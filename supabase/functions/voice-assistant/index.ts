@@ -37,10 +37,11 @@ serve(async (req) => {
   
   // Connect to OpenAI Realtime API
   const openAISocket = new WebSocket(
-    `wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01`,
+    `wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-12-17`,
     [
       "realtime",
-      `openai-insecure-api-key.${OPENAI_API_KEY}`
+      `openai-insecure-api-key.${OPENAI_API_KEY}`,
+      "openai-beta.realtime=v1"
     ]
   );
 
@@ -66,6 +67,13 @@ serve(async (req) => {
   openAISocket.onmessage = async (event) => {
     const data = JSON.parse(event.data);
     console.log(`[OpenAI Event] ${data.type}`);
+
+    if (data.type === 'error') {
+      console.error('[OpenAI Error payload]', data);
+      socket.send(JSON.stringify({ type: 'error', message: data.error?.message || 'OpenAI error' }));
+      try { openAISocket.close(); } catch {}
+      return;
+    }
 
     // Configure session after receiving session.created
     if (data.type === 'session.created' && !sessionStarted) {
