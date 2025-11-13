@@ -1,0 +1,181 @@
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Trash2, Crown } from "lucide-react";
+import { toast } from "sonner";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
+
+interface MembersSectionProps {
+  clubId: string;
+  canManage: boolean;
+}
+
+export function MembersSection({ clubId, canManage }: MembersSectionProps) {
+  const queryClient = useQueryClient();
+
+  const { data: members, isLoading } = useQuery({
+    queryKey: ["club-members", clubId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("club_members")
+        .select("*")
+        .eq("club_id", clubId)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+
+      // Fetch user emails separately
+      if (data && data.length > 0) {
+        const userIds = data.map((m) => m.user_id);
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, email, full_name")
+          .in("id", userIds);
+
+        return data.map((member) => ({
+          ...member,
+          profile: profiles?.find((p) => p.id === member.user_id),
+        }));
+      }
+
+      return data;
+    },
+  });
+
+  const { data: club } = useQuery({
+    queryKey: ["club-owner", clubId],
+    queryFn: async () => {
+      const { data: clubData, error } = await supabase
+        .from("clubs")
+        .select("*")
+        .eq("id", clubId)
+        .single();
+      if (error) throw error;
+
+      // Fetch owner profile
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("email, full_name")
+        .eq("id", clubData.user_id)
+        .maybeSingle();
+
+      return {
+        ...clubData,
+        profile: profileData,
+      };
+    },
+  });
+
+  const removeMember = useMutation({
+    mutationFn: async (memberId: string) => {
+      const { error } = await supabase
+        .from("club_members")
+        .delete()
+        .eq("id", memberId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["club-members", clubId] });
+      toast.success("Membre retiré avec succès");
+    },
+    onError: () => {
+      toast.error("Erreur lors du retrait du membre");
+    },
+  });
+
+  if (isLoading) {
+    return <Skeleton className="h-64 w-full" />;
+  }
+
+  const getRoleBadge = (role: string) => {
+    const config = {
+      admin: { label: "Admin", variant: "default" as const },
+      coach: { label: "Coach", variant: "secondary" as const },
+      viewer: { label: "Viewer", variant: "outline" as const },
+    };
+    const { label, variant } = config[role as keyof typeof config] || { label: role, variant: "outline" as const };
+    return <Badge variant={variant}>{label}</Badge>;
+  };
+
+  return (
+    <Card className="bg-gradient-card shadow-md">
+      <CardHeader>
+        <CardTitle>Membres du Club</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Utilisateur</TableHead>
+              <TableHead>Email</TableHead>
+              <TableHead>Rôle</TableHead>
+              <TableHead>Membre depuis</TableHead>
+              {canManage && <TableHead>Actions</TableHead>}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {club && (
+              <TableRow>
+                <TableCell className="font-medium">
+                  <div className="flex items-center gap-2">
+                    <Crown className="h-4 w-4 text-yellow-500" />
+                    {club.profile?.full_name || "Propriétaire"}
+                  </div>
+                </TableCell>
+                <TableCell>{club.profile?.email}</TableCell>
+                <TableCell>
+                  <Badge variant="default">Propriétaire</Badge>
+                </TableCell>
+                <TableCell>—</TableCell>
+                {canManage && <TableCell>—</TableCell>}
+              </TableRow>
+            )}
+            {members && members.length > 0 ? (
+              members.map((member: any) => (
+                <TableRow key={member.id}>
+                  <TableCell className="font-medium">
+                    {member.profile?.full_name || "Utilisateur"}
+                  </TableCell>
+                  <TableCell>{member.profile?.email}</TableCell>
+                  <TableCell>{getRoleBadge(member.role)}</TableCell>
+                  <TableCell>
+                    {format(new Date(member.created_at), "dd MMM yyyy", { locale: fr })}
+                  </TableCell>
+                  {canManage && (
+                    <TableCell>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeMember.mutate(member.id)}
+                        disabled={removeMember.isPending}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </TableCell>
+                  )}
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={canManage ? 5 : 4} className="text-center text-muted-foreground">
+                  Aucun membre pour le moment
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+}

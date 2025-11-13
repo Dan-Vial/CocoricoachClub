@@ -6,7 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AddCategoryDialog } from "@/components/categories/AddCategoryDialog";
+import { CollaborationTab } from "@/components/collaboration/CollaborationTab";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 
 export default function ClubDetails() {
@@ -86,15 +88,22 @@ export default function ClubDetails() {
       </div>
 
       <div className="container mx-auto max-w-6xl px-4 py-8">
-        <div className="flex justify-between items-center mb-8">
-          <h2 className="text-2xl font-bold text-foreground">Catégories</h2>
-          <Button onClick={() => setIsAddDialogOpen(true)} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Ajouter une catégorie
-          </Button>
-        </div>
+        <Tabs defaultValue="categories" className="space-y-6">
+          <TabsList>
+            <TabsTrigger value="categories">Catégories</TabsTrigger>
+            <TabsTrigger value="collaboration">Collaboration</TabsTrigger>
+          </TabsList>
 
-        {categories && categories.length === 0 ? (
+          <TabsContent value="categories" className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h2 className="text-2xl font-bold text-foreground">Catégories</h2>
+              <Button onClick={() => setIsAddDialogOpen(true)} className="gap-2">
+                <Plus className="h-4 w-4" />
+                Ajouter une catégorie
+              </Button>
+            </div>
+
+            {categories && categories.length === 0 ? (
           <Card className="bg-gradient-card shadow-md">
             <CardContent className="py-12 text-center">
               <p className="text-muted-foreground mb-4">
@@ -152,7 +161,13 @@ export default function ClubDetails() {
             ))}
           </div>
         )}
-      </div>
+      </TabsContent>
+
+      <TabsContent value="collaboration">
+        <CollaborationTab clubId={clubId!} />
+      </TabsContent>
+    </Tabs>
+  </div>
 
       <AddCategoryDialog
         open={isAddDialogOpen}
