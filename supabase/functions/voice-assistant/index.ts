@@ -45,10 +45,22 @@ serve(async (req) => {
   );
 
   let sessionStarted = false;
+  let openAIReady = false;
+  const messageQueue: string[] = [];
   let currentFunctionCall: any = {};
 
   openAISocket.onopen = () => {
     console.log("[Voice Assistant] Connected to OpenAI");
+    openAIReady = true;
+    
+    // Send queued messages
+    while (messageQueue.length > 0 && openAISocket.readyState === WebSocket.OPEN) {
+      const msg = messageQueue.shift();
+      if (msg) {
+        console.log("[Queue] Sending queued message");
+        openAISocket.send(msg);
+      }
+    }
   };
 
   openAISocket.onmessage = async (event) => {
@@ -247,9 +259,25 @@ Sois concis et efficace. Confirme toujours les données avant d'enregistrer.`,
   };
 
   socket.onmessage = (event) => {
-    const data = JSON.parse(event.data);
-    console.log(`[Client Event] ${data.type}`);
-    openAISocket.send(event.data);
+    try {
+      const data = JSON.parse(event.data);
+      console.log(`[Client Event] ${data.type}`);
+      
+      // Skip auth messages - already handled
+      if (data.type === 'auth') {
+        return;
+      }
+      
+      // Queue messages if OpenAI not ready yet
+      if (!openAIReady || openAISocket.readyState !== WebSocket.OPEN) {
+        console.log("[Queue] Queueing message until OpenAI ready");
+        messageQueue.push(event.data);
+      } else {
+        openAISocket.send(event.data);
+      }
+    } catch (error) {
+      console.error("[Relay Error]", error);
+    }
   };
 
   socket.onclose = () => {
