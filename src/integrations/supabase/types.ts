@@ -194,6 +194,57 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          category_id: string
+          created_at: string
+          id: string
+          injury_id: string | null
+          is_read: boolean
+          message: string
+          notification_type: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          id?: string
+          injury_id?: string | null
+          is_read?: boolean
+          message: string
+          notification_type: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          id?: string
+          injury_id?: string | null
+          is_read?: boolean
+          message?: string
+          notification_type?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_category"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_injury"
+            columns: ["injury_id"]
+            isOneToOne: false
+            referencedRelation: "injuries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       players: {
         Row: {
           category_id: string
