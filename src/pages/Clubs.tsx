@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { AddClubDialog } from "@/components/clubs/AddClubDialog";
@@ -12,6 +12,15 @@ export default function Clubs() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setUserId(session?.user?.id || null);
+    };
+    getUser();
+  }, []);
 
   const { data: clubs, isLoading } = useQuery({
     queryKey: ["clubs"],
@@ -39,6 +48,16 @@ export default function Clubs() {
     },
   });
 
+  const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      toast.error("Erreur lors de la déconnexion");
+    } else {
+      toast.success("Déconnexion réussie");
+      navigate("/auth");
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -63,10 +82,16 @@ export default function Clubs() {
       <div className="container mx-auto max-w-6xl px-4 py-8">
         <div className="flex justify-between items-center mb-8">
           <h2 className="text-2xl font-bold text-foreground">Mes Clubs</h2>
-          <Button onClick={() => setIsAddDialogOpen(true)} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Ajouter un club
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={() => setIsAddDialogOpen(true)} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Ajouter un club
+            </Button>
+            <Button onClick={handleLogout} variant="outline" className="gap-2">
+              <LogOut className="h-4 w-4" />
+              Déconnexion
+            </Button>
+          </div>
         </div>
 
         {clubs && clubs.length === 0 ? (
@@ -118,7 +143,7 @@ export default function Clubs() {
         )}
       </div>
 
-      <AddClubDialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen} />
+      <AddClubDialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen} userId={userId} />
     </div>
   );
 }

@@ -12,19 +12,31 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { clubSchema } from "@/lib/validations";
+import { z } from "zod";
 
 interface AddClubDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  userId: string | null;
 }
 
-export function AddClubDialog({ open, onOpenChange }: AddClubDialogProps) {
+export function AddClubDialog({ open, onOpenChange, userId }: AddClubDialogProps) {
   const [clubName, setClubName] = useState("");
   const queryClient = useQueryClient();
 
   const addClub = useMutation({
     mutationFn: async (name: string) => {
-      const { error } = await supabase.from("clubs").insert({ name });
+      if (!userId) {
+        throw new Error("Utilisateur non authentifié");
+      }
+      
+      // Validate input
+      const validatedData = clubSchema.parse({ name });
+      
+      const { error } = await supabase
+        .from("clubs")
+        .insert({ name: validatedData.name, user_id: userId });
       if (error) throw error;
     },
     onSuccess: () => {
@@ -33,8 +45,12 @@ export function AddClubDialog({ open, onOpenChange }: AddClubDialogProps) {
       setClubName("");
       onOpenChange(false);
     },
-    onError: () => {
-      toast.error("Erreur lors de l'ajout du club");
+    onError: (error) => {
+      if (error instanceof z.ZodError) {
+        toast.error(error.errors[0].message);
+      } else {
+        toast.error("Erreur lors de l'ajout du club");
+      }
     },
   });
 
@@ -60,6 +76,7 @@ export function AddClubDialog({ open, onOpenChange }: AddClubDialogProps) {
                 value={clubName}
                 onChange={(e) => setClubName(e.target.value)}
                 placeholder="Ex: Colomiers Rugby"
+                maxLength={100}
                 required
               />
             </div>
