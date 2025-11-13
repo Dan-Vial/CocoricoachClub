@@ -57,14 +57,14 @@ export default function CategoryDetails() {
 
       <div className="container mx-auto max-w-7xl px-4 py-8">
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-7">
-            <TabsTrigger value="overview">Vue Générale</TabsTrigger>
-            <TabsTrigger value="players">Joueurs</TabsTrigger>
-            <TabsTrigger value="calendar">Calendrier</TabsTrigger>
-            <TabsTrigger value="tests">Tests</TabsTrigger>
-            <TabsTrigger value="awcr">AWCR</TabsTrigger>
-            <TabsTrigger value="injuries">Blessures</TabsTrigger>
-            <TabsTrigger value="periodization">Périodisation</TabsTrigger>
+          <TabsList className="w-full overflow-x-auto flex gap-2">
+            <TabsTrigger className="whitespace-nowrap flex-shrink-0" value="overview">Vue Générale</TabsTrigger>
+            <TabsTrigger className="whitespace-nowrap flex-shrink-0" value="players">Joueurs</TabsTrigger>
+            <TabsTrigger className="whitespace-nowrap flex-shrink-0" value="calendar">Calendrier</TabsTrigger>
+            <TabsTrigger className="whitespace-nowrap flex-shrink-0" value="tests">Tests</TabsTrigger>
+            <TabsTrigger className="whitespace-nowrap flex-shrink-0" value="awcr">AWCR</TabsTrigger>
+            <TabsTrigger className="whitespace-nowrap flex-shrink-0" value="injuries">Blessures</TabsTrigger>
+            <TabsTrigger className="whitespace-nowrap flex-shrink-0" value="periodization">Périodisation</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4">
