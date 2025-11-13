@@ -12,31 +12,31 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 import { clubSchema } from "@/lib/validations";
 import { z } from "zod";
 
 interface AddClubDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  userId: string | null;
 }
 
-export function AddClubDialog({ open, onOpenChange, userId }: AddClubDialogProps) {
+export function AddClubDialog({ open, onOpenChange }: AddClubDialogProps) {
   const [clubName, setClubName] = useState("");
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   const addClub = useMutation({
     mutationFn: async (name: string) => {
-      if (!userId) {
+      if (!user) {
         throw new Error("Utilisateur non authentifié");
       }
       
-      // Validate input
       const validatedData = clubSchema.parse({ name });
       
       const { error } = await supabase
         .from("clubs")
-        .insert({ name: validatedData.name, user_id: userId });
+        .insert({ name: validatedData.name, user_id: user.id });
       if (error) throw error;
     },
     onSuccess: () => {
