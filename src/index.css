@@ -47,6 +47,14 @@ All colors MUST be HSL.
     
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
+    /* Training type colors */
+    --training-collectif: 220 70% 50%;
+    --training-technique: 280 65% 60%;
+    --training-physique: 160 60% 45%;
+    --training-musculation: 30 70% 50%;
+    --training-repos: 210 15% 60%;
+    --training-test: 350 70% 55%;
+
     --sidebar-background: 0 0% 98%;
 
     --sidebar-foreground: 240 5.3% 26.1%;

@@ -57,6 +57,14 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        training: {
+          collectif: "hsl(var(--training-collectif))",
+          technique: "hsl(var(--training-technique))",
+          physique: "hsl(var(--training-physique))",
+          musculation: "hsl(var(--training-musculation))",
+          repos: "hsl(var(--training-repos))",
+          test: "hsl(var(--training-test))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
