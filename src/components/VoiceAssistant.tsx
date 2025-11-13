@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Mic, MicOff, Loader2, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { AudioRecorder, encodeAudioForAPI, playAudioData } from "@/utils/VoiceAssistant";
+import { supabase } from "@/integrations/supabase/client";
 
 interface VoiceAssistantProps {
   categoryId: string;
@@ -31,15 +32,34 @@ const VoiceAssistant = ({ categoryId }: VoiceAssistantProps) => {
     try {
       setStatus("Connexion...");
       
+      // Get auth session for secure connection
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast({
+          title: "Erreur d'authentification",
+          description: "Vous devez être connecté",
+          variant: "destructive",
+        });
+        return;
+      }
+      
       // Initialize audio context
       audioContextRef.current = new AudioContext({ sampleRate: 24000 });
 
-      // Connect to WebSocket
+      // Connect to WebSocket with auth token
       const projectId = "mbloebaovvvgfwxsdzgo";
       const wsUrl = `wss://${projectId}.supabase.co/functions/v1/voice-assistant?categoryId=${categoryId}`;
       
       console.log("[Voice Assistant] Connecting to:", wsUrl);
       wsRef.current = new WebSocket(wsUrl);
+      
+      // Send auth token after connection
+      wsRef.current.addEventListener('open', () => {
+        wsRef.current?.send(JSON.stringify({
+          type: 'auth',
+          token: session.access_token
+        }));
+      }, { once: true });
 
       wsRef.current.onopen = () => {
         console.log("[Voice Assistant] Connected");
