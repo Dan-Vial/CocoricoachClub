@@ -41,7 +41,7 @@ export function InviteMemberDialog({ open, onOpenChange, clubId }: InviteMemberD
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) throw new Error("Non authentifié");
 
-      const { error } = await supabase.from("club_invitations").insert({
+      const { error } = await (supabase as any).from("club_invitations").insert({
         club_id: clubId,
         email: data.email,
         role: data.role,

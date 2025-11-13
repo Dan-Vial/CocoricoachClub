@@ -35,7 +35,7 @@ export default function AcceptInvitation() {
 
   const acceptInvitation = async (token: string) => {
     try {
-      const { data, error } = await supabase.rpc("accept_club_invitation", {
+      const { data, error } = await (supabase as any).rpc("accept_club_invitation", {
         _token: token,
       });
 
