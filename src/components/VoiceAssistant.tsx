@@ -48,7 +48,7 @@ const VoiceAssistant = ({ categoryId }: VoiceAssistantProps) => {
 
       // Connect to WebSocket with auth token
       const projectId = "mbloebaovvvgfwxsdzgo";
-      const wsUrl = `wss://${projectId}.supabase.co/functions/v1/voice-assistant?categoryId=${categoryId}`;
+      const wsUrl = `wss://${projectId}.functions.supabase.co/functions/v1/voice-assistant?categoryId=${categoryId}`;
       
       console.log("[Voice Assistant] Connecting to:", wsUrl);
       wsRef.current = new WebSocket(wsUrl);
