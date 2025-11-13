@@ -6,6 +6,51 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Validation schemas
+const validateRPE = (rpe: number): number => {
+  if (typeof rpe !== 'number' || isNaN(rpe)) {
+    throw new Error('RPE must be a number');
+  }
+  if (!Number.isInteger(rpe) || rpe < 1 || rpe > 10) {
+    throw new Error('RPE must be an integer between 1 and 10');
+  }
+  return rpe;
+};
+
+const validateDuration = (duration: number): number => {
+  if (typeof duration !== 'number' || isNaN(duration)) {
+    throw new Error('Duration must be a number');
+  }
+  if (!Number.isInteger(duration) || duration < 1 || duration > 480) {
+    throw new Error('Duration must be an integer between 1 and 480 minutes (8 hours)');
+  }
+  return duration;
+};
+
+const validatePlayerName = (name: string): string => {
+  if (typeof name !== 'string' || !name.trim()) {
+    throw new Error('Player name is required');
+  }
+  const trimmed = name.trim();
+  if (trimmed.length > 100) {
+    throw new Error('Player name must be less than 100 characters');
+  }
+  if (!/^[a-zA-ZÀ-ÿ\s'-]+$/.test(trimmed)) {
+    throw new Error('Player name can only contain letters, spaces, hyphens, and apostrophes');
+  }
+  return trimmed;
+};
+
+const validateSessionDate = (date: string | undefined): string => {
+  if (!date) {
+    return new Date().toISOString().split('T')[0];
+  }
+  if (typeof date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    throw new Error('Session date must be in YYYY-MM-DD format');
+  }
+  return date;
+};
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -23,6 +68,14 @@ serve(async (req) => {
     return new Response("OPENAI_API_KEY not configured", { status: 500 });
   }
 
+  // Get auth token from headers
+  const authHeader = headers.get('authorization');
+  if (!authHeader) {
+    return new Response("Unauthorized: No authorization header", { status: 401 });
+  }
+
+  const token = authHeader.replace('Bearer ', '');
+  
   // Get category ID from URL params
   const url = new URL(req.url);
   const categoryId = url.searchParams.get('categoryId');
@@ -31,7 +84,46 @@ serve(async (req) => {
     return new Response("categoryId is required", { status: 400 });
   }
 
-  console.log(`[Voice Assistant] Starting session for category: ${categoryId}`);
+  // Create Supabase client with user's JWT to check permissions
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+  const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+  const authClient = createClient(supabaseUrl, supabaseAnonKey, {
+    global: {
+      headers: { Authorization: authHeader }
+    }
+  });
+
+  // Verify user has access to this category
+  const { data: category, error: categoryError } = await authClient
+    .from('categories')
+    .select('id, club_id')
+    .eq('id', categoryId)
+    .single();
+
+  if (categoryError || !category) {
+    console.error('[Auth] Category access denied:', categoryError);
+    return new Response("Unauthorized: You don't have access to this category", { status: 403 });
+  }
+
+  // Verify user has access to the club
+  const { data: { user } } = await authClient.auth.getUser();
+  if (!user) {
+    return new Response("Unauthorized: Invalid token", { status: 401 });
+  }
+
+  const { data: clubAccess, error: clubError } = await authClient
+    .from('clubs')
+    .select('id')
+    .eq('id', category.club_id)
+    .or(`user_id.eq.${user.id},id.in.(select club_id from club_members where user_id='${user.id}')`)
+    .single();
+
+  if (clubError || !clubAccess) {
+    console.error('[Auth] Club access denied:', clubError);
+    return new Response("Unauthorized: You don't have access to this club", { status: 403 });
+  }
+
+  console.log(`[Voice Assistant] Session authorized for category: ${categoryId}, user: ${user.id}`);
 
   const { socket, response } = Deno.upgradeWebSocket(req);
   
@@ -159,11 +251,22 @@ Sois concis et efficace. Confirme toujours les données avant d'enregistrer.`,
 
       // Execute the function
       try {
-        const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-        const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-        const supabase = createClient(supabaseUrl, supabaseKey);
+        // Validate all inputs before processing
+        const rawArgs = currentFunctionCall.arguments;
+        
+        const validatedData = {
+          playerName: validatePlayerName(rawArgs.playerName),
+          rpe: validateRPE(rawArgs.rpe),
+          durationMinutes: validateDuration(rawArgs.durationMinutes),
+          sessionDate: validateSessionDate(rawArgs.sessionDate)
+        };
 
-        const { playerName, rpe, durationMinutes, sessionDate } = currentFunctionCall.arguments;
+        const { playerName, rpe, durationMinutes, sessionDate } = validatedData;
+        
+        console.log('[Validation] All inputs validated successfully');
+
+        // Use authenticated client instead of service role for data operations
+        const supabase = authClient;
         
         // Find or create player
         const { data: players, error: playerError } = await supabase
@@ -196,14 +299,13 @@ Sois concis et efficace. Confirme toujours les données avant d'enregistrer.`,
 
         // Calculate training load and insert AWCR data
         const trainingLoad = rpe * durationMinutes;
-        const date = sessionDate || new Date().toISOString().split('T')[0];
 
         const { error: awcrError } = await supabase
           .from('awcr_tracking')
           .insert({
             category_id: categoryId,
             player_id: playerId,
-            session_date: date,
+            session_date: sessionDate,
             rpe,
             duration_minutes: durationMinutes,
             training_load: trainingLoad
