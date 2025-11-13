@@ -32,6 +32,7 @@ const trainingTypes = [
   { value: "technique_individuelle", label: "Technique Individuelle" },
   { value: "physique", label: "Physique" },
   { value: "musculation", label: "Musculation" },
+  { value: "réathlétisation", label: "Réathlétisation" },
   { value: "repos", label: "Repos" },
   { value: "test", label: "Test" },
 ];

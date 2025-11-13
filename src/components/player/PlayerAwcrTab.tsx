@@ -40,6 +40,26 @@ export function PlayerAwcrTab({ playerId, categoryId }: PlayerAwcrTabProps) {
     },
   });
 
+  // Fetch team AWCR average
+  const { data: teamAwcrAvg } = useQuery({
+    queryKey: ["team_awcr_avg", categoryId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("awcr_tracking")
+        .select("awcr, training_load")
+        .eq("category_id", categoryId)
+        .not("awcr", "is", null);
+      
+      if (error) throw error;
+      if (!data || data.length === 0) return null;
+      
+      const avgAwcr = data.reduce((sum, row) => sum + (row.awcr || 0), 0) / data.length;
+      const avgLoad = data.reduce((sum, row) => sum + (row.training_load || 0), 0) / data.length;
+      
+      return { avgAwcr, avgLoad };
+    },
+  });
+
   const chartData = awcrData?.map((entry) => ({
     date: new Date(entry.session_date).toLocaleDateString("fr-FR"),
     awcr: entry.awcr,
@@ -57,6 +77,23 @@ export function PlayerAwcrTab({ playerId, categoryId }: PlayerAwcrTabProps) {
             <p className="text-sm text-muted-foreground">
               Zone optimale: 0.8 - 1.3 (zone verte)
             </p>
+            {teamAwcrAvg && awcrData && awcrData.length > 0 && (
+              <p className="text-sm text-muted-foreground mt-2">
+                AWCR moyen équipe: {teamAwcrAvg.avgAwcr.toFixed(2)} | 
+                Dernier AWCR: {awcrData[awcrData.length - 1].awcr?.toFixed(2)}
+                {awcrData[awcrData.length - 1].awcr && (
+                  <span className={`ml-2 font-semibold ${
+                    Math.abs(awcrData[awcrData.length - 1].awcr - 1.0) < Math.abs(teamAwcrAvg.avgAwcr - 1.0)
+                      ? "text-primary"
+                      : "text-muted-foreground"
+                  }`}>
+                    ({Math.abs(awcrData[awcrData.length - 1].awcr - 1.0) < Math.abs(teamAwcrAvg.avgAwcr - 1.0) 
+                      ? "Plus proche de l'optimal" 
+                      : "Similaire à l'équipe"})
+                  </span>
+                )}
+              </p>
+            )}
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
@@ -85,6 +122,11 @@ export function PlayerAwcrTab({ playerId, categoryId }: PlayerAwcrTabProps) {
         <Card className="bg-gradient-card shadow-md">
           <CardHeader>
             <CardTitle>Évolution des charges</CardTitle>
+            {teamAwcrAvg && (
+              <p className="text-sm text-muted-foreground">
+                Charge moyenne équipe: {teamAwcrAvg.avgLoad.toFixed(0)}
+              </p>
+            )}
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>

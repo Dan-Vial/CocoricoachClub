@@ -8,6 +8,7 @@ import { PlayersTab } from "@/components/category/PlayersTab";
 import { CalendarTab } from "@/components/category/CalendarTab";
 import { TestsTab } from "@/components/category/TestsTab";
 import { AwcrTab } from "@/components/category/AwcrTab";
+import { OverviewTab } from "@/components/category/OverviewTab";
 
 export default function CategoryDetails() {
   const { categoryId } = useParams();
@@ -48,13 +49,18 @@ export default function CategoryDetails() {
       </div>
 
       <div className="container mx-auto max-w-7xl px-4 py-8">
-        <Tabs defaultValue="players" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+        <Tabs defaultValue="overview" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="overview">Vue Générale</TabsTrigger>
             <TabsTrigger value="players">Joueurs</TabsTrigger>
             <TabsTrigger value="calendar">Calendrier</TabsTrigger>
             <TabsTrigger value="tests">Tests</TabsTrigger>
             <TabsTrigger value="awcr">AWCR</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="overview" className="space-y-4">
+            <OverviewTab categoryId={categoryId!} />
+          </TabsContent>
 
           <TabsContent value="players" className="space-y-4">
             <PlayersTab categoryId={categoryId!} />

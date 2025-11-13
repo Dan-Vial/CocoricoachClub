@@ -53,6 +53,60 @@ export function PlayerTestsTab({ playerId, categoryId }: PlayerTestsTabProps) {
     },
   });
 
+  // Fetch team averages for comparison
+  const { data: teamSpeedAvg } = useQuery({
+    queryKey: ["team_speed_avg", categoryId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("speed_tests")
+        .select("time_40m_seconds, vma_kmh, test_type")
+        .eq("category_id", categoryId);
+      
+      if (error) throw error;
+      if (!data || data.length === 0) return null;
+      
+      const sprint40m = data.filter(t => t.test_type === "40m_sprint" && t.time_40m_seconds);
+      const run1600m = data.filter(t => t.test_type === "1600m_run" && t.vma_kmh);
+      
+      const avg40m = sprint40m.length > 0 
+        ? sprint40m.reduce((sum, row) => sum + (row.time_40m_seconds || 0), 0) / sprint40m.length 
+        : null;
+      
+      const avgVma = run1600m.length > 0
+        ? run1600m.reduce((sum, row) => sum + (row.vma_kmh || 0), 0) / run1600m.length
+        : null;
+      
+      return { avg40m, avgVma };
+    },
+  });
+
+  const { data: teamStrengthAvg } = useQuery({
+    queryKey: ["team_strength_avg", categoryId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("strength_tests")
+        .select("test_name, weight_kg")
+        .eq("category_id", categoryId);
+      
+      if (error) throw error;
+      if (!data || data.length === 0) return null;
+      
+      const grouped = data.reduce((acc, test) => {
+        if (!acc[test.test_name]) {
+          acc[test.test_name] = { sum: 0, count: 0 };
+        }
+        acc[test.test_name].sum += test.weight_kg;
+        acc[test.test_name].count += 1;
+        return acc;
+      }, {} as Record<string, { sum: number; count: number }>);
+      
+      return Object.entries(grouped).reduce((acc, [name, stats]) => {
+        acc[name] = stats.sum / stats.count;
+        return acc;
+      }, {} as Record<string, number>);
+    },
+  });
+
   // Préparer les données pour les graphiques
   const sprint40mData = speedTests
     ?.filter((test) => test.test_type === "40m_sprint")
@@ -96,6 +150,21 @@ export function PlayerTestsTab({ playerId, categoryId }: PlayerTestsTabProps) {
             <Card className="bg-gradient-card shadow-md">
               <CardHeader>
                 <CardTitle>Évolution Sprint 40m</CardTitle>
+                {teamSpeedAvg?.avg40m && sprint40mData.length > 0 && (
+                  <p className="text-sm text-muted-foreground">
+                    Moyenne équipe: {teamSpeedAvg.avg40m.toFixed(2)}s | 
+                    Dernier test: {sprint40mData[sprint40mData.length - 1].temps?.toFixed(2)}s
+                    {sprint40mData[sprint40mData.length - 1].temps && (
+                      <span className={`ml-2 font-semibold ${
+                        sprint40mData[sprint40mData.length - 1].temps < teamSpeedAvg.avg40m
+                          ? "text-primary"
+                          : "text-destructive"
+                      }`}>
+                        ({sprint40mData[sprint40mData.length - 1].temps < teamSpeedAvg.avg40m ? "Au-dessus" : "En-dessous"} de la moyenne)
+                      </span>
+                    )}
+                  </p>
+                )}
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
@@ -118,6 +187,21 @@ export function PlayerTestsTab({ playerId, categoryId }: PlayerTestsTabProps) {
             <Card className="bg-gradient-card shadow-md">
               <CardHeader>
                 <CardTitle>Évolution Course 1600m</CardTitle>
+                {teamSpeedAvg?.avgVma && run1600mData.length > 0 && (
+                  <p className="text-sm text-muted-foreground">
+                    VMA moyenne équipe: {teamSpeedAvg.avgVma.toFixed(1)} km/h | 
+                    Dernier test: {run1600mData[run1600mData.length - 1].vma?.toFixed(1)} km/h
+                    {run1600mData[run1600mData.length - 1].vma && (
+                      <span className={`ml-2 font-semibold ${
+                        run1600mData[run1600mData.length - 1].vma > teamSpeedAvg.avgVma
+                          ? "text-primary"
+                          : "text-destructive"
+                      }`}>
+                        ({run1600mData[run1600mData.length - 1].vma > teamSpeedAvg.avgVma ? "Au-dessus" : "En-dessous"} de la moyenne)
+                      </span>
+                    )}
+                  </p>
+                )}
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
@@ -181,6 +265,11 @@ export function PlayerTestsTab({ playerId, categoryId }: PlayerTestsTabProps) {
             <Card className="bg-gradient-card shadow-md">
               <CardHeader>
                 <CardTitle>Évolution des charges</CardTitle>
+                {teamStrengthAvg && (
+                  <p className="text-sm text-muted-foreground">
+                    Comparaison avec les moyennes de l'équipe
+                  </p>
+                )}
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
@@ -212,24 +301,40 @@ export function PlayerTestsTab({ playerId, categoryId }: PlayerTestsTabProps) {
             <CardContent>
               {strengthTests && strengthTests.length > 0 ? (
                 <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b">
-                        <th className="text-left p-2">Date</th>
-                        <th className="text-left p-2">Exercice</th>
-                        <th className="text-left p-2">Poids (kg)</th>
-                      </tr>
-                    </thead>
-                    <tbody>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Exercise</TableHead>
+                        <TableHead>Poids</TableHead>
+                        {teamStrengthAvg && <TableHead>vs Moyenne Équipe</TableHead>}
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
                       {strengthTests.map((test) => (
-                        <tr key={test.id} className="border-b">
-                          <td className="p-2">{new Date(test.test_date).toLocaleDateString("fr-FR")}</td>
-                          <td className="p-2">{test.test_name}</td>
-                          <td className="p-2">{test.weight_kg} kg</td>
-                        </tr>
+                        <TableRow key={test.id}>
+                          <TableCell>{new Date(test.test_date).toLocaleDateString("fr-FR")}</TableCell>
+                          <TableCell>{test.test_name}</TableCell>
+                          <TableCell className="font-semibold">{test.weight_kg} kg</TableCell>
+                          {teamStrengthAvg && teamStrengthAvg[test.test_name] && (
+                            <TableCell>
+                              <span className={`font-semibold ${
+                                test.weight_kg > teamStrengthAvg[test.test_name]
+                                  ? "text-primary"
+                                  : "text-destructive"
+                              }`}>
+                                {test.weight_kg > teamStrengthAvg[test.test_name] ? "+" : ""}
+                                {(test.weight_kg - teamStrengthAvg[test.test_name]).toFixed(1)} kg
+                              </span>
+                              <span className="text-muted-foreground text-xs ml-1">
+                                (Moy: {teamStrengthAvg[test.test_name].toFixed(1)} kg)
+                              </span>
+                            </TableCell>
+                          )}
+                        </TableRow>
                       ))}
-                    </tbody>
-                  </table>
+                    </TableBody>
+                  </Table>
                 </div>
               ) : (
                 <p className="text-muted-foreground text-center py-4">Aucun test de musculation</p>
