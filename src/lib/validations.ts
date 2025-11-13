@@ -19,10 +19,22 @@ export const clubSchema = z.object({
 
 // Category schemas
 export const categorySchema = z.object({
-  name: z.string().trim().min(1, "Le nom de la catégorie est requis").max(100, "Le nom de la catégorie ne peut pas dépasser 100 caractères"),
+  name: z.string()
+    .trim()
+    .min(1, "Le nom de la catégorie est requis")
+    .max(100, "Le nom de la catégorie ne peut pas dépasser 100 caractères")
+    .regex(/^[a-zA-Z0-9À-ÿ\s'-]+$/, "Le nom ne peut contenir que des lettres, chiffres, espaces, tirets et apostrophes"),
 });
+
+export type CategoryFormData = z.infer<typeof categorySchema>;
 
 // Player schemas
 export const playerSchema = z.object({
-  name: z.string().trim().min(1, "Le nom du joueur est requis").max(100, "Le nom du joueur ne peut pas dépasser 100 caractères"),
+  name: z.string()
+    .trim()
+    .min(1, "Le nom du joueur est requis")
+    .max(100, "Le nom du joueur ne peut pas dépasser 100 caractères")
+    .regex(/^[a-zA-ZÀ-ÿ\s'-]+$/, "Le nom ne peut contenir que des lettres, espaces, tirets et apostrophes"),
 });
+
+export type PlayerFormData = z.infer<typeof playerSchema>;
