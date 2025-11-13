@@ -42,7 +42,8 @@ export function AddSessionDialog({
   categoryId,
 }: AddSessionDialogProps) {
   const [date, setDate] = useState("");
-  const [time, setTime] = useState("");
+  const [startTime, setStartTime] = useState("");
+  const [endTime, setEndTime] = useState("");
   const [type, setType] = useState("");
   const [intensity, setIntensity] = useState("");
   const [notes, setNotes] = useState("");
@@ -53,7 +54,8 @@ export function AddSessionDialog({
       const { error } = await supabase.from("training_sessions").insert([{
         category_id: categoryId,
         session_date: date,
-        session_time: time || null,
+        session_start_time: startTime || null,
+        session_end_time: endTime || null,
         training_type: type as any,
         intensity: intensity ? parseInt(intensity) : null,
         notes: notes || null,
@@ -73,7 +75,8 @@ export function AddSessionDialog({
 
   const resetForm = () => {
     setDate("");
-    setTime("");
+    setStartTime("");
+    setEndTime("");
     setType("");
     setIntensity("");
     setNotes("");
@@ -81,6 +84,19 @@ export function AddSessionDialog({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validation: si on a une heure de fin, on doit avoir une heure de début
+    if (endTime && !startTime) {
+      toast.error("Veuillez indiquer une heure de début si vous spécifiez une heure de fin");
+      return;
+    }
+    
+    // Validation: l'heure de fin doit être après l'heure de début
+    if (startTime && endTime && endTime <= startTime) {
+      toast.error("L'heure de fin doit être après l'heure de début");
+      return;
+    }
+    
     if (date && type) {
       addSession.mutate();
     }
@@ -94,24 +110,34 @@ export function AddSessionDialog({
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="date">Date *</Label>
+              <Input
+                id="date"
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                required
+              />
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="date">Date *</Label>
+                <Label htmlFor="startTime">Heure de début</Label>
                 <Input
-                  id="date"
-                  type="date"
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  required
+                  id="startTime"
+                  type="time"
+                  value={startTime}
+                  onChange={(e) => setStartTime(e.target.value)}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="time">Heure</Label>
+                <Label htmlFor="endTime">Heure de fin</Label>
                 <Input
-                  id="time"
+                  id="endTime"
                   type="time"
-                  value={time}
-                  onChange={(e) => setTime(e.target.value)}
+                  value={endTime}
+                  onChange={(e) => setEndTime(e.target.value)}
                 />
               </div>
             </div>

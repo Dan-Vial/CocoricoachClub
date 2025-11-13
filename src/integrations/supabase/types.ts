@@ -294,7 +294,8 @@ export type Database = {
           intensity: number | null
           notes: string | null
           session_date: string
-          session_time: string | null
+          session_end_time: string | null
+          session_start_time: string | null
           training_type: Database["public"]["Enums"]["training_type"]
         }
         Insert: {
@@ -304,7 +305,8 @@ export type Database = {
           intensity?: number | null
           notes?: string | null
           session_date: string
-          session_time?: string | null
+          session_end_time?: string | null
+          session_start_time?: string | null
           training_type: Database["public"]["Enums"]["training_type"]
         }
         Update: {
@@ -314,7 +316,8 @@ export type Database = {
           intensity?: number | null
           notes?: string | null
           session_date?: string
-          session_time?: string | null
+          session_end_time?: string | null
+          session_start_time?: string | null
           training_type?: Database["public"]["Enums"]["training_type"]
         }
         Relationships: [

@@ -46,7 +46,7 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
         .select("*")
         .eq("category_id", categoryId)
         .order("session_date", { ascending: false })
-        .order("session_time", { ascending: false });
+        .order("session_start_time", { ascending: false });
       if (error) throw error;
       return data;
     },
@@ -220,11 +220,15 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
                           <span className="text-xs text-muted-foreground">
                             {format(new Date(session.session_date), "d MMM yyyy", { locale: fr })}
                           </span>
-                          {session.session_time && (
+                          {session.session_start_time && session.session_end_time ? (
                             <span className="text-xs text-muted-foreground">
-                              • {session.session_time}
+                              • {session.session_start_time} - {session.session_end_time}
                             </span>
-                          )}
+                          ) : session.session_start_time ? (
+                            <span className="text-xs text-muted-foreground">
+                              • {session.session_start_time}
+                            </span>
+                          ) : null}
                         </div>
                         <div className="flex items-center gap-2">
                           <span className="font-semibold">
