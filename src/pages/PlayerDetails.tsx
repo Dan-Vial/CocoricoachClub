@@ -9,6 +9,7 @@ import { PlayerTestsTab } from "@/components/player/PlayerTestsTab";
 import { PlayerCalendarTab } from "@/components/player/PlayerCalendarTab";
 import { PlayerAwcrTab } from "@/components/player/PlayerAwcrTab";
 import { PlayerProfile } from "@/components/player/PlayerProfile";
+import { PlayerInjuriesTab } from "@/components/player/PlayerInjuriesTab";
 
 export default function PlayerDetails() {
   const { playerId } = useParams<{ playerId: string }>();
@@ -68,10 +69,11 @@ export default function PlayerDetails() {
         </div>
 
         <Tabs defaultValue="tests" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="tests">Tests</TabsTrigger>
             <TabsTrigger value="calendar">Calendrier</TabsTrigger>
             <TabsTrigger value="awcr">AWCR</TabsTrigger>
+            <TabsTrigger value="injuries">Blessures</TabsTrigger>
           </TabsList>
 
           <TabsContent value="tests">
@@ -84,6 +86,10 @@ export default function PlayerDetails() {
 
           <TabsContent value="awcr">
             <PlayerAwcrTab playerId={playerId!} categoryId={player.category_id} />
+          </TabsContent>
+
+          <TabsContent value="injuries">
+            <PlayerInjuriesTab playerId={playerId!} categoryId={player.category_id} />
           </TabsContent>
         </Tabs>
       </div>
