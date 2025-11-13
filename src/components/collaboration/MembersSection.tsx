@@ -28,7 +28,7 @@ export function MembersSection({ clubId, canManage }: MembersSectionProps) {
   const { data: members, isLoading } = useQuery({
     queryKey: ["club-members", clubId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("club_members")
         .select("*")
         .eq("club_id", clubId)
@@ -37,13 +37,13 @@ export function MembersSection({ clubId, canManage }: MembersSectionProps) {
 
       // Fetch user emails separately
       if (data && data.length > 0) {
-        const userIds = data.map((m) => m.user_id);
+        const userIds = data.map((m: any) => m.user_id);
         const { data: profiles } = await supabase
           .from("profiles")
           .select("id, email, full_name")
           .in("id", userIds);
 
-        return data.map((member) => ({
+        return data.map((member: any) => ({
           ...member,
           profile: profiles?.find((p) => p.id === member.user_id),
         }));
@@ -79,7 +79,7 @@ export function MembersSection({ clubId, canManage }: MembersSectionProps) {
 
   const removeMember = useMutation({
     mutationFn: async (memberId: string) => {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from("club_members")
         .delete()
         .eq("id", memberId);
