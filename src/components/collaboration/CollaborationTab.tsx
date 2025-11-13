@@ -41,7 +41,7 @@ export function CollaborationTab({ clubId }: CollaborationTabProps) {
       }
 
       // Check if user is member
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("club_members")
         .select("role")
         .eq("club_id", clubId)
@@ -49,7 +49,7 @@ export function CollaborationTab({ clubId }: CollaborationTabProps) {
         .maybeSingle();
 
       if (error) throw error;
-      return data?.role || null;
+      return (data as any)?.role || null;
     },
     enabled: !!club,
   });
