@@ -26,20 +26,26 @@ export function AddPlayerDialog({
   categoryId,
 }: AddPlayerDialogProps) {
   const [playerName, setPlayerName] = useState("");
+  const [birthYear, setBirthYear] = useState("");
   const [validationError, setValidationError] = useState("");
   const queryClient = useQueryClient();
 
   const addPlayer = useMutation({
-    mutationFn: async (name: string) => {
+    mutationFn: async (data: { name: string; birth_year?: number }) => {
       const { error } = await supabase
         .from("players")
-        .insert({ name, category_id: categoryId });
+        .insert({ 
+          name: data.name, 
+          category_id: categoryId,
+          birth_year: data.birth_year 
+        });
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["players", categoryId] });
       toast.success("Joueur ajouté avec succès");
       setPlayerName("");
+      setBirthYear("");
       onOpenChange(false);
     },
     onError: () => {
@@ -51,14 +57,21 @@ export function AddPlayerDialog({
     e.preventDefault();
     setValidationError("");
 
-    const result = playerSchema.safeParse({ name: playerName });
+    const birthYearNum = birthYear ? parseInt(birthYear) : undefined;
+    const result = playerSchema.safeParse({ 
+      name: playerName,
+      birthYear: birthYearNum 
+    });
     
     if (!result.success) {
       setValidationError(result.error.errors[0].message);
       return;
     }
 
-    addPlayer.mutate(result.data.name);
+    addPlayer.mutate({
+      name: result.data.name,
+      birth_year: result.data.birthYear
+    });
   };
 
   return (
@@ -81,10 +94,27 @@ export function AddPlayerDialog({
                 placeholder="Ex: Jean Dupont"
                 required
               />
-              {validationError && (
-                <p className="text-sm text-destructive">{validationError}</p>
-              )}
             </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="birthYear">Année de naissance (optionnel)</Label>
+              <Input
+                id="birthYear"
+                type="number"
+                value={birthYear}
+                onChange={(e) => {
+                  setBirthYear(e.target.value);
+                  setValidationError("");
+                }}
+                placeholder="Ex: 2010"
+                min="1950"
+                max={new Date().getFullYear()}
+              />
+            </div>
+            
+            {validationError && (
+              <p className="text-sm text-destructive">{validationError}</p>
+            )}
           </div>
           <DialogFooter>
             <Button

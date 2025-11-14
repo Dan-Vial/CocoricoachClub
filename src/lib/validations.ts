@@ -35,6 +35,18 @@ export const playerSchema = z.object({
     .min(1, "Le nom du joueur est requis")
     .max(100, "Le nom du joueur ne peut pas dépasser 100 caractères")
     .regex(/^[a-zA-ZÀ-ÿ\s'-]+$/, "Le nom ne peut contenir que des lettres, espaces, tirets et apostrophes"),
+  birthYear: z.number().int().min(1950, "Année invalide").max(new Date().getFullYear(), "Année invalide").optional(),
 });
 
 export type PlayerFormData = z.infer<typeof playerSchema>;
+
+// Measurement schemas
+export const measurementSchema = z.object({
+  weight_kg: z.number().min(20, "Poids minimum 20 kg").max(200, "Poids maximum 200 kg").optional(),
+  height_cm: z.number().min(100, "Taille minimum 100 cm").max(250, "Taille maximum 250 cm").optional(),
+  measurement_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Format de date invalide"),
+}).refine((data) => data.weight_kg !== undefined || data.height_cm !== undefined, {
+  message: "Au moins le poids ou la taille doit être renseigné",
+});
+
+export type MeasurementFormData = z.infer<typeof measurementSchema>;

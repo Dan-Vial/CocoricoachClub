@@ -10,6 +10,7 @@ import { PlayerCalendarTab } from "@/components/player/PlayerCalendarTab";
 import { PlayerAwcrTab } from "@/components/player/PlayerAwcrTab";
 import { PlayerProfile } from "@/components/player/PlayerProfile";
 import { PlayerInjuriesTab } from "@/components/player/PlayerInjuriesTab";
+import { PlayerBiometrics } from "@/components/player/PlayerBiometrics";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 
 export default function PlayerDetails() {
@@ -67,9 +68,14 @@ export default function PlayerDetails() {
           </CardHeader>
         </Card>
 
-        {/* Player Profile Section */}
-        <div className="mb-6">
+        {/* Player Profile and Biometrics Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           <PlayerProfile playerId={playerId!} categoryId={player.category_id} />
+          <PlayerBiometrics 
+            playerId={playerId!} 
+            categoryId={player.category_id}
+            birthYear={player.birth_year}
+          />
         </div>
 
         <Tabs defaultValue="tests" className="space-y-6">
