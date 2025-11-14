@@ -12,6 +12,7 @@ import { OverviewTab } from "@/components/category/OverviewTab";
 import { InjuriesTab } from "@/components/injuries/InjuriesTab";
 import { PeriodizationTab } from "@/components/periodization/PeriodizationTab";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
+import { AnalyticsTab } from "@/components/analytics/AnalyticsTab";
 
 
 export default function CategoryDetails() {
@@ -64,6 +65,7 @@ export default function CategoryDetails() {
             <TabsTrigger className="whitespace-nowrap flex-shrink-0" value="tests">Tests</TabsTrigger>
             <TabsTrigger className="whitespace-nowrap flex-shrink-0" value="awcr">AWCR</TabsTrigger>
             <TabsTrigger className="whitespace-nowrap flex-shrink-0" value="injuries">Blessures</TabsTrigger>
+            <TabsTrigger className="whitespace-nowrap flex-shrink-0" value="analytics">Analyse</TabsTrigger>
             <TabsTrigger className="whitespace-nowrap flex-shrink-0" value="periodization">Périodisation</TabsTrigger>
           </TabsList>
 
@@ -89,6 +91,10 @@ export default function CategoryDetails() {
 
           <TabsContent value="injuries" className="space-y-4">
             <InjuriesTab categoryId={categoryId!} />
+          </TabsContent>
+
+          <TabsContent value="analytics" className="space-y-4">
+            <AnalyticsTab categoryId={categoryId!} />
           </TabsContent>
 
           <TabsContent value="periodization" className="space-y-4">
