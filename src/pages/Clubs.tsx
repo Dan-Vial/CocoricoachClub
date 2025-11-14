@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Trash2, LogOut, BarChart3 } from "lucide-react";
+import { Plus, Trash2, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { AddClubDialog } from "@/components/clubs/AddClubDialog";
@@ -92,16 +92,10 @@ export default function Clubs() {
       <div className="container mx-auto max-w-6xl px-4 py-8">
         <div className="flex justify-between items-center mb-8">
           <h2 className="text-2xl font-bold text-foreground">Mes Clubs</h2>
-          <div className="flex gap-2">
-            <Button onClick={() => navigate("/dashboard")} variant="outline" className="gap-2">
-              <BarChart3 className="h-4 w-4" />
-              Tableau de Bord
-            </Button>
-            <Button onClick={() => setIsAddDialogOpen(true)} className="gap-2">
-              <Plus className="h-4 w-4" />
-              Ajouter un club
-            </Button>
-          </div>
+          <Button onClick={() => setIsAddDialogOpen(true)} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Ajouter un club
+          </Button>
         </div>
 
         {clubs && clubs.length === 0 ? (
