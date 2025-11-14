@@ -214,7 +214,18 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
                 {filteredSessions?.map((session) => (
                   <div
                     key={session.id}
-                    className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/5 transition-colors animate-fade-in"
+                    className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/5 transition-colors animate-fade-in cursor-pointer"
+                    onClick={() =>
+                      setSelectedSession({
+                        id: session.id,
+                        date: session.session_date,
+                        type:
+                          session.training_type === "test" ||
+                          session.training_type === "musculation"
+                            ? "test"
+                            : "training",
+                      })
+                    }
                   >
                     <div className="flex items-center gap-4 flex-1">
                       <div
@@ -257,10 +268,9 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => {
-                        if (
-                          confirm("Êtes-vous sûr de vouloir supprimer cette séance ?")
-                        ) {
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (confirm("Êtes-vous sûr de vouloir supprimer cette séance ?")) {
                           deleteSession.mutate(session.id);
                         }
                       }}
