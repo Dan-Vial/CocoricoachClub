@@ -12,7 +12,7 @@ import { OverviewTab } from "@/components/category/OverviewTab";
 import { InjuriesTab } from "@/components/injuries/InjuriesTab";
 import { PeriodizationTab } from "@/components/periodization/PeriodizationTab";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
-import VoiceAssistant from "@/components/VoiceAssistant";
+
 
 export default function CategoryDetails() {
   const { categoryId } = useParams();
@@ -97,8 +97,7 @@ export default function CategoryDetails() {
         </Tabs>
       </div>
       
-      {/* Voice Assistant Component */}
-      {categoryId && <VoiceAssistant categoryId={categoryId} />}
+{/* Voice Assistant temporairement désactivé */}
     </div>
   );
 }
