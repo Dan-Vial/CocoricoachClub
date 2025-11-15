@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AddCategoryDialog } from "@/components/categories/AddCategoryDialog";
 import { CollaborationTab } from "@/components/collaboration/CollaborationTab";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
+import { GlobalPlayerSearch } from "@/components/search/GlobalPlayerSearch";
 
 export default function ClubDetails() {
   const { clubId } = useParams();
@@ -81,7 +82,10 @@ export default function ClubDetails() {
               <ArrowLeft className="h-4 w-4 mr-2" />
               Retour aux clubs
             </Button>
-            <NotificationBell />
+            <div className="flex items-center gap-2">
+              <GlobalPlayerSearch />
+              <NotificationBell />
+            </div>
           </div>
           <h1 className="text-4xl font-bold text-primary-foreground">{club?.name}</h1>
         </div>

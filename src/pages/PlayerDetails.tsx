@@ -12,6 +12,7 @@ import { PlayerProfile } from "@/components/player/PlayerProfile";
 import { PlayerInjuriesTab } from "@/components/player/PlayerInjuriesTab";
 import { PlayerBiometrics } from "@/components/player/PlayerBiometrics";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
+import { GlobalPlayerSearch } from "@/components/search/GlobalPlayerSearch";
 
 export default function PlayerDetails() {
   const { playerId } = useParams<{ playerId: string }>();
@@ -58,7 +59,10 @@ export default function PlayerDetails() {
             <ArrowLeft className="h-4 w-4" />
             Retour à la catégorie
           </Button>
-          <NotificationBell variant="default" />
+          <div className="flex items-center gap-2">
+            <GlobalPlayerSearch />
+            <NotificationBell variant="default" />
+          </div>
         </div>
 
         <Card className="mb-6 bg-gradient-card shadow-md">

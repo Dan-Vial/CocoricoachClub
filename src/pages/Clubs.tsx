@@ -9,6 +9,8 @@ import { toast } from "sonner";
 import { AddClubDialog } from "@/components/clubs/AddClubDialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
+import { GlobalPlayerSearch } from "@/components/search/GlobalPlayerSearch";
+import { InjuryReturnAlerts } from "@/components/injuries/InjuryReturnAlerts";
 
 export default function Clubs() {
   const navigate = useNavigate();
@@ -75,6 +77,7 @@ export default function Clubs() {
               </p>
             </div>
             <div className="flex items-center gap-2">
+              <GlobalPlayerSearch />
               <NotificationBell />
               <Button
                 variant="ghost"
@@ -90,7 +93,9 @@ export default function Clubs() {
       </div>
 
       <div className="container mx-auto max-w-6xl px-4 py-8">
-        <div className="flex justify-between items-center mb-8">
+        <InjuryReturnAlerts />
+        
+        <div className="flex justify-between items-center mb-8 mt-8">
           <h2 className="text-2xl font-bold text-foreground">Mes Clubs</h2>
           <Button onClick={() => setIsAddDialogOpen(true)} className="gap-2">
             <Plus className="h-4 w-4" />

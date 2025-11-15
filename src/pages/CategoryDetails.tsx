@@ -14,6 +14,7 @@ import { PeriodizationTab } from "@/components/periodization/PeriodizationTab";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { AnalyticsTab } from "@/components/analytics/AnalyticsTab";
 import { CategoryCoverUpload } from "@/components/category/CategoryCoverUpload";
+import { GlobalPlayerSearch } from "@/components/search/GlobalPlayerSearch";
 
 
 export default function CategoryDetails() {
@@ -57,7 +58,10 @@ export default function CategoryDetails() {
               <ArrowLeft className="h-4 w-4 mr-2" />
               Retour aux catégories
             </Button>
-            <NotificationBell />
+            <div className="flex items-center gap-2">
+              <GlobalPlayerSearch />
+              <NotificationBell />
+            </div>
           </div>
           <div className="flex justify-between items-end">
             <div>
