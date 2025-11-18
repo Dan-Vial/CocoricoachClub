@@ -1,0 +1,313 @@
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Plus, Bell, Trash2, Calendar } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
+
+interface TestRemindersTabProps {
+  categoryId: string;
+}
+
+interface TestReminder {
+  id: string;
+  category_id: string;
+  test_type: string;
+  frequency_weeks: number;
+  is_active: boolean;
+  last_notification_date: string | null;
+  created_at: string;
+}
+
+export function TestRemindersTab({ categoryId }: TestRemindersTabProps) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [newReminder, setNewReminder] = useState({
+    test_type: "VMA",
+    frequency_weeks: 6,
+  });
+
+  // Récupérer les rappels
+  const { data: reminders, isLoading } = useQuery({
+    queryKey: ["test-reminders", categoryId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("test_reminders")
+        .select("*")
+        .eq("category_id", categoryId)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      return data as TestReminder[];
+    },
+  });
+
+  // Créer un rappel
+  const createReminder = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("test_reminders").insert({
+        category_id: categoryId,
+        test_type: newReminder.test_type,
+        frequency_weeks: newReminder.frequency_weeks,
+        is_active: true,
+      });
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["test-reminders", categoryId] });
+      setIsDialogOpen(false);
+      setNewReminder({ test_type: "VMA", frequency_weeks: 6 });
+      toast({
+        title: "Rappel créé",
+        description: "Le rappel de test a été créé avec succès",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Erreur",
+        description: "Impossible de créer le rappel",
+        variant: "destructive",
+      });
+      console.error(error);
+    },
+  });
+
+  // Activer/désactiver un rappel
+  const toggleReminder = useMutation({
+    mutationFn: async ({ id, isActive }: { id: string; isActive: boolean }) => {
+      const { error } = await supabase
+        .from("test_reminders")
+        .update({ is_active: isActive })
+        .eq("id", id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["test-reminders", categoryId] });
+      toast({
+        title: "Rappel mis à jour",
+        description: "Le statut du rappel a été modifié",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Erreur",
+        description: "Impossible de modifier le rappel",
+        variant: "destructive",
+      });
+      console.error(error);
+    },
+  });
+
+  // Supprimer un rappel
+  const deleteReminder = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("test_reminders")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["test-reminders", categoryId] });
+      toast({
+        title: "Rappel supprimé",
+        description: "Le rappel a été supprimé avec succès",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Erreur",
+        description: "Impossible de supprimer le rappel",
+        variant: "destructive",
+      });
+      console.error(error);
+    },
+  });
+
+  const getTestTypeLabel = (type: string) => {
+    switch (type) {
+      case "VMA":
+        return "Test VMA (1600m)";
+      case "Force":
+        return "Tests de Force";
+      case "Sprint":
+        return "Sprint 40m";
+      default:
+        return type;
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold">Rappels de Tests</h2>
+          <p className="text-muted-foreground">
+            Configurez des rappels automatiques pour les tests physiques périodiques
+          </p>
+        </div>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <Plus className="h-4 w-4 mr-2" />
+              Nouveau Rappel
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Créer un rappel de test</DialogTitle>
+              <DialogDescription>
+                Configurez un rappel automatique pour un type de test
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="test-type">Type de test</Label>
+                <Select
+                  value={newReminder.test_type}
+                  onValueChange={(value) =>
+                    setNewReminder({ ...newReminder, test_type: value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="VMA">Test VMA (1600m)</SelectItem>
+                    <SelectItem value="Force">Tests de Force</SelectItem>
+                    <SelectItem value="Sprint">Sprint 40m</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="frequency">Fréquence (semaines)</Label>
+                <Input
+                  id="frequency"
+                  type="number"
+                  min="1"
+                  max="52"
+                  value={newReminder.frequency_weeks}
+                  onChange={(e) =>
+                    setNewReminder({
+                      ...newReminder,
+                      frequency_weeks: parseInt(e.target.value) || 6,
+                    })
+                  }
+                />
+              </div>
+              <Button
+                onClick={() => createReminder.mutate()}
+                disabled={createReminder.isPending}
+                className="w-full"
+              >
+                Créer le rappel
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      {isLoading ? (
+        <div className="text-center text-muted-foreground">Chargement...</div>
+      ) : reminders && reminders.length > 0 ? (
+        <div className="grid gap-4">
+          {reminders.map((reminder) => (
+            <Card key={reminder.id}>
+              <CardHeader>
+                <div className="flex items-start justify-between">
+                  <div className="space-y-1">
+                    <CardTitle className="flex items-center gap-2">
+                      <Bell className="h-5 w-5 text-primary" />
+                      {getTestTypeLabel(reminder.test_type)}
+                    </CardTitle>
+                    <CardDescription>
+                      Fréquence: Tous les {reminder.frequency_weeks} semaines
+                    </CardDescription>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      checked={reminder.is_active}
+                      onCheckedChange={(checked) =>
+                        toggleReminder.mutate({
+                          id: reminder.id,
+                          isActive: checked,
+                        })
+                      }
+                    />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => deleteReminder.mutate(reminder.id)}
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Calendar className="h-4 w-4" />
+                    {reminder.last_notification_date ? (
+                      <span>
+                        Dernière notification:{" "}
+                        {format(
+                          new Date(reminder.last_notification_date),
+                          "dd MMMM yyyy",
+                          { locale: fr }
+                        )}
+                      </span>
+                    ) : (
+                      <span>Aucune notification envoyée</span>
+                    )}
+                  </div>
+                  <div
+                    className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${
+                      reminder.is_active
+                        ? "bg-success/10 text-success"
+                        : "bg-muted text-muted-foreground"
+                    }`}
+                  >
+                    {reminder.is_active ? "Actif" : "Inactif"}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <Card>
+          <CardContent className="py-8 text-center text-muted-foreground">
+            Aucun rappel configuré. Créez-en un pour recevoir des notifications
+            automatiques.
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}

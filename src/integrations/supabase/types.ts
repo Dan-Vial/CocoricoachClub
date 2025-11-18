@@ -557,6 +557,47 @@ export type Database = {
           },
         ]
       }
+      test_reminders: {
+        Row: {
+          category_id: string
+          created_at: string | null
+          frequency_weeks: number
+          id: string
+          is_active: boolean
+          last_notification_date: string | null
+          test_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          category_id: string
+          created_at?: string | null
+          frequency_weeks?: number
+          id?: string
+          is_active?: boolean
+          last_notification_date?: string | null
+          test_type: string
+          updated_at?: string | null
+        }
+        Update: {
+          category_id?: string
+          created_at?: string | null
+          frequency_weeks?: number
+          id?: string
+          is_active?: boolean
+          last_notification_date?: string | null
+          test_type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "test_reminders_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       training_cycles: {
         Row: {
           category_id: string

@@ -15,6 +15,7 @@ import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { AnalyticsTab } from "@/components/analytics/AnalyticsTab";
 import { CategoryCoverUpload } from "@/components/category/CategoryCoverUpload";
 import { GlobalPlayerSearch } from "@/components/search/GlobalPlayerSearch";
+import { TestRemindersTab } from "@/components/category/TestRemindersTab";
 
 
 export default function CategoryDetails() {
@@ -93,6 +94,7 @@ export default function CategoryDetails() {
             <TabsTrigger className="whitespace-nowrap flex-shrink-0" value="injuries">Blessures</TabsTrigger>
             <TabsTrigger className="whitespace-nowrap flex-shrink-0" value="analytics">Analyse</TabsTrigger>
             <TabsTrigger className="whitespace-nowrap flex-shrink-0" value="periodization">Périodisation</TabsTrigger>
+            <TabsTrigger className="whitespace-nowrap flex-shrink-0" value="reminders">Rappels Tests</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4">
@@ -125,6 +127,10 @@ export default function CategoryDetails() {
 
           <TabsContent value="periodization" className="space-y-4">
             <PeriodizationTab categoryId={categoryId!} />
+          </TabsContent>
+
+          <TabsContent value="reminders" className="space-y-4">
+            <TestRemindersTab categoryId={categoryId!} />
           </TabsContent>
         </Tabs>
       </div>
