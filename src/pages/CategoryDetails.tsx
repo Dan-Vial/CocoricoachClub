@@ -17,6 +17,7 @@ import { CategoryCoverUpload } from "@/components/category/CategoryCoverUpload";
 import { GlobalPlayerSearch } from "@/components/search/GlobalPlayerSearch";
 import { TestRemindersTab } from "@/components/category/TestRemindersTab";
 import { TournamentsTab } from "@/components/category/TournamentsTab";
+import { EditableCategoryName } from "@/components/category/EditableCategoryName";
 
 
 export default function CategoryDetails() {
@@ -69,9 +70,12 @@ export default function CategoryDetails() {
           </div>
           <div className="flex justify-between items-end">
             <div>
-              <h1 className="text-4xl font-bold text-primary-foreground">
-                {category?.name}
-              </h1>
+              {categoryId && category?.name && (
+                <EditableCategoryName 
+                  categoryId={categoryId} 
+                  initialName={category.name}
+                />
+              )}
               <p className="text-primary-foreground/90 mt-2">
                 {category?.clubs?.name}
               </p>
