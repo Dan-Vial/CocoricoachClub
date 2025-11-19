@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
 import { categorySchema } from "@/lib/validations";
 
@@ -26,20 +27,22 @@ export function AddCategoryDialog({
   clubId,
 }: AddCategoryDialogProps) {
   const [categoryName, setCategoryName] = useState("");
+  const [rugbyType, setRugbyType] = useState<"XV" | "7">("XV");
   const [validationError, setValidationError] = useState("");
   const queryClient = useQueryClient();
 
   const addCategory = useMutation({
-    mutationFn: async (name: string) => {
+    mutationFn: async (data: { name: string; rugby_type: "XV" | "7" }) => {
       const { error } = await supabase
         .from("categories")
-        .insert({ name, club_id: clubId });
+        .insert({ name: data.name, club_id: clubId, rugby_type: data.rugby_type });
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["categories", clubId] });
       toast.success("Catégorie ajoutée avec succès");
       setCategoryName("");
+      setRugbyType("XV");
       onOpenChange(false);
     },
     onError: () => {
@@ -58,7 +61,7 @@ export function AddCategoryDialog({
       return;
     }
 
-    addCategory.mutate(result.data.name);
+    addCategory.mutate({ name: result.data.name, rugby_type: rugbyType });
   };
 
   return (
@@ -84,6 +87,19 @@ export function AddCategoryDialog({
               {validationError && (
                 <p className="text-sm text-destructive">{validationError}</p>
               )}
+            </div>
+            <div className="space-y-2">
+              <Label>Type de rugby</Label>
+              <RadioGroup value={rugbyType} onValueChange={(value: "XV" | "7") => setRugbyType(value)}>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="XV" id="rugby-xv" />
+                  <Label htmlFor="rugby-xv" className="cursor-pointer font-normal">Rugby à XV</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="7" id="rugby-7" />
+                  <Label htmlFor="rugby-7" className="cursor-pointer font-normal">Rugby à 7</Label>
+                </div>
+              </RadioGroup>
             </div>
           </div>
           <DialogFooter>
