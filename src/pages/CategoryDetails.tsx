@@ -16,6 +16,7 @@ import { AnalyticsTab } from "@/components/analytics/AnalyticsTab";
 import { CategoryCoverUpload } from "@/components/category/CategoryCoverUpload";
 import { GlobalPlayerSearch } from "@/components/search/GlobalPlayerSearch";
 import { TestRemindersTab } from "@/components/category/TestRemindersTab";
+import { TournamentsTab } from "@/components/category/TournamentsTab";
 
 
 export default function CategoryDetails() {
@@ -27,13 +28,15 @@ export default function CategoryDetails() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("categories")
-        .select("*, clubs(name, id)")
+        .select("*, clubs(name, id), rugby_type")
         .eq("id", categoryId)
         .single();
       if (error) throw error;
       return data;
     },
   });
+
+  const isRugby7 = category?.rugby_type === "7";
 
   return (
     <div className="min-h-screen bg-background">
@@ -95,6 +98,9 @@ export default function CategoryDetails() {
             <TabsTrigger className="whitespace-nowrap flex-shrink-0" value="analytics">Analyse</TabsTrigger>
             <TabsTrigger className="whitespace-nowrap flex-shrink-0" value="periodization">Périodisation</TabsTrigger>
             <TabsTrigger className="whitespace-nowrap flex-shrink-0" value="reminders">Rappels Tests</TabsTrigger>
+            {isRugby7 && (
+              <TabsTrigger className="whitespace-nowrap flex-shrink-0" value="tournaments">Tournois</TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4">
@@ -132,6 +138,12 @@ export default function CategoryDetails() {
           <TabsContent value="reminders" className="space-y-4">
             <TestRemindersTab categoryId={categoryId!} />
           </TabsContent>
+
+          {isRugby7 && (
+            <TabsContent value="tournaments" className="space-y-4">
+              <TournamentsTab categoryId={categoryId!} />
+            </TabsContent>
+          )}
         </Tabs>
       </div>
       
