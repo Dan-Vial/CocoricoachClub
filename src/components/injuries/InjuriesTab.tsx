@@ -12,13 +12,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Plus, Activity, TrendingUp } from "lucide-react";
 import { AddInjuryDialog } from "./AddInjuryDialog";
 import { toast } from "sonner";
@@ -205,24 +198,44 @@ export function InjuriesTab({ categoryId }: InjuriesTabProps) {
                           : "-"}
                       </TableCell>
                       <TableCell>
-                        <Select
-                          value={injury.status}
-                          onValueChange={(value) => {
-                            console.log("Changement de statut:", value);
-                            updateInjuryStatus.mutate({ id: injury.id, status: value });
-                          }}
-                        >
-                          <SelectTrigger className="w-[180px] bg-background">
-                            <SelectValue placeholder="Choisir un statut" />
-                          </SelectTrigger>
-                          <SelectContent className="bg-popover">
-                            <SelectItem value="active">Active</SelectItem>
-                            <SelectItem value="en_réathlétisation">
-                              En Réathlétisation
-                            </SelectItem>
-                            <SelectItem value="guérie">Guérie</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <div className="flex gap-2">
+                          {injury.status !== "active" && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() =>
+                                updateInjuryStatus.mutate({ id: injury.id, status: "active" })
+                              }
+                              className="h-8 px-2 text-xs"
+                            >
+                              Activer
+                            </Button>
+                          )}
+                          {injury.status !== "en_réathlétisation" && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() =>
+                                updateInjuryStatus.mutate({ id: injury.id, status: "en_réathlétisation" })
+                              }
+                              className="h-8 px-2 text-xs"
+                            >
+                              Réathléti.
+                            </Button>
+                          )}
+                          {injury.status !== "guérie" && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() =>
+                                updateInjuryStatus.mutate({ id: injury.id, status: "guérie" })
+                              }
+                              className="h-8 px-2 text-xs"
+                            >
+                              Guérir
+                            </Button>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}

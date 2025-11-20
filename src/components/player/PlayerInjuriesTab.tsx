@@ -4,13 +4,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Plus, AlertCircle } from "lucide-react";
 import { AddInjuryDialog } from "@/components/injuries/AddInjuryDialog";
 import { toast } from "sonner";
@@ -175,28 +168,52 @@ export function PlayerInjuriesTab({ playerId, categoryId }: PlayerInjuriesTabPro
                         {new Date(injury.injury_date).toLocaleDateString("fr-FR")}
                       </p>
                     </div>
-                    <div className="flex gap-2 items-start">
+                    <div className="flex gap-2 items-start flex-wrap">
                       <Badge className={getSeverityColor(injury.severity)}>
                         {injury.severity}
                       </Badge>
-                      <Select
-                        value={injury.status}
-                        onValueChange={(value) =>
-                          updateInjuryStatus.mutate({ id: injury.id, status: value })
-                        }
-                      >
-                        <SelectTrigger className="w-[180px] h-7">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="active">Active</SelectItem>
-                          <SelectItem value="en_réathlétisation">
-                            En Réathlétisation
-                          </SelectItem>
-                          <SelectItem value="guérie">Guérie</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <Badge className={getStatusColor(injury.status)}>
+                        {getStatusLabel(injury.status)}
+                      </Badge>
                     </div>
+                  </div>
+                  <div className="flex gap-2 flex-wrap">
+                    {injury.status !== "active" && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() =>
+                          updateInjuryStatus.mutate({ id: injury.id, status: "active" })
+                        }
+                        className="h-8 text-xs"
+                      >
+                        Activer
+                      </Button>
+                    )}
+                    {injury.status !== "en_réathlétisation" && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() =>
+                          updateInjuryStatus.mutate({ id: injury.id, status: "en_réathlétisation" })
+                        }
+                        className="h-8 text-xs"
+                      >
+                        Réathlétisation
+                      </Button>
+                    )}
+                    {injury.status !== "guérie" && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() =>
+                          updateInjuryStatus.mutate({ id: injury.id, status: "guérie" })
+                        }
+                        className="h-8 text-xs"
+                      >
+                        Marquer guérie
+                      </Button>
+                    )}
                   </div>
                   {injury.description && (
                     <p className="text-sm text-muted-foreground">{injury.description}</p>
