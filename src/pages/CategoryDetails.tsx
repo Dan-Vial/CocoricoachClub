@@ -18,6 +18,7 @@ import { GlobalPlayerSearch } from "@/components/search/GlobalPlayerSearch";
 import { TestRemindersTab } from "@/components/category/TestRemindersTab";
 import { TournamentsTab } from "@/components/category/TournamentsTab";
 import { EditableCategoryName } from "@/components/category/EditableCategoryName";
+import { EditableRugbyType } from "@/components/category/EditableRugbyType";
 
 
 export default function CategoryDetails() {
@@ -76,9 +77,20 @@ export default function CategoryDetails() {
                   initialName={category.name}
                 />
               )}
-              <p className="text-primary-foreground/90 mt-2">
-                {category?.clubs?.name}
-              </p>
+              <div className="flex items-center gap-4 mt-2">
+                <p className="text-primary-foreground/90">
+                  {category?.clubs?.name}
+                </p>
+                {categoryId && category?.rugby_type && (
+                  <>
+                    <span className="text-primary-foreground/60">•</span>
+                    <EditableRugbyType 
+                      categoryId={categoryId}
+                      currentType={category.rugby_type}
+                    />
+                  </>
+                )}
+              </div>
             </div>
             {categoryId && (
               <CategoryCoverUpload 
