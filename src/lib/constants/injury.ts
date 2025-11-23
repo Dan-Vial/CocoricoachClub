@@ -1,7 +1,7 @@
 export const INJURY_STATUS = {
   ACTIVE: 'active' as const,
-  REHABILITATION: 'en_réathlétisation' as const,
-  HEALED: 'guérie' as const,
+  REHABILITATION: 'recovering' as const,
+  HEALED: 'healed' as const,
 };
 
 export const INJURY_STATUS_LABELS = {

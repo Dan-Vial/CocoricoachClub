@@ -923,7 +923,7 @@ export type Database = {
     Enums: {
       app_role: "admin" | "coach" | "viewer"
       injury_severity: "légère" | "modérée" | "grave"
-      injury_status: "active" | "en_réathlétisation" | "guérie"
+      injury_status: "active" | "recovering" | "healed"
       period_type: "préparation" | "compétition" | "récupération" | "trêve"
       training_type:
         | "collectif"
@@ -1062,7 +1062,7 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "coach", "viewer"],
       injury_severity: ["légère", "modérée", "grave"],
-      injury_status: ["active", "en_réathlétisation", "guérie"],
+      injury_status: ["active", "recovering", "healed"],
       period_type: ["préparation", "compétition", "récupération", "trêve"],
       training_type: [
         "collectif",

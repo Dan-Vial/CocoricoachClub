@@ -47,16 +47,8 @@ export function InjuriesTab({ categoryId }: InjuriesTabProps) {
 
   const updateInjuryStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      console.log("Mutation with status:", { id, status, isValidEnum: Object.values(INJURY_STATUS).includes(status as any) });
-      
-      // Ensure we're using the correct enum value
-      const validStatus = status === 'active' ? INJURY_STATUS.ACTIVE 
-        : status === 'en_réathlétisation' ? INJURY_STATUS.REHABILITATION
-        : status === 'guérie' ? INJURY_STATUS.HEALED
-        : status;
-      
-      const updateData: any = { status: validStatus };
-      if (validStatus === INJURY_STATUS.HEALED) {
+      const updateData: any = { status };
+      if (status === INJURY_STATUS.HEALED) {
         updateData.actual_return_date = new Date().toISOString().split("T")[0];
       }
       
@@ -66,7 +58,6 @@ export function InjuriesTab({ categoryId }: InjuriesTabProps) {
         .eq("id", id)
         .select();
       
-      console.log("Update result:", { data, error, sentStatus: validStatus });
       if (error) throw error;
       return data;
     },
@@ -96,11 +87,11 @@ export function InjuriesTab({ categoryId }: InjuriesTabProps) {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "active":
+      case INJURY_STATUS.ACTIVE:
         return "bg-destructive/20 text-destructive";
-      case "en_réathlétisation":
+      case INJURY_STATUS.REHABILITATION:
         return "bg-primary/20 text-primary";
-      case "guérie":
+      case INJURY_STATUS.HEALED:
         return "bg-green-500/20 text-green-700 dark:text-green-400";
       default:
         return "";
