@@ -67,15 +67,15 @@ export function MatchLineupDialog({
   });
 
   useEffect(() => {
-    if (players) {
+    if (players && players.length > 0) {
       const lineup = players.map((player) => {
         const existing = existingLineup?.find((l) => l.player_id === player.id);
         return {
           playerId: player.id,
-          playerName: player.name,
-          isStarter: existing?.is_starter || false,
-          position: existing?.position || "",
-          minutesPlayed: existing?.minutes_played || 0,
+          playerName: player.name || "Joueur inconnu",
+          isStarter: existing?.is_starter ?? false,
+          position: existing?.position ?? "",
+          minutesPlayed: existing?.minutes_played ?? 0,
           isSelected: !!existing,
         };
       });
@@ -120,8 +120,8 @@ export function MatchLineupDialog({
     );
   };
 
-  const selectedCount = lineupData.filter((p) => p.isSelected).length;
-  const starterCount = lineupData.filter((p) => p.isStarter).length;
+  const selectedCount = lineupData?.filter((p) => p.isSelected).length ?? 0;
+  const starterCount = lineupData?.filter((p) => p.isSelected && p.isStarter).length ?? 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -143,7 +143,7 @@ export function MatchLineupDialog({
 
         <ScrollArea className="h-[400px] pr-4">
           <div className="space-y-3">
-            {lineupData.map((player) => (
+            {lineupData && lineupData.length > 0 ? lineupData.map((player) => (
               <div
                 key={player.playerId}
                 className={`p-3 rounded-lg border transition-colors ${
@@ -208,7 +208,9 @@ export function MatchLineupDialog({
                   </div>
                 )}
               </div>
-            ))}
+            )) : (
+              <p className="text-center text-muted-foreground py-4">Aucun joueur dans cette catégorie</p>
+            )}
           </div>
         </ScrollArea>
 
