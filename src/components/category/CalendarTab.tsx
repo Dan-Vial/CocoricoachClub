@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
-import { Plus, Trash2, X } from "lucide-react";
+import { Plus, Trash2, X, Swords, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import { AddSessionDialog } from "./AddSessionDialog";
 import { QuickTestEntryDialog } from "./QuickTestEntryDialog";
@@ -12,6 +12,7 @@ import { QuickRpeEntryDialog } from "./QuickRpeEntryDialog";
 import { format, isSameDay, isWithinInterval } from "date-fns";
 import { fr } from "date-fns/locale";
 import type { DateRange } from "react-day-picker";
+import { useNavigate } from "react-router-dom";
 
 interface CalendarTabProps {
   categoryId: string;
@@ -24,6 +25,7 @@ const trainingTypeLabels: Record<string, string> = {
   musculation: "Musculation",
   repos: "Repos",
   test: "Test",
+  reathlétisation: "Réathlétisation",
 };
 
 const trainingTypeColors: Record<string, string> = {
@@ -33,6 +35,8 @@ const trainingTypeColors: Record<string, string> = {
   musculation: "bg-training-musculation",
   repos: "bg-training-repos",
   test: "bg-training-test",
+  reathlétisation: "bg-amber-500",
+  match: "bg-rose-500",
 };
 
 export function CalendarTab({ categoryId }: CalendarTabProps) {
@@ -44,8 +48,9 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
     type: "test" | "training";
   } | null>(null);
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
-  const { data: sessions, isLoading } = useQuery({
+  const { data: sessions, isLoading: isLoadingSessions } = useQuery({
     queryKey: ["training_sessions", categoryId],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -54,6 +59,19 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
         .eq("category_id", categoryId)
         .order("session_date", { ascending: false })
         .order("session_start_time", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: matches, isLoading: isLoadingMatches } = useQuery({
+    queryKey: ["matches", categoryId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("matches")
+        .select("*")
+        .eq("category_id", categoryId)
+        .order("match_date", { ascending: false });
       if (error) throw error;
       return data;
     },
@@ -86,24 +104,56 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
     return isSameDay(sessionDate, dateRange.from);
   });
 
+  const filteredMatches = matches?.filter((match) => {
+    if (!dateRange?.from) return false;
+    const matchDate = new Date(match.match_date);
+    
+    if (dateRange.to) {
+      return isWithinInterval(matchDate, { start: dateRange.from, end: dateRange.to });
+    }
+    return isSameDay(matchDate, dateRange.from);
+  });
+
+  // Combine and sort events by date
+  const combinedEvents = [
+    ...(filteredSessions?.map((s) => ({ ...s, eventType: "session" as const })) || []),
+    ...(filteredMatches?.map((m) => ({ ...m, eventType: "match" as const })) || []),
+  ].sort((a, b) => {
+    const dateA = a.eventType === "session" ? a.session_date : a.match_date;
+    const dateB = b.eventType === "session" ? b.session_date : b.match_date;
+    return new Date(dateB).getTime() - new Date(dateA).getTime();
+  });
+
   const getDayContent = (day: Date) => {
     const daySessions = sessions?.filter((session) =>
       isSameDay(new Date(session.session_date), day)
     );
+    const dayMatches = matches?.filter((match) =>
+      isSameDay(new Date(match.match_date), day)
+    );
 
-    if (!daySessions || daySessions.length === 0) return null;
+    const hasEvents = (daySessions && daySessions.length > 0) || (dayMatches && dayMatches.length > 0);
+    if (!hasEvents) return null;
 
     return (
       <div className="flex gap-0.5 justify-center mt-1 flex-wrap">
-        {daySessions.slice(0, 3).map((session, index) => (
+        {dayMatches?.slice(0, 1).map((_, index) => (
           <div
-            key={index}
-            className={`h-1.5 w-1.5 rounded-full ${trainingTypeColors[session.training_type]}`}
+            key={`match-${index}`}
+            className="h-1.5 w-1.5 rounded-full bg-rose-500"
+          />
+        ))}
+        {daySessions?.slice(0, 2).map((session, index) => (
+          <div
+            key={`session-${index}`}
+            className={`h-1.5 w-1.5 rounded-full ${trainingTypeColors[session.training_type] || "bg-muted"}`}
           />
         ))}
       </div>
     );
   };
+
+  const isLoading = isLoadingSessions || isLoadingMatches;
 
   if (isLoading) {
     return <p className="text-muted-foreground">Chargement...</p>;
@@ -114,7 +164,7 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
       <Card className="bg-gradient-card shadow-md">
         <CardHeader>
           <div className="flex justify-between items-center flex-wrap gap-4">
-            <CardTitle>Calendrier des entraînements</CardTitle>
+            <CardTitle>Calendrier des entraînements et matchs</CardTitle>
             <div className="flex gap-2">
               {dateRange?.from && (
                 <Button 
@@ -137,7 +187,7 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
           <div className="flex flex-col items-center gap-4">
             <div className="text-center">
               <p className="text-sm text-muted-foreground mb-2">
-                Sélectionnez une période pour filtrer les séances
+                Sélectionnez une période pour filtrer les événements
               </p>
               {dateRange?.from && (
                 <p className="text-sm font-medium">
@@ -164,9 +214,14 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
                   sessions?.some((session) =>
                     isSameDay(new Date(session.session_date), day)
                   ) || false,
+                hasMatch: (day) =>
+                  matches?.some((match) =>
+                    isSameDay(new Date(match.match_date), day)
+                  ) || false,
               }}
               modifiersClassNames={{
                 hasSession: "font-bold",
+                hasMatch: "font-bold text-rose-600",
               }}
               components={{
                 DayContent: ({ date }) => (
@@ -180,9 +235,13 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
           </div>
 
           <div className="flex flex-wrap gap-3 justify-center text-sm">
+            <div className="flex items-center gap-2">
+              <div className="h-3 w-3 rounded-full bg-rose-500" />
+              <span className="text-muted-foreground">Match</span>
+            </div>
             {Object.entries(trainingTypeLabels).map(([key, label]) => (
               <div key={key} className="flex items-center gap-2">
-                <div className={`h-3 w-3 rounded-full ${trainingTypeColors[key]}`} />
+                <div className={`h-3 w-3 rounded-full ${trainingTypeColors[key] || "bg-muted"}`} />
                 <span className="text-muted-foreground">{label}</span>
               </div>
             ))}
@@ -196,89 +255,136 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
             <CardTitle>
               {dateRange.to ? (
                 <>
-                  Séances du {format(dateRange.from, "d MMM", { locale: fr })} au{" "}
+                  Événements du {format(dateRange.from, "d MMM", { locale: fr })} au{" "}
                   {format(dateRange.to, "d MMM yyyy", { locale: fr })}
                 </>
               ) : (
-                <>Séances du {format(dateRange.from, "d MMMM yyyy", { locale: fr })}</>
+                <>Événements du {format(dateRange.from, "d MMMM yyyy", { locale: fr })}</>
               )}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {filteredSessions && filteredSessions.length === 0 ? (
+            {combinedEvents.length === 0 ? (
               <div className="text-center py-8">
-                <p className="text-muted-foreground">Aucune séance sur cette période</p>
+                <p className="text-muted-foreground">Aucun événement sur cette période</p>
               </div>
             ) : (
               <div className="space-y-3">
-                {filteredSessions?.map((session) => (
-                  <div
-                    key={session.id}
-                    className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/5 transition-colors animate-fade-in cursor-pointer"
-                    onClick={() =>
-                      setSelectedSession({
-                        id: session.id,
-                        date: session.session_date,
-                        type:
-                          session.training_type === "test" ||
-                          session.training_type === "musculation"
-                            ? "test"
-                            : "training",
-                      })
-                    }
-                  >
-                    <div className="flex items-center gap-4 flex-1">
+                {combinedEvents.map((event) => {
+                  if (event.eventType === "match") {
+                    return (
                       <div
-                        className={`h-12 w-1.5 rounded-full ${
-                          trainingTypeColors[session.training_type]
-                        }`}
-                      />
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-xs text-muted-foreground">
-                            {format(new Date(session.session_date), "d MMM yyyy", { locale: fr })}
-                          </span>
-                          {session.session_start_time && session.session_end_time ? (
-                            <span className="text-xs text-muted-foreground">
-                              • {session.session_start_time} - {session.session_end_time}
-                            </span>
-                          ) : session.session_start_time ? (
-                            <span className="text-xs text-muted-foreground">
-                              • {session.session_start_time}
-                            </span>
-                          ) : null}
+                        key={`match-${event.id}`}
+                        className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/5 transition-colors animate-fade-in cursor-pointer"
+                        onClick={() => navigate(`?tab=matches`)}
+                      >
+                        <div className="flex items-center gap-4 flex-1">
+                          <div className="h-12 w-1.5 rounded-full bg-rose-500" />
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-xs text-muted-foreground">
+                                {format(new Date(event.match_date), "d MMM yyyy", { locale: fr })}
+                              </span>
+                              {event.match_time && (
+                                <span className="text-xs text-muted-foreground">
+                                  • {event.match_time}
+                                </span>
+                              )}
+                              <span className="text-xs px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-600 font-medium">
+                                {event.is_home ? "Domicile" : "Extérieur"}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Swords className="h-4 w-4 text-rose-500" />
+                              <span className="font-semibold">Match vs {event.opponent}</span>
+                            </div>
+                            {event.location && (
+                              <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
+                                <MapPin className="h-3 w-3" />
+                                {event.location}
+                              </p>
+                            )}
+                            {(event.score_home !== null && event.score_away !== null) && (
+                              <p className="text-sm font-medium mt-1">
+                                Score: {event.score_home} - {event.score_away}
+                              </p>
+                            )}
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold">
-                            {trainingTypeLabels[session.training_type]}
-                          </span>
-                        </div>
-                        {session.intensity && (
-                          <p className="text-sm text-muted-foreground">
-                            Intensité: {session.intensity}/10
-                          </p>
-                        )}
-                        {session.notes && (
-                          <p className="text-sm text-muted-foreground mt-1">
-                            {session.notes}
-                          </p>
-                        )}
                       </div>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (confirm("Êtes-vous sûr de vouloir supprimer cette séance ?")) {
-                          deleteSession.mutate(session.id);
-                        }
-                      }}
+                    );
+                  }
+
+                  // Training session
+                  return (
+                    <div
+                      key={`session-${event.id}`}
+                      className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/5 transition-colors animate-fade-in cursor-pointer"
+                      onClick={() =>
+                        setSelectedSession({
+                          id: event.id,
+                          date: event.session_date,
+                          type:
+                            event.training_type === "test" ||
+                            event.training_type === "musculation"
+                              ? "test"
+                              : "training",
+                        })
+                      }
                     >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </div>
-                ))}
+                      <div className="flex items-center gap-4 flex-1">
+                        <div
+                          className={`h-12 w-1.5 rounded-full ${
+                            trainingTypeColors[event.training_type] || "bg-muted"
+                          }`}
+                        />
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-xs text-muted-foreground">
+                              {format(new Date(event.session_date), "d MMM yyyy", { locale: fr })}
+                            </span>
+                            {event.session_start_time && event.session_end_time ? (
+                              <span className="text-xs text-muted-foreground">
+                                • {event.session_start_time} - {event.session_end_time}
+                              </span>
+                            ) : event.session_start_time ? (
+                              <span className="text-xs text-muted-foreground">
+                                • {event.session_start_time}
+                              </span>
+                            ) : null}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold">
+                              {trainingTypeLabels[event.training_type] || event.training_type}
+                            </span>
+                          </div>
+                          {event.intensity && (
+                            <p className="text-sm text-muted-foreground">
+                              Intensité: {event.intensity}/10
+                            </p>
+                          )}
+                          {event.notes && (
+                            <p className="text-sm text-muted-foreground mt-1">
+                              {event.notes}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (confirm("Êtes-vous sûr de vouloir supprimer cette séance ?")) {
+                            deleteSession.mutate(event.id);
+                          }
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </CardContent>
