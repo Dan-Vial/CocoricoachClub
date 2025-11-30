@@ -216,6 +216,51 @@ export type Database = {
         }
         Relationships: []
       }
+      concussion_protocols: {
+        Row: {
+          category_id: string
+          clearance_date: string | null
+          created_at: string
+          id: string
+          incident_date: string
+          incident_description: string | null
+          medical_notes: string | null
+          player_id: string
+          return_to_play_phase: number | null
+          status: string
+          symptoms: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          category_id: string
+          clearance_date?: string | null
+          created_at?: string
+          id?: string
+          incident_date?: string
+          incident_description?: string | null
+          medical_notes?: string | null
+          player_id: string
+          return_to_play_phase?: number | null
+          status?: string
+          symptoms?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string
+          clearance_date?: string | null
+          created_at?: string
+          id?: string
+          incident_date?: string
+          incident_description?: string | null
+          medical_notes?: string | null
+          player_id?: string
+          return_to_play_phase?: number | null
+          status?: string
+          symptoms?: string[] | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       injuries: {
         Row: {
           actual_return_date: string | null
@@ -303,6 +348,39 @@ export type Database = {
           success?: boolean
           token?: string
           user_agent?: string | null
+        }
+        Relationships: []
+      }
+      jump_tests: {
+        Row: {
+          category_id: string
+          created_at: string
+          id: string
+          notes: string | null
+          player_id: string
+          result_cm: number
+          test_date: string
+          test_type: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          player_id: string
+          result_cm: number
+          test_date?: string
+          test_type: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          player_id?: string
+          result_cm?: number
+          test_date?: string
+          test_type?: string
         }
         Relationships: []
       }
@@ -403,6 +481,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      mobility_tests: {
+        Row: {
+          category_id: string
+          created_at: string
+          id: string
+          left_score: number | null
+          notes: string | null
+          player_id: string
+          right_score: number | null
+          score: number | null
+          test_date: string
+          test_type: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          id?: string
+          left_score?: number | null
+          notes?: string | null
+          player_id: string
+          right_score?: number | null
+          score?: number | null
+          test_date?: string
+          test_type: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          id?: string
+          left_score?: number | null
+          notes?: string | null
+          player_id?: string
+          right_score?: number | null
+          score?: number | null
+          test_date?: string
+          test_type?: string
+        }
+        Relationships: []
       }
       notifications: {
         Row: {
