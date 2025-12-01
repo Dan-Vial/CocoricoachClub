@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Trash2, ChevronRight, User } from "lucide-react";
+import { Trash2, ChevronRight, User, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -30,8 +30,34 @@ const STATUS_OPTIONS = [
   { value: "cleared", label: "Retour validé" },
 ];
 
+const getConcussionBadgeVariant = (number: number) => {
+  if (number >= 3) return "destructive";
+  if (number === 2) return "secondary";
+  return "outline";
+};
+
 export function ConcussionProtocolCard({ protocol, categoryId }: ConcussionProtocolCardProps) {
   const queryClient = useQueryClient();
+
+  // Get total concussion count for this player
+  const { data: allPlayerConcussions } = useQuery({
+    queryKey: ["player_concussions_count", protocol.player_id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("concussion_protocols")
+        .select("id, incident_date")
+        .eq("player_id", protocol.player_id)
+        .order("incident_date", { ascending: true });
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Calculate which concussion number this is
+  const concussionNumber = allPlayerConcussions
+    ? allPlayerConcussions.findIndex((c: any) => c.id === protocol.id) + 1
+    : 1;
+  const totalConcussions = allPlayerConcussions?.length || 1;
 
   const updateMutation = useMutation({
     mutationFn: async (updates: any) => {
@@ -57,6 +83,7 @@ export function ConcussionProtocolCard({ protocol, categoryId }: ConcussionProto
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["concussion_protocols", categoryId] });
+      queryClient.invalidateQueries({ queryKey: ["player_concussions_count", protocol.player_id] });
       toast.success("Protocole supprimé");
     },
     onError: () => {
@@ -84,12 +111,19 @@ export function ConcussionProtocolCard({ protocol, categoryId }: ConcussionProto
   };
 
   return (
-    <Card className="bg-card/50">
+    <Card className={`bg-card/50 ${totalConcussions >= 3 ? "border-destructive/50" : totalConcussions === 2 ? "border-yellow-500/50" : ""}`}>
       <CardContent className="pt-4">
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-2">
             <User className="h-4 w-4 text-muted-foreground" />
             <span className="font-semibold">{protocol.players?.name}</span>
+            <Badge 
+              variant={getConcussionBadgeVariant(totalConcussions)} 
+              className={`text-xs ${totalConcussions === 2 ? "bg-yellow-500/20 text-yellow-600 border-yellow-500" : ""}`}
+            >
+              {totalConcussions >= 3 && <AlertTriangle className="h-3 w-3 mr-1" />}
+              Commotion n°{concussionNumber}/{totalConcussions}
+            </Badge>
           </div>
           <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate()}>
             <Trash2 className="h-4 w-4 text-destructive" />
