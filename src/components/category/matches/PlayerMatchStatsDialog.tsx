@@ -199,7 +199,9 @@ export function PlayerMatchStatsDialog({
             <TabsContent value="scoring" className="space-y-4 mt-0">
               {statsData.map((player) => (
                 <div key={player.playerId} className="p-3 rounded-lg border bg-card">
-                  <h4 className="font-medium mb-3">{player.playerName}</h4>
+                  <h4 className="font-semibold mb-3 text-base text-primary">
+                    {player.playerName}
+                  </h4>
                   <div className="grid grid-cols-4 gap-3">
                     <div>
                       <Label className="text-xs">Essais</Label>
@@ -249,7 +251,9 @@ export function PlayerMatchStatsDialog({
             <TabsContent value="attack" className="space-y-4 mt-0">
               {statsData.map((player) => (
                 <div key={player.playerId} className="p-3 rounded-lg border bg-card">
-                  <h4 className="font-medium mb-3">{player.playerName}</h4>
+                  <h4 className="font-semibold mb-3 text-base text-primary">
+                    {player.playerName}
+                  </h4>
                   <div className="grid grid-cols-4 gap-3">
                     <div>
                       <Label className="text-xs">Courses</Label>
@@ -299,7 +303,9 @@ export function PlayerMatchStatsDialog({
             <TabsContent value="defense" className="space-y-4 mt-0">
               {statsData.map((player) => (
                 <div key={player.playerId} className="p-3 rounded-lg border bg-card">
-                  <h4 className="font-medium mb-3">{player.playerName}</h4>
+                  <h4 className="font-semibold mb-3 text-base text-primary">
+                    {player.playerName}
+                  </h4>
                   <div className="grid grid-cols-4 gap-3">
                     <div>
                       <Label className="text-xs">Plaquages</Label>

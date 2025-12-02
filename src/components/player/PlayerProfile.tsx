@@ -3,15 +3,18 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Activity, Zap, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { PlayerAvatarUpload } from "./PlayerAvatarUpload";
 
 interface PlayerProfileProps {
   playerId: string;
   categoryId: string;
+  playerName: string;
+  avatarUrl?: string | null;
 }
 
 type ProfileType = "vitesse" | "mixte" | "endurance" | "insufficient_data";
 
-export function PlayerProfile({ playerId, categoryId }: PlayerProfileProps) {
+export function PlayerProfile({ playerId, categoryId, playerName, avatarUrl }: PlayerProfileProps) {
   const { data: speedTests } = useQuery({
     queryKey: ["player_speed_profile", playerId],
     queryFn: async () => {
@@ -131,6 +134,11 @@ export function PlayerProfile({ playerId, categoryId }: PlayerProfileProps) {
         </p>
       </CardHeader>
       <CardContent className="space-y-6">
+        <PlayerAvatarUpload
+          playerId={playerId}
+          playerName={playerName}
+          currentAvatarUrl={avatarUrl}
+        />
         <div className="flex items-center justify-between">
           <Badge className={`${config.color} text-lg py-2 px-4`}>
             {config.label}

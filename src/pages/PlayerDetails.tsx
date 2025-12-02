@@ -75,7 +75,12 @@ export default function PlayerDetails() {
 
         {/* Player Profile and Biometrics Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          <PlayerProfile playerId={playerId!} categoryId={player.category_id} />
+          <PlayerProfile 
+            playerId={playerId!} 
+            categoryId={player.category_id}
+            playerName={player.name}
+            avatarUrl={player.avatar_url}
+          />
           <PlayerBiometrics 
             playerId={playerId!} 
             categoryId={player.category_id}

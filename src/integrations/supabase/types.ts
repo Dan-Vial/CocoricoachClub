@@ -694,6 +694,7 @@ export type Database = {
       }
       players: {
         Row: {
+          avatar_url: string | null
           birth_year: number | null
           category_id: string
           created_at: string
@@ -701,6 +702,7 @@ export type Database = {
           name: string
         }
         Insert: {
+          avatar_url?: string | null
           birth_year?: number | null
           category_id: string
           created_at?: string
@@ -708,6 +710,7 @@ export type Database = {
           name: string
         }
         Update: {
+          avatar_url?: string | null
           birth_year?: number | null
           category_id?: string
           created_at?: string
