@@ -31,10 +31,13 @@ interface PlayerStats {
   dropGoals: number;
   tackles: number;
   tacklesMissed: number;
+  defensiveRecoveries: number;
   carries: number;
   metersGained: number;
   offloads: number;
   turnoversWon: number;
+  breakthroughs: number;
+  totalContacts: number;
   yellowCards: number;
   redCards: number;
 }
@@ -46,10 +49,13 @@ const defaultStats = {
   dropGoals: 0,
   tackles: 0,
   tacklesMissed: 0,
+  defensiveRecoveries: 0,
   carries: 0,
   metersGained: 0,
   offloads: 0,
   turnoversWon: 0,
+  breakthroughs: 0,
+  totalContacts: 0,
   yellowCards: 0,
   redCards: 0,
 };
@@ -61,7 +67,29 @@ export function PlayerMatchStatsDialog({
   categoryId,
 }: PlayerMatchStatsDialogProps) {
   const [statsData, setStatsData] = useState<PlayerStats[]>([]);
+  const [effectivePlayTime, setEffectivePlayTime] = useState<number>(0);
   const queryClient = useQueryClient();
+
+  // Get match data
+  const { data: matchData } = useQuery({
+    queryKey: ["match", matchId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("matches")
+        .select("*")
+        .eq("id", matchId)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!matchId,
+  });
+
+  useEffect(() => {
+    if (matchData?.effective_play_time) {
+      setEffectivePlayTime(matchData.effective_play_time);
+    }
+  }, [matchData]);
 
   // Get players in the lineup for this match
   const { data: lineup } = useQuery({
@@ -104,10 +132,13 @@ export function PlayerMatchStatsDialog({
           dropGoals: existing?.drop_goals ?? 0,
           tackles: existing?.tackles ?? 0,
           tacklesMissed: existing?.tackles_missed ?? 0,
+          defensiveRecoveries: existing?.defensive_recoveries ?? 0,
           carries: existing?.carries ?? 0,
           metersGained: existing?.meters_gained ?? 0,
           offloads: existing?.offloads ?? 0,
           turnoversWon: existing?.turnovers_won ?? 0,
+          breakthroughs: existing?.breakthroughs ?? 0,
+          totalContacts: existing?.total_contacts ?? 0,
           yellowCards: existing?.yellow_cards ?? 0,
           redCards: existing?.red_cards ?? 0,
         };
@@ -118,6 +149,12 @@ export function PlayerMatchStatsDialog({
 
   const saveStats = useMutation({
     mutationFn: async () => {
+      // Update match effective play time
+      await supabase
+        .from("matches")
+        .update({ effective_play_time: effectivePlayTime })
+        .eq("id", matchId);
+
       // Delete existing stats
       await supabase.from("player_match_stats").delete().eq("match_id", matchId);
 
@@ -133,10 +170,13 @@ export function PlayerMatchStatsDialog({
             drop_goals: s.dropGoals,
             tackles: s.tackles,
             tackles_missed: s.tacklesMissed,
+            defensive_recoveries: s.defensiveRecoveries,
             carries: s.carries,
             meters_gained: s.metersGained,
             offloads: s.offloads,
             turnovers_won: s.turnoversWon,
+            breakthroughs: s.breakthroughs,
+            total_contacts: s.totalContacts,
             yellow_cards: s.yellowCards,
             red_cards: s.redCards,
           }))
@@ -146,6 +186,7 @@ export function PlayerMatchStatsDialog({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["player_match_stats", matchId] });
+      queryClient.invalidateQueries({ queryKey: ["match", matchId] });
       toast.success("Statistiques enregistrées");
       onOpenChange(false);
     },
@@ -188,14 +229,39 @@ export function PlayerMatchStatsDialog({
           </DialogTitle>
         </DialogHeader>
 
-        <Tabs defaultValue="scoring" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+        <Tabs defaultValue="general" className="w-full">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="general">Général</TabsTrigger>
             <TabsTrigger value="scoring">Points</TabsTrigger>
             <TabsTrigger value="attack">Attaque</TabsTrigger>
             <TabsTrigger value="defense">Défense</TabsTrigger>
           </TabsList>
 
           <ScrollArea className="h-[400px] mt-4">
+            <TabsContent value="general" className="space-y-4 mt-0">
+              <div className="p-4 rounded-lg border bg-card">
+                <h4 className="font-semibold mb-3 text-base text-primary">
+                  Informations du match
+                </h4>
+                <div className="space-y-3">
+                  <div>
+                    <Label className="text-sm">Temps de jeu effectif (minutes)</Label>
+                    <Input
+                      type="number"
+                      value={effectivePlayTime}
+                      onChange={(e) => setEffectivePlayTime(parseInt(e.target.value) || 0)}
+                      min={0}
+                      max={120}
+                      className="h-9 mt-1"
+                      placeholder="Ex: 80"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Durée réelle de jeu (hors arrêts)
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </TabsContent>
             <TabsContent value="scoring" className="space-y-4 mt-0">
               {statsData.map((player) => (
                 <div key={player.playerId} className="p-3 rounded-lg border bg-card">
@@ -254,9 +320,9 @@ export function PlayerMatchStatsDialog({
                   <h4 className="font-semibold mb-3 text-base text-primary">
                     {player.playerName}
                   </h4>
-                  <div className="grid grid-cols-4 gap-3">
+                  <div className="grid grid-cols-3 gap-3">
                     <div>
-                      <Label className="text-xs">Courses</Label>
+                      <Label className="text-xs">Ballons portés</Label>
                       <Input
                         type="number"
                         value={player.carries}
@@ -266,7 +332,17 @@ export function PlayerMatchStatsDialog({
                       />
                     </div>
                     <div>
-                      <Label className="text-xs">Mètres</Label>
+                      <Label className="text-xs">Franchissements</Label>
+                      <Input
+                        type="number"
+                        value={player.breakthroughs}
+                        onChange={(e) => updateStat(player.playerId, "breakthroughs", parseInt(e.target.value) || 0)}
+                        min={0}
+                        className="h-8"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Mètres gagnés</Label>
                       <Input
                         type="number"
                         value={player.metersGained}
@@ -286,11 +362,21 @@ export function PlayerMatchStatsDialog({
                       />
                     </div>
                     <div>
-                      <Label className="text-xs">Turnovers</Label>
+                      <Label className="text-xs">Turnovers gagnés</Label>
                       <Input
                         type="number"
                         value={player.turnoversWon}
                         onChange={(e) => updateStat(player.playerId, "turnoversWon", parseInt(e.target.value) || 0)}
+                        min={0}
+                        className="h-8"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Contacts totaux</Label>
+                      <Input
+                        type="number"
+                        value={player.totalContacts}
+                        onChange={(e) => updateStat(player.playerId, "totalContacts", parseInt(e.target.value) || 0)}
                         min={0}
                         className="h-8"
                       />
@@ -306,9 +392,9 @@ export function PlayerMatchStatsDialog({
                   <h4 className="font-semibold mb-3 text-base text-primary">
                     {player.playerName}
                   </h4>
-                  <div className="grid grid-cols-4 gap-3">
+                  <div className="grid grid-cols-3 gap-3">
                     <div>
-                      <Label className="text-xs">Plaquages</Label>
+                      <Label className="text-xs">Plaquages réalisés</Label>
                       <Input
                         type="number"
                         value={player.tackles}
@@ -318,7 +404,7 @@ export function PlayerMatchStatsDialog({
                       />
                     </div>
                     <div>
-                      <Label className="text-xs">Ratés</Label>
+                      <Label className="text-xs">Plaquages ratés</Label>
                       <Input
                         type="number"
                         value={player.tacklesMissed}
@@ -328,7 +414,17 @@ export function PlayerMatchStatsDialog({
                       />
                     </div>
                     <div>
-                      <Label className="text-xs">Jaunes</Label>
+                      <Label className="text-xs">Ballons récupérés</Label>
+                      <Input
+                        type="number"
+                        value={player.defensiveRecoveries}
+                        onChange={(e) => updateStat(player.playerId, "defensiveRecoveries", parseInt(e.target.value) || 0)}
+                        min={0}
+                        className="h-8"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Cartons jaunes</Label>
                       <Input
                         type="number"
                         value={player.yellowCards}
@@ -338,7 +434,7 @@ export function PlayerMatchStatsDialog({
                       />
                     </div>
                     <div>
-                      <Label className="text-xs">Rouges</Label>
+                      <Label className="text-xs">Cartons rouges</Label>
                       <Input
                         type="number"
                         value={player.redCards}

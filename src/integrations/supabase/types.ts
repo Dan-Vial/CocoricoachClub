@@ -433,6 +433,7 @@ export type Database = {
         Row: {
           category_id: string
           created_at: string
+          effective_play_time: number | null
           id: string
           is_home: boolean | null
           location: string | null
@@ -447,6 +448,7 @@ export type Database = {
         Insert: {
           category_id: string
           created_at?: string
+          effective_play_time?: number | null
           id?: string
           is_home?: boolean | null
           location?: string | null
@@ -461,6 +463,7 @@ export type Database = {
         Update: {
           category_id?: string
           created_at?: string
+          effective_play_time?: number | null
           id?: string
           is_home?: boolean | null
           location?: string | null
@@ -574,9 +577,11 @@ export type Database = {
       }
       player_match_stats: {
         Row: {
+          breakthroughs: number | null
           carries: number | null
           conversions: number | null
           created_at: string
+          defensive_recoveries: number | null
           drop_goals: number | null
           id: string
           match_id: string
@@ -588,14 +593,17 @@ export type Database = {
           red_cards: number | null
           tackles: number | null
           tackles_missed: number | null
+          total_contacts: number | null
           tries: number | null
           turnovers_won: number | null
           yellow_cards: number | null
         }
         Insert: {
+          breakthroughs?: number | null
           carries?: number | null
           conversions?: number | null
           created_at?: string
+          defensive_recoveries?: number | null
           drop_goals?: number | null
           id?: string
           match_id: string
@@ -607,14 +615,17 @@ export type Database = {
           red_cards?: number | null
           tackles?: number | null
           tackles_missed?: number | null
+          total_contacts?: number | null
           tries?: number | null
           turnovers_won?: number | null
           yellow_cards?: number | null
         }
         Update: {
+          breakthroughs?: number | null
           carries?: number | null
           conversions?: number | null
           created_at?: string
+          defensive_recoveries?: number | null
           drop_goals?: number | null
           id?: string
           match_id?: string
@@ -626,6 +637,7 @@ export type Database = {
           red_cards?: number | null
           tackles?: number | null
           tackles_missed?: number | null
+          total_contacts?: number | null
           tries?: number | null
           turnovers_won?: number | null
           yellow_cards?: number | null

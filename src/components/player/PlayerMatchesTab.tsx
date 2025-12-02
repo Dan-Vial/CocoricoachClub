@@ -59,10 +59,13 @@ export function PlayerMatchesTab({ playerId, categoryId, playerName }: PlayerMat
       acc.dropGoals += stat.drop_goals || 0;
       acc.tackles += stat.tackles || 0;
       acc.tacklesMissed += stat.tackles_missed || 0;
+      acc.defensiveRecoveries += stat.defensive_recoveries || 0;
       acc.carries += stat.carries || 0;
       acc.metersGained += stat.meters_gained || 0;
       acc.offloads += stat.offloads || 0;
       acc.turnoversWon += stat.turnovers_won || 0;
+      acc.breakthroughs += stat.breakthroughs || 0;
+      acc.totalContacts += stat.total_contacts || 0;
       acc.yellowCards += stat.yellow_cards || 0;
       acc.redCards += stat.red_cards || 0;
       return acc;
@@ -75,10 +78,13 @@ export function PlayerMatchesTab({ playerId, categoryId, playerName }: PlayerMat
       dropGoals: 0,
       tackles: 0,
       tacklesMissed: 0,
+      defensiveRecoveries: 0,
       carries: 0,
       metersGained: 0,
       offloads: 0,
       turnoversWon: 0,
+      breakthroughs: 0,
+      totalContacts: 0,
       yellowCards: 0,
       redCards: 0,
     }
@@ -90,10 +96,13 @@ export function PlayerMatchesTab({ playerId, categoryId, playerName }: PlayerMat
     dropGoals: 0,
     tackles: 0,
     tacklesMissed: 0,
+    defensiveRecoveries: 0,
     carries: 0,
     metersGained: 0,
     offloads: 0,
     turnoversWon: 0,
+    breakthroughs: 0,
+    totalContacts: 0,
     yellowCards: 0,
     redCards: 0,
   };
@@ -193,7 +202,11 @@ export function PlayerMatchesTab({ playerId, categoryId, playerName }: PlayerMat
             </div>
             <div className="text-center p-3 bg-muted/50 rounded-lg">
               <p className="text-2xl font-bold">{cumulativeStats.carries}</p>
-              <p className="text-xs text-muted-foreground">Courses</p>
+              <p className="text-xs text-muted-foreground">Ballons portés</p>
+            </div>
+            <div className="text-center p-3 bg-muted/50 rounded-lg">
+              <p className="text-2xl font-bold">{cumulativeStats.breakthroughs}</p>
+              <p className="text-xs text-muted-foreground">Franchissements</p>
             </div>
             <div className="text-center p-3 bg-muted/50 rounded-lg">
               <p className="text-2xl font-bold">{cumulativeStats.offloads}</p>
@@ -201,7 +214,15 @@ export function PlayerMatchesTab({ playerId, categoryId, playerName }: PlayerMat
             </div>
             <div className="text-center p-3 bg-muted/50 rounded-lg">
               <p className="text-2xl font-bold">{cumulativeStats.turnoversWon}</p>
-              <p className="text-xs text-muted-foreground">Turnovers</p>
+              <p className="text-xs text-muted-foreground">Turnovers gagnés</p>
+            </div>
+            <div className="text-center p-3 bg-muted/50 rounded-lg">
+              <p className="text-2xl font-bold">{cumulativeStats.defensiveRecoveries}</p>
+              <p className="text-xs text-muted-foreground">Ballons récup.</p>
+            </div>
+            <div className="text-center p-3 bg-muted/50 rounded-lg">
+              <p className="text-2xl font-bold">{cumulativeStats.totalContacts}</p>
+              <p className="text-xs text-muted-foreground">Contacts</p>
             </div>
           </div>
         </CardContent>
