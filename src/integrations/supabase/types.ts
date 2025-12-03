@@ -1211,6 +1211,69 @@ export type Database = {
         }
         Relationships: []
       }
+      wellness_tracking: {
+        Row: {
+          category_id: string
+          created_at: string
+          general_fatigue: number
+          has_specific_pain: boolean
+          id: string
+          pain_location: string | null
+          player_id: string
+          sleep_duration: number
+          sleep_quality: number
+          soreness_lower_body: number
+          soreness_upper_body: number
+          stress_level: number
+          tracking_date: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          general_fatigue: number
+          has_specific_pain?: boolean
+          id?: string
+          pain_location?: string | null
+          player_id: string
+          sleep_duration: number
+          sleep_quality: number
+          soreness_lower_body: number
+          soreness_upper_body: number
+          stress_level: number
+          tracking_date?: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          general_fatigue?: number
+          has_specific_pain?: boolean
+          id?: string
+          pain_location?: string | null
+          player_id?: string
+          sleep_duration?: number
+          sleep_quality?: number
+          soreness_lower_body?: number
+          soreness_upper_body?: number
+          stress_level?: number
+          tracking_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wellness_tracking_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wellness_tracking_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

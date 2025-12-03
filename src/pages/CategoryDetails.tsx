@@ -21,6 +21,7 @@ import { EditableCategoryName } from "@/components/category/EditableCategoryName
 import { EditableRugbyType } from "@/components/category/EditableRugbyType";
 import { MatchesTab } from "@/components/category/MatchesTab";
 import { ConcussionProtocolTab } from "@/components/category/ConcussionProtocolTab";
+import { WellnessTab } from "@/components/category/WellnessTab";
 
 
 export default function CategoryDetails() {
@@ -117,6 +118,7 @@ export default function CategoryDetails() {
             <TabsTrigger className="whitespace-nowrap flex-shrink-0" value="periodization">Périodisation</TabsTrigger>
             <TabsTrigger className="whitespace-nowrap flex-shrink-0" value="reminders">Rappels Tests</TabsTrigger>
             <TabsTrigger className="whitespace-nowrap flex-shrink-0" value="matches">Matchs</TabsTrigger>
+            <TabsTrigger className="whitespace-nowrap flex-shrink-0" value="wellness">Wellness</TabsTrigger>
             <TabsTrigger className="whitespace-nowrap flex-shrink-0" value="medical">Médical</TabsTrigger>
             {isRugby7 && (
               <TabsTrigger className="whitespace-nowrap flex-shrink-0" value="tournaments">Tournois</TabsTrigger>
@@ -161,6 +163,10 @@ export default function CategoryDetails() {
 
           <TabsContent value="matches" className="space-y-4">
             <MatchesTab categoryId={categoryId!} />
+          </TabsContent>
+
+          <TabsContent value="wellness" className="space-y-4">
+            <WellnessTab categoryId={categoryId!} />
           </TabsContent>
 
           <TabsContent value="medical" className="space-y-4">
