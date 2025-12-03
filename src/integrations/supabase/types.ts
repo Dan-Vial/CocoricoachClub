@@ -431,12 +431,14 @@ export type Database = {
       }
       matches: {
         Row: {
+          average_play_sequence: number | null
           category_id: string
           created_at: string
           effective_play_time: number | null
           id: string
           is_home: boolean | null
           location: string | null
+          longest_play_sequence: number | null
           match_date: string
           match_time: string | null
           notes: string | null
@@ -446,12 +448,14 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          average_play_sequence?: number | null
           category_id: string
           created_at?: string
           effective_play_time?: number | null
           id?: string
           is_home?: boolean | null
           location?: string | null
+          longest_play_sequence?: number | null
           match_date: string
           match_time?: string | null
           notes?: string | null
@@ -461,12 +465,14 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          average_play_sequence?: number | null
           category_id?: string
           created_at?: string
           effective_play_time?: number | null
           id?: string
           is_home?: boolean | null
           location?: string | null
+          longest_play_sequence?: number | null
           match_date?: string
           match_time?: string | null
           notes?: string | null

@@ -68,6 +68,8 @@ export function PlayerMatchStatsDialog({
 }: PlayerMatchStatsDialogProps) {
   const [statsData, setStatsData] = useState<PlayerStats[]>([]);
   const [effectivePlayTime, setEffectivePlayTime] = useState<number>(0);
+  const [longestPlaySequence, setLongestPlaySequence] = useState<number>(0);
+  const [averagePlaySequence, setAveragePlaySequence] = useState<number>(0);
   const queryClient = useQueryClient();
 
   // Get match data
@@ -86,8 +88,10 @@ export function PlayerMatchStatsDialog({
   });
 
   useEffect(() => {
-    if (matchData?.effective_play_time) {
-      setEffectivePlayTime(matchData.effective_play_time);
+    if (matchData) {
+      setEffectivePlayTime(matchData.effective_play_time ?? 0);
+      setLongestPlaySequence(matchData.longest_play_sequence ?? 0);
+      setAveragePlaySequence(matchData.average_play_sequence ?? 0);
     }
   }, [matchData]);
 
@@ -149,10 +153,14 @@ export function PlayerMatchStatsDialog({
 
   const saveStats = useMutation({
     mutationFn: async () => {
-      // Update match effective play time
+      // Update match general stats
       await supabase
         .from("matches")
-        .update({ effective_play_time: effectivePlayTime })
+        .update({ 
+          effective_play_time: effectivePlayTime,
+          longest_play_sequence: longestPlaySequence,
+          average_play_sequence: averagePlaySequence
+        })
         .eq("id", matchId);
 
       // Delete existing stats
@@ -243,9 +251,9 @@ export function PlayerMatchStatsDialog({
                 <h4 className="font-semibold mb-3 text-base text-primary">
                   Informations du match
                 </h4>
-                <div className="space-y-3">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <Label className="text-sm">Temps de jeu effectif (minutes)</Label>
+                    <Label className="text-sm">Temps de jeu effectif (min)</Label>
                     <Input
                       type="number"
                       value={effectivePlayTime}
@@ -256,7 +264,36 @@ export function PlayerMatchStatsDialog({
                       placeholder="Ex: 80"
                     />
                     <p className="text-xs text-muted-foreground mt-1">
-                      Durée réelle de jeu (hors arrêts)
+                      Durée réelle de jeu
+                    </p>
+                  </div>
+                  <div>
+                    <Label className="text-sm">Séquence la plus longue (sec)</Label>
+                    <Input
+                      type="number"
+                      value={longestPlaySequence}
+                      onChange={(e) => setLongestPlaySequence(parseInt(e.target.value) || 0)}
+                      min={0}
+                      className="h-9 mt-1"
+                      placeholder="Ex: 180"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Plus longue séquence de jeu
+                    </p>
+                  </div>
+                  <div>
+                    <Label className="text-sm">Séquence moyenne (sec)</Label>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      value={averagePlaySequence}
+                      onChange={(e) => setAveragePlaySequence(parseFloat(e.target.value) || 0)}
+                      min={0}
+                      className="h-9 mt-1"
+                      placeholder="Ex: 45.5"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Durée moyenne des séquences
                     </p>
                   </div>
                 </div>
