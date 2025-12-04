@@ -581,6 +581,126 @@ export type Database = {
           },
         ]
       }
+      player_academic_tracking: {
+        Row: {
+          absence_reason: string | null
+          academic_grade: number | null
+          category_id: string
+          created_at: string
+          id: string
+          notes: string | null
+          player_id: string
+          school_absence_hours: number | null
+          subject: string | null
+          tracking_date: string
+        }
+        Insert: {
+          absence_reason?: string | null
+          academic_grade?: number | null
+          category_id: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          player_id: string
+          school_absence_hours?: number | null
+          subject?: string | null
+          tracking_date?: string
+        }
+        Update: {
+          absence_reason?: string | null
+          academic_grade?: number | null
+          category_id?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          player_id?: string
+          school_absence_hours?: number | null
+          subject?: string | null
+          tracking_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_academic_tracking_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_academic_tracking_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      player_development_plans: {
+        Row: {
+          academic_objectives: string | null
+          annual_summary: string | null
+          category_id: string
+          created_at: string
+          id: string
+          mental_objectives: string | null
+          physical_objectives: string | null
+          player_id: string
+          season_year: number
+          semester1_review: string | null
+          semester2_review: string | null
+          tactical_objectives: string | null
+          technical_objectives: string | null
+          updated_at: string
+        }
+        Insert: {
+          academic_objectives?: string | null
+          annual_summary?: string | null
+          category_id: string
+          created_at?: string
+          id?: string
+          mental_objectives?: string | null
+          physical_objectives?: string | null
+          player_id: string
+          season_year: number
+          semester1_review?: string | null
+          semester2_review?: string | null
+          tactical_objectives?: string | null
+          technical_objectives?: string | null
+          updated_at?: string
+        }
+        Update: {
+          academic_objectives?: string | null
+          annual_summary?: string | null
+          category_id?: string
+          created_at?: string
+          id?: string
+          mental_objectives?: string | null
+          physical_objectives?: string | null
+          player_id?: string
+          season_year?: number
+          semester1_review?: string | null
+          semester2_review?: string | null
+          tactical_objectives?: string | null
+          technical_objectives?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_development_plans_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_development_plans_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       player_match_stats: {
         Row: {
           breakthroughs: number | null
@@ -819,6 +939,57 @@ export type Database = {
           },
           {
             foreignKeyName: "speed_tests_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      staff_notes: {
+        Row: {
+          category_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          is_confidential: boolean | null
+          note_content: string
+          note_date: string
+          player_id: string
+          staff_role: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_confidential?: boolean | null
+          note_content: string
+          note_date?: string
+          player_id: string
+          staff_role: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_confidential?: boolean | null
+          note_content?: string
+          note_date?: string
+          player_id?: string
+          staff_role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_notes_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_notes_player_id_fkey"
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"

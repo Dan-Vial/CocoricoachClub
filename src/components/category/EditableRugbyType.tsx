@@ -52,11 +52,16 @@ export function EditableRugbyType({ categoryId, currentType }: EditableRugbyType
     updateType.mutate(rugbyType);
   };
 
+  const getTypeLabel = (type: string) => {
+    if (type === "academie") return "Académie";
+    return `Rugby à ${type}`;
+  };
+
   return (
     <>
       <div className="flex items-center gap-2 group">
         <span className="text-primary-foreground/90">
-          Rugby à {currentType}
+          {getTypeLabel(currentType)}
         </span>
         <button
           onClick={() => {
@@ -78,6 +83,7 @@ export function EditableRugbyType({ categoryId, currentType }: EditableRugbyType
               Changez le type de rugby pour cette catégorie. 
               {currentType === "XV" && " Passer au rugby à 7 activera l'onglet Tournois."}
               {currentType === "7" && " Passer au rugby à XV désactivera l'onglet Tournois."}
+              {currentType === "academie" && " Type Académie avec suivi scolaire et plans de développement."}
             </DialogDescription>
           </DialogHeader>
 
@@ -93,6 +99,12 @@ export function EditableRugbyType({ categoryId, currentType }: EditableRugbyType
                 <RadioGroupItem value="7" id="type-7" />
                 <Label htmlFor="type-7" className="cursor-pointer">
                   Rugby à 7
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="academie" id="type-academie" />
+                <Label htmlFor="type-academie" className="cursor-pointer">
+                  Académie / Pôle Espoir
                 </Label>
               </div>
             </RadioGroup>

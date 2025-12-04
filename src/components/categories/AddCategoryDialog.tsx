@@ -27,12 +27,12 @@ export function AddCategoryDialog({
   clubId,
 }: AddCategoryDialogProps) {
   const [categoryName, setCategoryName] = useState("");
-  const [rugbyType, setRugbyType] = useState<"XV" | "7">("XV");
+  const [rugbyType, setRugbyType] = useState<"XV" | "7" | "academie">("XV");
   const [validationError, setValidationError] = useState("");
   const queryClient = useQueryClient();
 
   const addCategory = useMutation({
-    mutationFn: async (data: { name: string; rugby_type: "XV" | "7" }) => {
+    mutationFn: async (data: { name: string; rugby_type: "XV" | "7" | "academie" }) => {
       const { error } = await supabase
         .from("categories")
         .insert({ name: data.name, club_id: clubId, rugby_type: data.rugby_type });
@@ -90,7 +90,7 @@ export function AddCategoryDialog({
             </div>
             <div className="space-y-2">
               <Label>Type de rugby</Label>
-              <RadioGroup value={rugbyType} onValueChange={(value: "XV" | "7") => setRugbyType(value)}>
+              <RadioGroup value={rugbyType} onValueChange={(value: "XV" | "7" | "academie") => setRugbyType(value)}>
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="XV" id="rugby-xv" />
                   <Label htmlFor="rugby-xv" className="cursor-pointer font-normal">Rugby à XV</Label>
@@ -98,6 +98,10 @@ export function AddCategoryDialog({
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="7" id="rugby-7" />
                   <Label htmlFor="rugby-7" className="cursor-pointer font-normal">Rugby à 7</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="academie" id="rugby-academie" />
+                  <Label htmlFor="rugby-academie" className="cursor-pointer font-normal">Académie / Pôle Espoir</Label>
                 </div>
               </RadioGroup>
             </div>

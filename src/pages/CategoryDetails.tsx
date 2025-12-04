@@ -22,6 +22,7 @@ import { EditableRugbyType } from "@/components/category/EditableRugbyType";
 import { MatchesTab } from "@/components/category/MatchesTab";
 import { ConcussionProtocolTab } from "@/components/category/ConcussionProtocolTab";
 import { WellnessTab } from "@/components/category/WellnessTab";
+import { AcademyTab } from "@/components/category/AcademyTab";
 
 
 export default function CategoryDetails() {
@@ -42,6 +43,7 @@ export default function CategoryDetails() {
   });
 
   const isRugby7 = category?.rugby_type === "7";
+  const isAcademy = category?.rugby_type === "academie";
 
   return (
     <div className="min-h-screen bg-background">
@@ -123,6 +125,9 @@ export default function CategoryDetails() {
             {isRugby7 && (
               <TabsTrigger className="whitespace-nowrap flex-shrink-0" value="tournaments">Tournois</TabsTrigger>
             )}
+            {isAcademy && (
+              <TabsTrigger className="whitespace-nowrap flex-shrink-0" value="academy">Académie</TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4">
@@ -176,6 +181,12 @@ export default function CategoryDetails() {
           {isRugby7 && (
             <TabsContent value="tournaments" className="space-y-4">
               <TournamentsTab categoryId={categoryId!} />
+            </TabsContent>
+          )}
+
+          {isAcademy && (
+            <TabsContent value="academy" className="space-y-4">
+              <AcademyTab categoryId={categoryId!} />
             </TabsContent>
           )}
         </Tabs>
