@@ -33,10 +33,15 @@ export function AddCategoryDialog({
 
   const addCategory = useMutation({
     mutationFn: async (data: { name: string; rugby_type: "XV" | "7" | "academie" }) => {
-      const { error } = await supabase
+      console.log("Adding category with data:", { name: data.name, club_id: clubId, rugby_type: data.rugby_type });
+      const { error, data: result } = await supabase
         .from("categories")
         .insert({ name: data.name, club_id: clubId, rugby_type: data.rugby_type });
-      if (error) throw error;
+      if (error) {
+        console.error("Category insert error:", error);
+        throw error;
+      }
+      console.log("Category added successfully:", result);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["categories", clubId] });
