@@ -109,26 +109,28 @@ export default function CategoryDetails() {
 
       <div className="container mx-auto max-w-7xl px-4 py-8">
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="w-full overflow-x-auto flex gap-2">
-            <TabsTrigger className="whitespace-nowrap flex-shrink-0" value="overview">Vue Générale</TabsTrigger>
-            <TabsTrigger className="whitespace-nowrap flex-shrink-0" value="players">Joueurs</TabsTrigger>
-            <TabsTrigger className="whitespace-nowrap flex-shrink-0" value="calendar">Calendrier</TabsTrigger>
-            <TabsTrigger className="whitespace-nowrap flex-shrink-0" value="tests">Tests</TabsTrigger>
-            <TabsTrigger className="whitespace-nowrap flex-shrink-0" value="awcr">AWCR</TabsTrigger>
-            <TabsTrigger className="whitespace-nowrap flex-shrink-0" value="injuries">Blessures</TabsTrigger>
-            <TabsTrigger className="whitespace-nowrap flex-shrink-0" value="analytics">Analyse</TabsTrigger>
-            <TabsTrigger className="whitespace-nowrap flex-shrink-0" value="periodization">Périodisation</TabsTrigger>
-            <TabsTrigger className="whitespace-nowrap flex-shrink-0" value="reminders">Rappels Tests</TabsTrigger>
-            <TabsTrigger className="whitespace-nowrap flex-shrink-0" value="matches">Matchs</TabsTrigger>
-            <TabsTrigger className="whitespace-nowrap flex-shrink-0" value="wellness">Wellness</TabsTrigger>
-            <TabsTrigger className="whitespace-nowrap flex-shrink-0" value="medical">Médical</TabsTrigger>
-            {isRugby7 && (
-              <TabsTrigger className="whitespace-nowrap flex-shrink-0" value="tournaments">Tournois</TabsTrigger>
-            )}
-            {isAcademy && (
-              <TabsTrigger className="whitespace-nowrap flex-shrink-0" value="academy">Académie</TabsTrigger>
-            )}
-          </TabsList>
+          <div className="w-full overflow-x-auto pb-2 -mb-2 scrollbar-thin">
+            <TabsList className="inline-flex min-w-max gap-2">
+              <TabsTrigger className="whitespace-nowrap" value="overview">Vue Générale</TabsTrigger>
+              <TabsTrigger className="whitespace-nowrap" value="players">Joueurs</TabsTrigger>
+              <TabsTrigger className="whitespace-nowrap" value="calendar">Calendrier</TabsTrigger>
+              <TabsTrigger className="whitespace-nowrap" value="tests">Tests</TabsTrigger>
+              <TabsTrigger className="whitespace-nowrap" value="awcr">AWCR</TabsTrigger>
+              <TabsTrigger className="whitespace-nowrap" value="injuries">Blessures</TabsTrigger>
+              <TabsTrigger className="whitespace-nowrap" value="analytics">Analyse</TabsTrigger>
+              <TabsTrigger className="whitespace-nowrap" value="periodization">Périodisation</TabsTrigger>
+              <TabsTrigger className="whitespace-nowrap" value="reminders">Rappels Tests</TabsTrigger>
+              <TabsTrigger className="whitespace-nowrap" value="matches">Matchs</TabsTrigger>
+              <TabsTrigger className="whitespace-nowrap" value="wellness">Wellness</TabsTrigger>
+              <TabsTrigger className="whitespace-nowrap" value="medical">Médical</TabsTrigger>
+              {isRugby7 && (
+                <TabsTrigger className="whitespace-nowrap" value="tournaments">Tournois</TabsTrigger>
+              )}
+              {isAcademy && (
+                <TabsTrigger className="whitespace-nowrap" value="academy">Académie</TabsTrigger>
+              )}
+            </TabsList>
+          </div>
 
           <TabsContent value="overview" className="space-y-4">
             <OverviewTab categoryId={categoryId!} />
