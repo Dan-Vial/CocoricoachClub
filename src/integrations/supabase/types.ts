@@ -86,6 +86,7 @@ export type Database = {
           club_id: string
           cover_image_url: string | null
           created_at: string
+          gender: string
           id: string
           name: string
           rugby_type: string
@@ -94,6 +95,7 @@ export type Database = {
           club_id: string
           cover_image_url?: string | null
           created_at?: string
+          gender?: string
           id?: string
           name: string
           rugby_type?: string
@@ -102,6 +104,7 @@ export type Database = {
           club_id?: string
           cover_image_url?: string | null
           created_at?: string
+          gender?: string
           id?: string
           name?: string
           rugby_type?: string
@@ -487,6 +490,120 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      menstrual_cycles: {
+        Row: {
+          category_id: string
+          created_at: string
+          cycle_length_days: number | null
+          cycle_start_date: string
+          id: string
+          notes: string | null
+          period_length_days: number | null
+          player_id: string
+          updated_at: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          cycle_length_days?: number | null
+          cycle_start_date: string
+          id?: string
+          notes?: string | null
+          period_length_days?: number | null
+          player_id: string
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          cycle_length_days?: number | null
+          cycle_start_date?: string
+          id?: string
+          notes?: string | null
+          period_length_days?: number | null
+          player_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "menstrual_cycles_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "menstrual_cycles_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      menstrual_symptoms: {
+        Row: {
+          category_id: string
+          created_at: string
+          cycle_day: number | null
+          energy_level: number | null
+          id: string
+          mood_level: number | null
+          notes: string | null
+          pain_level: number | null
+          phase: string | null
+          player_id: string
+          sleep_quality: number | null
+          symptoms: string[] | null
+          tracking_date: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          cycle_day?: number | null
+          energy_level?: number | null
+          id?: string
+          mood_level?: number | null
+          notes?: string | null
+          pain_level?: number | null
+          phase?: string | null
+          player_id: string
+          sleep_quality?: number | null
+          symptoms?: string[] | null
+          tracking_date?: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          cycle_day?: number | null
+          energy_level?: number | null
+          id?: string
+          mood_level?: number | null
+          notes?: string | null
+          pain_level?: number | null
+          phase?: string | null
+          player_id?: string
+          sleep_quality?: number | null
+          symptoms?: string[] | null
+          tracking_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "menstrual_symptoms_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "menstrual_symptoms_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
             referencedColumns: ["id"]
           },
         ]

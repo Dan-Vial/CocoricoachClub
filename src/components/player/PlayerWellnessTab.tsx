@@ -7,6 +7,7 @@ import { AlertTriangle, TrendingUp, Activity } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import { MenstrualCycleSection } from "@/components/category/MenstrualCycleSection";
 
 interface PlayerWellnessTabProps {
   playerId: string;
@@ -20,6 +21,21 @@ const getScoreBadge = (score: number) => {
 };
 
 export function PlayerWellnessTab({ playerId, categoryId }: PlayerWellnessTabProps) {
+  const { data: category } = useQuery({
+    queryKey: ["category_gender", categoryId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("categories")
+        .select("gender")
+        .eq("id", categoryId)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const isFeminine = category?.gender === "feminine";
+
   const { data: wellnessData, isLoading } = useQuery({
     queryKey: ["player_wellness", playerId],
     queryFn: async () => {
@@ -258,6 +274,11 @@ export function PlayerWellnessTab({ playerId, categoryId }: PlayerWellnessTabPro
           )}
         </CardContent>
       </Card>
+
+      {/* Menstrual Cycle Section for Feminine Categories */}
+      {isFeminine && (
+        <MenstrualCycleSection categoryId={categoryId} playerId={playerId} />
+      )}
     </div>
   );
 }
