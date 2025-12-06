@@ -28,15 +28,16 @@ export function AddCategoryDialog({
 }: AddCategoryDialogProps) {
   const [categoryName, setCategoryName] = useState("");
   const [rugbyType, setRugbyType] = useState<"XV" | "7" | "academie">("XV");
+  const [gender, setGender] = useState<"masculine" | "feminine">("masculine");
   const [validationError, setValidationError] = useState("");
   const queryClient = useQueryClient();
 
   const addCategory = useMutation({
-    mutationFn: async (data: { name: string; rugby_type: "XV" | "7" | "academie" }) => {
-      console.log("Adding category with data:", { name: data.name, club_id: clubId, rugby_type: data.rugby_type });
+    mutationFn: async (data: { name: string; rugby_type: "XV" | "7" | "academie"; gender: "masculine" | "feminine" }) => {
+      console.log("Adding category with data:", { name: data.name, club_id: clubId, rugby_type: data.rugby_type, gender: data.gender });
       const { error, data: result } = await supabase
         .from("categories")
-        .insert({ name: data.name, club_id: clubId, rugby_type: data.rugby_type });
+        .insert({ name: data.name, club_id: clubId, rugby_type: data.rugby_type, gender: data.gender });
       if (error) {
         console.error("Category insert error:", error);
         throw error;
@@ -48,6 +49,7 @@ export function AddCategoryDialog({
       toast.success("Catégorie ajoutée avec succès");
       setCategoryName("");
       setRugbyType("XV");
+      setGender("masculine");
       onOpenChange(false);
     },
     onError: () => {
@@ -66,7 +68,7 @@ export function AddCategoryDialog({
       return;
     }
 
-    addCategory.mutate({ name: result.data.name, rugby_type: rugbyType });
+    addCategory.mutate({ name: result.data.name, rugby_type: rugbyType, gender: gender });
   };
 
   return (
@@ -92,6 +94,19 @@ export function AddCategoryDialog({
               {validationError && (
                 <p className="text-sm text-destructive">{validationError}</p>
               )}
+            </div>
+            <div className="space-y-2">
+              <Label>Genre</Label>
+              <RadioGroup value={gender} onValueChange={(value: "masculine" | "feminine") => setGender(value)}>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="masculine" id="gender-m" />
+                  <Label htmlFor="gender-m" className="cursor-pointer font-normal">Masculin</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="feminine" id="gender-f" />
+                  <Label htmlFor="gender-f" className="cursor-pointer font-normal">Féminin</Label>
+                </div>
+              </RadioGroup>
             </div>
             <div className="space-y-2">
               <Label>Type de rugby</Label>

@@ -11,6 +11,7 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { AddWellnessDialog } from "./AddWellnessDialog";
 import { InjuryRiskAssessment } from "./InjuryRiskAssessment";
+import { MenstrualCycleSection } from "./MenstrualCycleSection";
 
 interface WellnessTabProps {
   categoryId: string;
@@ -30,6 +31,21 @@ const getScoreBadge = (score: number) => {
 
 export function WellnessTab({ categoryId }: WellnessTabProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  const { data: category } = useQuery({
+    queryKey: ["category", categoryId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("categories")
+        .select("gender")
+        .eq("id", categoryId)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const isFeminine = category?.gender === "feminine";
 
   const { data: wellnessData, isLoading } = useQuery({
     queryKey: ["wellness_tracking", categoryId],
@@ -66,6 +82,9 @@ export function WellnessTab({ categoryId }: WellnessTabProps) {
         <TabsList>
           <TabsTrigger value="tracking">Suivi Wellness</TabsTrigger>
           <TabsTrigger value="risk">Risque Blessure (AWCR + Wellness)</TabsTrigger>
+          {isFeminine && (
+            <TabsTrigger value="menstrual">Cycle Menstruel</TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="tracking">
@@ -204,6 +223,12 @@ export function WellnessTab({ categoryId }: WellnessTabProps) {
       <TabsContent value="risk">
         <InjuryRiskAssessment categoryId={categoryId} />
       </TabsContent>
+
+      {isFeminine && (
+        <TabsContent value="menstrual">
+          <MenstrualCycleSection categoryId={categoryId} />
+        </TabsContent>
+      )}
     </Tabs>
 
     <AddWellnessDialog
