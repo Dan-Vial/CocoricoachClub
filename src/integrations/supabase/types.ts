@@ -698,6 +698,69 @@ export type Database = {
           },
         ]
       }
+      nutrition_entries: {
+        Row: {
+          calories: number | null
+          carbs_g: number | null
+          category_id: string
+          created_at: string
+          entry_date: string
+          fats_g: number | null
+          id: string
+          meal_description: string | null
+          meal_type: string
+          notes: string | null
+          player_id: string
+          proteins_g: number | null
+          water_ml: number | null
+        }
+        Insert: {
+          calories?: number | null
+          carbs_g?: number | null
+          category_id: string
+          created_at?: string
+          entry_date?: string
+          fats_g?: number | null
+          id?: string
+          meal_description?: string | null
+          meal_type: string
+          notes?: string | null
+          player_id: string
+          proteins_g?: number | null
+          water_ml?: number | null
+        }
+        Update: {
+          calories?: number | null
+          carbs_g?: number | null
+          category_id?: string
+          created_at?: string
+          entry_date?: string
+          fats_g?: number | null
+          id?: string
+          meal_description?: string | null
+          meal_type?: string
+          notes?: string | null
+          player_id?: string
+          proteins_g?: number | null
+          water_ml?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nutrition_entries_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nutrition_entries_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       player_academic_tracking: {
         Row: {
           absence_reason: string | null
@@ -1185,6 +1248,100 @@ export type Database = {
           id?: string
         }
         Relationships: []
+      }
+      season_goals: {
+        Row: {
+          category_id: string
+          created_at: string
+          description: string | null
+          goal_type: string
+          id: string
+          progress_percentage: number | null
+          season_year: number
+          status: string
+          target_date: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          description?: string | null
+          goal_type: string
+          id?: string
+          progress_percentage?: number | null
+          season_year: number
+          status?: string
+          target_date?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          description?: string | null
+          goal_type?: string
+          id?: string
+          progress_percentage?: number | null
+          season_year?: number
+          status?: string
+          target_date?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "season_goals_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      season_milestones: {
+        Row: {
+          category_id: string
+          created_at: string
+          description: string | null
+          id: string
+          is_completed: boolean | null
+          milestone_date: string
+          milestone_type: string
+          season_year: number
+          title: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_completed?: boolean | null
+          milestone_date: string
+          milestone_type: string
+          season_year: number
+          title: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_completed?: boolean | null
+          milestone_date?: string
+          milestone_type?: string
+          season_year?: number
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "season_milestones_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       speed_tests: {
         Row: {

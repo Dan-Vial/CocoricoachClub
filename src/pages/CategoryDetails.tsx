@@ -23,6 +23,9 @@ import { MatchesTab } from "@/components/category/MatchesTab";
 import { ConcussionProtocolTab } from "@/components/category/ConcussionProtocolTab";
 import { WellnessTab } from "@/components/category/WellnessTab";
 import { AcademyTab } from "@/components/category/AcademyTab";
+import { PlanningTab } from "@/components/category/PlanningTab";
+import { NutritionTab } from "@/components/category/NutritionTab";
+import { ReportsTab } from "@/components/category/ReportsTab";
 
 
 export default function CategoryDetails() {
@@ -122,7 +125,10 @@ export default function CategoryDetails() {
               <TabsTrigger className="whitespace-nowrap" value="reminders">Rappels Tests</TabsTrigger>
               <TabsTrigger className="whitespace-nowrap" value="matches">Matchs</TabsTrigger>
               <TabsTrigger className="whitespace-nowrap" value="wellness">Wellness</TabsTrigger>
+              <TabsTrigger className="whitespace-nowrap" value="nutrition">Nutrition</TabsTrigger>
+              <TabsTrigger className="whitespace-nowrap" value="planning">Planification</TabsTrigger>
               <TabsTrigger className="whitespace-nowrap" value="medical">Médical</TabsTrigger>
+              <TabsTrigger className="whitespace-nowrap" value="reports">Rapports</TabsTrigger>
               {isRugby7 && (
                 <TabsTrigger className="whitespace-nowrap" value="tournaments">Tournois</TabsTrigger>
               )}
@@ -176,8 +182,20 @@ export default function CategoryDetails() {
             <WellnessTab categoryId={categoryId!} />
           </TabsContent>
 
+          <TabsContent value="nutrition" className="space-y-4">
+            <NutritionTab categoryId={categoryId!} />
+          </TabsContent>
+
+          <TabsContent value="planning" className="space-y-4">
+            <PlanningTab categoryId={categoryId!} />
+          </TabsContent>
+
           <TabsContent value="medical" className="space-y-4">
             <ConcussionProtocolTab categoryId={categoryId!} />
+          </TabsContent>
+
+          <TabsContent value="reports" className="space-y-4">
+            <ReportsTab categoryId={categoryId!} />
           </TabsContent>
 
           {isRugby7 && (
