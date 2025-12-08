@@ -38,7 +38,7 @@ export function NutritionTab({ categoryId }: NutritionTabProps) {
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(format(new Date(), "yyyy-MM-dd"));
-  const [selectedPlayer, setSelectedPlayer] = useState<string>("");
+  const [selectedPlayer, setSelectedPlayer] = useState<string>("all");
 
   // Form states
   const [playerId, setPlayerId] = useState("");
@@ -75,7 +75,7 @@ export function NutritionTab({ categoryId }: NutritionTabProps) {
         .eq("entry_date", selectedDate)
         .order("created_at", { ascending: false });
       
-      if (selectedPlayer) {
+      if (selectedPlayer && selectedPlayer !== "all") {
         query = query.eq("player_id", selectedPlayer);
       }
       
@@ -313,7 +313,7 @@ export function NutritionTab({ categoryId }: NutritionTabProps) {
               <SelectValue placeholder="Tous les joueurs" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Tous les joueurs</SelectItem>
+              <SelectItem value="all">Tous les joueurs</SelectItem>
               {players.map((player) => (
                 <SelectItem key={player.id} value={player.id}>
                   {player.name}
