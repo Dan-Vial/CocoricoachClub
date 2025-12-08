@@ -13,6 +13,8 @@ import { PlayerInjuriesTab } from "@/components/player/PlayerInjuriesTab";
 import { PlayerBiometrics } from "@/components/player/PlayerBiometrics";
 import { PlayerMatchesTab } from "@/components/player/PlayerMatchesTab";
 import { PlayerWellnessTab } from "@/components/player/PlayerWellnessTab";
+import { PlayerNutritionTab } from "@/components/player/PlayerNutritionTab";
+import { PlayerAcademyTab } from "@/components/player/PlayerAcademyTab";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { GlobalPlayerSearch } from "@/components/search/GlobalPlayerSearch";
 
@@ -90,12 +92,14 @@ export default function PlayerDetails() {
         </div>
 
         <Tabs defaultValue="tests" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8">
             <TabsTrigger value="tests">Tests</TabsTrigger>
             <TabsTrigger value="matches">Matchs</TabsTrigger>
             <TabsTrigger value="calendar">Calendrier</TabsTrigger>
             <TabsTrigger value="awcr">AWCR</TabsTrigger>
             <TabsTrigger value="wellness">Wellness</TabsTrigger>
+            <TabsTrigger value="nutrition">Nutrition</TabsTrigger>
+            <TabsTrigger value="academy">Académie</TabsTrigger>
             <TabsTrigger value="injuries">Blessures</TabsTrigger>
           </TabsList>
 
@@ -117,6 +121,14 @@ export default function PlayerDetails() {
 
           <TabsContent value="wellness">
             <PlayerWellnessTab playerId={playerId!} categoryId={player.category_id} />
+          </TabsContent>
+
+          <TabsContent value="nutrition">
+            <PlayerNutritionTab playerId={playerId!} categoryId={player.category_id} />
+          </TabsContent>
+
+          <TabsContent value="academy">
+            <PlayerAcademyTab playerId={playerId!} categoryId={player.category_id} playerName={player.name} />
           </TabsContent>
 
           <TabsContent value="injuries">
