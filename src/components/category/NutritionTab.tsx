@@ -9,10 +9,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Plus, Utensils, Droplets, Apple, Beef, Wheat, Flame } from "lucide-react";
+import { Plus, Utensils, Droplets, Apple, Beef, Wheat, Flame, Target, ClipboardList } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { NutritionObjectives } from "./nutrition/NutritionObjectives";
 
 interface NutritionTabProps {
   categoryId: string;
@@ -142,7 +144,7 @@ export function NutritionTab({ categoryId }: NutritionTabProps) {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h2 className="text-2xl font-bold">Suivi Nutritionnel</h2>
-          <p className="text-muted-foreground">Repas, hydratation et macronutriments</p>
+          <p className="text-muted-foreground">Objectifs, repas, hydratation et macronutriments</p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
@@ -292,39 +294,57 @@ export function NutritionTab({ categoryId }: NutritionTabProps) {
               </Button>
             </div>
           </DialogContent>
-        </Dialog>
+      </Dialog>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-wrap gap-4">
-        <div>
-          <label className="text-sm font-medium mb-1 block">Date</label>
-          <Input 
-            type="date" 
-            value={selectedDate} 
-            onChange={(e) => setSelectedDate(e.target.value)}
-            className="w-[180px]"
-          />
-        </div>
-        <div>
-          <label className="text-sm font-medium mb-1 block">Joueur</label>
-          <Select value={selectedPlayer} onValueChange={setSelectedPlayer}>
-            <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="Tous les joueurs" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tous les joueurs</SelectItem>
-              {players.map((player) => (
-                <SelectItem key={player.id} value={player.id}>
-                  {player.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+      {/* Main Tabs */}
+      <Tabs defaultValue="objectives" className="w-full">
+        <TabsList>
+          <TabsTrigger value="objectives" className="flex items-center gap-1">
+            <Target className="h-4 w-4" />
+            Objectifs
+          </TabsTrigger>
+          <TabsTrigger value="tracking" className="flex items-center gap-1">
+            <ClipboardList className="h-4 w-4" />
+            Suivi quotidien
+          </TabsTrigger>
+        </TabsList>
 
-      {/* Daily Summary */}
+        <TabsContent value="objectives" className="mt-6">
+          <NutritionObjectives categoryId={categoryId} players={players} />
+        </TabsContent>
+
+        <TabsContent value="tracking" className="mt-6 space-y-6">
+          {/* Filters */}
+          <div className="flex flex-wrap gap-4">
+            <div>
+              <label className="text-sm font-medium mb-1 block">Date</label>
+              <Input 
+                type="date" 
+                value={selectedDate} 
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="w-[180px]"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1 block">Joueur</label>
+              <Select value={selectedPlayer} onValueChange={setSelectedPlayer}>
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue placeholder="Tous les joueurs" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tous les joueurs</SelectItem>
+                  {players.map((player) => (
+                    <SelectItem key={player.id} value={player.id}>
+                      {player.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Daily Summary */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <Card>
           <CardContent className="pt-4">
@@ -438,6 +458,8 @@ export function NutritionTab({ categoryId }: NutritionTabProps) {
           )}
         </CardContent>
       </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
