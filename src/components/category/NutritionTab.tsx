@@ -9,12 +9,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
-import { Plus, Utensils, Droplets, Apple, Beef, Wheat, Flame, Target, ClipboardList } from "lucide-react";
+import { Plus, Utensils, Droplets, Apple, Beef, Wheat, Flame, User } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { NutritionObjectives } from "./nutrition/NutritionObjectives";
+import { NutritionObjectivesBanner, useNutritionObjectives } from "./nutrition/NutritionObjectivesBanner";
 
 interface NutritionTabProps {
   categoryId: string;
@@ -40,7 +40,8 @@ export function NutritionTab({ categoryId }: NutritionTabProps) {
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(format(new Date(), "yyyy-MM-dd"));
-  const [selectedPlayer, setSelectedPlayer] = useState<string>("all");
+  const [selectedPlayer, setSelectedPlayer] = useState<string>("");
+  const [dayType, setDayType] = useState<"rest" | "training" | "match">("training");
 
   // Form states
   const [playerId, setPlayerId] = useState("");
@@ -70,27 +71,30 @@ export function NutritionTab({ categoryId }: NutritionTabProps) {
   const { data: entries = [] } = useQuery({
     queryKey: ["nutrition-entries", categoryId, selectedDate, selectedPlayer],
     queryFn: async () => {
-      let query = supabase
+      if (!selectedPlayer) return [];
+      const { data, error } = await supabase
         .from("nutrition_entries")
         .select("*, players(name)")
         .eq("category_id", categoryId)
         .eq("entry_date", selectedDate)
-        .order("created_at", { ascending: false });
-      
-      if (selectedPlayer && selectedPlayer !== "all") {
-        query = query.eq("player_id", selectedPlayer);
-      }
-      
-      const { data, error } = await query;
+        .eq("player_id", selectedPlayer)
+        .order("created_at", { ascending: true });
       if (error) throw error;
       return data;
     },
+    enabled: !!selectedPlayer,
   });
+
+  const { getObjectives, canCalculate } = useNutritionObjectives(selectedPlayer, categoryId);
+  const objectives = selectedPlayer ? getObjectives(dayType) : null;
 
   const addEntryMutation = useMutation({
     mutationFn: async () => {
+      const targetPlayer = playerId || selectedPlayer;
+      if (!targetPlayer) throw new Error("Joueur requis");
+      
       const { error } = await supabase.from("nutrition_entries").insert({
-        player_id: playerId,
+        player_id: targetPlayer,
         category_id: categoryId,
         entry_date: entryDate,
         meal_type: mealType,
@@ -138,17 +142,30 @@ export function NutritionTab({ categoryId }: NutritionTabProps) {
     { calories: 0, proteins: 0, carbs: 0, fats: 0, water: 0 }
   );
 
+  // Calculate progress percentages
+  const getProgress = (current: number, target: number | undefined) => {
+    if (!target) return 0;
+    return Math.min((current / target) * 100, 100);
+  };
+
+  const getProgressColor = (percent: number) => {
+    if (percent < 50) return "bg-red-500";
+    if (percent < 80) return "bg-amber-500";
+    if (percent <= 110) return "bg-green-500";
+    return "bg-red-500";
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h2 className="text-2xl font-bold">Suivi Nutritionnel</h2>
-          <p className="text-muted-foreground">Objectifs, repas, hydratation et macronutriments</p>
+          <p className="text-muted-foreground">Objectifs et suivi quotidien des repas</p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
+            <Button disabled={!selectedPlayer}>
               <Plus className="h-4 w-4 mr-2" />
               Nouvelle entrée
             </Button>
@@ -158,21 +175,6 @@ export function NutritionTab({ categoryId }: NutritionTabProps) {
               <DialogTitle>Ajouter une entrée nutrition</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
-              <div>
-                <label className="text-sm font-medium">Joueur</label>
-                <Select value={playerId} onValueChange={setPlayerId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner un joueur" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {players.map((player) => (
-                      <SelectItem key={player.id} value={player.id}>
-                        {player.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
               <div>
                 <label className="text-sm font-medium">Date</label>
                 <Input 
@@ -287,36 +289,37 @@ export function NutritionTab({ categoryId }: NutritionTabProps) {
               </div>
               <Button 
                 onClick={() => addEntryMutation.mutate()} 
-                disabled={!playerId}
                 className="w-full"
               >
                 Ajouter
               </Button>
             </div>
           </DialogContent>
-      </Dialog>
+        </Dialog>
       </div>
 
-      {/* Main Tabs */}
-      <Tabs defaultValue="objectives" className="w-full">
-        <TabsList>
-          <TabsTrigger value="objectives" className="flex items-center gap-1">
-            <Target className="h-4 w-4" />
-            Objectifs
-          </TabsTrigger>
-          <TabsTrigger value="tracking" className="flex items-center gap-1">
-            <ClipboardList className="h-4 w-4" />
-            Suivi quotidien
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="objectives" className="mt-6">
-          <NutritionObjectives categoryId={categoryId} players={players} />
-        </TabsContent>
-
-        <TabsContent value="tracking" className="mt-6 space-y-6">
-          {/* Filters */}
+      {/* Player & Date Selection */}
+      <Card>
+        <CardContent className="pt-4">
           <div className="flex flex-wrap gap-4">
+            <div className="flex-1 min-w-[200px]">
+              <label className="text-sm font-medium mb-1 block">Joueur</label>
+              <Select value={selectedPlayer} onValueChange={setSelectedPlayer}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner un joueur" />
+                </SelectTrigger>
+                <SelectContent>
+                  {players.map((player) => (
+                    <SelectItem key={player.id} value={player.id}>
+                      <div className="flex items-center gap-2">
+                        <User className="h-4 w-4" />
+                        {player.name}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div>
               <label className="text-sm font-medium mb-1 block">Date</label>
               <Input 
@@ -327,139 +330,201 @@ export function NutritionTab({ categoryId }: NutritionTabProps) {
               />
             </div>
             <div>
-              <label className="text-sm font-medium mb-1 block">Joueur</label>
-              <Select value={selectedPlayer} onValueChange={setSelectedPlayer}>
-                <SelectTrigger className="w-[200px]">
-                  <SelectValue placeholder="Tous les joueurs" />
+              <label className="text-sm font-medium mb-1 block">Type de jour</label>
+              <Select value={dayType} onValueChange={(v) => setDayType(v as "rest" | "training" | "match")}>
+                <SelectTrigger className="w-[150px]">
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Tous les joueurs</SelectItem>
-                  {players.map((player) => (
-                    <SelectItem key={player.id} value={player.id}>
-                      {player.name}
-                    </SelectItem>
-                  ))}
+                  <SelectItem value="rest">Repos</SelectItem>
+                  <SelectItem value="training">Entraînement</SelectItem>
+                  <SelectItem value="match">Match</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
-
-          {/* Daily Summary */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <Card>
-          <CardContent className="pt-4">
-            <div className="flex items-center gap-2">
-              <Flame className="h-5 w-5 text-orange-500" />
-              <div>
-                <p className="text-xs text-muted-foreground">Calories</p>
-                <p className="text-xl font-bold">{dailyTotals.calories}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4">
-            <div className="flex items-center gap-2">
-              <Beef className="h-5 w-5 text-red-500" />
-              <div>
-                <p className="text-xs text-muted-foreground">Protéines</p>
-                <p className="text-xl font-bold">{dailyTotals.proteins}g</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4">
-            <div className="flex items-center gap-2">
-              <Wheat className="h-5 w-5 text-amber-500" />
-              <div>
-                <p className="text-xs text-muted-foreground">Glucides</p>
-                <p className="text-xl font-bold">{dailyTotals.carbs}g</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4">
-            <div className="flex items-center gap-2">
-              <Apple className="h-5 w-5 text-green-500" />
-              <div>
-                <p className="text-xs text-muted-foreground">Lipides</p>
-                <p className="text-xl font-bold">{dailyTotals.fats}g</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4">
-            <div className="flex items-center gap-2">
-              <Droplets className="h-5 w-5 text-blue-500" />
-              <div>
-                <p className="text-xs text-muted-foreground">Hydratation</p>
-                <p className="text-xl font-bold">{dailyTotals.water}ml</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Entries Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            Entrées du {format(new Date(selectedDate), "d MMMM yyyy", { locale: fr })}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {entries.length === 0 ? (
-            <p className="text-muted-foreground text-center py-8">
-              Aucune entrée pour cette date
-            </p>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Joueur</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Description</TableHead>
-                    <TableHead className="text-right">Cal</TableHead>
-                    <TableHead className="text-right">Prot</TableHead>
-                    <TableHead className="text-right">Gluc</TableHead>
-                    <TableHead className="text-right">Lip</TableHead>
-                    <TableHead className="text-right">Eau</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {entries.map((entry) => (
-                    <TableRow key={entry.id}>
-                      <TableCell className="font-medium">
-                        {entry.players?.name}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="flex items-center gap-1 w-fit">
-                          {mealTypeIcons[entry.meal_type]}
-                          {mealTypeLabels[entry.meal_type]}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="max-w-[200px] truncate">
-                        {entry.meal_description || "-"}
-                      </TableCell>
-                      <TableCell className="text-right">{entry.calories || "-"}</TableCell>
-                      <TableCell className="text-right">{entry.proteins_g || "-"}</TableCell>
-                      <TableCell className="text-right">{entry.carbs_g || "-"}</TableCell>
-                      <TableCell className="text-right">{entry.fats_g || "-"}</TableCell>
-                      <TableCell className="text-right">{entry.water_ml || "-"}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
         </CardContent>
       </Card>
-        </TabsContent>
-      </Tabs>
+
+      {!selectedPlayer ? (
+        <Card>
+          <CardContent className="py-12 text-center text-muted-foreground">
+            <User className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <p className="font-medium">Sélectionnez un joueur</p>
+            <p className="text-sm">pour voir ses objectifs nutritionnels et son suivi</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          {/* Nutrition Objectives Banner */}
+          <NutritionObjectivesBanner playerId={selectedPlayer} categoryId={categoryId} />
+
+          {/* Daily Progress */}
+          {objectives && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">
+                  Progression du {format(new Date(selectedDate), "d MMMM yyyy", { locale: fr })}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {/* Calories */}
+                  <div>
+                    <div className="flex justify-between mb-1">
+                      <div className="flex items-center gap-2">
+                        <Flame className="h-4 w-4 text-orange-500" />
+                        <span className="text-sm font-medium">Calories</span>
+                      </div>
+                      <span className="text-sm">
+                        <span className="font-bold">{dailyTotals.calories}</span>
+                        <span className="text-muted-foreground"> / {objectives.calories} kcal</span>
+                      </span>
+                    </div>
+                    <Progress 
+                      value={getProgress(dailyTotals.calories, objectives.calories)} 
+                      className={`h-2 ${getProgressColor(getProgress(dailyTotals.calories, objectives.calories))}`}
+                    />
+                  </div>
+
+                  {/* Proteins */}
+                  <div>
+                    <div className="flex justify-between mb-1">
+                      <div className="flex items-center gap-2">
+                        <Beef className="h-4 w-4 text-red-500" />
+                        <span className="text-sm font-medium">Protéines</span>
+                      </div>
+                      <span className="text-sm">
+                        <span className="font-bold">{Math.round(dailyTotals.proteins)}</span>
+                        <span className="text-muted-foreground"> / {objectives.proteins}g</span>
+                      </span>
+                    </div>
+                    <Progress 
+                      value={getProgress(dailyTotals.proteins, objectives.proteins)} 
+                      className={`h-2 ${getProgressColor(getProgress(dailyTotals.proteins, objectives.proteins))}`}
+                    />
+                  </div>
+
+                  {/* Carbs */}
+                  <div>
+                    <div className="flex justify-between mb-1">
+                      <div className="flex items-center gap-2">
+                        <Wheat className="h-4 w-4 text-amber-500" />
+                        <span className="text-sm font-medium">Glucides</span>
+                      </div>
+                      <span className="text-sm">
+                        <span className="font-bold">{Math.round(dailyTotals.carbs)}</span>
+                        <span className="text-muted-foreground"> / {objectives.carbs}g</span>
+                      </span>
+                    </div>
+                    <Progress 
+                      value={getProgress(dailyTotals.carbs, objectives.carbs)} 
+                      className={`h-2 ${getProgressColor(getProgress(dailyTotals.carbs, objectives.carbs))}`}
+                    />
+                  </div>
+
+                  {/* Fats */}
+                  <div>
+                    <div className="flex justify-between mb-1">
+                      <div className="flex items-center gap-2">
+                        <Apple className="h-4 w-4 text-green-500" />
+                        <span className="text-sm font-medium">Lipides</span>
+                      </div>
+                      <span className="text-sm">
+                        <span className="font-bold">{Math.round(dailyTotals.fats)}</span>
+                        <span className="text-muted-foreground"> / {objectives.fats}g</span>
+                      </span>
+                    </div>
+                    <Progress 
+                      value={getProgress(dailyTotals.fats, objectives.fats)} 
+                      className={`h-2 ${getProgressColor(getProgress(dailyTotals.fats, objectives.fats))}`}
+                    />
+                  </div>
+
+                  {/* Water */}
+                  <div>
+                    <div className="flex justify-between mb-1">
+                      <div className="flex items-center gap-2">
+                        <Droplets className="h-4 w-4 text-blue-500" />
+                        <span className="text-sm font-medium">Hydratation</span>
+                      </div>
+                      <span className="text-sm">
+                        <span className="font-bold">{(dailyTotals.water / 1000).toFixed(1)}</span>
+                        <span className="text-muted-foreground"> / {(objectives.water / 1000).toFixed(1)}L</span>
+                      </span>
+                    </div>
+                    <Progress 
+                      value={getProgress(dailyTotals.water, objectives.water)} 
+                      className={`h-2 ${getProgressColor(getProgress(dailyTotals.water, objectives.water))}`}
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Entries Table */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">
+                Détail des repas du {format(new Date(selectedDate), "d MMMM yyyy", { locale: fr })}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {entries.length === 0 ? (
+                <p className="text-muted-foreground text-center py-8">
+                  Aucune entrée pour cette date. Cliquez sur "Nouvelle entrée" pour commencer.
+                </p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Description</TableHead>
+                        <TableHead className="text-right">Cal</TableHead>
+                        <TableHead className="text-right">Prot</TableHead>
+                        <TableHead className="text-right">Gluc</TableHead>
+                        <TableHead className="text-right">Lip</TableHead>
+                        <TableHead className="text-right">Eau</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {entries.map((entry) => (
+                        <TableRow key={entry.id}>
+                          <TableCell>
+                            <Badge variant="outline" className="flex items-center gap-1 w-fit">
+                              {mealTypeIcons[entry.meal_type]}
+                              {mealTypeLabels[entry.meal_type]}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="max-w-[200px] truncate">
+                            {entry.meal_description || "-"}
+                          </TableCell>
+                          <TableCell className="text-right font-medium">{entry.calories || "-"}</TableCell>
+                          <TableCell className="text-right">{entry.proteins_g || "-"}</TableCell>
+                          <TableCell className="text-right">{entry.carbs_g || "-"}</TableCell>
+                          <TableCell className="text-right">{entry.fats_g || "-"}</TableCell>
+                          <TableCell className="text-right">{entry.water_ml || "-"}</TableCell>
+                        </TableRow>
+                      ))}
+                      {/* Totals row */}
+                      <TableRow className="bg-muted/50 font-bold">
+                        <TableCell colSpan={2}>Total</TableCell>
+                        <TableCell className="text-right">{dailyTotals.calories}</TableCell>
+                        <TableCell className="text-right">{Math.round(dailyTotals.proteins)}</TableCell>
+                        <TableCell className="text-right">{Math.round(dailyTotals.carbs)}</TableCell>
+                        <TableCell className="text-right">{Math.round(dailyTotals.fats)}</TableCell>
+                        <TableCell className="text-right">{dailyTotals.water}</TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </>
+      )}
     </div>
   );
 }
