@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
+import OfflineIndicator from "@/components/OfflineIndicator";
 import Clubs from "./pages/Clubs";
 import ClubDetails from "./pages/ClubDetails";
 import CategoryDetails from "./pages/CategoryDetails";
@@ -15,13 +16,26 @@ import AcceptInvitation from "./pages/AcceptInvitation";
 import Install from "./pages/Install";
 import NotFound from "./pages/NotFound";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      gcTime: 1000 * 60 * 60 * 24, // 24 hours (formerly cacheTime)
+      retry: (failureCount, error) => {
+        // Don't retry if offline
+        if (!navigator.onLine) return false;
+        return failureCount < 3;
+      },
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
       <Sonner />
+      <OfflineIndicator />
       <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AuthProvider>
           <PWAInstallPrompt />
