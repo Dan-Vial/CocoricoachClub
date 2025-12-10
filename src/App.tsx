@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { OfflineSyncProvider } from "@/contexts/OfflineSyncContext";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import OfflineIndicator from "@/components/OfflineIndicator";
 import Clubs from "./pages/Clubs";
@@ -35,23 +36,25 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <OfflineIndicator />
-      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-        <AuthProvider>
-          <PWAInstallPrompt />
-          <Routes>
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/" element={<Clubs />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/accept-invitation" element={<AcceptInvitation />} />
-            <Route path="/install" element={<Install />} />
-            <Route path="/clubs/:clubId" element={<ClubDetails />} />
-            <Route path="/categories/:categoryId" element={<CategoryDetails />} />
-            <Route path="/players/:playerId" element={<PlayerDetails />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </AuthProvider>
-      </BrowserRouter>
+      <OfflineSyncProvider>
+        <OfflineIndicator />
+        <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+          <AuthProvider>
+            <PWAInstallPrompt />
+            <Routes>
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/" element={<Clubs />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/accept-invitation" element={<AcceptInvitation />} />
+              <Route path="/install" element={<Install />} />
+              <Route path="/clubs/:clubId" element={<ClubDetails />} />
+              <Route path="/categories/:categoryId" element={<CategoryDetails />} />
+              <Route path="/players/:playerId" element={<PlayerDetails />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </AuthProvider>
+        </BrowserRouter>
+      </OfflineSyncProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
