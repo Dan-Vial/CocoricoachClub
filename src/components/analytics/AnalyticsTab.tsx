@@ -3,6 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PerformanceEvolution } from "./PerformanceEvolution";
 import { PlayerComparison } from "./PlayerComparison";
 import { InjuryRiskPrediction } from "./InjuryRiskPrediction";
+import { PerformanceHeatmap } from "./PerformanceHeatmap";
 
 interface AnalyticsTabProps {
   categoryId: string;
@@ -16,9 +17,10 @@ export function AnalyticsTab({ categoryId }: AnalyticsTabProps) {
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="evolution" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="evolution">Évolution</TabsTrigger>
             <TabsTrigger value="comparison">Comparaison</TabsTrigger>
+            <TabsTrigger value="heatmap">Heatmap</TabsTrigger>
             <TabsTrigger value="risk">Risque Blessure</TabsTrigger>
           </TabsList>
 
@@ -28,6 +30,10 @@ export function AnalyticsTab({ categoryId }: AnalyticsTabProps) {
 
           <TabsContent value="comparison">
             <PlayerComparison categoryId={categoryId} />
+          </TabsContent>
+
+          <TabsContent value="heatmap">
+            <PerformanceHeatmap categoryId={categoryId} />
           </TabsContent>
 
           <TabsContent value="risk">
