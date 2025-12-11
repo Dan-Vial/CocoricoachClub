@@ -2,3 +2,12 @@ project_id = "mbloebaovvvgfwxsdzgo"
 
 [functions.voice-assistant]
 verify_jwt = true
+
+[functions.check-test-reminders]
+verify_jwt = false
+
+[functions.create-injury-notifications]
+verify_jwt = false
+
+[functions.predict-injuries]
+verify_jwt = false
