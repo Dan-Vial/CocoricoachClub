@@ -1959,7 +1959,50 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      safe_club_invitations: {
+        Row: {
+          club_id: string | null
+          created_at: string | null
+          email: string | null
+          expires_at: string | null
+          id: string | null
+          invited_by: string | null
+          role: Database["public"]["Enums"]["app_role"] | null
+          status: string | null
+          token: string | null
+        }
+        Insert: {
+          club_id?: string | null
+          created_at?: string | null
+          email?: string | null
+          expires_at?: string | null
+          id?: string | null
+          invited_by?: string | null
+          role?: Database["public"]["Enums"]["app_role"] | null
+          status?: string | null
+          token?: never
+        }
+        Update: {
+          club_id?: string | null
+          created_at?: string | null
+          email?: string | null
+          expires_at?: string | null
+          id?: string | null
+          invited_by?: string | null
+          role?: Database["public"]["Enums"]["app_role"] | null
+          status?: string | null
+          token?: never
+        }
+        Relationships: [
+          {
+            foreignKeyName: "club_invitations_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       accept_club_invitation: { Args: { _token: string }; Returns: Json }
@@ -1968,6 +2011,14 @@ export type Database = {
         Returns: boolean
       }
       cleanup_old_invitation_attempts: { Args: never; Returns: undefined }
+      get_safe_profile: {
+        Args: { profile_id: string }
+        Returns: {
+          email: string
+          full_name: string
+          id: string
+        }[]
+      }
       has_club_role: {
         Args: {
           _club_id: string
