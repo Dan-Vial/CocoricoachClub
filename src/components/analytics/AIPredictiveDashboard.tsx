@@ -5,8 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Loader2, Brain, AlertTriangle, TrendingUp, Shield, RefreshCw, Activity } from "lucide-react";
+import { Loader2, Brain, AlertTriangle, TrendingUp, Shield, RefreshCw, Activity, WifiOff } from "lucide-react";
 import { toast } from "sonner";
+import { useOnlineStatus } from "@/hooks/use-online-status";
 
 interface AIPredictiveDashboardProps {
   categoryId: string;
@@ -36,8 +37,14 @@ export function AIPredictiveDashboard({ categoryId }: AIPredictiveDashboardProps
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [predictions, setPredictions] = useState<PredictionResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const { isOnline } = useOnlineStatus();
 
   const analyzePredictions = async () => {
+    if (!isOnline) {
+      toast.error("Connexion internet requise pour l'analyse IA");
+      return;
+    }
+    
     setIsAnalyzing(true);
     setError(null);
     
@@ -96,6 +103,17 @@ export function AIPredictiveDashboard({ categoryId }: AIPredictiveDashboardProps
 
   return (
     <div className="space-y-6">
+      {/* Offline indicator */}
+      {!isOnline && (
+        <Alert className="bg-warning/10 border-warning/30">
+          <WifiOff className="h-4 w-4 text-warning" />
+          <AlertTitle className="text-warning">Mode hors ligne</AlertTitle>
+          <AlertDescription>
+            L'analyse IA nécessite une connexion internet. Les prédictions seront disponibles une fois reconnecté.
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Header with analyze button */}
       <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
         <CardHeader>
@@ -113,13 +131,18 @@ export function AIPredictiveDashboard({ categoryId }: AIPredictiveDashboardProps
             </div>
             <Button 
               onClick={analyzePredictions} 
-              disabled={isAnalyzing}
+              disabled={isAnalyzing || !isOnline}
               className="gap-2"
             >
               {isAnalyzing ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
                   Analyse en cours...
+                </>
+              ) : !isOnline ? (
+                <>
+                  <WifiOff className="h-4 w-4" />
+                  Hors ligne
                 </>
               ) : (
                 <>
