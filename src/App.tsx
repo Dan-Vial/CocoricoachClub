@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { OfflineSyncProvider } from "@/contexts/OfflineSyncContext";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
+import PWAUpdatePrompt from "@/components/PWAUpdatePrompt";
 import OfflineIndicator from "@/components/OfflineIndicator";
 import Clubs from "./pages/Clubs";
 import ClubDetails from "./pages/ClubDetails";
@@ -38,6 +39,7 @@ const App = () => (
       <Sonner />
       <OfflineSyncProvider>
         <OfflineIndicator />
+        <PWAUpdatePrompt />
         <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <AuthProvider>
             <PWAInstallPrompt />
