@@ -12,6 +12,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Trash2, Crown } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -94,12 +101,35 @@ export function MembersSection({ clubId, canManage }: MembersSectionProps) {
     },
   });
 
+  const updateRole = useMutation({
+    mutationFn: async ({ memberId, newRole }: { memberId: string; newRole: string }) => {
+      const { error } = await (supabase as any)
+        .from("club_members")
+        .update({ role: newRole })
+        .eq("id", memberId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["club-members", clubId] });
+      toast.success("Rôle modifié avec succès");
+    },
+    onError: () => {
+      toast.error("Erreur lors de la modification du rôle");
+    },
+  });
+
   if (isLoading) {
     return <Skeleton className="h-64 w-full" />;
   }
 
   const getRoleBadge = (role: string) => {
-    return <Badge variant="outline">Viewer</Badge>;
+    const variants: Record<string, { label: string; variant: "default" | "secondary" | "outline" }> = {
+      admin: { label: "Admin", variant: "default" },
+      coach: { label: "Coach", variant: "secondary" },
+      viewer: { label: "Viewer", variant: "outline" },
+    };
+    const config = variants[role] || variants.viewer;
+    return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
   return (
@@ -142,7 +172,37 @@ export function MembersSection({ clubId, canManage }: MembersSectionProps) {
                     {member.profile?.full_name || "Utilisateur"}
                   </TableCell>
                   <TableCell>{member.profile?.email}</TableCell>
-                  <TableCell>{getRoleBadge(member.role)}</TableCell>
+                  <TableCell>
+                    {canManage ? (
+                      <Select
+                        value={member.role}
+                        onValueChange={(value) => updateRole.mutate({ memberId: member.id, newRole: value })}
+                      >
+                        <SelectTrigger className="w-32">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="viewer">
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline" className="text-xs">Viewer</Badge>
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="coach">
+                            <div className="flex items-center gap-2">
+                              <Badge variant="secondary" className="text-xs">Coach</Badge>
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="admin">
+                            <div className="flex items-center gap-2">
+                              <Badge variant="default" className="text-xs">Admin</Badge>
+                            </div>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      getRoleBadge(member.role)
+                    )}
+                  </TableCell>
                   <TableCell>
                     {format(new Date(member.created_at), "dd MMM yyyy", { locale: fr })}
                   </TableCell>
