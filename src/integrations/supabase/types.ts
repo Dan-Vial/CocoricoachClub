@@ -81,6 +81,63 @@ export type Database = {
           },
         ]
       }
+      body_composition: {
+        Row: {
+          bmi: number | null
+          body_fat_percentage: number | null
+          category_id: string
+          created_at: string
+          height_cm: number | null
+          id: string
+          measurement_date: string
+          muscle_mass_kg: number | null
+          notes: string | null
+          player_id: string
+          weight_kg: number | null
+        }
+        Insert: {
+          bmi?: number | null
+          body_fat_percentage?: number | null
+          category_id: string
+          created_at?: string
+          height_cm?: number | null
+          id?: string
+          measurement_date?: string
+          muscle_mass_kg?: number | null
+          notes?: string | null
+          player_id: string
+          weight_kg?: number | null
+        }
+        Update: {
+          bmi?: number | null
+          body_fat_percentage?: number | null
+          category_id?: string
+          created_at?: string
+          height_cm?: number | null
+          id?: string
+          measurement_date?: string
+          muscle_mass_kg?: number | null
+          notes?: string | null
+          player_id?: string
+          weight_kg?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "body_composition_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "body_composition_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       categories: {
         Row: {
           club_id: string
@@ -894,6 +951,66 @@ export type Database = {
           },
         ]
       }
+      player_availability_scores: {
+        Row: {
+          availability_status: string
+          awcr_score: number | null
+          category_id: string
+          created_at: string
+          fatigue_score: number | null
+          id: string
+          injury_score: number | null
+          notes: string | null
+          overall_score: number | null
+          player_id: string
+          score_date: string
+          wellness_score: number | null
+        }
+        Insert: {
+          availability_status?: string
+          awcr_score?: number | null
+          category_id: string
+          created_at?: string
+          fatigue_score?: number | null
+          id?: string
+          injury_score?: number | null
+          notes?: string | null
+          overall_score?: number | null
+          player_id: string
+          score_date?: string
+          wellness_score?: number | null
+        }
+        Update: {
+          availability_status?: string
+          awcr_score?: number | null
+          category_id?: string
+          created_at?: string
+          fatigue_score?: number | null
+          id?: string
+          injury_score?: number | null
+          notes?: string | null
+          overall_score?: number | null
+          player_id?: string
+          score_date?: string
+          wellness_score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_availability_scores_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_availability_scores_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       player_contacts: {
         Row: {
           address: string | null
@@ -1280,6 +1397,7 @@ export type Database = {
           created_at: string
           id: string
           name: string
+          position: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -1288,6 +1406,7 @@ export type Database = {
           created_at?: string
           id?: string
           name: string
+          position?: string | null
         }
         Update: {
           avatar_url?: string | null
@@ -1296,10 +1415,82 @@ export type Database = {
           created_at?: string
           id?: string
           name?: string
+          position?: string | null
         }
         Relationships: [
           {
             foreignKeyName: "players_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      position_benchmarks: {
+        Row: {
+          bench_ratio_elite: number | null
+          bench_ratio_good: number | null
+          body_fat_max: number | null
+          category_id: string
+          cmj_cm_elite: number | null
+          cmj_cm_good: number | null
+          created_at: string
+          id: string
+          muscle_mass_min_ratio: number | null
+          notes: string | null
+          position: string
+          sprint_40m_elite: number | null
+          sprint_40m_good: number | null
+          squat_ratio_elite: number | null
+          squat_ratio_good: number | null
+          updated_at: string
+          yo_yo_level_elite: string | null
+          yo_yo_level_good: string | null
+        }
+        Insert: {
+          bench_ratio_elite?: number | null
+          bench_ratio_good?: number | null
+          body_fat_max?: number | null
+          category_id: string
+          cmj_cm_elite?: number | null
+          cmj_cm_good?: number | null
+          created_at?: string
+          id?: string
+          muscle_mass_min_ratio?: number | null
+          notes?: string | null
+          position: string
+          sprint_40m_elite?: number | null
+          sprint_40m_good?: number | null
+          squat_ratio_elite?: number | null
+          squat_ratio_good?: number | null
+          updated_at?: string
+          yo_yo_level_elite?: string | null
+          yo_yo_level_good?: string | null
+        }
+        Update: {
+          bench_ratio_elite?: number | null
+          bench_ratio_good?: number | null
+          body_fat_max?: number | null
+          category_id?: string
+          cmj_cm_elite?: number | null
+          cmj_cm_good?: number | null
+          created_at?: string
+          id?: string
+          muscle_mass_min_ratio?: number | null
+          notes?: string | null
+          position?: string
+          sprint_40m_elite?: number | null
+          sprint_40m_good?: number | null
+          squat_ratio_elite?: number | null
+          squat_ratio_good?: number | null
+          updated_at?: string
+          yo_yo_level_elite?: string | null
+          yo_yo_level_good?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "position_benchmarks_category_id_fkey"
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categories"
@@ -1327,6 +1518,63 @@ export type Database = {
           id?: string
         }
         Relationships: []
+      }
+      rugby_specific_tests: {
+        Row: {
+          agility_time_seconds: number | null
+          bronco_time_seconds: number | null
+          category_id: string
+          created_at: string
+          id: string
+          notes: string | null
+          player_id: string
+          test_date: string
+          test_type: string
+          yo_yo_distance_m: number | null
+          yo_yo_level: string | null
+        }
+        Insert: {
+          agility_time_seconds?: number | null
+          bronco_time_seconds?: number | null
+          category_id: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          player_id: string
+          test_date?: string
+          test_type: string
+          yo_yo_distance_m?: number | null
+          yo_yo_level?: string | null
+        }
+        Update: {
+          agility_time_seconds?: number | null
+          bronco_time_seconds?: number | null
+          category_id?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          player_id?: string
+          test_date?: string
+          test_type?: string
+          yo_yo_distance_m?: number | null
+          yo_yo_level?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rugby_specific_tests_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rugby_specific_tests_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       season_goals: {
         Row: {

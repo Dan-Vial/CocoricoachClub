@@ -27,6 +27,7 @@ import { PlanningTab } from "@/components/category/PlanningTab";
 import { NutritionTab } from "@/components/category/NutritionTab";
 import { ReportsTab } from "@/components/category/ReportsTab";
 import { CategoryCollaborationTab } from "@/components/category/CategoryCollaborationTab";
+import { PhysicalPreparationTab } from "@/components/category/PhysicalPreparationTab";
 
 
 export default function CategoryDetails() {
