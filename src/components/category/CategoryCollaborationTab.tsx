@@ -17,6 +17,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { InviteCategoryMemberDialog } from "./InviteCategoryMemberDialog";
 
 interface CategoryCollaborationTabProps {
@@ -137,6 +144,23 @@ export function CategoryCollaborationTab({ categoryId }: CategoryCollaborationTa
     },
   });
 
+  const updateRoleMutation = useMutation({
+    mutationFn: async ({ memberId, newRole }: { memberId: string; newRole: "admin" | "coach" | "viewer" }) => {
+      const { error } = await supabase
+        .from("category_members")
+        .update({ role: newRole })
+        .eq("id", memberId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["category-members", categoryId] });
+      toast.success("Rôle modifié avec succès");
+    },
+    onError: () => {
+      toast.error("Erreur lors de la modification du rôle");
+    },
+  });
+
   const copyInvitationLink = async (token: string) => {
     const link = `${window.location.origin}/accept-invitation?token=${token}&type=category`;
     await navigator.clipboard.writeText(link);
@@ -208,7 +232,31 @@ export function CategoryCollaborationTab({ categoryId }: CategoryCollaborationTa
                         <p className="text-sm text-muted-foreground">{member.profile?.email}</p>
                       </div>
                     </TableCell>
-                    <TableCell>{getRoleBadge(member.role)}</TableCell>
+                    <TableCell>
+                      {canManage ? (
+                        <Select
+                          value={member.role}
+                          onValueChange={(value: "admin" | "coach" | "viewer") => updateRoleMutation.mutate({ memberId: member.id, newRole: value })}
+                        >
+                          <SelectTrigger className="w-32">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="viewer">
+                              <Badge variant="outline" className="text-xs">Viewer</Badge>
+                            </SelectItem>
+                            <SelectItem value="coach">
+                              <Badge variant="secondary" className="text-xs">Coach</Badge>
+                            </SelectItem>
+                            <SelectItem value="admin">
+                              <Badge variant="default" className="text-xs">Admin</Badge>
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        getRoleBadge(member.role)
+                      )}
+                    </TableCell>
                     <TableCell className="text-muted-foreground">
                       {format(new Date(member.created_at), "dd MMM yyyy", { locale: fr })}
                     </TableCell>
