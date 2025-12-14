@@ -129,6 +129,7 @@ export default function CategoryDetails() {
               <TabsTrigger className="whitespace-nowrap" value="wellness">Wellness</TabsTrigger>
               <TabsTrigger className="whitespace-nowrap" value="nutrition">Nutrition</TabsTrigger>
               <TabsTrigger className="whitespace-nowrap" value="planning">Planification</TabsTrigger>
+              <TabsTrigger className="whitespace-nowrap" value="physical-prep">Prépa Physique</TabsTrigger>
               <TabsTrigger className="whitespace-nowrap" value="medical">Médical</TabsTrigger>
               <TabsTrigger className="whitespace-nowrap" value="reports">Rapports</TabsTrigger>
               {isRugby7 && (
@@ -191,6 +192,10 @@ export default function CategoryDetails() {
 
           <TabsContent value="planning" className="space-y-4">
             <PlanningTab categoryId={categoryId!} />
+          </TabsContent>
+
+          <TabsContent value="physical-prep" className="space-y-4">
+            <PhysicalPreparationTab categoryId={categoryId!} />
           </TabsContent>
 
           <TabsContent value="medical" className="space-y-4">
