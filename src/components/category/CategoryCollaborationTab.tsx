@@ -74,7 +74,7 @@ export function CategoryCollaborationTab({ categoryId }: CategoryCollaborationTa
     },
   });
 
-  const { data: invitations, isLoading: invitationsLoading } = useQuery({
+  const { data: categoryInvitations, isLoading: categoryInvitationsLoading } = useQuery({
     queryKey: ["category-invitations", categoryId],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -87,6 +87,25 @@ export function CategoryCollaborationTab({ categoryId }: CategoryCollaborationTa
       return data;
     },
   });
+
+  // Fetch club-level invitations that would give access to this category
+  const { data: clubInvitations, isLoading: clubInvitationsLoading } = useQuery({
+    queryKey: ["club-invitations-for-category", categoryId],
+    queryFn: async () => {
+      if (!category) return [];
+      const { data, error } = await supabase
+        .from("club_invitations")
+        .select("*")
+        .eq("club_id", (category as any).club_id)
+        .eq("status", "pending")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!category,
+  });
+
+  const invitationsLoading = categoryInvitationsLoading || clubInvitationsLoading;
 
   const { data: canManage } = useQuery({
     queryKey: ["can-manage-category", categoryId],
@@ -283,15 +302,15 @@ export function CategoryCollaborationTab({ categoryId }: CategoryCollaborationTa
         </CardContent>
       </Card>
 
-      {/* Invitations Section */}
+      {/* Category Invitations Section */}
       <Card className="bg-gradient-card shadow-md">
         <CardHeader>
-          <CardTitle className="text-lg">Invitations en attente</CardTitle>
+          <CardTitle className="text-lg">Invitations catégorie en attente</CardTitle>
         </CardHeader>
         <CardContent>
-          {invitationsLoading ? (
+          {categoryInvitationsLoading ? (
             <Skeleton className="h-24 w-full" />
-          ) : invitations && invitations.length > 0 ? (
+          ) : categoryInvitations && categoryInvitations.length > 0 ? (
             <Table>
               <TableHeader>
                 <TableRow>
@@ -302,7 +321,7 @@ export function CategoryCollaborationTab({ categoryId }: CategoryCollaborationTa
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {invitations.map((invitation: any) => (
+                {categoryInvitations.map((invitation: any) => (
                   <TableRow key={invitation.id}>
                     <TableCell>{invitation.email}</TableCell>
                     <TableCell>{getRoleBadge(invitation.role)}</TableCell>
@@ -339,7 +358,53 @@ export function CategoryCollaborationTab({ categoryId }: CategoryCollaborationTa
             </Table>
           ) : (
             <p className="text-center text-muted-foreground py-6">
-              Aucune invitation en attente
+              Aucune invitation catégorie en attente
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Club Invitations Section */}
+      <Card className="bg-gradient-card shadow-md">
+        <CardHeader>
+          <CardTitle className="text-lg">Invitations club en attente</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground mb-4">
+            Ces invitations au niveau du club donneront accès à <strong>toutes les catégories</strong> du club.
+          </p>
+          {clubInvitationsLoading ? (
+            <Skeleton className="h-24 w-full" />
+          ) : clubInvitations && clubInvitations.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Rôle</TableHead>
+                  <TableHead>Expire le</TableHead>
+                  <TableHead>Type</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {clubInvitations.map((invitation: any) => (
+                  <TableRow key={invitation.id}>
+                    <TableCell>{invitation.email}</TableCell>
+                    <TableCell>{getRoleBadge(invitation.role)}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {format(new Date(invitation.expires_at), "dd MMM yyyy", { locale: fr })}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                        Club
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <p className="text-center text-muted-foreground py-6">
+              Aucune invitation club en attente
             </p>
           )}
         </CardContent>
