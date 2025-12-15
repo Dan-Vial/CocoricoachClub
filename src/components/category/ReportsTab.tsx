@@ -370,6 +370,14 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
     setGeneratingReport("squad");
     
     try {
+      // First get matches for this category
+      const { data: categoryMatches } = await supabase
+        .from("matches")
+        .select("id")
+        .eq("category_id", categoryId);
+      
+      const matchIds = categoryMatches?.map(m => m.id) || [];
+
       // Fetch all squad data
       const [
         injuriesRes,
@@ -386,7 +394,9 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
         supabase.from("awcr_tracking").select("*").eq("category_id", categoryId).order("session_date", { ascending: false }),
         supabase.from("speed_tests").select("*, players(name)").eq("category_id", categoryId),
         supabase.from("jump_tests").select("*, players(name)").eq("category_id", categoryId),
-        supabase.from("match_lineups").select("*, players(name), matches(match_date, opponent)").eq("matches.category_id", categoryId),
+        matchIds.length > 0 
+          ? supabase.from("match_lineups").select("*, players(name), matches(match_date, opponent)").in("match_id", matchIds)
+          : Promise.resolve({ data: [] }),
         supabase.from("player_measurements").select("*, players(name)").eq("category_id", categoryId).order("measurement_date", { ascending: false }),
         supabase.from("body_composition").select("*, players(name)").eq("category_id", categoryId).order("measurement_date", { ascending: false }),
       ]);
