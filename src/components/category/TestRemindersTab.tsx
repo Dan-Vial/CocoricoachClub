@@ -150,16 +150,26 @@ export function TestRemindersTab({ categoryId }: TestRemindersTabProps) {
   });
 
   const getTestTypeLabel = (type: string) => {
-    switch (type) {
-      case "VMA":
-        return "Test VMA (1600m)";
-      case "Force":
-        return "Tests de Force";
-      case "Sprint":
-        return "Sprint 40m";
-      default:
-        return type;
-    }
+    const labels: Record<string, string> = {
+      // Vitesse & Endurance
+      VMA: "Test VMA (1600m)",
+      Sprint: "Sprint 40m",
+      // Force
+      Force: "Tests de Force",
+      // Détente
+      vertical_jump: "Saut Vertical (CMJ)",
+      horizontal_jump: "Saut Horizontal",
+      // Mobilité
+      fms: "FMS (Functional Movement Screen)",
+      hip: "Mobilité Hanche",
+      shoulder: "Mobilité Épaule",
+      ankle: "Mobilité Cheville",
+      // Tests Rugby
+      yo_yo: "Yo-Yo Test",
+      bronco: "Bronco Test",
+      agility: "Test d'Agilité",
+    };
+    return labels[type] || type;
   };
 
   return (
@@ -198,9 +208,21 @@ export function TestRemindersTab({ categoryId }: TestRemindersTabProps) {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="VMA">Test VMA (1600m)</SelectItem>
-                    <SelectItem value="Force">Tests de Force</SelectItem>
+                    <SelectItem value="VMA" className="font-medium">Test VMA (1600m)</SelectItem>
                     <SelectItem value="Sprint">Sprint 40m</SelectItem>
+                    <SelectItem value="Force" className="font-medium">Tests de Force</SelectItem>
+                    <div className="px-2 py-1.5 text-xs text-muted-foreground font-semibold">— Détente —</div>
+                    <SelectItem value="vertical_jump">Saut Vertical (CMJ)</SelectItem>
+                    <SelectItem value="horizontal_jump">Saut Horizontal</SelectItem>
+                    <div className="px-2 py-1.5 text-xs text-muted-foreground font-semibold">— Mobilité —</div>
+                    <SelectItem value="fms">FMS (Functional Movement Screen)</SelectItem>
+                    <SelectItem value="hip">Mobilité Hanche</SelectItem>
+                    <SelectItem value="shoulder">Mobilité Épaule</SelectItem>
+                    <SelectItem value="ankle">Mobilité Cheville</SelectItem>
+                    <div className="px-2 py-1.5 text-xs text-muted-foreground font-semibold">— Tests Rugby —</div>
+                    <SelectItem value="yo_yo">Yo-Yo Test</SelectItem>
+                    <SelectItem value="bronco">Bronco Test</SelectItem>
+                    <SelectItem value="agility">Test d'Agilité</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
