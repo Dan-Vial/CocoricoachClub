@@ -71,14 +71,17 @@ export default function Clubs() {
     queryKey: ["is-super-admin", user?.id],
     queryFn: async () => {
       if (!user?.id) return false;
-      const { data, error } = await supabase
-        .from("super_admin_users")
-        .select("id")
-        .eq("user_id", user.id)
-        .maybeSingle();
-      
-      if (error) return false;
-      return !!data;
+
+      const { data, error } = await supabase.rpc("is_super_admin", {
+        _user_id: user.id,
+      });
+
+      if (error) {
+        console.error("Error checking super admin status:", error);
+        return false;
+      }
+
+      return data === true;
     },
     enabled: !!user?.id,
   });
@@ -88,15 +91,17 @@ export default function Clubs() {
     queryKey: ["is-approved", user?.id],
     queryFn: async () => {
       if (!user?.id) return false;
-      const { data, error } = await supabase
-        .from("approved_users")
-        .select("id")
-        .eq("user_id", user.id)
-        .maybeSingle();
-      
-      if (error) return false;
-      // Super admins are always approved
-      return !!data || isSuperAdmin;
+
+      const { data, error } = await supabase.rpc("is_approved_user", {
+        _user_id: user.id,
+      });
+
+      if (error) {
+        console.error("Error checking approved status:", error);
+        return false;
+      }
+
+      return data === true;
     },
     enabled: !!user?.id,
   });
