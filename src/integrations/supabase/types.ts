@@ -171,6 +171,13 @@ export type Database = {
             foreignKeyName: "categories_club_id_fkey"
             columns: ["club_id"]
             isOneToOne: false
+            referencedRelation: "admin_all_clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "categories_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
             referencedRelation: "clubs"
             referencedColumns: ["id"]
           },
@@ -294,6 +301,13 @@ export type Database = {
             foreignKeyName: "club_invitations_club_id_fkey"
             columns: ["club_id"]
             isOneToOne: false
+            referencedRelation: "admin_all_clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "club_invitations_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
             referencedRelation: "clubs"
             referencedColumns: ["id"]
           },
@@ -325,6 +339,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "club_members_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "admin_all_clubs"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "club_members_club_id_fkey"
             columns: ["club_id"]
@@ -1856,6 +1877,27 @@ export type Database = {
           },
         ]
       }
+      super_admin_users: {
+        Row: {
+          created_at: string
+          granted_by: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          granted_by?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          granted_by?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       test_reminders: {
         Row: {
           category_id: string
@@ -2316,6 +2358,46 @@ export type Database = {
       }
     }
     Views: {
+      admin_all_clubs: {
+        Row: {
+          category_count: number | null
+          created_at: string | null
+          id: string | null
+          member_count: number | null
+          name: string | null
+          owner_email: string | null
+          owner_name: string | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
+      admin_all_users: {
+        Row: {
+          clubs_owned: number | null
+          created_at: string | null
+          email: string | null
+          full_name: string | null
+          id: string | null
+          is_super_admin: boolean | null
+        }
+        Insert: {
+          clubs_owned?: never
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string | null
+          is_super_admin?: never
+        }
+        Update: {
+          clubs_owned?: never
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string | null
+          is_super_admin?: never
+        }
+        Relationships: []
+      }
       safe_club_invitations: {
         Row: {
           club_id: string | null
@@ -2355,6 +2437,13 @@ export type Database = {
             foreignKeyName: "club_invitations_club_id_fkey"
             columns: ["club_id"]
             isOneToOne: false
+            referencedRelation: "admin_all_clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "club_invitations_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
             referencedRelation: "clubs"
             referencedColumns: ["id"]
           },
@@ -2389,6 +2478,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_super_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "coach" | "viewer"
