@@ -2437,7 +2437,7 @@ export type Database = {
         Insert: {
           club_id?: string | null
           created_at?: string | null
-          email?: string | null
+          email?: never
           expires_at?: string | null
           id?: string | null
           invited_by?: string | null
@@ -2448,7 +2448,7 @@ export type Database = {
         Update: {
           club_id?: string | null
           created_at?: string | null
-          email?: string | null
+          email?: never
           expires_at?: string | null
           id?: string | null
           invited_by?: string | null
@@ -2472,6 +2472,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      safe_profiles: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          full_name: string | null
+          id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email?: never
+          full_name?: string | null
+          id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: never
+          full_name?: string | null
+          id?: string | null
+        }
+        Relationships: []
       }
     }
     Functions: {
