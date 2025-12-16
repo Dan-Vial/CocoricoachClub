@@ -2,10 +2,16 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { AlertTriangle, CheckCircle, AlertCircle, TrendingUp } from "lucide-react";
-import { format, subDays } from "date-fns";
-import { fr } from "date-fns/locale";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertTriangle, CheckCircle, AlertCircle, TrendingUp, TrendingDown, Minus, Activity } from "lucide-react";
+import { subDays } from "date-fns";
+import { 
+  calculateWeightedWellnessScore, 
+  detectWellnessTrend, 
+  generateWellnessAlert,
+  getWellnessRiskLevel,
+  type WellnessEntry 
+} from "@/lib/wellnessCalculations";
 
 interface InjuryRiskAssessmentProps {
   categoryId: string;
@@ -22,6 +28,8 @@ interface PlayerRisk {
   painLocation: string | null;
   combinedRisk: "low" | "medium" | "high" | "critical";
   riskFactors: string[];
+  trend: "improving" | "stable" | "declining" | "rapid_decline" | null;
+  smartAlert: { type: "info" | "warning" | "critical"; message: string; recommendations: string[] } | null;
 }
 
 export function InjuryRiskAssessment({ categoryId }: InjuryRiskAssessmentProps) {
@@ -57,7 +65,7 @@ export function InjuryRiskAssessment({ categoryId }: InjuryRiskAssessmentProps) 
     },
   });
 
-  // Fetch latest wellness data for each player
+  // Fetch wellness data for each player (last 7 days for trend analysis)
   const { data: wellnessData } = useQuery({
     queryKey: ["wellness_latest", categoryId],
     queryFn: async () => {
@@ -65,7 +73,7 @@ export function InjuryRiskAssessment({ categoryId }: InjuryRiskAssessmentProps) 
         .from("wellness_tracking")
         .select("*")
         .eq("category_id", categoryId)
-        .gte("tracking_date", subDays(today, 3).toISOString().split("T")[0])
+        .gte("tracking_date", subDays(today, 7).toISOString().split("T")[0])
         .order("tracking_date", { ascending: false });
       if (error) throw error;
       return data;
@@ -87,31 +95,40 @@ export function InjuryRiskAssessment({ categoryId }: InjuryRiskAssessmentProps) 
         else if (awcrValue < 0.9 || awcrValue > 1.3) awcrRisk = "medium";
       }
 
-      // Get latest wellness for player
-      const playerWellness = wellnessData?.find((w) => w.player_id === player.id);
+      // Get all wellness entries for this player (for trend analysis)
+      const playerWellnessEntries = wellnessData?.filter((w) => w.player_id === player.id) || [];
+      const latestWellness = playerWellnessEntries[0];
+      
       let wellnessScore: number | null = null;
       let wellnessRisk: "low" | "medium" | "high" = "low";
       let hasSpecificPain = false;
       let painLocation: string | null = null;
+      let trend: "improving" | "stable" | "declining" | "rapid_decline" | null = null;
+      let smartAlert: { type: "info" | "warning" | "critical"; message: string; recommendations: string[] } | null = null;
 
-      if (playerWellness) {
-        wellnessScore = (
-          playerWellness.sleep_quality +
-          playerWellness.sleep_duration +
-          playerWellness.general_fatigue +
-          playerWellness.stress_level +
-          playerWellness.soreness_upper_body +
-          playerWellness.soreness_lower_body
-        ) / 6;
+      if (latestWellness) {
+        // Calculate WEIGHTED wellness score
+        wellnessScore = calculateWeightedWellnessScore(latestWellness as WellnessEntry);
+        
+        hasSpecificPain = latestWellness.has_specific_pain;
+        painLocation = latestWellness.pain_location;
+        
+        // Get risk level using weighted score
+        wellnessRisk = getWellnessRiskLevel(wellnessScore, hasSpecificPain) === "critical" 
+          ? "high" 
+          : getWellnessRiskLevel(wellnessScore, hasSpecificPain) as "low" | "medium" | "high";
 
-        if (wellnessScore >= 4) wellnessRisk = "high";
-        else if (wellnessScore >= 3) wellnessRisk = "medium";
+        // Detect trend if we have multiple entries
+        if (playerWellnessEntries.length >= 2) {
+          const trendResult = detectWellnessTrend(playerWellnessEntries as WellnessEntry[]);
+          trend = trendResult.trend;
+        }
 
-        hasSpecificPain = playerWellness.has_specific_pain;
-        painLocation = playerWellness.pain_location;
+        // Generate smart alert
+        smartAlert = generateWellnessAlert(wellnessScore, hasSpecificPain, trend || "stable", awcrValue);
       }
 
-      // Calculate combined risk
+      // Calculate combined risk with trend consideration
       const riskFactors: string[] = [];
       let combinedRisk: "low" | "medium" | "high" | "critical" = "low";
 
@@ -120,15 +137,21 @@ export function InjuryRiskAssessment({ categoryId }: InjuryRiskAssessmentProps) 
       if (wellnessRisk === "high") riskFactors.push("Wellness préoccupant");
       if (wellnessRisk === "medium") riskFactors.push("Wellness à surveiller");
       if (hasSpecificPain) riskFactors.push(`Douleur: ${painLocation || "signalée"}`);
+      if (trend === "rapid_decline") riskFactors.push("⚠️ Détérioration rapide");
+      if (trend === "declining") riskFactors.push("Tendance en baisse");
 
-      // Combined risk logic
-      if (hasSpecificPain && (awcrRisk === "high" || wellnessRisk === "high")) {
+      // Combined risk logic with trend consideration
+      if (hasSpecificPain && (awcrRisk === "high" || wellnessRisk === "high" || trend === "rapid_decline")) {
         combinedRisk = "critical";
       } else if (awcrRisk === "high" && wellnessRisk === "high") {
         combinedRisk = "critical";
+      } else if (trend === "rapid_decline" && (awcrRisk !== "low" || wellnessRisk !== "low")) {
+        combinedRisk = "critical";
       } else if (awcrRisk === "high" || wellnessRisk === "high" || hasSpecificPain) {
         combinedRisk = "high";
-      } else if (awcrRisk === "medium" || wellnessRisk === "medium") {
+      } else if (trend === "rapid_decline") {
+        combinedRisk = "high";
+      } else if (awcrRisk === "medium" || wellnessRisk === "medium" || trend === "declining") {
         combinedRisk = "medium";
       }
 
@@ -143,6 +166,8 @@ export function InjuryRiskAssessment({ categoryId }: InjuryRiskAssessmentProps) 
         painLocation,
         combinedRisk,
         riskFactors,
+        trend,
+        smartAlert,
       };
     });
   };
@@ -151,6 +176,14 @@ export function InjuryRiskAssessment({ categoryId }: InjuryRiskAssessmentProps) 
   const criticalPlayers = playerRisks.filter((p) => p.combinedRisk === "critical");
   const highRiskPlayers = playerRisks.filter((p) => p.combinedRisk === "high");
   const mediumRiskPlayers = playerRisks.filter((p) => p.combinedRisk === "medium");
+
+  // Get all smart alerts
+  const allAlerts = playerRisks
+    .filter((p) => p.smartAlert)
+    .sort((a, b) => {
+      const priority = { critical: 0, warning: 1, info: 2 };
+      return priority[a.smartAlert!.type] - priority[b.smartAlert!.type];
+    });
 
   const getRiskBadge = (risk: string) => {
     switch (risk) {
@@ -178,18 +211,78 @@ export function InjuryRiskAssessment({ categoryId }: InjuryRiskAssessmentProps) 
     }
   };
 
+  const getTrendIcon = (trend: string | null) => {
+    switch (trend) {
+      case "rapid_decline":
+        return <TrendingDown className="h-4 w-4 text-red-500" />;
+      case "declining":
+        return <TrendingDown className="h-4 w-4 text-orange-500" />;
+      case "improving":
+        return <TrendingUp className="h-4 w-4 text-green-500" />;
+      default:
+        return <Minus className="h-4 w-4 text-muted-foreground" />;
+    }
+  };
+
+  const getTrendLabel = (trend: string | null) => {
+    switch (trend) {
+      case "rapid_decline": return "Chute rapide";
+      case "declining": return "En baisse";
+      case "improving": return "En hausse";
+      default: return "Stable";
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <AlertTriangle className="h-5 w-5" />
+          <Activity className="h-5 w-5" />
           Évaluation du Risque de Blessure
         </CardTitle>
         <CardDescription>
-          Analyse combinée AWCR + Wellness pour prévenir les blessures
+          Analyse combinée AWCR + Wellness pondéré avec détection de tendances
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* Smart Alerts Section */}
+        {allAlerts.length > 0 && (
+          <div className="space-y-3">
+            <h4 className="font-semibold flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4" />
+              Alertes Intelligentes
+            </h4>
+            {allAlerts.slice(0, 3).map((player, idx) => (
+              <Alert 
+                key={idx} 
+                variant={player.smartAlert!.type === "critical" ? "destructive" : "default"}
+                className={player.smartAlert!.type === "warning" ? "border-yellow-500 bg-yellow-500/10" : ""}
+              >
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle className="flex items-center gap-2">
+                  {player.playerName}
+                  {player.trend && (
+                    <span className="flex items-center gap-1 text-xs font-normal">
+                      {getTrendIcon(player.trend)}
+                      {getTrendLabel(player.trend)}
+                    </span>
+                  )}
+                </AlertTitle>
+                <AlertDescription className="space-y-2">
+                  <p>{player.smartAlert!.message}</p>
+                  {player.smartAlert!.recommendations.length > 0 && (
+                    <ul className="list-disc list-inside text-xs">
+                      {player.smartAlert!.recommendations.map((rec, i) => (
+                        <li key={i}>{rec}</li>
+                      ))}
+                    </ul>
+                  )}
+                </AlertDescription>
+              </Alert>
+            ))}
+          </div>
+        )}
+
         {/* Summary Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="p-4 bg-red-100 dark:bg-red-900/20 rounded-lg text-center">
@@ -229,6 +322,12 @@ export function InjuryRiskAssessment({ categoryId }: InjuryRiskAssessmentProps) 
                     <div className="flex items-center gap-3">
                       {getRiskIcon(player.combinedRisk)}
                       <span className="font-medium">{player.playerName}</span>
+                      {player.trend && (
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          {getTrendIcon(player.trend)}
+                          <span>{getTrendLabel(player.trend)}</span>
+                        </div>
+                      )}
                     </div>
                     {getRiskBadge(player.combinedRisk)}
                   </div>
@@ -241,9 +340,9 @@ export function InjuryRiskAssessment({ categoryId }: InjuryRiskAssessmentProps) 
                       </span>
                     </div>
                     <div>
-                      <span className="text-muted-foreground">Wellness: </span>
+                      <span className="text-muted-foreground">Wellness (pondéré): </span>
                       <span className={player.wellnessRisk === "high" ? "text-destructive font-medium" : ""}>
-                        {player.wellnessScore?.toFixed(1) ?? "N/A"}/5
+                        {player.wellnessScore?.toFixed(2) ?? "N/A"}/5
                       </span>
                     </div>
                   </div>
@@ -275,13 +374,14 @@ export function InjuryRiskAssessment({ categoryId }: InjuryRiskAssessmentProps) 
                 <div className="flex items-center gap-3">
                   {getRiskIcon(player.combinedRisk)}
                   <span>{player.playerName}</span>
+                  {player.trend && getTrendIcon(player.trend)}
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="text-sm text-muted-foreground">
                     AWCR: {player.awcr?.toFixed(2) ?? "-"}
                   </div>
                   <div className="text-sm text-muted-foreground">
-                    W: {player.wellnessScore?.toFixed(1) ?? "-"}
+                    W: {player.wellnessScore?.toFixed(2) ?? "-"}
                   </div>
                   {getRiskBadge(player.combinedRisk)}
                 </div>
@@ -294,10 +394,11 @@ export function InjuryRiskAssessment({ categoryId }: InjuryRiskAssessmentProps) 
         <div className="p-4 bg-muted rounded-lg text-sm">
           <h5 className="font-medium mb-2">Comment est calculé le risque ?</h5>
           <ul className="space-y-1 text-muted-foreground">
+            <li>• <strong>Score Wellness pondéré:</strong> Fatigue (22%) et douleurs bas du corps (22%) pèsent plus</li>
             <li>• <strong>AWCR optimal:</strong> 0.8 - 1.3 (zone de sécurité)</li>
-            <li>• <strong>Wellness optimal:</strong> score moyen &lt; 3 (bon état)</li>
-            <li>• <strong>Risque critique:</strong> Douleur signalée + AWCR ou Wellness élevé</li>
-            <li>• <strong>Risque élevé:</strong> AWCR &gt;1.5 ou &lt;0.8, ou Wellness &gt;4</li>
+            <li>• <strong>Détection de tendance:</strong> Analyse sur 7 jours pour détecter les détériorations</li>
+            <li>• <strong>Risque critique:</strong> Douleur + (AWCR ou Wellness élevé) ou détérioration rapide</li>
+            <li>• <strong>Alertes intelligentes:</strong> Recommandations personnalisées selon le contexte</li>
           </ul>
         </div>
       </CardContent>
