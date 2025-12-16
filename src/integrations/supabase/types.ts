@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      approved_users: {
+        Row: {
+          approved_at: string
+          approved_by: string | null
+          id: string
+          notes: string | null
+          user_id: string
+        }
+        Insert: {
+          approved_at?: string
+          approved_by?: string | null
+          id?: string
+          notes?: string | null
+          user_id: string
+        }
+        Update: {
+          approved_at?: string
+          approved_by?: string | null
+          id?: string
+          notes?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       awcr_tracking: {
         Row: {
           acute_load: number | null
@@ -2478,6 +2502,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_approved_user: { Args: { _user_id: string }; Returns: boolean }
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {

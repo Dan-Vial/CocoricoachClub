@@ -83,6 +83,24 @@ export default function Clubs() {
     enabled: !!user?.id,
   });
 
+  // Check if user is approved to create clubs
+  const { data: isApproved } = useQuery({
+    queryKey: ["is-approved", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return false;
+      const { data, error } = await supabase
+        .from("approved_users")
+        .select("id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      
+      if (error) return false;
+      // Super admins are always approved
+      return !!data || isSuperAdmin;
+    },
+    enabled: !!user?.id,
+  });
+
   const deleteClub = useMutation({
     mutationFn: async (clubId: string) => {
       const { error } = await supabase.from("clubs").delete().eq("id", clubId);
@@ -153,22 +171,50 @@ export default function Clubs() {
         <DashboardWidgets />
         <InjuryReturnAlerts />
         
+        {/* Pending approval message */}
+        {!isApproved && !isSuperAdmin && (
+          <Card className="bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800 mb-8">
+            <CardContent className="py-6">
+              <div className="flex items-center gap-3">
+                <Shield className="h-6 w-6 text-amber-600" />
+                <div>
+                  <h3 className="font-semibold text-amber-800 dark:text-amber-200">
+                    Compte en attente de validation
+                  </h3>
+                  <p className="text-sm text-amber-700 dark:text-amber-300">
+                    Votre compte doit être validé par un administrateur avant de pouvoir créer des clubs.
+                    Vous serez notifié une fois votre accès approuvé.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         <div className="flex justify-between items-center mb-8 mt-8">
           <h2 className="text-2xl font-bold text-foreground">Mes Clubs</h2>
-          <Button onClick={() => setIsAddDialogOpen(true)} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Ajouter un club
-          </Button>
+          {(isApproved || isSuperAdmin) && (
+            <Button onClick={() => setIsAddDialogOpen(true)} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Ajouter un club
+            </Button>
+          )}
         </div>
 
         {clubs && clubs.length === 0 ? (
           <Card className="bg-gradient-card shadow-md">
             <CardContent className="py-12 text-center">
-              <p className="text-muted-foreground mb-4">Aucun club créé pour le moment</p>
-              <Button onClick={() => setIsAddDialogOpen(true)} variant="outline" className="gap-2">
-                <Plus className="h-4 w-4" />
-                Créer votre premier club
-              </Button>
+              <p className="text-muted-foreground mb-4">
+                {isApproved || isSuperAdmin 
+                  ? "Aucun club créé pour le moment" 
+                  : "Vous pourrez créer des clubs une fois votre compte validé"}
+              </p>
+              {(isApproved || isSuperAdmin) && (
+                <Button onClick={() => setIsAddDialogOpen(true)} variant="outline" className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  Créer votre premier club
+                </Button>
+              )}
             </CardContent>
           </Card>
         ) : (
