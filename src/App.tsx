@@ -38,11 +38,11 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <OfflineSyncProvider>
-        <OfflineIndicator />
-        <PWAUpdatePrompt />
-        <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-          <AuthProvider>
+      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+        <AuthProvider>
+          <OfflineSyncProvider>
+            <OfflineIndicator />
+            <PWAUpdatePrompt />
             <PWAInstallPrompt />
             <Routes>
               <Route path="/auth" element={<Auth />} />
@@ -56,9 +56,9 @@ const App = () => (
               <Route path="/players/:playerId" element={<PlayerDetails />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
-          </AuthProvider>
-        </BrowserRouter>
-      </OfflineSyncProvider>
+          </OfflineSyncProvider>
+        </AuthProvider>
+      </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
 );
