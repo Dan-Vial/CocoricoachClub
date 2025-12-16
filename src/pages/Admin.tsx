@@ -46,17 +46,17 @@ export default function Admin() {
     queryKey: ["is-super-admin", user?.id],
     queryFn: async () => {
       if (!user?.id) return false;
-      const { data, error } = await supabase
-        .from("super_admin_users")
-        .select("id")
-        .eq("user_id", user.id)
-        .maybeSingle();
-      
+
+      const { data, error } = await supabase.rpc("is_super_admin", {
+        _user_id: user.id,
+      });
+
       if (error) {
         console.error("Error checking super admin status:", error);
         return false;
       }
-      return !!data;
+
+      return data === true;
     },
     enabled: !!user?.id,
   });
