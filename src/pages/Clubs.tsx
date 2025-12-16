@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Trash2, LogOut } from "lucide-react";
+import { Plus, Trash2, LogOut, Shield } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { AddClubDialog } from "@/components/clubs/AddClubDialog";
@@ -66,6 +66,23 @@ export default function Clubs() {
     enabled: !!user,
   });
 
+  // Check if user is super admin
+  const { data: isSuperAdmin } = useQuery({
+    queryKey: ["is-super-admin", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return false;
+      const { data, error } = await supabase
+        .from("super_admin_users")
+        .select("id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      
+      if (error) return false;
+      return !!data;
+    },
+    enabled: !!user?.id,
+  });
+
   const deleteClub = useMutation({
     mutationFn: async (clubId: string) => {
       const { error } = await supabase.from("clubs").delete().eq("id", clubId);
@@ -108,6 +125,17 @@ export default function Clubs() {
             <div className="flex items-center gap-2">
               <GlobalPlayerSearch />
               <NotificationBell />
+              {isSuperAdmin && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => navigate("/admin")}
+                  className="text-primary-foreground hover:bg-primary-foreground/10"
+                  title="Administration"
+                >
+                  <Shield className="h-5 w-5" />
+                </Button>
+              )}
               <Button
                 variant="ghost"
                 size="icon"
