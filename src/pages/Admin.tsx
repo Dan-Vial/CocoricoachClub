@@ -215,7 +215,7 @@ export default function Admin() {
   useEffect(() => {
     if (!checkingAdmin && isSuperAdmin === false && user) {
       toast.error("Accès non autorisé");
-      navigate("/clubs");
+      navigate("/");
     }
   }, [checkingAdmin, isSuperAdmin, user, navigate]);
 
@@ -236,7 +236,7 @@ export default function Admin() {
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/clubs")}>
+          <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div className="flex items-center gap-3">
