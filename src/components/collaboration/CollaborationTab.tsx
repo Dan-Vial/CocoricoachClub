@@ -30,7 +30,7 @@ export function CollaborationTab({ clubId }: CollaborationTabProps) {
   });
 
   const { data: userRole } = useQuery({
-    queryKey: ["user-club-role", clubId],
+    queryKey: ["user-club-role", clubId, club?.user_id],
     queryFn: async () => {
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) return null;
