@@ -28,8 +28,7 @@ import { NutritionTab } from "@/components/category/NutritionTab";
 import { ReportsTab } from "@/components/category/ReportsTab";
 import { CategoryCollaborationTab } from "@/components/category/CategoryCollaborationTab";
 import { PhysicalPreparationTab } from "@/components/category/PhysicalPreparationTab";
-
-
+import { NationalTeamTab } from "@/components/category/national-team/NationalTeamTab";
 export default function CategoryDetails() {
   const { categoryId } = useParams();
   const navigate = useNavigate();
@@ -49,7 +48,7 @@ export default function CategoryDetails() {
 
   const isRugby7 = category?.rugby_type === "7";
   const isAcademy = category?.rugby_type === "academie";
-
+  const isNationalTeam = category?.rugby_type === "national_team";
   return (
     <div className="min-h-screen bg-background">
       <div 
@@ -138,6 +137,9 @@ export default function CategoryDetails() {
               {isAcademy && (
                 <TabsTrigger className="whitespace-nowrap" value="academy">Académie</TabsTrigger>
               )}
+              {isNationalTeam && (
+                <TabsTrigger className="whitespace-nowrap" value="national-team">Équipe Nationale</TabsTrigger>
+              )}
               <TabsTrigger className="whitespace-nowrap" value="collaboration">Collaboration</TabsTrigger>
             </TabsList>
           </div>
@@ -215,6 +217,12 @@ export default function CategoryDetails() {
           {isAcademy && (
             <TabsContent value="academy" className="space-y-4">
               <AcademyTab categoryId={categoryId!} />
+            </TabsContent>
+          )}
+
+          {isNationalTeam && (
+            <TabsContent value="national-team" className="space-y-4">
+              <NationalTeamTab categoryId={categoryId!} />
             </TabsContent>
           )}
 

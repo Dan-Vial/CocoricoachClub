@@ -54,6 +54,7 @@ export function EditableRugbyType({ categoryId, currentType }: EditableRugbyType
 
   const getTypeLabel = (type: string) => {
     if (type === "academie") return "Académie";
+    if (type === "national_team") return "Équipe Nationale";
     return `Rugby à ${type}`;
   };
 
@@ -84,6 +85,7 @@ export function EditableRugbyType({ categoryId, currentType }: EditableRugbyType
               {currentType === "XV" && " Passer au rugby à 7 activera l'onglet Tournois."}
               {currentType === "7" && " Passer au rugby à XV désactivera l'onglet Tournois."}
               {currentType === "academie" && " Type Académie avec suivi scolaire et plans de développement."}
+              {currentType === "national_team" && " Type Équipe Nationale avec calendrier international et suivi des sélections."}
             </DialogDescription>
           </DialogHeader>
 
@@ -105,6 +107,12 @@ export function EditableRugbyType({ categoryId, currentType }: EditableRugbyType
                 <RadioGroupItem value="academie" id="type-academie" />
                 <Label htmlFor="type-academie" className="cursor-pointer">
                   Académie / Pôle Espoir
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="national_team" id="type-national" />
+                <Label htmlFor="type-national" className="cursor-pointer">
+                  Équipe Nationale
                 </Label>
               </div>
             </RadioGroup>

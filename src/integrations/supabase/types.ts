@@ -858,6 +858,110 @@ export type Database = {
           },
         ]
       }
+      national_team_event_types: {
+        Row: {
+          category_id: string
+          color: string | null
+          created_at: string
+          id: string
+          is_default: boolean | null
+          name: string
+        }
+        Insert: {
+          category_id: string
+          color?: string | null
+          created_at?: string
+          id?: string
+          is_default?: boolean | null
+          name: string
+        }
+        Update: {
+          category_id?: string
+          color?: string | null
+          created_at?: string
+          id?: string
+          is_default?: boolean | null
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "national_team_event_types_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      national_team_events: {
+        Row: {
+          category_id: string
+          created_at: string
+          end_date: string | null
+          event_type: string
+          event_type_id: string | null
+          id: string
+          is_home: boolean | null
+          location: string | null
+          name: string
+          notes: string | null
+          opponent: string | null
+          score_away: number | null
+          score_home: number | null
+          start_date: string
+          updated_at: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          end_date?: string | null
+          event_type: string
+          event_type_id?: string | null
+          id?: string
+          is_home?: boolean | null
+          location?: string | null
+          name: string
+          notes?: string | null
+          opponent?: string | null
+          score_away?: number | null
+          score_home?: number | null
+          start_date: string
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          end_date?: string | null
+          event_type?: string
+          event_type_id?: string | null
+          id?: string
+          is_home?: boolean | null
+          location?: string | null
+          name?: string
+          notes?: string | null
+          opponent?: string | null
+          score_away?: number | null
+          score_home?: number | null
+          start_date?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "national_team_events_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "national_team_events_event_type_id_fkey"
+            columns: ["event_type_id"]
+            isOneToOne: false
+            referencedRelation: "national_team_event_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           category_id: string
@@ -1079,6 +1183,79 @@ export type Database = {
           },
           {
             foreignKeyName: "player_availability_scores_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      player_caps: {
+        Row: {
+          cap_date: string
+          cap_number: number | null
+          category_id: string
+          competition: string | null
+          created_at: string
+          event_id: string | null
+          id: string
+          minutes_played: number | null
+          notes: string | null
+          opponent: string | null
+          player_id: string
+          points: number | null
+          tries: number | null
+          was_starter: boolean | null
+        }
+        Insert: {
+          cap_date: string
+          cap_number?: number | null
+          category_id: string
+          competition?: string | null
+          created_at?: string
+          event_id?: string | null
+          id?: string
+          minutes_played?: number | null
+          notes?: string | null
+          opponent?: string | null
+          player_id: string
+          points?: number | null
+          tries?: number | null
+          was_starter?: boolean | null
+        }
+        Update: {
+          cap_date?: string
+          cap_number?: number | null
+          category_id?: string
+          competition?: string | null
+          created_at?: string
+          event_id?: string | null
+          id?: string
+          minutes_played?: number | null
+          notes?: string | null
+          opponent?: string | null
+          player_id?: string
+          points?: number | null
+          tries?: number | null
+          was_starter?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_caps_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_caps_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "national_team_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_caps_player_id_fkey"
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
@@ -1469,6 +1646,7 @@ export type Database = {
           avatar_url: string | null
           birth_year: number | null
           category_id: string
+          club_origin: string | null
           created_at: string
           id: string
           name: string
@@ -1478,6 +1656,7 @@ export type Database = {
           avatar_url?: string | null
           birth_year?: number | null
           category_id: string
+          club_origin?: string | null
           created_at?: string
           id?: string
           name: string
@@ -1487,6 +1666,7 @@ export type Database = {
           avatar_url?: string | null
           birth_year?: number | null
           category_id?: string
+          club_origin?: string | null
           created_at?: string
           id?: string
           name?: string

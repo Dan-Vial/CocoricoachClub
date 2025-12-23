@@ -285,7 +285,7 @@ export default function Clubs() {
                       Club: {item.categories.clubs?.name}
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Rugby {item.categories.rugby_type === "7" ? "à 7" : item.categories.rugby_type === "academie" ? "Académie" : "à XV"}
+                      {item.categories.rugby_type === "7" ? "Rugby à 7" : item.categories.rugby_type === "academie" ? "Académie" : item.categories.rugby_type === "national_team" ? "Équipe Nationale" : "Rugby à XV"}
                     </p>
                   </CardContent>
                 </Card>

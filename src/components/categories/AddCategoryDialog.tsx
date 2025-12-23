@@ -27,13 +27,13 @@ export function AddCategoryDialog({
   clubId,
 }: AddCategoryDialogProps) {
   const [categoryName, setCategoryName] = useState("");
-  const [rugbyType, setRugbyType] = useState<"XV" | "7" | "academie">("XV");
+  const [rugbyType, setRugbyType] = useState<"XV" | "7" | "academie" | "national_team">("XV");
   const [gender, setGender] = useState<"masculine" | "feminine">("masculine");
   const [validationError, setValidationError] = useState("");
   const queryClient = useQueryClient();
 
   const addCategory = useMutation({
-    mutationFn: async (data: { name: string; rugby_type: "XV" | "7" | "academie"; gender: "masculine" | "feminine" }) => {
+    mutationFn: async (data: { name: string; rugby_type: "XV" | "7" | "academie" | "national_team"; gender: "masculine" | "feminine" }) => {
       console.log("Adding category with data:", { name: data.name, club_id: clubId, rugby_type: data.rugby_type, gender: data.gender });
       const { error, data: result } = await supabase
         .from("categories")
@@ -110,7 +110,7 @@ export function AddCategoryDialog({
             </div>
             <div className="space-y-2">
               <Label>Type de rugby</Label>
-              <RadioGroup value={rugbyType} onValueChange={(value: "XV" | "7" | "academie") => setRugbyType(value)}>
+              <RadioGroup value={rugbyType} onValueChange={(value: "XV" | "7" | "academie" | "national_team") => setRugbyType(value)}>
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="XV" id="rugby-xv" />
                   <Label htmlFor="rugby-xv" className="cursor-pointer font-normal">Rugby à XV</Label>
@@ -122,6 +122,10 @@ export function AddCategoryDialog({
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="academie" id="rugby-academie" />
                   <Label htmlFor="rugby-academie" className="cursor-pointer font-normal">Académie / Pôle Espoir</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="national_team" id="rugby-national" />
+                  <Label htmlFor="rugby-national" className="cursor-pointer font-normal">Équipe Nationale</Label>
                 </div>
               </RadioGroup>
             </div>
