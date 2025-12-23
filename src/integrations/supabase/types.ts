@@ -2587,6 +2587,10 @@ export type Database = {
         Args: { _club_id: string; _user_id: string }
         Returns: boolean
       }
+      has_medical_or_coaching_access: {
+        Args: { _club_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_approved_user: { Args: { _user_id: string }; Returns: boolean }
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
     }
