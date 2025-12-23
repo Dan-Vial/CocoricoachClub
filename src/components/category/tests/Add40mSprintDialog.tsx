@@ -156,6 +156,16 @@ export function Add40mSprintDialog({
               </TabsContent>
             </Tabs>
           </div>
+          {/* Show what's missing */}
+          {(!playerId || !date || !timeSeconds) && (
+            <p className="text-sm text-amber-600 dark:text-amber-400">
+              Champs manquants: {[
+                !playerId && "Joueur",
+                !date && "Date", 
+                !timeSeconds && "Temps"
+              ].filter(Boolean).join(", ")}
+            </p>
+          )}
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Annuler
