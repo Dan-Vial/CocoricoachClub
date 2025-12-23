@@ -1745,6 +1745,66 @@ export type Database = {
           },
         ]
       }
+      smart_alerts: {
+        Row: {
+          alert_type: string
+          category_id: string
+          created_at: string
+          data: Json | null
+          expires_at: string | null
+          id: string
+          is_dismissed: boolean
+          is_read: boolean
+          message: string
+          player_id: string
+          severity: string
+          title: string
+        }
+        Insert: {
+          alert_type: string
+          category_id: string
+          created_at?: string
+          data?: Json | null
+          expires_at?: string | null
+          id?: string
+          is_dismissed?: boolean
+          is_read?: boolean
+          message: string
+          player_id: string
+          severity: string
+          title: string
+        }
+        Update: {
+          alert_type?: string
+          category_id?: string
+          created_at?: string
+          data?: Json | null
+          expires_at?: string | null
+          id?: string
+          is_dismissed?: boolean
+          is_read?: boolean
+          message?: string
+          player_id?: string
+          severity?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "smart_alerts_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "smart_alerts_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       speed_tests: {
         Row: {
           category_id: string
@@ -2527,7 +2587,13 @@ export type Database = {
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
-      app_role: "admin" | "coach" | "viewer"
+      app_role:
+        | "admin"
+        | "coach"
+        | "viewer"
+        | "physio"
+        | "doctor"
+        | "mental_coach"
       injury_severity: "légère" | "modérée" | "grave"
       injury_status: "active" | "recovering" | "healed"
       period_type: "préparation" | "compétition" | "récupération" | "trêve"
@@ -2666,7 +2732,14 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "coach", "viewer"],
+      app_role: [
+        "admin",
+        "coach",
+        "viewer",
+        "physio",
+        "doctor",
+        "mental_coach",
+      ],
       injury_severity: ["légère", "modérée", "grave"],
       injury_status: ["active", "recovering", "healed"],
       period_type: ["préparation", "compétition", "récupération", "trêve"],

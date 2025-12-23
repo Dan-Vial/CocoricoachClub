@@ -13,7 +13,7 @@ import { toast } from "sonner";
 
 const invitationSchema = z.object({
   email: z.string().email("Email invalide"),
-  role: z.enum(["admin", "coach", "viewer"]),
+  role: z.enum(["admin", "coach", "viewer", "physio", "doctor", "mental_coach"]),
 });
 
 type InvitationForm = z.infer<typeof invitationSchema>;
@@ -97,7 +97,6 @@ export function InviteCategoryMemberDialog({ open, onOpenChange, categoryId }: I
             <Select
               onValueChange={(value) => form.setValue("role", value as any)}
               defaultValue="viewer"
-              disabled
             >
               <SelectTrigger>
                 <SelectValue />
@@ -109,11 +108,32 @@ export function InviteCategoryMemberDialog({ open, onOpenChange, categoryId }: I
                     <div className="text-xs text-muted-foreground">Consultation uniquement</div>
                   </div>
                 </SelectItem>
+                <SelectItem value="coach">
+                  <div>
+                    <div className="font-medium">Coach</div>
+                    <div className="text-xs text-muted-foreground">Peut consulter et modifier les données</div>
+                  </div>
+                </SelectItem>
+                <SelectItem value="physio">
+                  <div>
+                    <div className="font-medium">Kinésithérapeute</div>
+                    <div className="text-xs text-muted-foreground">Accès blessures et récupération</div>
+                  </div>
+                </SelectItem>
+                <SelectItem value="doctor">
+                  <div>
+                    <div className="font-medium">Médecin</div>
+                    <div className="text-xs text-muted-foreground">Accès médical complet</div>
+                  </div>
+                </SelectItem>
+                <SelectItem value="mental_coach">
+                  <div>
+                    <div className="font-medium">Préparateur Mental</div>
+                    <div className="text-xs text-muted-foreground">Accès wellness et suivi psychologique</div>
+                  </div>
+                </SelectItem>
               </SelectContent>
             </Select>
-            <p className="text-xs text-muted-foreground mt-1">
-              Accès en lecture seule à cette catégorie uniquement
-            </p>
           </div>
 
           <div className="bg-muted/50 p-3 rounded-lg text-sm">

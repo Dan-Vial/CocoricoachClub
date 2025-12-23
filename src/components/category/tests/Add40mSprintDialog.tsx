@@ -18,7 +18,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import { Stopwatch } from "./Stopwatch";
 
 interface Add40mSprintDialogProps {
   open: boolean;
@@ -36,6 +38,7 @@ export function Add40mSprintDialog({
   const [playerId, setPlayerId] = useState("");
   const [date, setDate] = useState("");
   const [timeSeconds, setTimeSeconds] = useState("");
+  const [inputMode, setInputMode] = useState<"manual" | "stopwatch">("manual");
   const queryClient = useQueryClient();
 
   const addTest = useMutation({
@@ -79,9 +82,15 @@ export function Add40mSprintDialog({
     }
   };
 
+  const handleStopwatchRecord = (seconds: number) => {
+    setTimeSeconds(seconds.toFixed(2));
+    setInputMode("manual");
+    toast.success(`Temps enregistré: ${seconds.toFixed(2)}s`);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>Test 40m Sprint</DialogTitle>
         </DialogHeader>
@@ -114,24 +123,38 @@ export function Add40mSprintDialog({
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="time">Temps (secondes) *</Label>
-              <Input
-                id="time"
-                type="number"
-                step="0.01"
-                value={timeSeconds}
-                onChange={(e) => setTimeSeconds(e.target.value)}
-                placeholder="Ex: 5.25"
-                required
-              />
-              {timeSeconds && (
-                <p className="text-sm text-muted-foreground">
-                  Vitesse: {(40 / parseFloat(timeSeconds)).toFixed(2)} m/s |{" "}
-                  {((40 / parseFloat(timeSeconds)) * 3.6).toFixed(2)} km/h
-                </p>
-              )}
-            </div>
+            <Tabs value={inputMode} onValueChange={(v) => setInputMode(v as "manual" | "stopwatch")}>
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="manual">Saisie manuelle</TabsTrigger>
+                <TabsTrigger value="stopwatch">Chronomètre</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="manual" className="space-y-2">
+                <Label htmlFor="time">Temps (secondes) *</Label>
+                <Input
+                  id="time"
+                  type="number"
+                  step="0.01"
+                  value={timeSeconds}
+                  onChange={(e) => setTimeSeconds(e.target.value)}
+                  placeholder="Ex: 5.25"
+                  required
+                />
+                {timeSeconds && (
+                  <p className="text-sm text-muted-foreground">
+                    Vitesse: {(40 / parseFloat(timeSeconds)).toFixed(2)} m/s |{" "}
+                    {((40 / parseFloat(timeSeconds)) * 3.6).toFixed(2)} km/h
+                  </p>
+                )}
+              </TabsContent>
+              
+              <TabsContent value="stopwatch">
+                <Stopwatch 
+                  onTimeRecorded={handleStopwatchRecord}
+                  title="Chronomètre 40m"
+                />
+              </TabsContent>
+            </Tabs>
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

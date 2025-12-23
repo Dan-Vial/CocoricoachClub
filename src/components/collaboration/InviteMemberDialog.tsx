@@ -13,7 +13,7 @@ import { toast } from "sonner";
 
 const invitationSchema = z.object({
   email: z.string().email("Email invalide"),
-  role: z.enum(["admin", "coach", "viewer"]),
+  role: z.enum(["admin", "coach", "viewer", "physio", "doctor", "mental_coach"]),
 });
 
 type InvitationForm = z.infer<typeof invitationSchema>;
@@ -112,6 +112,24 @@ export function InviteMemberDialog({ open, onOpenChange, clubId }: InviteMemberD
                   <div>
                     <div className="font-medium">Coach</div>
                     <div className="text-xs text-muted-foreground">Peut consulter et modifier les données</div>
+                  </div>
+                </SelectItem>
+                <SelectItem value="physio">
+                  <div>
+                    <div className="font-medium">Kinésithérapeute</div>
+                    <div className="text-xs text-muted-foreground">Accès blessures, wellness et récupération</div>
+                  </div>
+                </SelectItem>
+                <SelectItem value="doctor">
+                  <div>
+                    <div className="font-medium">Médecin</div>
+                    <div className="text-xs text-muted-foreground">Accès médical complet et protocoles</div>
+                  </div>
+                </SelectItem>
+                <SelectItem value="mental_coach">
+                  <div>
+                    <div className="font-medium">Préparateur Mental</div>
+                    <div className="text-xs text-muted-foreground">Accès wellness et suivi psychologique</div>
                   </div>
                 </SelectItem>
                 <SelectItem value="admin">
