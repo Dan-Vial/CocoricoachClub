@@ -3,6 +3,7 @@ import { PerformanceChart } from "@/components/dashboard/PerformanceChart";
 import { InjuryAlerts } from "@/components/dashboard/InjuryAlerts";
 import { PlayerComparison } from "@/components/dashboard/PlayerComparison";
 import { DailySessionView } from "./DailySessionView";
+import { SmartAlertsPanel } from "@/components/alerts/SmartAlertsPanel";
 import { Separator } from "@/components/ui/separator";
 
 interface OverviewTabProps {
@@ -16,6 +17,9 @@ export function OverviewTab({ categoryId }: OverviewTabProps) {
       <DailySessionView categoryId={categoryId} />
       
       <Separator />
+
+      {/* Smart Alerts Panel */}
+      <SmartAlertsPanel categoryId={categoryId} />
       
       <KPICards categoryIds={[categoryId]} />
       <PerformanceChart categoryIds={[categoryId]} />

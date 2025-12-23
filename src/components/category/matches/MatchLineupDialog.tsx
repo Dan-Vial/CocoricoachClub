@@ -12,8 +12,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Users, UserCheck } from "lucide-react";
+import { Users, UserCheck, LayoutGrid, List } from "lucide-react";
+import { RugbyFieldLineup } from "@/components/matches/RugbyFieldLineup";
 
 interface MatchLineupDialogProps {
   open: boolean;
@@ -38,14 +40,28 @@ export function MatchLineupDialog({
   categoryId,
 }: MatchLineupDialogProps) {
   const [lineupData, setLineupData] = useState<LineupPlayer[]>([]);
+  const [viewMode, setViewMode] = useState<"list" | "field">("field");
   const queryClient = useQueryClient();
+
+  const { data: category } = useQuery({
+    queryKey: ["category", categoryId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("categories")
+        .select("rugby_type")
+        .eq("id", categoryId)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+  });
 
   const { data: players } = useQuery({
     queryKey: ["players", categoryId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("players")
-        .select("id, name")
+        .select("id, name, position")
         .eq("category_id", categoryId)
         .order("name");
       if (error) throw error;
@@ -120,16 +136,49 @@ export function MatchLineupDialog({
     );
   };
 
+  const handleFieldLineupChange = (fieldLineup: Record<string, string>) => {
+    // Update lineup from field visualization
+    setLineupData(prev => prev.map(p => {
+      const positionNumber = Object.entries(fieldLineup).find(([_, playerId]) => playerId === p.playerId)?.[0];
+      if (positionNumber) {
+        return { ...p, isSelected: true, isStarter: true, position: positionNumber };
+      }
+      // Keep players that were selected but not on field as subs
+      return p;
+    }));
+  };
+
   const selectedCount = lineupData?.filter((p) => p.isSelected).length ?? 0;
   const starterCount = lineupData?.filter((p) => p.isSelected && p.isStarter).length ?? 0;
+  const rugbyType = category?.rugby_type === "7" ? "7s" : "xv";
+
+  // Convert lineup data to field format
+  const fieldLineup = lineupData
+    .filter(p => p.isSelected && p.isStarter && p.position)
+    .reduce((acc, p) => {
+      acc[p.position] = p.playerId;
+      return acc;
+    }, {} as Record<string, string>);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] max-h-[80vh]">
+      <DialogContent className="sm:max-w-[700px] max-h-[90vh]">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5" />
-            Composition de l'équipe
+          <DialogTitle className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Composition de l'équipe
+            </div>
+            <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as "list" | "field")}>
+              <TabsList className="h-8">
+                <TabsTrigger value="field" className="px-2 h-7">
+                  <LayoutGrid className="h-4 w-4" />
+                </TabsTrigger>
+                <TabsTrigger value="list" className="px-2 h-7">
+                  <List className="h-4 w-4" />
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
           </DialogTitle>
         </DialogHeader>
 
@@ -141,78 +190,87 @@ export function MatchLineupDialog({
           <span>{starterCount} titulaires</span>
         </div>
 
-        <ScrollArea className="h-[400px] pr-4">
-          <div className="space-y-3">
-            {lineupData && lineupData.length > 0 ? lineupData.map((player) => (
-              <div
-                key={player.playerId}
-                className={`p-3 rounded-lg border transition-colors ${
-                  player.isSelected
-                    ? "bg-primary/5 border-primary/20"
-                    : "bg-card"
-                }`}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-3">
-                    <Switch
-                      checked={player.isSelected}
-                      onCheckedChange={(checked) =>
-                        updatePlayer(player.playerId, {
-                          isSelected: checked,
-                          isStarter: checked ? player.isStarter : false,
-                        })
-                      }
-                    />
-                    <span className="font-medium">{player.playerName}</span>
-                  </div>
-                  {player.isSelected && (
-                    <div className="flex items-center gap-2">
-                      <Label className="text-xs">Titulaire</Label>
+        {viewMode === "field" ? (
+          <RugbyFieldLineup
+            players={players || []}
+            rugbyType={rugbyType}
+            initialLineup={fieldLineup}
+            onLineupChange={handleFieldLineupChange}
+          />
+        ) : (
+          <ScrollArea className="h-[400px] pr-4">
+            <div className="space-y-3">
+              {lineupData && lineupData.length > 0 ? lineupData.map((player) => (
+                <div
+                  key={player.playerId}
+                  className={`p-3 rounded-lg border transition-colors ${
+                    player.isSelected
+                      ? "bg-primary/5 border-primary/20"
+                      : "bg-card"
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-3">
                       <Switch
-                        checked={player.isStarter}
+                        checked={player.isSelected}
                         onCheckedChange={(checked) =>
-                          updatePlayer(player.playerId, { isStarter: checked })
+                          updatePlayer(player.playerId, {
+                            isSelected: checked,
+                            isStarter: checked ? player.isStarter : false,
+                          })
                         }
                       />
+                      <span className="font-medium">{player.playerName}</span>
+                    </div>
+                    {player.isSelected && (
+                      <div className="flex items-center gap-2">
+                        <Label className="text-xs">Titulaire</Label>
+                        <Switch
+                          checked={player.isStarter}
+                          onCheckedChange={(checked) =>
+                            updatePlayer(player.playerId, { isStarter: checked })
+                          }
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {player.isSelected && (
+                    <div className="grid grid-cols-2 gap-3 mt-2">
+                      <div>
+                        <Label className="text-xs">Position</Label>
+                        <Input
+                          value={player.position}
+                          onChange={(e) =>
+                            updatePlayer(player.playerId, { position: e.target.value })
+                          }
+                          placeholder="Ex: 1, 9, 15..."
+                          className="h-8 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Minutes jouées</Label>
+                        <Input
+                          type="number"
+                          value={player.minutesPlayed}
+                          onChange={(e) =>
+                            updatePlayer(player.playerId, {
+                              minutesPlayed: parseInt(e.target.value) || 0,
+                            })
+                          }
+                          min={0}
+                          className="h-8 text-sm"
+                        />
+                      </div>
                     </div>
                   )}
                 </div>
-
-                {player.isSelected && (
-                  <div className="grid grid-cols-2 gap-3 mt-2">
-                    <div>
-                      <Label className="text-xs">Position</Label>
-                      <Input
-                        value={player.position}
-                        onChange={(e) =>
-                          updatePlayer(player.playerId, { position: e.target.value })
-                        }
-                        placeholder="Ex: Pilier, Demi..."
-                        className="h-8 text-sm"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-xs">Minutes jouées</Label>
-                      <Input
-                        type="number"
-                        value={player.minutesPlayed}
-                        onChange={(e) =>
-                          updatePlayer(player.playerId, {
-                            minutesPlayed: parseInt(e.target.value) || 0,
-                          })
-                        }
-                        min={0}
-                        className="h-8 text-sm"
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-            )) : (
-              <p className="text-center text-muted-foreground py-4">Aucun joueur dans cette catégorie</p>
-            )}
-          </div>
-        </ScrollArea>
+              )) : (
+                <p className="text-center text-muted-foreground py-4">Aucun joueur dans cette catégorie</p>
+              )}
+            </div>
+          </ScrollArea>
+        )}
 
         <div className="flex justify-end gap-2 pt-4 border-t">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
