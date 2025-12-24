@@ -1933,6 +1933,64 @@ export type Database = {
           },
         ]
       }
+      player_transfers: {
+        Row: {
+          created_at: string
+          from_category_id: string
+          id: string
+          notes: string | null
+          player_id: string
+          reason: string | null
+          to_category_id: string
+          transfer_date: string
+          transferred_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          from_category_id: string
+          id?: string
+          notes?: string | null
+          player_id: string
+          reason?: string | null
+          to_category_id: string
+          transfer_date?: string
+          transferred_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          from_category_id?: string
+          id?: string
+          notes?: string | null
+          player_id?: string
+          reason?: string | null
+          to_category_id?: string
+          transfer_date?: string
+          transferred_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_transfers_from_category_id_fkey"
+            columns: ["from_category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_transfers_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_transfers_to_category_id_fkey"
+            columns: ["to_category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       players: {
         Row: {
           avatar_url: string | null

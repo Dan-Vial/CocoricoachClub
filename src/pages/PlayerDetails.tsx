@@ -1,10 +1,11 @@
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ArrowRightLeft } from "lucide-react";
 import { PlayerTestsTab } from "@/components/player/PlayerTestsTab";
 import { PlayerCalendarTab } from "@/components/player/PlayerCalendarTab";
 import { PlayerAwcrTab } from "@/components/player/PlayerAwcrTab";
@@ -17,10 +18,13 @@ import { PlayerNutritionTab } from "@/components/player/PlayerNutritionTab";
 import { PlayerAcademyTab } from "@/components/player/PlayerAcademyTab";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { GlobalPlayerSearch } from "@/components/search/GlobalPlayerSearch";
+import { TransferPlayerDialog } from "@/components/player/TransferPlayerDialog";
+import { PlayerTransferHistory } from "@/components/player/PlayerTransferHistory";
 
 export default function PlayerDetails() {
   const { playerId } = useParams<{ playerId: string }>();
   const navigate = useNavigate();
+  const [transferDialogOpen, setTransferDialogOpen] = useState(false);
 
   const { data: player, isLoading } = useQuery({
     queryKey: ["player", playerId],
@@ -70,11 +74,26 @@ export default function PlayerDetails() {
         </div>
 
         <Card className="mb-6 bg-gradient-card shadow-md">
-          <CardHeader>
-            <CardTitle className="text-3xl">{player.name}</CardTitle>
-            <p className="text-muted-foreground">{player.categories?.name}</p>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle className="text-3xl">{player.name}</CardTitle>
+              <p className="text-muted-foreground">{player.categories?.name}</p>
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => setTransferDialogOpen(true)}
+              className="gap-2"
+            >
+              <ArrowRightLeft className="h-4 w-4" />
+              Transférer
+            </Button>
           </CardHeader>
         </Card>
+
+        {/* Transfer History */}
+        <div className="mb-6">
+          <PlayerTransferHistory playerId={playerId!} />
+        </div>
 
         {/* Player Profile and Biometrics Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
@@ -135,6 +154,16 @@ export default function PlayerDetails() {
             <PlayerInjuriesTab playerId={playerId!} categoryId={player.category_id} />
           </TabsContent>
         </Tabs>
+
+        <TransferPlayerDialog
+          open={transferDialogOpen}
+          onOpenChange={setTransferDialogOpen}
+          playerId={playerId!}
+          playerName={player.name}
+          currentCategoryId={player.category_id}
+          currentCategoryName={player.categories?.name || ""}
+          clubId={player.categories?.club_id || ""}
+        />
       </div>
     </div>
   );
