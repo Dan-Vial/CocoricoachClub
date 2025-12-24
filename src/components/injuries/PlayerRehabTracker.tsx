@@ -31,11 +31,29 @@ import {
   Dumbbell,
   Clock,
   AlertTriangle,
-  RotateCcw
+  RotateCcw,
+  Shield,
+  Activity,
+  Zap,
+  Target,
+  Trophy
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useAuth } from "@/contexts/AuthContext";
+
+// Phase colors configuration
+const PHASE_COLORS = {
+  1: { bg: "bg-red-500/20", text: "text-red-700 dark:text-red-400", border: "border-red-500", icon: Shield, label: "Protection" },
+  2: { bg: "bg-orange-500/20", text: "text-orange-700 dark:text-orange-400", border: "border-orange-500", icon: Activity, label: "Mobilisation" },
+  3: { bg: "bg-yellow-500/20", text: "text-yellow-700 dark:text-yellow-400", border: "border-yellow-500", icon: Zap, label: "Renforcement" },
+  4: { bg: "bg-blue-500/20", text: "text-blue-700 dark:text-blue-400", border: "border-blue-500", icon: Target, label: "Retour terrain" },
+  5: { bg: "bg-green-500/20", text: "text-green-700 dark:text-green-400", border: "border-green-500", icon: Trophy, label: "Performance" },
+};
+
+const getPhaseColor = (phaseNumber: number) => {
+  return PHASE_COLORS[phaseNumber as keyof typeof PHASE_COLORS] || PHASE_COLORS[1];
+};
 
 interface PlayerRehabTrackerProps {
   playerId: string;
@@ -272,9 +290,15 @@ export function PlayerRehabTracker({
           </div>
 
           {currentPhase && (
-            <div className="p-4 bg-muted/50 rounded-lg">
+            <div className={`p-4 rounded-lg border-2 ${getPhaseColor(currentPhaseNumber).bg} ${getPhaseColor(currentPhaseNumber).border}`}>
               <div className="flex items-center gap-2 mb-2">
-                <Badge variant="outline">Phase actuelle</Badge>
+                {(() => {
+                  const PhaseIcon = getPhaseColor(currentPhaseNumber).icon;
+                  return <PhaseIcon className={`h-5 w-5 ${getPhaseColor(currentPhaseNumber).text}`} />;
+                })()}
+                <Badge className={`${getPhaseColor(currentPhaseNumber).bg} ${getPhaseColor(currentPhaseNumber).text} border-0`}>
+                  Phase {currentPhaseNumber} - {getPhaseColor(currentPhaseNumber).label}
+                </Badge>
                 <span className="font-semibold">{currentPhase.name}</span>
               </div>
               <p className="text-sm text-muted-foreground">{currentPhase.description}</p>
@@ -285,7 +309,7 @@ export function PlayerRehabTracker({
                   <ul className="text-sm space-y-1">
                     {(currentPhase.objectives as string[]).map((obj, i) => (
                       <li key={i} className="flex items-center gap-2">
-                        <ChevronRight className="h-3 w-3 text-primary" />
+                        <ChevronRight className={`h-3 w-3 ${getPhaseColor(currentPhaseNumber).text}`} />
                         {obj}
                       </li>
                     ))}
@@ -339,25 +363,42 @@ export function PlayerRehabTracker({
         </CardHeader>
         <CardContent>
           <Accordion type="single" collapsible defaultValue={`phase-${currentPhaseNumber}`}>
-            {phases?.map((phase) => (
-              <AccordionItem key={phase.id} value={`phase-${phase.phase_number}`}>
-                <AccordionTrigger className="hover:no-underline">
+            {phases?.map((phase) => {
+              const phaseColor = getPhaseColor(phase.phase_number);
+              const PhaseIcon = phaseColor.icon;
+              const isCompleted = phase.phase_number < currentPhaseNumber;
+              const isCurrent = phase.phase_number === currentPhaseNumber;
+              
+              return (
+              <AccordionItem key={phase.id} value={`phase-${phase.phase_number}`} className={isCurrent ? `border-2 ${phaseColor.border} rounded-lg` : ""}>
+                <AccordionTrigger className={`hover:no-underline ${isCurrent ? `${phaseColor.bg} rounded-t-lg px-4` : ""}`}>
                   <div className="flex items-center gap-3">
-                    <Badge 
-                      variant={phase.phase_number === currentPhaseNumber ? "default" : "outline"}
-                      className="w-8 h-8 rounded-full flex items-center justify-center p-0"
+                    <div 
+                      className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                        isCompleted ? "bg-green-500 text-white" : 
+                        isCurrent ? `${phaseColor.bg} ${phaseColor.text} border-2 ${phaseColor.border}` : 
+                        "bg-muted text-muted-foreground"
+                      }`}
                     >
-                      {phase.phase_number}
-                    </Badge>
+                      {isCompleted ? (
+                        <CheckCircle2 className="h-5 w-5" />
+                      ) : (
+                        <PhaseIcon className="h-5 w-5" />
+                      )}
+                    </div>
                     <div className="text-left">
-                      <p className="font-medium">{phase.name}</p>
+                      <div className="flex items-center gap-2">
+                        <p className={`font-medium ${isCurrent ? phaseColor.text : ""}`}>{phase.name}</p>
+                        {isCurrent && (
+                          <Badge className={`${phaseColor.bg} ${phaseColor.text} border-0 text-xs`}>
+                            En cours
+                          </Badge>
+                        )}
+                      </div>
                       <p className="text-xs text-muted-foreground">
                         {phase.duration_days_min}-{phase.duration_days_max} jours
                       </p>
                     </div>
-                    {phase.phase_number < currentPhaseNumber && (
-                      <CheckCircle2 className="h-4 w-4 text-green-500 ml-2" />
-                    )}
                   </div>
                 </AccordionTrigger>
                 <AccordionContent>
@@ -421,7 +462,8 @@ export function PlayerRehabTracker({
                   </div>
                 </AccordionContent>
               </AccordionItem>
-            ))}
+              );
+            })}
           </Accordion>
         </CardContent>
       </Card>

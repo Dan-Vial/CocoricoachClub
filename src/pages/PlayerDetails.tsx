@@ -151,7 +151,7 @@ export default function PlayerDetails() {
           </TabsContent>
 
           <TabsContent value="injuries">
-            <PlayerInjuriesTab playerId={playerId!} categoryId={player.category_id} />
+            <PlayerInjuriesTab playerId={playerId!} categoryId={player.category_id} playerName={player.name} />
           </TabsContent>
         </Tabs>
 

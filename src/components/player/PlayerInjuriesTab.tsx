@@ -11,18 +11,29 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, AlertCircle } from "lucide-react";
+import { Plus, AlertCircle, Dumbbell, ChevronDown, ChevronUp } from "lucide-react";
 import { AddInjuryDialog } from "@/components/injuries/AddInjuryDialog";
+import { AssignProtocolDialog } from "@/components/injuries/AssignProtocolDialog";
+import { PlayerRehabTracker } from "@/components/injuries/PlayerRehabTracker";
 import { toast } from "sonner";
 import { INJURY_STATUS, INJURY_STATUS_LABELS } from "@/lib/constants/injury";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 interface PlayerInjuriesTabProps {
   playerId: string;
   categoryId: string;
+  playerName?: string;
 }
 
-export function PlayerInjuriesTab({ playerId, categoryId }: PlayerInjuriesTabProps) {
+export function PlayerInjuriesTab({ playerId, categoryId, playerName = "Joueur" }: PlayerInjuriesTabProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [protocolDialogOpen, setProtocolDialogOpen] = useState(false);
+  const [selectedInjury, setSelectedInjury] = useState<any>(null);
+  const [expandedInjuries, setExpandedInjuries] = useState<string[]>([]);
   const queryClient = useQueryClient();
 
   const { data: injuries } = useQuery({
@@ -37,6 +48,23 @@ export function PlayerInjuriesTab({ playerId, categoryId }: PlayerInjuriesTabPro
       return data;
     },
   });
+
+  // Check which injuries have protocols assigned
+  const { data: rehabProtocols } = useQuery({
+    queryKey: ["player-rehab-protocols", playerId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("player_rehab_protocols")
+        .select("injury_id, status, current_phase")
+        .eq("player_id", playerId);
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const getRehabProtocol = (injuryId: string) => {
+    return rehabProtocols?.find(p => p.injury_id === injuryId);
+  };
 
   const updateInjuryStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
@@ -95,10 +123,25 @@ export function PlayerInjuriesTab({ playerId, categoryId }: PlayerInjuriesTabPro
     return INJURY_STATUS_LABELS[status as keyof typeof INJURY_STATUS_LABELS] || status;
   };
 
+  const toggleInjuryExpanded = (injuryId: string) => {
+    setExpandedInjuries(prev => 
+      prev.includes(injuryId) 
+        ? prev.filter(id => id !== injuryId)
+        : [...prev, injuryId]
+    );
+  };
+
+  const handleAssignProtocol = (injury: any) => {
+    setSelectedInjury(injury);
+    setProtocolDialogOpen(true);
+  };
+
   const activeInjury = injuries?.find((i) => i.status === INJURY_STATUS.ACTIVE);
+  const rehabInjuries = injuries?.filter((i) => i.status === INJURY_STATUS.REHABILITATION) || [];
 
   return (
     <div className="space-y-6">
+      {/* Active Injury Alert */}
       {activeInjury && (
         <Card className="bg-destructive/10 border-destructive/50">
           <CardHeader>
@@ -130,22 +173,98 @@ export function PlayerInjuriesTab({ playerId, categoryId }: PlayerInjuriesTabPro
               <div>
                 <p className="text-sm text-muted-foreground">Retour estimé</p>
                 <p className="font-medium">
-                  {new Date(activeInjury.estimated_return_date).toLocaleDateString(
-                    "fr-FR"
-                  )}
+                  {new Date(activeInjury.estimated_return_date).toLocaleDateString("fr-FR")}
                 </p>
               </div>
             )}
-            {activeInjury.protocol_notes && (
-              <div>
-                <p className="text-sm text-muted-foreground">Protocole</p>
-                <p className="text-sm whitespace-pre-wrap">{activeInjury.protocol_notes}</p>
+            
+            {/* Protocol Assignment */}
+            {!getRehabProtocol(activeInjury.id) ? (
+              <Button 
+                onClick={() => handleAssignProtocol(activeInjury)}
+                className="w-full"
+                variant="outline"
+              >
+                <Dumbbell className="h-4 w-4 mr-2" />
+                Assigner un protocole de réhabilitation
+              </Button>
+            ) : (
+              <div className="pt-2">
+                <PlayerRehabTracker
+                  playerId={playerId}
+                  injuryId={activeInjury.id}
+                  categoryId={categoryId}
+                  playerName={playerName}
+                  injuryType={activeInjury.injury_type}
+                />
               </div>
             )}
           </CardContent>
         </Card>
       )}
 
+      {/* Rehabilitation in Progress */}
+      {rehabInjuries.map((injury) => (
+        <Collapsible
+          key={injury.id}
+          open={expandedInjuries.includes(injury.id)}
+          onOpenChange={() => toggleInjuryExpanded(injury.id)}
+        >
+          <Card className="bg-primary/5 border-primary/30">
+            <CollapsibleTrigger asChild>
+              <CardHeader className="cursor-pointer hover:bg-primary/10 transition-colors">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Dumbbell className="h-5 w-5 text-primary" />
+                    <div>
+                      <CardTitle className="text-lg">{injury.injury_type}</CardTitle>
+                      <p className="text-sm text-muted-foreground">
+                        En réhabilitation depuis le {new Date(injury.injury_date).toLocaleDateString("fr-FR")}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {getRehabProtocol(injury.id) && (
+                      <Badge variant="secondary">
+                        Phase {getRehabProtocol(injury.id)?.current_phase}
+                      </Badge>
+                    )}
+                    {expandedInjuries.includes(injury.id) ? (
+                      <ChevronUp className="h-5 w-5 text-muted-foreground" />
+                    ) : (
+                      <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                    )}
+                  </div>
+                </div>
+              </CardHeader>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent>
+                {!getRehabProtocol(injury.id) ? (
+                  <Button 
+                    onClick={() => handleAssignProtocol(injury)}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    <Dumbbell className="h-4 w-4 mr-2" />
+                    Assigner un protocole de réhabilitation
+                  </Button>
+                ) : (
+                  <PlayerRehabTracker
+                    playerId={playerId}
+                    injuryId={injury.id}
+                    categoryId={categoryId}
+                    playerName={playerName}
+                    injuryType={injury.injury_type}
+                  />
+                )}
+              </CardContent>
+            </CollapsibleContent>
+          </Card>
+        </Collapsible>
+      ))}
+
+      {/* Injury History */}
       <Card className="bg-gradient-card shadow-md">
         <CardHeader>
           <div className="flex justify-between items-center">
@@ -183,12 +302,18 @@ export function PlayerInjuriesTab({ playerId, categoryId }: PlayerInjuriesTabPro
                       <Badge className={getStatusColor(injury.status)}>
                         {getStatusLabel(injury.status)}
                       </Badge>
+                      {getRehabProtocol(injury.id) && (
+                        <Badge variant="outline" className="gap-1">
+                          <Dumbbell className="h-3 w-3" />
+                          Protocole
+                        </Badge>
+                      )}
                     </div>
                   </div>
+                  <div className="flex items-center gap-2">
                     <Select
                       value={injury.status}
                       onValueChange={(value) => {
-                        console.log("Select change:", { id: injury.id, value });
                         updateInjuryStatus.mutate({ id: injury.id, status: value });
                       }}
                       disabled={updateInjuryStatus.isPending}
@@ -202,6 +327,17 @@ export function PlayerInjuriesTab({ playerId, categoryId }: PlayerInjuriesTabPro
                         <SelectItem value={INJURY_STATUS.HEALED}>{INJURY_STATUS_LABELS[INJURY_STATUS.HEALED]}</SelectItem>
                       </SelectContent>
                     </Select>
+                    {!getRehabProtocol(injury.id) && injury.status !== INJURY_STATUS.HEALED && (
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => handleAssignProtocol(injury)}
+                      >
+                        <Dumbbell className="h-4 w-4 mr-1" />
+                        Protocole
+                      </Button>
+                    )}
+                  </div>
                   {injury.description && (
                     <p className="text-sm text-muted-foreground">{injury.description}</p>
                   )}
@@ -209,9 +345,7 @@ export function PlayerInjuriesTab({ playerId, categoryId }: PlayerInjuriesTabPro
                     <div className="text-sm">
                       <span className="text-muted-foreground">Retour estimé: </span>
                       <span className="font-medium">
-                        {new Date(injury.estimated_return_date).toLocaleDateString(
-                          "fr-FR"
-                        )}
+                        {new Date(injury.estimated_return_date).toLocaleDateString("fr-FR")}
                       </span>
                     </div>
                   )}
@@ -240,6 +374,17 @@ export function PlayerInjuriesTab({ playerId, categoryId }: PlayerInjuriesTabPro
         categoryId={categoryId}
         playerId={playerId}
       />
+
+      {selectedInjury && (
+        <AssignProtocolDialog
+          open={protocolDialogOpen}
+          onOpenChange={setProtocolDialogOpen}
+          playerId={playerId}
+          injuryId={selectedInjury.id}
+          categoryId={categoryId}
+          injuryType={selectedInjury.injury_type}
+        />
+      )}
     </div>
   );
 }
