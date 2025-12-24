@@ -12,6 +12,7 @@ import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { GlobalPlayerSearch } from "@/components/search/GlobalPlayerSearch";
 import { InjuryReturnAlerts } from "@/components/injuries/InjuryReturnAlerts";
 import { DashboardWidgets } from "@/components/dashboard/DashboardWidgets";
+import { ExerciseLibrarySection } from "@/components/library/ExerciseLibrarySection";
 
 export default function Clubs() {
   const navigate = useNavigate();
@@ -290,9 +291,14 @@ export default function Clubs() {
                   </CardContent>
                 </Card>
               ))}
-            </div>
-          </>
+          </div>
+        </>
         )}
+
+        {/* Exercise Library Section */}
+        <div className="mt-12">
+          <ExerciseLibrarySection />
+        </div>
       </div>
 
       <AddClubDialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen} />

@@ -445,6 +445,39 @@ export type Database = {
         }
         Relationships: []
       }
+      exercise_library: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+          youtube_url: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+          user_id: string
+          youtube_url?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+          youtube_url?: string | null
+        }
+        Relationships: []
+      }
       gathering_wellness_assessments: {
         Row: {
           appetite_level: number | null
