@@ -95,6 +95,17 @@ export function NotificationBell({ variant = "hero" }: { variant?: "hero" | "def
         return "🚑";
       case "status_change":
         return "📋";
+      case "injury_return":
+      case "return_ready":
+        return "✅";
+      case "birthday":
+        return "🎂";
+      case "medical_reminder":
+        return "💊";
+      case "protocol_reminder":
+        return "📝";
+      case "test_reminder":
+        return "🏃";
       default:
         return "ℹ️";
     }

@@ -27,17 +27,19 @@ export function AddPlayerDialog({
 }: AddPlayerDialogProps) {
   const [playerName, setPlayerName] = useState("");
   const [birthYear, setBirthYear] = useState("");
+  const [birthDate, setBirthDate] = useState("");
   const [validationError, setValidationError] = useState("");
   const queryClient = useQueryClient();
 
   const addPlayer = useMutation({
-    mutationFn: async (data: { name: string; birth_year?: number }) => {
+    mutationFn: async (data: { name: string; birth_year?: number; birth_date?: string }) => {
       const { error } = await supabase
         .from("players")
         .insert({ 
           name: data.name, 
           category_id: categoryId,
-          birth_year: data.birth_year 
+          birth_year: data.birth_year,
+          birth_date: data.birth_date || null
         });
       if (error) throw error;
     },
@@ -46,6 +48,7 @@ export function AddPlayerDialog({
       toast.success("Joueur ajouté avec succès");
       setPlayerName("");
       setBirthYear("");
+      setBirthDate("");
       onOpenChange(false);
     },
     onError: () => {
@@ -70,7 +73,8 @@ export function AddPlayerDialog({
 
     addPlayer.mutate({
       name: result.data.name,
-      birth_year: result.data.birthYear
+      birth_year: result.data.birthYear,
+      birth_date: birthDate || undefined
     });
   };
 
@@ -94,6 +98,27 @@ export function AddPlayerDialog({
                 placeholder="Ex: Jean Dupont"
                 required
               />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="birthDate">Date de naissance (optionnel)</Label>
+              <Input
+                id="birthDate"
+                type="date"
+                value={birthDate}
+                onChange={(e) => {
+                  setBirthDate(e.target.value);
+                  // Auto-fill birth year from date
+                  if (e.target.value) {
+                    setBirthYear(e.target.value.split('-')[0]);
+                  }
+                  setValidationError("");
+                }}
+                max={new Date().toISOString().split('T')[0]}
+              />
+              <p className="text-xs text-muted-foreground">
+                Pour recevoir des notifications d'anniversaire
+              </p>
             </div>
             
             <div className="space-y-2">
