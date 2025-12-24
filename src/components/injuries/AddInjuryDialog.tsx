@@ -20,6 +20,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { RUGBY_INJURY_TYPES } from "@/lib/constants/rugbyInjuries";
+import { Badge } from "@/components/ui/badge";
 
 interface AddInjuryDialogProps {
   open: boolean;
@@ -42,12 +44,15 @@ export function AddInjuryDialog({
 }: AddInjuryDialogProps) {
   const [selectedPlayerId, setSelectedPlayerId] = useState(playerId || "");
   const [injuryType, setInjuryType] = useState("");
+  const [customInjuryType, setCustomInjuryType] = useState("");
   const [injuryDate, setInjuryDate] = useState(new Date().toISOString().split("T")[0]);
   const [severity, setSeverity] = useState<string>("");
   const [estimatedReturnDate, setEstimatedReturnDate] = useState("");
   const [description, setDescription] = useState("");
   const [protocolNotes, setProtocolNotes] = useState("");
   const queryClient = useQueryClient();
+
+  const selectedInjury = RUGBY_INJURY_TYPES.find(i => i.name === injuryType);
 
   const { data: players } = useQuery({
     queryKey: ["players", categoryId],
@@ -65,11 +70,12 @@ export function AddInjuryDialog({
 
   const addInjury = useMutation({
     mutationFn: async () => {
+      const finalInjuryType = injuryType === "other" ? customInjuryType : injuryType;
       const { error } = await supabase.from("injuries").insert([
         {
           player_id: selectedPlayerId,
           category_id: categoryId,
-          injury_type: injuryType,
+          injury_type: finalInjuryType,
           injury_date: injuryDate,
           severity: severity as any,
           estimated_return_date: estimatedReturnDate || null,
@@ -93,6 +99,7 @@ export function AddInjuryDialog({
   const resetForm = () => {
     if (!playerId) setSelectedPlayerId("");
     setInjuryType("");
+    setCustomInjuryType("");
     setInjuryDate(new Date().toISOString().split("T")[0]);
     setSeverity("");
     setEstimatedReturnDate("");
@@ -100,9 +107,21 @@ export function AddInjuryDialog({
     setProtocolNotes("");
   };
 
+  // Auto-calculate estimated return date based on injury type
+  const handleInjuryTypeChange = (value: string) => {
+    setInjuryType(value);
+    const injury = RUGBY_INJURY_TYPES.find(i => i.name === value);
+    if (injury && !estimatedReturnDate) {
+      const returnDate = new Date(injuryDate);
+      returnDate.setDate(returnDate.getDate() + injury.durationMin);
+      setEstimatedReturnDate(returnDate.toISOString().split("T")[0]);
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (selectedPlayerId && injuryType && severity) {
+    const finalInjuryType = injuryType === "other" ? customInjuryType : injuryType;
+    if (selectedPlayerId && finalInjuryType && severity) {
       addInjury.mutate();
     }
   };
@@ -135,13 +154,37 @@ export function AddInjuryDialog({
 
             <div className="space-y-2">
               <Label htmlFor="injuryType">Type de blessure *</Label>
-              <Input
-                id="injuryType"
-                value={injuryType}
-                onChange={(e) => setInjuryType(e.target.value)}
-                placeholder="Ex: Entorse cheville, Élongation ischio-jambiers..."
-                required
-              />
+              <Select value={injuryType} onValueChange={handleInjuryTypeChange}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner un type de blessure" />
+                </SelectTrigger>
+                <SelectContent className="max-h-[300px]">
+                  {RUGBY_INJURY_TYPES.map((injury) => (
+                    <SelectItem key={injury.name} value={injury.name}>
+                      <div className="flex items-center gap-2">
+                        <span>{injury.name}</span>
+                        <Badge variant="outline" className="text-xs">
+                          {injury.category}
+                        </Badge>
+                      </div>
+                    </SelectItem>
+                  ))}
+                  <SelectItem value="other">Autre (personnalisé)</SelectItem>
+                </SelectContent>
+              </Select>
+              {injuryType === "other" && (
+                <Input
+                  value={customInjuryType}
+                  onChange={(e) => setCustomInjuryType(e.target.value)}
+                  placeholder="Décrire la blessure..."
+                  className="mt-2"
+                />
+              )}
+              {selectedInjury && (
+                <p className="text-xs text-muted-foreground">
+                  Durée typique: {selectedInjury.durationMin}-{selectedInjury.durationMax} jours
+                </p>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">

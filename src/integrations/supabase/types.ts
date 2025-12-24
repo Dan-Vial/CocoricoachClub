@@ -654,6 +654,53 @@ export type Database = {
           },
         ]
       }
+      injury_protocols: {
+        Row: {
+          category_id: string | null
+          created_at: string
+          description: string | null
+          id: string
+          injury_category: string
+          is_system_default: boolean | null
+          name: string
+          typical_duration_days_max: number | null
+          typical_duration_days_min: number | null
+          updated_at: string
+        }
+        Insert: {
+          category_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          injury_category: string
+          is_system_default?: boolean | null
+          name: string
+          typical_duration_days_max?: number | null
+          typical_duration_days_min?: number | null
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          injury_category?: string
+          is_system_default?: boolean | null
+          name?: string
+          typical_duration_days_max?: number | null
+          typical_duration_days_min?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "injury_protocols_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invitation_attempts: {
         Row: {
           attempted_at: string
@@ -1882,6 +1929,80 @@ export type Database = {
           },
         ]
       }
+      player_rehab_protocols: {
+        Row: {
+          category_id: string
+          completed_at: string | null
+          created_at: string
+          current_phase: number | null
+          id: string
+          injury_id: string
+          notes: string | null
+          player_id: string
+          protocol_id: string
+          started_at: string | null
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          category_id: string
+          completed_at?: string | null
+          created_at?: string
+          current_phase?: number | null
+          id?: string
+          injury_id: string
+          notes?: string | null
+          player_id: string
+          protocol_id: string
+          started_at?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string
+          completed_at?: string | null
+          created_at?: string
+          current_phase?: number | null
+          id?: string
+          injury_id?: string
+          notes?: string | null
+          player_id?: string
+          protocol_id?: string
+          started_at?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_rehab_protocols_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_rehab_protocols_injury_id_fkey"
+            columns: ["injury_id"]
+            isOneToOne: false
+            referencedRelation: "injuries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_rehab_protocols_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_rehab_protocols_protocol_id_fkey"
+            columns: ["protocol_id"]
+            isOneToOne: false
+            referencedRelation: "injury_protocols"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       player_selections: {
         Row: {
           category_id: string
@@ -2133,6 +2254,106 @@ export type Database = {
         }
         Relationships: []
       }
+      protocol_exercises: {
+        Row: {
+          created_at: string
+          description: string | null
+          exercise_order: number | null
+          frequency: string | null
+          id: string
+          image_url: string | null
+          name: string
+          notes: string | null
+          phase_id: string
+          reps: string | null
+          sets: number | null
+          video_url: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          exercise_order?: number | null
+          frequency?: string | null
+          id?: string
+          image_url?: string | null
+          name: string
+          notes?: string | null
+          phase_id: string
+          reps?: string | null
+          sets?: number | null
+          video_url?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          exercise_order?: number | null
+          frequency?: string | null
+          id?: string
+          image_url?: string | null
+          name?: string
+          notes?: string | null
+          phase_id?: string
+          reps?: string | null
+          sets?: number | null
+          video_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "protocol_exercises_phase_id_fkey"
+            columns: ["phase_id"]
+            isOneToOne: false
+            referencedRelation: "protocol_phases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      protocol_phases: {
+        Row: {
+          created_at: string
+          description: string | null
+          duration_days_max: number | null
+          duration_days_min: number | null
+          exit_criteria: string[] | null
+          id: string
+          name: string
+          objectives: string[] | null
+          phase_number: number
+          protocol_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          duration_days_max?: number | null
+          duration_days_min?: number | null
+          exit_criteria?: string[] | null
+          id?: string
+          name: string
+          objectives?: string[] | null
+          phase_number: number
+          protocol_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          duration_days_max?: number | null
+          duration_days_min?: number | null
+          exit_criteria?: string[] | null
+          id?: string
+          name?: string
+          objectives?: string[] | null
+          phase_number?: number
+          protocol_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "protocol_phases_protocol_id_fkey"
+            columns: ["protocol_id"]
+            isOneToOne: false
+            referencedRelation: "injury_protocols"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       recovery_journal: {
         Row: {
           active_recovery: boolean | null
@@ -2276,6 +2497,63 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rehab_exercise_logs: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          difficulty_level: number | null
+          exercise_id: string
+          id: string
+          logged_by: string | null
+          notes: string | null
+          pain_level: number | null
+          player_rehab_protocol_id: string
+          reps_completed: string | null
+          sets_completed: number | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          difficulty_level?: number | null
+          exercise_id: string
+          id?: string
+          logged_by?: string | null
+          notes?: string | null
+          pain_level?: number | null
+          player_rehab_protocol_id: string
+          reps_completed?: string | null
+          sets_completed?: number | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          difficulty_level?: number | null
+          exercise_id?: string
+          id?: string
+          logged_by?: string | null
+          notes?: string | null
+          pain_level?: number | null
+          player_rehab_protocol_id?: string
+          reps_completed?: string | null
+          sets_completed?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rehab_exercise_logs_exercise_id_fkey"
+            columns: ["exercise_id"]
+            isOneToOne: false
+            referencedRelation: "protocol_exercises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rehab_exercise_logs_player_rehab_protocol_id_fkey"
+            columns: ["player_rehab_protocol_id"]
+            isOneToOne: false
+            referencedRelation: "player_rehab_protocols"
             referencedColumns: ["id"]
           },
         ]
