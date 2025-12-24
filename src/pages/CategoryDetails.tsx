@@ -9,7 +9,6 @@ import { CalendarTab } from "@/components/category/CalendarTab";
 import { TestsTab } from "@/components/category/TestsTab";
 import { AwcrTab } from "@/components/category/AwcrTab";
 import { OverviewTab } from "@/components/category/OverviewTab";
-import { InjuriesTab } from "@/components/injuries/InjuriesTab";
 import { PeriodizationTab } from "@/components/periodization/PeriodizationTab";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { AnalyticsTab } from "@/components/analytics/AnalyticsTab";
@@ -20,7 +19,6 @@ import { TournamentsTab } from "@/components/category/TournamentsTab";
 import { EditableCategoryName } from "@/components/category/EditableCategoryName";
 import { EditableRugbyType } from "@/components/category/EditableRugbyType";
 import { MatchesTab } from "@/components/category/MatchesTab";
-import { ConcussionProtocolTab } from "@/components/category/ConcussionProtocolTab";
 import { WellnessTab } from "@/components/category/WellnessTab";
 import { AcademyTab } from "@/components/category/AcademyTab";
 import { PlanningTab } from "@/components/category/PlanningTab";
@@ -29,6 +27,7 @@ import { ReportsTab } from "@/components/category/ReportsTab";
 import { CategoryCollaborationTab } from "@/components/category/CategoryCollaborationTab";
 import { PhysicalPreparationTab } from "@/components/category/PhysicalPreparationTab";
 import { NationalTeamTab } from "@/components/category/national-team/NationalTeamTab";
+import { HealthTab } from "@/components/health/HealthTab";
 export default function CategoryDetails() {
   const { categoryId } = useParams();
   const navigate = useNavigate();
@@ -120,7 +119,7 @@ export default function CategoryDetails() {
               <TabsTrigger className="whitespace-nowrap" value="calendar">Calendrier</TabsTrigger>
               <TabsTrigger className="whitespace-nowrap" value="tests">Tests</TabsTrigger>
               <TabsTrigger className="whitespace-nowrap" value="awcr">AWCR</TabsTrigger>
-              <TabsTrigger className="whitespace-nowrap" value="injuries">Blessures</TabsTrigger>
+              <TabsTrigger className="whitespace-nowrap" value="health">Santé</TabsTrigger>
               <TabsTrigger className="whitespace-nowrap" value="analytics">Analyse</TabsTrigger>
               <TabsTrigger className="whitespace-nowrap" value="periodization">Périodisation</TabsTrigger>
               <TabsTrigger className="whitespace-nowrap" value="reminders">Rappels Tests</TabsTrigger>
@@ -129,7 +128,6 @@ export default function CategoryDetails() {
               <TabsTrigger className="whitespace-nowrap" value="nutrition">Nutrition</TabsTrigger>
               <TabsTrigger className="whitespace-nowrap" value="planning">Planification</TabsTrigger>
               <TabsTrigger className="whitespace-nowrap" value="physical-prep">Prépa Physique</TabsTrigger>
-              <TabsTrigger className="whitespace-nowrap" value="medical">Médical</TabsTrigger>
               <TabsTrigger className="whitespace-nowrap" value="reports">Rapports</TabsTrigger>
               {isRugby7 && (
                 <TabsTrigger className="whitespace-nowrap" value="tournaments">Tournois</TabsTrigger>
@@ -164,8 +162,8 @@ export default function CategoryDetails() {
             <AwcrTab categoryId={categoryId!} />
           </TabsContent>
 
-          <TabsContent value="injuries" className="space-y-4">
-            <InjuriesTab categoryId={categoryId!} />
+          <TabsContent value="health" className="space-y-4">
+            <HealthTab categoryId={categoryId!} />
           </TabsContent>
 
           <TabsContent value="analytics" className="space-y-4">
@@ -200,9 +198,6 @@ export default function CategoryDetails() {
             <PhysicalPreparationTab categoryId={categoryId!} />
           </TabsContent>
 
-          <TabsContent value="medical" className="space-y-4">
-            <ConcussionProtocolTab categoryId={categoryId!} />
-          </TabsContent>
 
           <TabsContent value="reports" className="space-y-4">
             <ReportsTab categoryId={categoryId!} />

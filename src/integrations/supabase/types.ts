@@ -836,6 +836,84 @@ export type Database = {
           },
         ]
       }
+      medical_records: {
+        Row: {
+          category_id: string
+          created_at: string
+          document_url: string | null
+          expiry_date: string | null
+          id: string
+          last_reminder_sent: string | null
+          location: string | null
+          name: string
+          next_due_date: string | null
+          notes: string | null
+          player_id: string
+          provider: string | null
+          record_date: string
+          record_type: string
+          reminder_days_before: number | null
+          reminder_enabled: boolean | null
+          result: string | null
+          updated_at: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          document_url?: string | null
+          expiry_date?: string | null
+          id?: string
+          last_reminder_sent?: string | null
+          location?: string | null
+          name: string
+          next_due_date?: string | null
+          notes?: string | null
+          player_id: string
+          provider?: string | null
+          record_date: string
+          record_type: string
+          reminder_days_before?: number | null
+          reminder_enabled?: boolean | null
+          result?: string | null
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          document_url?: string | null
+          expiry_date?: string | null
+          id?: string
+          last_reminder_sent?: string | null
+          location?: string | null
+          name?: string
+          next_due_date?: string | null
+          notes?: string | null
+          player_id?: string
+          provider?: string | null
+          record_date?: string
+          record_type?: string
+          reminder_days_before?: number | null
+          reminder_enabled?: boolean | null
+          result?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "medical_records_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "medical_records_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       menstrual_cycles: {
         Row: {
           category_id: string
@@ -1108,6 +1186,62 @@ export type Database = {
           },
         ]
       }
+      notification_preferences: {
+        Row: {
+          birthday_alerts: boolean | null
+          category_id: string | null
+          created_at: string
+          daily_digest: boolean | null
+          digest_time: string | null
+          id: string
+          injury_alerts: boolean | null
+          medical_reminders: boolean | null
+          protocol_updates: boolean | null
+          test_reminders: boolean | null
+          updated_at: string
+          user_id: string
+          wellness_alerts: boolean | null
+        }
+        Insert: {
+          birthday_alerts?: boolean | null
+          category_id?: string | null
+          created_at?: string
+          daily_digest?: boolean | null
+          digest_time?: string | null
+          id?: string
+          injury_alerts?: boolean | null
+          medical_reminders?: boolean | null
+          protocol_updates?: boolean | null
+          test_reminders?: boolean | null
+          updated_at?: string
+          user_id: string
+          wellness_alerts?: boolean | null
+        }
+        Update: {
+          birthday_alerts?: boolean | null
+          category_id?: string | null
+          created_at?: string
+          daily_digest?: boolean | null
+          digest_time?: string | null
+          id?: string
+          injury_alerts?: boolean | null
+          medical_reminders?: boolean | null
+          protocol_updates?: boolean | null
+          test_reminders?: boolean | null
+          updated_at?: string
+          user_id?: string
+          wellness_alerts?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_preferences_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           category_id: string
@@ -1116,7 +1250,11 @@ export type Database = {
           injury_id: string | null
           is_read: boolean
           message: string
+          metadata: Json | null
+          notification_subtype: string | null
           notification_type: string
+          priority: string | null
+          scheduled_for: string | null
           title: string
           user_id: string
         }
@@ -1127,7 +1265,11 @@ export type Database = {
           injury_id?: string | null
           is_read?: boolean
           message: string
+          metadata?: Json | null
+          notification_subtype?: string | null
           notification_type: string
+          priority?: string | null
+          scheduled_for?: string | null
           title: string
           user_id: string
         }
@@ -1138,7 +1280,11 @@ export type Database = {
           injury_id?: string | null
           is_read?: boolean
           message?: string
+          metadata?: Json | null
+          notification_subtype?: string | null
           notification_type?: string
+          priority?: string | null
+          scheduled_for?: string | null
           title?: string
           user_id?: string
         }
@@ -1790,32 +1936,41 @@ export type Database = {
       players: {
         Row: {
           avatar_url: string | null
+          birth_date: string | null
           birth_year: number | null
           category_id: string
           club_origin: string | null
           created_at: string
+          email: string | null
           id: string
           name: string
+          phone: string | null
           position: string | null
         }
         Insert: {
           avatar_url?: string | null
+          birth_date?: string | null
           birth_year?: number | null
           category_id: string
           club_origin?: string | null
           created_at?: string
+          email?: string | null
           id?: string
           name: string
+          phone?: string | null
           position?: string | null
         }
         Update: {
           avatar_url?: string | null
+          birth_date?: string | null
           birth_year?: number | null
           category_id?: string
           club_origin?: string | null
           created_at?: string
+          email?: string | null
           id?: string
           name?: string
+          phone?: string | null
           position?: string | null
         }
         Relationships: [
@@ -1919,6 +2074,267 @@ export type Database = {
           id?: string
         }
         Relationships: []
+      }
+      recovery_journal: {
+        Row: {
+          active_recovery: boolean | null
+          active_recovery_duration_min: number | null
+          active_recovery_type: string | null
+          bed_time: string | null
+          category_id: string
+          compression: boolean | null
+          compression_duration_min: number | null
+          compression_type: string | null
+          contrast_bath: boolean | null
+          contrast_bath_duration_min: number | null
+          created_at: string
+          cryotherapy: boolean | null
+          cryotherapy_duration_min: number | null
+          energy_level: number | null
+          entry_date: string
+          foam_rolling: boolean | null
+          foam_rolling_duration_min: number | null
+          ice_bath: boolean | null
+          ice_bath_duration_min: number | null
+          ice_bath_temperature: number | null
+          id: string
+          massage: boolean | null
+          massage_duration_min: number | null
+          massage_type: string | null
+          muscle_readiness: number | null
+          notes: string | null
+          overall_recovery_score: number | null
+          player_id: string
+          protein_shake: boolean | null
+          sauna: boolean | null
+          sauna_duration_min: number | null
+          sleep_duration_hours: number | null
+          sleep_notes: string | null
+          sleep_quality: number | null
+          stretching: boolean | null
+          stretching_duration_min: number | null
+          stretching_type: string | null
+          supplements_taken: string[] | null
+          updated_at: string
+          wake_time: string | null
+          water_intake_liters: number | null
+        }
+        Insert: {
+          active_recovery?: boolean | null
+          active_recovery_duration_min?: number | null
+          active_recovery_type?: string | null
+          bed_time?: string | null
+          category_id: string
+          compression?: boolean | null
+          compression_duration_min?: number | null
+          compression_type?: string | null
+          contrast_bath?: boolean | null
+          contrast_bath_duration_min?: number | null
+          created_at?: string
+          cryotherapy?: boolean | null
+          cryotherapy_duration_min?: number | null
+          energy_level?: number | null
+          entry_date?: string
+          foam_rolling?: boolean | null
+          foam_rolling_duration_min?: number | null
+          ice_bath?: boolean | null
+          ice_bath_duration_min?: number | null
+          ice_bath_temperature?: number | null
+          id?: string
+          massage?: boolean | null
+          massage_duration_min?: number | null
+          massage_type?: string | null
+          muscle_readiness?: number | null
+          notes?: string | null
+          overall_recovery_score?: number | null
+          player_id: string
+          protein_shake?: boolean | null
+          sauna?: boolean | null
+          sauna_duration_min?: number | null
+          sleep_duration_hours?: number | null
+          sleep_notes?: string | null
+          sleep_quality?: number | null
+          stretching?: boolean | null
+          stretching_duration_min?: number | null
+          stretching_type?: string | null
+          supplements_taken?: string[] | null
+          updated_at?: string
+          wake_time?: string | null
+          water_intake_liters?: number | null
+        }
+        Update: {
+          active_recovery?: boolean | null
+          active_recovery_duration_min?: number | null
+          active_recovery_type?: string | null
+          bed_time?: string | null
+          category_id?: string
+          compression?: boolean | null
+          compression_duration_min?: number | null
+          compression_type?: string | null
+          contrast_bath?: boolean | null
+          contrast_bath_duration_min?: number | null
+          created_at?: string
+          cryotherapy?: boolean | null
+          cryotherapy_duration_min?: number | null
+          energy_level?: number | null
+          entry_date?: string
+          foam_rolling?: boolean | null
+          foam_rolling_duration_min?: number | null
+          ice_bath?: boolean | null
+          ice_bath_duration_min?: number | null
+          ice_bath_temperature?: number | null
+          id?: string
+          massage?: boolean | null
+          massage_duration_min?: number | null
+          massage_type?: string | null
+          muscle_readiness?: number | null
+          notes?: string | null
+          overall_recovery_score?: number | null
+          player_id?: string
+          protein_shake?: boolean | null
+          sauna?: boolean | null
+          sauna_duration_min?: number | null
+          sleep_duration_hours?: number | null
+          sleep_notes?: string | null
+          sleep_quality?: number | null
+          stretching?: boolean | null
+          stretching_duration_min?: number | null
+          stretching_type?: string | null
+          supplements_taken?: string[] | null
+          updated_at?: string
+          wake_time?: string | null
+          water_intake_liters?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recovery_journal_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recovery_journal_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      return_to_play_protocols: {
+        Row: {
+          category_id: string
+          completed_at: string | null
+          created_at: string
+          current_phase: number
+          id: string
+          injury_id: string
+          notes: string | null
+          player_id: string
+          started_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          category_id: string
+          completed_at?: string | null
+          created_at?: string
+          current_phase?: number
+          id?: string
+          injury_id: string
+          notes?: string | null
+          player_id: string
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string
+          completed_at?: string | null
+          created_at?: string
+          current_phase?: number
+          id?: string
+          injury_id?: string
+          notes?: string | null
+          player_id?: string
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "return_to_play_protocols_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "return_to_play_protocols_injury_id_fkey"
+            columns: ["injury_id"]
+            isOneToOne: false
+            referencedRelation: "injuries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "return_to_play_protocols_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rtp_phase_completions: {
+        Row: {
+          checklist_completed: Json | null
+          completed_at: string | null
+          created_at: string
+          id: string
+          phase_name: string
+          phase_number: number
+          protocol_id: string
+          started_at: string | null
+          status: string
+          validated_by: string | null
+          validation_notes: string | null
+        }
+        Insert: {
+          checklist_completed?: Json | null
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          phase_name: string
+          phase_number: number
+          protocol_id: string
+          started_at?: string | null
+          status?: string
+          validated_by?: string | null
+          validation_notes?: string | null
+        }
+        Update: {
+          checklist_completed?: Json | null
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          phase_name?: string
+          phase_number?: number
+          protocol_id?: string
+          started_at?: string | null
+          status?: string
+          validated_by?: string | null
+          validation_notes?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rtp_phase_completions_protocol_id_fkey"
+            columns: ["protocol_id"]
+            isOneToOne: false
+            referencedRelation: "return_to_play_protocols"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       rugby_specific_tests: {
         Row: {
