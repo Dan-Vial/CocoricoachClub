@@ -3653,13 +3653,13 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
-          email?: never
+          email?: string | null
           full_name?: string | null
           id?: string | null
         }
         Update: {
           created_at?: string | null
-          email?: never
+          email?: string | null
           full_name?: string | null
           id?: string | null
         }
