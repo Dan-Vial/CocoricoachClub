@@ -35,6 +35,16 @@ All colors MUST be HSL.
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
 
+    /* Status colors - consistent color code */
+    --status-optimal: 142 76% 36%;
+    --status-attention: 38 92% 50%;
+    --status-critical: 0 84% 60%;
+    
+    /* Risk gradient colors */
+    --risk-low: 142 76% 36%;
+    --risk-medium: 38 92% 50%;
+    --risk-high: 0 84% 60%;
+
     --border: 150 20% 90%;
     --input: 150 20% 90%;
     --ring: 145 65% 25%;
@@ -102,6 +112,16 @@ All colors MUST be HSL.
 
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
+
+    /* Status colors - consistent color code */
+    --status-optimal: 142 76% 46%;
+    --status-attention: 38 92% 55%;
+    --status-critical: 0 72% 55%;
+    
+    /* Risk gradient colors */
+    --risk-low: 142 76% 46%;
+    --risk-medium: 38 92% 55%;
+    --risk-high: 0 72% 55%;
 
     --border: 150 20% 20%;
     --input: 150 20% 20%;

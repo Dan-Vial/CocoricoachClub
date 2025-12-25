@@ -11,7 +11,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { GlobalPlayerSearch } from "@/components/search/GlobalPlayerSearch";
 import { InjuryReturnAlerts } from "@/components/injuries/InjuryReturnAlerts";
-import { DashboardWidgets } from "@/components/dashboard/DashboardWidgets";
 import { ExerciseLibrarySection } from "@/components/library/ExerciseLibrarySection";
 
 export default function Clubs() {
@@ -174,7 +173,6 @@ export default function Clubs() {
       </div>
 
       <div className="container mx-auto max-w-6xl px-4 py-8">
-        <DashboardWidgets />
         <InjuryReturnAlerts />
         
         {/* Pending approval message */}
