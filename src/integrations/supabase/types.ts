@@ -2534,6 +2534,89 @@ export type Database = {
           },
         ]
       }
+      rehab_calendar_events: {
+        Row: {
+          category_id: string
+          completed_at: string | null
+          created_at: string
+          description: string | null
+          event_date: string
+          event_type: string
+          id: string
+          is_completed: boolean | null
+          notes: string | null
+          phase_id: string | null
+          phase_name: string
+          phase_number: number
+          player_id: string
+          player_rehab_protocol_id: string
+          title: string
+        }
+        Insert: {
+          category_id: string
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          event_date: string
+          event_type?: string
+          id?: string
+          is_completed?: boolean | null
+          notes?: string | null
+          phase_id?: string | null
+          phase_name: string
+          phase_number: number
+          player_id: string
+          player_rehab_protocol_id: string
+          title: string
+        }
+        Update: {
+          category_id?: string
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          event_date?: string
+          event_type?: string
+          id?: string
+          is_completed?: boolean | null
+          notes?: string | null
+          phase_id?: string | null
+          phase_name?: string
+          phase_number?: number
+          player_id?: string
+          player_rehab_protocol_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rehab_calendar_events_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rehab_calendar_events_phase_id_fkey"
+            columns: ["phase_id"]
+            isOneToOne: false
+            referencedRelation: "protocol_phases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rehab_calendar_events_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rehab_calendar_events_player_rehab_protocol_id_fkey"
+            columns: ["player_rehab_protocol_id"]
+            isOneToOne: false
+            referencedRelation: "player_rehab_protocols"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rehab_exercise_logs: {
         Row: {
           completed_at: string | null
