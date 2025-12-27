@@ -4,12 +4,14 @@ import { ConcussionProtocolTab } from "@/components/category/ConcussionProtocolT
 import { MedicalRecordsTab } from "./MedicalRecordsTab";
 import { RecoveryJournalTab } from "./RecoveryJournalTab";
 import { CoachDashboard } from "./CoachDashboard";
+import { ProtocolManager } from "@/components/injuries/ProtocolManager";
 import {
   Activity,
   Brain,
   FileText,
   Snowflake,
   LayoutDashboard,
+  Settings2,
 } from "lucide-react";
 
 interface HealthTabProps {
@@ -41,6 +43,10 @@ export function HealthTab({ categoryId }: HealthTabProps) {
             <Snowflake className="h-4 w-4" />
             Récupération
           </TabsTrigger>
+          <TabsTrigger value="protocols" className="flex items-center gap-2">
+            <Settings2 className="h-4 w-4" />
+            Protocoles
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="dashboard">
@@ -61,6 +67,10 @@ export function HealthTab({ categoryId }: HealthTabProps) {
 
         <TabsContent value="recovery">
           <RecoveryJournalTab categoryId={categoryId} />
+        </TabsContent>
+
+        <TabsContent value="protocols">
+          <ProtocolManager categoryId={categoryId} />
         </TabsContent>
       </Tabs>
     </div>
