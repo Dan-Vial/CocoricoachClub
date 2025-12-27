@@ -23,7 +23,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { RUGBY_INJURY_TYPES, DEFAULT_REHAB_PHASES, INJURY_CATEGORIES } from "@/lib/constants/rugbyInjuries";
 import { Badge } from "@/components/ui/badge";
-import { Clock, Dumbbell, FileText, Sparkles } from "lucide-react";
+import { Clock, Dumbbell, FileText, Sparkles, Calendar } from "lucide-react";
+import { addDays, format } from "date-fns";
 
 interface AssignProtocolDialogProps {
   open: boolean;
@@ -32,6 +33,79 @@ interface AssignProtocolDialogProps {
   injuryId: string;
   categoryId: string;
   injuryType: string;
+}
+
+// Helper function to create calendar events for a protocol
+async function createCalendarEvents(
+  playerRehabProtocolId: string,
+  playerId: string,
+  categoryId: string,
+  phases: Array<{
+    id: string;
+    phase_number: number;
+    name: string;
+    description?: string;
+    duration_days_min?: number;
+    duration_days_max?: number;
+  }>,
+  startDate: Date = new Date()
+) {
+  const events = [];
+  let currentDate = startDate;
+
+  for (const phase of phases.sort((a, b) => a.phase_number - b.phase_number)) {
+    // Create phase start event
+    events.push({
+      player_rehab_protocol_id: playerRehabProtocolId,
+      player_id: playerId,
+      category_id: categoryId,
+      phase_id: phase.id,
+      phase_number: phase.phase_number,
+      phase_name: phase.name,
+      event_date: format(currentDate, 'yyyy-MM-dd'),
+      event_type: 'phase_start',
+      title: `Début Phase ${phase.phase_number}: ${phase.name}`,
+      description: phase.description || null,
+    });
+
+    // Calculate phase end date (using average of min/max duration)
+    const avgDuration = Math.round(
+      ((phase.duration_days_min || 7) + (phase.duration_days_max || 14)) / 2
+    );
+    
+    const phaseEndDate = addDays(currentDate, avgDuration);
+    
+    // Create phase end/checkpoint event
+    events.push({
+      player_rehab_protocol_id: playerRehabProtocolId,
+      player_id: playerId,
+      category_id: categoryId,
+      phase_id: phase.id,
+      phase_number: phase.phase_number,
+      phase_name: phase.name,
+      event_date: format(phaseEndDate, 'yyyy-MM-dd'),
+      event_type: 'checkpoint',
+      title: `Évaluation Phase ${phase.phase_number}: ${phase.name}`,
+      description: `Vérifier les critères de passage pour ${phase.name}`,
+    });
+
+    // Move to next phase
+    currentDate = addDays(phaseEndDate, 1);
+  }
+
+  // Insert all events
+  if (events.length > 0) {
+    const { error } = await supabase
+      .from("rehab_calendar_events")
+      .insert(events);
+    
+    if (error) {
+      console.error("Error creating calendar events:", error);
+      throw error;
+    }
+  }
+
+  return events;
 }
 
 export function AssignProtocolDialog({
@@ -83,8 +157,12 @@ export function AssignProtocolDialog({
     mutationFn: async () => {
       if (!selectedProtocolId) throw new Error("Aucun protocole sélectionné");
 
+      // Get protocol phases
+      const selectedProtocol = existingProtocols?.find(p => p.id === selectedProtocolId);
+      const phases = selectedProtocol?.protocol_phases || [];
+
       // Assign protocol to player's injury
-      const { error: assignError } = await supabase
+      const { data: rehabProtocol, error: assignError } = await supabase
         .from("player_rehab_protocols")
         .insert({
           player_id: playerId,
@@ -94,13 +172,28 @@ export function AssignProtocolDialog({
           current_phase: 1,
           status: "in_progress",
           notes: notes || null,
-        });
+        })
+        .select()
+        .single();
 
       if (assignError) throw assignError;
+
+      // Create calendar events for each phase
+      if (phases.length > 0) {
+        await createCalendarEvents(
+          rehabProtocol.id,
+          playerId,
+          categoryId,
+          phases
+        );
+      }
+
+      return rehabProtocol;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["player-rehab-protocol", injuryId] });
-      toast.success("Protocole de réhabilitation assigné");
+      queryClient.invalidateQueries({ queryKey: ["rehab-calendar-events", playerId] });
+      toast.success("Protocole assigné et ajouté au calendrier");
       handleClose();
     },
     onError: (error) => {
@@ -116,12 +209,15 @@ export function AssignProtocolDialog({
 
       // Check if protocol already exists
       let protocolId: string;
+      let phases: Array<{ id: string; phase_number: number; name: string; description?: string; duration_days_min?: number; duration_days_max?: number }> = [];
+      
       const existingProtocol = existingProtocols?.find(
         p => p.name === selectedType.name && (p.is_system_default || p.category_id === categoryId)
       );
 
       if (existingProtocol) {
         protocolId = existingProtocol.id;
+        phases = existingProtocol.protocol_phases || [];
       } else {
         // Create new protocol for this category
         const { data: newProtocol, error: protocolError } = await supabase
@@ -163,6 +259,16 @@ export function AssignProtocolDialog({
 
           if (phaseError) throw phaseError;
 
+          // Add to phases array for calendar events
+          phases.push({
+            id: newPhase.id,
+            phase_number: phase.phase_number,
+            name: phase.name,
+            description: phase.description,
+            duration_days_min: phase.duration_days_min,
+            duration_days_max: phase.duration_days_max,
+          });
+
           // Create default exercises for this phase
           for (let i = 0; i < phase.exercises.length; i++) {
             const exercise = phase.exercises[i];
@@ -184,7 +290,7 @@ export function AssignProtocolDialog({
       }
 
       // Assign protocol to player's injury
-      const { error: assignError } = await supabase
+      const { data: rehabProtocol, error: assignError } = await supabase
         .from("player_rehab_protocols")
         .insert({
           player_id: playerId,
@@ -194,14 +300,29 @@ export function AssignProtocolDialog({
           current_phase: 1,
           status: "in_progress",
           notes: notes || null,
-        });
+        })
+        .select()
+        .single();
 
       if (assignError) throw assignError;
+
+      // Create calendar events for each phase
+      if (phases.length > 0) {
+        await createCalendarEvents(
+          rehabProtocol.id,
+          playerId,
+          categoryId,
+          phases
+        );
+      }
+
+      return rehabProtocol;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["player-rehab-protocol", injuryId] });
       queryClient.invalidateQueries({ queryKey: ["injury-protocols-with-phases", categoryId] });
-      toast.success("Protocole de réhabilitation créé et assigné");
+      queryClient.invalidateQueries({ queryKey: ["rehab-calendar-events", playerId] });
+      toast.success("Protocole créé et ajouté au calendrier");
       handleClose();
     },
     onError: (error) => {
@@ -244,9 +365,16 @@ export function AssignProtocolDialog({
             Assigner un protocole de réhabilitation
           </DialogTitle>
           <DialogDescription>
-            Choisissez un protocole existant ou créez-en un nouveau à partir d'un modèle
+            Les phases du protocole seront automatiquement ajoutées au calendrier du joueur
           </DialogDescription>
         </DialogHeader>
+
+        <div className="flex items-center gap-2 p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800 text-sm">
+          <Calendar className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+          <span className="text-blue-700 dark:text-blue-300">
+            Les phases seront planifiées dans le calendrier du joueur
+          </span>
+        </div>
 
         <Tabs value={selectedMode} onValueChange={(v) => setSelectedMode(v as any)} className="mt-2">
           <TabsList className="grid w-full grid-cols-2">
@@ -322,7 +450,7 @@ export function AssignProtocolDialog({
                     </div>
                     {selectedProtocol.protocol_phases && selectedProtocol.protocol_phases.length > 0 && (
                       <div className="space-y-1">
-                        <p className="text-xs font-medium text-muted-foreground">Phases:</p>
+                        <p className="text-xs font-medium text-muted-foreground">Phases (seront ajoutées au calendrier):</p>
                         <div className="flex flex-wrap gap-1">
                           {selectedProtocol.protocol_phases
                             .sort((a: any, b: any) => a.phase_number - b.phase_number)
@@ -406,7 +534,7 @@ export function AssignProtocolDialog({
                   </span>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Ce modèle créera un protocole avec 4-5 phases et des exercices prédéfinis que vous pourrez modifier dans Santé → Protocoles.
+                  Ce modèle créera un protocole avec 4-5 phases. Les phases seront automatiquement planifiées dans le calendrier du joueur.
                 </p>
               </div>
             )}

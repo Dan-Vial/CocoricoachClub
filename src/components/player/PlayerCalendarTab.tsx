@@ -5,8 +5,9 @@ import { Calendar } from "@/components/ui/calendar";
 import { useState } from "react";
 import { DateRange } from "react-day-picker";
 import { Button } from "@/components/ui/button";
-import { X } from "lucide-react";
-import { isWithinInterval } from "date-fns";
+import { Badge } from "@/components/ui/badge";
+import { X, Dumbbell, Activity, CheckCircle2 } from "lucide-react";
+import { isWithinInterval, parseISO } from "date-fns";
 
 interface PlayerCalendarTabProps {
   playerId: string;
@@ -16,6 +17,7 @@ interface PlayerCalendarTabProps {
 export function PlayerCalendarTab({ playerId, categoryId }: PlayerCalendarTabProps) {
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
+  // Fetch training sessions
   const { data: sessions } = useQuery({
     queryKey: ["training_sessions", categoryId],
     queryFn: async () => {
@@ -30,6 +32,27 @@ export function PlayerCalendarTab({ playerId, categoryId }: PlayerCalendarTabPro
     },
   });
 
+  // Fetch rehab calendar events for this player
+  const { data: rehabEvents } = useQuery({
+    queryKey: ["rehab-calendar-events", playerId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("rehab_calendar_events")
+        .select(`
+          *,
+          player_rehab_protocols (
+            injury_protocols (
+              name
+            )
+          )
+        `)
+        .eq("player_id", playerId)
+        .order("event_date", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const filteredSessions = sessions?.filter((session) => {
     if (!dateRange?.from) return true;
     const sessionDate = new Date(session.session_date);
@@ -39,13 +62,55 @@ export function PlayerCalendarTab({ playerId, categoryId }: PlayerCalendarTabPro
     return sessionDate.toDateString() === dateRange.from.toDateString();
   });
 
+  const filteredRehabEvents = rehabEvents?.filter((event) => {
+    if (!dateRange?.from) return true;
+    const eventDate = parseISO(event.event_date);
+    if (dateRange.to) {
+      return isWithinInterval(eventDate, { start: dateRange.from, end: dateRange.to });
+    }
+    return eventDate.toDateString() === dateRange.from.toDateString();
+  });
+
   const sessionDates = sessions?.map((session) => new Date(session.session_date)) || [];
+  const rehabDates = rehabEvents?.map((event) => parseISO(event.event_date)) || [];
+
+  const getEventTypeLabel = (type: string) => {
+    switch (type) {
+      case 'phase_start': return 'Début de phase';
+      case 'checkpoint': return 'Évaluation';
+      case 'phase_end': return 'Fin de phase';
+      default: return type;
+    }
+  };
+
+  const getEventTypeColor = (type: string, isCompleted: boolean) => {
+    if (isCompleted) return 'bg-green-500/20 text-green-700 dark:text-green-400 border-green-500';
+    switch (type) {
+      case 'phase_start': return 'bg-blue-500/20 text-blue-700 dark:text-blue-400 border-blue-500';
+      case 'checkpoint': return 'bg-amber-500/20 text-amber-700 dark:text-amber-400 border-amber-500';
+      default: return 'bg-muted text-muted-foreground';
+    }
+  };
+
+  // Combine all events for display, sorted by date
+  const allEvents = [
+    ...(filteredSessions?.map(s => ({ 
+      ...s, 
+      _type: 'session' as const, 
+      _date: new Date(s.session_date) 
+    })) || []),
+    ...(filteredRehabEvents?.map(e => ({ 
+      ...e, 
+      _type: 'rehab' as const, 
+      _date: parseISO(e.event_date) 
+    })) || []),
+  ].sort((a, b) => b._date.getTime() - a._date.getTime());
 
   return (
     <Card className="bg-gradient-card shadow-md">
       <CardHeader>
         <div className="flex justify-between items-center">
-          <CardTitle>Calendrier des séances</CardTitle>
+          <CardTitle>Calendrier du joueur</CardTitle>
           {dateRange?.from && (
             <Button
               variant="outline"
@@ -68,11 +133,16 @@ export function PlayerCalendarTab({ playerId, categoryId }: PlayerCalendarTabPro
               onSelect={setDateRange}
               modifiers={{
                 session: sessionDates,
+                rehab: rehabDates,
               }}
               modifiersStyles={{
                 session: {
                   fontWeight: "bold",
                   textDecoration: "underline",
+                },
+                rehab: {
+                  backgroundColor: "hsl(var(--primary) / 0.2)",
+                  borderRadius: "4px",
                 },
               }}
               className="rounded-md border pointer-events-auto"
@@ -80,53 +150,115 @@ export function PlayerCalendarTab({ playerId, categoryId }: PlayerCalendarTabPro
           </div>
 
           <div className="space-y-4">
+            {/* Legend */}
+            <div className="flex flex-wrap gap-3 text-xs">
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 bg-muted border rounded" style={{ textDecoration: 'underline', fontWeight: 'bold' }}></div>
+                <span>Entraînement</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 bg-primary/20 rounded"></div>
+                <span>Réhabilitation</span>
+              </div>
+            </div>
+
             <div>
               <h3 className="font-semibold mb-2">
                 {dateRange?.from
                   ? dateRange.to
-                    ? `Séances du ${dateRange.from.toLocaleDateString("fr-FR")} au ${dateRange.to.toLocaleDateString("fr-FR")}`
-                    : `Séances du ${dateRange.from.toLocaleDateString("fr-FR")}`
-                  : "Toutes les séances"}
+                    ? `Événements du ${dateRange.from.toLocaleDateString("fr-FR")} au ${dateRange.to.toLocaleDateString("fr-FR")}`
+                    : `Événements du ${dateRange.from.toLocaleDateString("fr-FR")}`
+                  : "Tous les événements"}
               </h3>
-              {filteredSessions && filteredSessions.length > 0 ? (
-                <div className="space-y-2">
-                  {filteredSessions.map((session) => (
-                    <div
-                      key={session.id}
-                      className="p-3 border rounded-lg bg-card hover:bg-accent/10 transition-colors"
-                    >
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <p className="font-medium capitalize">{session.training_type.replace(/_/g, " ")}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {new Date(session.session_date).toLocaleDateString("fr-FR", {
-                              weekday: "long",
-                              year: "numeric",
-                              month: "long",
-                              day: "numeric",
-                            })}
-                          </p>
-                          {session.session_start_time && (
-                            <p className="text-sm text-muted-foreground">
-                              {session.session_start_time}
-                              {session.session_end_time && ` - ${session.session_end_time}`}
-                            </p>
+              
+              {allEvents.length > 0 ? (
+                <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                  {allEvents.map((event) => {
+                    if (event._type === 'session') {
+                      return (
+                        <div
+                          key={`session-${event.id}`}
+                          className="p-3 border rounded-lg bg-card hover:bg-accent/10 transition-colors"
+                        >
+                          <div className="flex justify-between items-start">
+                            <div className="flex items-start gap-2">
+                              <Activity className="h-4 w-4 mt-0.5 text-muted-foreground" />
+                              <div>
+                                <p className="font-medium capitalize">{event.training_type.replace(/_/g, " ")}</p>
+                                <p className="text-sm text-muted-foreground">
+                                  {event._date.toLocaleDateString("fr-FR", {
+                                    weekday: "long",
+                                    year: "numeric",
+                                    month: "long",
+                                    day: "numeric",
+                                  })}
+                                </p>
+                                {event.session_start_time && (
+                                  <p className="text-sm text-muted-foreground">
+                                    {event.session_start_time}
+                                    {event.session_end_time && ` - ${event.session_end_time}`}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            {event.intensity && (
+                              <span className="text-xs px-2 py-1 bg-primary/10 text-primary rounded">
+                                Intensité: {event.intensity}/10
+                              </span>
+                            )}
+                          </div>
+                          {event.notes && (
+                            <p className="text-sm mt-2 text-muted-foreground ml-6">{event.notes}</p>
                           )}
                         </div>
-                        {session.intensity && (
-                          <span className="text-xs px-2 py-1 bg-primary/10 text-primary rounded">
-                            Intensité: {session.intensity}/10
-                          </span>
-                        )}
-                      </div>
-                      {session.notes && (
-                        <p className="text-sm mt-2 text-muted-foreground">{session.notes}</p>
-                      )}
-                    </div>
-                  ))}
+                      );
+                    } else {
+                      // Rehab event
+                      const protocolName = (event as any).player_rehab_protocols?.injury_protocols?.name;
+                      return (
+                        <div
+                          key={`rehab-${event.id}`}
+                          className={`p-3 border-l-4 rounded-lg transition-colors ${getEventTypeColor(event.event_type, event.is_completed || false)}`}
+                        >
+                          <div className="flex justify-between items-start">
+                            <div className="flex items-start gap-2">
+                              <Dumbbell className="h-4 w-4 mt-0.5" />
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <p className="font-medium">{event.title}</p>
+                                  {event.is_completed && (
+                                    <CheckCircle2 className="h-4 w-4 text-green-600" />
+                                  )}
+                                </div>
+                                <p className="text-sm text-muted-foreground">
+                                  {event._date.toLocaleDateString("fr-FR", {
+                                    weekday: "long",
+                                    year: "numeric",
+                                    month: "long",
+                                    day: "numeric",
+                                  })}
+                                </p>
+                                {protocolName && (
+                                  <p className="text-xs text-muted-foreground">
+                                    Protocole: {protocolName}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            <Badge variant="outline" className="text-xs">
+                              {getEventTypeLabel(event.event_type)}
+                            </Badge>
+                          </div>
+                          {event.description && (
+                            <p className="text-sm mt-2 text-muted-foreground ml-6">{event.description}</p>
+                          )}
+                        </div>
+                      );
+                    }
+                  })}
                 </div>
               ) : (
-                <p className="text-muted-foreground">Aucune séance pour cette période</p>
+                <p className="text-muted-foreground">Aucun événement pour cette période</p>
               )}
             </div>
           </div>
