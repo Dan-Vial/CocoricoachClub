@@ -3677,6 +3677,10 @@ export type Database = {
         Args: { _club_id: string; _user_id: string }
         Returns: boolean
       }
+      can_view_player_sensitive_data: {
+        Args: { _category_id: string; _user_id: string }
+        Returns: boolean
+      }
       cleanup_old_invitation_attempts: { Args: never; Returns: undefined }
       get_safe_profile: {
         Args: { profile_id: string }
