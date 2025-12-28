@@ -1833,6 +1833,84 @@ export type Database = {
           },
         ]
       }
+      player_exercise_completions: {
+        Row: {
+          completed: boolean | null
+          completion_date: string
+          created_at: string
+          id: string
+          notes: string | null
+          phase_id: string
+          player_id: string
+          player_rehab_protocol_id: string
+          protocol_exercise_id: string | null
+          protocol_phase_exercise_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          completed?: boolean | null
+          completion_date?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          phase_id: string
+          player_id: string
+          player_rehab_protocol_id: string
+          protocol_exercise_id?: string | null
+          protocol_phase_exercise_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          completed?: boolean | null
+          completion_date?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          phase_id?: string
+          player_id?: string
+          player_rehab_protocol_id?: string
+          protocol_exercise_id?: string | null
+          protocol_phase_exercise_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_exercise_completions_phase_id_fkey"
+            columns: ["phase_id"]
+            isOneToOne: false
+            referencedRelation: "protocol_phases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_exercise_completions_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_exercise_completions_player_rehab_protocol_id_fkey"
+            columns: ["player_rehab_protocol_id"]
+            isOneToOne: false
+            referencedRelation: "player_rehab_protocols"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_exercise_completions_protocol_exercise_id_fkey"
+            columns: ["protocol_exercise_id"]
+            isOneToOne: false
+            referencedRelation: "protocol_exercises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_exercise_completions_protocol_phase_exercise_id_fkey"
+            columns: ["protocol_phase_exercise_id"]
+            isOneToOne: false
+            referencedRelation: "protocol_phase_exercises"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       player_match_stats: {
         Row: {
           breakthroughs: number | null
@@ -1973,8 +2051,10 @@ export type Database = {
           notes: string | null
           player_id: string
           protocol_id: string
+          recommended_load_reduction: number | null
           started_at: string | null
           status: string | null
+          track_wellness: boolean | null
           updated_at: string
         }
         Insert: {
@@ -1987,8 +2067,10 @@ export type Database = {
           notes?: string | null
           player_id: string
           protocol_id: string
+          recommended_load_reduction?: number | null
           started_at?: string | null
           status?: string | null
+          track_wellness?: boolean | null
           updated_at?: string
         }
         Update: {
@@ -2001,8 +2083,10 @@ export type Database = {
           notes?: string | null
           player_id?: string
           protocol_id?: string
+          recommended_load_reduction?: number | null
           started_at?: string | null
           status?: string | null
+          track_wellness?: boolean | null
           updated_at?: string
         }
         Relationships: [
@@ -2333,6 +2417,60 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "protocol_exercises_phase_id_fkey"
+            columns: ["phase_id"]
+            isOneToOne: false
+            referencedRelation: "protocol_phases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      protocol_phase_exercises: {
+        Row: {
+          created_at: string
+          custom_exercise_name: string | null
+          exercise_library_id: string | null
+          exercise_order: number | null
+          frequency: string | null
+          id: string
+          notes: string | null
+          phase_id: string
+          reps: string | null
+          sets: number | null
+        }
+        Insert: {
+          created_at?: string
+          custom_exercise_name?: string | null
+          exercise_library_id?: string | null
+          exercise_order?: number | null
+          frequency?: string | null
+          id?: string
+          notes?: string | null
+          phase_id: string
+          reps?: string | null
+          sets?: number | null
+        }
+        Update: {
+          created_at?: string
+          custom_exercise_name?: string | null
+          exercise_library_id?: string | null
+          exercise_order?: number | null
+          frequency?: string | null
+          id?: string
+          notes?: string | null
+          phase_id?: string
+          reps?: string | null
+          sets?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "protocol_phase_exercises_exercise_library_id_fkey"
+            columns: ["exercise_library_id"]
+            isOneToOne: false
+            referencedRelation: "exercise_library"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "protocol_phase_exercises_phase_id_fkey"
             columns: ["phase_id"]
             isOneToOne: false
             referencedRelation: "protocol_phases"
