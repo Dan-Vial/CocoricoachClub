@@ -53,7 +53,6 @@ export function HealthTab({ categoryId }: HealthTabProps) {
             <Settings2 className="h-4 w-4" />
             Protocoles
           </TabsTrigger>
-          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="dashboard">
@@ -81,8 +80,6 @@ export function HealthTab({ categoryId }: HealthTabProps) {
         </TabsContent>
 
         <TabsContent value="protocols">
-          <ProtocolManager categoryId={categoryId} />
-        </TabsContent>
           <ProtocolManager categoryId={categoryId} />
         </TabsContent>
       </Tabs>
