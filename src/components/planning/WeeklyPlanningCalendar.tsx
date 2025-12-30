@@ -103,7 +103,7 @@ export function WeeklyPlanningCalendar({ categoryId }: WeeklyPlanningCalendarPro
         time_slot: newItemTime || null,
         custom_title: newItemTitle || null,
         location: newItemLocation || null,
-        template_id: selectedTemplateId || null,
+        template_id: selectedTemplateId && selectedTemplateId !== "none" ? selectedTemplateId : null,
         created_by: user?.id,
       });
       if (error) throw error;
@@ -286,7 +286,7 @@ export function WeeklyPlanningCalendar({ categoryId }: WeeklyPlanningCalendarPro
                   <SelectValue placeholder="Choisir un template" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Aucun template</SelectItem>
+                  <SelectItem value="none">Aucun template</SelectItem>
                   {templates?.map((t) => (
                     <SelectItem key={t.id} value={t.id}>
                       {t.name}
@@ -296,7 +296,7 @@ export function WeeklyPlanningCalendar({ categoryId }: WeeklyPlanningCalendarPro
               </Select>
             </div>
 
-            {!selectedTemplateId && (
+            {(!selectedTemplateId || selectedTemplateId === "none") && (
               <div className="space-y-2">
                 <Label>Titre personnalisé</Label>
                 <Input
@@ -332,7 +332,7 @@ export function WeeklyPlanningCalendar({ categoryId }: WeeklyPlanningCalendarPro
               </Button>
               <Button 
                 onClick={() => addPlanningItem.mutate()}
-                disabled={(!selectedTemplateId && !newItemTitle) || addPlanningItem.isPending}
+                disabled={((!selectedTemplateId || selectedTemplateId === "none") && !newItemTitle) || addPlanningItem.isPending}
               >
                 Ajouter
               </Button>
