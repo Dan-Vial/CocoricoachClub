@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -57,7 +57,8 @@ export function WeeklyPlanningCalendar({ categoryId }: WeeklyPlanningCalendarPro
   const [newItemTitle, setNewItemTitle] = useState("");
   const [newItemTime, setNewItemTime] = useState("");
   const [newItemLocation, setNewItemLocation] = useState("");
-  const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>("none");
+  const [pendingTemplateId, setPendingTemplateId] = useState<string | null>(null);
 
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -91,6 +92,15 @@ export function WeeklyPlanningCalendar({ categoryId }: WeeklyPlanningCalendarPro
       return data;
     },
   });
+
+  useEffect(() => {
+    if (!pendingTemplateId) return;
+    const exists = templates?.some((t) => t.id === pendingTemplateId);
+    if (exists) {
+      setSelectedTemplateId(pendingTemplateId);
+      setPendingTemplateId(null);
+    }
+  }, [pendingTemplateId, templates]);
 
   const addPlanningItem = useMutation({
     mutationFn: async () => {
@@ -138,15 +148,26 @@ export function WeeklyPlanningCalendar({ categoryId }: WeeklyPlanningCalendarPro
     setNewItemTitle("");
     setNewItemTime("");
     setNewItemLocation("");
-    setSelectedTemplateId("");
+    setSelectedTemplateId("none");
+    setPendingTemplateId(null);
   };
 
   const handleDropOnDay = (dayIndex: number, templateData: string) => {
     try {
       const template = JSON.parse(templateData);
       setSelectedDay(dayIndex);
-      setSelectedTemplateId(template.id);
       setNewItemTitle("");
+
+      setPendingTemplateId(template.id);
+      const exists = templates?.some((t) => t.id === template.id);
+      if (exists) {
+        setSelectedTemplateId(template.id);
+        setPendingTemplateId(null);
+      } else {
+        // évite une valeur invalide tant que la liste n'est pas chargée
+        setSelectedTemplateId("none");
+      }
+
       setAddDialogOpen(true);
     } catch (e) {
       console.error("Failed to parse dropped template:", e);
@@ -223,6 +244,9 @@ export function WeeklyPlanningCalendar({ categoryId }: WeeklyPlanningCalendarPro
                     className="h-6 w-6"
                     onClick={() => {
                       setSelectedDay(index);
+                      setSelectedTemplateId("none");
+                      setPendingTemplateId(null);
+                      setNewItemTitle("");
                       setAddDialogOpen(true);
                     }}
                   >
