@@ -26,6 +26,29 @@ const sessionTypeLabels: Record<string, string> = {
   physical: "Prépa Physique",
   technical: "Technique",
   tactical: "Tactique",
+  collectif: "Collectif",
+  technique_individuelle: "Technique Individuelle",
+  physique: "Physique",
+  musculation: "Musculation",
+  repos: "Repos",
+  test: "Test",
+  reathlétisation: "Réathlétisation",
+};
+
+const sessionTypeColors: Record<string, string> = {
+  training: "bg-blue-500",
+  match: "bg-rose-500",
+  recovery: "bg-emerald-500",
+  physical: "bg-orange-500",
+  technical: "bg-purple-500",
+  tactical: "bg-cyan-500",
+  collectif: "bg-training-collectif",
+  technique_individuelle: "bg-training-technique",
+  physique: "bg-training-physique",
+  musculation: "bg-training-musculation",
+  repos: "bg-training-repos",
+  test: "bg-training-test",
+  reathlétisation: "bg-amber-500",
 };
 
 const intensityColors: Record<string, string> = {
@@ -42,24 +65,29 @@ export function SessionTemplateCard({
   onDuplicate,
   onDragStart,
 }: SessionTemplateCardProps) {
+  const typeColor = sessionTypeColors[template.session_type] || "bg-muted";
+
   return (
     <Card
-      className="cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow"
+      className="cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow overflow-hidden"
       draggable
       onDragStart={(e) => {
         e.dataTransfer.setData("template", JSON.stringify(template));
         onDragStart?.();
       }}
     >
-      <CardHeader className="pb-2">
-        <div className="flex items-start justify-between">
-          <CardTitle className="text-sm font-medium">{template.name}</CardTitle>
-          <Badge variant="secondary" className="text-xs">
-            {sessionTypeLabels[template.session_type] || template.session_type}
-          </Badge>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-3">
+      <div className="flex">
+        <div className={`w-1.5 ${typeColor}`} />
+        <div className="flex-1">
+          <CardHeader className="pb-2">
+            <div className="flex items-start justify-between">
+              <CardTitle className="text-sm font-medium">{template.name}</CardTitle>
+              <Badge variant="secondary" className="text-xs">
+                {sessionTypeLabels[template.session_type] || template.session_type}
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
         {template.description && (
           <p className="text-xs text-muted-foreground line-clamp-2">
             {template.description}
@@ -100,7 +128,9 @@ export function SessionTemplateCard({
             </Button>
           )}
         </div>
-      </CardContent>
+          </CardContent>
+        </div>
+      </div>
     </Card>
   );
 }
