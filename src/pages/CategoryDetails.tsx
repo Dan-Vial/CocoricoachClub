@@ -3,32 +3,22 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft } from "lucide-react";
-import { PlayersTab } from "@/components/category/PlayersTab";
-import { CalendarTab } from "@/components/category/CalendarTab";
-import { TestsTab } from "@/components/category/TestsTab";
-import { AwcrTab } from "@/components/category/AwcrTab";
+import { ArrowLeft, LayoutDashboard, Users, Calendar, Zap, Heart, Trophy, MessageSquare } from "lucide-react";
 import { OverviewTab } from "@/components/category/OverviewTab";
-import { PeriodizationTab } from "@/components/periodization/PeriodizationTab";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
-import { AnalyticsTab } from "@/components/analytics/AnalyticsTab";
 import { CategoryCoverUpload } from "@/components/category/CategoryCoverUpload";
 import { GlobalPlayerSearch } from "@/components/search/GlobalPlayerSearch";
-import { TestRemindersTab } from "@/components/category/TestRemindersTab";
-import { TournamentsTab } from "@/components/category/TournamentsTab";
 import { EditableCategoryName } from "@/components/category/EditableCategoryName";
 import { EditableRugbyType } from "@/components/category/EditableRugbyType";
-import { MatchesTab } from "@/components/category/MatchesTab";
-import { WellnessTab } from "@/components/category/WellnessTab";
-import { AcademyTab } from "@/components/category/AcademyTab";
 
-import { MessagingTab } from "@/components/messaging/MessagingTab";
-import { NutritionTab } from "@/components/category/NutritionTab";
-import { ReportsTab } from "@/components/category/ReportsTab";
-import { CategoryCollaborationTab } from "@/components/category/CategoryCollaborationTab";
-import { PhysicalPreparationTab } from "@/components/category/PhysicalPreparationTab";
-import { NationalTeamTab } from "@/components/category/national-team/NationalTeamTab";
-import { HealthTab } from "@/components/health/HealthTab";
+// New mega-tabs
+import { EffectifTab } from "@/components/category/tabs/EffectifTab";
+import { PlanificationTab } from "@/components/category/tabs/PlanificationTab";
+import { PerformanceTab } from "@/components/category/tabs/PerformanceTab";
+import { SanteTab } from "@/components/category/tabs/SanteTab";
+import { CompetitionTab } from "@/components/category/tabs/CompetitionTab";
+import { CommunicationTab } from "@/components/category/tabs/CommunicationTab";
+
 export default function CategoryDetails() {
   const { categoryId } = useParams();
   const navigate = useNavigate();
@@ -49,6 +39,7 @@ export default function CategoryDetails() {
   const isRugby7 = category?.rugby_type === "7";
   const isAcademy = category?.rugby_type === "academie";
   const isNationalTeam = category?.rugby_type === "national_team";
+
   return (
     <div className="min-h-screen bg-background">
       <div 
@@ -113,124 +104,77 @@ export default function CategoryDetails() {
 
       <div className="container mx-auto max-w-7xl px-4 py-8">
         <Tabs defaultValue="overview" className="space-y-6">
-          <div className="w-full overflow-x-auto pb-2 -mb-2 scrollbar-thin">
-            <TabsList className="inline-flex min-w-max gap-2">
-              <TabsTrigger className="whitespace-nowrap" value="overview">Vue Générale</TabsTrigger>
-              <TabsTrigger className="whitespace-nowrap" value="players">Joueurs</TabsTrigger>
-              <TabsTrigger className="whitespace-nowrap" value="calendar">Calendrier</TabsTrigger>
-              <TabsTrigger className="whitespace-nowrap" value="tests">Tests</TabsTrigger>
-              <TabsTrigger className="whitespace-nowrap" value="awcr">AWCR</TabsTrigger>
-              <TabsTrigger className="whitespace-nowrap" value="health">Santé</TabsTrigger>
-              <TabsTrigger className="whitespace-nowrap" value="analytics">Analyse</TabsTrigger>
-              <TabsTrigger className="whitespace-nowrap" value="periodization">Périodisation</TabsTrigger>
-              <TabsTrigger className="whitespace-nowrap" value="reminders">Rappels Tests</TabsTrigger>
-              <TabsTrigger className="whitespace-nowrap" value="matches">Matchs</TabsTrigger>
-              <TabsTrigger className="whitespace-nowrap" value="wellness">Wellness</TabsTrigger>
-              <TabsTrigger className="whitespace-nowrap" value="nutrition">Nutrition</TabsTrigger>
-              
-              <TabsTrigger className="whitespace-nowrap" value="messaging">Messagerie</TabsTrigger>
-              <TabsTrigger className="whitespace-nowrap" value="physical-prep">Prépa Physique</TabsTrigger>
-              <TabsTrigger className="whitespace-nowrap" value="reports">Rapports</TabsTrigger>
-              {isRugby7 && (
-                <TabsTrigger className="whitespace-nowrap" value="tournaments">Tournois</TabsTrigger>
-              )}
-              {isAcademy && (
-                <TabsTrigger className="whitespace-nowrap" value="academy">Académie</TabsTrigger>
-              )}
-              {isNationalTeam && (
-                <TabsTrigger className="whitespace-nowrap" value="national-team">Équipe Nationale</TabsTrigger>
-              )}
-              <TabsTrigger className="whitespace-nowrap" value="collaboration">Collaboration</TabsTrigger>
-            </TabsList>
-          </div>
+          <TabsList className="grid w-full grid-cols-3 lg:grid-cols-7 gap-1">
+            <TabsTrigger value="overview" className="flex items-center gap-2">
+              <LayoutDashboard className="h-4 w-4" />
+              <span className="hidden sm:inline">Vue Générale</span>
+              <span className="sm:hidden">Général</span>
+            </TabsTrigger>
+            <TabsTrigger value="effectif" className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              <span className="hidden sm:inline">Effectif</span>
+              <span className="sm:hidden">Équipe</span>
+            </TabsTrigger>
+            <TabsTrigger value="planification" className="flex items-center gap-2">
+              <Calendar className="h-4 w-4" />
+              <span className="hidden sm:inline">Planification</span>
+              <span className="sm:hidden">Planning</span>
+            </TabsTrigger>
+            <TabsTrigger value="performance" className="flex items-center gap-2">
+              <Zap className="h-4 w-4" />
+              <span>Performance</span>
+            </TabsTrigger>
+            <TabsTrigger value="sante" className="flex items-center gap-2">
+              <Heart className="h-4 w-4" />
+              <span>Santé</span>
+            </TabsTrigger>
+            <TabsTrigger value="competition" className="flex items-center gap-2">
+              <Trophy className="h-4 w-4" />
+              <span>Compétition</span>
+            </TabsTrigger>
+            <TabsTrigger value="communication" className="flex items-center gap-2">
+              <MessageSquare className="h-4 w-4" />
+              <span className="hidden sm:inline">Communication</span>
+              <span className="sm:hidden">Com</span>
+            </TabsTrigger>
+          </TabsList>
 
           <TabsContent value="overview" className="space-y-4">
             <OverviewTab categoryId={categoryId!} />
           </TabsContent>
 
-          <TabsContent value="players" className="space-y-4">
-            <PlayersTab categoryId={categoryId!} />
+          <TabsContent value="effectif" className="space-y-4">
+            <EffectifTab categoryId={categoryId!} />
           </TabsContent>
 
-          <TabsContent value="calendar" className="space-y-4">
-            <CalendarTab categoryId={categoryId!} />
+          <TabsContent value="planification" className="space-y-4">
+            <PlanificationTab categoryId={categoryId!} />
           </TabsContent>
 
-          <TabsContent value="tests" className="space-y-4">
-            <TestsTab categoryId={categoryId!} />
+          <TabsContent value="performance" className="space-y-4">
+            <PerformanceTab categoryId={categoryId!} />
           </TabsContent>
 
-          <TabsContent value="awcr" className="space-y-4">
-            <AwcrTab categoryId={categoryId!} />
+          <TabsContent value="sante" className="space-y-4">
+            <SanteTab categoryId={categoryId!} />
           </TabsContent>
 
-          <TabsContent value="health" className="space-y-4">
-            <HealthTab categoryId={categoryId!} />
+          <TabsContent value="competition" className="space-y-4">
+            <CompetitionTab 
+              categoryId={categoryId!} 
+              isRugby7={isRugby7} 
+              isNationalTeam={isNationalTeam} 
+            />
           </TabsContent>
 
-          <TabsContent value="analytics" className="space-y-4">
-            <AnalyticsTab categoryId={categoryId!} />
-          </TabsContent>
-
-          <TabsContent value="periodization" className="space-y-4">
-            <PeriodizationTab categoryId={categoryId!} />
-          </TabsContent>
-
-          <TabsContent value="reminders" className="space-y-4">
-            <TestRemindersTab categoryId={categoryId!} />
-          </TabsContent>
-
-          <TabsContent value="matches" className="space-y-4">
-            <MatchesTab categoryId={categoryId!} />
-          </TabsContent>
-
-          <TabsContent value="wellness" className="space-y-4">
-            <WellnessTab categoryId={categoryId!} />
-          </TabsContent>
-
-          <TabsContent value="nutrition" className="space-y-4">
-            <NutritionTab categoryId={categoryId!} />
-          </TabsContent>
-
-
-          <TabsContent value="messaging" className="space-y-4">
-            <MessagingTab categoryId={categoryId!} />
-          </TabsContent>
-
-          <TabsContent value="physical-prep" className="space-y-4">
-            <PhysicalPreparationTab categoryId={categoryId!} />
-          </TabsContent>
-
-
-          <TabsContent value="reports" className="space-y-4">
-            <ReportsTab categoryId={categoryId!} />
-          </TabsContent>
-
-          {isRugby7 && (
-            <TabsContent value="tournaments" className="space-y-4">
-              <TournamentsTab categoryId={categoryId!} />
-            </TabsContent>
-          )}
-
-          {isAcademy && (
-            <TabsContent value="academy" className="space-y-4">
-              <AcademyTab categoryId={categoryId!} />
-            </TabsContent>
-          )}
-
-          {isNationalTeam && (
-            <TabsContent value="national-team" className="space-y-4">
-              <NationalTeamTab categoryId={categoryId!} />
-            </TabsContent>
-          )}
-
-          <TabsContent value="collaboration" className="space-y-4">
-            <CategoryCollaborationTab categoryId={categoryId!} />
+          <TabsContent value="communication" className="space-y-4">
+            <CommunicationTab 
+              categoryId={categoryId!} 
+              isAcademy={isAcademy} 
+            />
           </TabsContent>
         </Tabs>
       </div>
-      
-{/* Voice Assistant temporairement désactivé */}
     </div>
   );
 }
