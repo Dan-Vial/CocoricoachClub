@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Trash2, X, Swords, MapPin, Calendar as CalendarIcon, LayoutTemplate } from "lucide-react";
+import { Plus, Trash2, X, Swords, MapPin, Calendar as CalendarIcon, LayoutTemplate, Target } from "lucide-react";
 import { toast } from "sonner";
 import { AddSessionDialog } from "./AddSessionDialog";
 import { QuickTestEntryDialog } from "./QuickTestEntryDialog";
@@ -16,6 +16,7 @@ import type { DateRange } from "react-day-picker";
 import { useNavigate } from "react-router-dom";
 import { WeeklyPlanningCalendar } from "@/components/planning/WeeklyPlanningCalendar";
 import { SessionTemplatesSection } from "@/components/planning/SessionTemplatesSection";
+import { SeasonObjectivesSection } from "@/components/planning/SeasonObjectivesSection";
 
 interface CalendarTabProps {
   categoryId: string;
@@ -177,6 +178,10 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
           <TabsTrigger value="templates" className="flex items-center gap-2">
             <LayoutTemplate className="h-4 w-4" />
             Templates
+          </TabsTrigger>
+          <TabsTrigger value="objectives" className="flex items-center gap-2">
+            <Target className="h-4 w-4" />
+            Objectifs
           </TabsTrigger>
         </TabsList>
 
@@ -427,6 +432,10 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
           <div className="max-w-2xl">
             <SessionTemplatesSection categoryId={categoryId} />
           </div>
+        </TabsContent>
+
+        <TabsContent value="objectives">
+          <SeasonObjectivesSection categoryId={categoryId} />
         </TabsContent>
       </Tabs>
 

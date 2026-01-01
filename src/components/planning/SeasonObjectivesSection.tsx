@@ -9,12 +9,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { Plus, Target, Calendar, Flag, CheckCircle2, Clock, TrendingUp } from "lucide-react";
+import { Plus, Target, Flag, CheckCircle2, TrendingUp } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 
-interface PlanningTabProps {
+interface SeasonObjectivesSectionProps {
   categoryId: string;
 }
 
@@ -47,7 +48,7 @@ const milestoneTypeLabels: Record<string, string> = {
   other: "Autre",
 };
 
-export function PlanningTab({ categoryId }: PlanningTabProps) {
+export function SeasonObjectivesSection({ categoryId }: SeasonObjectivesSectionProps) {
   const queryClient = useQueryClient();
   const [goalDialogOpen, setGoalDialogOpen] = useState(false);
   const [milestoneDialogOpen, setMilestoneDialogOpen] = useState(false);
@@ -187,8 +188,8 @@ export function PlanningTab({ categoryId }: PlanningTabProps) {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold">Planification de Saison</h2>
-          <p className="text-muted-foreground">Objectifs et étapes clés</p>
+          <h2 className="text-xl font-bold">Objectifs de Saison</h2>
+          <p className="text-sm text-muted-foreground">Objectifs et étapes clés</p>
         </div>
         <div className="flex items-center gap-2">
           <Select value={String(selectedSeason)} onValueChange={(v) => setSelectedSeason(Number(v))}>
@@ -207,55 +208,55 @@ export function PlanningTab({ categoryId }: PlanningTabProps) {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <Target className="h-5 w-5 text-primary" />
+          <CardContent className="pt-4 pb-4">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 bg-primary/10 rounded-lg">
+                <Target className="h-4 w-4 text-primary" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Objectifs</p>
-                <p className="text-2xl font-bold">{goals.length}</p>
+                <p className="text-xs text-muted-foreground">Objectifs</p>
+                <p className="text-lg font-bold">{goals.length}</p>
               </div>
             </div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-green-500/10 rounded-lg">
-                <CheckCircle2 className="h-5 w-5 text-green-500" />
+          <CardContent className="pt-4 pb-4">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 bg-green-500/10 rounded-lg">
+                <CheckCircle2 className="h-4 w-4 text-green-500" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Complétés</p>
-                <p className="text-2xl font-bold">{completedGoals}/{goals.length}</p>
+                <p className="text-xs text-muted-foreground">Complétés</p>
+                <p className="text-lg font-bold">{completedGoals}/{goals.length}</p>
               </div>
             </div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-500/10 rounded-lg">
-                <Flag className="h-5 w-5 text-blue-500" />
+          <CardContent className="pt-4 pb-4">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 bg-blue-500/10 rounded-lg">
+                <Flag className="h-4 w-4 text-blue-500" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Étapes</p>
-                <p className="text-2xl font-bold">{completedMilestones}/{milestones.length}</p>
+                <p className="text-xs text-muted-foreground">Étapes</p>
+                <p className="text-lg font-bold">{completedMilestones}/{milestones.length}</p>
               </div>
             </div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-purple-500/10 rounded-lg">
-                <TrendingUp className="h-5 w-5 text-purple-500" />
+          <CardContent className="pt-4 pb-4">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 bg-purple-500/10 rounded-lg">
+                <TrendingUp className="h-4 w-4 text-purple-500" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Progression</p>
-                <p className="text-2xl font-bold">{overallProgress}%</p>
+                <p className="text-xs text-muted-foreground">Progression</p>
+                <p className="text-lg font-bold">{overallProgress}%</p>
               </div>
             </div>
           </CardContent>
@@ -265,10 +266,10 @@ export function PlanningTab({ categoryId }: PlanningTabProps) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Goals Section */}
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <Target className="h-5 w-5" />
-              Objectifs de Saison
+          <CardHeader className="flex flex-row items-center justify-between py-4">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Target className="h-4 w-4" />
+              Objectifs
             </CardTitle>
             <Dialog open={goalDialogOpen} onOpenChange={setGoalDialogOpen}>
               <DialogTrigger asChild>
@@ -330,30 +331,30 @@ export function PlanningTab({ categoryId }: PlanningTabProps) {
               </DialogContent>
             </Dialog>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-3 max-h-[400px] overflow-y-auto">
             {goals.length === 0 ? (
-              <p className="text-muted-foreground text-center py-8">Aucun objectif défini</p>
+              <p className="text-muted-foreground text-center py-6 text-sm">Aucun objectif défini</p>
             ) : (
               goals.map((goal) => (
-                <div key={goal.id} className="border rounded-lg p-4 space-y-3">
+                <div key={goal.id} className="border rounded-lg p-3 space-y-2">
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-2">
                       <div className={`w-2 h-2 rounded-full ${goalTypeColors[goal.goal_type]}`} />
-                      <span className="font-medium">{goal.title}</span>
+                      <span className="font-medium text-sm">{goal.title}</span>
                     </div>
-                    <Badge variant={goal.status === "completed" ? "default" : "secondary"}>
+                    <Badge variant={goal.status === "completed" ? "default" : "secondary"} className="text-xs">
                       {statusLabels[goal.status]}
                     </Badge>
                   </div>
                   {goal.description && (
-                    <p className="text-sm text-muted-foreground">{goal.description}</p>
+                    <p className="text-xs text-muted-foreground">{goal.description}</p>
                   )}
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-xs">
                       <span>Progression</span>
                       <span>{goal.progress_percentage || 0}%</span>
                     </div>
-                    <Progress value={goal.progress_percentage || 0} />
+                    <Progress value={goal.progress_percentage || 0} className="h-1.5" />
                   </div>
                   <div className="flex gap-2">
                     <Select 
@@ -364,7 +365,7 @@ export function PlanningTab({ categoryId }: PlanningTabProps) {
                         progress: status === "completed" ? 100 : goal.progress_percentage || 0 
                       })}
                     >
-                      <SelectTrigger className="w-[120px]">
+                      <SelectTrigger className="w-[100px] h-8 text-xs">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -383,9 +384,9 @@ export function PlanningTab({ categoryId }: PlanningTabProps) {
                         status: goal.status,
                         progress: Number(e.target.value)
                       })}
-                      className="w-20"
+                      className="w-16 h-8 text-xs"
                     />
-                    <span className="text-sm self-center">%</span>
+                    <span className="text-xs self-center">%</span>
                   </div>
                 </div>
               ))
@@ -395,9 +396,9 @@ export function PlanningTab({ categoryId }: PlanningTabProps) {
 
         {/* Milestones Section */}
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <Flag className="h-5 w-5" />
+          <CardHeader className="flex flex-row items-center justify-between py-4">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Flag className="h-4 w-4" />
               Étapes Clés
             </CardTitle>
             <Dialog open={milestoneDialogOpen} onOpenChange={setMilestoneDialogOpen}>
@@ -460,44 +461,42 @@ export function PlanningTab({ categoryId }: PlanningTabProps) {
               </DialogContent>
             </Dialog>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-2 max-h-[400px] overflow-y-auto">
             {milestones.length === 0 ? (
-              <p className="text-muted-foreground text-center py-8">Aucune étape définie</p>
+              <p className="text-muted-foreground text-center py-6 text-sm">Aucune étape définie</p>
             ) : (
-              <div className="space-y-3">
-                {milestones.map((milestone) => (
-                  <div 
-                    key={milestone.id} 
-                    className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${
-                      milestone.is_completed ? "bg-muted/50" : "hover:bg-muted/30"
-                    }`}
-                    onClick={() => toggleMilestoneMutation.mutate({ 
-                      id: milestone.id, 
-                      completed: !milestone.is_completed 
-                    })}
-                  >
-                    <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
-                      milestone.is_completed ? "bg-green-500 text-white" : "border-2 border-muted-foreground"
-                    }`}>
-                      {milestone.is_completed && <CheckCircle2 className="h-5 w-5" />}
+              milestones.map((milestone) => (
+                <div 
+                  key={milestone.id} 
+                  className={`flex items-start gap-3 p-3 rounded-lg border ${
+                    milestone.is_completed ? "bg-muted/50" : ""
+                  }`}
+                >
+                  <Checkbox 
+                    checked={milestone.is_completed}
+                    onCheckedChange={(checked) => 
+                      toggleMilestoneMutation.mutate({ id: milestone.id, completed: !!checked })
+                    }
+                    className="mt-0.5"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className={`font-medium text-sm ${milestone.is_completed ? "line-through text-muted-foreground" : ""}`}>
+                        {milestone.title}
+                      </span>
+                      <Badge variant="outline" className="text-xs">
+                        {milestoneTypeLabels[milestone.milestone_type]}
+                      </Badge>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className={`font-medium ${milestone.is_completed ? "line-through text-muted-foreground" : ""}`}>
-                          {milestone.title}
-                        </span>
-                        <Badge variant="outline" className="text-xs">
-                          {milestoneTypeLabels[milestone.milestone_type]}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                        <Calendar className="h-3 w-3" />
-                        {format(new Date(milestone.milestone_date), "d MMMM yyyy", { locale: fr })}
-                      </div>
-                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {format(new Date(milestone.milestone_date), "d MMMM yyyy", { locale: fr })}
+                    </p>
+                    {milestone.description && (
+                      <p className="text-xs text-muted-foreground mt-1">{milestone.description}</p>
+                    )}
                   </div>
-                ))}
-              </div>
+                </div>
+              ))
             )}
           </CardContent>
         </Card>
