@@ -12,18 +12,19 @@ interface CommunicationTabProps {
 export function CommunicationTab({ categoryId, isAcademy }: CommunicationTabProps) {
   return (
     <Tabs defaultValue="messaging" className="space-y-4">
-      <TabsList>
-        <TabsTrigger value="messaging" className="flex items-center gap-2">
-          <MessageSquare className="h-4 w-4" />
-          Messagerie
+      <TabsList className="flex w-full overflow-x-auto no-scrollbar gap-1 h-auto flex-wrap md:flex-nowrap bg-muted">
+        <TabsTrigger value="messaging" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3">
+          <MessageSquare className="h-4 w-4 shrink-0" />
+          <span className="hidden sm:inline">Messagerie</span>
+          <span className="sm:hidden">Msg</span>
         </TabsTrigger>
-        <TabsTrigger value="reports" className="flex items-center gap-2">
-          <FileText className="h-4 w-4" />
+        <TabsTrigger value="reports" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3">
+          <FileText className="h-4 w-4 shrink-0" />
           Rapports
         </TabsTrigger>
         {isAcademy && (
-          <TabsTrigger value="academy" className="flex items-center gap-2">
-            <GraduationCap className="h-4 w-4" />
+          <TabsTrigger value="academy" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3">
+            <GraduationCap className="h-4 w-4 shrink-0" />
             Académie
           </TabsTrigger>
         )}
