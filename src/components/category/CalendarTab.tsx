@@ -166,22 +166,25 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
   return (
     <div className="space-y-6">
       <Tabs defaultValue="global" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="global" className="flex items-center gap-2">
-            <CalendarIcon className="h-4 w-4" />
-            Calendrier Global
+        <TabsList className="flex w-full overflow-x-auto no-scrollbar gap-1 h-auto flex-wrap md:flex-nowrap bg-muted">
+          <TabsTrigger value="global" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3">
+            <CalendarIcon className="h-4 w-4 shrink-0" />
+            <span className="hidden sm:inline">Calendrier Global</span>
+            <span className="sm:hidden">Global</span>
           </TabsTrigger>
-          <TabsTrigger value="weekly" className="flex items-center gap-2">
-            <CalendarIcon className="h-4 w-4" />
-            Planning Hebdo
+          <TabsTrigger value="weekly" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3">
+            <CalendarIcon className="h-4 w-4 shrink-0" />
+            <span className="hidden sm:inline">Planning Hebdo</span>
+            <span className="sm:hidden">Hebdo</span>
           </TabsTrigger>
-          <TabsTrigger value="templates" className="flex items-center gap-2">
-            <LayoutTemplate className="h-4 w-4" />
+          <TabsTrigger value="templates" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3">
+            <LayoutTemplate className="h-4 w-4 shrink-0" />
             Templates
           </TabsTrigger>
-          <TabsTrigger value="objectives" className="flex items-center gap-2">
-            <Target className="h-4 w-4" />
-            Objectifs
+          <TabsTrigger value="objectives" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3">
+            <Target className="h-4 w-4 shrink-0" />
+            <span className="hidden sm:inline">Objectifs</span>
+            <span className="sm:hidden">Obj.</span>
           </TabsTrigger>
         </TabsList>
 
