@@ -1,9 +1,10 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ClipboardCheck, Activity, BarChart3, Dumbbell } from "lucide-react";
+import { ClipboardCheck, Activity, BarChart3, Dumbbell, MapPin } from "lucide-react";
 import { TestsTab } from "@/components/category/TestsTab";
 import { AwcrTab } from "@/components/category/AwcrTab";
 import { AnalyticsTab } from "@/components/analytics/AnalyticsTab";
 import { PhysicalPreparationTab } from "@/components/category/PhysicalPreparationTab";
+import { GpsDataTab } from "@/components/category/gps/GpsDataTab";
 
 interface PerformanceTabProps {
   categoryId: string;
@@ -30,6 +31,11 @@ export function PerformanceTab({ categoryId }: PerformanceTabProps) {
           <span className="hidden sm:inline">Prépa Physique</span>
           <span className="sm:hidden">Prépa</span>
         </TabsTrigger>
+        <TabsTrigger value="gps" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5">
+          <MapPin className="h-4 w-4 shrink-0" />
+          <span className="hidden sm:inline">Data GPS</span>
+          <span className="sm:hidden">GPS</span>
+        </TabsTrigger>
       </TabsList>
 
       <TabsContent value="tests">
@@ -46,6 +52,10 @@ export function PerformanceTab({ categoryId }: PerformanceTabProps) {
 
       <TabsContent value="physical-prep">
         <PhysicalPreparationTab categoryId={categoryId} />
+      </TabsContent>
+
+      <TabsContent value="gps">
+        <GpsDataTab categoryId={categoryId} />
       </TabsContent>
     </Tabs>
   );

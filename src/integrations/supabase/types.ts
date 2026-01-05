@@ -733,6 +733,114 @@ export type Database = {
           },
         ]
       }
+      gps_sessions: {
+        Row: {
+          accelerations: number | null
+          avg_speed_ms: number | null
+          category_id: string
+          created_at: string
+          decelerations: number | null
+          duration_minutes: number | null
+          high_intensity_accelerations: number | null
+          high_intensity_decelerations: number | null
+          high_speed_distance_m: number | null
+          id: string
+          max_speed_ms: number | null
+          max_sprint_distance_m: number | null
+          notes: string | null
+          player_id: string
+          player_load: number | null
+          raw_data: Json | null
+          session_date: string
+          session_name: string | null
+          source: string | null
+          sprint_count: number | null
+          sprint_distance_m: number | null
+          time_zone_1_min: number | null
+          time_zone_2_min: number | null
+          time_zone_3_min: number | null
+          time_zone_4_min: number | null
+          time_zone_5_min: number | null
+          total_distance_m: number | null
+          updated_at: string
+        }
+        Insert: {
+          accelerations?: number | null
+          avg_speed_ms?: number | null
+          category_id: string
+          created_at?: string
+          decelerations?: number | null
+          duration_minutes?: number | null
+          high_intensity_accelerations?: number | null
+          high_intensity_decelerations?: number | null
+          high_speed_distance_m?: number | null
+          id?: string
+          max_speed_ms?: number | null
+          max_sprint_distance_m?: number | null
+          notes?: string | null
+          player_id: string
+          player_load?: number | null
+          raw_data?: Json | null
+          session_date: string
+          session_name?: string | null
+          source?: string | null
+          sprint_count?: number | null
+          sprint_distance_m?: number | null
+          time_zone_1_min?: number | null
+          time_zone_2_min?: number | null
+          time_zone_3_min?: number | null
+          time_zone_4_min?: number | null
+          time_zone_5_min?: number | null
+          total_distance_m?: number | null
+          updated_at?: string
+        }
+        Update: {
+          accelerations?: number | null
+          avg_speed_ms?: number | null
+          category_id?: string
+          created_at?: string
+          decelerations?: number | null
+          duration_minutes?: number | null
+          high_intensity_accelerations?: number | null
+          high_intensity_decelerations?: number | null
+          high_speed_distance_m?: number | null
+          id?: string
+          max_speed_ms?: number | null
+          max_sprint_distance_m?: number | null
+          notes?: string | null
+          player_id?: string
+          player_load?: number | null
+          raw_data?: Json | null
+          session_date?: string
+          session_name?: string | null
+          source?: string | null
+          sprint_count?: number | null
+          sprint_distance_m?: number | null
+          time_zone_1_min?: number | null
+          time_zone_2_min?: number | null
+          time_zone_3_min?: number | null
+          time_zone_4_min?: number | null
+          time_zone_5_min?: number | null
+          total_distance_m?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gps_sessions_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gps_sessions_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       injuries: {
         Row: {
           actual_return_date: string | null
