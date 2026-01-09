@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Trash2, X, Swords, MapPin, Calendar as CalendarIcon, LayoutTemplate, Target, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { AddSessionDialog } from "./AddSessionDialog";
+import { AddMatchCalendarDialog } from "./matches/AddMatchCalendarDialog";
 import { QuickTestEntryDialog } from "./QuickTestEntryDialog";
 import { QuickRpeEntryDialog } from "./QuickRpeEntryDialog";
 import { format, isSameDay, isWithinInterval, startOfWeek, addDays } from "date-fns";
@@ -45,6 +46,7 @@ const trainingTypeColors: Record<string, string> = {
 
 export function CalendarTab({ categoryId }: CalendarTabProps) {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isAddMatchDialogOpen, setIsAddMatchDialogOpen] = useState(false);
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [selectedSession, setSelectedSession] = useState<{
     id: string;
@@ -249,6 +251,10 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
                       Réinitialiser
                     </Button>
                   )}
+                  <Button onClick={() => setIsAddMatchDialogOpen(true)} variant="outline" className="gap-2">
+                    <Swords className="h-4 w-4" />
+                    Ajouter un match
+                  </Button>
                   <Button onClick={() => setIsAddDialogOpen(true)} className="gap-2">
                     <Plus className="h-4 w-4" />
                     Ajouter une séance
@@ -543,6 +549,12 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
       <AddSessionDialog
         open={isAddDialogOpen}
         onOpenChange={setIsAddDialogOpen}
+        categoryId={categoryId}
+      />
+
+      <AddMatchCalendarDialog
+        open={isAddMatchDialogOpen}
+        onOpenChange={setIsAddMatchDialogOpen}
         categoryId={categoryId}
       />
 

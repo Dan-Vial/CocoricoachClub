@@ -40,6 +40,8 @@ interface PlanningItem {
   location: string | null;
   status: string | null;
   template_id: string | null;
+  is_match?: boolean;
+  match_opponent?: string | null;
   template?: {
     name: string;
     session_type: string;
@@ -59,6 +61,9 @@ export function WeeklyPlanningCalendar({ categoryId }: WeeklyPlanningCalendarPro
   const [newItemLocation, setNewItemLocation] = useState("");
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("none");
   const [pendingTemplateId, setPendingTemplateId] = useState<string | null>(null);
+  const [isMatch, setIsMatch] = useState(false);
+  const [matchOpponent, setMatchOpponent] = useState("");
+  const [isHomeMatch, setIsHomeMatch] = useState(true);
 
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -106,21 +111,39 @@ export function WeeklyPlanningCalendar({ categoryId }: WeeklyPlanningCalendarPro
     mutationFn: async () => {
       if (selectedDay === null) return;
       
+      // Calculate actual date for the match
+      const matchDate = format(addDays(currentWeekStart, selectedDay), "yyyy-MM-dd");
+      
+      // If it's a match, also create it in the matches table
+      if (isMatch && matchOpponent) {
+        const { error: matchError } = await supabase.from("matches").insert({
+          category_id: categoryId,
+          opponent: matchOpponent,
+          match_date: matchDate,
+          match_time: newItemTime || null,
+          location: newItemLocation || null,
+          is_home: isHomeMatch,
+        });
+        if (matchError) throw matchError;
+      }
+      
       const { error } = await supabase.from("weekly_planning").insert({
         category_id: categoryId,
         week_start_date: weekStartStr,
         day_of_week: selectedDay,
         time_slot: newItemTime || null,
-        custom_title: newItemTitle || null,
+        custom_title: isMatch ? `Match vs ${matchOpponent}` : (newItemTitle || null),
         location: newItemLocation || null,
-        template_id: selectedTemplateId && selectedTemplateId !== "none" ? selectedTemplateId : null,
+        template_id: (!isMatch && selectedTemplateId && selectedTemplateId !== "none") ? selectedTemplateId : null,
         created_by: user?.id,
       });
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["weekly-planning", categoryId, weekStartStr] });
-      toast.success("Séance ajoutée");
+      queryClient.invalidateQueries({ queryKey: ["matches", categoryId] });
+      queryClient.invalidateQueries({ queryKey: ["weekly-planning-all", categoryId] });
+      toast.success(isMatch ? "Match ajouté" : "Séance ajoutée");
       resetAddDialog();
     },
     onError: () => {
@@ -150,6 +173,9 @@ export function WeeklyPlanningCalendar({ categoryId }: WeeklyPlanningCalendarPro
     setNewItemLocation("");
     setSelectedTemplateId("none");
     setPendingTemplateId(null);
+    setIsMatch(false);
+    setMatchOpponent("");
+    setIsHomeMatch(true);
   };
 
   const handleDropOnDay = (dayIndex: number, templateData: string) => {
@@ -303,32 +329,88 @@ export function WeeklyPlanningCalendar({ categoryId }: WeeklyPlanningCalendarPro
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label>Template (optionnel)</Label>
-              <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Choisir un template" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Aucun template</SelectItem>
-                  {templates?.map((t) => (
-                    <SelectItem key={t.id} value={t.id}>
-                      {t.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="flex items-center gap-4 p-3 rounded-lg border bg-muted/50">
+              <Label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  checked={!isMatch}
+                  onChange={() => setIsMatch(false)}
+                  className="accent-primary"
+                />
+                Séance
+              </Label>
+              <Label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  checked={isMatch}
+                  onChange={() => setIsMatch(true)}
+                  className="accent-primary"
+                />
+                Match
+              </Label>
             </div>
 
-            {(!selectedTemplateId || selectedTemplateId === "none") && (
-              <div className="space-y-2">
-                <Label>Titre personnalisé</Label>
-                <Input
-                  value={newItemTitle}
-                  onChange={(e) => setNewItemTitle(e.target.value)}
-                  placeholder="Ex: Entraînement collectif"
-                />
-              </div>
+            {isMatch ? (
+              <>
+                <div className="space-y-2">
+                  <Label>Adversaire *</Label>
+                  <Input
+                    value={matchOpponent}
+                    onChange={(e) => setMatchOpponent(e.target.value)}
+                    placeholder="Nom de l'équipe adverse"
+                  />
+                </div>
+                <div className="flex items-center gap-4">
+                  <Label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      checked={isHomeMatch}
+                      onChange={() => setIsHomeMatch(true)}
+                      className="accent-primary"
+                    />
+                    Domicile
+                  </Label>
+                  <Label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      checked={!isHomeMatch}
+                      onChange={() => setIsHomeMatch(false)}
+                      className="accent-primary"
+                    />
+                    Extérieur
+                  </Label>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="space-y-2">
+                  <Label>Template (optionnel)</Label>
+                  <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choisir un template" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Aucun template</SelectItem>
+                      {templates?.map((t) => (
+                        <SelectItem key={t.id} value={t.id}>
+                          {t.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {(!selectedTemplateId || selectedTemplateId === "none") && (
+                  <div className="space-y-2">
+                    <Label>Titre personnalisé</Label>
+                    <Input
+                      value={newItemTitle}
+                      onChange={(e) => setNewItemTitle(e.target.value)}
+                      placeholder="Ex: Entraînement collectif"
+                    />
+                  </div>
+                )}
+              </>
             )}
 
             <div className="grid grid-cols-2 gap-4">
@@ -356,7 +438,10 @@ export function WeeklyPlanningCalendar({ categoryId }: WeeklyPlanningCalendarPro
               </Button>
               <Button 
                 onClick={() => addPlanningItem.mutate()}
-                disabled={((!selectedTemplateId || selectedTemplateId === "none") && !newItemTitle) || addPlanningItem.isPending}
+                disabled={
+                  (isMatch ? !matchOpponent : ((!selectedTemplateId || selectedTemplateId === "none") && !newItemTitle)) || 
+                  addPlanningItem.isPending
+                }
               >
                 Ajouter
               </Button>
