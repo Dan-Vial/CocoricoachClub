@@ -2789,6 +2789,70 @@ export type Database = {
           },
         ]
       }
+      public_access_tokens: {
+        Row: {
+          access_type: string
+          category_id: string | null
+          club_id: string | null
+          created_at: string
+          created_by: string
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          label: string | null
+          last_used_at: string | null
+          token: string
+        }
+        Insert: {
+          access_type?: string
+          category_id?: string | null
+          club_id?: string | null
+          created_at?: string
+          created_by: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          label?: string | null
+          last_used_at?: string | null
+          token?: string
+        }
+        Update: {
+          access_type?: string
+          category_id?: string | null
+          club_id?: string | null
+          created_at?: string
+          created_by?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          label?: string | null
+          last_used_at?: string | null
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "public_access_tokens_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "public_access_tokens_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "admin_all_clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "public_access_tokens_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       push_subscriptions: {
         Row: {
           auth: string
@@ -4441,6 +4505,7 @@ export type Database = {
         }
         Returns: string
       }
+      validate_public_token: { Args: { _token: string }; Returns: Json }
     }
     Enums: {
       app_role:

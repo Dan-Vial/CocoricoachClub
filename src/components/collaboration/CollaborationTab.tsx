@@ -8,6 +8,7 @@ import { Plus } from "lucide-react";
 import { MembersSection } from "./MembersSection";
 import { InvitationsSection } from "./InvitationsSection";
 import { InviteMemberDialog } from "./InviteMemberDialog";
+import { PublicLinkSection } from "./PublicLinkSection";
 
 interface CollaborationTabProps {
   clubId: string;
@@ -92,6 +93,10 @@ export function CollaborationTab({ clubId }: CollaborationTabProps) {
 
       <MembersSection clubId={clubId} canManage={canManageMembers} />
       <InvitationsSection clubId={clubId} canManage={canManageMembers} />
+      
+      {canManageMembers && (
+        <PublicLinkSection clubId={clubId} />
+      )}
 
       <InviteMemberDialog
         open={isInviteDialogOpen}

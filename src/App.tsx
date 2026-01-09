@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { OfflineSyncProvider } from "@/contexts/OfflineSyncContext";
+import { PublicAccessProvider } from "@/contexts/PublicAccessContext";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import PWAUpdatePrompt from "@/components/PWAUpdatePrompt";
 import OfflineIndicator from "@/components/OfflineIndicator";
@@ -15,6 +16,7 @@ import PlayerDetails from "./pages/PlayerDetails";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import AcceptInvitation from "./pages/AcceptInvitation";
+import PublicView from "./pages/PublicView";
 import Install from "./pages/Install";
 import Admin from "./pages/Admin";
 import Settings from "./pages/Settings";
@@ -41,24 +43,27 @@ const App = () => (
       <Sonner />
       <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AuthProvider>
-          <OfflineSyncProvider>
-            <OfflineIndicator />
-            <PWAUpdatePrompt />
-            <PWAInstallPrompt />
-            <Routes>
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/" element={<Clubs />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/accept-invitation" element={<AcceptInvitation />} />
-              <Route path="/install" element={<Install />} />
-              <Route path="/admin" element={<Admin />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="/clubs/:clubId" element={<ClubDetails />} />
-              <Route path="/categories/:categoryId" element={<CategoryDetails />} />
-              <Route path="/players/:playerId" element={<PlayerDetails />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </OfflineSyncProvider>
+          <PublicAccessProvider>
+            <OfflineSyncProvider>
+              <OfflineIndicator />
+              <PWAUpdatePrompt />
+              <PWAInstallPrompt />
+              <Routes>
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/" element={<Clubs />} />
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/accept-invitation" element={<AcceptInvitation />} />
+                <Route path="/public-view" element={<PublicView />} />
+                <Route path="/install" element={<Install />} />
+                <Route path="/admin" element={<Admin />} />
+                <Route path="/settings" element={<Settings />} />
+                <Route path="/clubs/:clubId" element={<ClubDetails />} />
+                <Route path="/categories/:categoryId" element={<CategoryDetails />} />
+                <Route path="/players/:playerId" element={<PlayerDetails />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </OfflineSyncProvider>
+          </PublicAccessProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

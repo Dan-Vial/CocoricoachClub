@@ -1,5 +1,6 @@
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { usePublicAccess } from "@/contexts/PublicAccessContext";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -7,6 +8,7 @@ interface ProtectedRouteProps {
 
 export default function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { user, loading, isOfflineSession } = useAuth();
+  const { isPublicAccess } = usePublicAccess();
 
   if (loading) {
     return (
@@ -16,8 +18,8 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
     );
   }
 
-  // Allow access if user exists (either online session or offline cached session)
-  if (!user) {
+  // Allow access if user exists OR if public access is valid
+  if (!user && !isPublicAccess) {
     return <Navigate to="/auth" replace />;
   }
 
