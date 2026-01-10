@@ -1075,6 +1075,7 @@ export type Database = {
         Row: {
           average_play_sequence: number | null
           category_id: string
+          competition: string | null
           created_at: string
           effective_play_time: number | null
           id: string
@@ -1092,6 +1093,7 @@ export type Database = {
         Insert: {
           average_play_sequence?: number | null
           category_id: string
+          competition?: string | null
           created_at?: string
           effective_play_time?: number | null
           id?: string
@@ -1109,6 +1111,7 @@ export type Database = {
         Update: {
           average_play_sequence?: number | null
           category_id?: string
+          competition?: string | null
           created_at?: string
           effective_play_time?: number | null
           id?: string

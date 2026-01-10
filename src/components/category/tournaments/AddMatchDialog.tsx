@@ -12,7 +12,32 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
+
+const COMPETITIONS = [
+  "Tournois",
+  "SCF",
+  "Groupama A",
+  "Groupama B",
+  "Groupama C",
+  "Sélection régionale",
+  "Gaudermen",
+  "Alamercery",
+  "Crabos A",
+  "Crabos B",
+  "Espoirs",
+  "Sélection nationale",
+  "Elite 1 féminine",
+  "Matchs amicaux",
+  "Sevens jeunes",
+];
 
 interface AddMatchDialogProps {
   open: boolean;
@@ -28,6 +53,7 @@ export function AddMatchDialog({
   nextMatchOrder,
 }: AddMatchDialogProps) {
   const [opponent, setOpponent] = useState("");
+  const [competition, setCompetition] = useState("");
   const [matchDate, setMatchDate] = useState("");
   const [matchTime, setMatchTime] = useState("");
   const [notes, setNotes] = useState("");
@@ -36,6 +62,7 @@ export function AddMatchDialog({
   const addMatch = useMutation({
     mutationFn: async (data: {
       opponent: string;
+      competition?: string;
       match_date: string;
       match_time?: string;
       match_order: number;
@@ -51,6 +78,7 @@ export function AddMatchDialog({
       queryClient.invalidateQueries({ queryKey: ["tournament-matches", tournamentId] });
       toast.success("Match ajouté avec succès");
       setOpponent("");
+      setCompetition("");
       setMatchDate("");
       setMatchTime("");
       setNotes("");
@@ -65,6 +93,7 @@ export function AddMatchDialog({
     e.preventDefault();
     addMatch.mutate({
       opponent,
+      competition: competition || undefined,
       match_date: matchDate,
       match_time: matchTime || undefined,
       match_order: nextMatchOrder,
@@ -89,6 +118,21 @@ export function AddMatchDialog({
                 placeholder="Nom de l'équipe adverse"
                 required
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="competition">Championnat</Label>
+              <Select value={competition} onValueChange={setCompetition}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner un championnat" />
+                </SelectTrigger>
+                <SelectContent>
+                  {COMPETITIONS.map((comp) => (
+                    <SelectItem key={comp} value={comp}>
+                      {comp}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">

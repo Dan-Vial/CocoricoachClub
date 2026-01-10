@@ -12,7 +12,32 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
+
+const COMPETITIONS = [
+  "Tournois",
+  "SCF",
+  "Groupama A",
+  "Groupama B",
+  "Groupama C",
+  "Sélection régionale",
+  "Gaudermen",
+  "Alamercery",
+  "Crabos A",
+  "Crabos B",
+  "Espoirs",
+  "Sélection nationale",
+  "Elite 1 féminine",
+  "Matchs amicaux",
+  "Sevens jeunes",
+];
 
 interface AddMatchCalendarDialogProps {
   open: boolean;
@@ -26,6 +51,7 @@ export function AddMatchCalendarDialog({
   categoryId,
 }: AddMatchCalendarDialogProps) {
   const [opponent, setOpponent] = useState("");
+  const [competition, setCompetition] = useState("");
   const [matchDate, setMatchDate] = useState("");
   const [matchTime, setMatchTime] = useState("");
   const [location, setLocation] = useState("");
@@ -38,6 +64,7 @@ export function AddMatchCalendarDialog({
       const { error } = await supabase.from("matches").insert({
         category_id: categoryId,
         opponent,
+        competition: competition || null,
         match_date: matchDate,
         match_time: matchTime || null,
         location: location || null,
@@ -59,6 +86,7 @@ export function AddMatchCalendarDialog({
 
   const resetForm = () => {
     setOpponent("");
+    setCompetition("");
     setMatchDate("");
     setMatchTime("");
     setLocation("");
@@ -91,6 +119,22 @@ export function AddMatchCalendarDialog({
               placeholder="Nom de l'équipe adverse"
               required
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="competition">Championnat</Label>
+            <Select value={competition} onValueChange={setCompetition}>
+              <SelectTrigger>
+                <SelectValue placeholder="Sélectionner un championnat" />
+              </SelectTrigger>
+              <SelectContent>
+                {COMPETITIONS.map((comp) => (
+                  <SelectItem key={comp} value={comp}>
+                    {comp}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
