@@ -180,12 +180,45 @@ export function CategoryCollaborationTab({ categoryId }: CategoryCollaborationTa
     },
   });
 
-  const copyInvitationLink = async (token: string) => {
-    const link = `${window.location.origin}/accept-invitation?token=${token}&type=category`;
-    await navigator.clipboard.writeText(link);
-    setCopiedToken(token);
-    toast.success("Lien copié !");
-    setTimeout(() => setCopiedToken(null), 2000);
+  const copyInvitationLink = async (invitation: any) => {
+    try {
+      // Viewer: generate a public (no-auth) read-only link
+      if (invitation.role === "viewer") {
+        const { data: userData } = await supabase.auth.getUser();
+        const userId = userData.user?.id;
+        if (!userId) throw new Error("Non authentifié");
+
+        const { data, error } = await supabase
+          .from("public_access_tokens")
+          .insert({
+            club_id: null,
+            category_id: categoryId,
+            created_by: userId,
+            label: invitation.email ? `Invitation viewer: ${invitation.email}` : null,
+            access_type: "viewer",
+          })
+          .select("token")
+          .single();
+
+        if (error) throw error;
+
+        const link = `${window.location.origin}/public-view?token=${data.token}`;
+        await navigator.clipboard.writeText(link);
+        setCopiedToken(invitation.token);
+        toast.success("Lien viewer (sans compte) copié !");
+        setTimeout(() => setCopiedToken(null), 2000);
+        return;
+      }
+
+      // Other roles: classic invitation flow (requires login)
+      const link = `${window.location.origin}/accept-invitation?token=${invitation.token}&type=category`;
+      await navigator.clipboard.writeText(link);
+      setCopiedToken(invitation.token);
+      toast.success("Lien copié !");
+      setTimeout(() => setCopiedToken(null), 2000);
+    } catch (e) {
+      toast.error("Erreur lors de la copie du lien");
+    }
   };
 
   const getRoleBadge = (role: string) => {
@@ -333,7 +366,7 @@ export function CategoryCollaborationTab({ categoryId }: CategoryCollaborationTa
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => copyInvitationLink(invitation.token)}
+                          onClick={() => copyInvitationLink(invitation)}
                         >
                           {copiedToken === invitation.token ? (
                             <Check className="h-4 w-4 text-green-500" />

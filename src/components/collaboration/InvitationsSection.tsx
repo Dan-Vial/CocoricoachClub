@@ -56,10 +56,41 @@ export function InvitationsSection({ clubId, canManage }: InvitationsSectionProp
     },
   });
 
-  const copyInvitationLink = (token: string) => {
-    const link = `${window.location.origin}/accept-invitation?token=${token}`;
-    navigator.clipboard.writeText(link);
-    toast.success("Lien d'invitation copié");
+  const copyInvitationLink = async (invitation: any) => {
+    try {
+      // Viewer: generate a public (no-auth) read-only link
+      if (invitation.role === "viewer") {
+        const { data: userData } = await supabase.auth.getUser();
+        const userId = userData.user?.id;
+        if (!userId) throw new Error("Non authentifié");
+
+        const { data, error } = await supabase
+          .from("public_access_tokens")
+          .insert({
+            club_id: clubId,
+            category_id: null,
+            created_by: userId,
+            label: invitation.email ? `Invitation viewer: ${invitation.email}` : null,
+            access_type: "viewer",
+          })
+          .select("token")
+          .single();
+
+        if (error) throw error;
+
+        const link = `${window.location.origin}/public-view?token=${data.token}`;
+        await navigator.clipboard.writeText(link);
+        toast.success("Lien viewer (sans compte) copié");
+        return;
+      }
+
+      // Other roles: classic invitation flow (requires login)
+      const link = `${window.location.origin}/accept-invitation?token=${invitation.token}`;
+      await navigator.clipboard.writeText(link);
+      toast.success("Lien d'invitation copié");
+    } catch (e) {
+      toast.error("Erreur lors de la copie du lien");
+    }
   };
 
   if (isLoading) {
@@ -117,7 +148,7 @@ export function InvitationsSection({ clubId, canManage }: InvitationsSectionProp
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => copyInvitationLink(invitation.token)}
+                          onClick={() => copyInvitationLink(invitation)}
                         >
                           <Copy className="h-4 w-4" />
                         </Button>
