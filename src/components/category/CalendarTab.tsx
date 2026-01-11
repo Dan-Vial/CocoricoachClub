@@ -5,9 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Trash2, X, Swords, MapPin, Calendar as CalendarIcon, LayoutTemplate, Target, Clock } from "lucide-react";
+import { Plus, Trash2, Pencil, X, Swords, MapPin, Calendar as CalendarIcon, LayoutTemplate, Target, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { AddSessionDialog } from "./AddSessionDialog";
+import { EditSessionDialog } from "./EditSessionDialog";
 import { AddMatchCalendarDialog } from "./matches/AddMatchCalendarDialog";
 import { QuickTestEntryDialog } from "./QuickTestEntryDialog";
 import { QuickRpeEntryDialog } from "./QuickRpeEntryDialog";
@@ -47,6 +48,16 @@ const trainingTypeColors: Record<string, string> = {
 export function CalendarTab({ categoryId }: CalendarTabProps) {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isAddMatchDialogOpen, setIsAddMatchDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingSession, setEditingSession] = useState<{
+    id: string;
+    session_date: string;
+    session_start_time: string | null;
+    session_end_time: string | null;
+    training_type: string;
+    intensity: number | null;
+    notes: string | null;
+  } | null>(null);
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [selectedSession, setSelectedSession] = useState<{
     id: string;
@@ -499,18 +510,39 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
                                 )}
                               </div>
                             </div>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (confirm("Êtes-vous sûr de vouloir supprimer cette séance ?")) {
-                                  deleteSession.mutate(event.id);
-                                }
-                              }}
-                            >
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
+                            <div className="flex items-center gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setEditingSession({
+                                    id: event.id,
+                                    session_date: event.session_date,
+                                    session_start_time: event.session_start_time,
+                                    session_end_time: event.session_end_time,
+                                    training_type: event.training_type,
+                                    intensity: event.intensity,
+                                    notes: event.notes,
+                                  });
+                                  setIsEditDialogOpen(true);
+                                }}
+                              >
+                                <Pencil className="h-4 w-4 text-muted-foreground" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (confirm("Êtes-vous sûr de vouloir supprimer cette séance ?")) {
+                                    deleteSession.mutate(event.id);
+                                  }
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </div>
                           </div>
                         );
                       }
@@ -556,6 +588,16 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
         open={isAddMatchDialogOpen}
         onOpenChange={setIsAddMatchDialogOpen}
         categoryId={categoryId}
+      />
+
+      <EditSessionDialog
+        open={isEditDialogOpen}
+        onOpenChange={(open) => {
+          setIsEditDialogOpen(open);
+          if (!open) setEditingSession(null);
+        }}
+        categoryId={categoryId}
+        session={editingSession}
       />
 
       {selectedSession?.type === "test" && (
