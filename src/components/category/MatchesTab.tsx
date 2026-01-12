@@ -9,6 +9,7 @@ import { MatchCard } from "./matches/MatchCard";
 import { PlayerCumulativeStats } from "./matches/PlayerCumulativeStats";
 import { isFuture, isPast } from "date-fns";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 
 interface MatchesTabProps {
   categoryId: string;
@@ -16,6 +17,7 @@ interface MatchesTabProps {
 
 export function MatchesTab({ categoryId }: MatchesTabProps) {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const { isViewer } = useViewerModeContext();
 
   const { data: matches, isLoading } = useQuery({
     queryKey: ["matches", categoryId],
@@ -59,10 +61,12 @@ export function MatchesTab({ categoryId }: MatchesTabProps) {
                   <Calendar className="h-5 w-5" />
                   Gestion des matchs
                 </CardTitle>
-                <Button onClick={() => setIsAddDialogOpen(true)} className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Ajouter un match
-                </Button>
+                {!isViewer && (
+                  <Button onClick={() => setIsAddDialogOpen(true)} className="gap-2">
+                    <Plus className="h-4 w-4" />
+                    Ajouter un match
+                  </Button>
+                )}
               </div>
             </CardHeader>
             <CardContent>
@@ -72,10 +76,12 @@ export function MatchesTab({ categoryId }: MatchesTabProps) {
                   <p className="text-muted-foreground mb-4">
                     Aucun match programmé pour cette catégorie
                   </p>
-                  <Button onClick={() => setIsAddDialogOpen(true)} className="gap-2">
-                    <Plus className="h-4 w-4" />
-                    Créer le premier match
-                  </Button>
+                  {!isViewer && (
+                    <Button onClick={() => setIsAddDialogOpen(true)} className="gap-2">
+                      <Plus className="h-4 w-4" />
+                      Créer le premier match
+                    </Button>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-8">

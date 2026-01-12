@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { AddPlayerDialog } from "./AddPlayerDialog";
 import { useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 
 interface PlayersTabProps {
   categoryId: string;
@@ -25,6 +26,7 @@ export function PlayersTab({ categoryId }: PlayersTabProps) {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const { isViewer } = useViewerModeContext();
 
   const { data: players, isLoading } = useQuery({
     queryKey: ["players", categoryId],
@@ -62,20 +64,24 @@ export function PlayersTab({ categoryId }: PlayersTabProps) {
       <CardHeader>
         <div className="flex justify-between items-center">
           <CardTitle>Liste des joueurs</CardTitle>
-          <Button onClick={() => setIsAddDialogOpen(true)} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Ajouter un joueur
-          </Button>
+          {!isViewer && (
+            <Button onClick={() => setIsAddDialogOpen(true)} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Ajouter un joueur
+            </Button>
+          )}
         </div>
       </CardHeader>
       <CardContent>
         {players && players.length === 0 ? (
           <div className="text-center py-8">
             <p className="text-muted-foreground mb-4">Aucun joueur dans cette catégorie</p>
-            <Button onClick={() => setIsAddDialogOpen(true)} variant="outline" className="gap-2">
-              <Plus className="h-4 w-4" />
-              Ajouter le premier joueur
-            </Button>
+            {!isViewer && (
+              <Button onClick={() => setIsAddDialogOpen(true)} variant="outline" className="gap-2">
+                <Plus className="h-4 w-4" />
+                Ajouter le premier joueur
+              </Button>
+            )}
           </div>
         ) : (
           <Table>
@@ -117,18 +123,20 @@ export function PlayersTab({ categoryId }: PlayersTabProps) {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (confirm(`Êtes-vous sûr de vouloir supprimer ${player.name} ?`)) {
-                              deletePlayer.mutate(player.id);
-                            }
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
+                        {!isViewer && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (confirm(`Êtes-vous sûr de vouloir supprimer ${player.name} ?`)) {
+                                deletePlayer.mutate(player.id);
+                              }
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        )}
                         <Button
                           variant="ghost"
                           size="icon"

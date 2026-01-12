@@ -9,6 +9,7 @@ import { PublicAccessProvider, usePublicAccess } from "@/contexts/PublicAccessCo
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import PWAUpdatePrompt from "@/components/PWAUpdatePrompt";
 import OfflineIndicator from "@/components/OfflineIndicator";
+import { ViewerModeBanner } from "@/components/ViewerModeBanner";
 import Clubs from "./pages/Clubs";
 import ClubDetails from "./pages/ClubDetails";
 import CategoryDetails from "./pages/CategoryDetails";
@@ -78,6 +79,7 @@ const App = () => (
         <AuthProvider>
           <PublicAccessProvider>
             <OfflineSyncProvider>
+              <ViewerModeBanner />
               <OfflineIndicator />
               <PWAUpdatePrompt />
               <PWAInstallPrompt />
