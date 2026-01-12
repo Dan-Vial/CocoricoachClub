@@ -10,6 +10,7 @@ import { CategoryCoverUpload } from "@/components/category/CategoryCoverUpload";
 import { GlobalPlayerSearch } from "@/components/search/GlobalPlayerSearch";
 import { EditableCategoryName } from "@/components/category/EditableCategoryName";
 import { EditableRugbyType } from "@/components/category/EditableRugbyType";
+import { ViewerModeProvider, useViewerModeContext } from "@/contexts/ViewerModeContext";
 
 // New mega-tabs
 import { EffectifTab } from "@/components/category/tabs/EffectifTab";
@@ -19,9 +20,10 @@ import { SanteTab } from "@/components/category/tabs/SanteTab";
 import { CompetitionTab } from "@/components/category/tabs/CompetitionTab";
 import { CommunicationTab } from "@/components/category/tabs/CommunicationTab";
 
-export default function CategoryDetails() {
+function CategoryDetailsContent() {
   const { categoryId } = useParams();
   const navigate = useNavigate();
+  const { isViewer } = useViewerModeContext();
 
   const { data: category } = useQuery({
     queryKey: ["category", categoryId],
@@ -64,18 +66,24 @@ export default function CategoryDetails() {
               <ArrowLeft className="h-4 w-4 mr-2" />
               Retour aux catégories
             </Button>
-            <div className="flex items-center gap-2">
-              <GlobalPlayerSearch />
-              <NotificationBell />
-            </div>
+            {!isViewer && (
+              <div className="flex items-center gap-2">
+                <GlobalPlayerSearch />
+                <NotificationBell />
+              </div>
+            )}
           </div>
           <div className="flex justify-between items-end">
             <div>
               {categoryId && category?.name && (
-                <EditableCategoryName 
-                  categoryId={categoryId} 
-                  initialName={category.name}
-                />
+                isViewer ? (
+                  <h1 className="text-3xl font-bold text-primary-foreground">{category.name}</h1>
+                ) : (
+                  <EditableCategoryName 
+                    categoryId={categoryId} 
+                    initialName={category.name}
+                  />
+                )
               )}
               <div className="flex items-center gap-4 mt-2">
                 <p className="text-primary-foreground/90">
@@ -84,15 +92,25 @@ export default function CategoryDetails() {
                 {categoryId && category?.rugby_type && (
                   <>
                     <span className="text-primary-foreground/60">•</span>
-                    <EditableRugbyType 
-                      categoryId={categoryId}
-                      currentType={category.rugby_type}
-                    />
+                    {isViewer ? (
+                      <span className="text-primary-foreground/90 text-sm">
+                        {category.rugby_type === "15" ? "Rugby XV" : 
+                         category.rugby_type === "7" ? "Rugby 7" : 
+                         category.rugby_type === "academie" ? "Académie" : 
+                         category.rugby_type === "national_team" ? "Équipe Nationale" : 
+                         category.rugby_type}
+                      </span>
+                    ) : (
+                      <EditableRugbyType 
+                        categoryId={categoryId}
+                        currentType={category.rugby_type}
+                      />
+                    )}
                   </>
                 )}
               </div>
             </div>
-            {categoryId && (
+            {categoryId && !isViewer && (
               <CategoryCoverUpload 
                 categoryId={categoryId} 
                 currentCoverUrl={category?.cover_image_url}
@@ -134,11 +152,13 @@ export default function CategoryDetails() {
               <span className="hidden sm:inline">Compétition</span>
               <span className="sm:hidden">Compét</span>
             </TabsTrigger>
-            <TabsTrigger value="communication" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3">
-              <MessageSquare className="h-4 w-4 shrink-0" />
-              <span className="hidden sm:inline">Communication</span>
-              <span className="sm:hidden">Com</span>
-            </TabsTrigger>
+            {!isViewer && (
+              <TabsTrigger value="communication" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3">
+                <MessageSquare className="h-4 w-4 shrink-0" />
+                <span className="hidden sm:inline">Communication</span>
+                <span className="sm:hidden">Com</span>
+              </TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4">
@@ -165,18 +185,44 @@ export default function CategoryDetails() {
             <CompetitionTab 
               categoryId={categoryId!} 
               isRugby7={isRugby7} 
-              isNationalTeam={isNationalTeam} 
+              isNationalTeam={isNationalTeam}
             />
           </TabsContent>
 
-          <TabsContent value="communication" className="space-y-4">
-            <CommunicationTab 
-              categoryId={categoryId!} 
-              isAcademy={isAcademy} 
-            />
-          </TabsContent>
+          {!isViewer && (
+            <TabsContent value="communication" className="space-y-4">
+              <CommunicationTab 
+                categoryId={categoryId!} 
+                isAcademy={isAcademy}
+              />
+            </TabsContent>
+          )}
         </Tabs>
       </div>
     </div>
+  );
+}
+
+export default function CategoryDetails() {
+  const { categoryId } = useParams();
+
+  // Fetch category to get club_id for the provider
+  const { data: category } = useQuery({
+    queryKey: ["category-for-viewer", categoryId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("categories")
+        .select("club_id")
+        .eq("id", categoryId)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  return (
+    <ViewerModeProvider clubId={category?.club_id} categoryId={categoryId}>
+      <CategoryDetailsContent />
+    </ViewerModeProvider>
   );
 }

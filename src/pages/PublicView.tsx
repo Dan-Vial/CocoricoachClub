@@ -67,10 +67,10 @@ export default function PublicView() {
 
   const handleContinue = () => {
     if (categoryId) {
-      // Navigate to public category view (doesn't require auth)
-      navigate(`/public/categories/${categoryId}`);
+      // Navigate to the real category page (public context allows access)
+      navigate(`/categories/${categoryId}`);
     } else if (clubId) {
-      // For club-level access, redirect to club page with public context
+      // Navigate to the real club page
       navigate(`/clubs/${clubId}`);
     } else {
       navigate("/");

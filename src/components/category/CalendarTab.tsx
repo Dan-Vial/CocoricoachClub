@@ -19,6 +19,7 @@ import { useNavigate } from "react-router-dom";
 import { WeeklyPlanningCalendar } from "@/components/planning/WeeklyPlanningCalendar";
 import { SessionTemplatesSection } from "@/components/planning/SessionTemplatesSection";
 import { SeasonObjectivesSection } from "@/components/planning/SeasonObjectivesSection";
+import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 
 interface CalendarTabProps {
   categoryId: string;
@@ -66,6 +67,7 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
   } | null>(null);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const { isViewer } = useViewerModeContext();
 
   const { data: sessions, isLoading: isLoadingSessions } = useQuery({
     queryKey: ["training_sessions", categoryId],
@@ -262,14 +264,18 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
                       Réinitialiser
                     </Button>
                   )}
-                  <Button onClick={() => setIsAddMatchDialogOpen(true)} variant="outline" className="gap-2">
-                    <Swords className="h-4 w-4" />
-                    Ajouter un match
-                  </Button>
-                  <Button onClick={() => setIsAddDialogOpen(true)} className="gap-2">
-                    <Plus className="h-4 w-4" />
-                    Ajouter une séance
-                  </Button>
+                  {!isViewer && (
+                    <>
+                      <Button onClick={() => setIsAddMatchDialogOpen(true)} variant="outline" className="gap-2">
+                        <Swords className="h-4 w-4" />
+                        Ajouter un match
+                      </Button>
+                      <Button onClick={() => setIsAddDialogOpen(true)} className="gap-2">
+                        <Plus className="h-4 w-4" />
+                        Ajouter une séance
+                      </Button>
+                    </>
+                  )}
                 </div>
               </div>
             </CardHeader>
