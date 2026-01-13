@@ -91,16 +91,26 @@ export function AddSessionDialog({
   const [showLibraryFor, setShowLibraryFor] = useState<number | null>(null);
   const queryClient = useQueryClient();
   const exercisesSectionRef = useRef<HTMLDivElement | null>(null);
+  const lastAutoScrollTypeRef = useRef<string | null>(null);
 
-  const selectedTrainingType = trainingTypes.find(t => t.value === type);
+  const selectedTrainingType = trainingTypes.find((t) => t.value === type);
   const showExerciseSection = selectedTrainingType?.hasExercises || false;
 
-  // When a training type with exercises is selected, ensure UI is ready
+  // When a training type with exercises is selected, ensure UI is ready (and scroll user to it)
   useEffect(() => {
     if (!open || !showExerciseSection) return;
+
     setShowExercises(true);
     setExercises((prev) => (prev.length === 0 ? [emptyExercise(0)] : prev));
-  }, [open, showExerciseSection]);
+
+    // UX: make the "Exercises" section visible immediately after selecting a gym-type session.
+    if (type && lastAutoScrollTypeRef.current !== type) {
+      lastAutoScrollTypeRef.current = type;
+      window.setTimeout(() => {
+        exercisesSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 50);
+    }
+  }, [open, showExerciseSection, type]);
 
   const { data: players } = useQuery({
     queryKey: ["players-with-injuries", categoryId],
