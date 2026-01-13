@@ -60,7 +60,7 @@ export function DailySessionView({ categoryId }: DailySessionViewProps) {
         .select("*")
         .eq("category_id", categoryId)
         .eq("session_date", today)
-        .order("start_time");
+        .order("session_start_time");
       if (error) throw error;
       return data;
     },
