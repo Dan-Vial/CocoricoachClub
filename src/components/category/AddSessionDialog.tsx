@@ -24,8 +24,10 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
-import { Users, UserCheck, AlertTriangle } from "lucide-react";
+import { Users, UserCheck, AlertTriangle, Plus, Trash2, Dumbbell, ChevronDown, ChevronUp, Library, Copy } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface AddSessionDialogProps {
   open: boolean;
@@ -34,20 +36,60 @@ interface AddSessionDialogProps {
 }
 
 const trainingTypes = [
-  { value: "collectif", label: "Collectif" },
-  { value: "technique_individuelle", label: "Technique Individuelle" },
-  { value: "physique", label: "Physique" },
-  { value: "musculation", label: "Musculation" },
-  { value: "reathlétisation", label: "Réathlétisation" },
-  { value: "repos", label: "Repos" },
-  { value: "test", label: "Test" },
+  { value: "collectif", label: "Collectif", hasExercises: false },
+  { value: "technique_individuelle", label: "Technique Individuelle", hasExercises: false },
+  { value: "physique", label: "Physique", hasExercises: true },
+  { value: "musculation", label: "Musculation", hasExercises: true },
+  { value: "reathlétisation", label: "Réathlétisation", hasExercises: true },
+  { value: "repos", label: "Repos", hasExercises: false },
+  { value: "test", label: "Test", hasExercises: false },
 ];
+
+const EXERCISE_CATEGORIES = [
+  { value: "upper_push", label: "Haut - Poussée" },
+  { value: "upper_pull", label: "Haut - Tirage" },
+  { value: "lower_push", label: "Bas - Poussée" },
+  { value: "lower_pull", label: "Bas - Tirage" },
+  { value: "core", label: "Core / Gainage" },
+  { value: "cardio", label: "Cardio" },
+  { value: "plyometrics", label: "Pliométrie" },
+  { value: "mobility", label: "Mobilité" },
+  { value: "stretching_mobility", label: "Stretching" },
+  { value: "terrain", label: "Terrain" },
+  { value: "musculation", label: "Musculation" },
+  { value: "other", label: "Autre" },
+];
+
+interface Exercise {
+  exercise_name: string;
+  exercise_category: string;
+  sets: number;
+  reps: number | null;
+  weight_kg: number | null;
+  rest_seconds: number | null;
+  notes: string;
+  order_index: number;
+  library_exercise_id: string | null;
+}
+
+const emptyExercise = (index: number): Exercise => ({
+  exercise_name: "",
+  exercise_category: "musculation",
+  sets: 3,
+  reps: 10,
+  weight_kg: null,
+  rest_seconds: 90,
+  notes: "",
+  order_index: index,
+  library_exercise_id: null,
+});
 
 export function AddSessionDialog({
   open,
   onOpenChange,
   categoryId,
 }: AddSessionDialogProps) {
+  const { user } = useAuth();
   const [date, setDate] = useState("");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
@@ -56,7 +98,14 @@ export function AddSessionDialog({
   const [notes, setNotes] = useState("");
   const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
   const [playerSelectionMode, setPlayerSelectionMode] = useState<"all" | "specific">("all");
+  const [exercises, setExercises] = useState<Exercise[]>([]);
+  const [showExercises, setShowExercises] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showLibraryFor, setShowLibraryFor] = useState<number | null>(null);
   const queryClient = useQueryClient();
+
+  const selectedTrainingType = trainingTypes.find(t => t.value === type);
+  const showExerciseSection = selectedTrainingType?.hasExercises || false;
 
   // Fetch players with their injury status
   const { data: players } = useQuery({
@@ -69,7 +118,6 @@ export function AddSessionDialog({
         .order("name");
       if (playersError) throw playersError;
 
-      // Fetch active injuries
       const { data: injuriesData } = await supabase
         .from("injuries")
         .select("player_id")
@@ -86,8 +134,29 @@ export function AddSessionDialog({
     enabled: open,
   });
 
+  // Fetch exercise library
+  const { data: libraryExercises } = useQuery({
+    queryKey: ["exercise-library", user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data, error } = await supabase
+        .from("exercise_library")
+        .select("*")
+        .or(`user_id.eq.${user.id},is_system.eq.true`)
+        .order("name");
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user && open && showExerciseSection,
+  });
+
   const injuredPlayers = players?.filter(p => p.isInjured) || [];
   const healthyPlayers = players?.filter(p => !p.isInjured) || [];
+
+  const filteredLibrary = libraryExercises?.filter((ex) =>
+    ex.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    ex.category.toLowerCase().includes(searchQuery.toLowerCase())
+  ) || [];
 
   const addSession = useMutation({
     mutationFn: async () => {
@@ -108,9 +177,14 @@ export function AddSessionDialog({
       
       if (sessionError) throw sessionError;
 
-      // If specific players are selected, create attendance records
-      if (playerSelectionMode === "specific" && selectedPlayers.length > 0) {
-        const attendanceRecords = selectedPlayers.map(playerId => ({
+      // Determine which players to use
+      const playersToUse = playerSelectionMode === "specific" && selectedPlayers.length > 0 
+        ? selectedPlayers 
+        : players?.map(p => p.id) || [];
+
+      // Create attendance records for selected players
+      if (playersToUse.length > 0) {
+        const attendanceRecords = playersToUse.map(playerId => ({
           player_id: playerId,
           category_id: categoryId,
           attendance_date: date,
@@ -125,12 +199,41 @@ export function AddSessionDialog({
         if (attendanceError) throw attendanceError;
       }
 
+      // If exercises were added, create them for each selected player
+      const validExercises = exercises.filter(e => e.exercise_name.trim());
+      if (validExercises.length > 0 && playersToUse.length > 0) {
+        const exerciseRecords = playersToUse.flatMap(playerId => 
+          validExercises.map((ex, idx) => ({
+            training_session_id: sessionData.id,
+            player_id: playerId,
+            category_id: categoryId,
+            exercise_name: ex.exercise_name,
+            exercise_category: ex.exercise_category,
+            sets: ex.sets,
+            reps: ex.reps,
+            weight_kg: ex.weight_kg,
+            rest_seconds: ex.rest_seconds,
+            notes: ex.notes || null,
+            order_index: idx,
+            library_exercise_id: ex.library_exercise_id,
+          }))
+        );
+
+        const { error: exerciseError } = await supabase
+          .from("gym_session_exercises")
+          .insert(exerciseRecords);
+        
+        if (exerciseError) throw exerciseError;
+      }
+
       return sessionData;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["training_sessions", categoryId] });
       queryClient.invalidateQueries({ queryKey: ["training_attendance"] });
-      toast.success("Séance ajoutée avec succès");
+      queryClient.invalidateQueries({ queryKey: ["gym-exercises"] });
+      const exerciseCount = exercises.filter(e => e.exercise_name.trim()).length;
+      toast.success(`Séance ajoutée${exerciseCount > 0 ? ` avec ${exerciseCount} exercice(s)` : ''}`);
       resetForm();
       onOpenChange(false);
     },
@@ -148,6 +251,10 @@ export function AddSessionDialog({
     setNotes("");
     setSelectedPlayers([]);
     setPlayerSelectionMode("all");
+    setExercises([]);
+    setShowExercises(true);
+    setSearchQuery("");
+    setShowLibraryFor(null);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -195,15 +302,57 @@ export function AddSessionDialog({
     setSelectedPlayers([]);
   };
 
+  // Exercise management
+  const addExercise = () => {
+    setExercises([...exercises, emptyExercise(exercises.length)]);
+  };
+
+  const removeExercise = (index: number) => {
+    setExercises(exercises.filter((_, i) => i !== index));
+  };
+
+  const duplicateExercise = (index: number) => {
+    const exercise = { ...exercises[index], order_index: exercises.length };
+    setExercises([...exercises, exercise]);
+  };
+
+  const updateExercise = (index: number, field: keyof Exercise, value: any) => {
+    const updated = [...exercises];
+    updated[index] = { ...updated[index], [field]: value };
+    setExercises(updated);
+  };
+
+  const selectFromLibrary = (index: number, libExercise: any) => {
+    updateExercise(index, "exercise_name", libExercise.name);
+    updateExercise(index, "exercise_category", libExercise.category);
+    updateExercise(index, "library_exercise_id", libExercise.id);
+    setShowLibraryFor(null);
+    setSearchQuery("");
+  };
+
+  const getCategoryLabel = (value: string) => {
+    return EXERCISE_CATEGORIES.find((c) => c.value === value)?.label || value;
+  };
+
+  // Handle type change to auto-add empty exercise
+  const handleTypeChange = (newType: string) => {
+    setType(newType);
+    const newTrainingType = trainingTypes.find(t => t.value === newType);
+    if (newTrainingType?.hasExercises && exercises.length === 0) {
+      setExercises([emptyExercise(0)]);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
+      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>Ajouter une séance d'entraînement</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
           <ScrollArea className="flex-1 pr-4">
             <div className="space-y-4 py-4">
+              {/* Date and time */}
               <div className="space-y-2">
                 <Label htmlFor="date">Date *</Label>
                 <Input
@@ -238,14 +387,17 @@ export function AddSessionDialog({
 
               <div className="space-y-2">
                 <Label htmlFor="type">Type d'entraînement *</Label>
-                <Select value={type} onValueChange={setType} required>
+                <Select value={type} onValueChange={handleTypeChange} required>
                   <SelectTrigger>
                     <SelectValue placeholder="Sélectionner un type" />
                   </SelectTrigger>
                   <SelectContent>
                     {trainingTypes.map((t) => (
                       <SelectItem key={t.value} value={t.value}>
-                        {t.label}
+                        <span className="flex items-center gap-2">
+                          {t.label}
+                          {t.hasExercises && <Dumbbell className="h-3 w-3 text-muted-foreground" />}
+                        </span>
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -308,7 +460,6 @@ export function AddSessionDialog({
 
                 {playerSelectionMode === "specific" && (
                   <>
-                    {/* Quick selection buttons */}
                     <div className="flex flex-wrap gap-2">
                       <Button
                         type="button"
@@ -355,14 +506,12 @@ export function AddSessionDialog({
                       )}
                     </div>
 
-                    {/* Selected count */}
                     {selectedPlayers.length > 0 && (
                       <Badge variant="secondary" className="w-fit">
                         {selectedPlayers.length} joueur(s) sélectionné(s)
                       </Badge>
                     )}
 
-                    {/* Player list */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto">
                       {players?.map((player) => (
                         <div
@@ -408,6 +557,182 @@ export function AddSessionDialog({
                   </p>
                 )}
               </div>
+
+              {/* Exercises Section - Only shown for certain training types */}
+              {showExerciseSection && (
+                <Collapsible open={showExercises} onOpenChange={setShowExercises}>
+                  <div className="border rounded-lg p-4 bg-muted/30">
+                    <CollapsibleTrigger asChild>
+                      <div className="flex items-center justify-between cursor-pointer">
+                        <Label className="flex items-center gap-2 text-base font-medium cursor-pointer">
+                          <Dumbbell className="h-4 w-4" />
+                          Exercices de la séance
+                          {exercises.filter(e => e.exercise_name.trim()).length > 0 && (
+                            <Badge variant="secondary" className="ml-2">
+                              {exercises.filter(e => e.exercise_name.trim()).length}
+                            </Badge>
+                          )}
+                        </Label>
+                        <Button type="button" variant="ghost" size="sm">
+                          {showExercises ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                        </Button>
+                      </div>
+                    </CollapsibleTrigger>
+                    
+                    <CollapsibleContent className="space-y-3 mt-4">
+                      {exercises.length === 0 ? (
+                        <div className="text-center py-4">
+                          <p className="text-sm text-muted-foreground mb-2">Aucun exercice ajouté</p>
+                          <Button type="button" variant="outline" size="sm" onClick={addExercise}>
+                            <Plus className="h-4 w-4 mr-1" />
+                            Ajouter un exercice
+                          </Button>
+                        </div>
+                      ) : (
+                        <>
+                          {exercises.map((exercise, index) => (
+                            <div key={index} className="p-3 border rounded-lg bg-card space-y-3">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium text-muted-foreground w-6">
+                                  {index + 1}.
+                                </span>
+                                <div className="flex-1 relative">
+                                  <Input
+                                    placeholder="Nom de l'exercice..."
+                                    value={exercise.exercise_name}
+                                    onChange={(e) => {
+                                      updateExercise(index, "exercise_name", e.target.value);
+                                      setSearchQuery(e.target.value);
+                                    }}
+                                    onFocus={() => setShowLibraryFor(index)}
+                                    onBlur={() => setTimeout(() => setShowLibraryFor(null), 200)}
+                                  />
+                                  {exercise.library_exercise_id && (
+                                    <Library className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-primary" />
+                                  )}
+                                  
+                                  {/* Library dropdown */}
+                                  {showLibraryFor === index && filteredLibrary.length > 0 && (
+                                    <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-popover border rounded-md shadow-lg max-h-32 overflow-y-auto">
+                                      {filteredLibrary.slice(0, 6).map((libEx) => (
+                                        <div
+                                          key={libEx.id}
+                                          className="px-3 py-2 hover:bg-muted cursor-pointer text-sm flex justify-between items-center"
+                                          onMouseDown={() => selectFromLibrary(index, libEx)}
+                                        >
+                                          <span>{libEx.name}</span>
+                                          <Badge variant="outline" className="text-xs">
+                                            {getCategoryLabel(libEx.category)}
+                                          </Badge>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => duplicateExercise(index)}
+                                  title="Dupliquer"
+                                >
+                                  <Copy className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => removeExercise(index)}
+                                  className="text-destructive"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+
+                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                <div>
+                                  <Label className="text-xs text-muted-foreground">Catégorie</Label>
+                                  <Select
+                                    value={exercise.exercise_category}
+                                    onValueChange={(v) => updateExercise(index, "exercise_category", v)}
+                                  >
+                                    <SelectTrigger className="h-8 text-xs">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {EXERCISE_CATEGORIES.map((c) => (
+                                        <SelectItem key={c.value} value={c.value}>
+                                          {c.label}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                <div>
+                                  <Label className="text-xs text-muted-foreground">Séries</Label>
+                                  <Input
+                                    type="number"
+                                    min="1"
+                                    className="h-8 text-xs"
+                                    value={exercise.sets}
+                                    onChange={(e) => updateExercise(index, "sets", parseInt(e.target.value) || 1)}
+                                  />
+                                </div>
+                                <div>
+                                  <Label className="text-xs text-muted-foreground">Reps</Label>
+                                  <Input
+                                    type="number"
+                                    min="1"
+                                    className="h-8 text-xs"
+                                    value={exercise.reps || ""}
+                                    onChange={(e) => updateExercise(index, "reps", e.target.value ? parseInt(e.target.value) : null)}
+                                  />
+                                </div>
+                                <div>
+                                  <Label className="text-xs text-muted-foreground">Poids (kg)</Label>
+                                  <Input
+                                    type="number"
+                                    step="0.5"
+                                    className="h-8 text-xs"
+                                    value={exercise.weight_kg || ""}
+                                    onChange={(e) => updateExercise(index, "weight_kg", e.target.value ? parseFloat(e.target.value) : null)}
+                                  />
+                                </div>
+                              </div>
+
+                              <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                  <Label className="text-xs text-muted-foreground">Repos (sec)</Label>
+                                  <Input
+                                    type="number"
+                                    className="h-8 text-xs"
+                                    value={exercise.rest_seconds || ""}
+                                    onChange={(e) => updateExercise(index, "rest_seconds", e.target.value ? parseInt(e.target.value) : null)}
+                                  />
+                                </div>
+                                <div>
+                                  <Label className="text-xs text-muted-foreground">Notes</Label>
+                                  <Input
+                                    className="h-8 text-xs"
+                                    placeholder="Notes..."
+                                    value={exercise.notes}
+                                    onChange={(e) => updateExercise(index, "notes", e.target.value)}
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                          
+                          <Button type="button" variant="outline" size="sm" onClick={addExercise} className="w-full">
+                            <Plus className="h-4 w-4 mr-1" />
+                            Ajouter un exercice
+                          </Button>
+                        </>
+                      )}
+                    </CollapsibleContent>
+                  </div>
+                </Collapsible>
+              )}
             </div>
           </ScrollArea>
           
