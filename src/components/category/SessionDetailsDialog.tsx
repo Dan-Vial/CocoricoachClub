@@ -142,30 +142,78 @@ export function SessionDetailsDialog({
     enabled: open && !!sessionId,
   });
 
+  // Calculate AWCR for a player
+  const calculateAWCR = async (playerId: string, sessionDateStr: string, newLoad: number) => {
+    const sevenDaysAgo = new Date(sessionDateStr);
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    const twentyEightDaysAgo = new Date(sessionDateStr);
+    twentyEightDaysAgo.setDate(twentyEightDaysAgo.getDate() - 28);
+
+    const { data: recentSessions } = await supabase
+      .from("awcr_tracking")
+      .select("training_load")
+      .eq("player_id", playerId)
+      .gte("session_date", sevenDaysAgo.toISOString().split("T")[0])
+      .lt("session_date", sessionDateStr);
+
+    const { data: chronicSessions } = await supabase
+      .from("awcr_tracking")
+      .select("training_load")
+      .eq("player_id", playerId)
+      .gte("session_date", twentyEightDaysAgo.toISOString().split("T")[0])
+      .lt("session_date", sessionDateStr);
+
+    const acuteTotal = (recentSessions?.reduce((sum, s) => sum + (s.training_load || 0), 0) || 0) + newLoad;
+    const chronicTotal = chronicSessions?.reduce((sum, s) => sum + (s.training_load || 0), 0) || 0;
+
+    const acuteAvg = acuteTotal / 7;
+    const chronicAvg = chronicTotal / 28;
+
+    const awcr = chronicAvg > 0 ? acuteAvg / chronicAvg : 0;
+
+    return { acuteLoad: acuteAvg, chronicLoad: chronicAvg, awcr };
+  };
+
   const saveRpe = useMutation({
     mutationFn: async () => {
-      const entries = players
-        ?.filter((p) => rpeValues[p.id]?.rpe && rpeValues[p.id]?.duration)
-        .map((p) => ({
-          player_id: p.id,
-          category_id: categoryId,
-          training_session_id: sessionId,
-          session_date: sessionDate,
-          rpe: parseInt(rpeValues[p.id].rpe),
-          duration_minutes: parseInt(rpeValues[p.id].duration),
-          training_load: parseInt(rpeValues[p.id].rpe) * parseInt(rpeValues[p.id].duration),
-        }));
+      const playersToSave = players?.filter((p) => rpeValues[p.id]?.rpe && rpeValues[p.id]?.duration) || [];
 
-      if (!entries || entries.length === 0) {
+      if (playersToSave.length === 0) {
         throw new Error("Aucun RPE à enregistrer");
       }
 
-      const { error } = await supabase.from("awcr_tracking").insert(entries);
-      if (error) throw error;
+      // Calculate AWCR for each player and save
+      for (const player of playersToSave) {
+        const rpe = parseInt(rpeValues[player.id].rpe);
+        const duration = parseInt(rpeValues[player.id].duration);
+        const trainingLoad = rpe * duration;
+
+        const { acuteLoad, chronicLoad, awcr } = await calculateAWCR(
+          player.id,
+          sessionDate,
+          trainingLoad
+        );
+
+        const { error } = await supabase.from("awcr_tracking").insert({
+          player_id: player.id,
+          category_id: categoryId,
+          training_session_id: sessionId,
+          session_date: sessionDate,
+          rpe,
+          duration_minutes: duration,
+          acute_load: acuteLoad,
+          chronic_load: chronicLoad,
+          awcr: awcr,
+        });
+
+        if (error) throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["awcr_tracking"] });
-      toast.success("RPE enregistrés avec succès");
+      queryClient.invalidateQueries({ queryKey: ["awcr-data"] });
+      toast.success(`RPE enregistrés avec calcul AWCR automatique`);
       setRpeValues({});
     },
     onError: (error: any) => {

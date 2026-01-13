@@ -12,6 +12,7 @@ import { EditSessionDialog } from "./EditSessionDialog";
 import { AddMatchCalendarDialog } from "./matches/AddMatchCalendarDialog";
 import { QuickTestEntryDialog } from "./QuickTestEntryDialog";
 import { SessionDetailsDialog } from "./SessionDetailsDialog";
+import { MatchRpeDialog } from "./MatchRpeDialog";
 import { format, isSameDay, isWithinInterval, startOfWeek, addDays } from "date-fns";
 import { fr } from "date-fns/locale";
 import type { DateRange } from "react-day-picker";
@@ -65,6 +66,11 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
     id: string;
     date: string;
     type: "test" | "training";
+  } | null>(null);
+  const [selectedMatch, setSelectedMatch] = useState<{
+    id: string;
+    date: string;
+    opponent: string;
   } | null>(null);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -400,7 +406,11 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
                           <div
                             key={`match-${event.id}`}
                             className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/5 transition-colors animate-fade-in cursor-pointer"
-                            onClick={() => navigate(`?tab=matches`)}
+                            onClick={() => setSelectedMatch({
+                              id: event.id,
+                              date: event.match_date,
+                              opponent: event.opponent,
+                            })}
                           >
                             <div className="flex items-center gap-4 flex-1">
                               <div className="h-12 w-1.5 rounded-full bg-rose-500" />
@@ -646,6 +656,17 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
           categoryId={categoryId}
           sessionId={selectedSession.id}
           sessionDate={selectedSession.date}
+        />
+      )}
+
+      {selectedMatch && (
+        <MatchRpeDialog
+          open={true}
+          onOpenChange={(open) => !open && setSelectedMatch(null)}
+          categoryId={categoryId}
+          matchId={selectedMatch.id}
+          matchDate={selectedMatch.date}
+          opponent={selectedMatch.opponent}
         />
       )}
     </div>
