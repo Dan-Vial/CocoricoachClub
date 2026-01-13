@@ -91,26 +91,16 @@ export function AddSessionDialog({
   const [showLibraryFor, setShowLibraryFor] = useState<number | null>(null);
   const queryClient = useQueryClient();
   const exercisesSectionRef = useRef<HTMLDivElement | null>(null);
-  const lastAutoScrollTypeRef = useRef<string | null>(null);
 
   const selectedTrainingType = trainingTypes.find((t) => t.value === type);
   const showExerciseSection = selectedTrainingType?.hasExercises || false;
 
-  // When a training type with exercises is selected, ensure UI is ready (and scroll user to it)
+  // When a training type with exercises is selected, ensure UI is ready
   useEffect(() => {
     if (!open || !showExerciseSection) return;
-
     setShowExercises(true);
     setExercises((prev) => (prev.length === 0 ? [emptyExercise(0)] : prev));
-
-    // UX: make the "Exercises" section visible immediately after selecting a gym-type session.
-    if (type && lastAutoScrollTypeRef.current !== type) {
-      lastAutoScrollTypeRef.current = type;
-      window.setTimeout(() => {
-        exercisesSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-      }, 50);
-    }
-  }, [open, showExerciseSection, type]);
+  }, [open, showExerciseSection]);
 
   const { data: players } = useQuery({
     queryKey: ["players-with-injuries", categoryId],
@@ -430,136 +420,6 @@ export function AddSessionDialog({
                 />
               </div>
 
-              {/* Player Selection Section */}
-              <div className="space-y-3 border rounded-lg p-4 bg-muted/30">
-                <div className="flex items-center justify-between">
-                  <Label className="flex items-center gap-2 text-base font-medium">
-                    <Users className="h-4 w-4" />
-                    Joueurs concernés
-                  </Label>
-                  <div className="flex gap-2">
-                    <Button
-                      type="button"
-                      variant={playerSelectionMode === "all" ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => {
-                        setPlayerSelectionMode("all");
-                        setSelectedPlayers([]);
-                      }}
-                    >
-                      Tous
-                    </Button>
-                    <Button
-                      type="button"
-                      variant={playerSelectionMode === "specific" ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setPlayerSelectionMode("specific")}
-                    >
-                      Spécifiques
-                    </Button>
-                  </div>
-                </div>
-
-                {playerSelectionMode === "specific" && (
-                  <>
-                    <div className="flex flex-wrap gap-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={selectAll}
-                        className="text-xs"
-                      >
-                        <UserCheck className="h-3 w-3 mr-1" />
-                        Tous ({players?.length || 0})
-                      </Button>
-                      {injuredPlayers.length > 0 && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={selectAllInjured}
-                          className="text-xs border-amber-300 text-amber-700 hover:bg-amber-50"
-                        >
-                          <AlertTriangle className="h-3 w-3 mr-1" />
-                          Blessés ({injuredPlayers.length})
-                        </Button>
-                      )}
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={selectAllHealthy}
-                        className="text-xs border-green-300 text-green-700 hover:bg-green-50"
-                      >
-                        <UserCheck className="h-3 w-3 mr-1" />
-                        Aptes ({healthyPlayers.length})
-                      </Button>
-                      {selectedPlayers.length > 0 && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={clearSelection}
-                          className="text-xs text-muted-foreground"
-                        >
-                          Effacer
-                        </Button>
-                      )}
-                    </div>
-
-                    {selectedPlayers.length > 0 && (
-                      <Badge variant="secondary" className="w-fit">
-                        {selectedPlayers.length} joueur(s) sélectionné(s)
-                      </Badge>
-                    )}
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto">
-                      {players?.map((player) => (
-                        <div
-                          key={player.id}
-                          onClick={() => togglePlayer(player.id)}
-                          className={cn(
-                            "flex items-center gap-2 p-2 rounded-md border cursor-pointer transition-colors",
-                            selectedPlayers.includes(player.id)
-                              ? "border-primary bg-primary/10"
-                              : "border-border hover:bg-muted/50",
-                            player.isInjured && "border-amber-300 bg-amber-50/50"
-                          )}
-                        >
-                          <Checkbox
-                            checked={selectedPlayers.includes(player.id)}
-                            onCheckedChange={() => togglePlayer(player.id)}
-                            onClick={(e) => e.stopPropagation()}
-                          />
-                          <Avatar className="h-6 w-6">
-                            <AvatarImage src={player.avatar_url || undefined} />
-                            <AvatarFallback className="text-xs">
-                              {player.name.slice(0, 2).toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="text-sm truncate flex-1">{player.name}</span>
-                          {player.isInjured && (
-                            <AlertTriangle className="h-3 w-3 text-amber-500 flex-shrink-0" />
-                          )}
-                          {player.position && (
-                            <Badge variant="outline" className="text-xs flex-shrink-0">
-                              {player.position}
-                            </Badge>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </>
-                )}
-
-                {playerSelectionMode === "all" && (
-                  <p className="text-sm text-muted-foreground">
-                    Tous les joueurs de la catégorie seront concernés par cette séance.
-                  </p>
-                )}
-              </div>
-
               {/* Exercises Section - Only shown for certain training types */}
               {showExerciseSection && (
                 <Collapsible open={showExercises} onOpenChange={setShowExercises}>
@@ -569,19 +429,23 @@ export function AddSessionDialog({
                         <Label className="flex items-center gap-2 text-base font-medium cursor-pointer">
                           <Dumbbell className="h-4 w-4" />
                           Exercices de la séance
-                          {exercises.filter(e => e.exercise_name.trim()).length > 0 && (
+                          {exercises.filter((e) => e.exercise_name.trim()).length > 0 && (
                             <Badge variant="secondary" className="ml-2">
-                              {exercises.filter(e => e.exercise_name.trim()).length}
+                              {exercises.filter((e) => e.exercise_name.trim()).length}
                             </Badge>
                           )}
                         </Label>
                         <Button type="button" variant="ghost" size="sm">
-                          {showExercises ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                          {showExercises ? (
+                            <ChevronUp className="h-4 w-4" />
+                          ) : (
+                            <ChevronDown className="h-4 w-4" />
+                          )}
                         </Button>
                       </div>
                     </CollapsibleTrigger>
-                    
-                    <CollapsibleContent className="space-y-3 mt-4">
+
+                    <CollapsibleContent className="space-y-3 mt-4 max-h-[50vh] overflow-y-auto pr-2">
                       {exercises.length === 0 ? (
                         <div className="text-center py-4">
                           <p className="text-sm text-muted-foreground mb-2">Aucun exercice ajouté</p>
@@ -595,9 +459,7 @@ export function AddSessionDialog({
                           {exercises.map((exercise, index) => (
                             <div key={index} className="p-3 border rounded-lg bg-card space-y-3">
                               <div className="flex items-center gap-2">
-                                <span className="text-sm font-medium text-muted-foreground w-6">
-                                  {index + 1}.
-                                </span>
+                                <span className="text-sm font-medium text-muted-foreground w-6">{index + 1}.</span>
                                 <div className="flex-1 relative">
                                   <Popover
                                     open={showLibraryFor === index}
@@ -629,9 +491,7 @@ export function AddSessionDialog({
                                       onOpenAutoFocus={(e) => e.preventDefault()}
                                     >
                                       {filteredLibrary.length === 0 ? (
-                                        <div className="px-2 py-2 text-xs text-muted-foreground">
-                                          Aucun exercice trouvé
-                                        </div>
+                                        <div className="px-2 py-2 text-xs text-muted-foreground">Aucun exercice trouvé</div>
                                       ) : (
                                         filteredLibrary.slice(0, 12).map((libEx) => (
                                           <button
@@ -706,7 +566,9 @@ export function AddSessionDialog({
                                     min="1"
                                     className="h-8 text-xs"
                                     value={exercise.reps || ""}
-                                    onChange={(e) => updateExercise(index, "reps", e.target.value ? parseInt(e.target.value) : null)}
+                                    onChange={(e) =>
+                                      updateExercise(index, "reps", e.target.value ? parseInt(e.target.value) : null)
+                                    }
                                   />
                                 </div>
                                 <div>
@@ -716,7 +578,9 @@ export function AddSessionDialog({
                                     step="0.5"
                                     className="h-8 text-xs"
                                     value={exercise.weight_kg || ""}
-                                    onChange={(e) => updateExercise(index, "weight_kg", e.target.value ? parseFloat(e.target.value) : null)}
+                                    onChange={(e) =>
+                                      updateExercise(index, "weight_kg", e.target.value ? parseFloat(e.target.value) : null)
+                                    }
                                   />
                                 </div>
                               </div>
@@ -728,7 +592,13 @@ export function AddSessionDialog({
                                     type="number"
                                     className="h-8 text-xs"
                                     value={exercise.rest_seconds || ""}
-                                    onChange={(e) => updateExercise(index, "rest_seconds", e.target.value ? parseInt(e.target.value) : null)}
+                                    onChange={(e) =>
+                                      updateExercise(
+                                        index,
+                                        "rest_seconds",
+                                        e.target.value ? parseInt(e.target.value) : null
+                                      )
+                                    }
                                   />
                                 </div>
                                 <div>
@@ -743,7 +613,7 @@ export function AddSessionDialog({
                               </div>
                             </div>
                           ))}
-                          
+
                           <Button type="button" variant="outline" size="sm" onClick={addExercise} className="w-full">
                             <Plus className="h-4 w-4 mr-1" />
                             Ajouter un exercice
@@ -754,6 +624,126 @@ export function AddSessionDialog({
                   </div>
                 </Collapsible>
               )}
+
+              {/* Player Selection Section */}
+              <div className="space-y-3 border rounded-lg p-4 bg-muted/30">
+                <div className="flex items-center justify-between">
+                  <Label className="flex items-center gap-2 text-base font-medium">
+                    <Users className="h-4 w-4" />
+                    Joueurs concernés
+                  </Label>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant={playerSelectionMode === "all" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => {
+                        setPlayerSelectionMode("all");
+                        setSelectedPlayers([]);
+                      }}
+                    >
+                      Tous
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={playerSelectionMode === "specific" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setPlayerSelectionMode("specific")}
+                    >
+                      Spécifiques
+                    </Button>
+                  </div>
+                </div>
+
+                {playerSelectionMode === "specific" && (
+                  <>
+                    <div className="flex flex-wrap gap-2">
+                      <Button type="button" variant="outline" size="sm" onClick={selectAll} className="text-xs">
+                        <UserCheck className="h-3 w-3 mr-1" />
+                        Tous ({players?.length || 0})
+                      </Button>
+                      {injuredPlayers.length > 0 && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={selectAllInjured}
+                          className="text-xs border-amber-300 text-amber-700 hover:bg-amber-50"
+                        >
+                          <AlertTriangle className="h-3 w-3 mr-1" />
+                          Blessés ({injuredPlayers.length})
+                        </Button>
+                      )}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={selectAllHealthy}
+                        className="text-xs border-green-300 text-green-700 hover:bg-green-50"
+                      >
+                        <UserCheck className="h-3 w-3 mr-1" />
+                        Aptes ({healthyPlayers.length})
+                      </Button>
+                      {selectedPlayers.length > 0 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={clearSelection}
+                          className="text-xs text-muted-foreground"
+                        >
+                          Effacer
+                        </Button>
+                      )}
+                    </div>
+
+                    {selectedPlayers.length > 0 && (
+                      <Badge variant="secondary" className="w-fit">
+                        {selectedPlayers.length} joueur(s) sélectionné(s)
+                      </Badge>
+                    )}
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto">
+                      {players?.map((player) => (
+                        <div
+                          key={player.id}
+                          onClick={() => togglePlayer(player.id)}
+                          className={cn(
+                            "flex items-center gap-2 p-2 rounded-md border cursor-pointer transition-colors",
+                            selectedPlayers.includes(player.id)
+                              ? "border-primary bg-primary/10"
+                              : "border-border hover:bg-muted/50",
+                            player.isInjured && "border-amber-300 bg-amber-50/50"
+                          )}
+                        >
+                          <Checkbox
+                            checked={selectedPlayers.includes(player.id)}
+                            onCheckedChange={() => togglePlayer(player.id)}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                          <Avatar className="h-6 w-6">
+                            <AvatarImage src={player.avatar_url || undefined} />
+                            <AvatarFallback className="text-xs">{player.name.slice(0, 2).toUpperCase()}</AvatarFallback>
+                          </Avatar>
+                          <span className="text-sm truncate flex-1">{player.name}</span>
+                          {player.isInjured && <AlertTriangle className="h-3 w-3 text-amber-500 flex-shrink-0" />}
+                          {player.position && (
+                            <Badge variant="outline" className="text-xs flex-shrink-0">
+                              {player.position}
+                            </Badge>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+
+                {playerSelectionMode === "all" && (
+                  <p className="text-sm text-muted-foreground">
+                    Tous les joueurs de la catégorie seront concernés par cette séance.
+                  </p>
+                )}
+              </div>
             </div>
           </ScrollArea>
           
