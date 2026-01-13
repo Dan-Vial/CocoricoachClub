@@ -58,6 +58,20 @@ const trainingTypes = [
   { value: "test", label: "Test" },
 ];
 
+// Set types for exercise groupings
+const SET_TYPES = [
+  { value: "normal", label: "Normal" },
+  { value: "superset", label: "Superset" },
+  { value: "triset", label: "Triset" },
+  { value: "giant_set", label: "Giant Set" },
+  { value: "circuit", label: "Circuit" },
+  { value: "drop_set", label: "Drop Set" },
+  { value: "pyramid", label: "Pyramide" },
+  { value: "cluster", label: "Cluster" },
+  { value: "emom", label: "EMOM" },
+  { value: "amrap", label: "AMRAP" },
+] as const;
+
 interface Exercise {
   id?: string;
   exercise_name: string;
@@ -65,10 +79,14 @@ interface Exercise {
   sets: number;
   reps: number | null;
   weight_kg: number | null;
+  weight_percent_rm: number | null;
+  weight_mode: "kg" | "percent_rm";
   rest_seconds: number | null;
   notes: string;
   order_index: number;
   library_exercise_id: string | null;
+  set_type: string;
+  group_id: string | null;
 }
 
 const emptyExercise = (index: number): Exercise => ({
@@ -77,10 +95,14 @@ const emptyExercise = (index: number): Exercise => ({
   sets: 3,
   reps: 10,
   weight_kg: null,
+  weight_percent_rm: null,
+  weight_mode: "kg",
   rest_seconds: 90,
   notes: "",
   order_index: index,
   library_exercise_id: null,
+  set_type: "normal",
+  group_id: null,
 });
 
 export function SessionFormDialog({
@@ -204,10 +226,14 @@ export function SessionFormDialog({
           sets: ex.sets || 3,
           reps: ex.reps,
           weight_kg: ex.weight_kg,
+          weight_percent_rm: null,
+          weight_mode: "kg" as const,
           rest_seconds: ex.rest_seconds,
           notes: ex.notes || "",
           order_index: idx,
           library_exercise_id: ex.library_exercise_id,
+          set_type: ex.set_type || "normal",
+          group_id: ex.group_id || null,
         }))
       );
     } else if (!editSession) {
@@ -300,11 +326,15 @@ export function SessionFormDialog({
               exercise_category: ex.exercise_category,
               sets: ex.sets,
               reps: ex.reps,
-              weight_kg: ex.weight_kg,
+              weight_kg: ex.weight_mode === "kg" ? ex.weight_kg : null,
               rest_seconds: ex.rest_seconds,
-              notes: ex.notes || null,
+              notes: ex.weight_mode === "percent_rm" && ex.weight_percent_rm 
+                ? `${ex.weight_percent_rm}% RM${ex.notes ? ` - ${ex.notes}` : ""}` 
+                : (ex.notes || null),
               order_index: idx,
               library_exercise_id: ex.library_exercise_id,
+              set_type: ex.set_type,
+              group_id: ex.group_id,
             }))
           );
 
@@ -629,7 +659,26 @@ export function SessionFormDialog({
                               </Button>
                             </div>
 
-                            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                            {/* Row 1: Set Type + Category */}
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <Label className="text-xs text-muted-foreground">Type de série</Label>
+                                <Select
+                                  value={exercise.set_type}
+                                  onValueChange={(v) => updateExercise(index, "set_type", v)}
+                                >
+                                  <SelectTrigger className="h-8 text-xs">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {SET_TYPES.map((st) => (
+                                      <SelectItem key={st.value} value={st.value}>
+                                        {st.label}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
                               <div>
                                 <Label className="text-xs text-muted-foreground">Catégorie</Label>
                                 <Select
@@ -648,6 +697,10 @@ export function SessionFormDialog({
                                   </SelectContent>
                                 </Select>
                               </div>
+                            </div>
+
+                            {/* Row 2: Sets, Reps, Weight, Rest */}
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                               <div>
                                 <Label className="text-xs text-muted-foreground">Séries</Label>
                                 <Input
@@ -677,20 +730,48 @@ export function SessionFormDialog({
                                 />
                               </div>
                               <div>
-                                <Label className="text-xs text-muted-foreground">Poids (kg)</Label>
-                                <Input
-                                  type="number"
-                                  step="0.5"
-                                  className="h-8 text-xs"
-                                  value={exercise.weight_kg || ""}
-                                  onChange={(e) =>
-                                    updateExercise(
-                                      index,
-                                      "weight_kg",
-                                      e.target.value ? parseFloat(e.target.value) : null
-                                    )
-                                  }
-                                />
+                                <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                                  Poids
+                                  <button
+                                    type="button"
+                                    className="text-[10px] px-1 py-0.5 rounded bg-muted hover:bg-muted/80"
+                                    onClick={() => updateExercise(index, "weight_mode", exercise.weight_mode === "kg" ? "percent_rm" : "kg")}
+                                  >
+                                    {exercise.weight_mode === "kg" ? "kg" : "% RM"}
+                                  </button>
+                                </Label>
+                                {exercise.weight_mode === "kg" ? (
+                                  <Input
+                                    type="number"
+                                    step="0.5"
+                                    className="h-8 text-xs"
+                                    placeholder="kg"
+                                    value={exercise.weight_kg || ""}
+                                    onChange={(e) =>
+                                      updateExercise(
+                                        index,
+                                        "weight_kg",
+                                        e.target.value ? parseFloat(e.target.value) : null
+                                      )
+                                    }
+                                  />
+                                ) : (
+                                  <Input
+                                    type="number"
+                                    min="1"
+                                    max="100"
+                                    className="h-8 text-xs"
+                                    placeholder="% RM"
+                                    value={exercise.weight_percent_rm || ""}
+                                    onChange={(e) =>
+                                      updateExercise(
+                                        index,
+                                        "weight_percent_rm",
+                                        e.target.value ? parseInt(e.target.value) : null
+                                      )
+                                    }
+                                  />
+                                )}
                               </div>
                               <div>
                                 <Label className="text-xs text-muted-foreground">Repos (sec)</Label>
