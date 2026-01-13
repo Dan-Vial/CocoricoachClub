@@ -95,12 +95,13 @@ export function AddSessionDialog({
   const showExerciseSection = selectedTrainingType?.hasExercises || false;
 
   useEffect(() => {
-    if (!open) return;
-    if (!showExerciseSection) return;
+    if (!open || !showExerciseSection) return;
 
-    // Ensure exercises section is expanded and visible when the selected type supports exercises
+    // Ensure exercises UI is actually usable: open + at least one editable row
     setShowExercises(true);
-    // Smooth scroll to the section so users don't miss it (it is below the player selector)
+    setExercises((prev) => (prev.length === 0 ? [emptyExercise(0)] : prev));
+
+    // Scroll inside the dialog to the exercises block (below player selector)
     window.setTimeout(() => {
       exercisesSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 100);
