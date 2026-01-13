@@ -1,0 +1,233 @@
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Plus, Calendar as CalendarIcon, Clock, Dumbbell, Trash2, Edit } from "lucide-react";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
+import { toast } from "sonner";
+import { SessionFormDialog } from "./SessionFormDialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
+interface SessionsTabProps {
+  categoryId: string;
+}
+
+const trainingTypeLabels: Record<string, string> = {
+  collectif: "Collectif",
+  technique_individuelle: "Technique Individuelle",
+  physique: "Physique",
+  musculation: "Musculation",
+  reathlétisation: "Réathlétisation",
+  repos: "Repos",
+  test: "Test",
+};
+
+export function SessionsTab({ categoryId }: SessionsTabProps) {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const [formOpen, setFormOpen] = useState(false);
+  const [editingSession, setEditingSession] = useState<any | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
+
+  // Fetch sessions with exercise counts
+  const { data: sessions, isLoading } = useQuery({
+    queryKey: ["training_sessions", categoryId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("training_sessions")
+        .select(`
+          id,
+          session_date,
+          session_start_time,
+          session_end_time,
+          training_type,
+          intensity,
+          notes
+        `)
+        .eq("category_id", categoryId)
+        .order("session_date", { ascending: false })
+        .order("session_start_time", { ascending: false });
+
+      if (error) throw error;
+
+      // Get exercise counts for each session
+      const sessionIds = data?.map((s) => s.id) || [];
+      if (sessionIds.length > 0) {
+        const { data: exerciseCounts } = await supabase
+          .from("gym_session_exercises")
+          .select("training_session_id")
+          .in("training_session_id", sessionIds);
+
+        const countMap = new Map<string, number>();
+        exerciseCounts?.forEach((ex) => {
+          const current = countMap.get(ex.training_session_id) || 0;
+          countMap.set(ex.training_session_id, current + 1);
+        });
+
+        return data?.map((s) => ({
+          ...s,
+          exerciseCount: countMap.get(s.id) || 0,
+        }));
+      }
+
+      return data?.map((s) => ({ ...s, exerciseCount: 0 })) || [];
+    },
+  });
+
+  const deleteSession = useMutation({
+    mutationFn: async (sessionId: string) => {
+      // Delete related records first
+      await supabase.from("gym_session_exercises").delete().eq("training_session_id", sessionId);
+      await supabase.from("training_attendance").delete().eq("training_session_id", sessionId);
+      await supabase.from("awcr_tracking").delete().eq("training_session_id", sessionId);
+      const { error } = await supabase.from("training_sessions").delete().eq("id", sessionId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["training_sessions", categoryId] });
+      toast.success("Séance supprimée");
+      setDeleteDialogOpen(false);
+      setSessionToDelete(null);
+    },
+    onError: () => {
+      toast.error("Erreur lors de la suppression");
+    },
+  });
+
+  const handleEdit = (session: any) => {
+    setEditingSession(session);
+    setFormOpen(true);
+  };
+
+  const handleDeleteClick = (sessionId: string) => {
+    setSessionToDelete(sessionId);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleFormClose = () => {
+    setFormOpen(false);
+    setEditingSession(null);
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold">Séances d'entraînement</h2>
+        <Button onClick={() => setFormOpen(true)} size="sm">
+          <Plus className="h-4 w-4 mr-1" />
+          Nouvelle séance
+        </Button>
+      </div>
+
+      {isLoading ? (
+        <div className="text-sm text-muted-foreground">Chargement...</div>
+      ) : sessions?.length === 0 ? (
+        <Card>
+          <CardContent className="py-8 text-center text-muted-foreground">
+            <Dumbbell className="h-12 w-12 mx-auto mb-3 opacity-50" />
+            <p>Aucune séance créée</p>
+            <p className="text-sm mt-1">Cliquez sur "Nouvelle séance" pour commencer</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-3">
+          {sessions?.map((session) => (
+            <Card key={session.id} className="hover:shadow-md transition-shadow">
+              <CardContent className="py-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1 space-y-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Badge variant="outline" className="font-medium">
+                        {trainingTypeLabels[session.training_type] || session.training_type}
+                      </Badge>
+                      {session.intensity && (
+                        <Badge variant="secondary">Intensité {session.intensity}/10</Badge>
+                      )}
+                      {session.exerciseCount > 0 && (
+                        <Badge variant="default" className="bg-primary/80">
+                          <Dumbbell className="h-3 w-3 mr-1" />
+                          {session.exerciseCount} exercice(s)
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        <CalendarIcon className="h-4 w-4" />
+                        {format(new Date(session.session_date), "EEEE d MMMM yyyy", { locale: fr })}
+                      </span>
+                      {session.session_start_time && (
+                        <span className="flex items-center gap-1">
+                          <Clock className="h-4 w-4" />
+                          {session.session_start_time.slice(0, 5)}
+                          {session.session_end_time && ` - ${session.session_end_time.slice(0, 5)}`}
+                        </span>
+                      )}
+                    </div>
+                    {session.notes && (
+                      <p className="text-sm text-muted-foreground line-clamp-2">{session.notes}</p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Button variant="ghost" size="icon" onClick={() => handleEdit(session)}>
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-destructive"
+                      onClick={() => handleDeleteClick(session.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      <SessionFormDialog
+        open={formOpen}
+        onOpenChange={handleFormClose}
+        categoryId={categoryId}
+        editSession={editingSession}
+      />
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer cette séance ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Cette action est irréversible. Les exercices, présences et données AWCR associés seront
+              également supprimés.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => sessionToDelete && deleteSession.mutate(sessionToDelete)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}

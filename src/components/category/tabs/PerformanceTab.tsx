@@ -1,11 +1,12 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ClipboardCheck, Activity, BarChart3, Dumbbell, MapPin, History } from "lucide-react";
+import { ClipboardCheck, Activity, BarChart3, Dumbbell, MapPin, History, CalendarDays } from "lucide-react";
 import { TestsTab } from "@/components/category/TestsTab";
 import { AwcrTab } from "@/components/category/AwcrTab";
 import { AnalyticsTab } from "@/components/analytics/AnalyticsTab";
 import { PhysicalPreparationTab } from "@/components/category/PhysicalPreparationTab";
 import { GpsDataTab } from "@/components/category/gps/GpsDataTab";
 import { SessionHistoryTimeline } from "@/components/category/history/SessionHistoryTimeline";
+import { SessionsTab } from "@/components/category/sessions/SessionsTab";
 
 interface PerformanceTabProps {
   categoryId: string;
@@ -13,8 +14,13 @@ interface PerformanceTabProps {
 
 export function PerformanceTab({ categoryId }: PerformanceTabProps) {
   return (
-    <Tabs defaultValue="tests" className="space-y-4">
+    <Tabs defaultValue="sessions" className="space-y-4">
       <TabsList className="flex w-full overflow-x-auto no-scrollbar gap-1 h-auto flex-wrap md:flex-nowrap bg-muted p-1">
+        <TabsTrigger value="sessions" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5">
+          <CalendarDays className="h-4 w-4 shrink-0" />
+          <span className="hidden sm:inline">Séances</span>
+          <span className="sm:hidden">Séan</span>
+        </TabsTrigger>
         <TabsTrigger value="tests" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5">
           <ClipboardCheck className="h-4 w-4 shrink-0" />
           Tests
@@ -43,6 +49,10 @@ export function PerformanceTab({ categoryId }: PerformanceTabProps) {
           <span className="sm:hidden">GPS</span>
         </TabsTrigger>
       </TabsList>
+
+      <TabsContent value="sessions">
+        <SessionsTab categoryId={categoryId} />
+      </TabsContent>
 
       <TabsContent value="tests">
         <TestsTab categoryId={categoryId} />
