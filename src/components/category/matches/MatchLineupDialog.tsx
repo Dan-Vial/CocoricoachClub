@@ -162,8 +162,8 @@ export function MatchLineupDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[700px] max-h-[90vh] flex flex-col">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-[700px] h-[90vh] flex flex-col overflow-hidden">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Users className="h-5 w-5" />
@@ -182,7 +182,7 @@ export function MatchLineupDialog({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex gap-4 text-sm text-muted-foreground mb-2">
+        <div className="flex gap-4 text-sm text-muted-foreground mb-2 flex-shrink-0">
           <span className="flex items-center gap-1">
             <UserCheck className="h-4 w-4" />
             {selectedCount} joueurs sélectionnés
@@ -190,8 +190,8 @@ export function MatchLineupDialog({
           <span>{starterCount} titulaires</span>
         </div>
 
-        <ScrollArea className="flex-1 min-h-0">
-          <div className="pr-4">
+        <div className="flex-1 min-h-0 overflow-y-auto">
+          <div className="pr-2">
             {viewMode === "field" ? (
               <RugbyFieldLineup
                 players={players || []}
@@ -272,9 +272,9 @@ export function MatchLineupDialog({
               </div>
             )}
           </div>
-        </ScrollArea>
+        </div>
 
-        <div className="flex justify-end gap-2 pt-4 border-t">
+        <div className="flex justify-end gap-2 pt-4 border-t flex-shrink-0">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Annuler
           </Button>
