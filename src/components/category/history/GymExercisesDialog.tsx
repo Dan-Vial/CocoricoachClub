@@ -258,6 +258,97 @@ export function GymExercisesDialog({
     }, 0);
   };
 
+  // Calculate total session time based on exercises and set types
+  const calculateSessionTime = () => {
+    let totalSeconds = 0;
+    const validExercises = exercises.filter((e) => e.exercise_name.trim());
+    
+    // Group exercises by group_id for supersets/trisets
+    const groups: { [key: string]: Exercise[] } = {};
+    let ungrouped: Exercise[] = [];
+    
+    validExercises.forEach((ex) => {
+      if (ex.group_id) {
+        if (!groups[ex.group_id]) groups[ex.group_id] = [];
+        groups[ex.group_id].push(ex);
+      } else {
+        ungrouped.push(ex);
+      }
+    });
+
+    // Calculate time for ungrouped exercises
+    ungrouped.forEach((ex) => {
+      const sets = ex.sets || 1;
+      const reps = ex.reps || 10;
+      const restSeconds = ex.rest_seconds || 90;
+      
+      // Estimate time per rep (3 seconds average)
+      const timePerRep = 3;
+      // Time for all sets including rest (no rest after last set)
+      const workTime = sets * reps * timePerRep;
+      const restTime = (sets - 1) * restSeconds;
+      
+      // Special handling for timed exercises
+      if (["emom", "tabata", "amrap"].includes(ex.set_type)) {
+        totalSeconds += ex.duration_seconds || 60;
+      } else if (ex.set_type === "circuit") {
+        // Circuit: minimal rest
+        totalSeconds += workTime + (sets - 1) * 15;
+      } else {
+        totalSeconds += workTime + restTime;
+      }
+    });
+
+    // Calculate time for grouped exercises (supersets, trisets, etc.)
+    Object.values(groups).forEach((groupExercises) => {
+      if (groupExercises.length === 0) return;
+      
+      const maxSets = Math.max(...groupExercises.map((e) => e.sets || 1));
+      const restBetweenRounds = groupExercises[0].rest_seconds || 90;
+      
+      // Time for each exercise in the group
+      let roundTime = 0;
+      groupExercises.forEach((ex) => {
+        const reps = ex.reps || 10;
+        roundTime += reps * 3; // 3 seconds per rep
+      });
+      
+      // Total: rounds * round time + rest between rounds (not after last)
+      totalSeconds += maxSets * roundTime + (maxSets - 1) * restBetweenRounds;
+    });
+
+    return totalSeconds;
+  };
+
+  const formatTime = (seconds: number) => {
+    const hours = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    if (hours > 0) {
+      return `${hours}h${mins.toString().padStart(2, '0')}`;
+    }
+    return `${mins} min`;
+  };
+
+  // Get rest time hint based on set type
+  const getRestHint = (setType: string) => {
+    switch (setType) {
+      case "superset":
+      case "triset":
+      case "giant_set":
+        return "Repos après le groupe";
+      case "circuit":
+        return "Repos minimal (~15s)";
+      case "emom":
+        return "Repos = temps restant";
+      case "tabata":
+        return "10s repos fixe";
+      case "drop_set":
+        return "Repos entre drops: 0-10s";
+      default:
+        return "";
+    }
+  };
+
   const getCategoryLabel = (value: string) => {
     return EXERCISE_CATEGORIES.find((c) => c.value === value)?.label || value;
   };
@@ -298,6 +389,9 @@ export function GymExercisesDialog({
             </Badge>
             <Badge className="bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">
               Tonnage: {calculateTonnage().toLocaleString()}kg
+            </Badge>
+            <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300">
+              ⏱️ Durée estimée: {formatTime(calculateSessionTime())}
             </Badge>
           </div>
 
@@ -466,13 +560,20 @@ export function GymExercisesDialog({
                       />
                     </div>
                     <div>
-                      <Label className="text-xs">Repos (s)</Label>
+                      <Label className="text-xs flex items-center gap-1">
+                        Repos (s)
+                        {getRestHint(exercise.set_type) && (
+                          <span className="text-[10px] text-muted-foreground">
+                            ({getRestHint(exercise.set_type)})
+                          </span>
+                        )}
+                      </Label>
                       <Input
                         type="number"
                         min={0}
                         step={15}
                         className="h-8"
-                        placeholder="90"
+                        placeholder={["superset", "triset", "giant_set"].includes(exercise.set_type) ? "120" : "90"}
                         value={exercise.rest_seconds || ""}
                         onChange={(e) => updateExercise(index, "rest_seconds", parseInt(e.target.value) || null)}
                       />
@@ -510,11 +611,32 @@ export function GymExercisesDialog({
                     )}
                   </div>
 
+                  {/* Superset grouping hint */}
+                  {["superset", "triset", "giant_set"].includes(exercise.set_type) && (
+                    <div className="flex items-center gap-2">
+                      <Label className="text-xs">Groupe:</Label>
+                      <Input
+                        className="h-7 w-20 text-xs"
+                        placeholder="A, B..."
+                        value={exercise.group_id || ""}
+                        onChange={(e) => updateExercise(index, "group_id", e.target.value || null)}
+                      />
+                      <span className="text-xs text-muted-foreground">
+                        (même lettre = même groupe)
+                      </span>
+                    </div>
+                  )}
+
                   {/* Info badges */}
                   <div className="flex flex-wrap gap-2">
                     {exercise.set_type !== "standard" && (
                       <Badge variant="secondary" className="text-xs">
                         {getSetTypeInfo(exercise.set_type).label}
+                      </Badge>
+                    )}
+                    {exercise.group_id && (
+                      <Badge variant="outline" className="text-xs bg-primary/10">
+                        Groupe {exercise.group_id}
                       </Badge>
                     )}
                     {exercise.weight_kg && exercise.reps && (
