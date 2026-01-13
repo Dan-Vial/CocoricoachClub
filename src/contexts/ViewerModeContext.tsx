@@ -41,6 +41,7 @@ export function ViewerModeProvider({ children, clubId, categoryId }: ViewerModeP
       return data?.role || null;
     },
     enabled: !!user && !!clubId && !isPublicAccess,
+    staleTime: 0, // Always refetch to get latest role
   });
 
   // Check if user has viewer role for the category
@@ -60,6 +61,7 @@ export function ViewerModeProvider({ children, clubId, categoryId }: ViewerModeP
       return data?.role || null;
     },
     enabled: !!user && !!categoryId && !isPublicAccess,
+    staleTime: 0, // Always refetch to get latest role
   });
 
   const isLoading = clubLoading || categoryLoading;
