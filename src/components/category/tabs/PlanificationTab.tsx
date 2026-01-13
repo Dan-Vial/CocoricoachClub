@@ -1,8 +1,9 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar, Timer, Bell } from "lucide-react";
+import { Calendar, Timer, Bell, ClipboardCheck } from "lucide-react";
 import { CalendarTab } from "@/components/category/CalendarTab";
 import { PeriodizationTab } from "@/components/periodization/PeriodizationTab";
 import { TestRemindersTab } from "@/components/category/TestRemindersTab";
+import { AttendanceTab } from "@/components/category/attendance/AttendanceTab";
 
 interface PlanificationTabProps {
   categoryId: string;
@@ -16,6 +17,11 @@ export function PlanificationTab({ categoryId }: PlanificationTabProps) {
           <Calendar className="h-4 w-4 shrink-0" />
           <span className="hidden sm:inline">Calendrier</span>
           <span className="sm:hidden">Cal</span>
+        </TabsTrigger>
+        <TabsTrigger value="attendance" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5">
+          <ClipboardCheck className="h-4 w-4 shrink-0" />
+          <span className="hidden sm:inline">Présences</span>
+          <span className="sm:hidden">Prés</span>
         </TabsTrigger>
         <TabsTrigger value="periodization" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5">
           <Timer className="h-4 w-4 shrink-0" />
@@ -31,6 +37,10 @@ export function PlanificationTab({ categoryId }: PlanificationTabProps) {
 
       <TabsContent value="calendar">
         <CalendarTab categoryId={categoryId} />
+      </TabsContent>
+
+      <TabsContent value="attendance">
+        <AttendanceTab categoryId={categoryId} />
       </TabsContent>
 
       <TabsContent value="periodization">
