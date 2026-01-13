@@ -29,9 +29,12 @@ interface SessionAttendanceDialogProps {
     session_date: string;
     training_type: string;
     session_start_time?: string;
+    session_end_time?: string;
+    intensity?: number;
     notes?: string;
   } | null;
   categoryId: string;
+  onAttendanceSaved?: (presentPlayerIds: string[]) => void;
 }
 
 const ATTENDANCE_STATUS = [
@@ -69,7 +72,8 @@ export function SessionAttendanceDialog({
   open, 
   onOpenChange, 
   session, 
-  categoryId 
+  categoryId,
+  onAttendanceSaved 
 }: SessionAttendanceDialogProps) {
   const queryClient = useQueryClient();
   const [attendance, setAttendance] = useState<Record<string, PlayerAttendanceData>>({});
@@ -212,7 +216,18 @@ export function SessionAttendanceDialog({
       queryClient.invalidateQueries({ queryKey: ["wellness_tracking"] });
       queryClient.invalidateQueries({ queryKey: ["session-wellness"] });
       toast.success("Présences et wellness enregistrés");
+
+      // Get list of present player IDs and trigger callback
+      const presentPlayerIds = Object.entries(attendance)
+        .filter(([_, data]) => data.status === "present")
+        .map(([playerId]) => playerId);
+      
       onOpenChange(false);
+      
+      // Call callback after closing this dialog
+      if (onAttendanceSaved && presentPlayerIds.length > 0) {
+        onAttendanceSaved(presentPlayerIds);
+      }
     },
     onError: () => toast.error("Erreur lors de l'enregistrement"),
   });

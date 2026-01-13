@@ -11,6 +11,7 @@ import { ClipboardCheck, Calendar, Users, TrendingUp, ChevronRight } from "lucid
 import { format, startOfMonth, endOfMonth, subMonths } from "date-fns";
 import { fr } from "date-fns/locale";
 import { SessionAttendanceDialog } from "./SessionAttendanceDialog";
+import { PostSessionRpeDialog } from "./PostSessionRpeDialog";
 import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 
 interface AttendanceTabProps {
@@ -21,6 +22,8 @@ export function AttendanceTab({ categoryId }: AttendanceTabProps) {
   const { isViewer } = useViewerModeContext();
   const [selectedSession, setSelectedSession] = useState<any>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [rpeDialogOpen, setRpeDialogOpen] = useState(false);
+  const [presentPlayerIds, setPresentPlayerIds] = useState<string[]>([]);
 
   // Fetch recent sessions
   const { data: sessions } = useQuery({
@@ -97,6 +100,14 @@ export function AttendanceTab({ categoryId }: AttendanceTabProps) {
   const handleOpenAttendance = (session: any) => {
     setSelectedSession(session);
     setDialogOpen(true);
+  };
+
+  const handleAttendanceSaved = (playerIds: string[]) => {
+    setPresentPlayerIds(playerIds);
+    // Open RPE dialog after a small delay to let the attendance dialog close
+    setTimeout(() => {
+      setRpeDialogOpen(true);
+    }, 100);
   };
 
   const getSessionTypeLabel = (type: string) => {
@@ -347,6 +358,15 @@ export function AttendanceTab({ categoryId }: AttendanceTabProps) {
         onOpenChange={setDialogOpen}
         session={selectedSession}
         categoryId={categoryId}
+        onAttendanceSaved={handleAttendanceSaved}
+      />
+
+      <PostSessionRpeDialog
+        open={rpeDialogOpen}
+        onOpenChange={setRpeDialogOpen}
+        session={selectedSession}
+        categoryId={categoryId}
+        presentPlayerIds={presentPlayerIds}
       />
     </div>
   );
