@@ -94,18 +94,7 @@ export function AddSessionDialog({
   const selectedTrainingType = trainingTypes.find(t => t.value === type);
   const showExerciseSection = selectedTrainingType?.hasExercises || false;
 
-  useEffect(() => {
-    if (!open || !showExerciseSection) return;
-
-    // Ensure exercises UI is actually usable: open + at least one editable row
-    setShowExercises(true);
-    setExercises((prev) => (prev.length === 0 ? [emptyExercise(0)] : prev));
-
-    // Scroll inside the dialog to the exercises block (below player selector)
-    window.setTimeout(() => {
-      exercisesSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 100);
-  }, [open, showExerciseSection]);
+  // No auto-scroll on open - let user fill top fields first
 
   const { data: players } = useQuery({
     queryKey: ["players-with-injuries", categoryId],
