@@ -12,6 +12,7 @@ import { fr } from "date-fns/locale";
 import { AddWellnessDialog } from "./AddWellnessDialog";
 import { InjuryRiskAssessment } from "./InjuryRiskAssessment";
 import { MenstrualCycleSection } from "./MenstrualCycleSection";
+import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 
 interface WellnessTabProps {
   categoryId: string;
@@ -31,6 +32,7 @@ const getScoreBadge = (score: number) => {
 
 export function WellnessTab({ categoryId }: WellnessTabProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const { isViewer } = useViewerModeContext();
 
   const { data: category } = useQuery({
     queryKey: ["category", categoryId],
@@ -97,24 +99,28 @@ export function WellnessTab({ categoryId }: WellnessTabProps) {
                     Suivi du bien-être et des douleurs musculaires des joueurs
                   </CardDescription>
                 </div>
-                <Button onClick={() => setIsDialogOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Nouvelle entrée
-                </Button>
+                {!isViewer && (
+                  <Button onClick={() => setIsDialogOpen(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Nouvelle entrée
+                  </Button>
+                )}
               </div>
             </CardHeader>
             <CardContent>
         {!wellnessData || wellnessData.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             <p>Aucune donnée wellness enregistrée.</p>
-            <Button 
-              variant="outline" 
-              className="mt-4"
-              onClick={() => setIsDialogOpen(true)}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Ajouter la première entrée
-            </Button>
+            {!isViewer && (
+              <Button 
+                variant="outline" 
+                className="mt-4"
+                onClick={() => setIsDialogOpen(true)}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Ajouter la première entrée
+              </Button>
+            )}
           </div>
         ) : (
           <>

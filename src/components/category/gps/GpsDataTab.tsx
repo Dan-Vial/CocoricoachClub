@@ -8,6 +8,7 @@ import { GpsImportDialog } from "./GpsImportDialog";
 import { GpsSessionsList } from "./GpsSessionsList";
 import { GpsAnalyticsDashboard } from "./GpsAnalyticsDashboard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 
 interface GpsDataTabProps {
   categoryId: string;
@@ -15,6 +16,7 @@ interface GpsDataTabProps {
 
 export function GpsDataTab({ categoryId }: GpsDataTabProps) {
   const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const { isViewer } = useViewerModeContext();
 
   const { data: gpsSessions, isLoading, refetch } = useQuery({
     queryKey: ['gps-sessions', categoryId],
@@ -78,10 +80,12 @@ export function GpsDataTab({ categoryId }: GpsDataTabProps) {
             Importez et analysez les données de tracking GPS (Catapult, STATSports)
           </p>
         </div>
-        <Button onClick={() => setImportDialogOpen(true)} className="gap-2">
-          <Upload className="h-4 w-4" />
-          Importer CSV
-        </Button>
+        {!isViewer && (
+          <Button onClick={() => setImportDialogOpen(true)} className="gap-2">
+            <Upload className="h-4 w-4" />
+            Importer CSV
+          </Button>
+        )}
       </div>
 
       {/* Summary Cards */}
