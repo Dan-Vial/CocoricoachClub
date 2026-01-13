@@ -240,6 +240,26 @@ export function SessionAttendanceDialog({
     setAttendance(updated);
   };
 
+  const handleCollectWellnessChange = (checked: boolean) => {
+    setCollectWellness(checked);
+
+    if (!checked) {
+      setExpandedPlayer(null);
+      return;
+    }
+
+    // If user wants wellness, default-enable it for all present players
+    enableAllWellness();
+
+    // And auto-open the first present player so the QCM is immediately visible
+    const firstPresentPlayerId = players?.find((p) => {
+      const status = attendance[p.id]?.status || "present";
+      return status === "present";
+    })?.id;
+
+    setExpandedPlayer(firstPresentPlayerId || null);
+  };
+
   const getStatusInfo = (status: string) => {
     return ATTENDANCE_STATUS.find((s) => s.value === status) || ATTENDANCE_STATUS[0];
   };
@@ -306,7 +326,7 @@ export function SessionAttendanceDialog({
             <Switch 
               id="collect-wellness" 
               checked={collectWellness} 
-              onCheckedChange={setCollectWellness}
+              onCheckedChange={handleCollectWellnessChange}
             />
             <Label htmlFor="collect-wellness" className="text-sm font-medium">
               Collecter le Wellness
