@@ -8,6 +8,7 @@ import { Plus, Weight, Ruler, Calendar, Scale, Dumbbell } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { AddMeasurementDialog } from "./AddMeasurementDialog";
+import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 
 interface PlayerBiometricsProps {
   playerId: string;
@@ -16,6 +17,7 @@ interface PlayerBiometricsProps {
 }
 
 export function PlayerBiometrics({ playerId, categoryId, birthYear }: PlayerBiometricsProps) {
+  const { isViewer } = useViewerModeContext();
   const [showAddDialog, setShowAddDialog] = useState(false);
 
   const { data: measurements } = useQuery({
@@ -77,13 +79,15 @@ export function PlayerBiometrics({ playerId, categoryId, birthYear }: PlayerBiom
               <Weight className="h-5 w-5" />
               Données Biométriques
             </CardTitle>
-            <Button
-              size="sm"
-              onClick={() => setShowAddDialog(true)}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Nouvelle mesure
-            </Button>
+            {!isViewer && (
+              <Button
+                size="sm"
+                onClick={() => setShowAddDialog(true)}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Nouvelle mesure
+              </Button>
+            )}
           </div>
           {birthYear && (
             <p className="text-sm text-muted-foreground">
@@ -212,12 +216,14 @@ export function PlayerBiometrics({ playerId, categoryId, birthYear }: PlayerBiom
         </CardContent>
       </Card>
 
-      <AddMeasurementDialog
-        open={showAddDialog}
-        onOpenChange={setShowAddDialog}
-        playerId={playerId}
-        categoryId={categoryId}
-      />
+      {!isViewer && (
+        <AddMeasurementDialog
+          open={showAddDialog}
+          onOpenChange={setShowAddDialog}
+          playerId={playerId}
+          categoryId={categoryId}
+        />
+      )}
     </>
   );
 }

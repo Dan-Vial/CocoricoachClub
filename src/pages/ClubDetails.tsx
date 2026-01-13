@@ -11,12 +11,14 @@ import { AddCategoryDialog } from "@/components/categories/AddCategoryDialog";
 import { CollaborationTab } from "@/components/collaboration/CollaborationTab";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { GlobalPlayerSearch } from "@/components/search/GlobalPlayerSearch";
+import { ViewerModeProvider, useViewerModeContext } from "@/contexts/ViewerModeContext";
 
-export default function ClubDetails() {
+function ClubDetailsContent() {
   const { clubId } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const { isViewer } = useViewerModeContext();
 
   const { data: club } = useQuery({
     queryKey: ["club", clubId],
@@ -95,16 +97,20 @@ export default function ClubDetails() {
         <Tabs defaultValue="categories" className="space-y-6">
           <TabsList>
             <TabsTrigger value="categories">Catégories</TabsTrigger>
-            <TabsTrigger value="collaboration">Collaboration</TabsTrigger>
+            {!isViewer && (
+              <TabsTrigger value="collaboration">Collaboration</TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value="categories" className="space-y-4">
             <div className="flex justify-between items-center">
               <h2 className="text-2xl font-bold text-foreground">Catégories</h2>
-              <Button onClick={() => setIsAddDialogOpen(true)} className="gap-2">
-                <Plus className="h-4 w-4" />
-                Ajouter une catégorie
-              </Button>
+              {!isViewer && (
+                <Button onClick={() => setIsAddDialogOpen(true)} className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  Ajouter une catégorie
+                </Button>
+              )}
             </div>
 
             {categories && categories.length === 0 ? (
@@ -113,14 +119,16 @@ export default function ClubDetails() {
               <p className="text-muted-foreground mb-4">
                 Aucune catégorie créée pour ce club
               </p>
-              <Button
-                onClick={() => setIsAddDialogOpen(true)}
-                variant="outline"
-                className="gap-2"
-              >
-                <Plus className="h-4 w-4" />
-                Créer votre première catégorie
-              </Button>
+              {!isViewer && (
+                <Button
+                  onClick={() => setIsAddDialogOpen(true)}
+                  variant="outline"
+                  className="gap-2"
+                >
+                  <Plus className="h-4 w-4" />
+                  Créer votre première catégorie
+                </Button>
+              )}
             </CardContent>
           </Card>
         ) : (
@@ -144,23 +152,25 @@ export default function ClubDetails() {
                     <span className="text-foreground group-hover:text-primary transition-colors">
                       {category.name}
                     </span>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (
-                          confirm(
-                            `Êtes-vous sûr de vouloir supprimer ${category.name} ?`
-                          )
-                        ) {
-                          deleteCategory.mutate(category.id);
-                        }
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
+                    {!isViewer && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (
+                            confirm(
+                              `Êtes-vous sûr de vouloir supprimer ${category.name} ?`
+                            )
+                          ) {
+                            deleteCategory.mutate(category.id);
+                          }
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    )}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -175,17 +185,31 @@ export default function ClubDetails() {
         )}
       </TabsContent>
 
-      <TabsContent value="collaboration">
-        <CollaborationTab clubId={clubId!} />
-      </TabsContent>
+      {!isViewer && (
+        <TabsContent value="collaboration">
+          <CollaborationTab clubId={clubId!} />
+        </TabsContent>
+      )}
     </Tabs>
   </div>
 
-      <AddCategoryDialog
-        open={isAddDialogOpen}
-        onOpenChange={setIsAddDialogOpen}
-        clubId={clubId!}
-      />
+      {!isViewer && (
+        <AddCategoryDialog
+          open={isAddDialogOpen}
+          onOpenChange={setIsAddDialogOpen}
+          clubId={clubId!}
+        />
+      )}
     </div>
+  );
+}
+
+export default function ClubDetails() {
+  const { clubId } = useParams();
+  
+  return (
+    <ViewerModeProvider clubId={clubId}>
+      <ClubDetailsContent />
+    </ViewerModeProvider>
   );
 }

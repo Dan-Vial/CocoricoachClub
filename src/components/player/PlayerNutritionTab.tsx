@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { Plus, Utensils, Droplets, Apple, Beef, Wheat, Flame, Target, ClipboardList } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 
 interface PlayerNutritionTabProps {
   playerId: string;
@@ -37,6 +38,7 @@ const mealTypeIcons: Record<string, React.ReactNode> = {
 };
 
 export function PlayerNutritionTab({ playerId, categoryId }: PlayerNutritionTabProps) {
+  const { isViewer } = useViewerModeContext();
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(format(new Date(), "yyyy-MM-dd"));
@@ -176,13 +178,14 @@ export function PlayerNutritionTab({ playerId, categoryId }: PlayerNutritionTabP
           <h3 className="text-xl font-semibold">Suivi Nutritionnel</h3>
           <p className="text-sm text-muted-foreground">Objectifs, repas et hydratation</p>
         </div>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button size="sm">
-              <Plus className="h-4 w-4 mr-2" />
-              Nouvelle entrée
-            </Button>
-          </DialogTrigger>
+        {!isViewer && (
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm">
+                <Plus className="h-4 w-4 mr-2" />
+                Nouvelle entrée
+              </Button>
+            </DialogTrigger>
           <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle>Ajouter une entrée nutrition</DialogTitle>
@@ -309,6 +312,7 @@ export function PlayerNutritionTab({ playerId, categoryId }: PlayerNutritionTabP
             </div>
           </DialogContent>
         </Dialog>
+        )}
       </div>
 
       <Tabs defaultValue="objectives" className="w-full">

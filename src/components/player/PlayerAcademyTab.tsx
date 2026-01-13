@@ -15,6 +15,7 @@ import { Plus, GraduationCap, Users, Target, Award, Phone, Star, Trash2 } from "
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { toast } from "sonner";
+import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 
 interface PlayerAcademyTabProps {
   playerId: string;
@@ -39,6 +40,7 @@ const SELECTION_TYPES = [
 ];
 
 export function PlayerAcademyTab({ playerId, categoryId, playerName }: PlayerAcademyTabProps) {
+  const { isViewer } = useViewerModeContext();
   const queryClient = useQueryClient();
   const [academicDialogOpen, setAcademicDialogOpen] = useState(false);
   const [staffNoteDialogOpen, setStaffNoteDialogOpen] = useState(false);
@@ -337,10 +339,12 @@ export function PlayerAcademyTab({ playerId, categoryId, playerName }: PlayerAca
                   <CardTitle className="text-lg">Suivi Scolaire</CardTitle>
                   <CardDescription>Absences et notes académiques</CardDescription>
                 </div>
-                <Button size="sm" onClick={() => setAcademicDialogOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Ajouter
-                </Button>
+                {!isViewer && (
+                  <Button size="sm" onClick={() => setAcademicDialogOpen(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Ajouter
+                  </Button>
+                )}
               </div>
             </CardHeader>
             <CardContent>
@@ -385,10 +389,12 @@ export function PlayerAcademyTab({ playerId, categoryId, playerName }: PlayerAca
                   <CardTitle className="text-lg">Notes du Staff</CardTitle>
                   <CardDescription>Médecin, kiné, préparateur, tuteur</CardDescription>
                 </div>
-                <Button size="sm" onClick={() => setStaffNoteDialogOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Ajouter
-                </Button>
+                {!isViewer && (
+                  <Button size="sm" onClick={() => setStaffNoteDialogOpen(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Ajouter
+                  </Button>
+                )}
               </div>
             </CardHeader>
             <CardContent>
@@ -424,10 +430,12 @@ export function PlayerAcademyTab({ playerId, categoryId, playerName }: PlayerAca
                   <CardTitle className="text-lg">Plan de Développement</CardTitle>
                   <CardDescription>Objectifs annuels</CardDescription>
                 </div>
-                <Button size="sm" onClick={() => setDevelopmentDialogOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Ajouter
-                </Button>
+                {!isViewer && (
+                  <Button size="sm" onClick={() => setDevelopmentDialogOpen(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Ajouter
+                  </Button>
+                )}
               </div>
             </CardHeader>
             <CardContent>
@@ -489,10 +497,12 @@ export function PlayerAcademyTab({ playerId, categoryId, playerName }: PlayerAca
                   <CardTitle className="text-lg">Sélections</CardTitle>
                   <CardDescription>Équipes nationales et régionales</CardDescription>
                 </div>
-                <Button size="sm" onClick={() => setSelectionDialogOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Ajouter
-                </Button>
+                {!isViewer && (
+                  <Button size="sm" onClick={() => setSelectionDialogOpen(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Ajouter
+                  </Button>
+                )}
               </div>
             </CardHeader>
             <CardContent>
@@ -528,10 +538,12 @@ export function PlayerAcademyTab({ playerId, categoryId, playerName }: PlayerAca
                   <CardTitle className="text-lg">Contacts</CardTitle>
                   <CardDescription>Parents et tuteurs légaux</CardDescription>
                 </div>
-                <Button size="sm" onClick={() => setContactDialogOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Ajouter
-                </Button>
+                {!isViewer && (
+                  <Button size="sm" onClick={() => setContactDialogOpen(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Ajouter
+                  </Button>
+                )}
               </div>
             </CardHeader>
             <CardContent>

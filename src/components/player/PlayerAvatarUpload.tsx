@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Upload, User } from "lucide-react";
 import { toast } from "sonner";
+import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 
 interface PlayerAvatarUploadProps {
   playerId: string;
@@ -17,6 +18,7 @@ export function PlayerAvatarUpload({
   playerName,
   currentAvatarUrl,
 }: PlayerAvatarUploadProps) {
+  const { isViewer } = useViewerModeContext();
   const [uploading, setUploading] = useState(false);
   const queryClient = useQueryClient();
 
@@ -97,30 +99,32 @@ export function PlayerAvatarUpload({
         </AvatarFallback>
       </Avatar>
 
-      <div>
-        <input
-          type="file"
-          id="avatar-upload"
-          accept="image/*"
-          onChange={handleFileChange}
-          className="hidden"
-          disabled={uploading}
-        />
-        <label htmlFor="avatar-upload">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
+      {!isViewer && (
+        <div>
+          <input
+            type="file"
+            id="avatar-upload"
+            accept="image/*"
+            onChange={handleFileChange}
+            className="hidden"
             disabled={uploading}
-            asChild
-          >
-            <span className="cursor-pointer">
-              <Upload className="h-4 w-4 mr-2" />
-              {uploading ? "Upload..." : "Changer la photo"}
-            </span>
-          </Button>
-        </label>
-      </div>
+          />
+          <label htmlFor="avatar-upload">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={uploading}
+              asChild
+            >
+              <span className="cursor-pointer">
+                <Upload className="h-4 w-4 mr-2" />
+                {uploading ? "Upload..." : "Changer la photo"}
+              </span>
+            </Button>
+          </label>
+        </div>
+      )}
     </div>
   );
 }

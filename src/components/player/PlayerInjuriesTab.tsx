@@ -22,6 +22,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 
 interface PlayerInjuriesTabProps {
   playerId: string;
@@ -30,6 +31,7 @@ interface PlayerInjuriesTabProps {
 }
 
 export function PlayerInjuriesTab({ playerId, categoryId, playerName = "Joueur" }: PlayerInjuriesTabProps) {
+  const { isViewer } = useViewerModeContext();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [protocolDialogOpen, setProtocolDialogOpen] = useState(false);
   const [selectedInjury, setSelectedInjury] = useState<any>(null);
@@ -179,7 +181,7 @@ export function PlayerInjuriesTab({ playerId, categoryId, playerName = "Joueur" 
             )}
             
             {/* Protocol Assignment */}
-            {!getRehabProtocol(activeInjury.id) ? (
+            {!getRehabProtocol(activeInjury.id) && !isViewer ? (
               <Button 
                 onClick={() => handleAssignProtocol(activeInjury)}
                 className="w-full"
@@ -240,7 +242,7 @@ export function PlayerInjuriesTab({ playerId, categoryId, playerName = "Joueur" 
             </CollapsibleTrigger>
             <CollapsibleContent>
               <CardContent>
-                {!getRehabProtocol(injury.id) ? (
+                {!getRehabProtocol(injury.id) && !isViewer ? (
                   <Button 
                     onClick={() => handleAssignProtocol(injury)}
                     variant="outline"
@@ -274,10 +276,12 @@ export function PlayerInjuriesTab({ playerId, categoryId, playerName = "Joueur" 
                 Toutes les blessures du joueur
               </p>
             </div>
-            <Button onClick={() => setIsDialogOpen(true)} size="sm">
-              <Plus className="h-4 w-4 mr-2" />
-              Ajouter
-            </Button>
+            {!isViewer && (
+              <Button onClick={() => setIsDialogOpen(true)} size="sm">
+                <Plus className="h-4 w-4 mr-2" />
+                Ajouter
+              </Button>
+            )}
           </div>
         </CardHeader>
         <CardContent>
@@ -310,34 +314,36 @@ export function PlayerInjuriesTab({ playerId, categoryId, playerName = "Joueur" 
                       )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Select
-                      value={injury.status}
-                      onValueChange={(value) => {
-                        updateInjuryStatus.mutate({ id: injury.id, status: value });
-                      }}
-                      disabled={updateInjuryStatus.isPending}
-                    >
-                      <SelectTrigger className="w-[200px]">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value={INJURY_STATUS.ACTIVE}>{INJURY_STATUS_LABELS[INJURY_STATUS.ACTIVE]}</SelectItem>
-                        <SelectItem value={INJURY_STATUS.REHABILITATION}>{INJURY_STATUS_LABELS[INJURY_STATUS.REHABILITATION]}</SelectItem>
-                        <SelectItem value={INJURY_STATUS.HEALED}>{INJURY_STATUS_LABELS[INJURY_STATUS.HEALED]}</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {!getRehabProtocol(injury.id) && injury.status !== INJURY_STATUS.HEALED && (
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={() => handleAssignProtocol(injury)}
+                  {!isViewer && (
+                    <div className="flex items-center gap-2">
+                      <Select
+                        value={injury.status}
+                        onValueChange={(value) => {
+                          updateInjuryStatus.mutate({ id: injury.id, status: value });
+                        }}
+                        disabled={updateInjuryStatus.isPending}
                       >
-                        <Dumbbell className="h-4 w-4 mr-1" />
-                        Protocole
-                      </Button>
-                    )}
-                  </div>
+                        <SelectTrigger className="w-[200px]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={INJURY_STATUS.ACTIVE}>{INJURY_STATUS_LABELS[INJURY_STATUS.ACTIVE]}</SelectItem>
+                          <SelectItem value={INJURY_STATUS.REHABILITATION}>{INJURY_STATUS_LABELS[INJURY_STATUS.REHABILITATION]}</SelectItem>
+                          <SelectItem value={INJURY_STATUS.HEALED}>{INJURY_STATUS_LABELS[INJURY_STATUS.HEALED]}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {!getRehabProtocol(injury.id) && injury.status !== INJURY_STATUS.HEALED && (
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => handleAssignProtocol(injury)}
+                        >
+                          <Dumbbell className="h-4 w-4 mr-1" />
+                          Protocole
+                        </Button>
+                      )}
+                    </div>
+                  )}
                   {injury.description && (
                     <p className="text-sm text-muted-foreground">{injury.description}</p>
                   )}

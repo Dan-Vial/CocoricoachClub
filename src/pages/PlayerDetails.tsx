@@ -20,11 +20,13 @@ import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { GlobalPlayerSearch } from "@/components/search/GlobalPlayerSearch";
 import { TransferPlayerDialog } from "@/components/player/TransferPlayerDialog";
 import { PlayerTransferHistory } from "@/components/player/PlayerTransferHistory";
+import { ViewerModeProvider, useViewerModeContext } from "@/contexts/ViewerModeContext";
 
-export default function PlayerDetails() {
+function PlayerDetailsContent() {
   const { playerId } = useParams<{ playerId: string }>();
   const navigate = useNavigate();
   const [transferDialogOpen, setTransferDialogOpen] = useState(false);
+  const { isViewer } = useViewerModeContext();
 
   const { data: player, isLoading } = useQuery({
     queryKey: ["player", playerId],
@@ -79,14 +81,16 @@ export default function PlayerDetails() {
               <CardTitle className="text-3xl">{player.name}</CardTitle>
               <p className="text-muted-foreground">{player.categories?.name}</p>
             </div>
-            <Button
-              variant="outline"
-              onClick={() => setTransferDialogOpen(true)}
-              className="gap-2"
-            >
-              <ArrowRightLeft className="h-4 w-4" />
-              Transférer
-            </Button>
+            {!isViewer && (
+              <Button
+                variant="outline"
+                onClick={() => setTransferDialogOpen(true)}
+                className="gap-2"
+              >
+                <ArrowRightLeft className="h-4 w-4" />
+                Transférer
+              </Button>
+            )}
           </CardHeader>
         </Card>
 
@@ -155,16 +159,46 @@ export default function PlayerDetails() {
           </TabsContent>
         </Tabs>
 
-        <TransferPlayerDialog
-          open={transferDialogOpen}
-          onOpenChange={setTransferDialogOpen}
-          playerId={playerId!}
-          playerName={player.name}
-          currentCategoryId={player.category_id}
-          currentCategoryName={player.categories?.name || ""}
-          clubId={player.categories?.club_id || ""}
-        />
+        {!isViewer && (
+          <TransferPlayerDialog
+            open={transferDialogOpen}
+            onOpenChange={setTransferDialogOpen}
+            playerId={playerId!}
+            playerName={player.name}
+            currentCategoryId={player.category_id}
+            currentCategoryName={player.categories?.name || ""}
+            clubId={player.categories?.club_id || ""}
+          />
+        )}
       </div>
     </div>
+  );
+}
+
+export default function PlayerDetails() {
+  const { playerId } = useParams<{ playerId: string }>();
+  
+  // Fetch player to get categoryId and clubId for viewer mode
+  const { data: player } = useQuery({
+    queryKey: ["player-for-viewer-mode", playerId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("players")
+        .select("category_id, categories(club_id)")
+        .eq("id", playerId!)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!playerId,
+  });
+  
+  return (
+    <ViewerModeProvider 
+      categoryId={player?.category_id} 
+      clubId={player?.categories?.club_id}
+    >
+      <PlayerDetailsContent />
+    </ViewerModeProvider>
   );
 }
