@@ -11,20 +11,22 @@ interface SanteTabProps {
 export function SanteTab({ categoryId }: SanteTabProps) {
   return (
     <Tabs defaultValue="health" className="space-y-4">
-      <TabsList className="flex w-full overflow-x-auto no-scrollbar gap-1 h-auto flex-wrap md:flex-nowrap bg-muted p-1">
-        <TabsTrigger value="health" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5">
-          <Heart className="h-4 w-4 shrink-0" />
-          Santé
-        </TabsTrigger>
-        <TabsTrigger value="wellness" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5">
-          <Smile className="h-4 w-4 shrink-0" />
-          Wellness
-        </TabsTrigger>
-        <TabsTrigger value="nutrition" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5">
-          <Apple className="h-4 w-4 shrink-0" />
-          Nutrition
-        </TabsTrigger>
-      </TabsList>
+      <div className="overflow-x-auto -mx-4 px-4 pb-2">
+        <TabsList className="inline-flex w-max min-w-full gap-1 h-auto bg-muted p-1">
+          <TabsTrigger value="health" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">
+            <Heart className="h-4 w-4 shrink-0" />
+            Santé
+          </TabsTrigger>
+          <TabsTrigger value="wellness" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">
+            <Smile className="h-4 w-4 shrink-0" />
+            Wellness
+          </TabsTrigger>
+          <TabsTrigger value="nutrition" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">
+            <Apple className="h-4 w-4 shrink-0" />
+            Nutrition
+          </TabsTrigger>
+        </TabsList>
+      </div>
 
       <TabsContent value="health">
         <HealthTab categoryId={categoryId} />

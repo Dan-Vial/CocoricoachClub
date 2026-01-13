@@ -57,27 +57,29 @@ function CategoryDetailsContent() {
         }
       >
         <div className="container mx-auto max-w-7xl">
-          <div className="flex justify-between items-start mb-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start gap-3 mb-4">
             <Button
               variant="ghost"
+              size="sm"
               className="text-primary-foreground hover:bg-primary-foreground/10"
               onClick={() => navigate(`/clubs/${category?.clubs?.id}`)}
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Retour aux catégories
+              <span className="hidden sm:inline">Retour aux catégories</span>
+              <span className="sm:hidden">Retour</span>
             </Button>
             {!isViewer && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 self-end sm:self-auto">
                 <GlobalPlayerSearch />
                 <NotificationBell />
               </div>
             )}
           </div>
-          <div className="flex justify-between items-end">
-            <div>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
+            <div className="min-w-0 flex-1">
               {categoryId && category?.name && (
                 isViewer ? (
-                  <h1 className="text-3xl font-bold text-primary-foreground">{category.name}</h1>
+                  <h1 className="text-2xl sm:text-3xl font-bold text-primary-foreground truncate">{category.name}</h1>
                 ) : (
                   <EditableCategoryName 
                     categoryId={categoryId} 
@@ -85,15 +87,15 @@ function CategoryDetailsContent() {
                   />
                 )
               )}
-              <div className="flex items-center gap-4 mt-2">
-                <p className="text-primary-foreground/90">
+              <div className="flex items-center gap-2 sm:gap-4 mt-2 flex-wrap">
+                <p className="text-primary-foreground/90 text-sm sm:text-base truncate">
                   {category?.clubs?.name}
                 </p>
                 {categoryId && category?.rugby_type && (
                   <>
                     <span className="text-primary-foreground/60">•</span>
                     {isViewer ? (
-                      <span className="text-primary-foreground/90 text-sm">
+                      <span className="text-primary-foreground/90 text-xs sm:text-sm">
                         {category.rugby_type === "15" ? "Rugby XV" : 
                          category.rugby_type === "7" ? "Rugby 7" : 
                          category.rugby_type === "academie" ? "Académie" : 
@@ -122,44 +124,46 @@ function CategoryDetailsContent() {
 
       <div className="container mx-auto max-w-7xl px-4 py-8">
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="flex w-full overflow-x-auto no-scrollbar gap-1 h-auto flex-wrap md:flex-nowrap">
-            <TabsTrigger value="overview" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3">
-              <LayoutDashboard className="h-4 w-4 shrink-0" />
-              <span className="hidden sm:inline">Vue Générale</span>
-              <span className="sm:hidden">Général</span>
-            </TabsTrigger>
-            <TabsTrigger value="effectif" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3">
-              <Users className="h-4 w-4 shrink-0" />
-              <span className="hidden sm:inline">Effectif</span>
-              <span className="sm:hidden">Équipe</span>
-            </TabsTrigger>
-            <TabsTrigger value="planification" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3">
-              <Calendar className="h-4 w-4 shrink-0" />
-              <span className="hidden sm:inline">Planification</span>
-              <span className="sm:hidden">Planning</span>
-            </TabsTrigger>
-            <TabsTrigger value="performance" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3">
-              <Zap className="h-4 w-4 shrink-0" />
-              <span className="hidden sm:inline">Performance</span>
-              <span className="sm:hidden">Perf</span>
-            </TabsTrigger>
-            <TabsTrigger value="sante" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3">
-              <Heart className="h-4 w-4 shrink-0" />
-              <span>Santé</span>
-            </TabsTrigger>
-            <TabsTrigger value="competition" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3">
-              <Trophy className="h-4 w-4 shrink-0" />
-              <span className="hidden sm:inline">Compétition</span>
-              <span className="sm:hidden">Compét</span>
-            </TabsTrigger>
-            {!isViewer && (
-              <TabsTrigger value="communication" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3">
-                <MessageSquare className="h-4 w-4 shrink-0" />
-                <span className="hidden sm:inline">Communication</span>
-                <span className="sm:hidden">Com</span>
+          <div className="overflow-x-auto -mx-4 px-4 pb-2">
+            <TabsList className="inline-flex w-max min-w-full gap-1 h-auto bg-muted p-1">
+              <TabsTrigger value="overview" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">
+                <LayoutDashboard className="h-4 w-4 shrink-0" />
+                <span className="hidden sm:inline">Vue Générale</span>
+                <span className="sm:hidden">Général</span>
               </TabsTrigger>
-            )}
-          </TabsList>
+              <TabsTrigger value="effectif" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">
+                <Users className="h-4 w-4 shrink-0" />
+                <span className="hidden sm:inline">Effectif</span>
+                <span className="sm:hidden">Équipe</span>
+              </TabsTrigger>
+              <TabsTrigger value="planification" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">
+                <Calendar className="h-4 w-4 shrink-0" />
+                <span className="hidden sm:inline">Planification</span>
+                <span className="sm:hidden">Planning</span>
+              </TabsTrigger>
+              <TabsTrigger value="performance" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">
+                <Zap className="h-4 w-4 shrink-0" />
+                <span className="hidden sm:inline">Performance</span>
+                <span className="sm:hidden">Perf</span>
+              </TabsTrigger>
+              <TabsTrigger value="sante" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">
+                <Heart className="h-4 w-4 shrink-0" />
+                <span>Santé</span>
+              </TabsTrigger>
+              <TabsTrigger value="competition" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">
+                <Trophy className="h-4 w-4 shrink-0" />
+                <span className="hidden sm:inline">Compétition</span>
+                <span className="sm:hidden">Compét</span>
+              </TabsTrigger>
+              {!isViewer && (
+                <TabsTrigger value="communication" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">
+                  <MessageSquare className="h-4 w-4 shrink-0" />
+                  <span className="hidden sm:inline">Communication</span>
+                  <span className="sm:hidden">Com</span>
+                </TabsTrigger>
+              )}
+            </TabsList>
+          </div>
 
           <TabsContent value="overview" className="space-y-4">
             <OverviewTab categoryId={categoryId!} />

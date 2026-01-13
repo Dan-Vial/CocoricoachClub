@@ -13,19 +13,21 @@ export function EffectifTab({ categoryId }: EffectifTabProps) {
 
   return (
     <Tabs defaultValue="players" className="space-y-4">
-      <TabsList className="flex w-full overflow-x-auto no-scrollbar gap-1 h-auto flex-wrap md:flex-nowrap bg-muted">
-        <TabsTrigger value="players" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3">
-          <Users className="h-4 w-4 shrink-0" />
-          Joueurs
-        </TabsTrigger>
-        {!isViewer && (
-          <TabsTrigger value="collaboration" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3">
-            <UserPlus className="h-4 w-4 shrink-0" />
-            <span className="hidden sm:inline">Collaboration</span>
-            <span className="sm:hidden">Collab</span>
+      <div className="overflow-x-auto -mx-4 px-4 pb-2">
+        <TabsList className="inline-flex w-max min-w-full gap-1 h-auto bg-muted p-1">
+          <TabsTrigger value="players" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">
+            <Users className="h-4 w-4 shrink-0" />
+            Joueurs
           </TabsTrigger>
-        )}
-      </TabsList>
+          {!isViewer && (
+            <TabsTrigger value="collaboration" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">
+              <UserPlus className="h-4 w-4 shrink-0" />
+              <span className="hidden sm:inline">Collaboration</span>
+              <span className="sm:hidden">Collab</span>
+            </TabsTrigger>
+          )}
+        </TabsList>
+      </div>
 
       <TabsContent value="players">
         <PlayersTab categoryId={categoryId} />

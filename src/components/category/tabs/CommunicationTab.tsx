@@ -12,23 +12,25 @@ interface CommunicationTabProps {
 export function CommunicationTab({ categoryId, isAcademy }: CommunicationTabProps) {
   return (
     <Tabs defaultValue="messaging" className="space-y-4">
-      <TabsList className="flex w-full overflow-x-auto no-scrollbar gap-1 h-auto flex-wrap md:flex-nowrap bg-muted p-1">
-        <TabsTrigger value="messaging" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5">
-          <MessageSquare className="h-4 w-4 shrink-0" />
-          <span className="hidden sm:inline">Messagerie</span>
-          <span className="sm:hidden">Msg</span>
-        </TabsTrigger>
-        <TabsTrigger value="reports" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5">
-          <FileText className="h-4 w-4 shrink-0" />
-          Rapports
-        </TabsTrigger>
-        {isAcademy && (
-          <TabsTrigger value="academy" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5">
-            <GraduationCap className="h-4 w-4 shrink-0" />
-            Académie
+      <div className="overflow-x-auto -mx-4 px-4 pb-2">
+        <TabsList className="inline-flex w-max min-w-full gap-1 h-auto bg-muted p-1">
+          <TabsTrigger value="messaging" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">
+            <MessageSquare className="h-4 w-4 shrink-0" />
+            <span className="hidden sm:inline">Messagerie</span>
+            <span className="sm:hidden">Msg</span>
           </TabsTrigger>
-        )}
-      </TabsList>
+          <TabsTrigger value="reports" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">
+            <FileText className="h-4 w-4 shrink-0" />
+            Rapports
+          </TabsTrigger>
+          {isAcademy && (
+            <TabsTrigger value="academy" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">
+              <GraduationCap className="h-4 w-4 shrink-0" />
+              Académie
+            </TabsTrigger>
+          )}
+        </TabsList>
+      </div>
 
       <TabsContent value="messaging">
         <MessagingTab categoryId={categoryId} />
