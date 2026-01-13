@@ -841,6 +841,82 @@ export type Database = {
           },
         ]
       }
+      gym_session_exercises: {
+        Row: {
+          category_id: string
+          created_at: string
+          exercise_category: string | null
+          exercise_name: string
+          id: string
+          notes: string | null
+          order_index: number | null
+          player_id: string
+          reps: number | null
+          rest_seconds: number | null
+          rpe: number | null
+          sets: number
+          tempo: string | null
+          training_session_id: string
+          weight_kg: number | null
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          exercise_category?: string | null
+          exercise_name: string
+          id?: string
+          notes?: string | null
+          order_index?: number | null
+          player_id: string
+          reps?: number | null
+          rest_seconds?: number | null
+          rpe?: number | null
+          sets?: number
+          tempo?: string | null
+          training_session_id: string
+          weight_kg?: number | null
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          exercise_category?: string | null
+          exercise_name?: string
+          id?: string
+          notes?: string | null
+          order_index?: number | null
+          player_id?: string
+          reps?: number | null
+          rest_seconds?: number | null
+          rpe?: number | null
+          sets?: number
+          tempo?: string | null
+          training_session_id?: string
+          weight_kg?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gym_session_exercises_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gym_session_exercises_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gym_session_exercises_training_session_id_fkey"
+            columns: ["training_session_id"]
+            isOneToOne: false
+            referencedRelation: "training_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       injuries: {
         Row: {
           actual_return_date: string | null
