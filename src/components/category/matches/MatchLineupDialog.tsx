@@ -162,7 +162,7 @@ export function MatchLineupDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[700px] max-h-[90vh]">
+      <DialogContent className="sm:max-w-[700px] max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -182,7 +182,7 @@ export function MatchLineupDialog({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex gap-4 text-sm text-muted-foreground mb-4">
+        <div className="flex gap-4 text-sm text-muted-foreground mb-2">
           <span className="flex items-center gap-1">
             <UserCheck className="h-4 w-4" />
             {selectedCount} joueurs sélectionnés
@@ -190,87 +190,89 @@ export function MatchLineupDialog({
           <span>{starterCount} titulaires</span>
         </div>
 
-        {viewMode === "field" ? (
-          <RugbyFieldLineup
-            players={players || []}
-            rugbyType={rugbyType}
-            initialLineup={fieldLineup}
-            onLineupChange={handleFieldLineupChange}
-          />
-        ) : (
-          <ScrollArea className="h-[400px] pr-4">
-            <div className="space-y-3">
-              {lineupData && lineupData.length > 0 ? lineupData.map((player) => (
-                <div
-                  key={player.playerId}
-                  className={`p-3 rounded-lg border transition-colors ${
-                    player.isSelected
-                      ? "bg-primary/5 border-primary/20"
-                      : "bg-card"
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-3">
-                      <Switch
-                        checked={player.isSelected}
-                        onCheckedChange={(checked) =>
-                          updatePlayer(player.playerId, {
-                            isSelected: checked,
-                            isStarter: checked ? player.isStarter : false,
-                          })
-                        }
-                      />
-                      <span className="font-medium">{player.playerName}</span>
-                    </div>
-                    {player.isSelected && (
-                      <div className="flex items-center gap-2">
-                        <Label className="text-xs">Titulaire</Label>
+        <ScrollArea className="flex-1 min-h-0">
+          <div className="pr-4">
+            {viewMode === "field" ? (
+              <RugbyFieldLineup
+                players={players || []}
+                rugbyType={rugbyType}
+                initialLineup={fieldLineup}
+                onLineupChange={handleFieldLineupChange}
+              />
+            ) : (
+              <div className="space-y-3">
+                {lineupData && lineupData.length > 0 ? lineupData.map((player) => (
+                  <div
+                    key={player.playerId}
+                    className={`p-3 rounded-lg border transition-colors ${
+                      player.isSelected
+                        ? "bg-primary/5 border-primary/20"
+                        : "bg-card"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-3">
                         <Switch
-                          checked={player.isStarter}
+                          checked={player.isSelected}
                           onCheckedChange={(checked) =>
-                            updatePlayer(player.playerId, { isStarter: checked })
+                            updatePlayer(player.playerId, {
+                              isSelected: checked,
+                              isStarter: checked ? player.isStarter : false,
+                            })
                           }
                         />
+                        <span className="font-medium">{player.playerName}</span>
+                      </div>
+                      {player.isSelected && (
+                        <div className="flex items-center gap-2">
+                          <Label className="text-xs">Titulaire</Label>
+                          <Switch
+                            checked={player.isStarter}
+                            onCheckedChange={(checked) =>
+                              updatePlayer(player.playerId, { isStarter: checked })
+                            }
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    {player.isSelected && (
+                      <div className="grid grid-cols-2 gap-3 mt-2">
+                        <div>
+                          <Label className="text-xs">Position</Label>
+                          <Input
+                            value={player.position}
+                            onChange={(e) =>
+                              updatePlayer(player.playerId, { position: e.target.value })
+                            }
+                            placeholder="Ex: 1, 9, 15..."
+                            className="h-8 text-sm"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Minutes jouées</Label>
+                          <Input
+                            type="number"
+                            value={player.minutesPlayed}
+                            onChange={(e) =>
+                              updatePlayer(player.playerId, {
+                                minutesPlayed: parseInt(e.target.value) || 0,
+                              })
+                            }
+                            min={0}
+                            className="h-8 text-sm"
+                          />
+                        </div>
                       </div>
                     )}
                   </div>
-
-                  {player.isSelected && (
-                    <div className="grid grid-cols-2 gap-3 mt-2">
-                      <div>
-                        <Label className="text-xs">Position</Label>
-                        <Input
-                          value={player.position}
-                          onChange={(e) =>
-                            updatePlayer(player.playerId, { position: e.target.value })
-                          }
-                          placeholder="Ex: 1, 9, 15..."
-                          className="h-8 text-sm"
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-xs">Minutes jouées</Label>
-                        <Input
-                          type="number"
-                          value={player.minutesPlayed}
-                          onChange={(e) =>
-                            updatePlayer(player.playerId, {
-                              minutesPlayed: parseInt(e.target.value) || 0,
-                            })
-                          }
-                          min={0}
-                          className="h-8 text-sm"
-                        />
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )) : (
-                <p className="text-center text-muted-foreground py-4">Aucun joueur dans cette catégorie</p>
-              )}
-            </div>
-          </ScrollArea>
-        )}
+                )) : (
+                  <p className="text-center text-muted-foreground py-4">Aucun joueur dans cette catégorie</p>
+                )}
+              </div>
+            )}
+          </div>
+        </ScrollArea>
 
         <div className="flex justify-end gap-2 pt-4 border-t">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
