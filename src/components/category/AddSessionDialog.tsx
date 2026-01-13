@@ -94,7 +94,12 @@ export function AddSessionDialog({
   const selectedTrainingType = trainingTypes.find(t => t.value === type);
   const showExerciseSection = selectedTrainingType?.hasExercises || false;
 
-  // No auto-scroll on open - let user fill top fields first
+  // When a training type with exercises is selected, ensure UI is ready
+  useEffect(() => {
+    if (!open || !showExerciseSection) return;
+    setShowExercises(true);
+    setExercises((prev) => (prev.length === 0 ? [emptyExercise(0)] : prev));
+  }, [open, showExerciseSection]);
 
   const { data: players } = useQuery({
     queryKey: ["players-with-injuries", categoryId],
