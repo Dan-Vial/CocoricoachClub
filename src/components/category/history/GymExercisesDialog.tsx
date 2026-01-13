@@ -12,6 +12,7 @@ import { Plus, Trash2, Dumbbell, Copy, Search, Library, Link2 } from "lucide-rea
 import { toast } from "sonner";
 import { QuickAddExerciseDialog } from "@/components/library/QuickAddExerciseDialog";
 import { useAuth } from "@/contexts/AuthContext";
+import { EXERCISE_CATEGORIES, getCategoryLabel } from "@/lib/constants/exerciseCategories";
 
 interface GymExercisesDialogProps {
   open: boolean;
@@ -43,21 +44,6 @@ interface Exercise {
   library_exercise_id: string | null;
 }
 
-const EXERCISE_CATEGORIES = [
-  { value: "upper_push", label: "Haut - Poussée" },
-  { value: "upper_pull", label: "Haut - Tirage" },
-  { value: "lower_push", label: "Bas - Poussée" },
-  { value: "lower_pull", label: "Bas - Tirage" },
-  { value: "core", label: "Core / Gainage" },
-  { value: "cardio", label: "Cardio" },
-  { value: "plyometrics", label: "Pliométrie" },
-  { value: "mobility", label: "Mobilité" },
-  { value: "stretching_mobility", label: "Stretching" },
-  { value: "terrain", label: "Terrain" },
-  { value: "musculation", label: "Musculation" },
-  { value: "other", label: "Autre" },
-];
-
 const SET_TYPES = [
   { value: "standard", label: "Standard", description: "Séries classiques" },
   { value: "superset", label: "Superset", description: "2 exercices enchaînés" },
@@ -73,7 +59,7 @@ const SET_TYPES = [
 
 const emptyExercise = (): Exercise => ({
   exercise_name: "",
-  exercise_category: "musculation",
+  exercise_category: "upper_push",
   sets: 3,
   reps: 10,
   weight_kg: null,
@@ -349,9 +335,7 @@ export function GymExercisesDialog({
     }
   };
 
-  const getCategoryLabel = (value: string) => {
-    return EXERCISE_CATEGORIES.find((c) => c.value === value)?.label || value;
-  };
+  // getCategoryLabel is now imported from constants
 
   const getSetTypeInfo = (value: string) => {
     return SET_TYPES.find((t) => t.value === value) || SET_TYPES[0];
