@@ -8,7 +8,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,12 +19,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus } from "lucide-react";
 
 const CATEGORIES = [
   { value: "stretching_mobility", label: "Stretching / Mobilité" },
   { value: "musculation", label: "Musculation" },
-  { value: "terrain", label: "Terrain (courses, sprints...)" },
+  { value: "terrain", label: "Terrain" },
 ];
 
 const DIFFICULTY_LEVELS = [
@@ -34,16 +32,34 @@ const DIFFICULTY_LEVELS = [
   { value: "advanced", label: "Avancé" },
 ];
 
-export function AddExerciseDialog() {
-  const [open, setOpen] = useState(false);
-  const [name, setName] = useState("");
-  const [category, setCategory] = useState("");
+interface QuickAddExerciseDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  initialName?: string;
+  initialCategory?: string;
+  onSuccess?: (exercise: { id: string; name: string; category: string }) => void;
+}
+
+export function QuickAddExerciseDialog({
+  open,
+  onOpenChange,
+  initialName = "",
+  initialCategory = "musculation",
+  onSuccess,
+}: QuickAddExerciseDialogProps) {
+  const [name, setName] = useState(initialName);
+  const [category, setCategory] = useState(initialCategory);
   const [youtubeUrl, setYoutubeUrl] = useState("");
   const [description, setDescription] = useState("");
   const [difficulty, setDifficulty] = useState("intermediate");
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Update name when initialName changes
+  useState(() => {
+    if (initialName) setName(initialName);
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,7 +77,7 @@ export function AddExerciseDialog() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Non authentifié");
 
-      const { error } = await supabase.from("exercise_library").insert({
+      const { data, error } = await supabase.from("exercise_library").insert({
         user_id: user.id,
         name,
         category,
@@ -69,7 +85,7 @@ export function AddExerciseDialog() {
         description: description || null,
         difficulty,
         is_system: false,
-      });
+      }).select().single();
 
       if (error) throw error;
 
@@ -79,12 +95,15 @@ export function AddExerciseDialog() {
       });
 
       queryClient.invalidateQueries({ queryKey: ["exercise-library"] });
-      setOpen(false);
+      
+      if (onSuccess && data) {
+        onSuccess({ id: data.id, name: data.name, category: data.category });
+      }
+      
+      onOpenChange(false);
       setName("");
-      setCategory("");
       setYoutubeUrl("");
       setDescription("");
-      setDifficulty("intermediate");
     } catch (error: any) {
       toast({
         title: "Erreur",
@@ -97,16 +116,10 @@ export function AddExerciseDialog() {
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button size="sm">
-          <Plus className="h-4 w-4 mr-2" />
-          Ajouter un exercice
-        </Button>
-      </DialogTrigger>
-      <DialogContent>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Ajouter un exercice</DialogTitle>
+          <DialogTitle>Ajouter un exercice à la bibliothèque</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
@@ -123,7 +136,7 @@ export function AddExerciseDialog() {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="category">Catégorie *</Label>
-              <Select value={category} onValueChange={setCategory} required>
+              <Select value={category} onValueChange={setCategory}>
                 <SelectTrigger>
                   <SelectValue placeholder="Sélectionner" />
                 </SelectTrigger>
@@ -155,7 +168,7 @@ export function AddExerciseDialog() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="youtube">Lien YouTube</Label>
+            <Label htmlFor="youtube">Lien YouTube (optionnel)</Label>
             <Input
               id="youtube"
               value={youtubeUrl}
@@ -166,18 +179,18 @@ export function AddExerciseDialog() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
+            <Label htmlFor="description">Description (optionnel)</Label>
             <Textarea
               id="description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Description de l'exercice..."
-              rows={3}
+              rows={2}
             />
           </div>
 
           <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Annuler
             </Button>
             <Button type="submit" disabled={isLoading}>

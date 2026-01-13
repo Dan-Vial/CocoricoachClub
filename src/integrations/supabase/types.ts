@@ -559,7 +559,11 @@ export type Database = {
           category: string
           created_at: string
           description: string | null
+          difficulty: string | null
+          equipment: string[] | null
           id: string
+          is_system: boolean | null
+          muscle_groups: string[] | null
           name: string
           updated_at: string
           user_id: string
@@ -569,7 +573,11 @@ export type Database = {
           category: string
           created_at?: string
           description?: string | null
+          difficulty?: string | null
+          equipment?: string[] | null
           id?: string
+          is_system?: boolean | null
+          muscle_groups?: string[] | null
           name: string
           updated_at?: string
           user_id: string
@@ -579,7 +587,11 @@ export type Database = {
           category?: string
           created_at?: string
           description?: string | null
+          difficulty?: string | null
+          equipment?: string[] | null
           id?: string
+          is_system?: boolean | null
+          muscle_groups?: string[] | null
           name?: string
           updated_at?: string
           user_id?: string
@@ -845,15 +857,19 @@ export type Database = {
         Row: {
           category_id: string
           created_at: string
+          duration_seconds: number | null
           exercise_category: string | null
           exercise_name: string
+          group_id: string | null
           id: string
+          library_exercise_id: string | null
           notes: string | null
           order_index: number | null
           player_id: string
           reps: number | null
           rest_seconds: number | null
           rpe: number | null
+          set_type: string | null
           sets: number
           tempo: string | null
           training_session_id: string
@@ -862,15 +878,19 @@ export type Database = {
         Insert: {
           category_id: string
           created_at?: string
+          duration_seconds?: number | null
           exercise_category?: string | null
           exercise_name: string
+          group_id?: string | null
           id?: string
+          library_exercise_id?: string | null
           notes?: string | null
           order_index?: number | null
           player_id: string
           reps?: number | null
           rest_seconds?: number | null
           rpe?: number | null
+          set_type?: string | null
           sets?: number
           tempo?: string | null
           training_session_id: string
@@ -879,15 +899,19 @@ export type Database = {
         Update: {
           category_id?: string
           created_at?: string
+          duration_seconds?: number | null
           exercise_category?: string | null
           exercise_name?: string
+          group_id?: string | null
           id?: string
+          library_exercise_id?: string | null
           notes?: string | null
           order_index?: number | null
           player_id?: string
           reps?: number | null
           rest_seconds?: number | null
           rpe?: number | null
+          set_type?: string | null
           sets?: number
           tempo?: string | null
           training_session_id?: string
@@ -899,6 +923,13 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gym_session_exercises_library_exercise_id_fkey"
+            columns: ["library_exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercise_library"
             referencedColumns: ["id"]
           },
           {
