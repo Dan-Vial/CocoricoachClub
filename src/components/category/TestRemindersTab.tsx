@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/dialog";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 
 interface TestRemindersTabProps {
   categoryId: string;
@@ -48,6 +49,7 @@ export function TestRemindersTab({ categoryId }: TestRemindersTabProps) {
     test_type: "VMA",
     frequency_weeks: 6,
   });
+  const { isViewer } = useViewerModeContext();
 
   // Récupérer les rappels
   const { data: reminders, isLoading } = useQuery({
@@ -181,77 +183,79 @@ export function TestRemindersTab({ categoryId }: TestRemindersTabProps) {
             Configurez des rappels automatiques pour les tests physiques périodiques
           </p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Nouveau Rappel
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Créer un rappel de test</DialogTitle>
-              <DialogDescription>
-                Configurez un rappel automatique pour un type de test
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="test-type">Type de test</Label>
-                <Select
-                  value={newReminder.test_type}
-                  onValueChange={(value) =>
-                    setNewReminder({ ...newReminder, test_type: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="VMA" className="font-medium">Test VMA (1600m)</SelectItem>
-                    <SelectItem value="Sprint">Sprint 40m</SelectItem>
-                    <SelectItem value="Force" className="font-medium">Tests de Force</SelectItem>
-                    <div className="px-2 py-1.5 text-xs text-muted-foreground font-semibold">— Détente —</div>
-                    <SelectItem value="vertical_jump">Saut Vertical (CMJ)</SelectItem>
-                    <SelectItem value="horizontal_jump">Saut Horizontal</SelectItem>
-                    <div className="px-2 py-1.5 text-xs text-muted-foreground font-semibold">— Mobilité —</div>
-                    <SelectItem value="fms">FMS (Functional Movement Screen)</SelectItem>
-                    <SelectItem value="hip">Mobilité Hanche</SelectItem>
-                    <SelectItem value="shoulder">Mobilité Épaule</SelectItem>
-                    <SelectItem value="ankle">Mobilité Cheville</SelectItem>
-                    <div className="px-2 py-1.5 text-xs text-muted-foreground font-semibold">— Tests Rugby —</div>
-                    <SelectItem value="yo_yo">Yo-Yo Test</SelectItem>
-                    <SelectItem value="bronco">Bronco Test</SelectItem>
-                    <SelectItem value="agility">Test d'Agilité</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="frequency">Fréquence (semaines)</Label>
-                <Input
-                  id="frequency"
-                  type="number"
-                  min="1"
-                  max="52"
-                  value={newReminder.frequency_weeks}
-                  onChange={(e) =>
-                    setNewReminder({
-                      ...newReminder,
-                      frequency_weeks: parseInt(e.target.value) || 6,
-                    })
-                  }
-                />
-              </div>
-              <Button
-                onClick={() => createReminder.mutate()}
-                disabled={createReminder.isPending}
-                className="w-full"
-              >
-                Créer le rappel
+        {!isViewer && (
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                Nouveau Rappel
               </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Créer un rappel de test</DialogTitle>
+                <DialogDescription>
+                  Configurez un rappel automatique pour un type de test
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="test-type">Type de test</Label>
+                  <Select
+                    value={newReminder.test_type}
+                    onValueChange={(value) =>
+                      setNewReminder({ ...newReminder, test_type: value })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="VMA" className="font-medium">Test VMA (1600m)</SelectItem>
+                      <SelectItem value="Sprint">Sprint 40m</SelectItem>
+                      <SelectItem value="Force" className="font-medium">Tests de Force</SelectItem>
+                      <div className="px-2 py-1.5 text-xs text-muted-foreground font-semibold">— Détente —</div>
+                      <SelectItem value="vertical_jump">Saut Vertical (CMJ)</SelectItem>
+                      <SelectItem value="horizontal_jump">Saut Horizontal</SelectItem>
+                      <div className="px-2 py-1.5 text-xs text-muted-foreground font-semibold">— Mobilité —</div>
+                      <SelectItem value="fms">FMS (Functional Movement Screen)</SelectItem>
+                      <SelectItem value="hip">Mobilité Hanche</SelectItem>
+                      <SelectItem value="shoulder">Mobilité Épaule</SelectItem>
+                      <SelectItem value="ankle">Mobilité Cheville</SelectItem>
+                      <div className="px-2 py-1.5 text-xs text-muted-foreground font-semibold">— Tests Rugby —</div>
+                      <SelectItem value="yo_yo">Yo-Yo Test</SelectItem>
+                      <SelectItem value="bronco">Bronco Test</SelectItem>
+                      <SelectItem value="agility">Test d'Agilité</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="frequency">Fréquence (semaines)</Label>
+                  <Input
+                    id="frequency"
+                    type="number"
+                    min="1"
+                    max="52"
+                    value={newReminder.frequency_weeks}
+                    onChange={(e) =>
+                      setNewReminder({
+                        ...newReminder,
+                        frequency_weeks: parseInt(e.target.value) || 6,
+                      })
+                    }
+                  />
+                </div>
+                <Button
+                  onClick={() => createReminder.mutate()}
+                  disabled={createReminder.isPending}
+                  className="w-full"
+                >
+                  Créer le rappel
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
 
       {isLoading ? (
@@ -271,24 +275,26 @@ export function TestRemindersTab({ categoryId }: TestRemindersTabProps) {
                       Fréquence: Tous les {reminder.frequency_weeks} semaines
                     </CardDescription>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Switch
-                      checked={reminder.is_active}
-                      onCheckedChange={(checked) =>
-                        toggleReminder.mutate({
-                          id: reminder.id,
-                          isActive: checked,
-                        })
-                      }
-                    />
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => deleteReminder.mutate(reminder.id)}
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </div>
+                  {!isViewer ? (
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={reminder.is_active}
+                        onCheckedChange={(checked) =>
+                          toggleReminder.mutate({
+                            id: reminder.id,
+                            isActive: checked,
+                          })
+                        }
+                      />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => deleteReminder.mutate(reminder.id)}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                  ) : null}
                 </div>
               </CardHeader>
               <CardContent>

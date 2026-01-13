@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Plus } from "lucide-react";
 import { AddTournamentDialog } from "./tournaments/AddTournamentDialog";
 import { TournamentCard } from "./tournaments/TournamentCard";
+import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 
 interface TournamentsTabProps {
   categoryId: string;
@@ -13,6 +14,7 @@ interface TournamentsTabProps {
 
 export function TournamentsTab({ categoryId }: TournamentsTabProps) {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const { isViewer } = useViewerModeContext();
 
   const { data: tournaments, isLoading } = useQuery({
     queryKey: ["tournaments", categoryId],
@@ -40,10 +42,12 @@ export function TournamentsTab({ categoryId }: TournamentsTabProps) {
             Gérez vos tournois de Rugby à 7 avec suivi de la charge et rotation d'effectif
           </p>
         </div>
-        <Button onClick={() => setIsAddDialogOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Nouveau Tournoi
-        </Button>
+        {!isViewer && (
+          <Button onClick={() => setIsAddDialogOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Nouveau Tournoi
+          </Button>
+        )}
       </div>
 
       {!tournaments || tournaments.length === 0 ? (
@@ -51,10 +55,12 @@ export function TournamentsTab({ categoryId }: TournamentsTabProps) {
           <p className="text-muted-foreground mb-4">
             Aucun tournoi enregistré pour cette catégorie
           </p>
-          <Button onClick={() => setIsAddDialogOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Créer votre premier tournoi
-          </Button>
+          {!isViewer && (
+            <Button onClick={() => setIsAddDialogOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Créer votre premier tournoi
+            </Button>
+          )}
         </Card>
       ) : (
         <div className="grid gap-4">
@@ -68,11 +74,13 @@ export function TournamentsTab({ categoryId }: TournamentsTabProps) {
         </div>
       )}
 
-      <AddTournamentDialog
-        open={isAddDialogOpen}
-        onOpenChange={setIsAddDialogOpen}
-        categoryId={categoryId}
-      />
+      {!isViewer && (
+        <AddTournamentDialog
+          open={isAddDialogOpen}
+          onOpenChange={setIsAddDialogOpen}
+          categoryId={categoryId}
+        />
+      )}
     </div>
   );
 }

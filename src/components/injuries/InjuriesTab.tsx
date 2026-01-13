@@ -23,6 +23,7 @@ import { Plus, Activity, TrendingUp } from "lucide-react";
 import { AddInjuryDialog } from "./AddInjuryDialog";
 import { toast } from "sonner";
 import { INJURY_STATUS, INJURY_STATUS_LABELS } from "@/lib/constants/injury";
+import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 
 interface InjuriesTabProps {
   categoryId: string;
@@ -31,6 +32,7 @@ interface InjuriesTabProps {
 export function InjuriesTab({ categoryId }: InjuriesTabProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const queryClient = useQueryClient();
+  const { isViewer } = useViewerModeContext();
 
   const { data: injuries, isLoading } = useQuery({
     queryKey: ["injuries", categoryId],
@@ -157,10 +159,12 @@ export function InjuriesTab({ categoryId }: InjuriesTabProps) {
                 Suivi médical et réathlétisation
               </p>
             </div>
-            <Button onClick={() => setIsDialogOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Ajouter une blessure
-            </Button>
+            {!isViewer && (
+              <Button onClick={() => setIsDialogOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Ajouter une blessure
+              </Button>
+            )}
           </div>
         </CardHeader>
         <CardContent>
@@ -205,25 +209,29 @@ export function InjuriesTab({ categoryId }: InjuriesTabProps) {
                             )
                           : "-"}
                       </TableCell>
-                      <TableCell>
-                        <Select
-                          value={injury.status}
-                          onValueChange={(value) => {
-                            console.log("Select change:", { id: injury.id, value });
-                            updateInjuryStatus.mutate({ id: injury.id, status: value });
-                          }}
-                          disabled={updateInjuryStatus.isPending}
-                        >
-                          <SelectTrigger className="w-[180px]">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value={INJURY_STATUS.ACTIVE}>{INJURY_STATUS_LABELS[INJURY_STATUS.ACTIVE]}</SelectItem>
-                            <SelectItem value={INJURY_STATUS.REHABILITATION}>{INJURY_STATUS_LABELS[INJURY_STATUS.REHABILITATION]}</SelectItem>
-                            <SelectItem value={INJURY_STATUS.HEALED}>{INJURY_STATUS_LABELS[INJURY_STATUS.HEALED]}</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </TableCell>
+                        <TableCell>
+                          {!isViewer ? (
+                            <Select
+                              value={injury.status}
+                              onValueChange={(value) => {
+                                console.log("Select change:", { id: injury.id, value });
+                                updateInjuryStatus.mutate({ id: injury.id, status: value });
+                              }}
+                              disabled={updateInjuryStatus.isPending}
+                            >
+                              <SelectTrigger className="w-[180px]">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value={INJURY_STATUS.ACTIVE}>{INJURY_STATUS_LABELS[INJURY_STATUS.ACTIVE]}</SelectItem>
+                                <SelectItem value={INJURY_STATUS.REHABILITATION}>{INJURY_STATUS_LABELS[INJURY_STATUS.REHABILITATION]}</SelectItem>
+                                <SelectItem value={INJURY_STATUS.HEALED}>{INJURY_STATUS_LABELS[INJURY_STATUS.HEALED]}</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -232,14 +240,16 @@ export function InjuriesTab({ categoryId }: InjuriesTabProps) {
           ) : (
             <div className="text-center py-8">
               <p className="text-muted-foreground">Aucune blessure enregistrée</p>
-              <Button
-                variant="outline"
-                className="mt-4"
-                onClick={() => setIsDialogOpen(true)}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Ajouter la première blessure
-              </Button>
+              {!isViewer && (
+                <Button
+                  variant="outline"
+                  className="mt-4"
+                  onClick={() => setIsDialogOpen(true)}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Ajouter la première blessure
+                </Button>
+              )}
             </div>
           )}
         </CardContent>

@@ -17,6 +17,7 @@ import { AddAwcrDialog } from "./AddAwcrDialog";
 import { QuickTeamRpeDialog } from "./QuickTeamRpeDialog";
 import { OfflineRpeEntry } from "./OfflineRpeEntry";
 import { useOnlineStatus } from "@/hooks/use-online-status";
+import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 
 interface AwcrTabProps {
   categoryId: string;
@@ -27,6 +28,7 @@ export function AwcrTab({ categoryId }: AwcrTabProps) {
   const [isTeamDialogOpen, setIsTeamDialogOpen] = useState(false);
   const [isOfflineDialogOpen, setIsOfflineDialogOpen] = useState(false);
   const { isOnline } = useOnlineStatus();
+  const { isViewer } = useViewerModeContext();
 
   const { data: awcrData, isLoading } = useQuery({
     queryKey: ["awcr_tracking", categoryId],
@@ -79,40 +81,44 @@ export function AwcrTab({ categoryId }: AwcrTabProps) {
               </Badge>
             )}
           </div>
-          <div className="flex gap-2 flex-wrap">
-            {!isOnline && (
+          {!isViewer && (
+            <div className="flex gap-2 flex-wrap">
+              {!isOnline && (
+                <Button 
+                  onClick={() => setIsOfflineDialogOpen(true)} 
+                  variant="destructive"
+                  className="gap-2"
+                >
+                  <WifiOff className="h-4 w-4" />
+                  Saisie hors-ligne
+                </Button>
+              )}
               <Button 
-                onClick={() => setIsOfflineDialogOpen(true)} 
-                variant="destructive"
+                onClick={() => setIsTeamDialogOpen(true)} 
+                variant="outline"
                 className="gap-2"
               >
-                <WifiOff className="h-4 w-4" />
-                Saisie hors-ligne
+                <Users className="h-4 w-4" />
+                Saisie équipe
               </Button>
-            )}
-            <Button 
-              onClick={() => setIsTeamDialogOpen(true)} 
-              variant="outline"
-              className="gap-2"
-            >
-              <Users className="h-4 w-4" />
-              Saisie équipe
-            </Button>
-            <Button onClick={() => setIsDialogOpen(true)} className="gap-2">
-              <Plus className="h-4 w-4" />
-              Ajouter
-            </Button>
-          </div>
+              <Button onClick={() => setIsDialogOpen(true)} className="gap-2">
+                <Plus className="h-4 w-4" />
+                Ajouter
+              </Button>
+            </div>
+          )}
         </div>
       </CardHeader>
       <CardContent>
         {awcrData && awcrData.length === 0 ? (
           <div className="text-center py-8">
             <p className="text-muted-foreground mb-4">Aucune donnée AWCR enregistrée</p>
-            <Button onClick={() => setIsDialogOpen(true)} variant="outline" className="gap-2">
-              <Plus className="h-4 w-4" />
-              Ajouter la première entrée
-            </Button>
+            {!isViewer && (
+              <Button onClick={() => setIsDialogOpen(true)} variant="outline" className="gap-2">
+                <Plus className="h-4 w-4" />
+                Ajouter la première entrée
+              </Button>
+            )}
           </div>
         ) : (
           <div className="overflow-x-auto">
