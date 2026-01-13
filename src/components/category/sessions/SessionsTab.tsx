@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Calendar as CalendarIcon, Clock, Dumbbell, Trash2, Edit } from "lucide-react";
+import { Plus, Calendar as CalendarIcon, Clock, Dumbbell, Trash2, Edit, Printer } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { toast } from "sonner";
@@ -42,6 +42,97 @@ export function SessionsTab({ categoryId }: SessionsTabProps) {
   const [editingSession, setEditingSession] = useState<any | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
+
+  const handlePrintSession = async (session: any) => {
+    // Fetch exercises for this session
+    const { data: exercises } = await supabase
+      .from("gym_session_exercises")
+      .select("*")
+      .eq("training_session_id", session.id)
+      .order("order_index");
+
+    // Deduplicate exercises
+    const seen = new Map<string, any>();
+    exercises?.forEach((ex) => {
+      const key = `${ex.exercise_name}-${ex.order_index}`;
+      if (!seen.has(key)) {
+        seen.set(key, ex);
+      }
+    });
+    const uniqueExercises = Array.from(seen.values());
+
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      toast.error("Impossible d'ouvrir la fenêtre d'impression");
+      return;
+    }
+
+    const sessionDate = format(new Date(session.session_date), "EEEE d MMMM yyyy", { locale: fr });
+    const trainingType = trainingTypeLabels[session.training_type] || session.training_type;
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Séance - ${sessionDate}</title>
+        <style>
+          body { font-family: Arial, sans-serif; padding: 20px; }
+          h1 { font-size: 20px; margin-bottom: 5px; }
+          .meta { color: #666; margin-bottom: 20px; }
+          .badge { display: inline-block; padding: 4px 8px; background: #f0f0f0; border-radius: 4px; font-size: 12px; margin-right: 8px; }
+          table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+          th, td { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 13px; }
+          th { background: #f5f5f5; font-weight: 600; }
+          .notes { font-style: italic; color: #666; margin-top: 10px; }
+          @media print { body { padding: 0; } }
+        </style>
+      </head>
+      <body>
+        <h1>Séance d'entraînement</h1>
+        <div class="meta">
+          <span class="badge">${trainingType}</span>
+          ${session.intensity ? `<span class="badge">Intensité ${session.intensity}/10</span>` : ""}
+          <br/><br/>
+          📅 ${sessionDate}
+          ${session.session_start_time ? ` • 🕐 ${session.session_start_time.slice(0, 5)}${session.session_end_time ? ` - ${session.session_end_time.slice(0, 5)}` : ""}` : ""}
+        </div>
+        ${session.notes ? `<p class="notes">Notes: ${session.notes}</p>` : ""}
+        ${uniqueExercises.length > 0 ? `
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Exercice</th>
+                <th>Type</th>
+                <th>Séries</th>
+                <th>Reps</th>
+                <th>Poids</th>
+                <th>Repos</th>
+                <th>Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${uniqueExercises.map((ex, idx) => `
+                <tr>
+                  <td>${idx + 1}</td>
+                  <td>${ex.exercise_name}</td>
+                  <td>${ex.set_type || "Normal"}</td>
+                  <td>${ex.sets || "-"}</td>
+                  <td>${ex.reps || "-"}</td>
+                  <td>${ex.weight_kg ? ex.weight_kg + " kg" : "-"}</td>
+                  <td>${ex.rest_seconds ? ex.rest_seconds + "s" : "-"}</td>
+                  <td>${ex.notes || "-"}</td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        ` : "<p>Aucun exercice détaillé pour cette séance.</p>"}
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.print();
+  };
 
   // Fetch sessions with exercise counts
   const { data: sessions, isLoading } = useQuery({
@@ -184,6 +275,14 @@ export function SessionsTab({ categoryId }: SessionsTabProps) {
                   <div className="flex items-center gap-1">
                     <Button variant="ghost" size="icon" onClick={() => handleEdit(session)}>
                       <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handlePrintSession(session)}
+                      title="Imprimer"
+                    >
+                      <Printer className="h-4 w-4" />
                     </Button>
                     <Button
                       variant="ghost"
