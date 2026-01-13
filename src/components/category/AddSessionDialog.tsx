@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
@@ -588,37 +589,56 @@ export function AddSessionDialog({
                                   {index + 1}.
                                 </span>
                                 <div className="flex-1 relative">
-                                  <Input
-                                    placeholder="Nom de l'exercice..."
-                                    value={exercise.exercise_name}
-                                    onChange={(e) => {
-                                      updateExercise(index, "exercise_name", e.target.value);
-                                      setSearchQuery(e.target.value);
+                                  <Popover
+                                    open={showLibraryFor === index}
+                                    onOpenChange={(isOpen) => {
+                                      setShowLibraryFor(isOpen ? index : null);
+                                      if (isOpen) setSearchQuery(exercise.exercise_name);
                                     }}
-                                    onFocus={() => setShowLibraryFor(index)}
-                                    onBlur={() => setTimeout(() => setShowLibraryFor(null), 200)}
-                                  />
-                                  {exercise.library_exercise_id && (
-                                    <Library className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-primary" />
-                                  )}
-                                  
-                                  {/* Library dropdown */}
-                                  {showLibraryFor === index && filteredLibrary.length > 0 && (
-                                    <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-popover border rounded-md shadow-lg max-h-32 overflow-y-auto">
-                                      {filteredLibrary.slice(0, 6).map((libEx) => (
-                                        <div
-                                          key={libEx.id}
-                                          className="px-3 py-2 hover:bg-muted cursor-pointer text-sm flex justify-between items-center"
-                                          onMouseDown={() => selectFromLibrary(index, libEx)}
-                                        >
-                                          <span>{libEx.name}</span>
-                                          <Badge variant="outline" className="text-xs">
-                                            {getCategoryLabel(libEx.category)}
-                                          </Badge>
+                                  >
+                                    <PopoverTrigger asChild>
+                                      <div className="relative">
+                                        <Input
+                                          placeholder="Nom de l'exercice..."
+                                          value={exercise.exercise_name}
+                                          onChange={(e) => {
+                                            updateExercise(index, "exercise_name", e.target.value);
+                                            setSearchQuery(e.target.value);
+                                            setShowLibraryFor(index);
+                                          }}
+                                        />
+                                        {exercise.library_exercise_id && (
+                                          <Library className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-primary" />
+                                        )}
+                                      </div>
+                                    </PopoverTrigger>
+
+                                    <PopoverContent
+                                      align="start"
+                                      className="p-1 w-[--radix-popover-trigger-width] max-h-64 overflow-y-auto"
+                                      onOpenAutoFocus={(e) => e.preventDefault()}
+                                    >
+                                      {filteredLibrary.length === 0 ? (
+                                        <div className="px-2 py-2 text-xs text-muted-foreground">
+                                          Aucun exercice trouvé
                                         </div>
-                                      ))}
-                                    </div>
-                                  )}
+                                      ) : (
+                                        filteredLibrary.slice(0, 12).map((libEx) => (
+                                          <button
+                                            key={libEx.id}
+                                            type="button"
+                                            className="w-full text-left px-2 py-2 hover:bg-muted rounded-sm text-sm flex justify-between items-center"
+                                            onClick={() => selectFromLibrary(index, libEx)}
+                                          >
+                                            <span className="truncate pr-2">{libEx.name}</span>
+                                            <Badge variant="outline" className="text-xs shrink-0">
+                                              {getCategoryLabel(libEx.category)}
+                                            </Badge>
+                                          </button>
+                                        ))
+                                      )}
+                                    </PopoverContent>
+                                  </Popover>
                                 </div>
                                 <Button
                                   type="button"
