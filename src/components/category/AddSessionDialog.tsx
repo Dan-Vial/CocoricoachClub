@@ -28,6 +28,7 @@ import { Users, UserCheck, AlertTriangle, Plus, Trash2, Dumbbell, ChevronDown, C
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { EXERCISE_CATEGORIES, getCategoryLabel } from "@/lib/constants/exerciseCategories";
 
 interface AddSessionDialogProps {
   open: boolean;
@@ -45,21 +46,6 @@ const trainingTypes = [
   { value: "test", label: "Test", hasExercises: false },
 ];
 
-const EXERCISE_CATEGORIES = [
-  { value: "upper_push", label: "Haut - Poussée" },
-  { value: "upper_pull", label: "Haut - Tirage" },
-  { value: "lower_push", label: "Bas - Poussée" },
-  { value: "lower_pull", label: "Bas - Tirage" },
-  { value: "core", label: "Core / Gainage" },
-  { value: "cardio", label: "Cardio" },
-  { value: "plyometrics", label: "Pliométrie" },
-  { value: "mobility", label: "Mobilité" },
-  { value: "stretching_mobility", label: "Stretching" },
-  { value: "terrain", label: "Terrain" },
-  { value: "musculation", label: "Musculation" },
-  { value: "other", label: "Autre" },
-];
-
 interface Exercise {
   exercise_name: string;
   exercise_category: string;
@@ -74,7 +60,7 @@ interface Exercise {
 
 const emptyExercise = (index: number): Exercise => ({
   exercise_name: "",
-  exercise_category: "musculation",
+  exercise_category: "upper_push",
   sets: 3,
   reps: 10,
   weight_kg: null,
@@ -330,9 +316,7 @@ export function AddSessionDialog({
     setSearchQuery("");
   };
 
-  const getCategoryLabel = (value: string) => {
-    return EXERCISE_CATEGORIES.find((c) => c.value === value)?.label || value;
-  };
+  // getCategoryLabel is now imported from constants
 
   // Handle type change to auto-add empty exercise
   const handleTypeChange = (newType: string) => {

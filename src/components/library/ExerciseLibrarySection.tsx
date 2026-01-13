@@ -8,21 +8,24 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AddExerciseDialog } from "./AddExerciseDialog";
 import { ExternalLink, Trash2, Dumbbell, Move, Target, Library } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { 
+  CATEGORY_GROUPS, 
+  getCategoryLabel, 
+  getCategoriesByGroup,
+  getSubcategoryLabel,
+  getCategoryGroup
+} from "@/lib/constants/exerciseCategories";
 
-const CATEGORIES = [
-  { value: "all", label: "Tous", icon: Library },
-  { value: "stretching_mobility", label: "Stretching / Mobilité", icon: Move },
-  { value: "musculation", label: "Musculation", icon: Dumbbell },
-  { value: "terrain", label: "Terrain", icon: Target },
-];
-
-const getCategoryLabel = (value: string) => {
-  const cat = CATEGORIES.find((c) => c.value === value);
-  return cat ? cat.label : value;
+const TAB_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+  all: Library,
+  musculation: Dumbbell,
+  stretching_mobility: Move,
+  terrain: Target,
 };
 
 const getCategoryColor = (value: string) => {
-  switch (value) {
+  const group = getCategoryGroup(value);
+  switch (group) {
     case "stretching_mobility":
       return "bg-blue-500/10 text-blue-500 border-blue-500/20";
     case "musculation":
@@ -81,10 +84,12 @@ export function ExerciseLibrarySection() {
     return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
   };
 
-  const filterExercises = (category: string) => {
+  const filterExercises = (group: string) => {
     if (!exercises) return [];
-    if (category === "all") return exercises;
-    return exercises.filter((e) => e.category === category);
+    if (group === "all") return exercises;
+    // Filter by group (includes all categories in that group)
+    const categoriesInGroup = getCategoriesByGroup(group).map(c => c.value);
+    return exercises.filter((e) => categoriesInGroup.includes(e.category));
   };
 
   return (
@@ -101,27 +106,30 @@ export function ExerciseLibrarySection() {
         <CardContent className="pt-6">
           <Tabs defaultValue="all">
             <TabsList className="grid w-full grid-cols-4 mb-4">
-              {CATEGORIES.map((cat) => (
-                <TabsTrigger key={cat.value} value={cat.value} className="flex items-center gap-1">
-                  <cat.icon className="h-4 w-4" />
-                  <span className="hidden sm:inline">{cat.label}</span>
-                </TabsTrigger>
-              ))}
+              {CATEGORY_GROUPS.map((group) => {
+                const Icon = TAB_ICONS[group.value] || Library;
+                return (
+                  <TabsTrigger key={group.value} value={group.value} className="flex items-center gap-1">
+                    <Icon className="h-4 w-4" />
+                    <span className="hidden sm:inline">{group.label}</span>
+                  </TabsTrigger>
+                );
+              })}
             </TabsList>
 
-            {CATEGORIES.map((cat) => (
-              <TabsContent key={cat.value} value={cat.value}>
+            {CATEGORY_GROUPS.map((group) => (
+              <TabsContent key={group.value} value={group.value}>
                 {isLoading ? (
                   <div className="text-center py-8 text-muted-foreground">
                     Chargement...
                   </div>
-                ) : filterExercises(cat.value).length === 0 ? (
+                ) : filterExercises(group.value).length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
                     Aucun exercice dans cette catégorie
                   </div>
                 ) : (
                   <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {filterExercises(cat.value).map((exercise) => (
+                    {filterExercises(group.value).map((exercise) => (
                       <Card key={exercise.id} className="overflow-hidden">
                         {exercise.youtube_url && getYoutubeEmbedUrl(exercise.youtube_url) && (
                           <div className="aspect-video">
@@ -145,9 +153,16 @@ export function ExerciseLibrarySection() {
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
-                          <Badge variant="outline" className={getCategoryColor(exercise.category)}>
-                            {getCategoryLabel(exercise.category)}
-                          </Badge>
+                          <div className="flex flex-wrap gap-1">
+                            <Badge variant="outline" className={getCategoryColor(exercise.category)}>
+                              {getCategoryLabel(exercise.category)}
+                            </Badge>
+                            {exercise.subcategory && (
+                              <Badge variant="secondary" className="text-xs">
+                                {getSubcategoryLabel(exercise.subcategory)}
+                              </Badge>
+                            )}
+                          </div>
                         </CardHeader>
                         {exercise.description && (
                           <CardContent className="pt-0">
