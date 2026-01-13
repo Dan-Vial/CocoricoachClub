@@ -15,40 +15,42 @@ interface PerformanceTabProps {
 export function PerformanceTab({ categoryId }: PerformanceTabProps) {
   return (
     <Tabs defaultValue="sessions" className="space-y-4">
-      <TabsList className="flex w-full overflow-x-auto no-scrollbar gap-1 h-auto flex-wrap md:flex-nowrap bg-muted p-1">
-        <TabsTrigger value="sessions" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5">
-          <CalendarDays className="h-4 w-4 shrink-0" />
-          <span className="hidden sm:inline">Séances</span>
-          <span className="sm:hidden">Séan</span>
-        </TabsTrigger>
-        <TabsTrigger value="tests" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5">
-          <ClipboardCheck className="h-4 w-4 shrink-0" />
-          Tests
-        </TabsTrigger>
-        <TabsTrigger value="awcr" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5">
-          <Activity className="h-4 w-4 shrink-0" />
-          AWCR
-        </TabsTrigger>
-        <TabsTrigger value="history" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5">
-          <History className="h-4 w-4 shrink-0" />
-          <span className="hidden sm:inline">Historique</span>
-          <span className="sm:hidden">Hist</span>
-        </TabsTrigger>
-        <TabsTrigger value="analytics" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5">
-          <BarChart3 className="h-4 w-4 shrink-0" />
-          Analyse
-        </TabsTrigger>
-        <TabsTrigger value="physical-prep" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5">
-          <Dumbbell className="h-4 w-4 shrink-0" />
-          <span className="hidden sm:inline">Prépa Physique</span>
-          <span className="sm:hidden">Prépa</span>
-        </TabsTrigger>
-        <TabsTrigger value="gps" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5">
-          <MapPin className="h-4 w-4 shrink-0" />
-          <span className="hidden sm:inline">Data GPS</span>
-          <span className="sm:hidden">GPS</span>
-        </TabsTrigger>
-      </TabsList>
+      <div className="overflow-x-auto -mx-4 px-4 pb-2">
+        <TabsList className="inline-flex w-max min-w-full gap-1 h-auto bg-muted p-1">
+          <TabsTrigger value="sessions" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">
+            <CalendarDays className="h-4 w-4 shrink-0" />
+            <span className="hidden sm:inline">Séances</span>
+            <span className="sm:hidden">Séan</span>
+          </TabsTrigger>
+          <TabsTrigger value="tests" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">
+            <ClipboardCheck className="h-4 w-4 shrink-0" />
+            Tests
+          </TabsTrigger>
+          <TabsTrigger value="awcr" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">
+            <Activity className="h-4 w-4 shrink-0" />
+            AWCR
+          </TabsTrigger>
+          <TabsTrigger value="history" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">
+            <History className="h-4 w-4 shrink-0" />
+            <span className="hidden sm:inline">Historique</span>
+            <span className="sm:hidden">Hist</span>
+          </TabsTrigger>
+          <TabsTrigger value="analytics" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">
+            <BarChart3 className="h-4 w-4 shrink-0" />
+            Analyse
+          </TabsTrigger>
+          <TabsTrigger value="physical-prep" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">
+            <Dumbbell className="h-4 w-4 shrink-0" />
+            <span className="hidden sm:inline">Prépa Physique</span>
+            <span className="sm:hidden">Prépa</span>
+          </TabsTrigger>
+          <TabsTrigger value="gps" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">
+            <MapPin className="h-4 w-4 shrink-0" />
+            <span className="hidden sm:inline">Data GPS</span>
+            <span className="sm:hidden">GPS</span>
+          </TabsTrigger>
+        </TabsList>
+      </div>
 
       <TabsContent value="sessions">
         <SessionsTab categoryId={categoryId} />
