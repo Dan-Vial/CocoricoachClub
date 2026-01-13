@@ -66,6 +66,32 @@ export function DailySessionView({ categoryId }: DailySessionViewProps) {
     },
   });
 
+  // Fetch exercises for today's sessions
+  const sessionIds = todaySessions?.map(s => s.id) || [];
+  const { data: sessionExercises } = useQuery({
+    queryKey: ["today_session_exercises", sessionIds],
+    queryFn: async () => {
+      if (sessionIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from("gym_session_exercises")
+        .select("*")
+        .in("training_session_id", sessionIds)
+        .order("order_index");
+      if (error) throw error;
+      return data;
+    },
+    enabled: sessionIds.length > 0,
+  });
+
+  // Group exercises by session
+  const exercisesBySession = sessionExercises?.reduce((acc, ex) => {
+    if (!acc[ex.training_session_id]) {
+      acc[ex.training_session_id] = [];
+    }
+    acc[ex.training_session_id].push(ex);
+    return acc;
+  }, {} as Record<string, typeof sessionExercises>) || {};
+
   // Fetch players
   const { data: players } = useQuery({
     queryKey: ["players", categoryId],
@@ -353,66 +379,127 @@ export function DailySessionView({ categoryId }: DailySessionViewProps) {
               </div>
             ) : (
               <div className="space-y-3">
-                {todaySessions.map((session) => (
-                  <div
-                    key={session.id}
-                    className={cn(
-                      "p-4 rounded-lg border-2",
-                      fieldMode 
-                        ? "bg-slate-700 border-slate-600" 
-                        : "bg-muted/50 border-border"
-                    )}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-3">
-                        <div className={cn(
-                          "p-2 rounded-lg",
-                          session.training_type === "collectif" || session.training_type === "physique"
-                            ? (fieldMode ? "bg-green-900/50" : "bg-green-100") 
-                            : (fieldMode ? "bg-blue-900/50" : "bg-blue-100")
-                        )}>
-                          {getSessionTypeIcon(session.training_type)}
-                        </div>
-                        <div>
-                          <p className={cn("font-semibold", fieldMode && "text-white")}>
-                            {getSessionTypeLabel(session.training_type)}
-                          </p>
-                          {session.notes && (
-                            <p className={cn("text-sm", fieldMode ? "text-slate-400" : "text-muted-foreground")}>
-                              {session.notes}
+                {todaySessions.map((session) => {
+                  const exercises = exercisesBySession[session.id] || [];
+                  // Get unique exercises (by name) with aggregated info
+                  const uniqueExercises = exercises.reduce((acc, ex) => {
+                    const existing = acc.find(e => e.exercise_name === ex.exercise_name);
+                    if (existing) {
+                      existing.count++;
+                    } else {
+                      acc.push({ ...ex, count: 1 });
+                    }
+                    return acc;
+                  }, [] as Array<typeof exercises[0] & { count: number }>);
+
+                  return (
+                    <div
+                      key={session.id}
+                      className={cn(
+                        "p-4 rounded-lg border-2",
+                        fieldMode 
+                          ? "bg-slate-700 border-slate-600" 
+                          : "bg-muted/50 border-border"
+                      )}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-3">
+                          <div className={cn(
+                            "p-2 rounded-lg",
+                            session.training_type === "collectif" || session.training_type === "physique"
+                              ? (fieldMode ? "bg-green-900/50" : "bg-green-100") 
+                              : (fieldMode ? "bg-blue-900/50" : "bg-blue-100")
+                          )}>
+                            {getSessionTypeIcon(session.training_type)}
+                          </div>
+                          <div>
+                            <p className={cn("font-semibold", fieldMode && "text-white")}>
+                              {getSessionTypeLabel(session.training_type)}
                             </p>
-                          )}
+                            {session.notes && (
+                              <p className={cn("text-sm", fieldMode ? "text-slate-400" : "text-muted-foreground")}>
+                                {session.notes}
+                              </p>
+                            )}
+                          </div>
                         </div>
+                        {session.intensity && (
+                          <Badge className={cn(
+                            "text-lg px-3",
+                            session.intensity >= 8 
+                              ? "bg-red-500" 
+                              : session.intensity >= 6 
+                                ? "bg-yellow-500" 
+                                : "bg-green-500",
+                            "text-white"
+                          )}>
+                            RPE {session.intensity}
+                          </Badge>
+                        )}
                       </div>
-                      {session.intensity && (
-                        <Badge className={cn(
-                          "text-lg px-3",
-                          session.intensity >= 8 
-                            ? "bg-red-500" 
-                            : session.intensity >= 6 
-                              ? "bg-yellow-500" 
-                              : "bg-green-500",
-                          "text-white"
+                      
+                      <div className={cn(
+                        "flex items-center gap-4 text-sm mb-2",
+                        fieldMode ? "text-slate-400" : "text-muted-foreground"
+                      )}>
+                        {session.session_start_time && (
+                          <span className="flex items-center gap-1">
+                            <Clock className="h-4 w-4" />
+                            {session.session_start_time.slice(0, 5)}
+                            {session.session_end_time && ` - ${session.session_end_time.slice(0, 5)}`}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Exercises details */}
+                      {uniqueExercises.length > 0 && (
+                        <div className={cn(
+                          "mt-3 pt-3 border-t",
+                          fieldMode ? "border-slate-600" : "border-border"
                         )}>
-                          RPE {session.intensity}
-                        </Badge>
+                          <p className={cn(
+                            "text-xs font-medium mb-2 flex items-center gap-1",
+                            fieldMode ? "text-slate-300" : "text-muted-foreground"
+                          )}>
+                            <Dumbbell className="h-3 w-3" />
+                            Exercices prévus ({uniqueExercises.length})
+                          </p>
+                          <div className="space-y-1.5">
+                            {uniqueExercises.slice(0, 6).map((ex, idx) => (
+                              <div 
+                                key={idx}
+                                className={cn(
+                                  "flex items-center justify-between text-sm px-2 py-1.5 rounded",
+                                  fieldMode ? "bg-slate-600/50" : "bg-background"
+                                )}
+                              >
+                                <span className={cn("font-medium", fieldMode && "text-white")}>
+                                  {ex.exercise_name}
+                                </span>
+                                <span className={cn(
+                                  "text-xs",
+                                  fieldMode ? "text-slate-400" : "text-muted-foreground"
+                                )}>
+                                  {ex.sets && ex.reps && `${ex.sets}×${ex.reps}`}
+                                  {ex.weight_kg && ` @ ${ex.weight_kg}kg`}
+                                  {ex.count > 1 && ` (${ex.count} joueurs)`}
+                                </span>
+                              </div>
+                            ))}
+                            {uniqueExercises.length > 6 && (
+                              <p className={cn(
+                                "text-xs text-center pt-1",
+                                fieldMode ? "text-slate-500" : "text-muted-foreground"
+                              )}>
+                                + {uniqueExercises.length - 6} autres exercices
+                              </p>
+                            )}
+                          </div>
+                        </div>
                       )}
                     </div>
-                    
-                    <div className={cn(
-                      "flex items-center gap-4 text-sm",
-                      fieldMode ? "text-slate-400" : "text-muted-foreground"
-                    )}>
-                      {session.session_start_time && (
-                        <span className="flex items-center gap-1">
-                          <Clock className="h-4 w-4" />
-                          {session.session_start_time.slice(0, 5)}
-                          {session.session_end_time && ` - ${session.session_end_time.slice(0, 5)}`}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </CardContent>
