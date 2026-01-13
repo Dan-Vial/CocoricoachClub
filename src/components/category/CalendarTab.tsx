@@ -11,7 +11,7 @@ import { AddSessionDialog } from "./AddSessionDialog";
 import { EditSessionDialog } from "./EditSessionDialog";
 import { AddMatchCalendarDialog } from "./matches/AddMatchCalendarDialog";
 import { QuickTestEntryDialog } from "./QuickTestEntryDialog";
-import { QuickRpeEntryDialog } from "./QuickRpeEntryDialog";
+import { SessionDetailsDialog } from "./SessionDetailsDialog";
 import { format, isSameDay, isWithinInterval, startOfWeek, addDays } from "date-fns";
 import { fr } from "date-fns/locale";
 import type { DateRange } from "react-day-picker";
@@ -498,11 +498,7 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
                               setSelectedSession({
                                 id: event.id,
                                 date: event.session_date,
-                                type:
-                                  event.training_type === "test" ||
-                                  event.training_type === "musculation"
-                                    ? "test"
-                                    : "training",
+                                type: event.training_type === "test" ? "test" : "training",
                               })
                             }
                           >
@@ -644,7 +640,7 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
       )}
 
       {selectedSession?.type === "training" && (
-        <QuickRpeEntryDialog
+        <SessionDetailsDialog
           open={true}
           onOpenChange={(open) => !open && setSelectedSession(null)}
           categoryId={categoryId}
