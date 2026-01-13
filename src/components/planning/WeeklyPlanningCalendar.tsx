@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -7,9 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { format, startOfWeek, addDays, addWeeks, subWeeks } from "date-fns";
 import { fr } from "date-fns/locale";
-import { ChevronLeft, ChevronRight, Plus, X, Clock, MapPin } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, X, Clock, MapPin, Download, Printer } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { exportWeeklyPlanningToPdf, printElement } from "@/lib/pdfExport";
 import {
   Dialog,
   DialogContent,
@@ -213,11 +214,26 @@ export function WeeklyPlanningCalendar({ categoryId }: WeeklyPlanningCalendarPro
     return result;
   }, [planning]);
 
+  const calendarRef = useRef<HTMLDivElement>(null);
+
+  const handleExportPdf = () => {
+    if (planning) {
+      exportWeeklyPlanningToPdf(planning, currentWeekStart, "Catégorie");
+      toast.success("PDF exporté avec succès");
+    }
+  };
+
+  const handlePrint = () => {
+    if (calendarRef.current) {
+      printElement(calendarRef.current, `Planning Hebdomadaire - Semaine du ${format(currentWeekStart, "d MMMM yyyy", { locale: fr })}`);
+    }
+  };
+
   return (
     <>
       <Card>
         <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-2">
             <CardTitle className="text-base">Planification hebdomadaire</CardTitle>
             <div className="flex items-center gap-2">
               <Button variant="outline" size="icon" onClick={() => setCurrentWeekStart(subWeeks(currentWeekStart, 1))}>
@@ -229,10 +245,18 @@ export function WeeklyPlanningCalendar({ categoryId }: WeeklyPlanningCalendarPro
               <Button variant="outline" size="icon" onClick={() => setCurrentWeekStart(addWeeks(currentWeekStart, 1))}>
                 <ChevronRight className="h-4 w-4" />
               </Button>
+              <div className="flex gap-1 ml-2">
+                <Button variant="outline" size="icon" onClick={handlePrint} title="Imprimer">
+                  <Printer className="h-4 w-4" />
+                </Button>
+                <Button variant="outline" size="icon" onClick={handleExportPdf} title="Exporter PDF">
+                  <Download className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent ref={calendarRef}>
           <div className="grid grid-cols-7 gap-2">
             {DAYS.map((day, index) => (
               <div

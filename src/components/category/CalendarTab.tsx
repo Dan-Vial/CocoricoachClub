@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Trash2, Pencil, X, Swords, MapPin, Calendar as CalendarIcon, LayoutTemplate, Target, Clock } from "lucide-react";
+import { Plus, Trash2, Pencil, X, Swords, MapPin, Calendar as CalendarIcon, LayoutTemplate, Target, Clock, Download, Printer } from "lucide-react";
 import { toast } from "sonner";
 import { AddSessionDialog } from "./AddSessionDialog";
 import { EditSessionDialog } from "./EditSessionDialog";
@@ -20,6 +20,7 @@ import { WeeklyPlanningCalendar } from "@/components/planning/WeeklyPlanningCale
 import { SessionTemplatesSection } from "@/components/planning/SessionTemplatesSection";
 import { SeasonObjectivesSection } from "@/components/planning/SeasonObjectivesSection";
 import { useViewerModeContext } from "@/contexts/ViewerModeContext";
+import { exportCalendarToPdf, printElement } from "@/lib/pdfExport";
 
 interface CalendarTabProps {
   categoryId: string;
@@ -68,6 +69,27 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { isViewer } = useViewerModeContext();
+  const calendarContentRef = useRef<HTMLDivElement>(null);
+
+  const handleExportPdf = async () => {
+    if (sessions && matches) {
+      await exportCalendarToPdf(
+        sessions, 
+        matches, 
+        "Catégorie",
+        dateRange?.from && dateRange?.to 
+          ? { from: dateRange.from, to: dateRange.to } 
+          : undefined
+      );
+      toast.success("PDF exporté avec succès");
+    }
+  };
+
+  const handlePrint = () => {
+    if (calendarContentRef.current) {
+      printElement(calendarContentRef.current, "Calendrier Global");
+    }
+  };
 
   const { data: sessions, isLoading: isLoadingSessions } = useQuery({
     queryKey: ["training_sessions", categoryId],
@@ -253,7 +275,13 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
             <CardHeader>
               <div className="flex justify-between items-center flex-wrap gap-4">
                 <CardTitle>Calendrier des entraînements et matchs</CardTitle>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
+                  <Button variant="outline" size="icon" onClick={handlePrint} title="Imprimer">
+                    <Printer className="h-4 w-4" />
+                  </Button>
+                  <Button variant="outline" size="icon" onClick={handleExportPdf} title="Exporter PDF">
+                    <Download className="h-4 w-4" />
+                  </Button>
                   {dateRange?.from && (
                     <Button 
                       onClick={() => setDateRange(undefined)} 
@@ -279,7 +307,7 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-6" ref={calendarContentRef}>
               <div className="flex flex-col items-center gap-4">
                 <div className="text-center">
                   <p className="text-sm text-muted-foreground mb-2">
