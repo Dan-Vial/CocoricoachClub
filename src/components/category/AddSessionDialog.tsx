@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -89,11 +89,23 @@ export function AddSessionDialog({
   const [searchQuery, setSearchQuery] = useState("");
   const [showLibraryFor, setShowLibraryFor] = useState<number | null>(null);
   const queryClient = useQueryClient();
+  const exercisesSectionRef = useRef<HTMLDivElement | null>(null);
 
   const selectedTrainingType = trainingTypes.find(t => t.value === type);
   const showExerciseSection = selectedTrainingType?.hasExercises || false;
 
-  // Fetch players with their injury status
+  useEffect(() => {
+    if (!open) return;
+    if (!showExerciseSection) return;
+
+    // Ensure exercises section is expanded and visible when the selected type supports exercises
+    setShowExercises(true);
+    // Smooth scroll to the section so users don't miss it (it is below the player selector)
+    window.setTimeout(() => {
+      exercisesSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 100);
+  }, [open, showExerciseSection]);
+
   const { data: players } = useQuery({
     queryKey: ["players-with-injuries", categoryId],
     queryFn: async () => {
@@ -545,7 +557,7 @@ export function AddSessionDialog({
               {/* Exercises Section - Only shown for certain training types */}
               {showExerciseSection && (
                 <Collapsible open={showExercises} onOpenChange={setShowExercises}>
-                  <div className="border rounded-lg p-4 bg-muted/30">
+                  <div ref={exercisesSectionRef} className="border rounded-lg p-4 bg-muted/30">
                     <CollapsibleTrigger asChild>
                       <div className="flex items-center justify-between cursor-pointer">
                         <Label className="flex items-center gap-2 text-base font-medium cursor-pointer">
