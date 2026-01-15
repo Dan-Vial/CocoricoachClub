@@ -6,6 +6,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,9 +18,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
-import { Stopwatch } from "./Stopwatch";
-import { Textarea } from "@/components/ui/textarea";
+import { PlayerSelection } from "./PlayerSelection";
 
 interface Player {
   id: string;
@@ -42,7 +43,6 @@ const TEST_TYPES = [
   { value: "cooper_test", label: "Test de Cooper (12 min)", distance: null },
   { value: "beep_test", label: "Test Navette (Beep Test)", distance: null },
   { value: "yo_yo_test", label: "Yo-Yo Test", distance: null },
-  { value: "custom", label: "Test personnalisé", distance: null },
 ];
 
 export function AddRunningTestDialog({
@@ -51,219 +51,195 @@ export function AddRunningTestDialog({
   categoryId,
   players,
 }: AddRunningTestDialogProps) {
-  const [playerId, setPlayerId] = useState("");
-  const [date, setDate] = useState("");
+  const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
+  const [selectionMode, setSelectionMode] = useState<"all" | "specific">("all");
+  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [testType, setTestType] = useState("");
-  const [timeSeconds, setTimeSeconds] = useState("");
-  const [distanceMeters, setDistanceMeters] = useState("");
-  const [level, setLevel] = useState("");
-  const [notes, setNotes] = useState("");
-  const [inputMode, setInputMode] = useState<"manual" | "stopwatch">("manual");
+  const [playerResults, setPlayerResults] = useState<Record<string, string>>({});
   const queryClient = useQueryClient();
+
+  const effectivePlayers = selectionMode === "all" ? players : players.filter(p => selectedPlayers.includes(p.id));
 
   const selectedTest = TEST_TYPES.find((t) => t.value === testType);
   const isSprintTest = testType.includes("sprint");
-  const isCustomTest = testType === "custom";
-  const isLevelTest = testType === "beep_test" || testType === "yo_yo_test";
   const isCooperTest = testType === "cooper_test";
+  const isLevelTest = testType === "beep_test" || testType === "yo_yo_test";
 
   const addTest = useMutation({
     mutationFn: async () => {
-      let speedMs = null;
-      let speedKmh = null;
-      let vmaKmh = null;
+      const inserts = effectivePlayers
+        .filter(player => playerResults[player.id])
+        .map(player => {
+          let speedMs = null;
+          let speedKmh = null;
+          let vmaKmh = null;
 
-      if (isSprintTest && selectedTest?.distance) {
-        const time = parseFloat(timeSeconds);
-        speedMs = selectedTest.distance / time;
-        speedKmh = speedMs * 3.6;
+          const value = parseFloat(playerResults[player.id]);
+
+          if (isSprintTest && selectedTest?.distance) {
+            speedMs = selectedTest.distance / value;
+            speedKmh = speedMs * 3.6;
+          }
+
+          if (isCooperTest) {
+            vmaKmh = (value / 1000 / 12) * 60;
+          }
+
+          return {
+            player_id: player.id,
+            category_id: categoryId,
+            test_date: date,
+            test_type: testType,
+            time_40m_seconds: isSprintTest ? value : null,
+            speed_ms: speedMs,
+            speed_kmh: speedKmh,
+            vma_kmh: vmaKmh,
+          };
+        });
+
+      if (inserts.length === 0) {
+        throw new Error("Aucun résultat saisi");
       }
 
-      if (isCooperTest && distanceMeters) {
-        // VMA estimation from Cooper test: VMA = (distance / 1000) / 12 * 60 * 1.1
-        const dist = parseFloat(distanceMeters);
-        vmaKmh = (dist / 1000 / 12) * 60;
-      }
-
-      const { error } = await supabase.from("speed_tests").insert({
-        player_id: playerId,
-        category_id: categoryId,
-        test_date: date,
-        test_type: testType,
-        time_40m_seconds: isSprintTest ? parseFloat(timeSeconds) : null,
-        speed_ms: speedMs,
-        speed_kmh: speedKmh,
-        vma_kmh: vmaKmh,
-      });
+      const { error } = await supabase.from("speed_tests").insert(inserts);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["speed_tests", categoryId] });
-      toast.success("Test ajouté avec succès");
+      toast.success("Tests ajoutés avec succès");
       resetForm();
       onOpenChange(false);
     },
-    onError: () => {
-      toast.error("Erreur lors de l'ajout du test");
+    onError: (error: any) => {
+      toast.error(error.message || "Erreur lors de l'ajout du test");
     },
   });
 
   const resetForm = () => {
-    setPlayerId("");
-    setDate("");
+    setSelectedPlayers([]);
+    setSelectionMode("all");
     setTestType("");
-    setTimeSeconds("");
-    setDistanceMeters("");
-    setLevel("");
-    setNotes("");
+    setPlayerResults({});
   };
 
-  const handleStopwatchTime = (time: number) => {
-    setTimeSeconds(time.toFixed(2));
+  const updatePlayerResult = (playerId: string, value: string) => {
+    setPlayerResults(prev => ({ ...prev, [playerId]: value }));
   };
+
+  const getPlaceholder = () => {
+    if (isSprintTest) return "sec";
+    if (isCooperTest) return "m";
+    if (isLevelTest) return "palier";
+    return "";
+  };
+
+  const getLabel = () => {
+    if (isSprintTest) return "Temps (secondes)";
+    if (isCooperTest) return "Distance (mètres)";
+    if (isLevelTest) return "Palier atteint";
+    return "Résultat";
+  };
+
+  const filledResultsCount = effectivePlayers.filter(p => playerResults[p.id]).length;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>Ajouter un test de course</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label>Joueur</Label>
-            <Select value={playerId} onValueChange={setPlayerId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Sélectionner un joueur" />
-              </SelectTrigger>
-              <SelectContent>
-                {players.map((player) => (
-                  <SelectItem key={player.id} value={player.id}>
-                    {player.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Type de test</Label>
-            <Select value={testType} onValueChange={setTestType}>
-              <SelectTrigger>
-                <SelectValue placeholder="Sélectionner un type de test" />
-              </SelectTrigger>
-              <SelectContent>
-                {TEST_TYPES.map((type) => (
-                  <SelectItem key={type.value} value={type.value}>
-                    {type.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Date du test</Label>
-            <Input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
+        <ScrollArea className="flex-1 pr-4">
+          <div className="space-y-4">
+            <PlayerSelection
+              categoryId={categoryId}
+              selectedPlayers={selectedPlayers}
+              onSelectionChange={setSelectedPlayers}
+              selectionMode={selectionMode}
+              onSelectionModeChange={setSelectionMode}
+              players={players}
             />
-          </div>
 
-          {isSprintTest && (
-            <>
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  variant={inputMode === "manual" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setInputMode("manual")}
-                >
-                  Saisie manuelle
-                </Button>
-                <Button
-                  type="button"
-                  variant={inputMode === "stopwatch" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setInputMode("stopwatch")}
-                >
-                  Chronomètre
-                </Button>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Type de test *</Label>
+                <Select value={testType} onValueChange={setTestType}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner un type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {TEST_TYPES.map((type) => (
+                      <SelectItem key={type.value} value={type.value}>
+                        {type.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
-              {inputMode === "manual" ? (
-                <div className="space-y-2">
-                  <Label>Temps (secondes)</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    placeholder="Ex: 5.45"
-                    value={timeSeconds}
-                    onChange={(e) => setTimeSeconds(e.target.value)}
-                  />
-                </div>
-              ) : (
-                <Stopwatch onTimeRecorded={handleStopwatchTime} />
-              )}
-
-              {timeSeconds && selectedTest?.distance && (
-                <div className="p-3 bg-muted rounded-lg text-sm">
-                  <p>Vitesse: {(selectedTest.distance / parseFloat(timeSeconds)).toFixed(2)} m/s</p>
-                  <p>Vitesse: {((selectedTest.distance / parseFloat(timeSeconds)) * 3.6).toFixed(2)} km/h</p>
-                </div>
-              )}
-            </>
-          )}
-
-          {isCooperTest && (
-            <div className="space-y-2">
-              <Label>Distance parcourue (mètres)</Label>
-              <Input
-                type="number"
-                placeholder="Ex: 2800"
-                value={distanceMeters}
-                onChange={(e) => setDistanceMeters(e.target.value)}
-              />
-              {distanceMeters && (
-                <div className="p-3 bg-muted rounded-lg text-sm">
-                  <p>VMA estimée: {((parseFloat(distanceMeters) / 1000 / 12) * 60).toFixed(1)} km/h</p>
-                </div>
-              )}
+              <div className="space-y-2">
+                <Label>Date du test *</Label>
+                <Input
+                  type="date"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                />
+              </div>
             </div>
-          )}
 
-          {isLevelTest && (
-            <div className="space-y-2">
-              <Label>Palier atteint</Label>
-              <Input
-                type="text"
-                placeholder="Ex: 12.5"
-                value={level}
-                onChange={(e) => setLevel(e.target.value)}
-              />
-            </div>
-          )}
+            {effectivePlayers.length > 0 && testType && (
+              <div className="space-y-2">
+                <Label>{getLabel()} - {filledResultsCount}/{effectivePlayers.length} saisis</Label>
+                <div className="grid grid-cols-2 gap-2 p-3 border rounded-md bg-muted/30">
+                  {effectivePlayers.map((player) => {
+                    const value = playerResults[player.id];
+                    let extraInfo = null;
 
-          {isCustomTest && (
-            <div className="space-y-2">
-              <Label>Notes / Description du test</Label>
-              <Textarea
-                placeholder="Décrivez le test personnalisé..."
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-              />
-            </div>
-          )}
+                    if (value && isSprintTest && selectedTest?.distance) {
+                      const speedKmh = ((selectedTest.distance / parseFloat(value)) * 3.6).toFixed(2);
+                      extraInfo = `${speedKmh} km/h`;
+                    }
+                    if (value && isCooperTest) {
+                      const vma = ((parseFloat(value) / 1000 / 12) * 60).toFixed(1);
+                      extraInfo = `VMA: ${vma} km/h`;
+                    }
 
+                    return (
+                      <div key={player.id} className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm flex-1 truncate">{player.name}</span>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={value || ""}
+                            onChange={(e) => updatePlayerResult(player.id, e.target.value)}
+                            placeholder={getPlaceholder()}
+                            className="w-20 h-8 text-sm"
+                          />
+                        </div>
+                        {extraInfo && (
+                          <p className="text-xs text-muted-foreground pl-1">{extraInfo}</p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        </ScrollArea>
+
+        <DialogFooter className="pt-4">
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            Annuler
+          </Button>
           <Button
             onClick={() => addTest.mutate()}
-            disabled={!playerId || !testType || !date || addTest.isPending}
-            className="w-full"
+            disabled={!testType || !date || filledResultsCount === 0 || addTest.isPending}
           >
-            Ajouter le test
+            {addTest.isPending ? "Ajout..." : `Ajouter ${filledResultsCount} test${filledResultsCount > 1 ? "s" : ""}`}
           </Button>
-        </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
