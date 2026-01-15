@@ -2795,11 +2795,14 @@ export type Database = {
       }
       program_exercises: {
         Row: {
+          cluster_sets: Json | null
           created_at: string
+          drop_sets: Json | null
           exercise_name: string
           group_id: string | null
           group_order: number | null
           id: string
+          is_rm_test: boolean | null
           library_exercise_id: string | null
           method: string | null
           notes: string | null
@@ -2807,16 +2810,20 @@ export type Database = {
           percentage_1rm: number | null
           reps: string | null
           rest_seconds: number | null
+          rm_test_type: string | null
           session_id: string
           sets: number | null
           tempo: string | null
         }
         Insert: {
+          cluster_sets?: Json | null
           created_at?: string
+          drop_sets?: Json | null
           exercise_name: string
           group_id?: string | null
           group_order?: number | null
           id?: string
+          is_rm_test?: boolean | null
           library_exercise_id?: string | null
           method?: string | null
           notes?: string | null
@@ -2824,16 +2831,20 @@ export type Database = {
           percentage_1rm?: number | null
           reps?: string | null
           rest_seconds?: number | null
+          rm_test_type?: string | null
           session_id: string
           sets?: number | null
           tempo?: string | null
         }
         Update: {
+          cluster_sets?: Json | null
           created_at?: string
+          drop_sets?: Json | null
           exercise_name?: string
           group_id?: string | null
           group_order?: number | null
           id?: string
+          is_rm_test?: boolean | null
           library_exercise_id?: string | null
           method?: string | null
           notes?: string | null
@@ -2841,6 +2852,7 @@ export type Database = {
           percentage_1rm?: number | null
           reps?: string | null
           rest_seconds?: number | null
+          rm_test_type?: string | null
           session_id?: string
           sets?: number | null
           tempo?: string | null
@@ -2868,6 +2880,7 @@ export type Database = {
           day_of_week: number | null
           id: string
           name: string | null
+          scheduled_day: number | null
           session_number: number
           week_id: string
         }
@@ -2876,6 +2889,7 @@ export type Database = {
           day_of_week?: number | null
           id?: string
           name?: string | null
+          scheduled_day?: number | null
           session_number?: number
           week_id: string
         }
@@ -2884,6 +2898,7 @@ export type Database = {
           day_of_week?: number | null
           id?: string
           name?: string | null
+          scheduled_day?: number | null
           session_number?: number
           week_id?: string
         }
@@ -4438,6 +4453,7 @@ export type Database = {
       }
       training_programs: {
         Row: {
+          body_zone: string | null
           category_id: string
           created_at: string
           created_by: string | null
@@ -4446,9 +4462,12 @@ export type Database = {
           is_active: boolean | null
           level: string | null
           name: string
+          reathletisation_phase: string | null
+          theme: string | null
           updated_at: string
         }
         Insert: {
+          body_zone?: string | null
           category_id: string
           created_at?: string
           created_by?: string | null
@@ -4457,9 +4476,12 @@ export type Database = {
           is_active?: boolean | null
           level?: string | null
           name: string
+          reathletisation_phase?: string | null
+          theme?: string | null
           updated_at?: string
         }
         Update: {
+          body_zone?: string | null
           category_id?: string
           created_at?: string
           created_by?: string | null
@@ -4468,6 +4490,8 @@ export type Database = {
           is_active?: boolean | null
           level?: string | null
           name?: string
+          reathletisation_phase?: string | null
+          theme?: string | null
           updated_at?: string
         }
         Relationships: [
