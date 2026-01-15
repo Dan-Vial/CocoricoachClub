@@ -2748,6 +2748,187 @@ export type Database = {
         }
         Relationships: []
       }
+      program_assignments: {
+        Row: {
+          created_at: string
+          end_date: string | null
+          id: string
+          is_active: boolean | null
+          player_id: string
+          program_id: string
+          start_date: string
+        }
+        Insert: {
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          is_active?: boolean | null
+          player_id: string
+          program_id: string
+          start_date?: string
+        }
+        Update: {
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          is_active?: boolean | null
+          player_id?: string
+          program_id?: string
+          start_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "program_assignments_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "program_assignments_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "training_programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      program_exercises: {
+        Row: {
+          created_at: string
+          exercise_name: string
+          group_id: string | null
+          group_order: number | null
+          id: string
+          library_exercise_id: string | null
+          method: string | null
+          notes: string | null
+          order_index: number
+          percentage_1rm: number | null
+          reps: string | null
+          rest_seconds: number | null
+          session_id: string
+          sets: number | null
+          tempo: string | null
+        }
+        Insert: {
+          created_at?: string
+          exercise_name: string
+          group_id?: string | null
+          group_order?: number | null
+          id?: string
+          library_exercise_id?: string | null
+          method?: string | null
+          notes?: string | null
+          order_index?: number
+          percentage_1rm?: number | null
+          reps?: string | null
+          rest_seconds?: number | null
+          session_id: string
+          sets?: number | null
+          tempo?: string | null
+        }
+        Update: {
+          created_at?: string
+          exercise_name?: string
+          group_id?: string | null
+          group_order?: number | null
+          id?: string
+          library_exercise_id?: string | null
+          method?: string | null
+          notes?: string | null
+          order_index?: number
+          percentage_1rm?: number | null
+          reps?: string | null
+          rest_seconds?: number | null
+          session_id?: string
+          sets?: number | null
+          tempo?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "program_exercises_library_exercise_id_fkey"
+            columns: ["library_exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercise_library"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "program_exercises_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "program_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      program_sessions: {
+        Row: {
+          created_at: string
+          day_of_week: number | null
+          id: string
+          name: string | null
+          session_number: number
+          week_id: string
+        }
+        Insert: {
+          created_at?: string
+          day_of_week?: number | null
+          id?: string
+          name?: string | null
+          session_number?: number
+          week_id: string
+        }
+        Update: {
+          created_at?: string
+          day_of_week?: number | null
+          id?: string
+          name?: string | null
+          session_number?: number
+          week_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "program_sessions_week_id_fkey"
+            columns: ["week_id"]
+            isOneToOne: false
+            referencedRelation: "program_weeks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      program_weeks: {
+        Row: {
+          created_at: string
+          id: string
+          name: string | null
+          program_id: string
+          week_number: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name?: string | null
+          program_id: string
+          week_number?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string | null
+          program_id?: string
+          week_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "program_weeks_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "training_programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       protocol_exercises: {
         Row: {
           created_at: string
@@ -4248,6 +4429,50 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "training_periods_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_programs: {
+        Row: {
+          category_id: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          level: string | null
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          level?: string | null
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          level?: string | null
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_programs_category_id_fkey"
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categories"
