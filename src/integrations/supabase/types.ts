@@ -748,6 +748,60 @@ export type Database = {
           },
         ]
       }
+      generic_tests: {
+        Row: {
+          category_id: string
+          created_at: string
+          id: string
+          notes: string | null
+          player_id: string
+          result_unit: string | null
+          result_value: number
+          test_category: string
+          test_date: string
+          test_type: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          player_id: string
+          result_unit?: string | null
+          result_value: number
+          test_category: string
+          test_date?: string
+          test_type: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          player_id?: string
+          result_unit?: string | null
+          result_value?: number
+          test_category?: string
+          test_date?: string
+          test_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "generic_tests_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "generic_tests_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gps_sessions: {
         Row: {
           accelerations: number | null

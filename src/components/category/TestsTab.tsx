@@ -5,6 +5,7 @@ import { StrengthTestsSection } from "./tests/StrengthTestsSection";
 import { MobilityTestsSection } from "./tests/MobilityTestsSection";
 import { JumpTestsSection } from "./tests/JumpTestsSection";
 import { RugbySpecificTestsSection } from "./tests/RugbySpecificTestsSection";
+import { GenericTestsSection } from "./tests/GenericTestsSection";
 
 interface TestsTabProps {
   categoryId: string;
@@ -17,14 +18,19 @@ export function TestsTab({ categoryId }: TestsTabProps) {
         <CardTitle>Tests de Performance</CardTitle>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue="running" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-5">
+        <Tabs defaultValue="all" className="space-y-4">
+          <TabsList className="grid w-full grid-cols-6">
+            <TabsTrigger value="all">Tous</TabsTrigger>
             <TabsTrigger value="running">Course</TabsTrigger>
             <TabsTrigger value="strength">Musculation</TabsTrigger>
             <TabsTrigger value="mobility">Mobilité</TabsTrigger>
             <TabsTrigger value="jump">Détente</TabsTrigger>
             <TabsTrigger value="rugby">Tests Rugby</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="all" className="space-y-6">
+            <GenericTestsSection categoryId={categoryId} />
+          </TabsContent>
 
           <TabsContent value="running" className="space-y-6">
             <SpeedTestsSection categoryId={categoryId} />

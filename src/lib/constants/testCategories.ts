@@ -19,11 +19,12 @@ export const TEST_CATEGORIES: TestCategory[] = [
     label: "Cardio / Endurance",
     tests: [
       { value: "cooper", label: "Test de Cooper", unit: "m" },
+      { value: "demi_cooper", label: "Demi-Cooper (6 min)", unit: "m" },
       { value: "luc_leger", label: "Luc Léger (Bip Test)", unit: "palier" },
       { value: "vameval", label: "VAMEVAL", unit: "km/h" },
       { value: "test_australien", label: "Test Australien (Yo-Yo)", unit: "palier" },
       { value: "test_laboratoire", label: "Test de laboratoire (VO2max)", unit: "ml/kg/min" },
-      { value: "bronco", label: "Bronco", unit: "temps" },
+      { value: "bronco", label: "Bronco", unit: "temps", isTime: true },
     ],
   },
   {

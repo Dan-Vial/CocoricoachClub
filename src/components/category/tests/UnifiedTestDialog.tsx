@@ -1,0 +1,238 @@
+import { useState } from "react";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
+import { PlayerSelection } from "./PlayerSelection";
+import { TEST_CATEGORIES, TestCategory, TestOption } from "@/lib/constants/testCategories";
+
+interface UnifiedTestDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  categoryId: string;
+}
+
+export function UnifiedTestDialog({
+  open,
+  onOpenChange,
+  categoryId,
+}: UnifiedTestDialogProps) {
+  const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
+  const [selectionMode, setSelectionMode] = useState<"all" | "specific">("all");
+  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [selectedTest, setSelectedTest] = useState("");
+  const [playerResults, setPlayerResults] = useState<Record<string, string>>({});
+  const [notes, setNotes] = useState("");
+  const queryClient = useQueryClient();
+
+  const { data: players } = useQuery({
+    queryKey: ["players", categoryId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("players")
+        .select("*")
+        .eq("category_id", categoryId)
+        .order("name");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const effectivePlayers = selectionMode === "all" 
+    ? (players || []) 
+    : (players || []).filter(p => selectedPlayers.includes(p.id));
+
+  const currentCategory = TEST_CATEGORIES.find(c => c.value === selectedCategory);
+  const currentTest = currentCategory?.tests.find(t => t.value === selectedTest);
+
+  const addTests = useMutation({
+    mutationFn: async () => {
+      const inserts = effectivePlayers
+        .filter(player => playerResults[player.id])
+        .map(player => ({
+          player_id: player.id,
+          category_id: categoryId,
+          test_date: date,
+          test_category: selectedCategory,
+          test_type: selectedTest,
+          result_value: parseFloat(playerResults[player.id]),
+          result_unit: currentTest?.unit || "",
+          notes: notes || null,
+        }));
+
+      if (inserts.length === 0) {
+        throw new Error("Aucun résultat saisi");
+      }
+
+      const { error } = await supabase.from("generic_tests").insert(inserts);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["generic_tests", categoryId] });
+      toast.success("Tests ajoutés avec succès");
+      resetForm();
+      onOpenChange(false);
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Erreur lors de l'ajout des tests");
+    },
+  });
+
+  const resetForm = () => {
+    setSelectedPlayers([]);
+    setSelectionMode("all");
+    setSelectedCategory("");
+    setSelectedTest("");
+    setPlayerResults({});
+    setNotes("");
+  };
+
+  const updatePlayerResult = (playerId: string, value: string) => {
+    setPlayerResults(prev => ({ ...prev, [playerId]: value }));
+  };
+
+  const handleCategoryChange = (value: string) => {
+    setSelectedCategory(value);
+    setSelectedTest("");
+    setPlayerResults({});
+  };
+
+  const filledResultsCount = effectivePlayers.filter(p => playerResults[p.id]).length;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
+        <DialogHeader>
+          <DialogTitle>Ajouter un test de performance</DialogTitle>
+        </DialogHeader>
+
+        <ScrollArea className="flex-1 pr-4">
+          <div className="space-y-4">
+            <PlayerSelection
+              categoryId={categoryId}
+              selectedPlayers={selectedPlayers}
+              onSelectionChange={setSelectedPlayers}
+              selectionMode={selectionMode}
+              onSelectionModeChange={setSelectionMode}
+              players={players || []}
+            />
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Catégorie de test *</Label>
+                <Select value={selectedCategory} onValueChange={handleCategoryChange}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner une catégorie" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {TEST_CATEGORIES.map((category) => (
+                      <SelectItem key={category.value} value={category.value}>
+                        {category.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Date du test *</Label>
+                <Input
+                  type="date"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                />
+              </div>
+            </div>
+
+            {selectedCategory && (
+              <div className="space-y-2">
+                <Label>Type de test *</Label>
+                <Select value={selectedTest} onValueChange={setSelectedTest}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner un test" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectLabel>{currentCategory?.label}</SelectLabel>
+                      {currentCategory?.tests.map((test) => (
+                        <SelectItem key={test.value} value={test.value}>
+                          {test.label} {test.unit && `(${test.unit})`}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {effectivePlayers.length > 0 && selectedTest && currentTest && (
+              <div className="space-y-2">
+                <Label>
+                  Résultats {currentTest.unit && `(${currentTest.unit})`} - {filledResultsCount}/{effectivePlayers.length} saisis
+                </Label>
+                <div className="grid grid-cols-2 gap-2 p-3 border rounded-md bg-muted/30">
+                  {effectivePlayers.map((player) => (
+                    <div key={player.id} className="flex items-center gap-2">
+                      <span className="text-sm flex-1 truncate">{player.name}</span>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={playerResults[player.id] || ""}
+                        onChange={(e) => updatePlayerResult(player.id, e.target.value)}
+                        placeholder={currentTest.unit || "valeur"}
+                        className="w-24 h-8 text-sm"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label>Notes (optionnel)</Label>
+              <Textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Conditions du test, remarques..."
+                rows={2}
+              />
+            </div>
+          </div>
+        </ScrollArea>
+
+        <DialogFooter className="pt-4">
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            Annuler
+          </Button>
+          <Button
+            onClick={() => addTests.mutate()}
+            disabled={!selectedTest || !date || filledResultsCount === 0 || addTests.isPending}
+          >
+            {addTests.isPending ? "Ajout..." : `Ajouter ${filledResultsCount} test${filledResultsCount > 1 ? "s" : ""}`}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
