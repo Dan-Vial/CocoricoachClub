@@ -4710,38 +4710,90 @@ export type Database = {
           id: string | null
           member_count: number | null
           name: string | null
-          owner_email: string | null
-          owner_name: string | null
           user_id: string | null
+        }
+        Insert: {
+          category_count?: never
+          created_at?: string | null
+          id?: string | null
+          member_count?: never
+          name?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          category_count?: never
+          created_at?: string | null
+          id?: string | null
+          member_count?: never
+          name?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
       admin_all_users: {
         Row: {
           clubs_owned: number | null
-          created_at: string | null
           email: string | null
           full_name: string | null
           id: string | null
+          is_approved: boolean | null
           is_super_admin: boolean | null
         }
         Insert: {
           clubs_owned?: never
-          created_at?: string | null
           email?: string | null
           full_name?: string | null
           id?: string | null
+          is_approved?: never
           is_super_admin?: never
         }
         Update: {
           clubs_owned?: never
-          created_at?: string | null
           email?: string | null
           full_name?: string | null
           id?: string | null
+          is_approved?: never
           is_super_admin?: never
         }
         Relationships: []
+      }
+      safe_category_invitations: {
+        Row: {
+          category_id: string | null
+          created_at: string | null
+          email: string | null
+          expires_at: string | null
+          id: string | null
+          role: Database["public"]["Enums"]["app_role"] | null
+          status: string | null
+        }
+        Insert: {
+          category_id?: string | null
+          created_at?: string | null
+          email?: string | null
+          expires_at?: string | null
+          id?: string | null
+          role?: Database["public"]["Enums"]["app_role"] | null
+          status?: string | null
+        }
+        Update: {
+          category_id?: string | null
+          created_at?: string | null
+          email?: string | null
+          expires_at?: string | null
+          id?: string | null
+          role?: Database["public"]["Enums"]["app_role"] | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "category_invitations_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       safe_club_invitations: {
         Row: {
@@ -4750,32 +4802,26 @@ export type Database = {
           email: string | null
           expires_at: string | null
           id: string | null
-          invited_by: string | null
           role: Database["public"]["Enums"]["app_role"] | null
           status: string | null
-          token: string | null
         }
         Insert: {
           club_id?: string | null
           created_at?: string | null
-          email?: never
+          email?: string | null
           expires_at?: string | null
           id?: string | null
-          invited_by?: string | null
           role?: Database["public"]["Enums"]["app_role"] | null
           status?: string | null
-          token?: never
         }
         Update: {
           club_id?: string | null
           created_at?: string | null
-          email?: never
+          email?: string | null
           expires_at?: string | null
           id?: string | null
-          invited_by?: string | null
           role?: Database["public"]["Enums"]["app_role"] | null
           status?: string | null
-          token?: never
         }
         Relationships: [
           {
@@ -4796,20 +4842,17 @@ export type Database = {
       }
       safe_profiles: {
         Row: {
-          created_at: string | null
           email: string | null
           full_name: string | null
           id: string | null
         }
         Insert: {
-          created_at?: string | null
-          email?: string | null
+          email?: never
           full_name?: string | null
           id?: string | null
         }
         Update: {
-          created_at?: string | null
-          email?: string | null
+          email?: never
           full_name?: string | null
           id?: string | null
         }
