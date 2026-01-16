@@ -240,47 +240,45 @@ export const VOLLEYBALL_COMPETITIONS: CompetitionCategory[] = [
 // Judo competitions
 export const JUDO_COMPETITIONS: CompetitionCategory[] = [
   {
-    label: "Compétitions Jeunes",
+    label: "Tournois",
     options: [
-      "Minimes Départemental",
-      "Minimes Régional",
-      "Minimes National",
-      "Cadets Départemental",
-      "Cadets Régional",
-      "Cadets National",
-      "Juniors Départemental",
-      "Juniors Régional",
-      "Juniors National",
+      "Tournoi local",
+      "Tournoi départemental",
+      "Tournoi régional",
+      "Tournoi national",
+      "Tournoi international",
     ],
   },
   {
-    label: "Compétitions Seniors Nationales",
+    label: "Championnats Jeunes",
     options: [
+      "Championnat départemental Minimes",
+      "Championnat régional Minimes",
+      "Championnat de France Minimes",
+      "Championnat départemental Cadets",
+      "Championnat régional Cadets",
+      "Championnat de France Cadets",
+      "Championnat départemental Juniors",
+      "Championnat régional Juniors",
+      "Championnat de France Juniors",
+    ],
+  },
+  {
+    label: "Championnats Seniors",
+    options: [
+      "Championnat départemental Seniors",
+      "Championnat régional Seniors",
       "Championnat de France 1ère Division",
       "Championnat de France 2ème Division",
-      "Coupe de France",
-    ],
-  },
-  {
-    label: "Compétitions Régionales",
-    options: [
-      "Championnat Régional",
-      "Coupe Régionale",
-    ],
-  },
-  {
-    label: "Compétitions Départementales",
-    options: [
-      "Championnat Départemental",
-      "Animation Départementale",
     ],
   },
   {
     label: "Autres",
     options: [
-      "Tournois",
-      "Stage technique",
       "Interclubs",
+      "Animation départementale",
+      "Stage technique",
+      "Passage de grade",
     ],
   },
 ];
