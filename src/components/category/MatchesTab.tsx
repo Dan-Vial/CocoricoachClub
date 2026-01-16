@@ -19,6 +19,19 @@ export function MatchesTab({ categoryId }: MatchesTabProps) {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const { isViewer } = useViewerModeContext();
 
+  const { data: category } = useQuery({
+    queryKey: ["category-sport-type", categoryId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("categories")
+        .select("rugby_type")
+        .eq("id", categoryId)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const { data: matches, isLoading } = useQuery({
     queryKey: ["matches", categoryId],
     queryFn: async () => {
@@ -125,6 +138,7 @@ export function MatchesTab({ categoryId }: MatchesTabProps) {
         open={isAddDialogOpen}
         onOpenChange={setIsAddDialogOpen}
         categoryId={categoryId}
+        sportType={category?.rugby_type || "XV"}
       />
     </div>
   );

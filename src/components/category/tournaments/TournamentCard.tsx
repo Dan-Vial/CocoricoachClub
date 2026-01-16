@@ -38,6 +38,19 @@ export function TournamentCard({ tournament, categoryId }: TournamentCardProps) 
   const [isAddMatchOpen, setIsAddMatchOpen] = useState(false);
   const queryClient = useQueryClient();
 
+  const { data: category } = useQuery({
+    queryKey: ["category-sport-type", categoryId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("categories")
+        .select("rugby_type")
+        .eq("id", categoryId)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const { data: matches } = useQuery({
     queryKey: ["tournament-matches", tournament.id],
     queryFn: async () => {
@@ -156,6 +169,7 @@ export function TournamentCard({ tournament, categoryId }: TournamentCardProps) 
         onOpenChange={setIsAddMatchOpen}
         tournamentId={tournament.id}
         nextMatchOrder={(matches?.length || 0) + 1}
+        sportType={category?.rugby_type || "7"}
       />
     </>
   );

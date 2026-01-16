@@ -15,41 +15,29 @@ import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-
-const COMPETITIONS = [
-  "Tournois",
-  "SCF",
-  "Groupama A",
-  "Groupama B",
-  "Groupama C",
-  "Sélection régionale",
-  "Gaudermen",
-  "Alamercery",
-  "Crabos A",
-  "Crabos B",
-  "Espoirs",
-  "Sélection nationale",
-  "Elite 1 féminine",
-  "Matchs amicaux",
-  "Sevens jeunes",
-];
+import { getCompetitionsBySport } from "@/lib/constants/competitions";
 
 interface AddMatchCalendarDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   categoryId: string;
+  sportType?: string;
 }
 
 export function AddMatchCalendarDialog({
   open,
   onOpenChange,
   categoryId,
+  sportType = "XV",
 }: AddMatchCalendarDialogProps) {
+  const competitions = getCompetitionsBySport(sportType);
   const [opponent, setOpponent] = useState("");
   const [competition, setCompetition] = useState("");
   const [matchDate, setMatchDate] = useState("");
@@ -127,11 +115,18 @@ export function AddMatchCalendarDialog({
               <SelectTrigger>
                 <SelectValue placeholder="Sélectionner un championnat" />
               </SelectTrigger>
-              <SelectContent>
-                {COMPETITIONS.map((comp) => (
-                  <SelectItem key={comp} value={comp}>
-                    {comp}
-                  </SelectItem>
+              <SelectContent className="max-h-[300px]">
+                {competitions.map((category) => (
+                  <SelectGroup key={category.label}>
+                    <SelectLabel className="text-xs font-semibold text-muted-foreground">
+                      {category.label}
+                    </SelectLabel>
+                    {category.options.map((comp) => (
+                      <SelectItem key={comp} value={comp}>
+                        {comp}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
                 ))}
               </SelectContent>
             </Select>
