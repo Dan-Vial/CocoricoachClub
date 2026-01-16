@@ -10,10 +10,20 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/components/ui/sonner";
-import { Shield, Users, Building2, ArrowLeft, UserPlus, Trash2, Crown, CheckCircle2, XCircle, Clock, FileText, Gift } from "lucide-react";
+import { Shield, Users, Building2, ArrowLeft, UserPlus, Trash2, Crown, CheckCircle2, XCircle, Clock, FileText, Gift, Copy, Link, Mail } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { AuditLogsTab } from "@/components/admin/AuditLogsTab";
+
+interface AmbassadorInvitation {
+  id: string;
+  email: string;
+  name: string | null;
+  token: string;
+  status: string;
+  created_at: string;
+  expires_at: string;
+}
 
 interface AdminUser {
   id: string;
@@ -42,6 +52,8 @@ export default function Admin() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [newAdminEmail, setNewAdminEmail] = useState("");
+  const [newAdminName, setNewAdminName] = useState("");
+  const [createdInvitationLink, setCreatedInvitationLink] = useState<string | null>(null);
 
   // Check if current user is super admin
   const { data: isSuperAdmin, isLoading: checkingAdmin } = useQuery({
@@ -106,47 +118,79 @@ export default function Admin() {
     enabled: isSuperAdmin === true,
   });
 
-  // Add super admin mutation
-  const addSuperAdmin = useMutation({
-    mutationFn: async (email: string) => {
-      // First find the user by email
-      const { data: profile, error: profileError } = await supabase
-        .from("profiles")
-        .select("id")
-        .eq("email", email)
-        .maybeSingle();
-
-      if (profileError || !profile) {
-        throw new Error("Utilisateur non trouvé avec cet email");
-      }
-
-      // Check if already super admin
-      const { data: existing } = await supabase
-        .from("super_admin_users")
-        .select("id")
-        .eq("user_id", profile.id)
-        .maybeSingle();
-
-      if (existing) {
-        throw new Error("Cet utilisateur est déjà ambassadeur");
-      }
-
-      // Add as super admin
-      const { error } = await supabase
-        .from("super_admin_users")
-        .insert({ user_id: profile.id, granted_by: user?.id });
-
+  // Fetch ambassador invitations
+  const { data: invitations = [], isLoading: loadingInvitations } = useQuery({
+    queryKey: ["ambassador-invitations"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("ambassador_invitations")
+        .select("*")
+        .order("created_at", { ascending: false });
+      
       if (error) throw error;
+      return data as AmbassadorInvitation[];
     },
-    onSuccess: () => {
-      toast.success("Ambassadeur ajouté avec succès");
-      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+    enabled: isSuperAdmin === true,
+  });
+
+  // Create ambassador invitation mutation
+  const createInvitation = useMutation({
+    mutationFn: async ({ email, name }: { email: string; name: string }) => {
+      const { data, error } = await supabase
+        .from("ambassador_invitations")
+        .insert({ 
+          email, 
+          name: name || null,
+          invited_by: user?.id 
+        })
+        .select()
+        .single();
+
+      if (error) {
+        if (error.code === "23505") {
+          throw new Error("Une invitation existe déjà pour cet email");
+        }
+        throw error;
+      }
+      return data;
+    },
+    onSuccess: (data) => {
+      const link = `${window.location.origin}/ambassador-invitation?token=${data.token}`;
+      setCreatedInvitationLink(link);
+      toast.success("Invitation créée ! Copiez le lien ci-dessous.");
+      queryClient.invalidateQueries({ queryKey: ["ambassador-invitations"] });
       setNewAdminEmail("");
+      setNewAdminName("");
     },
     onError: (error: Error) => {
       toast.error(error.message);
     },
   });
+
+  // Delete invitation mutation
+  const deleteInvitation = useMutation({
+    mutationFn: async (invitationId: string) => {
+      const { error } = await supabase
+        .from("ambassador_invitations")
+        .delete()
+        .eq("id", invitationId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Invitation supprimée");
+      queryClient.invalidateQueries({ queryKey: ["ambassador-invitations"] });
+    },
+    onError: () => {
+      toast.error("Erreur lors de la suppression");
+    },
+  });
+
+  // Copy link to clipboard
+  const copyToClipboard = (link: string) => {
+    navigator.clipboard.writeText(link);
+    toast.success("Lien copié !");
+  };
 
   // Remove super admin mutation
   const removeSuperAdmin = useMutation({
@@ -628,69 +672,183 @@ export default function Admin() {
 
           {/* Super Admins Tab */}
           <TabsContent value="admins">
-            <Card>
-              <CardHeader>
-                <CardTitle>Gestion des Ambassadeurs</CardTitle>
-                <CardDescription>
-                  Ajoutez ou retirez des droits ambassadeur aux utilisateurs
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Add new admin form */}
-                <div className="flex gap-4">
-                  <Input
-                    placeholder="Email de l'utilisateur"
-                    value={newAdminEmail}
-                    onChange={(e) => setNewAdminEmail(e.target.value)}
-                    className="max-w-md"
-                  />
-                  <Button
-                    onClick={() => addSuperAdmin.mutate(newAdminEmail)}
-                    disabled={!newAdminEmail || addSuperAdmin.isPending}
-                  >
-                    <UserPlus className="h-4 w-4 mr-2" />
-                    Ajouter Ambassadeur
-                  </Button>
-                </div>
+            <div className="space-y-6">
+              {/* Create invitation card */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Mail className="h-5 w-5" />
+                    Inviter un nouvel ambassadeur
+                  </CardTitle>
+                  <CardDescription>
+                    Créez un lien d'invitation à envoyer à la personne
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex flex-col md:flex-row gap-4">
+                    <Input
+                      placeholder="Nom de l'ambassadeur"
+                      value={newAdminName}
+                      onChange={(e) => setNewAdminName(e.target.value)}
+                      className="max-w-xs"
+                    />
+                    <Input
+                      placeholder="Email de l'ambassadeur"
+                      type="email"
+                      value={newAdminEmail}
+                      onChange={(e) => setNewAdminEmail(e.target.value)}
+                      className="max-w-md"
+                    />
+                    <Button
+                      onClick={() => createInvitation.mutate({ email: newAdminEmail, name: newAdminName })}
+                      disabled={!newAdminEmail || createInvitation.isPending}
+                    >
+                      <Link className="h-4 w-4 mr-2" />
+                      Créer le lien
+                    </Button>
+                  </div>
 
-                {/* List of super admins */}
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Nom</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Clubs créés</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {users
-                      .filter((u) => u.is_super_admin)
-                      .map((admin) => (
-                        <TableRow key={admin.id}>
-                          <TableCell className="font-medium">
-                            {admin.full_name || "Non renseigné"}
-                          </TableCell>
-                          <TableCell>{admin.email}</TableCell>
-                          <TableCell>{admin.clubs_owned}</TableCell>
-                          <TableCell className="text-right">
-                            {admin.id !== user?.id && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => removeSuperAdmin.mutate(admin.id)}
-                                disabled={removeSuperAdmin.isPending}
-                              >
-                                <Trash2 className="h-4 w-4 text-destructive" />
-                              </Button>
-                            )}
-                          </TableCell>
+                  {createdInvitationLink && (
+                    <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg space-y-2">
+                      <p className="text-sm font-medium text-green-800 dark:text-green-200">
+                        ✅ Lien d'invitation créé ! Copiez-le et envoyez-le à l'ambassadeur :
+                      </p>
+                      <div className="flex gap-2">
+                        <Input
+                          value={createdInvitationLink}
+                          readOnly
+                          className="font-mono text-sm"
+                        />
+                        <Button
+                          variant="outline"
+                          onClick={() => copyToClipboard(createdInvitationLink)}
+                        >
+                          <Copy className="h-4 w-4 mr-2" />
+                          Copier
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Pending invitations */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Invitations en attente</CardTitle>
+                  <CardDescription>
+                    Liens d'invitation envoyés mais pas encore utilisés
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {loadingInvitations ? (
+                    <p className="text-muted-foreground">Chargement...</p>
+                  ) : invitations.filter(i => i.status === "pending").length === 0 ? (
+                    <p className="text-muted-foreground text-sm">Aucune invitation en attente</p>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Nom</TableHead>
+                          <TableHead>Email</TableHead>
+                          <TableHead>Créée le</TableHead>
+                          <TableHead>Expire le</TableHead>
+                          <TableHead>Lien</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
-                      ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
+                      </TableHeader>
+                      <TableBody>
+                        {invitations
+                          .filter(i => i.status === "pending")
+                          .map((inv) => (
+                            <TableRow key={inv.id}>
+                              <TableCell className="font-medium">
+                                {inv.name || "-"}
+                              </TableCell>
+                              <TableCell>{inv.email}</TableCell>
+                              <TableCell>
+                                {format(new Date(inv.created_at), "dd MMM yyyy", { locale: fr })}
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant={new Date(inv.expires_at) < new Date() ? "destructive" : "secondary"}>
+                                  {format(new Date(inv.expires_at), "dd MMM yyyy", { locale: fr })}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => copyToClipboard(`${window.location.origin}/ambassador-invitation?token=${inv.token}`)}
+                                >
+                                  <Copy className="h-4 w-4 mr-1" />
+                                  Copier
+                                </Button>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => deleteInvitation.mutate(inv.id)}
+                                  disabled={deleteInvitation.isPending}
+                                >
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Current ambassadors */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Ambassadeurs actifs</CardTitle>
+                  <CardDescription>
+                    Utilisateurs ayant les droits ambassadeur
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Nom</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Clubs créés</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {users
+                        .filter((u) => u.is_super_admin)
+                        .map((admin) => (
+                          <TableRow key={admin.id}>
+                            <TableCell className="font-medium">
+                              {admin.full_name || "Non renseigné"}
+                            </TableCell>
+                            <TableCell>{admin.email}</TableCell>
+                            <TableCell>{admin.clubs_owned}</TableCell>
+                            <TableCell className="text-right">
+                              {admin.id !== user?.id && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => removeSuperAdmin.mutate(admin.id)}
+                                  disabled={removeSuperAdmin.isPending}
+                                >
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
           {/* Audit Logs Tab */}

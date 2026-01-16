@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      ambassador_invitations: {
+        Row: {
+          accepted_at: string | null
+          accepted_by: string | null
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          invited_by: string | null
+          name: string | null
+          status: string
+          token: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string
+          email: string
+          expires_at?: string
+          id?: string
+          invited_by?: string | null
+          name?: string | null
+          status?: string
+          token?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          invited_by?: string | null
+          name?: string | null
+          status?: string
+          token?: string
+        }
+        Relationships: []
+      }
       approved_users: {
         Row: {
           approved_at: string
@@ -4917,6 +4956,10 @@ export type Database = {
       }
     }
     Functions: {
+      accept_ambassador_invitation: {
+        Args: { invitation_token: string }
+        Returns: boolean
+      }
       accept_category_invitation: { Args: { _token: string }; Returns: Json }
       accept_club_invitation: { Args: { _token: string }; Returns: Json }
       can_access_category: {

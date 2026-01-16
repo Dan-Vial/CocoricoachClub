@@ -22,6 +22,7 @@ import PublicCategoryView from "./pages/PublicCategoryView";
 import Install from "./pages/Install";
 import Admin from "./pages/Admin";
 import Settings from "./pages/Settings";
+import AcceptAmbassadorInvitation from "./pages/AcceptAmbassadorInvitation";
 import NotFound from "./pages/NotFound";
 
 // Auth wrapper component that allows public access
@@ -92,6 +93,7 @@ const App = () => (
                 <Route path="/public/categories/:categoryId" element={<PublicCategoryView />} />
                 <Route path="/install" element={<Install />} />
                 <Route path="/admin" element={<Admin />} />
+                <Route path="/ambassador-invitation" element={<AcceptAmbassadorInvitation />} />
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/clubs/:clubId" element={<ClubDetailsWithAuth />} />
                 <Route path="/categories/:categoryId" element={<CategoryDetailsWithAuth />} />
