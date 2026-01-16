@@ -20,7 +20,7 @@ import {
   Trophy,
 } from "lucide-react";
 import { MatchLineupDialog } from "./MatchLineupDialog";
-import { PlayerMatchStatsDialog } from "./PlayerMatchStatsDialog";
+import { SportMatchStatsDialog } from "./SportMatchStatsDialog";
 
 interface Match {
   id: string;
@@ -48,6 +48,19 @@ export function MatchCard({ match, categoryId }: MatchCardProps) {
   const [scoreHome, setScoreHome] = useState(match.score_home?.toString() || "");
   const [scoreAway, setScoreAway] = useState(match.score_away?.toString() || "");
   const queryClient = useQueryClient();
+
+  const { data: category } = useQuery({
+    queryKey: ["category-sport", categoryId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("categories")
+        .select("rugby_type")
+        .eq("id", categoryId)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+  });
 
   const { data: lineupCount } = useQuery({
     queryKey: ["match_lineup_count", match.id],
@@ -244,11 +257,12 @@ export function MatchCard({ match, categoryId }: MatchCardProps) {
         categoryId={categoryId}
       />
 
-      <PlayerMatchStatsDialog
+      <SportMatchStatsDialog
         open={isStatsOpen}
         onOpenChange={setIsStatsOpen}
         matchId={match.id}
         categoryId={categoryId}
+        sportType={category?.rugby_type || "XV"}
       />
     </>
   );

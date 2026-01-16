@@ -15,7 +15,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Users, UserCheck, LayoutGrid, List } from "lucide-react";
-import { RugbyFieldLineup } from "@/components/matches/RugbyFieldLineup";
+import { SportFieldLineup } from "@/components/matches/SportFieldLineup";
+import { getSportFieldConfig } from "@/lib/constants/sportPositions";
 
 interface MatchLineupDialogProps {
   open: boolean;
@@ -55,6 +56,9 @@ export function MatchLineupDialog({
       return data;
     },
   });
+
+  const sportType = category?.rugby_type || "XV";
+  const fieldConfig = getSportFieldConfig(sportType);
 
   const { data: players } = useQuery({
     queryKey: ["players", categoryId],
@@ -150,7 +154,9 @@ export function MatchLineupDialog({
 
   const selectedCount = lineupData?.filter((p) => p.isSelected).length ?? 0;
   const starterCount = lineupData?.filter((p) => p.isSelected && p.isStarter).length ?? 0;
-  const rugbyType = category?.rugby_type === "7" ? "7s" : "xv";
+  
+  // Check if this sport has a field layout
+  const hasFieldLayout = !fieldConfig.noField;
 
   // Convert lineup data to field format
   const fieldLineup = lineupData
@@ -167,18 +173,20 @@ export function MatchLineupDialog({
           <DialogTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Users className="h-5 w-5" />
-              Composition de l'équipe
+              Composition - {fieldConfig.label}
             </div>
-            <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as "list" | "field")}>
-              <TabsList className="h-8">
-                <TabsTrigger value="field" className="px-2 h-7">
-                  <LayoutGrid className="h-4 w-4" />
-                </TabsTrigger>
-                <TabsTrigger value="list" className="px-2 h-7">
-                  <List className="h-4 w-4" />
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
+            {hasFieldLayout && (
+              <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as "list" | "field")}>
+                <TabsList className="h-8">
+                  <TabsTrigger value="field" className="px-2 h-7">
+                    <LayoutGrid className="h-4 w-4" />
+                  </TabsTrigger>
+                  <TabsTrigger value="list" className="px-2 h-7">
+                    <List className="h-4 w-4" />
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+            )}
           </DialogTitle>
         </DialogHeader>
 
@@ -192,10 +200,10 @@ export function MatchLineupDialog({
 
         <div className="flex-1 min-h-0 overflow-y-auto">
           <div className="pr-2">
-            {viewMode === "field" ? (
-              <RugbyFieldLineup
+            {hasFieldLayout && viewMode === "field" ? (
+              <SportFieldLineup
                 players={players || []}
-                rugbyType={rugbyType}
+                sportType={sportType}
                 initialLineup={fieldLineup}
                 onLineupChange={handleFieldLineupChange}
               />
