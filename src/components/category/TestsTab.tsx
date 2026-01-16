@@ -4,14 +4,15 @@ import { SpeedTestsSection } from "./tests/SpeedTestsSection";
 import { StrengthTestsSection } from "./tests/StrengthTestsSection";
 import { MobilityTestsSection } from "./tests/MobilityTestsSection";
 import { JumpTestsSection } from "./tests/JumpTestsSection";
-import { RugbySpecificTestsSection } from "./tests/RugbySpecificTestsSection";
+import { FieldTestsSection } from "./tests/FieldTestsSection";
 import { GenericTestsSection } from "./tests/GenericTestsSection";
 
 interface TestsTabProps {
   categoryId: string;
+  sportType?: string;
 }
 
-export function TestsTab({ categoryId }: TestsTabProps) {
+export function TestsTab({ categoryId, sportType }: TestsTabProps) {
   return (
     <Card className="bg-gradient-card shadow-md">
       <CardHeader>
@@ -25,7 +26,7 @@ export function TestsTab({ categoryId }: TestsTabProps) {
             <TabsTrigger value="strength">Musculation</TabsTrigger>
             <TabsTrigger value="mobility">Mobilité</TabsTrigger>
             <TabsTrigger value="jump">Détente</TabsTrigger>
-            <TabsTrigger value="rugby">Tests Rugby</TabsTrigger>
+            <TabsTrigger value="field">Tests Terrains</TabsTrigger>
           </TabsList>
 
           <TabsContent value="all" className="space-y-6">
@@ -48,8 +49,8 @@ export function TestsTab({ categoryId }: TestsTabProps) {
             <JumpTestsSection categoryId={categoryId} />
           </TabsContent>
 
-          <TabsContent value="rugby">
-            <RugbySpecificTestsSection categoryId={categoryId} />
+          <TabsContent value="field">
+            <FieldTestsSection categoryId={categoryId} sportType={sportType} />
           </TabsContent>
         </Tabs>
       </CardContent>

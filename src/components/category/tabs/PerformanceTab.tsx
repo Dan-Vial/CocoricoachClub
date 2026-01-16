@@ -8,12 +8,28 @@ import { GpsDataTab } from "@/components/category/gps/GpsDataTab";
 import { SessionHistoryTimeline } from "@/components/category/history/SessionHistoryTimeline";
 import { SessionsTab } from "@/components/category/sessions/SessionsTab";
 import { ProgramsTab } from "@/components/category/programs/ProgramsTab";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 interface PerformanceTabProps {
   categoryId: string;
 }
 
 export function PerformanceTab({ categoryId }: PerformanceTabProps) {
+  // Fetch category to get sport type
+  const { data: category } = useQuery({
+    queryKey: ["category-sport-type", categoryId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("categories")
+        .select("rugby_type")
+        .eq("id", categoryId)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+  });
+
   return (
     <Tabs defaultValue="sessions" className="space-y-4">
       <div className="overflow-x-auto -mx-4 px-4 pb-2">
@@ -67,7 +83,7 @@ export function PerformanceTab({ categoryId }: PerformanceTabProps) {
       </TabsContent>
 
       <TabsContent value="tests">
-        <TestsTab categoryId={categoryId} />
+        <TestsTab categoryId={categoryId} sportType={category?.rugby_type} />
       </TabsContent>
 
       <TabsContent value="awcr">

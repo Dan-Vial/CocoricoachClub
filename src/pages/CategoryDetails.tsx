@@ -96,10 +96,14 @@ function CategoryDetailsContent() {
                     <span className="text-primary-foreground/60">•</span>
                     {isViewer ? (
                       <span className="text-primary-foreground/90 text-xs sm:text-sm">
-                        {category.rugby_type === "15" ? "Rugby XV" : 
+                        {category.rugby_type === "XV" ? "Rugby XV" : 
                          category.rugby_type === "7" ? "Rugby 7" : 
                          category.rugby_type === "academie" ? "Académie" : 
-                         category.rugby_type === "national_team" ? "Équipe Nationale" : 
+                         category.rugby_type === "national_team" ? "Équipe Nationale" :
+                         category.rugby_type === "football" ? "Football" :
+                         category.rugby_type === "handball" ? "Handball" :
+                         category.rugby_type === "judo" ? "Judo" :
+                         category.rugby_type === "volleyball" ? "Volleyball" :
                          category.rugby_type}
                       </span>
                     ) : (

@@ -14,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { SPORT_TYPES, SportType, getSportLabel, getRugbyTypes, getOtherSportTypes, isRugbyType } from "@/lib/constants/sportTypes";
 
 interface EditableRugbyTypeProps {
   categoryId: string;
@@ -22,8 +23,11 @@ interface EditableRugbyTypeProps {
 
 export function EditableRugbyType({ categoryId, currentType }: EditableRugbyTypeProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [rugbyType, setRugbyType] = useState(currentType);
+  const [sportType, setSportType] = useState(currentType);
   const queryClient = useQueryClient();
+
+  const rugbyTypes = getRugbyTypes();
+  const otherSports = getOtherSportTypes();
 
   const updateType = useMutation({
     mutationFn: async (newType: string) => {
@@ -35,87 +39,90 @@ export function EditableRugbyType({ categoryId, currentType }: EditableRugbyType
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["category", categoryId] });
-      toast.success("Type de rugby mis à jour");
+      queryClient.invalidateQueries({ queryKey: ["category-sport-type", categoryId] });
+      toast.success("Type de sport mis à jour");
       setIsOpen(false);
     },
     onError: () => {
       toast.error("Erreur lors de la mise à jour du type");
-      setRugbyType(currentType);
+      setSportType(currentType);
     },
   });
 
   const handleSubmit = () => {
-    if (rugbyType === currentType) {
+    if (sportType === currentType) {
       setIsOpen(false);
       return;
     }
-    updateType.mutate(rugbyType);
+    updateType.mutate(sportType);
   };
 
-  const getTypeLabel = (type: string) => {
-    if (type === "academie") return "Académie";
-    if (type === "national_team") return "Équipe Nationale";
-    return `Rugby à ${type}`;
+  const getDescription = (type: string) => {
+    if (type === "XV") return "Passer au rugby à 7 activera l'onglet Tournois.";
+    if (type === "7") return "Passer au rugby à XV désactivera l'onglet Tournois.";
+    if (type === "academie") return "Type Académie avec suivi scolaire et plans de développement.";
+    if (type === "national_team") return "Type Équipe Nationale avec calendrier international et suivi des sélections.";
+    return "";
   };
 
   return (
     <>
       <div className="flex items-center gap-2 group">
         <span className="text-primary-foreground/90">
-          {getTypeLabel(currentType)}
+          {getSportLabel(currentType)}
         </span>
         <button
           onClick={() => {
-            setRugbyType(currentType);
+            setSportType(currentType);
             setIsOpen(true);
           }}
           className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-primary-foreground/10 rounded-md"
-          aria-label="Modifier le type de rugby"
+          aria-label="Modifier le type de sport"
         >
           <Pencil className="h-4 w-4 text-primary-foreground" />
         </button>
       </div>
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Modifier le type de rugby</DialogTitle>
+            <DialogTitle>Modifier le type de sport</DialogTitle>
             <DialogDescription>
-              Changez le type de rugby pour cette catégorie. 
-              {currentType === "XV" && " Passer au rugby à 7 activera l'onglet Tournois."}
-              {currentType === "7" && " Passer au rugby à XV désactivera l'onglet Tournois."}
-              {currentType === "academie" && " Type Académie avec suivi scolaire et plans de développement."}
-              {currentType === "national_team" && " Type Équipe Nationale avec calendrier international et suivi des sélections."}
+              Changez le type de sport pour cette catégorie.
+              {isRugbyType(currentType) && ` ${getDescription(currentType)}`}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
-            <RadioGroup value={rugbyType} onValueChange={setRugbyType}>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="XV" id="type-xv" />
-                <Label htmlFor="type-xv" className="cursor-pointer">
-                  Rugby à XV
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="7" id="type-7" />
-                <Label htmlFor="type-7" className="cursor-pointer">
-                  Rugby à 7
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="academie" id="type-academie" />
-                <Label htmlFor="type-academie" className="cursor-pointer">
-                  Académie / Pôle Espoir
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="national_team" id="type-national" />
-                <Label htmlFor="type-national" className="cursor-pointer">
-                  Équipe Nationale
-                </Label>
-              </div>
-            </RadioGroup>
+            {/* Rugby options */}
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-muted-foreground">Rugby</p>
+              <RadioGroup value={sportType} onValueChange={setSportType}>
+                {rugbyTypes.map((type) => (
+                  <div key={type.value} className="flex items-center space-x-2">
+                    <RadioGroupItem value={type.value} id={`edit-type-${type.value}`} />
+                    <Label htmlFor={`edit-type-${type.value}`} className="cursor-pointer">
+                      {type.label}
+                    </Label>
+                  </div>
+                ))}
+              </RadioGroup>
+            </div>
+
+            {/* Other sports */}
+            <div className="space-y-2 pt-2 border-t">
+              <p className="text-sm font-medium text-muted-foreground">Autres sports</p>
+              <RadioGroup value={sportType} onValueChange={setSportType}>
+                {otherSports.map((type) => (
+                  <div key={type.value} className="flex items-center space-x-2">
+                    <RadioGroupItem value={type.value} id={`edit-type-${type.value}`} />
+                    <Label htmlFor={`edit-type-${type.value}`} className="cursor-pointer">
+                      {type.label}
+                    </Label>
+                  </div>
+                ))}
+              </RadioGroup>
+            </div>
           </div>
 
           <DialogFooter>

@@ -12,8 +12,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { categorySchema } from "@/lib/validations";
+import { SPORT_TYPES, SportType, getRugbyTypes, getOtherSportTypes } from "@/lib/constants/sportTypes";
 
 interface AddCategoryDialogProps {
   open: boolean;
@@ -27,13 +29,16 @@ export function AddCategoryDialog({
   clubId,
 }: AddCategoryDialogProps) {
   const [categoryName, setCategoryName] = useState("");
-  const [rugbyType, setRugbyType] = useState<"XV" | "7" | "academie" | "national_team">("XV");
+  const [sportType, setSportType] = useState<SportType>("XV");
   const [gender, setGender] = useState<"masculine" | "feminine">("masculine");
   const [validationError, setValidationError] = useState("");
   const queryClient = useQueryClient();
 
+  const rugbyTypes = getRugbyTypes();
+  const otherSports = getOtherSportTypes();
+
   const addCategory = useMutation({
-    mutationFn: async (data: { name: string; rugby_type: "XV" | "7" | "academie" | "national_team"; gender: "masculine" | "feminine" }) => {
+    mutationFn: async (data: { name: string; rugby_type: SportType; gender: "masculine" | "feminine" }) => {
       console.log("Adding category with data:", { name: data.name, club_id: clubId, rugby_type: data.rugby_type, gender: data.gender });
       const { error, data: result } = await supabase
         .from("categories")
@@ -48,7 +53,7 @@ export function AddCategoryDialog({
       queryClient.invalidateQueries({ queryKey: ["categories", clubId] });
       toast.success("Catégorie ajoutée avec succès");
       setCategoryName("");
-      setRugbyType("XV");
+      setSportType("XV");
       setGender("masculine");
       onOpenChange(false);
     },
@@ -68,12 +73,12 @@ export function AddCategoryDialog({
       return;
     }
 
-    addCategory.mutate({ name: result.data.name, rugby_type: rugbyType, gender: gender });
+    addCategory.mutate({ name: result.data.name, rugby_type: sportType, gender: gender });
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Ajouter une nouvelle catégorie</DialogTitle>
         </DialogHeader>
@@ -88,7 +93,7 @@ export function AddCategoryDialog({
                   setCategoryName(e.target.value);
                   setValidationError("");
                 }}
-                placeholder="Ex: M14, Gaudermen, Alamercery"
+                placeholder="Ex: M14, Séniors, U19"
                 required
               />
               {validationError && (
@@ -108,26 +113,39 @@ export function AddCategoryDialog({
                 </div>
               </RadioGroup>
             </div>
-            <div className="space-y-2">
-              <Label>Type de rugby</Label>
-              <RadioGroup value={rugbyType} onValueChange={(value: "XV" | "7" | "academie" | "national_team") => setRugbyType(value)}>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="XV" id="rugby-xv" />
-                  <Label htmlFor="rugby-xv" className="cursor-pointer font-normal">Rugby à XV</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="7" id="rugby-7" />
-                  <Label htmlFor="rugby-7" className="cursor-pointer font-normal">Rugby à 7</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="academie" id="rugby-academie" />
-                  <Label htmlFor="rugby-academie" className="cursor-pointer font-normal">Académie / Pôle Espoir</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="national_team" id="rugby-national" />
-                  <Label htmlFor="rugby-national" className="cursor-pointer font-normal">Équipe Nationale</Label>
-                </div>
-              </RadioGroup>
+            
+            <div className="space-y-3">
+              <Label>Type de sport</Label>
+              
+              {/* Rugby options */}
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-muted-foreground">Rugby</p>
+                <RadioGroup value={sportType} onValueChange={(value: SportType) => setSportType(value)}>
+                  {rugbyTypes.map((type) => (
+                    <div key={type.value} className="flex items-center space-x-2">
+                      <RadioGroupItem value={type.value} id={`sport-${type.value}`} />
+                      <Label htmlFor={`sport-${type.value}`} className="cursor-pointer font-normal">
+                        {type.label}
+                      </Label>
+                    </div>
+                  ))}
+                </RadioGroup>
+              </div>
+
+              {/* Other sports */}
+              <div className="space-y-2 pt-2 border-t">
+                <p className="text-sm font-medium text-muted-foreground">Autres sports</p>
+                <RadioGroup value={sportType} onValueChange={(value: SportType) => setSportType(value)}>
+                  {otherSports.map((type) => (
+                    <div key={type.value} className="flex items-center space-x-2">
+                      <RadioGroupItem value={type.value} id={`sport-${type.value}`} />
+                      <Label htmlFor={`sport-${type.value}`} className="cursor-pointer font-normal">
+                        {type.label}
+                      </Label>
+                    </div>
+                  ))}
+                </RadioGroup>
+              </div>
             </div>
           </div>
           <DialogFooter>
