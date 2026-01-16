@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/components/ui/sonner";
-import { Shield, Users, Building2, ArrowLeft, UserPlus, Trash2, Crown, CheckCircle2, XCircle, Clock, FileText } from "lucide-react";
+import { Shield, Users, Building2, ArrowLeft, UserPlus, Trash2, Crown, CheckCircle2, XCircle, Clock, FileText, Gift } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { AuditLogsTab } from "@/components/admin/AuditLogsTab";
@@ -23,6 +23,7 @@ interface AdminUser {
   clubs_owned: number;
   is_super_admin: boolean;
   is_approved?: boolean;
+  is_free_user?: boolean;
 }
 
 interface AdminClub {
@@ -74,16 +75,17 @@ export default function Admin() {
       
       if (error) throw error;
 
-      // Get approved users
+      // Get approved users with free user status
       const { data: approvedData } = await supabase
         .from("approved_users")
-        .select("user_id");
+        .select("user_id, is_free_user");
 
-      const approvedIds = new Set(approvedData?.map(a => a.user_id) || []);
+      const approvedMap = new Map(approvedData?.map(a => [a.user_id, a.is_free_user]) || []);
 
       return (usersData as AdminUser[]).map(u => ({
         ...u,
-        is_approved: approvedIds.has(u.id) || u.is_super_admin
+        is_approved: approvedMap.has(u.id) || u.is_super_admin,
+        is_free_user: approvedMap.get(u.id) === true
       }));
     },
     enabled: isSuperAdmin === true,
@@ -203,6 +205,65 @@ export default function Admin() {
     },
     onError: () => {
       toast.error("Erreur lors de la révocation");
+    },
+  });
+
+  // Toggle free user status mutation
+  const toggleFreeUser = useMutation({
+    mutationFn: async ({ userId, isFreeUser }: { userId: string; isFreeUser: boolean }) => {
+      // First check if user is already approved
+      const { data: existing } = await supabase
+        .from("approved_users")
+        .select("id")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (existing) {
+        // Update existing approval
+        const { error } = await supabase
+          .from("approved_users")
+          .update({ is_free_user: isFreeUser })
+          .eq("user_id", userId);
+
+        if (error) throw error;
+      } else {
+        // Insert new approval with free status
+        const { error } = await supabase
+          .from("approved_users")
+          .insert({ 
+            user_id: userId, 
+            approved_by: user?.id,
+            is_free_user: isFreeUser 
+          });
+
+        if (error) throw error;
+      }
+
+      // If free user, also add as super admin (ambassador)
+      if (isFreeUser) {
+        const { data: adminExists } = await supabase
+          .from("user_roles")
+          .select("id")
+          .eq("user_id", userId)
+          .eq("role", "admin")
+          .maybeSingle();
+
+        if (!adminExists) {
+          await supabase
+            .from("user_roles")
+            .insert({ user_id: userId, role: "admin" });
+        }
+      }
+    },
+    onSuccess: (_, variables) => {
+      toast.success(variables.isFreeUser 
+        ? "Utilisateur marqué comme gratuit et ambassadeur" 
+        : "Statut gratuit retiré"
+      );
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+    },
+    onError: () => {
+      toast.error("Erreur lors de la modification");
     },
   });
 
@@ -344,6 +405,7 @@ export default function Admin() {
                         <TableHead>Inscrit le</TableHead>
                         <TableHead>Clubs</TableHead>
                         <TableHead>Rôle</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -360,21 +422,47 @@ export default function Admin() {
                           </TableCell>
                           <TableCell>{u.clubs_owned}</TableCell>
                           <TableCell>
-                            {u.is_super_admin ? (
-                              <Badge variant="default" className="bg-primary">
-                                <Crown className="h-3 w-3 mr-1" />
-                                Ambassadeur
-                              </Badge>
-                            ) : u.is_approved ? (
-                              <Badge variant="default" className="bg-green-600">
-                                <CheckCircle2 className="h-3 w-3 mr-1" />
-                                Approuvé
-                              </Badge>
-                            ) : (
-                              <Badge variant="secondary" className="bg-amber-100 text-amber-800">
-                                <Clock className="h-3 w-3 mr-1" />
-                                En attente
-                              </Badge>
+                            <div className="flex flex-wrap gap-1">
+                              {u.is_super_admin && (
+                                <Badge variant="default" className="bg-primary">
+                                  <Crown className="h-3 w-3 mr-1" />
+                                  Ambassadeur
+                                </Badge>
+                              )}
+                              {u.is_free_user && (
+                                <Badge variant="default" className="bg-purple-600">
+                                  <Gift className="h-3 w-3 mr-1" />
+                                  Gratuit
+                                </Badge>
+                              )}
+                              {!u.is_super_admin && !u.is_free_user && u.is_approved && (
+                                <Badge variant="default" className="bg-green-600">
+                                  <CheckCircle2 className="h-3 w-3 mr-1" />
+                                  Approuvé
+                                </Badge>
+                              )}
+                              {!u.is_approved && !u.is_super_admin && (
+                                <Badge variant="secondary" className="bg-amber-100 text-amber-800">
+                                  <Clock className="h-3 w-3 mr-1" />
+                                  En attente
+                                </Badge>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {!u.is_super_admin && (
+                              <Button
+                                variant={u.is_free_user ? "destructive" : "outline"}
+                                size="sm"
+                                onClick={() => toggleFreeUser.mutate({ 
+                                  userId: u.id, 
+                                  isFreeUser: !u.is_free_user 
+                                })}
+                                disabled={toggleFreeUser.isPending}
+                              >
+                                <Gift className="h-4 w-4 mr-1" />
+                                {u.is_free_user ? "Retirer gratuit" : "Gratuit + Ambassadeur"}
+                              </Button>
                             )}
                           </TableCell>
                         </TableRow>

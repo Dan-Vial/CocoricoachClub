@@ -19,6 +19,7 @@ export type Database = {
           approved_at: string
           approved_by: string | null
           id: string
+          is_free_user: boolean | null
           notes: string | null
           user_id: string
         }
@@ -26,6 +27,7 @@ export type Database = {
           approved_at?: string
           approved_by?: string | null
           id?: string
+          is_free_user?: boolean | null
           notes?: string | null
           user_id: string
         }
@@ -33,6 +35,7 @@ export type Database = {
           approved_at?: string
           approved_by?: string | null
           id?: string
+          is_free_user?: boolean | null
           notes?: string | null
           user_id?: string
         }
