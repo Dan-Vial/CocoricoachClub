@@ -194,6 +194,7 @@ function CategoryDetailsContent() {
               categoryId={categoryId!} 
               isRugby7={isRugby7} 
               isNationalTeam={isNationalTeam}
+              sportType={category?.rugby_type}
             />
           </TabsContent>
 
