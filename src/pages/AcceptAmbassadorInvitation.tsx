@@ -9,12 +9,11 @@ import { toast } from "sonner";
 import { Loader2, Shield, CheckCircle, XCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
-type InvitationStatus = "loading" | "valid" | "invalid" | "expired" | "already_used" | "accepting" | "success";
+type InvitationStatus = "loading" | "valid" | "invalid" | "already_used" | "accepting" | "success";
 
 interface InvitationData {
   email: string;
   name: string | null;
-  expires_at: string;
 }
 
 export default function AcceptAmbassadorInvitation() {
@@ -53,7 +52,7 @@ export default function AcceptAmbassadorInvitation() {
     try {
       const { data, error } = await supabase
         .from("ambassador_invitations")
-        .select("email, name, status, expires_at")
+        .select("email, name, status")
         .eq("token", token)
         .maybeSingle();
 
@@ -67,12 +66,7 @@ export default function AcceptAmbassadorInvitation() {
         return;
       }
 
-      if (new Date(data.expires_at) < new Date()) {
-        setStatus("expired");
-        return;
-      }
-
-      setInvitation({ email: data.email, name: data.name, expires_at: data.expires_at });
+      setInvitation({ email: data.email, name: data.name });
       setFormData(prev => ({ ...prev, email: data.email, fullName: data.name || "" }));
       setStatus("valid");
     } catch (err) {
@@ -148,7 +142,7 @@ export default function AcceptAmbassadorInvitation() {
     );
   }
 
-  if (status === "invalid" || status === "expired" || status === "already_used") {
+  if (status === "invalid" || status === "already_used") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <Card className="w-full max-w-md">
@@ -156,12 +150,10 @@ export default function AcceptAmbassadorInvitation() {
             <XCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
             <CardTitle>
               {status === "invalid" && "Lien invalide"}
-              {status === "expired" && "Lien expiré"}
               {status === "already_used" && "Invitation déjà utilisée"}
             </CardTitle>
             <CardDescription>
               {status === "invalid" && "Ce lien d'invitation n'est pas valide."}
-              {status === "expired" && "Ce lien d'invitation a expiré."}
               {status === "already_used" && "Cette invitation a déjà été acceptée."}
             </CardDescription>
           </CardHeader>

@@ -752,7 +752,6 @@ export default function Admin() {
                           <TableHead>Nom</TableHead>
                           <TableHead>Email</TableHead>
                           <TableHead>Créée le</TableHead>
-                          <TableHead>Expire le</TableHead>
                           <TableHead>Lien</TableHead>
                           <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
@@ -768,11 +767,6 @@ export default function Admin() {
                               <TableCell>{inv.email}</TableCell>
                               <TableCell>
                                 {format(new Date(inv.created_at), "dd MMM yyyy", { locale: fr })}
-                              </TableCell>
-                              <TableCell>
-                                <Badge variant={new Date(inv.expires_at) < new Date() ? "destructive" : "secondary"}>
-                                  {format(new Date(inv.expires_at), "dd MMM yyyy", { locale: fr })}
-                                </Badge>
                               </TableCell>
                               <TableCell>
                                 <Button
