@@ -32,7 +32,7 @@ export function InviteMemberDialog({ open, onOpenChange, clubId }: InviteMemberD
     resolver: zodResolver(invitationSchema),
     defaultValues: {
       email: "",
-      role: "viewer",
+      role: "coach",
     },
   });
 
@@ -96,22 +96,28 @@ export function InviteMemberDialog({ open, onOpenChange, clubId }: InviteMemberD
             <Label htmlFor="role">Rôle</Label>
             <Select
               onValueChange={(value) => form.setValue("role", value as any)}
-              defaultValue="viewer"
+              defaultValue="coach"
             >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="viewer">
-                  <div>
-                    <div className="font-medium">Viewer</div>
-                    <div className="text-xs text-muted-foreground">Consultation uniquement</div>
-                  </div>
-                </SelectItem>
                 <SelectItem value="coach">
                   <div>
                     <div className="font-medium">Coach</div>
-                    <div className="text-xs text-muted-foreground">Peut consulter et modifier les données</div>
+                    <div className="text-xs text-muted-foreground">Accès aux données d'entraînement et joueurs</div>
+                  </div>
+                </SelectItem>
+                <SelectItem value="admin">
+                  <div>
+                    <div className="font-medium">Admin</div>
+                    <div className="text-xs text-muted-foreground">Accès complet + gestion des membres</div>
+                  </div>
+                </SelectItem>
+                <SelectItem value="viewer">
+                  <div>
+                    <div className="font-medium">Viewer</div>
+                    <div className="text-xs text-muted-foreground">Consultation uniquement (lecture seule)</div>
                   </div>
                 </SelectItem>
                 <SelectItem value="physio">
@@ -132,19 +138,16 @@ export function InviteMemberDialog({ open, onOpenChange, clubId }: InviteMemberD
                     <div className="text-xs text-muted-foreground">Accès wellness et suivi psychologique</div>
                   </div>
                 </SelectItem>
-                <SelectItem value="admin">
-                  <div>
-                    <div className="font-medium">Admin</div>
-                    <div className="text-xs text-muted-foreground">Accès complet + gestion des membres</div>
-                  </div>
-                </SelectItem>
               </SelectContent>
             </Select>
           </div>
 
-          <div className="bg-muted/50 p-3 rounded-lg text-sm">
+          <div className="bg-muted/50 p-3 rounded-lg text-sm space-y-2">
             <p className="text-muted-foreground">
-              Un lien d'invitation sera généré. Vous pourrez le copier et l'envoyer à la personne invitée.
+              Un lien d'invitation permanent sera généré. La personne devra créer un compte pour accéder aux données.
+            </p>
+            <p className="text-green-600 font-medium text-xs">
+              ✓ Les liens n'expirent jamais
             </p>
           </div>
 

@@ -12,7 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Trash2, Copy, Clock } from "lucide-react";
+import { Trash2, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -124,7 +124,7 @@ export function InvitationsSection({ clubId, canManage }: InvitationsSectionProp
                 <TableHead>Email</TableHead>
                 <TableHead>Rôle</TableHead>
                 <TableHead>Envoyée le</TableHead>
-                <TableHead>Expire le</TableHead>
+                <TableHead>Statut</TableHead>
                 {canManage && <TableHead>Actions</TableHead>}
               </TableRow>
             </TableHeader>
@@ -137,10 +137,9 @@ export function InvitationsSection({ clubId, canManage }: InvitationsSectionProp
                     {format(new Date(invitation.created_at), "dd MMM yyyy", { locale: fr })}
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-muted-foreground" />
-                      {format(new Date(invitation.expires_at), "dd MMM yyyy", { locale: fr })}
-                    </div>
+                    <Badge variant="outline" className="text-green-600 border-green-600">
+                      N'expire jamais
+                    </Badge>
                   </TableCell>
                   {canManage && (
                     <TableCell>
