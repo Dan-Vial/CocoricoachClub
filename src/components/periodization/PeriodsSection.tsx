@@ -27,12 +27,14 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
+import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 
 interface PeriodsSectionProps {
   categoryId: string;
 }
 
 export function PeriodsSection({ categoryId }: PeriodsSectionProps) {
+  const { isViewer } = useViewerModeContext();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingPeriod, setEditingPeriod] = useState<any>(null);
   const [deletingPeriodId, setDeletingPeriodId] = useState<string | null>(null);
@@ -98,10 +100,12 @@ export function PeriodsSection({ categoryId }: PeriodsSectionProps) {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold">Périodes d'Entraînement</h3>
-        <Button onClick={() => setIsDialogOpen(true)} size="sm">
-          <Plus className="h-4 w-4 mr-2" />
-          Ajouter une Période
-        </Button>
+        {!isViewer && (
+          <Button onClick={() => setIsDialogOpen(true)} size="sm">
+            <Plus className="h-4 w-4 mr-2" />
+            Ajouter une Période
+          </Button>
+        )}
       </div>
 
       {periods && periods.length > 0 ? (
@@ -114,7 +118,7 @@ export function PeriodsSection({ categoryId }: PeriodsSectionProps) {
               <TableHead>Fin</TableHead>
               <TableHead>Charge Cible (%)</TableHead>
               <TableHead>Description</TableHead>
-              <TableHead className="w-20">Actions</TableHead>
+              {!isViewer && <TableHead className="w-20">Actions</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -132,24 +136,26 @@ export function PeriodsSection({ categoryId }: PeriodsSectionProps) {
                 <TableCell className="max-w-xs truncate">
                   {period.description || "—"}
                 </TableCell>
-                <TableCell>
-                  <div className="flex gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleEdit(period)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setDeletingPeriodId(period.id)}
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </div>
-                </TableCell>
+                {!isViewer && (
+                  <TableCell>
+                    <div className="flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleEdit(period)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setDeletingPeriodId(period.id)}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                )}
               </TableRow>
             ))}
           </TableBody>

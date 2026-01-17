@@ -10,12 +10,14 @@ import { AssignProgramDialog } from "./AssignProgramDialog";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 
 interface ProgramsTabProps {
   categoryId: string;
 }
 
 export function ProgramsTab({ categoryId }: ProgramsTabProps) {
+  const { isViewer } = useViewerModeContext();
   const [showBuilder, setShowBuilder] = useState(false);
   const [editingProgram, setEditingProgram] = useState<string | null>(null);
   const [assigningProgram, setAssigningProgram] = useState<string | null>(null);
@@ -104,10 +106,12 @@ export function ProgramsTab({ categoryId }: ProgramsTabProps) {
           <FolderOpen className="h-5 w-5 text-primary" />
           <h2 className="text-xl font-semibold">Programmes d'entraînement</h2>
         </div>
-        <Button onClick={() => setShowBuilder(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Nouveau programme
-        </Button>
+        {!isViewer && (
+          <Button onClick={() => setShowBuilder(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Nouveau programme
+          </Button>
+        )}
       </div>
 
       {isLoading ? (
@@ -119,10 +123,12 @@ export function ProgramsTab({ categoryId }: ProgramsTabProps) {
             <p className="text-muted-foreground mb-4">
               Aucun programme créé pour cette catégorie
             </p>
-            <Button onClick={() => setShowBuilder(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Créer mon premier programme
-            </Button>
+            {!isViewer && (
+              <Button onClick={() => setShowBuilder(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Créer mon premier programme
+              </Button>
+            )}
           </CardContent>
         </Card>
       ) : (
@@ -169,48 +175,50 @@ export function ProgramsTab({ categoryId }: ProgramsTabProps) {
                     Créé le {format(new Date(program.created_at), "dd MMM yyyy", { locale: fr })}
                   </p>
 
-                  <div className="flex items-center gap-2 pt-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => toggleActive(program.id, program.is_active)}
-                    >
-                      {program.is_active ? (
-                        <>
-                          <Pause className="h-4 w-4 mr-1" />
-                          Désactiver
-                        </>
-                      ) : (
-                        <>
-                          <Play className="h-4 w-4 mr-1" />
-                          Activer
-                        </>
-                      )}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setAssigningProgram(program.id)}
-                    >
-                      <Users className="h-4 w-4 mr-1" />
-                      Assigner
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setEditingProgram(program.id)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-destructive hover:text-destructive"
-                      onClick={() => handleDelete(program.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  {!isViewer && (
+                    <div className="flex items-center gap-2 pt-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => toggleActive(program.id, program.is_active)}
+                      >
+                        {program.is_active ? (
+                          <>
+                            <Pause className="h-4 w-4 mr-1" />
+                            Désactiver
+                          </>
+                        ) : (
+                          <>
+                            <Play className="h-4 w-4 mr-1" />
+                            Activer
+                          </>
+                        )}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setAssigningProgram(program.id)}
+                      >
+                        <Users className="h-4 w-4 mr-1" />
+                        Assigner
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setEditingProgram(program.id)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => handleDelete(program.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             );

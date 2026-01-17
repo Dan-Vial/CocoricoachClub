@@ -26,6 +26,7 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { UnifiedTestDialog } from "./UnifiedTestDialog";
 import { TEST_CATEGORIES, getTestLabel } from "@/lib/constants/testCategories";
+import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 
 interface GenericTestsSectionProps {
   categoryId: string;
@@ -36,6 +37,7 @@ export function GenericTestsSection({ categoryId }: GenericTestsSectionProps) {
   const [filterCategory, setFilterCategory] = useState<string>("all");
   const [filterTestType, setFilterTestType] = useState<string>("all");
   const queryClient = useQueryClient();
+  const { isViewer } = useViewerModeContext();
 
   const { data: tests, isLoading } = useQuery({
     queryKey: ["generic_tests", categoryId, filterCategory, filterTestType],
@@ -86,9 +88,11 @@ export function GenericTestsSection({ categoryId }: GenericTestsSectionProps) {
     <Card className="bg-gradient-card">
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-lg">Tous les Tests de Performance</CardTitle>
-        <Button size="sm" onClick={() => setIsDialogOpen(true)}>
-          <Plus className="h-4 w-4 mr-1" /> Ajouter un test
-        </Button>
+        {!isViewer && (
+          <Button size="sm" onClick={() => setIsDialogOpen(true)}>
+            <Plus className="h-4 w-4 mr-1" /> Ajouter un test
+          </Button>
+        )}
       </CardHeader>
       <CardContent>
         {/* Filtres */}
@@ -134,10 +138,12 @@ export function GenericTestsSection({ categoryId }: GenericTestsSectionProps) {
         {!tests || tests.length === 0 ? (
           <div className="text-center py-8">
             <p className="text-muted-foreground mb-4">Aucun test enregistré</p>
-            <Button onClick={() => setIsDialogOpen(true)} variant="outline" size="sm" className="gap-2">
-              <Plus className="h-4 w-4" />
-              Ajouter le premier test
-            </Button>
+            {!isViewer && (
+              <Button onClick={() => setIsDialogOpen(true)} variant="outline" size="sm" className="gap-2">
+                <Plus className="h-4 w-4" />
+                Ajouter le premier test
+              </Button>
+            )}
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -149,7 +155,7 @@ export function GenericTestsSection({ categoryId }: GenericTestsSectionProps) {
                   <TableHead>Test</TableHead>
                   <TableHead>Résultat</TableHead>
                   <TableHead>Notes</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  {!isViewer && <TableHead className="text-right">Actions</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -173,19 +179,21 @@ export function GenericTestsSection({ categoryId }: GenericTestsSectionProps) {
                     <TableCell className="max-w-[150px] truncate text-muted-foreground text-sm">
                       {test.notes || "-"}
                     </TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => {
-                          if (confirm("Êtes-vous sûr de vouloir supprimer ce test ?")) {
-                            deleteTest.mutate(test.id);
-                          }
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </TableCell>
+                    {!isViewer && (
+                      <TableCell className="text-right">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            if (confirm("Êtes-vous sûr de vouloir supprimer ce test ?")) {
+                              deleteTest.mutate(test.id);
+                            }
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))}
               </TableBody>

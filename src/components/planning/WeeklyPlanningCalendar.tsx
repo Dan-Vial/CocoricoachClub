@@ -26,6 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 
 interface WeeklyPlanningCalendarProps {
   categoryId: string;
@@ -68,6 +69,7 @@ export function WeeklyPlanningCalendar({ categoryId }: WeeklyPlanningCalendarPro
 
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { isViewer } = useViewerModeContext();
 
   const weekStartStr = format(currentWeekStart, "yyyy-MM-dd");
 
@@ -281,44 +283,48 @@ export function WeeklyPlanningCalendar({ categoryId }: WeeklyPlanningCalendarPro
                   }
                 }}
               >
-                <div className="flex items-center justify-between mb-2">
-                  <div>
-                    <p className="text-xs font-medium">{day}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {format(addDays(currentWeekStart, index), "d MMM", { locale: fr })}
-                    </p>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6"
-                    onClick={() => {
-                      setSelectedDay(index);
-                      setSelectedTemplateId("none");
-                      setPendingTemplateId(null);
-                      setNewItemTitle("");
-                      setAddDialogOpen(true);
-                    }}
-                  >
-                    <Plus className="h-3 w-3" />
-                  </Button>
-                </div>
-                
-                <div className="space-y-1">
-                  {planningByDay[index]?.map((item) => (
-                    <div
-                      key={item.id}
-                      className="group relative bg-primary/10 rounded p-2 text-xs"
-                    >
+                  <div className="flex items-center justify-between mb-2">
+                    <div>
+                      <p className="text-xs font-medium">{day}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {format(addDays(currentWeekStart, index), "d MMM", { locale: fr })}
+                      </p>
+                    </div>
+                    {!isViewer && (
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="absolute -top-1 -right-1 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={() => deletePlanningItem.mutate(item.id)}
+                        className="h-6 w-6"
+                        onClick={() => {
+                          setSelectedDay(index);
+                          setSelectedTemplateId("none");
+                          setPendingTemplateId(null);
+                          setNewItemTitle("");
+                          setAddDialogOpen(true);
+                        }}
                       >
-                        <X className="h-3 w-3" />
+                        <Plus className="h-3 w-3" />
                       </Button>
-                      <p className="font-medium truncate">
+                    )}
+                  </div>
+                
+                <div className="space-y-1">
+                  {planningByDay[index]?.map((item) => (
+                      <div
+                        key={item.id}
+                        className="group relative bg-primary/10 rounded p-2 text-xs"
+                      >
+                        {!isViewer && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="absolute -top-1 -right-1 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => deletePlanningItem.mutate(item.id)}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        )}
+                        <p className="font-medium truncate">
                         {item.template?.name || item.custom_title || "Séance"}
                       </p>
                       {item.time_slot && (
@@ -339,9 +345,11 @@ export function WeeklyPlanningCalendar({ categoryId }: WeeklyPlanningCalendarPro
               </div>
             ))}
           </div>
-          <p className="text-xs text-muted-foreground mt-3 text-center">
-            Glissez-déposez un template depuis la liste pour l'ajouter à un jour
-          </p>
+          {!isViewer && (
+            <p className="text-xs text-muted-foreground mt-3 text-center">
+              Glissez-déposez un template depuis la liste pour l'ajouter à un jour
+            </p>
+          )}
         </CardContent>
       </Card>
 

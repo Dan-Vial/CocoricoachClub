@@ -18,6 +18,7 @@ import {
 import { format, startOfWeek, endOfWeek, isWithinInterval, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
 import { AddLoadObjectiveDialog } from "./AddLoadObjectiveDialog";
+import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 
 interface LoadObjectivesSectionProps {
   categoryId: string;
@@ -47,6 +48,7 @@ const cycleTypeLabels: Record<string, { label: string; color: string }> = {
 };
 
 export function LoadObjectivesSection({ categoryId }: LoadObjectivesSectionProps) {
+  const { isViewer } = useViewerModeContext();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const queryClient = useQueryClient();
 
@@ -240,10 +242,12 @@ export function LoadObjectivesSection({ categoryId }: LoadObjectivesSectionProps
               <Target className="h-5 w-5" />
               Objectifs de charge par semaine
             </CardTitle>
-            <Button onClick={() => setIsDialogOpen(true)} size="sm">
-              <Plus className="h-4 w-4 mr-2" />
-              Nouveau cycle
-            </Button>
+            {!isViewer && (
+              <Button onClick={() => setIsDialogOpen(true)} size="sm">
+                <Plus className="h-4 w-4 mr-2" />
+                Nouveau cycle
+              </Button>
+            )}
           </div>
         </CardHeader>
         <CardContent>
@@ -312,10 +316,12 @@ export function LoadObjectivesSection({ categoryId }: LoadObjectivesSectionProps
               <p className="text-muted-foreground mb-4">
                 Aucun cycle avec objectifs de charge défini
               </p>
-              <Button onClick={() => setIsDialogOpen(true)} variant="outline">
-                <Plus className="h-4 w-4 mr-2" />
-                Créer le premier cycle
-              </Button>
+              {!isViewer && (
+                <Button onClick={() => setIsDialogOpen(true)} variant="outline">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Créer le premier cycle
+                </Button>
+              )}
             </div>
           )}
         </CardContent>

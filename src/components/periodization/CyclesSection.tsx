@@ -26,12 +26,14 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
+import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 
 interface CyclesSectionProps {
   categoryId: string;
 }
 
 export function CyclesSection({ categoryId }: CyclesSectionProps) {
+  const { isViewer } = useViewerModeContext();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCycle, setEditingCycle] = useState<any>(null);
   const [deletingCycleId, setDeletingCycleId] = useState<string | null>(null);
@@ -89,10 +91,12 @@ export function CyclesSection({ categoryId }: CyclesSectionProps) {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold">Cycles d'Entraînement</h3>
-        <Button onClick={() => setIsDialogOpen(true)} size="sm">
-          <Plus className="h-4 w-4 mr-2" />
-          Ajouter un Cycle
-        </Button>
+        {!isViewer && (
+          <Button onClick={() => setIsDialogOpen(true)} size="sm">
+            <Plus className="h-4 w-4 mr-2" />
+            Ajouter un Cycle
+          </Button>
+        )}
       </div>
 
       {cycles && cycles.length > 0 ? (
@@ -106,7 +110,7 @@ export function CyclesSection({ categoryId }: CyclesSectionProps) {
               <TableHead>Fin</TableHead>
               <TableHead>Intensité Cible</TableHead>
               <TableHead>Notes</TableHead>
-              <TableHead className="w-20">Actions</TableHead>
+              {!isViewer && <TableHead className="w-20">Actions</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -127,24 +131,26 @@ export function CyclesSection({ categoryId }: CyclesSectionProps) {
                 <TableCell className="max-w-xs truncate">
                   {cycle.notes || "—"}
                 </TableCell>
-                <TableCell>
-                  <div className="flex gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleEdit(cycle)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setDeletingCycleId(cycle.id)}
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </div>
-                </TableCell>
+                {!isViewer && (
+                  <TableCell>
+                    <div className="flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleEdit(cycle)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setDeletingCycleId(cycle.id)}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                )}
               </TableRow>
             ))}
           </TableBody>

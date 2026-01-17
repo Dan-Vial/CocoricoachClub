@@ -20,6 +20,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 
 interface SessionsTabProps {
   categoryId: string;
@@ -38,6 +39,7 @@ const trainingTypeLabels: Record<string, string> = {
 export function SessionsTab({ categoryId }: SessionsTabProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { isViewer } = useViewerModeContext();
   const [formOpen, setFormOpen] = useState(false);
   const [editingSession, setEditingSession] = useState<any | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -218,10 +220,12 @@ export function SessionsTab({ categoryId }: SessionsTabProps) {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold">Séances d'entraînement</h2>
-        <Button onClick={() => setFormOpen(true)} size="sm">
-          <Plus className="h-4 w-4 mr-1" />
-          Nouvelle séance
-        </Button>
+        {!isViewer && (
+          <Button onClick={() => setFormOpen(true)} size="sm">
+            <Plus className="h-4 w-4 mr-1" />
+            Nouvelle séance
+          </Button>
+        )}
       </div>
 
       {isLoading ? (
@@ -273,9 +277,11 @@ export function SessionsTab({ categoryId }: SessionsTabProps) {
                     )}
                   </div>
                   <div className="flex items-center gap-1">
-                    <Button variant="ghost" size="icon" onClick={() => handleEdit(session)}>
-                      <Edit className="h-4 w-4" />
-                    </Button>
+                    {!isViewer && (
+                      <Button variant="ghost" size="icon" onClick={() => handleEdit(session)}>
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    )}
                     <Button
                       variant="ghost"
                       size="icon"
@@ -284,14 +290,16 @@ export function SessionsTab({ categoryId }: SessionsTabProps) {
                     >
                       <Printer className="h-4 w-4" />
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-destructive"
-                      onClick={() => handleDeleteClick(session.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    {!isViewer && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-destructive"
+                        onClick={() => handleDeleteClick(session.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
                   </div>
                 </div>
               </CardContent>
