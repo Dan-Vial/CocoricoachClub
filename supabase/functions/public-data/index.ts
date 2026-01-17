@@ -60,7 +60,7 @@ serve(async (req) => {
       case "players":
         const { data: playersData } = await supabaseAdmin
           .from("players")
-          .select("id, name, position, date_of_birth, avatar_url, jersey_number")
+          .select("id, name, position, date_of_birth, avatar_url, jersey_number, created_at")
           .eq("category_id", categoryId)
           .order("name");
         data = playersData || [];
@@ -168,7 +168,7 @@ serve(async (req) => {
           allMatchLineups
         ] = await Promise.all([
           supabaseAdmin.from("categories").select("*, clubs(name, id)").eq("id", categoryId).single(),
-          supabaseAdmin.from("players").select("id, name, position, date_of_birth, avatar_url, jersey_number").eq("category_id", categoryId).order("name"),
+          supabaseAdmin.from("players").select("id, name, position, date_of_birth, avatar_url, jersey_number, created_at").eq("category_id", categoryId).order("name"),
           supabaseAdmin.from("training_sessions").select("*").eq("category_id", categoryId).order("session_date", { ascending: false }).limit(100),
           supabaseAdmin.from("injuries").select("*, players(name)").eq("category_id", categoryId),
           supabaseAdmin.from("wellness_tracking").select("*, players(name)").eq("category_id", categoryId).order("wellness_date", { ascending: false }).limit(200),
