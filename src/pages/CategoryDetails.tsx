@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, LayoutDashboard, Users, Calendar, Zap, Heart, Trophy, MessageSquare, Loader2 } from "lucide-react";
+import { ArrowLeft, LayoutDashboard, Users, Calendar, Zap, Heart, Trophy, MessageSquare, Loader2, Lock } from "lucide-react";
 import { OverviewTab } from "@/components/category/OverviewTab";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { CategoryCoverUpload } from "@/components/category/CategoryCoverUpload";
@@ -13,6 +13,8 @@ import { EditableRugbyType } from "@/components/category/EditableRugbyType";
 import { ViewerModeProvider, useViewerModeContext } from "@/contexts/ViewerModeContext";
 import { usePublicAccess } from "@/contexts/PublicAccessContext";
 import { PublicDataProvider, usePublicDataContext } from "@/contexts/PublicDataContext";
+import { DisabledTabTrigger } from "@/components/ui/disabled-tab-trigger";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 // New mega-tabs
 import { EffectifTab } from "@/components/category/tabs/EffectifTab";
@@ -195,11 +197,12 @@ function CategoryDetailsContent() {
                 <span className="hidden sm:inline">Planification</span>
                 <span className="sm:hidden">Planning</span>
               </TabsTrigger>
-              <TabsTrigger value="performance" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">
+              {/* Performance - Grisé en mode viewer */}
+              <DisabledTabTrigger value="performance" isDisabled={isViewer} className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">
                 <Zap className="h-4 w-4 shrink-0" />
                 <span className="hidden sm:inline">Performance</span>
                 <span className="sm:hidden">Perf</span>
-              </TabsTrigger>
+              </DisabledTabTrigger>
               <TabsTrigger value="sante" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">
                 <Heart className="h-4 w-4 shrink-0" />
                 <span>Santé</span>

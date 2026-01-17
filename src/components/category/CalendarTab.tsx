@@ -24,6 +24,7 @@ import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 import { exportCalendarToPdf, printElement } from "@/lib/pdfExport";
 import { getTrainingTypesForSport, TRAINING_TYPE_COLORS } from "@/lib/constants/trainingTypes";
 import { isIndividualSport } from "@/lib/constants/sportTypes";
+import { DisabledTabTrigger } from "@/components/ui/disabled-tab-trigger";
 
 interface CalendarTabProps {
   categoryId: string;
@@ -275,15 +276,17 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
             <span className="hidden sm:inline">Planning Hebdo</span>
             <span className="sm:hidden">Hebdo</span>
           </TabsTrigger>
-          <TabsTrigger value="templates" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3">
+          {/* Templates - Grisé en mode viewer */}
+          <DisabledTabTrigger value="templates" isDisabled={isViewer} className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3">
             <LayoutTemplate className="h-4 w-4 shrink-0" />
             Templates
-          </TabsTrigger>
-          <TabsTrigger value="objectives" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3">
+          </DisabledTabTrigger>
+          {/* Objectifs - Grisé en mode viewer */}
+          <DisabledTabTrigger value="objectives" isDisabled={isViewer} className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3">
             <Target className="h-4 w-4 shrink-0" />
             <span className="hidden sm:inline">Objectifs</span>
             <span className="sm:hidden">Obj.</span>
-          </TabsTrigger>
+          </DisabledTabTrigger>
         </TabsList>
 
         <TabsContent value="global">
@@ -405,15 +408,19 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
           </div>
         </TabsContent>
 
-        <TabsContent value="templates">
-          <div className="max-w-2xl">
-            <SessionTemplatesSection categoryId={categoryId} />
-          </div>
-        </TabsContent>
+        {!isViewer && (
+          <TabsContent value="templates">
+            <div className="max-w-2xl">
+              <SessionTemplatesSection categoryId={categoryId} />
+            </div>
+          </TabsContent>
+        )}
 
-        <TabsContent value="objectives">
-          <SeasonObjectivesSection categoryId={categoryId} />
-        </TabsContent>
+        {!isViewer && (
+          <TabsContent value="objectives">
+            <SeasonObjectivesSection categoryId={categoryId} />
+          </TabsContent>
+        )}
       </Tabs>
 
       <AddSessionDialog
