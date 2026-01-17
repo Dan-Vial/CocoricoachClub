@@ -4829,6 +4829,7 @@ export type Database = {
       admin_all_users: {
         Row: {
           clubs_owned: number | null
+          created_at: string | null
           email: string | null
           full_name: string | null
           id: string | null
@@ -4837,6 +4838,7 @@ export type Database = {
         }
         Insert: {
           clubs_owned?: never
+          created_at?: string | null
           email?: string | null
           full_name?: string | null
           id?: string | null
@@ -4845,6 +4847,7 @@ export type Database = {
         }
         Update: {
           clubs_owned?: never
+          created_at?: string | null
           email?: string | null
           full_name?: string | null
           id?: string | null
