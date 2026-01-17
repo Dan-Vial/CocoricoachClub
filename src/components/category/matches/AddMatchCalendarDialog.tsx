@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { getCompetitionsBySport } from "@/lib/constants/competitions";
+import { isIndividualSport } from "@/lib/constants/sportTypes";
 
 interface AddMatchCalendarDialogProps {
   open: boolean;
@@ -38,6 +39,8 @@ export function AddMatchCalendarDialog({
   sportType = "XV",
 }: AddMatchCalendarDialogProps) {
   const competitions = getCompetitionsBySport(sportType);
+  const isIndividual = isIndividualSport(sportType);
+  
   const [opponent, setOpponent] = useState("");
   const [competition, setCompetition] = useState("");
   const [matchDate, setMatchDate] = useState("");
@@ -51,7 +54,7 @@ export function AddMatchCalendarDialog({
     mutationFn: async () => {
       const { error } = await supabase.from("matches").insert({
         category_id: categoryId,
-        opponent,
+        opponent: isIndividual ? (opponent || "Compétition") : opponent,
         competition: competition || null,
         match_date: matchDate,
         match_time: matchTime || null,
@@ -63,12 +66,12 @@ export function AddMatchCalendarDialog({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["matches", categoryId] });
-      toast.success("Match ajouté avec succès");
+      toast.success(isIndividual ? "Compétition ajoutée avec succès" : "Match ajouté avec succès");
       resetForm();
       onOpenChange(false);
     },
     onError: () => {
-      toast.error("Erreur lors de l'ajout du match");
+      toast.error(isIndividual ? "Erreur lors de l'ajout de la compétition" : "Erreur lors de l'ajout du match");
     },
   });
 
@@ -84,7 +87,12 @@ export function AddMatchCalendarDialog({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!opponent || !matchDate) {
+    if (!matchDate) {
+      toast.error("Veuillez remplir les champs obligatoires");
+      return;
+    }
+    // For individual sports, opponent is optional
+    if (!isIndividual && !opponent) {
       toast.error("Veuillez remplir les champs obligatoires");
       return;
     }
@@ -95,25 +103,31 @@ export function AddMatchCalendarDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Ajouter un match</DialogTitle>
+          <DialogTitle>
+            {isIndividual ? "Ajouter une compétition" : "Ajouter un match"}
+          </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="opponent">Adversaire *</Label>
-            <Input
-              id="opponent"
-              value={opponent}
-              onChange={(e) => setOpponent(e.target.value)}
-              placeholder="Nom de l'équipe adverse"
-              required
-            />
-          </div>
+          {!isIndividual && (
+            <div className="space-y-2">
+              <Label htmlFor="opponent">Adversaire *</Label>
+              <Input
+                id="opponent"
+                value={opponent}
+                onChange={(e) => setOpponent(e.target.value)}
+                placeholder="Nom de l'équipe adverse"
+                required
+              />
+            </div>
+          )}
 
           <div className="space-y-2">
-            <Label htmlFor="competition">Championnat</Label>
+            <Label htmlFor="competition">
+              {isIndividual ? "Type de compétition *" : "Championnat"}
+            </Label>
             <Select value={competition} onValueChange={setCompetition}>
               <SelectTrigger>
-                <SelectValue placeholder="Sélectionner un championnat" />
+                <SelectValue placeholder={isIndividual ? "Sélectionner une compétition" : "Sélectionner un championnat"} />
               </SelectTrigger>
               <SelectContent className="max-h-[300px]">
                 {competitions.map((category) => (
@@ -131,6 +145,18 @@ export function AddMatchCalendarDialog({
               </SelectContent>
             </Select>
           </div>
+
+          {isIndividual && (
+            <div className="space-y-2">
+              <Label htmlFor="opponent">Nom de l'événement</Label>
+              <Input
+                id="opponent"
+                value={opponent}
+                onChange={(e) => setOpponent(e.target.value)}
+                placeholder="Ex: Tournoi de Paris, Open National..."
+              />
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -160,18 +186,20 @@ export function AddMatchCalendarDialog({
               id="location"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
-              placeholder="Stade, ville..."
+              placeholder={isIndividual ? "Salle, bowling, dojo..." : "Stade, ville..."}
             />
           </div>
 
-          <div className="flex items-center justify-between">
-            <Label htmlFor="isHome">Match à domicile</Label>
-            <Switch
-              id="isHome"
-              checked={isHome}
-              onCheckedChange={setIsHome}
-            />
-          </div>
+          {!isIndividual && (
+            <div className="flex items-center justify-between">
+              <Label htmlFor="isHome">Match à domicile</Label>
+              <Switch
+                id="isHome"
+                checked={isHome}
+                onCheckedChange={setIsHome}
+              />
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="notes">Notes</Label>

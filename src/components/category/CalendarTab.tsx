@@ -290,7 +290,11 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
           <Card className="bg-gradient-card shadow-md">
             <CardHeader>
               <div className="flex justify-between items-center flex-wrap gap-4">
-                <CardTitle>Calendrier des entraînements et matchs</CardTitle>
+                <CardTitle>
+                  {isIndividualSport(sportType || "") 
+                    ? "Calendrier des entraînements et compétitions" 
+                    : "Calendrier des entraînements et matchs"}
+                </CardTitle>
                 <div className="flex gap-2 flex-wrap">
                   <Button variant="outline" size="icon" onClick={handlePrint} title="Imprimer">
                     <Printer className="h-4 w-4" />
@@ -302,7 +306,7 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
                     <>
                       <Button onClick={() => setIsAddMatchDialogOpen(true)} variant="outline" className="gap-2">
                         <Swords className="h-4 w-4" />
-                        Ajouter un match
+                        {isIndividualSport(sportType || "") ? "Ajouter une compétition" : "Ajouter un match"}
                       </Button>
                       <Button onClick={() => setIsAddDialogOpen(true)} className="gap-2">
                         <Plus className="h-4 w-4" />
@@ -422,6 +426,7 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
         open={isAddMatchDialogOpen}
         onOpenChange={setIsAddMatchDialogOpen}
         categoryId={categoryId}
+        sportType={sportType}
       />
 
       <EditSessionDialog
