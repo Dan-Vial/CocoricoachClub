@@ -10,12 +10,38 @@ import { SessionsTab } from "@/components/category/sessions/SessionsTab";
 import { ProgramsTab } from "@/components/category/programs/ProgramsTab";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useViewerModeContext } from "@/contexts/ViewerModeContext";
+import { DisabledTabTrigger } from "@/components/ui/disabled-tab-trigger";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Lock } from "lucide-react";
 
 interface PerformanceTabProps {
   categoryId: string;
 }
 
+// Message affiché quand l'onglet Performance est complètement désactivé
+function PerformanceDisabledMessage() {
+  return (
+    <Card className="border-dashed border-muted-foreground/30">
+      <CardHeader className="text-center pb-2">
+        <div className="mx-auto w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-2">
+          <Lock className="h-6 w-6 text-muted-foreground" />
+        </div>
+        <CardTitle className="text-lg text-muted-foreground">
+          Accès restreint
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="text-center text-muted-foreground text-sm">
+        <p>Cet onglet n'est pas accessible en mode lecture seule.</p>
+        <p className="mt-1">Contactez l'administrateur pour plus d'accès.</p>
+      </CardContent>
+    </Card>
+  );
+}
+
 export function PerformanceTab({ categoryId }: PerformanceTabProps) {
+  const { isViewer } = useViewerModeContext();
+
   // Fetch category to get sport type
   const { data: category } = useQuery({
     queryKey: ["category-sport-type", categoryId],
@@ -29,6 +55,11 @@ export function PerformanceTab({ categoryId }: PerformanceTabProps) {
       return data;
     },
   });
+
+  // En mode viewer, l'onglet Performance entier est désactivé
+  if (isViewer) {
+    return <PerformanceDisabledMessage />;
+  }
 
   return (
     <Tabs defaultValue="sessions" className="space-y-4">
