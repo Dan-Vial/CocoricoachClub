@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { MatchLineupDialog } from "./MatchLineupDialog";
 import { SportMatchStatsDialog } from "./SportMatchStatsDialog";
+import { isIndividualSport } from "@/lib/constants/sportTypes";
 
 interface Match {
   id: string;
@@ -74,6 +75,9 @@ export function MatchCard({ match, categoryId }: MatchCardProps) {
     },
   });
 
+  const sportType = category?.rugby_type || "XV";
+  const isIndividual = isIndividualSport(sportType);
+
   const deleteMatch = useMutation({
     mutationFn: async () => {
       const { error } = await supabase.from("matches").delete().eq("id", match.id);
@@ -81,7 +85,7 @@ export function MatchCard({ match, categoryId }: MatchCardProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["matches", categoryId] });
-      toast.success("Match supprimé");
+      toast.success(isIndividual ? "Compétition supprimée" : "Match supprimé");
     },
     onError: () => {
       toast.error("Erreur lors de la suppression");
@@ -118,13 +122,15 @@ export function MatchCard({ match, categoryId }: MatchCardProps) {
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-2">
-              <Badge variant={match.is_home ? "default" : "secondary"} className="text-xs">
-                {match.is_home ? (
-                  <><Home className="h-3 w-3 mr-1" /> Domicile</>
-                ) : (
-                  <><Plane className="h-3 w-3 mr-1" /> Extérieur</>
-                )}
-              </Badge>
+              {!isIndividual && (
+                <Badge variant={match.is_home ? "default" : "secondary"} className="text-xs">
+                  {match.is_home ? (
+                    <><Home className="h-3 w-3 mr-1" /> Domicile</>
+                  ) : (
+                    <><Plane className="h-3 w-3 mr-1" /> Extérieur</>
+                  )}
+                </Badge>
+              )}
               {isPast && (
                 <Badge variant="outline" className="text-xs">
                   Terminé
@@ -133,7 +139,10 @@ export function MatchCard({ match, categoryId }: MatchCardProps) {
             </div>
 
             <h4 className="font-semibold text-lg">
-              {match.is_home ? "vs" : "@"} {match.opponent}
+              {isIndividual 
+                ? (match.competition || match.opponent || "Compétition")
+                : `${match.is_home ? "vs" : "@"} ${match.opponent}`
+              }
             </h4>
 
             <div className="text-sm text-muted-foreground mt-1 space-y-1">
@@ -141,7 +150,15 @@ export function MatchCard({ match, categoryId }: MatchCardProps) {
                 {format(matchDate, "EEEE d MMMM yyyy", { locale: fr })}
                 {match.match_time && ` à ${match.match_time.slice(0, 5)}`}
               </p>
-              {match.competition && (
+              {/* For individual sports, show event name if different from competition */}
+              {isIndividual && match.opponent && match.opponent !== match.competition && (
+                <p className="flex items-center gap-1">
+                  <Trophy className="h-3 w-3" />
+                  {match.opponent}
+                </p>
+              )}
+              {/* For team sports, show competition */}
+              {!isIndividual && match.competition && (
                 <p className="flex items-center gap-1">
                   <Trophy className="h-3 w-3" />
                   {match.competition}
@@ -239,7 +256,7 @@ export function MatchCard({ match, categoryId }: MatchCardProps) {
               size="icon"
               className="h-8 w-8"
               onClick={() => {
-                if (confirm("Supprimer ce match ?")) {
+                if (confirm(isIndividual ? "Supprimer cette compétition ?" : "Supprimer ce match ?")) {
                   deleteMatch.mutate();
                 }
               }}
