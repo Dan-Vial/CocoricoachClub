@@ -9,7 +9,8 @@ export type SportType =
   | "judo" 
   | "volleyball"
   | "bowling"
-  | "basketball";
+  | "basketball"
+  | "aviron";
 
 export interface SportTypeOption {
   value: SportType;
@@ -31,6 +32,7 @@ export const SPORT_TYPES: SportTypeOption[] = [
   // Individual sports
   { value: "judo", label: "Judo", category: "individual" },
   { value: "bowling", label: "Bowling", category: "individual" },
+  { value: "aviron", label: "Aviron", category: "individual" },
 ];
 
 export const getSportLabel = (type: string): string => {
@@ -51,7 +53,7 @@ export const isRugbyType = (type: string): boolean => {
 };
 
 export const isIndividualSport = (type: string): boolean => {
-  return ["judo", "bowling"].includes(type);
+  return ["judo", "bowling", "aviron"].includes(type);
 };
 
 export const isTeamSport = (type: string): boolean => {

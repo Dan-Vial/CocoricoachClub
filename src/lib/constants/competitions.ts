@@ -390,6 +390,90 @@ export const JUDO_COMPETITIONS: CompetitionCategory[] = [
   },
 ];
 
+// Aviron competitions
+export const AVIRON_COMPETITIONS: CompetitionCategory[] = [
+  {
+    label: "Régates Jeunes",
+    options: [
+      "Championnat Départemental Minimes",
+      "Championnat Régional Minimes",
+      "Championnat de France Minimes",
+      "Championnat Départemental Cadets",
+      "Championnat Régional Cadets",
+      "Championnat de France Cadets",
+      "Championnat Départemental Juniors",
+      "Championnat Régional Juniors",
+      "Championnat de France Juniors",
+    ],
+  },
+  {
+    label: "Régates Seniors Nationales",
+    options: [
+      "Championnat de France Senior",
+      "Championnat de France Elite",
+      "Championnat de France Universitaire",
+      "Coupe de France",
+      "Tête de Rivière",
+    ],
+  },
+  {
+    label: "Régates Indoor (Ergomètre)",
+    options: [
+      "Championnat de France Indoor",
+      "Championnat Régional Indoor",
+      "Challenge National Indoor",
+      "World Rowing Indoor Championships",
+      "European Indoor Rowing Championships",
+    ],
+  },
+  {
+    label: "Distances Officielles",
+    options: [
+      "2000m (Distance Olympique)",
+      "1000m (Sprint)",
+      "500m (Court)",
+      "6000m (Tête de Rivière)",
+      "Marathon (42km)",
+      "Longue Distance (10km+)",
+    ],
+  },
+  {
+    label: "Types de Bateaux",
+    options: [
+      "Skiff (1x)",
+      "Double Scull (2x)",
+      "Quatre de couple (4x)",
+      "Huit de couple (8x)",
+      "Deux sans barreur (2-)",
+      "Deux avec barreur (2+)",
+      "Quatre sans barreur (4-)",
+      "Quatre avec barreur (4+)",
+      "Huit avec barreur (8+)",
+    ],
+  },
+  {
+    label: "Compétitions Internationales",
+    options: [
+      "Jeux Olympiques",
+      "Championnats du Monde",
+      "Championnats d'Europe",
+      "Coupe du Monde World Rowing",
+      "Jeux Méditerranéens",
+      "World Rowing U23 Championships",
+      "World Rowing Junior Championships",
+    ],
+  },
+  {
+    label: "Autres",
+    options: [
+      "Régate Amicale",
+      "Régate d'Entraînement",
+      "Interclubs",
+      "Stage Équipe",
+    ],
+  },
+];
+
 // Bowling competitions
 export const BOWLING_COMPETITIONS: CompetitionCategory[] = [
   {
@@ -468,6 +552,8 @@ export const getCompetitionsBySport = (sportType: string): CompetitionCategory[]
       return JUDO_COMPETITIONS;
     case "bowling":
       return BOWLING_COMPETITIONS;
+    case "aviron":
+      return AVIRON_COMPETITIONS;
     case "XV":
     case "7":
     case "academie":

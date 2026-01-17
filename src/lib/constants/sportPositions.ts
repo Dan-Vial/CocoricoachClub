@@ -85,7 +85,20 @@ export const BASKETBALL_POSITIONS: Position[] = [
 // Judo - no field positions, just weight categories
 export const JUDO_POSITIONS: Position[] = [];
 
-export type SportType = "XV" | "7" | "football" | "handball" | "volleyball" | "basketball" | "Judo" | "academie" | "national_team";
+// Aviron - positions in boat (8 rowers + cox example)
+export const AVIRON_POSITIONS: Position[] = [
+  { id: "1", name: "Barreur", x: 95, y: 50 },
+  { id: "2", name: "Nage (8)", x: 85, y: 50 },
+  { id: "3", name: "7", x: 75, y: 50 },
+  { id: "4", name: "6", x: 65, y: 50 },
+  { id: "5", name: "5", x: 55, y: 50 },
+  { id: "6", name: "4", x: 45, y: 50 },
+  { id: "7", name: "3", x: 35, y: 50 },
+  { id: "8", name: "2", x: 25, y: 50 },
+  { id: "9", name: "Chef de nage (1)", x: 15, y: 50 },
+];
+
+export type SportType = "XV" | "7" | "football" | "handball" | "volleyball" | "basketball" | "judo" | "aviron" | "academie" | "national_team";
 
 export function getPositionsForSport(sportType: SportType | string): Position[] {
   switch (sportType) {
@@ -103,8 +116,10 @@ export function getPositionsForSport(sportType: SportType | string): Position[] 
       return VOLLEYBALL_POSITIONS;
     case "basketball":
       return BASKETBALL_POSITIONS;
-    case "Judo":
+    case "judo":
       return JUDO_POSITIONS;
+    case "aviron":
+      return AVIRON_POSITIONS;
     default:
       return RUGBY_XV_POSITIONS;
   }
@@ -150,13 +165,20 @@ export function getSportFieldConfig(sportType: SportType | string) {
         aspectRatio: "2/3",
         label: "Basketball",
       };
-    case "Judo":
+    case "judo":
       return {
         type: "judo",
         bgColor: "from-red-600 to-red-700",
         aspectRatio: "1/1",
         label: "Judo",
         noField: true,
+      };
+    case "aviron":
+      return {
+        type: "aviron",
+        bgColor: "from-blue-500 to-blue-700",
+        aspectRatio: "4/1",
+        label: "Aviron",
       };
     default:
       return {

@@ -125,6 +125,13 @@ export const BOWLING_CONCUSSION_PROTOCOL: SportConcussionProtocol = {
   notes: "Le bowling présente un risque minimal de commotion. Pas de protocole spécifique."
 };
 
+export const AVIRON_CONCUSSION_PROTOCOL: SportConcussionProtocol = {
+  ...NO_PROTOCOL,
+  sportType: "aviron",
+  federation: "FFA (Fédération Française d'Aviron)",
+  notes: "L'aviron présente un faible risque de commotion. Consulter un médecin en cas de choc à la tête. Suivre les recommandations générales de retour au sport."
+};
+
 // Get protocol by sport type
 export function getConcussionProtocolForSport(sportType: string): SportConcussionProtocol {
   switch (sportType) {
@@ -145,6 +152,8 @@ export function getConcussionProtocolForSport(sportType: string): SportConcussio
       return JUDO_CONCUSSION_PROTOCOL;
     case "bowling":
       return BOWLING_CONCUSSION_PROTOCOL;
+    case "aviron":
+      return AVIRON_CONCUSSION_PROTOCOL;
     default:
       return RUGBY_CONCUSSION_PROTOCOL;
   }

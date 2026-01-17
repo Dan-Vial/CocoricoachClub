@@ -18,6 +18,13 @@ export const ALL_TRAINING_TYPES: TrainingTypeOption[] = [
   { value: "individuel", label: "Entraînement Individuel", hasExercises: false, forTeamSports: false, forIndividualSports: true },
   { value: "competition_training", label: "Simulation Compétition", hasExercises: false, forTeamSports: false, forIndividualSports: true },
   
+  // Aviron specific
+  { value: "aviron_ergo", label: "Ergomètre (Indoor)", hasExercises: false, forTeamSports: false, forIndividualSports: true },
+  { value: "aviron_eau", label: "Sur l'eau (Outdoor)", hasExercises: false, forTeamSports: false, forIndividualSports: true },
+  { value: "aviron_technique", label: "Technique Bateau", hasExercises: false, forTeamSports: false, forIndividualSports: true },
+  { value: "aviron_sortie_longue", label: "Sortie Longue", hasExercises: false, forTeamSports: false, forIndividualSports: true },
+  { value: "aviron_fractionne", label: "Fractionné", hasExercises: false, forTeamSports: false, forIndividualSports: true },
+  
   // Common to all sports
   { value: "technique_individuelle", label: "Technique Individuelle", hasExercises: false, forTeamSports: true, forIndividualSports: true },
   { value: "physique", label: "Physique", hasExercises: true, forTeamSports: true, forIndividualSports: true },
@@ -65,6 +72,12 @@ export const TRAINING_TYPE_COLORS: Record<string, string> = {
   test: "bg-training-test",
   reathlétisation: "bg-amber-500",
   match: "bg-rose-500",
+  // Aviron specific
+  aviron_ergo: "bg-blue-400",
+  aviron_eau: "bg-cyan-500",
+  aviron_technique: "bg-teal-400",
+  aviron_sortie_longue: "bg-blue-600",
+  aviron_fractionne: "bg-indigo-500",
 };
 
 // Training type labels mapping (for display)
@@ -78,4 +91,10 @@ export const TRAINING_TYPE_LABELS: Record<string, string> = {
   repos: "Repos",
   test: "Test",
   reathlétisation: "Réathlétisation",
+  // Aviron specific
+  aviron_ergo: "Ergomètre (Indoor)",
+  aviron_eau: "Sur l'eau (Outdoor)",
+  aviron_technique: "Technique Bateau",
+  aviron_sortie_longue: "Sortie Longue",
+  aviron_fractionne: "Fractionné",
 };

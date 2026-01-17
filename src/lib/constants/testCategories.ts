@@ -209,6 +209,66 @@ export const TEST_CATEGORIES: TestCategory[] = [
       { value: "bowling_post_failure", label: "Comportement post-échec (frame ouverte)", unit: "score" },
     ],
   },
+  // Aviron specific tests
+  {
+    value: "aviron_ergo",
+    label: "Aviron - Ergomètre",
+    tests: [
+      { value: "aviron_ergo_2000m", label: "2000m Ergomètre", unit: "min:s", isTime: true },
+      { value: "aviron_ergo_6000m", label: "6000m Ergomètre", unit: "min:s", isTime: true },
+      { value: "aviron_ergo_500m", label: "500m Ergomètre (Sprint)", unit: "s", isTime: true },
+      { value: "aviron_ergo_30min", label: "30min Ergomètre (Distance)", unit: "m" },
+      { value: "aviron_ergo_60min", label: "60min Ergomètre (Distance)", unit: "m" },
+      { value: "aviron_ergo_watts_max", label: "Puissance max Ergomètre", unit: "W" },
+      { value: "aviron_ergo_watts_avg", label: "Puissance moyenne 2000m", unit: "W" },
+    ],
+  },
+  {
+    value: "aviron_physio",
+    label: "Aviron - Tests Physiologiques",
+    tests: [
+      { value: "aviron_vo2max", label: "VO2max (test labo)", unit: "ml/kg/min" },
+      { value: "aviron_lactate_threshold", label: "Seuil Lactique", unit: "mmol/L" },
+      { value: "aviron_power_to_weight", label: "Ratio Puissance/Poids", unit: "W/kg" },
+      { value: "aviron_anaerobic_threshold", label: "Seuil Anaérobie (Puissance)", unit: "W" },
+      { value: "aviron_heart_rate_max", label: "FC Max", unit: "bpm" },
+      { value: "aviron_heart_rate_rest", label: "FC Repos", unit: "bpm" },
+    ],
+  },
+  {
+    value: "aviron_force",
+    label: "Aviron - Force Spécifique",
+    tests: [
+      { value: "aviron_leg_press_max", label: "Leg Press Max", unit: "kg" },
+      { value: "aviron_bench_pull", label: "Bench Pull 1RM", unit: "kg" },
+      { value: "aviron_seated_row", label: "Tirage assis 1RM", unit: "kg" },
+      { value: "aviron_deadlift_1rm", label: "Soulevé de terre 1RM", unit: "kg" },
+      { value: "aviron_clean_1rm", label: "Clean 1RM", unit: "kg" },
+      { value: "aviron_squat_1rm", label: "Squat 1RM", unit: "kg" },
+    ],
+  },
+  {
+    value: "aviron_technique",
+    label: "Aviron - Technique / Eau",
+    tests: [
+      { value: "aviron_stroke_rate_max", label: "Cadence Max (coups/min)", unit: "c/min" },
+      { value: "aviron_stroke_efficiency", label: "Efficacité du coup (m/coup)", unit: "m" },
+      { value: "aviron_technique_score", label: "Score technique (évaluation)", unit: "score" },
+      { value: "aviron_500m_water", label: "500m sur l'eau", unit: "s", isTime: true },
+      { value: "aviron_2000m_water", label: "2000m sur l'eau", unit: "min:s", isTime: true },
+    ],
+  },
+  {
+    value: "aviron_flexibility",
+    label: "Aviron - Souplesse / Mobilité",
+    tests: [
+      { value: "aviron_sit_and_reach", label: "Sit and Reach", unit: "cm" },
+      { value: "aviron_hip_flexion", label: "Flexion hanche", unit: "°" },
+      { value: "aviron_ankle_dorsiflexion", label: "Dorsiflexion cheville", unit: "°" },
+      { value: "aviron_shoulder_mobility", label: "Mobilité épaule", unit: "cm" },
+      { value: "aviron_thoracic_rotation", label: "Rotation thoracique", unit: "°" },
+    ],
+  },
   {
     value: "basketball_agility",
     label: "Basketball - Agilité / Vitesse",
@@ -290,7 +350,7 @@ export function getAllTests(): TestOption[] {
 // Fonction pour obtenir les catégories de tests par sport
 export function getTestCategoriesForSport(sportType: string): TestCategory[] {
   const baseCategories = TEST_CATEGORIES.filter(cat => 
-    !cat.value.startsWith("bowling_") && !cat.value.startsWith("basketball_")
+    !cat.value.startsWith("bowling_") && !cat.value.startsWith("basketball_") && !cat.value.startsWith("aviron_")
   );
   
   if (sportType === "bowling") {
@@ -305,6 +365,13 @@ export function getTestCategoriesForSport(sportType: string): TestCategory[] {
       cat.value.startsWith("basketball_")
     );
     return [...baseCategories, ...basketballCategories];
+  }
+  
+  if (sportType === "aviron") {
+    const avironCategories = TEST_CATEGORIES.filter(cat => 
+      cat.value.startsWith("aviron_")
+    );
+    return [...baseCategories, ...avironCategories];
   }
   
   return baseCategories;
