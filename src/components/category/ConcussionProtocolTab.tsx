@@ -4,18 +4,23 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, AlertTriangle, CheckCircle, Clock } from "lucide-react";
+import { Plus, AlertTriangle, CheckCircle, Clock, Info } from "lucide-react";
 import { toast } from "sonner";
 import { AddConcussionProtocolDialog } from "./AddConcussionProtocolDialog";
 import { ConcussionProtocolCard } from "./ConcussionProtocolCard";
+import { getConcussionProtocolForSport, hasConcussionProtocol } from "@/lib/constants/concussionProtocols";
 
 interface ConcussionProtocolTabProps {
   categoryId: string;
+  sportType?: string;
 }
 
-export function ConcussionProtocolTab({ categoryId }: ConcussionProtocolTabProps) {
+export function ConcussionProtocolTab({ categoryId, sportType = "XV" }: ConcussionProtocolTabProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const queryClient = useQueryClient();
+  
+  const protocol = getConcussionProtocolForSport(sportType);
+  const hasProtocol = hasConcussionProtocol(sportType);
 
   const { data: protocols, isLoading } = useQuery({
     queryKey: ["concussion_protocols", categoryId],
@@ -57,25 +62,36 @@ export function ConcussionProtocolTab({ categoryId }: ConcussionProtocolTabProps
             <AlertTriangle className="h-5 w-5 text-destructive" />
             <CardTitle>Protocole Commotion Cérébrale</CardTitle>
           </div>
-          <Button size="sm" onClick={() => setIsDialogOpen(true)}>
+          <Button size="sm" onClick={() => setIsDialogOpen(true)} disabled={!hasProtocol}>
             <Plus className="h-4 w-4 mr-1" /> Signaler
           </Button>
         </CardHeader>
         <CardContent>
-          <div className="bg-muted/50 p-4 rounded-lg mb-6">
-            <h4 className="font-semibold mb-2">Protocole de retour au jeu (World Rugby)</h4>
-            <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
-              <li>Repos complet (24-48h minimum)</li>
-              <li>Activité légère (marche, vélo stationnaire)</li>
-              <li>Exercice spécifique au sport (sans contact)</li>
-              <li>Entraînement sans contact</li>
-              <li>Entraînement avec contact (après avis médical)</li>
-              <li>Retour au jeu complet</li>
-            </ol>
-            <p className="text-xs text-muted-foreground mt-2">
-              Minimum 24h entre chaque phase. Retour à la phase précédente en cas de symptômes.
-            </p>
-          </div>
+          {!hasProtocol ? (
+            <div className="bg-muted/50 p-4 rounded-lg mb-6">
+              <div className="flex items-start gap-3">
+                <Info className="h-5 w-5 text-muted-foreground mt-0.5" />
+                <div>
+                  <h4 className="font-semibold mb-1">Pas de protocole officiel</h4>
+                  <p className="text-sm text-muted-foreground">
+                    {protocol.notes}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-muted/50 p-4 rounded-lg mb-6">
+              <h4 className="font-semibold mb-2">Protocole de retour au jeu ({protocol.federation})</h4>
+              <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
+                {protocol.phases.map((phase) => (
+                  <li key={phase.phase}>{phase.name} - {phase.description}</li>
+                ))}
+              </ol>
+              <p className="text-xs text-muted-foreground mt-2">
+                {protocol.notes}
+              </p>
+            </div>
+          )}
 
           {activeProtocols.length > 0 && (
             <div className="space-y-4 mb-6">

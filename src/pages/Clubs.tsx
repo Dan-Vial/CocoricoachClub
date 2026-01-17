@@ -7,6 +7,7 @@ import { Plus, Trash2, LogOut, Shield, Settings } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { AddClubDialog } from "@/components/clubs/AddClubDialog";
+import { ClubLogoUpload } from "@/components/clubs/ClubLogoUpload";
 import { useAuth } from "@/contexts/AuthContext";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { GlobalPlayerSearch } from "@/components/search/GlobalPlayerSearch";
@@ -239,10 +240,19 @@ export default function Clubs() {
                 onClick={() => navigate(`/clubs/${club.id}`)}
               >
                 <CardHeader>
-                  <CardTitle className="flex justify-between items-start">
-                    <span className="text-foreground group-hover:text-primary transition-colors">
-                      {club.name}
-                    </span>
+                  <CardTitle className="flex justify-between items-start gap-3">
+                    <div className="flex items-center gap-3">
+                      <ClubLogoUpload
+                        clubId={club.id}
+                        currentLogoUrl={club.logo_url}
+                        clubName={club.name}
+                        size="md"
+                        editable={false}
+                      />
+                      <span className="text-foreground group-hover:text-primary transition-colors">
+                        {club.name}
+                      </span>
+                    </div>
                     <Button
                       variant="ghost"
                       size="icon"

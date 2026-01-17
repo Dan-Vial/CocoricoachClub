@@ -8,7 +8,8 @@ export type SportType =
   | "handball" 
   | "judo" 
   | "volleyball"
-  | "bowling";
+  | "bowling"
+  | "basketball";
 
 export interface SportTypeOption {
   value: SportType;
@@ -26,6 +27,7 @@ export const SPORT_TYPES: SportTypeOption[] = [
   { value: "football", label: "Football", category: "team" },
   { value: "handball", label: "Handball", category: "team" },
   { value: "volleyball", label: "Volleyball", category: "team" },
+  { value: "basketball", label: "Basketball", category: "team" },
   // Individual sports
   { value: "judo", label: "Judo", category: "individual" },
   { value: "bowling", label: "Bowling", category: "individual" },
@@ -53,7 +55,7 @@ export const isIndividualSport = (type: string): boolean => {
 };
 
 export const isTeamSport = (type: string): boolean => {
-  return ["XV", "7", "15", "academie", "national_team", "football", "handball", "volleyball"].includes(type);
+  return ["XV", "7", "15", "academie", "national_team", "football", "handball", "volleyball", "basketball"].includes(type);
 };
 
 export const getRugbyTypes = (): SportTypeOption[] => {

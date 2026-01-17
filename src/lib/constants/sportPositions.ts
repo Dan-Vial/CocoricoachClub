@@ -73,10 +73,19 @@ export const VOLLEYBALL_POSITIONS: Position[] = [
   { id: "6", name: "Arrière centre (P6)", x: 50, y: 75 },
 ];
 
+// Basketball positions (5 players)
+export const BASKETBALL_POSITIONS: Position[] = [
+  { id: "1", name: "Meneur (Point Guard)", x: 50, y: 75 },
+  { id: "2", name: "Arrière (Shooting Guard)", x: 20, y: 60 },
+  { id: "3", name: "Ailier (Small Forward)", x: 80, y: 60 },
+  { id: "4", name: "Ailier fort (Power Forward)", x: 25, y: 40 },
+  { id: "5", name: "Pivot (Center)", x: 75, y: 40 },
+];
+
 // Judo - no field positions, just weight categories
 export const JUDO_POSITIONS: Position[] = [];
 
-export type SportType = "XV" | "7" | "football" | "handball" | "volleyball" | "Judo" | "academie" | "national_team";
+export type SportType = "XV" | "7" | "football" | "handball" | "volleyball" | "basketball" | "Judo" | "academie" | "national_team";
 
 export function getPositionsForSport(sportType: SportType | string): Position[] {
   switch (sportType) {
@@ -92,6 +101,8 @@ export function getPositionsForSport(sportType: SportType | string): Position[] 
       return HANDBALL_POSITIONS;
     case "volleyball":
       return VOLLEYBALL_POSITIONS;
+    case "basketball":
+      return BASKETBALL_POSITIONS;
     case "Judo":
       return JUDO_POSITIONS;
     default:
@@ -131,6 +142,13 @@ export function getSportFieldConfig(sportType: SportType | string) {
         bgColor: "from-orange-500 to-orange-600",
         aspectRatio: "1/1",
         label: "Volleyball",
+      };
+    case "basketball":
+      return {
+        type: "basketball",
+        bgColor: "from-orange-600 to-orange-700",
+        aspectRatio: "2/3",
+        label: "Basketball",
       };
     case "Judo":
       return {

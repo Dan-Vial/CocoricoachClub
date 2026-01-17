@@ -209,6 +209,50 @@ export const TEST_CATEGORIES: TestCategory[] = [
       { value: "bowling_post_failure", label: "Comportement post-échec (frame ouverte)", unit: "score" },
     ],
   },
+  {
+    value: "basketball_agility",
+    label: "Basketball - Agilité / Vitesse",
+    tests: [
+      { value: "basketball_lane_agility", label: "Lane Agility Test", unit: "s", isTime: true },
+      { value: "basketball_t_test", label: "Agility T-Test", unit: "s", isTime: true },
+      { value: "basketball_pro_agility", label: "Pro Agility (5-10-5)", unit: "s", isTime: true },
+      { value: "basketball_shuttle_run", label: "Shuttle Run", unit: "s", isTime: true },
+      { value: "basketball_defensive_slides", label: "Defensive Slides Test", unit: "s", isTime: true },
+      { value: "basketball_sprint_3_4", label: "Sprint 3/4 de terrain", unit: "s", isTime: true },
+      { value: "basketball_sprint_full", label: "Sprint terrain complet", unit: "s", isTime: true },
+    ],
+  },
+  {
+    value: "basketball_jump",
+    label: "Basketball - Détente verticale",
+    tests: [
+      { value: "basketball_vertical_jump_standing", label: "Vertical Jump (debout)", unit: "cm" },
+      { value: "basketball_vertical_jump_max", label: "Vertical Jump (avec élan)", unit: "cm" },
+      { value: "basketball_approach_jump", label: "Approach Jump (max reach)", unit: "cm" },
+      { value: "basketball_drop_jump", label: "Drop Jump (réactivité)", unit: "cm" },
+    ],
+  },
+  {
+    value: "basketball_endurance",
+    label: "Basketball - Endurance",
+    tests: [
+      { value: "basketball_beep_test", label: "Beep Test (Yo-Yo)", unit: "palier" },
+      { value: "basketball_suicide_drill", label: "Suicide Drill (ligne à ligne)", unit: "s", isTime: true },
+      { value: "basketball_free_throw_fatigue", label: "Free Throw Fatigue Test", unit: "%" },
+      { value: "basketball_repeated_sprint", label: "Repeated Sprint Ability", unit: "moyenne s", isTime: true },
+    ],
+  },
+  {
+    value: "basketball_skills",
+    label: "Basketball - Compétences spécifiques",
+    tests: [
+      { value: "basketball_ball_handling", label: "Ball Handling Test", unit: "s", isTime: true },
+      { value: "basketball_layup_drill", label: "Layup Drill (1 min)", unit: "réussites" },
+      { value: "basketball_spot_shooting", label: "Spot Shooting (5 positions)", unit: "/25" },
+      { value: "basketball_3pt_percentage", label: "3-Point Shooting %", unit: "%" },
+      { value: "basketball_free_throw", label: "Free Throw %", unit: "%" },
+    ],
+  },
 ];
 
 // Fonction utilitaire pour obtenir le label complet d'un test
@@ -246,7 +290,7 @@ export function getAllTests(): TestOption[] {
 // Fonction pour obtenir les catégories de tests par sport
 export function getTestCategoriesForSport(sportType: string): TestCategory[] {
   const baseCategories = TEST_CATEGORIES.filter(cat => 
-    !cat.value.startsWith("bowling_")
+    !cat.value.startsWith("bowling_") && !cat.value.startsWith("basketball_")
   );
   
   if (sportType === "bowling") {
@@ -254,6 +298,13 @@ export function getTestCategoriesForSport(sportType: string): TestCategory[] {
       cat.value.startsWith("bowling_")
     );
     return [...baseCategories, ...bowlingCategories];
+  }
+  
+  if (sportType === "basketball") {
+    const basketballCategories = TEST_CATEGORIES.filter(cat => 
+      cat.value.startsWith("basketball_")
+    );
+    return [...baseCategories, ...basketballCategories];
   }
   
   return baseCategories;

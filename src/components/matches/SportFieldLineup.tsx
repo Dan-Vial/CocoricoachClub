@@ -105,6 +105,35 @@ function VolleyballFieldMarkings() {
   );
 }
 
+function BasketballFieldMarkings() {
+  return (
+    <div className="absolute inset-0">
+      {/* Court border */}
+      <div className="absolute inset-[3%] border-2 border-white/60" />
+      {/* Halfway line */}
+      <div className="absolute top-[50%] left-[3%] right-[3%] h-[2px] bg-white/60" />
+      {/* Center circle */}
+      <div className="absolute top-[50%] left-[50%] w-[12%] h-[8%] -translate-x-1/2 -translate-y-1/2 border-2 border-white/50 rounded-full" />
+      {/* Top 3-point arc */}
+      <div className="absolute top-[3%] left-[15%] right-[15%] h-[30%] border-2 border-white/50 border-t-0 rounded-b-full" />
+      {/* Top key/paint */}
+      <div className="absolute top-[3%] left-[30%] right-[30%] h-[20%] border-2 border-white/50 border-t-0" />
+      {/* Top free throw circle */}
+      <div className="absolute top-[18%] left-[50%] w-[12%] h-[8%] -translate-x-1/2 border-2 border-dashed border-white/40 rounded-full" />
+      {/* Top basket */}
+      <div className="absolute top-[5%] left-[50%] w-[3%] h-[1.5%] -translate-x-1/2 bg-white/60" />
+      {/* Bottom 3-point arc */}
+      <div className="absolute bottom-[3%] left-[15%] right-[15%] h-[30%] border-2 border-white/50 border-b-0 rounded-t-full" />
+      {/* Bottom key/paint */}
+      <div className="absolute bottom-[3%] left-[30%] right-[30%] h-[20%] border-2 border-white/50 border-b-0" />
+      {/* Bottom free throw circle */}
+      <div className="absolute bottom-[18%] left-[50%] w-[12%] h-[8%] -translate-x-1/2 border-2 border-dashed border-white/40 rounded-full" />
+      {/* Bottom basket */}
+      <div className="absolute bottom-[5%] left-[50%] w-[3%] h-[1.5%] -translate-x-1/2 bg-white/60" />
+    </div>
+  );
+}
+
 export function SportFieldLineup({ 
   players, 
   sportType = "XV", 
@@ -185,6 +214,8 @@ export function SportFieldLineup({
         return <HandballFieldMarkings />;
       case "volleyball":
         return <VolleyballFieldMarkings />;
+      case "basketball":
+        return <BasketballFieldMarkings />;
       default:
         return <RugbyFieldMarkings />;
     }

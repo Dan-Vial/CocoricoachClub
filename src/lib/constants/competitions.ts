@@ -237,6 +237,113 @@ export const VOLLEYBALL_COMPETITIONS: CompetitionCategory[] = [
   },
 ];
 
+// Basketball competitions
+export const BASKETBALL_COMPETITIONS: CompetitionCategory[] = [
+  {
+    label: "Championnats Jeunes - Locaux",
+    options: [
+      "U11 Local",
+      "U13 Local",
+      "U15 Local",
+      "U17 Local",
+      "U18 Local",
+      "U20 Local",
+    ],
+  },
+  {
+    label: "Championnats Jeunes - Départementaux",
+    options: [
+      "U11 Départemental",
+      "U13 Départemental",
+      "U15 Départemental",
+      "U17 Départemental",
+      "U18 Départemental",
+      "U20 Départemental",
+    ],
+  },
+  {
+    label: "Championnats Jeunes - Régionaux",
+    options: [
+      "U13 Régional",
+      "U15 Régional Excellence",
+      "U15 Régional",
+      "U17 Régional Excellence",
+      "U17 Régional",
+      "U18 Régional Excellence",
+      "U18 Régional",
+      "U20 Régional",
+    ],
+  },
+  {
+    label: "Championnats Jeunes - Nationaux",
+    options: [
+      "U15 National",
+      "U17 National",
+      "U18 National",
+      "U20 National",
+      "Espoirs Pro A",
+      "Espoirs Pro B",
+    ],
+  },
+  {
+    label: "Championnats Seniors - Nationaux",
+    options: [
+      "Betclic Elite (Pro A)",
+      "Pro B",
+      "Nationale 1",
+      "Nationale 2",
+      "Nationale 3",
+    ],
+  },
+  {
+    label: "Championnats Régionaux",
+    options: [
+      "Pré-Nationale",
+      "Régionale 1",
+      "Régionale 2",
+      "Régionale 3",
+    ],
+  },
+  {
+    label: "Championnats Départementaux",
+    options: [
+      "Départemental 1",
+      "Départemental 2",
+      "Départemental 3",
+      "Départemental 4",
+    ],
+  },
+  {
+    label: "Compétitions Internationales",
+    options: [
+      "EuroLeague",
+      "EuroCup",
+      "FIBA Champions League",
+      "FIBA Europe Cup",
+      "Championnat d'Europe",
+      "Coupe du Monde",
+      "Jeux Olympiques",
+    ],
+  },
+  {
+    label: "Coupes",
+    options: [
+      "Coupe de France",
+      "Leaders Cup",
+      "Trophée du Futur",
+      "Coupe Régionale",
+      "Coupe Départementale",
+    ],
+  },
+  {
+    label: "Autres",
+    options: [
+      "Tournois",
+      "Matchs amicaux",
+    ],
+  },
+];
+
 // Judo competitions
 export const JUDO_COMPETITIONS: CompetitionCategory[] = [
   {
@@ -355,6 +462,8 @@ export const getCompetitionsBySport = (sportType: string): CompetitionCategory[]
       return HANDBALL_COMPETITIONS;
     case "volleyball":
       return VOLLEYBALL_COMPETITIONS;
+    case "basketball":
+      return BASKETBALL_COMPETITIONS;
     case "judo":
       return JUDO_COMPETITIONS;
     case "bowling":
