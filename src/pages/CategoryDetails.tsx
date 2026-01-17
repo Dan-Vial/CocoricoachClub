@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, LayoutDashboard, Users, Calendar, Zap, Heart, Trophy, MessageSquare } from "lucide-react";
+import { ArrowLeft, LayoutDashboard, Users, Calendar, Zap, Heart, Trophy, MessageSquare, Loader2 } from "lucide-react";
 import { OverviewTab } from "@/components/category/OverviewTab";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { CategoryCoverUpload } from "@/components/category/CategoryCoverUpload";
@@ -11,6 +11,8 @@ import { GlobalPlayerSearch } from "@/components/search/GlobalPlayerSearch";
 import { EditableCategoryName } from "@/components/category/EditableCategoryName";
 import { EditableRugbyType } from "@/components/category/EditableRugbyType";
 import { ViewerModeProvider, useViewerModeContext } from "@/contexts/ViewerModeContext";
+import { usePublicAccess } from "@/contexts/PublicAccessContext";
+import { PublicDataProvider, usePublicDataContext } from "@/contexts/PublicDataContext";
 
 // New mega-tabs
 import { EffectifTab } from "@/components/category/tabs/EffectifTab";
@@ -24,23 +26,64 @@ function CategoryDetailsContent() {
   const { categoryId } = useParams();
   const navigate = useNavigate();
   const { isViewer } = useViewerModeContext();
+  const { isPublicAccess, token, clubName: publicClubName, categoryName: publicCategoryName } = usePublicAccess();
 
-  const { data: category } = useQuery({
-    queryKey: ["category", categoryId],
+  // Fetch category data - use edge function for public access, direct query for authenticated
+  const { data: category, isLoading } = useQuery({
+    queryKey: ["category", categoryId, isPublicAccess],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("categories")
-        .select("*, clubs(name, id), rugby_type")
-        .eq("id", categoryId)
-        .single();
-      if (error) throw error;
-      return data;
+      if (isPublicAccess && token) {
+        // Use edge function for public access
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/public-data?token=${token}&type=category`,
+          {
+            headers: {
+              "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            },
+          }
+        );
+        const result = await response.json();
+        if (!result.success) {
+          throw new Error(result.error || "Failed to fetch category");
+        }
+        return result.data;
+      } else {
+        const { data, error } = await supabase
+          .from("categories")
+          .select("*, clubs(name, id), rugby_type")
+          .eq("id", categoryId)
+          .single();
+        if (error) throw error;
+        return data;
+      }
     },
   });
 
   const isRugby7 = category?.rugby_type === "7";
   const isAcademy = category?.rugby_type === "academie";
   const isNationalTeam = category?.rugby_type === "national_team";
+
+  // In public mode, use the context values as fallback
+  const displayCategoryName = category?.name || publicCategoryName || "Catégorie";
+  const displayClubName = category?.clubs?.name || publicClubName || "Club";
+
+  const handleBack = () => {
+    if (isPublicAccess && token) {
+      navigate(`/public-view?token=${token}`);
+    } else if (category?.clubs?.id) {
+      navigate(`/clubs/${category.clubs.id}`);
+    } else {
+      navigate("/");
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -62,10 +105,12 @@ function CategoryDetailsContent() {
               variant="ghost"
               size="sm"
               className="text-primary-foreground hover:bg-primary-foreground/10"
-              onClick={() => navigate(`/clubs/${category?.clubs?.id}`)}
+              onClick={handleBack}
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">Retour aux catégories</span>
+              <span className="hidden sm:inline">
+                {isPublicAccess ? "Retour" : "Retour aux catégories"}
+              </span>
               <span className="sm:hidden">Retour</span>
             </Button>
             {!isViewer && (
@@ -77,19 +122,23 @@ function CategoryDetailsContent() {
           </div>
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
             <div className="min-w-0 flex-1">
-              {categoryId && category?.name && (
+              {categoryId && (
                 isViewer ? (
-                  <h1 className="text-2xl sm:text-3xl font-bold text-primary-foreground truncate">{category.name}</h1>
+                  <h1 className="text-2xl sm:text-3xl font-bold text-primary-foreground truncate">
+                    {displayCategoryName}
+                  </h1>
                 ) : (
-                  <EditableCategoryName 
-                    categoryId={categoryId} 
-                    initialName={category.name}
-                  />
+                  category?.name && (
+                    <EditableCategoryName 
+                      categoryId={categoryId} 
+                      initialName={category.name}
+                    />
+                  )
                 )
               )}
               <div className="flex items-center gap-2 sm:gap-4 mt-2 flex-wrap">
                 <p className="text-primary-foreground/90 text-sm sm:text-base truncate">
-                  {category?.clubs?.name}
+                  {displayClubName}
                 </p>
                 {categoryId && category?.rugby_type && (
                   <>
@@ -104,6 +153,7 @@ function CategoryDetailsContent() {
                          category.rugby_type === "handball" ? "Handball" :
                          category.rugby_type === "judo" ? "Judo" :
                          category.rugby_type === "volleyball" ? "Volleyball" :
+                         category.rugby_type === "bowling" ? "Bowling" :
                          category.rugby_type}
                       </span>
                     ) : (
@@ -214,20 +264,44 @@ function CategoryDetailsContent() {
 
 export default function CategoryDetails() {
   const { categoryId } = useParams();
+  const { isPublicAccess, token } = usePublicAccess();
 
   // Fetch category to get club_id for the provider
-  const { data: category } = useQuery({
-    queryKey: ["category-for-viewer", categoryId],
+  // For public access, use edge function
+  const { data: category, isLoading } = useQuery({
+    queryKey: ["category-for-viewer", categoryId, isPublicAccess],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("categories")
-        .select("club_id")
-        .eq("id", categoryId)
-        .single();
-      if (error) throw error;
-      return data;
+      if (isPublicAccess && token) {
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/public-data?token=${token}&type=category`,
+          {
+            headers: {
+              "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            },
+          }
+        );
+        const result = await response.json();
+        if (!result.success) return null;
+        return { club_id: result.data?.clubs?.id };
+      } else {
+        const { data, error } = await supabase
+          .from("categories")
+          .select("club_id")
+          .eq("id", categoryId)
+          .single();
+        if (error) return null;
+        return data;
+      }
     },
   });
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <ViewerModeProvider clubId={category?.club_id} categoryId={categoryId}>
