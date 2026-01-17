@@ -3,7 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Users, RotateCcw } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Users, RotateCcw, UserPlus } from "lucide-react";
 import { getPositionsForSport, getSportFieldConfig, type Position } from "@/lib/constants/sportPositions";
 
 interface Player {
@@ -16,7 +17,8 @@ interface SportFieldLineupProps {
   players: Player[];
   sportType: string;
   initialLineup?: Record<string, string>;
-  onLineupChange?: (lineup: Record<string, string>) => void;
+  initialSubstitutes?: string[];
+  onLineupChange?: (lineup: Record<string, string>, substitutes: string[]) => void;
   readOnly?: boolean;
 }
 
@@ -138,19 +140,29 @@ export function SportFieldLineup({
   players, 
   sportType = "XV", 
   initialLineup = {},
+  initialSubstitutes = [],
   onLineupChange,
   readOnly = false 
 }: SportFieldLineupProps) {
   const [lineup, setLineup] = useState<Record<string, string>>(initialLineup);
+  const [substitutes, setSubstitutes] = useState<string[]>(initialSubstitutes);
   const [selectedPosition, setSelectedPosition] = useState<string | null>(null);
 
   const positions = getPositionsForSport(sportType);
   const fieldConfig = getSportFieldConfig(sportType);
 
+  // Players already on the field (starters)
+  const starterIds = useMemo(() => Object.values(lineup), [lineup]);
+  
+  // Available players (not starters, not substitutes)
   const availablePlayers = useMemo(() => {
-    const assignedPlayerIds = Object.values(lineup);
-    return players.filter(p => !assignedPlayerIds.includes(p.id));
-  }, [players, lineup]);
+    return players.filter(p => !starterIds.includes(p.id) && !substitutes.includes(p.id));
+  }, [players, starterIds, substitutes]);
+
+  // Substitute players
+  const substitutePlayers = useMemo(() => {
+    return players.filter(p => substitutes.includes(p.id));
+  }, [players, substitutes]);
 
   const handlePositionClick = (positionId: string) => {
     if (readOnly) return;
@@ -162,7 +174,7 @@ export function SportFieldLineup({
     
     const newLineup = { ...lineup, [selectedPosition]: playerId };
     setLineup(newLineup);
-    onLineupChange?.(newLineup);
+    onLineupChange?.(newLineup, substitutes);
     setSelectedPosition(null);
   };
 
@@ -171,12 +183,37 @@ export function SportFieldLineup({
     const newLineup = { ...lineup };
     delete newLineup[positionId];
     setLineup(newLineup);
-    onLineupChange?.(newLineup);
+    onLineupChange?.(newLineup, substitutes);
+  };
+
+  const handleToggleSubstitute = (playerId: string) => {
+    if (readOnly) return;
+    
+    let newSubs: string[];
+    if (substitutes.includes(playerId)) {
+      newSubs = substitutes.filter(id => id !== playerId);
+    } else {
+      // Check if we've reached the max substitutes
+      if (substitutes.length >= fieldConfig.substitutes) {
+        return; // Don't add more
+      }
+      newSubs = [...substitutes, playerId];
+    }
+    setSubstitutes(newSubs);
+    onLineupChange?.(lineup, newSubs);
+  };
+
+  const handleRemoveSubstitute = (playerId: string) => {
+    if (readOnly) return;
+    const newSubs = substitutes.filter(id => id !== playerId);
+    setSubstitutes(newSubs);
+    onLineupChange?.(lineup, newSubs);
   };
 
   const resetLineup = () => {
     setLineup({});
-    onLineupChange?.({});
+    setSubstitutes([]);
+    onLineupChange?.({}, []);
   };
 
   const getPlayerName = (playerId: string) => {
@@ -233,119 +270,168 @@ export function SportFieldLineup({
   };
 
   return (
-    <Card className="w-full">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5 text-primary" />
-            Composition {fieldConfig.label}
-            <Badge variant="secondary">
-              {filledPositions}/{totalPositions}
-            </Badge>
-          </CardTitle>
-          {!readOnly && (
-            <div className="flex gap-2">
+    <div className="space-y-4">
+      <Card className="w-full">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Users className="h-5 w-5 text-primary" />
+              Titulaires {fieldConfig.label}
+              <Badge variant="secondary">
+                {filledPositions}/{totalPositions}
+              </Badge>
+            </CardTitle>
+            {!readOnly && (
               <Button variant="outline" size="sm" onClick={resetLineup}>
                 <RotateCcw className="h-4 w-4 mr-1" />
                 Reset
               </Button>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Sport Field */}
+          <div 
+            className={`relative w-full bg-gradient-to-b ${fieldConfig.bgColor} rounded-lg overflow-hidden`}
+            style={{ aspectRatio: fieldConfig.aspectRatio, maxHeight: "400px" }}
+          >
+            {/* Field markings */}
+            {renderFieldMarkings()}
+
+            {/* Player positions */}
+            {positions.map((pos) => {
+              const playerId = lineup[pos.id];
+              const isSelected = selectedPosition === pos.id;
+              
+              return (
+                <div
+                  key={pos.id}
+                  className="absolute transform -translate-x-1/2 -translate-y-1/2 transition-all"
+                  style={{ left: `${pos.x}%`, top: `${pos.y}%` }}
+                >
+                  <button
+                    onClick={() => handlePositionClick(pos.id)}
+                    onDoubleClick={() => playerId && handleRemovePlayer(pos.id)}
+                    className={`
+                      relative flex flex-col items-center justify-center
+                      min-w-[2.5rem] min-h-[2.5rem] rounded-full transition-all
+                      ${playerId 
+                        ? "bg-primary text-primary-foreground shadow-lg" 
+                        : "bg-white/20 border-2 border-dashed border-white/50 text-white"
+                      }
+                      ${isSelected ? "ring-4 ring-yellow-400 scale-110" : ""}
+                      ${!readOnly ? "hover:scale-105 cursor-pointer" : ""}
+                    `}
+                    disabled={readOnly}
+                    title={playerId ? `${getPlayerName(playerId)} - Double-clic pour retirer` : pos.name}
+                  >
+                    <span className="text-xs font-bold">{pos.id}</span>
+                    {playerId && (
+                      <span className="absolute -bottom-5 text-[9px] font-medium text-white bg-black/60 px-1 rounded whitespace-nowrap max-w-[50px] truncate">
+                        {getPlayerName(playerId).split(" ")[0]}
+                      </span>
+                    )}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Player selection for position */}
+          {!readOnly && selectedPosition && (
+            <div className="p-3 bg-muted rounded-lg">
+              <p className="text-sm font-medium mb-2">
+                Position {selectedPosition}: {positions.find(p => p.id === selectedPosition)?.name}
+              </p>
+              <Select onValueChange={handlePlayerSelect}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner un joueur..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {availablePlayers.map((player) => (
+                    <SelectItem key={player.id} value={player.id}>
+                      {player.name} {player.position && `(${player.position})`}
+                    </SelectItem>
+                  ))}
+                  {availablePlayers.length === 0 && (
+                    <SelectItem value="none" disabled>
+                      Tous les joueurs sont assignés
+                    </SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
             </div>
           )}
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Sport Field */}
-        <div 
-          className={`relative w-full bg-gradient-to-b ${fieldConfig.bgColor} rounded-lg overflow-hidden`}
-          style={{ aspectRatio: fieldConfig.aspectRatio, maxHeight: "500px" }}
-        >
-          {/* Field markings */}
-          {renderFieldMarkings()}
+        </CardContent>
+      </Card>
 
-          {/* Player positions */}
-          {positions.map((pos) => {
-            const playerId = lineup[pos.id];
-            const isSelected = selectedPosition === pos.id;
-            
-            return (
-              <div
-                key={pos.id}
-                className="absolute transform -translate-x-1/2 -translate-y-1/2 transition-all"
-                style={{ left: `${pos.x}%`, top: `${pos.y}%` }}
-              >
-                <button
-                  onClick={() => handlePositionClick(pos.id)}
-                  onDoubleClick={() => playerId && handleRemovePlayer(pos.id)}
-                  className={`
-                    relative flex flex-col items-center justify-center
-                    min-w-[3rem] min-h-[3rem] rounded-full transition-all
-                    ${playerId 
-                      ? "bg-primary text-primary-foreground shadow-lg" 
-                      : "bg-white/20 border-2 border-dashed border-white/50 text-white"
-                    }
-                    ${isSelected ? "ring-4 ring-yellow-400 scale-110" : ""}
-                    ${!readOnly ? "hover:scale-105 cursor-pointer" : ""}
-                  `}
-                  disabled={readOnly}
-                  title={playerId ? `${getPlayerName(playerId)} - Double-clic pour retirer` : pos.name}
-                >
-                  <span className="text-xs font-bold">{pos.id}</span>
-                  {playerId && (
-                    <span className="absolute -bottom-5 text-[10px] font-medium text-white bg-black/60 px-1 rounded whitespace-nowrap max-w-[60px] truncate">
-                      {getPlayerName(playerId).split(" ")[0]}
-                    </span>
-                  )}
-                </button>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Player selection */}
-        {!readOnly && selectedPosition && (
-          <div className="p-3 bg-muted rounded-lg">
-            <p className="text-sm font-medium mb-2">
-              Position {selectedPosition}: {positions.find(p => p.id === selectedPosition)?.name}
-            </p>
-            <Select onValueChange={handlePlayerSelect}>
-              <SelectTrigger>
-                <SelectValue placeholder="Sélectionner un joueur..." />
-              </SelectTrigger>
-              <SelectContent>
-                {availablePlayers.map((player) => (
-                  <SelectItem key={player.id} value={player.id}>
-                    {player.name} {player.position && `(${player.position})`}
-                  </SelectItem>
-                ))}
-                {availablePlayers.length === 0 && (
-                  <SelectItem value="none" disabled>
-                    Tous les joueurs sont assignés
-                  </SelectItem>
-                )}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
-
-        {/* Bench / Available players */}
-        {!readOnly && availablePlayers.length > 0 && (
-          <div>
-            <p className="text-sm font-medium mb-2">Joueurs disponibles ({availablePlayers.length})</p>
+      {/* Substitutes Section */}
+      <Card className="w-full">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <UserPlus className="h-5 w-5 text-orange-500" />
+            Remplaçants
+            <Badge variant="outline" className="text-orange-600 border-orange-300">
+              {substitutes.length}/{fieldConfig.substitutes}
+            </Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {/* Current substitutes */}
+          {substitutePlayers.length > 0 && (
             <div className="flex flex-wrap gap-2">
-              {availablePlayers.slice(0, 10).map((player) => (
-                <Badge key={player.id} variant="outline" className="text-xs">
-                  {player.name}
+              {substitutePlayers.map((player, index) => (
+                <Badge 
+                  key={player.id} 
+                  variant="secondary" 
+                  className="text-sm py-1 px-2 flex items-center gap-1"
+                >
+                  <span className="font-bold text-orange-600">{fieldConfig.starters + index + 1}</span>
+                  <span>{player.name}</span>
+                  {!readOnly && (
+                    <button
+                      onClick={() => handleRemoveSubstitute(player.id)}
+                      className="ml-1 text-muted-foreground hover:text-destructive"
+                    >
+                      ×
+                    </button>
+                  )}
                 </Badge>
               ))}
-              {availablePlayers.length > 10 && (
-                <Badge variant="secondary" className="text-xs">
-                  +{availablePlayers.length - 10} autres
-                </Badge>
-              )}
             </div>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+          )}
+
+          {/* Add substitutes */}
+          {!readOnly && substitutes.length < fieldConfig.substitutes && availablePlayers.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs text-muted-foreground">
+                Sélectionner les remplaçants ({fieldConfig.substitutes - substitutes.length} places restantes)
+              </p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-32 overflow-y-auto">
+                {availablePlayers.map((player) => (
+                  <div 
+                    key={player.id}
+                    className="flex items-center gap-2 p-2 rounded border hover:bg-muted/50 cursor-pointer"
+                    onClick={() => handleToggleSubstitute(player.id)}
+                  >
+                    <Checkbox 
+                      checked={substitutes.includes(player.id)}
+                      onCheckedChange={() => handleToggleSubstitute(player.id)}
+                    />
+                    <span className="text-sm truncate">{player.name}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {substitutes.length >= fieldConfig.substitutes && (
+            <p className="text-xs text-muted-foreground">
+              Effectif complet ({fieldConfig.totalSquad} joueurs au total)
+            </p>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }

@@ -142,35 +142,47 @@ export function MatchLineupDialog({
     );
   };
 
-  const handleFieldLineupChange = (fieldLineup: Record<string, string>) => {
+  const handleFieldLineupChange = (fieldLineup: Record<string, string>, substitutes: string[]) => {
     // Update lineup from field visualization
     setLineupData(prev => prev.map(p => {
       const positionNumber = Object.entries(fieldLineup).find(([_, playerId]) => playerId === p.playerId)?.[0];
       if (positionNumber) {
+        // Player is a starter on the field
         return { ...p, isSelected: true, isStarter: true, position: positionNumber };
       }
-      // Keep players that were selected but not on field as subs
-      return p;
+      if (substitutes.includes(p.playerId)) {
+        // Player is a substitute
+        const subIndex = substitutes.indexOf(p.playerId);
+        return { ...p, isSelected: true, isStarter: false, position: `SUB${subIndex + 1}` };
+      }
+      // Player not selected
+      return { ...p, isSelected: false, isStarter: false, position: "" };
     }));
   };
 
   const selectedCount = lineupData?.filter((p) => p.isSelected).length ?? 0;
   const starterCount = lineupData?.filter((p) => p.isSelected && p.isStarter).length ?? 0;
+  const substituteCount = lineupData?.filter((p) => p.isSelected && !p.isStarter).length ?? 0;
   
   // Check if this sport has a field layout
   const hasFieldLayout = !fieldConfig.noField;
 
   // Convert lineup data to field format
   const fieldLineup = lineupData
-    .filter(p => p.isSelected && p.isStarter && p.position)
+    .filter(p => p.isSelected && p.isStarter && p.position && !p.position.startsWith("SUB"))
     .reduce((acc, p) => {
       acc[p.position] = p.playerId;
       return acc;
     }, {} as Record<string, string>);
 
+  // Get initial substitutes
+  const initialSubstitutes = lineupData
+    .filter(p => p.isSelected && !p.isStarter)
+    .map(p => p.playerId);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[700px] h-[90vh] flex flex-col overflow-hidden">
+      <DialogContent className="sm:max-w-[750px] h-[90vh] flex flex-col overflow-hidden">
         <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -192,12 +204,17 @@ export function MatchLineupDialog({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex gap-4 text-sm text-muted-foreground mb-2 flex-shrink-0">
+        <div className="flex gap-4 text-sm text-muted-foreground mb-2 flex-shrink-0 flex-wrap">
           <span className="flex items-center gap-1">
             <UserCheck className="h-4 w-4" />
-            {selectedCount} {isIndividual ? "participants sélectionnés" : "joueurs sélectionnés"}
+            {selectedCount} {isIndividual ? "participants" : "joueurs"}
           </span>
-          {!isIndividual && <span>{starterCount} titulaires</span>}
+          {!isIndividual && (
+            <>
+              <span>{starterCount}/{fieldConfig.starters} titulaires</span>
+              <span>{substituteCount}/{fieldConfig.substitutes} remplaçants</span>
+            </>
+          )}
         </div>
 
         <div className="flex-1 min-h-0 overflow-y-auto">
@@ -243,6 +260,7 @@ export function MatchLineupDialog({
                   players={players || []}
                   sportType={sportType}
                   initialLineup={fieldLineup}
+                  initialSubstitutes={initialSubstitutes}
                   onLineupChange={handleFieldLineupChange}
                 />
               ) : (
@@ -252,7 +270,9 @@ export function MatchLineupDialog({
                       key={player.playerId}
                       className={`p-3 rounded-lg border transition-colors ${
                         player.isSelected
-                          ? "bg-primary/5 border-primary/20"
+                          ? player.isStarter 
+                            ? "bg-primary/5 border-primary/20"
+                            : "bg-orange-50 border-orange-200 dark:bg-orange-950/20 dark:border-orange-800"
                           : "bg-card"
                       }`}
                     >

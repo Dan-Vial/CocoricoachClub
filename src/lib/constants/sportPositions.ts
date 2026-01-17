@@ -154,6 +154,9 @@ export function getSportFieldConfig(sportType: SportType | string) {
         bgColor: "from-green-600 to-green-700",
         aspectRatio: "2/3",
         label: "Rugby XV",
+        starters: 15,
+        substitutes: 8,
+        totalSquad: 23,
       };
     case "7":
       return {
@@ -161,6 +164,9 @@ export function getSportFieldConfig(sportType: SportType | string) {
         bgColor: "from-green-600 to-green-700",
         aspectRatio: "2/3",
         label: "Rugby 7s",
+        starters: 7,
+        substitutes: 5,
+        totalSquad: 12,
       };
     case "XIII":
     case "xiii":
@@ -169,6 +175,9 @@ export function getSportFieldConfig(sportType: SportType | string) {
         bgColor: "from-green-600 to-green-700",
         aspectRatio: "2/3",
         label: "Rugby XIII",
+        starters: 13,
+        substitutes: 4,
+        totalSquad: 17,
       };
     case "football":
       return {
@@ -176,6 +185,9 @@ export function getSportFieldConfig(sportType: SportType | string) {
         bgColor: "from-green-500 to-green-600",
         aspectRatio: "3/4",
         label: "Football",
+        starters: 11,
+        substitutes: 9,
+        totalSquad: 20,
       };
     case "handball":
       return {
@@ -183,6 +195,9 @@ export function getSportFieldConfig(sportType: SportType | string) {
         bgColor: "from-amber-600 to-amber-700",
         aspectRatio: "2/3",
         label: "Handball",
+        starters: 7,
+        substitutes: 7,
+        totalSquad: 14,
       };
     case "volleyball":
       return {
@@ -190,6 +205,9 @@ export function getSportFieldConfig(sportType: SportType | string) {
         bgColor: "from-orange-500 to-orange-600",
         aspectRatio: "1/1",
         label: "Volleyball",
+        starters: 6,
+        substitutes: 6,
+        totalSquad: 12,
       };
     case "basketball":
       return {
@@ -197,6 +215,9 @@ export function getSportFieldConfig(sportType: SportType | string) {
         bgColor: "from-orange-600 to-orange-700",
         aspectRatio: "2/3",
         label: "Basketball",
+        starters: 5,
+        substitutes: 7,
+        totalSquad: 12,
       };
     case "judo":
       return {
@@ -205,6 +226,9 @@ export function getSportFieldConfig(sportType: SportType | string) {
         aspectRatio: "1/1",
         label: "Judo",
         noField: true,
+        starters: 0,
+        substitutes: 0,
+        totalSquad: 0,
       };
     case "aviron":
       return {
@@ -213,6 +237,9 @@ export function getSportFieldConfig(sportType: SportType | string) {
         aspectRatio: "4/1",
         label: "Aviron",
         noField: true,
+        starters: 0,
+        substitutes: 0,
+        totalSquad: 0,
       };
     case "bowling":
       return {
@@ -221,6 +248,9 @@ export function getSportFieldConfig(sportType: SportType | string) {
         aspectRatio: "1/1",
         label: "Bowling",
         noField: true,
+        starters: 0,
+        substitutes: 0,
+        totalSquad: 0,
       };
     default:
       return {
@@ -228,6 +258,9 @@ export function getSportFieldConfig(sportType: SportType | string) {
         bgColor: "from-green-600 to-green-700",
         aspectRatio: "2/3",
         label: "Rugby",
+        starters: 15,
+        substitutes: 8,
+        totalSquad: 23,
       };
   }
 }
