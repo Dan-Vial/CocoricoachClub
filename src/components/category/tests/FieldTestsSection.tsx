@@ -12,6 +12,7 @@ import { fr } from "date-fns/locale";
 import { toast } from "sonner";
 import { AddFieldTestDialog } from "./AddFieldTestDialog";
 import { getFieldTestLabel, getFieldTestsForSport, YO_YO_LEVELS } from "@/lib/constants/fieldTests";
+import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 
 interface FieldTestsSectionProps {
   categoryId: string;
@@ -21,6 +22,7 @@ interface FieldTestsSectionProps {
 export function FieldTestsSection({ categoryId, sportType = "XV" }: FieldTestsSectionProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const queryClient = useQueryClient();
+  const { isViewer } = useViewerModeContext();
 
   const sportConfig = getFieldTestsForSport(sportType);
 
@@ -96,10 +98,12 @@ export function FieldTestsSection({ categoryId, sportType = "XV" }: FieldTestsSe
               {sportConfig.tests.length > 3 && "..."}
             </CardDescription>
           </div>
-          <Button onClick={() => setIsDialogOpen(true)} size="sm">
-            <Plus className="h-4 w-4 mr-2" />
-            Ajouter
-          </Button>
+          {!isViewer && (
+            <Button onClick={() => setIsDialogOpen(true)} size="sm">
+              <Plus className="h-4 w-4 mr-2" />
+              Ajouter
+            </Button>
+          )}
         </div>
       </CardHeader>
       <CardContent>
@@ -137,14 +141,16 @@ export function FieldTestsSection({ categoryId, sportType = "XV" }: FieldTestsSe
                       {test.notes || "-"}
                     </TableCell>
                     <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => deleteMutation.mutate(test.id)}
-                        className="text-destructive hover:text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      {!isViewer && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => deleteMutation.mutate(test.id)}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}

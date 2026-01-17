@@ -9,6 +9,7 @@ import { Add1600mRunDialog } from "./Add1600mRunDialog";
 import { AddRunningTestDialog } from "./AddRunningTestDialog";
 import { SpeedTestsTable } from "./SpeedTestsTable";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 
 interface SpeedTestsSectionProps {
   categoryId: string;
@@ -18,6 +19,7 @@ export function SpeedTestsSection({ categoryId }: SpeedTestsSectionProps) {
   const [is40mDialogOpen, setIs40mDialogOpen] = useState(false);
   const [is1600mDialogOpen, setIs1600mDialogOpen] = useState(false);
   const [isRunningDialogOpen, setIsRunningDialogOpen] = useState(false);
+  const { isViewer } = useViewerModeContext();
 
   const { data: players } = useQuery({
     queryKey: ["players", categoryId],
@@ -34,12 +36,14 @@ export function SpeedTestsSection({ categoryId }: SpeedTestsSectionProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-end">
-        <Button onClick={() => setIsRunningDialogOpen(true)} className="gap-2">
-          <Plus className="h-4 w-4" />
-          Ajouter un test de course
-        </Button>
-      </div>
+      {!isViewer && (
+        <div className="flex justify-end">
+          <Button onClick={() => setIsRunningDialogOpen(true)} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Ajouter un test de course
+          </Button>
+        </div>
+      )}
 
       <Tabs defaultValue="40m" className="space-y-4">
         <TabsList className="flex flex-wrap h-auto gap-1">
@@ -60,10 +64,12 @@ export function SpeedTestsSection({ categoryId }: SpeedTestsSectionProps) {
             <CardHeader>
               <div className="flex justify-between items-center">
                 <CardTitle>Test 40m Sprint</CardTitle>
-                <Button onClick={() => setIs40mDialogOpen(true)} size="sm" className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Ajouter
-                </Button>
+                {!isViewer && (
+                  <Button onClick={() => setIs40mDialogOpen(true)} size="sm" className="gap-2">
+                    <Plus className="h-4 w-4" />
+                    Ajouter
+                  </Button>
+                )}
               </div>
             </CardHeader>
             <CardContent>
@@ -80,10 +86,12 @@ export function SpeedTestsSection({ categoryId }: SpeedTestsSectionProps) {
             <CardHeader>
               <div className="flex justify-between items-center">
                 <CardTitle>Test 1600m Run</CardTitle>
-                <Button onClick={() => setIs1600mDialogOpen(true)} size="sm" className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Ajouter
-                </Button>
+                {!isViewer && (
+                  <Button onClick={() => setIs1600mDialogOpen(true)} size="sm" className="gap-2">
+                    <Plus className="h-4 w-4" />
+                    Ajouter
+                  </Button>
+                )}
               </div>
             </CardHeader>
             <CardContent>

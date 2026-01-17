@@ -13,6 +13,7 @@ import {
 import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { AddStrengthTestDialog } from "./AddStrengthTestDialog";
+import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 
 interface StrengthTestsSectionProps {
   categoryId: string;
@@ -21,6 +22,7 @@ interface StrengthTestsSectionProps {
 export function StrengthTestsSection({ categoryId }: StrengthTestsSectionProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const queryClient = useQueryClient();
+  const { isViewer } = useViewerModeContext();
 
   const { data: tests, isLoading } = useQuery({
     queryKey: ["strength_tests", categoryId],
@@ -70,19 +72,23 @@ export function StrengthTestsSection({ categoryId }: StrengthTestsSectionProps) 
         <p className="text-sm text-muted-foreground">
           Enregistrez les performances de musculation en kg
         </p>
-        <Button onClick={() => setIsDialogOpen(true)} size="sm" className="gap-2">
-          <Plus className="h-4 w-4" />
-          Ajouter un test
-        </Button>
+        {!isViewer && (
+          <Button onClick={() => setIsDialogOpen(true)} size="sm" className="gap-2">
+            <Plus className="h-4 w-4" />
+            Ajouter un test
+          </Button>
+        )}
       </div>
 
       {tests && tests.length === 0 ? (
         <div className="text-center py-8">
           <p className="text-muted-foreground mb-4">Aucun test de musculation enregistré</p>
-          <Button onClick={() => setIsDialogOpen(true)} variant="outline" size="sm" className="gap-2">
-            <Plus className="h-4 w-4" />
-            Ajouter le premier test
-          </Button>
+          {!isViewer && (
+            <Button onClick={() => setIsDialogOpen(true)} variant="outline" size="sm" className="gap-2">
+              <Plus className="h-4 w-4" />
+              Ajouter le premier test
+            </Button>
+          )}
         </div>
       ) : (
         <div className="overflow-x-auto">
@@ -106,17 +112,19 @@ export function StrengthTestsSection({ categoryId }: StrengthTestsSectionProps) 
                     {test.weight_kg} kg
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => {
-                        if (confirm("Êtes-vous sûr de vouloir supprimer ce test ?")) {
-                          deleteTest.mutate(test.id);
-                        }
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
+                    {!isViewer && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          if (confirm("Êtes-vous sûr de vouloir supprimer ce test ?")) {
+                            deleteTest.mutate(test.id);
+                          }
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}

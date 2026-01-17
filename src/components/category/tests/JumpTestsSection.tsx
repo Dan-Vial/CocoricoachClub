@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { AddJumpTestDialog } from "./AddJumpTestDialog";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 
 interface JumpTestsSectionProps {
   categoryId: string;
@@ -22,6 +23,7 @@ const TEST_TYPE_LABELS: Record<string, string> = {
 export function JumpTestsSection({ categoryId }: JumpTestsSectionProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const queryClient = useQueryClient();
+  const { isViewer } = useViewerModeContext();
 
   const { data: tests, isLoading } = useQuery({
     queryKey: ["jump_tests", categoryId],
@@ -69,9 +71,11 @@ export function JumpTestsSection({ categoryId }: JumpTestsSectionProps) {
     <Card className="bg-gradient-card">
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-lg">Tests de Détente</CardTitle>
-        <Button size="sm" onClick={() => setIsDialogOpen(true)}>
-          <Plus className="h-4 w-4 mr-1" /> Ajouter
-        </Button>
+        {!isViewer && (
+          <Button size="sm" onClick={() => setIsDialogOpen(true)}>
+            <Plus className="h-4 w-4 mr-1" /> Ajouter
+          </Button>
+        )}
       </CardHeader>
       <CardContent>
         {!tests || tests.length === 0 ? (
@@ -97,13 +101,15 @@ export function JumpTestsSection({ categoryId }: JumpTestsSectionProps) {
                   <TableCell className="font-semibold">{test.result_cm} cm</TableCell>
                   <TableCell className="max-w-[150px] truncate">{test.notes || "-"}</TableCell>
                   <TableCell>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => deleteMutation.mutate(test.id)}
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
+                    {!isViewer && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => deleteMutation.mutate(test.id)}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}
