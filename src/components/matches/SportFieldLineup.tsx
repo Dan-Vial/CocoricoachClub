@@ -187,19 +187,30 @@ export function SportFieldLineup({
   const filledPositions = Object.keys(lineup).length;
   const totalPositions = positions.length;
 
-  // Judo doesn't have a field
-  if (fieldConfig.type === "judo") {
+  // Individual sports don't have a field (judo, aviron, bowling)
+  if (fieldConfig.noField) {
+    const sportLabels: Record<string, string> = {
+      judo: "Combattants sélectionnés",
+      aviron: "Rameurs sélectionnés",
+      bowling: "Joueurs sélectionnés",
+    };
+    const sportMessages: Record<string, string> = {
+      judo: "Le judo ne nécessite pas de composition tactique. Utilisez la vue liste.",
+      aviron: "L'aviron ne nécessite pas de composition tactique. Utilisez la vue liste.",
+      bowling: "Le bowling ne nécessite pas de composition tactique. Utilisez la vue liste.",
+    };
+    
     return (
       <Card className="w-full">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2">
             <Users className="h-5 w-5 text-primary" />
-            Combattants sélectionnés
+            {sportLabels[fieldConfig.type] || "Participants sélectionnés"}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground text-sm mb-4">
-            Le judo ne nécessite pas de composition tactique. Utilisez la vue liste.
+            {sportMessages[fieldConfig.type] || "Ce sport ne nécessite pas de composition tactique. Utilisez la vue liste."}
           </p>
         </CardContent>
       </Card>
