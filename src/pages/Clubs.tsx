@@ -3,11 +3,11 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Trash2, LogOut, Shield, Settings } from "lucide-react";
+import { Plus, LogOut, Shield, Settings } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { AddClubDialog } from "@/components/clubs/AddClubDialog";
-import { ClubLogoUpload } from "@/components/clubs/ClubLogoUpload";
+import { ClubCard } from "@/components/clubs/ClubCard";
 import { useAuth } from "@/contexts/AuthContext";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { GlobalPlayerSearch } from "@/components/search/GlobalPlayerSearch";
@@ -234,46 +234,11 @@ export default function Clubs() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {clubs?.map((club) => (
-              <Card
-                key={club.id}
-                className="bg-gradient-card shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer group animate-fade-in"
-                onClick={() => navigate(`/clubs/${club.id}`)}
-              >
-                <CardHeader>
-                  <CardTitle className="flex justify-between items-start gap-3">
-                    <div className="flex items-center gap-3">
-                      <ClubLogoUpload
-                        clubId={club.id}
-                        currentLogoUrl={club.logo_url}
-                        clubName={club.name}
-                        size="md"
-                        editable={false}
-                      />
-                      <span className="text-foreground group-hover:text-primary transition-colors">
-                        {club.name}
-                      </span>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (confirm(`Êtes-vous sûr de vouloir supprimer ${club.name} ?`)) {
-                          deleteClub.mutate(club.id);
-                        }
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground">
-                    Créé le {new Date(club.created_at).toLocaleDateString("fr-FR")}
-                  </p>
-                </CardContent>
-              </Card>
+              <ClubCard 
+                key={club.id} 
+                club={club} 
+                onDelete={(clubId) => deleteClub.mutate(clubId)} 
+              />
             ))}
           </div>
         )}
