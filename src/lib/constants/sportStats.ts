@@ -10,7 +10,7 @@ export interface StatField {
   max?: number;
 }
 
-// Rugby stats (XV and 7s)
+// Rugby stats (XV, 7s, XIII)
 export const RUGBY_STATS: StatField[] = [
   // Scoring
   { key: "tries", label: "Essais", shortLabel: "Essais", category: "scoring", type: "number" },
@@ -104,6 +104,31 @@ export const VOLLEYBALL_STATS: StatField[] = [
   { key: "points", label: "Points totaux", shortLabel: "Points", category: "general", type: "number" },
 ];
 
+// Basketball stats
+export const BASKETBALL_STATS: StatField[] = [
+  // Scoring
+  { key: "points", label: "Points", shortLabel: "Points", category: "scoring", type: "number" },
+  { key: "fieldGoalsMade", label: "Paniers réussis", shortLabel: "FG", category: "scoring", type: "number" },
+  { key: "fieldGoalsAttempted", label: "Paniers tentés", shortLabel: "FGA", category: "scoring", type: "number" },
+  { key: "threePointersMade", label: "3 points réussis", shortLabel: "3P", category: "scoring", type: "number" },
+  { key: "threePointersAttempted", label: "3 points tentés", shortLabel: "3PA", category: "scoring", type: "number" },
+  { key: "freeThrowsMade", label: "Lancers francs réussis", shortLabel: "FT", category: "scoring", type: "number" },
+  { key: "freeThrowsAttempted", label: "Lancers francs tentés", shortLabel: "FTA", category: "scoring", type: "number" },
+  // Attack
+  { key: "assists", label: "Passes décisives", shortLabel: "Assists", category: "attack", type: "number" },
+  { key: "offensiveRebounds", label: "Rebonds offensifs", shortLabel: "RO", category: "attack", type: "number" },
+  { key: "turnovers", label: "Pertes de balle", shortLabel: "Pertes", category: "attack", type: "number" },
+  // Defense
+  { key: "defensiveRebounds", label: "Rebonds défensifs", shortLabel: "RD", category: "defense", type: "number" },
+  { key: "totalRebounds", label: "Rebonds totaux", shortLabel: "Reb.", category: "defense", type: "number" },
+  { key: "steals", label: "Interceptions", shortLabel: "Steals", category: "defense", type: "number" },
+  { key: "blocks", label: "Contres", shortLabel: "Blocks", category: "defense", type: "number" },
+  // General
+  { key: "personalFouls", label: "Fautes personnelles", shortLabel: "Fautes", category: "general", type: "number" },
+  { key: "minutesPlayed", label: "Minutes jouées", shortLabel: "Min.", category: "general", type: "number" },
+  { key: "plusMinus", label: "+/-", shortLabel: "+/-", category: "general", type: "number" },
+];
+
 // Judo stats - Focus on coach and physical trainer needs
 export const JUDO_STATS: StatField[] = [
   // Scoring / Results
@@ -160,14 +185,58 @@ export const BOWLING_STATS: StatField[] = [
   { key: "placement", label: "Classement", shortLabel: "Place", category: "general", type: "number" },
 ];
 
-export type SportType = "XV" | "7" | "football" | "handball" | "volleyball" | "judo" | "academie" | "national_team" | "bowling";
+// Aviron (Rowing) stats - Focus on performance and technique
+export const AVIRON_STATS: StatField[] = [
+  // Performance / Results
+  { key: "placement", label: "Classement final", shortLabel: "Place", category: "scoring", type: "number" },
+  { key: "raceTime", label: "Temps de course (sec)", shortLabel: "Temps", category: "scoring", type: "number" },
+  { key: "splitTime500m", label: "Split 500m (sec)", shortLabel: "Split 500m", category: "scoring", type: "number" },
+  { key: "splitTime1000m", label: "Split 1000m (sec)", shortLabel: "Split 1000m", category: "scoring", type: "number" },
+  { key: "finalSprint", label: "Temps sprint final (sec)", shortLabel: "Sprint", category: "scoring", type: "number" },
+  
+  // Technique / Power
+  { key: "avgStrokeRate", label: "Cadence moyenne (coups/min)", shortLabel: "Cadence", category: "attack", type: "number" },
+  { key: "maxStrokeRate", label: "Cadence max (coups/min)", shortLabel: "Cad. max", category: "attack", type: "number" },
+  { key: "avgPower", label: "Puissance moyenne (watts)", shortLabel: "Puissance", category: "attack", type: "number" },
+  { key: "maxPower", label: "Puissance max (watts)", shortLabel: "Pmax", category: "attack", type: "number" },
+  { key: "distancePerStroke", label: "Distance par coup (m)", shortLabel: "Dist/coup", category: "attack", type: "number" },
+  { key: "strokeEfficiency", label: "Efficacité du coup (%)", shortLabel: "% Eff.", category: "attack", type: "number", max: 100 },
+  
+  // Physiological
+  { key: "avgHeartRate", label: "FC moyenne (bpm)", shortLabel: "FC moy", category: "defense", type: "number" },
+  { key: "maxHeartRate", label: "FC max (bpm)", shortLabel: "FC max", category: "defense", type: "number" },
+  { key: "lactatePost", label: "Lactate post-course (mmol/L)", shortLabel: "Lactate", category: "defense", type: "number" },
+  
+  // General
+  { key: "raceDistance", label: "Distance course (m)", shortLabel: "Distance", category: "general", type: "number" },
+  { key: "boatType", label: "Type de bateau (1=1x, 2=2x, 4=4x, 8=8+)", shortLabel: "Bateau", category: "general", type: "number" },
+  { key: "perceivedEffort", label: "Effort perçu (RPE 1-10)", shortLabel: "RPE", category: "general", type: "number", max: 10 },
+  { key: "weatherConditions", label: "Conditions (1=calme, 2=vent léger, 3=vent fort)", shortLabel: "Conditions", category: "general", type: "number" },
+];
+
+export type SportType = "XV" | "7" | "XIII" | "football" | "handball" | "volleyball" | "basketball" | "judo" | "aviron" | "bowling" | "academie" | "national_team";
+
+// Helper function to extract base sport from subtypes like "aviron_club", "judo_academie"
+function getBaseSport(sportType: string): string {
+  // Handle exact rugby types first
+  if (["XV", "7", "XIII", "academie", "national_team"].includes(sportType)) {
+    return "rugby";
+  }
+  
+  // Extract base sport from subtypes (e.g., "aviron_club" -> "aviron")
+  if (sportType.includes("_")) {
+    return sportType.split("_")[0].toLowerCase();
+  }
+  
+  return sportType.toLowerCase();
+}
 
 export function getStatsForSport(sportType: SportType | string): StatField[] {
-  switch (sportType) {
-    case "XV":
-    case "7":
-    case "academie":
-    case "national_team":
+  const baseSport = getBaseSport(sportType);
+  
+  switch (baseSport) {
+    case "rugby":
+    case "xv":
       return RUGBY_STATS;
     case "football":
       return FOOTBALL_STATS;
@@ -175,17 +244,22 @@ export function getStatsForSport(sportType: SportType | string): StatField[] {
       return HANDBALL_STATS;
     case "volleyball":
       return VOLLEYBALL_STATS;
+    case "basketball":
+      return BASKETBALL_STATS;
     case "judo":
-    case "Judo":
       return JUDO_STATS;
     case "bowling":
       return BOWLING_STATS;
+    case "aviron":
+      return AVIRON_STATS;
     default:
       return RUGBY_STATS;
   }
 }
 
 export function getStatCategories(sportType: SportType | string): { key: string; label: string }[] {
+  const baseSport = getBaseSport(sportType);
+  
   const baseCategories = [
     { key: "general", label: "Général" },
     { key: "scoring", label: "Points" },
@@ -194,21 +268,41 @@ export function getStatCategories(sportType: SportType | string): { key: string;
   ];
   
   // Judo uses different terminology
-  if (sportType === "judo" || sportType === "Judo") {
+  if (baseSport === "judo") {
     return [
       { key: "general", label: "Général" },
-      { key: "scoring", label: "Scores" },
+      { key: "scoring", label: "Résultats" },
       { key: "attack", label: "Techniques" },
       { key: "defense", label: "Défense" },
     ];
   }
   
   // Bowling uses different terminology
-  if (sportType === "bowling") {
+  if (baseSport === "bowling") {
     return [
       { key: "general", label: "Général" },
       { key: "scoring", label: "Scores" },
       { key: "attack", label: "Précision" },
+    ];
+  }
+  
+  // Aviron uses different terminology
+  if (baseSport === "aviron") {
+    return [
+      { key: "general", label: "Général" },
+      { key: "scoring", label: "Performance" },
+      { key: "attack", label: "Technique/Puissance" },
+      { key: "defense", label: "Physiologique" },
+    ];
+  }
+  
+  // Basketball uses different terminology
+  if (baseSport === "basketball") {
+    return [
+      { key: "general", label: "Général" },
+      { key: "scoring", label: "Score" },
+      { key: "attack", label: "Attaque" },
+      { key: "defense", label: "Défense" },
     ];
   }
   
