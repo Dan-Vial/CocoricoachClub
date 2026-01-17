@@ -156,6 +156,59 @@ export const TEST_CATEGORIES: TestCategory[] = [
       { value: "clean_and_jerk_1rm", label: "Clean & Jerk - 1RM", unit: "kg" },
     ],
   },
+  {
+    value: "bowling_force",
+    label: "Bowling - Force / Stabilité",
+    tests: [
+      { value: "bowling_grip_strength", label: "Force de préhension (dynamomètre)", unit: "kg" },
+      { value: "bowling_wrist_flexors", label: "Force fléchisseurs poignet", unit: "kg" },
+      { value: "bowling_wrist_extensors", label: "Force extenseurs poignet", unit: "kg" },
+      { value: "bowling_lateral_core", label: "Gainage latéral", unit: "s", isTime: true },
+      { value: "bowling_rotational_core", label: "Gainage rotationnel", unit: "s", isTime: true },
+      { value: "bowling_slsq_control", label: "Single Leg Squat Control Test", unit: "score" },
+    ],
+  },
+  {
+    value: "bowling_balance",
+    label: "Bowling - Équilibre / Coordination",
+    tests: [
+      { value: "bowling_y_balance_ant", label: "Y-Balance Test - Antérieur", unit: "cm" },
+      { value: "bowling_y_balance_pm", label: "Y-Balance Test - Postéro-médial", unit: "cm" },
+      { value: "bowling_y_balance_pl", label: "Y-Balance Test - Postéro-latéral", unit: "cm" },
+      { value: "bowling_sebt", label: "Star Excursion Balance Test", unit: "cm" },
+      { value: "bowling_dynamic_balance", label: "Équilibre dynamique unipodal", unit: "s", isTime: true },
+    ],
+  },
+  {
+    value: "bowling_endurance",
+    label: "Bowling - Endurance Spécifique",
+    tests: [
+      { value: "bowling_fatigue_test", label: "Test de répétition de lancers (fatigue)", unit: "score" },
+      { value: "bowling_speed_maintain", label: "Maintien de la vitesse sur séries longues", unit: "%" },
+      { value: "bowling_precision_maintain", label: "Maintien de la précision sur séries longues", unit: "%" },
+      { value: "bowling_consistency_6games", label: "Consistance sur 6 parties", unit: "écart-type" },
+    ],
+  },
+  {
+    value: "bowling_cognitive",
+    label: "Bowling - Perceptivo-cognitif",
+    tests: [
+      { value: "bowling_visual_reaction", label: "Temps de réaction visuel", unit: "ms", isTime: true },
+      { value: "bowling_trajectory_reading", label: "Prise d'information trajectoire", unit: "score" },
+      { value: "bowling_oil_pattern_read", label: "Lecture du huilage", unit: "score" },
+      { value: "bowling_line_adaptation", label: "Capacité d'adaptation (changement de ligne)", unit: "score" },
+    ],
+  },
+  {
+    value: "bowling_mental",
+    label: "Bowling - Mental / Comportemental",
+    tests: [
+      { value: "bowling_pre_shot_routine", label: "Stabilité routine pré-lancer", unit: "%" },
+      { value: "bowling_stress_management", label: "Gestion du stress (questionnaire)", unit: "score" },
+      { value: "bowling_concentration", label: "Concentration sur séries longues", unit: "score" },
+      { value: "bowling_post_failure", label: "Comportement post-échec (frame ouverte)", unit: "score" },
+    ],
+  },
 ];
 
 // Fonction utilitaire pour obtenir le label complet d'un test
@@ -188,4 +241,20 @@ export function getAllTests(): TestOption[] {
       label: `${cat.label} - ${test.label}`,
     }))
   );
+}
+
+// Fonction pour obtenir les catégories de tests par sport
+export function getTestCategoriesForSport(sportType: string): TestCategory[] {
+  const baseCategories = TEST_CATEGORIES.filter(cat => 
+    !cat.value.startsWith("bowling_")
+  );
+  
+  if (sportType === "bowling") {
+    const bowlingCategories = TEST_CATEGORIES.filter(cat => 
+      cat.value.startsWith("bowling_")
+    );
+    return [...baseCategories, ...bowlingCategories];
+  }
+  
+  return baseCategories;
 }

@@ -283,6 +283,69 @@ export const JUDO_COMPETITIONS: CompetitionCategory[] = [
   },
 ];
 
+// Bowling competitions
+export const BOWLING_COMPETITIONS: CompetitionCategory[] = [
+  {
+    label: "Championnats Nationaux",
+    options: [
+      "Championnat de France Individuel",
+      "Championnat de France Doublette",
+      "Championnat de France Triplette",
+      "Championnat de France Équipe",
+      "Championnat de France Masters",
+      "Championnat de France Jeunes",
+      "Coupe de France",
+      "Trophée Fédéral",
+    ],
+  },
+  {
+    label: "Championnats Régionaux",
+    options: [
+      "Championnat Régional Individuel",
+      "Championnat Régional Doublette",
+      "Championnat Régional Triplette",
+      "Championnat Régional Équipe",
+    ],
+  },
+  {
+    label: "Compétitions Internationales",
+    options: [
+      "Championnat du Monde",
+      "Championnat d'Europe",
+      "World Bowling Tour",
+      "European Bowling Tour",
+      "WBT Masters",
+      "EBT Masters",
+      "World Youth Championship",
+      "European Youth Championship",
+      "Mediterranean Championship",
+      "Weber Cup",
+      "World Series of Bowling",
+    ],
+  },
+  {
+    label: "Tournois",
+    options: [
+      "Tournoi Open",
+      "Tournoi Pro-Am",
+      "Tournoi Scratch",
+      "Tournoi Handicap",
+      "Tournoi Jeunes",
+      "Tournoi Ranking",
+    ],
+  },
+  {
+    label: "Autres",
+    options: [
+      "Interclubs",
+      "Ligue régionale",
+      "Ligue départementale",
+      "Stage technique",
+      "Entraînement compétitif",
+    ],
+  },
+];
+
 // Get competitions by sport type
 export const getCompetitionsBySport = (sportType: string): CompetitionCategory[] => {
   switch (sportType) {
@@ -294,6 +357,8 @@ export const getCompetitionsBySport = (sportType: string): CompetitionCategory[]
       return VOLLEYBALL_COMPETITIONS;
     case "judo":
       return JUDO_COMPETITIONS;
+    case "bowling":
+      return BOWLING_COMPETITIONS;
     case "XV":
     case "7":
     case "academie":

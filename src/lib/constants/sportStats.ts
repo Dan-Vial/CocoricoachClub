@@ -134,7 +134,33 @@ export const JUDO_STATS: StatField[] = [
   { key: "perceivedEffort", label: "Effort perçu (RPE 1-10)", shortLabel: "RPE", category: "general", type: "number", max: 10 },
 ];
 
-export type SportType = "XV" | "7" | "football" | "handball" | "volleyball" | "Judo" | "academie" | "national_team";
+// Bowling stats - Score and precision focused
+export const BOWLING_STATS: StatField[] = [
+  // Score statistics
+  { key: "avgScoreScratch", label: "Score moyen (scratch)", shortLabel: "Moy. Scratch", category: "scoring", type: "number", max: 300 },
+  { key: "avgScoreHandicap", label: "Score moyen (handicap)", shortLabel: "Moy. Handi.", category: "scoring", type: "number" },
+  { key: "strikePercentage", label: "% de strikes", shortLabel: "% Strikes", category: "scoring", type: "number", max: 100 },
+  { key: "sparePercentage", label: "% de spares", shortLabel: "% Spares", category: "scoring", type: "number", max: 100 },
+  { key: "splitConversionRate", label: "Split conversion rate", shortLabel: "% Split Conv.", category: "scoring", type: "number", max: 100 },
+  { key: "splitCount", label: "Nombre de splits", shortLabel: "Splits", category: "scoring", type: "number" },
+  { key: "openFrames", label: "Open frames", shortLabel: "Opens", category: "scoring", type: "number" },
+  { key: "pinsPerFrame", label: "Pins par frame", shortLabel: "Pins/Frame", category: "scoring", type: "number" },
+  { key: "highGame", label: "Meilleur score partie", shortLabel: "High Game", category: "scoring", type: "number", max: 300 },
+  { key: "totalPins", label: "Total pins", shortLabel: "Total Pins", category: "scoring", type: "number" },
+  
+  // Precision statistics
+  { key: "targetHitRate", label: "Taux de touche de la cible (board)", shortLabel: "% Cible", category: "attack", type: "number", max: 100 },
+  { key: "avgLateralError", label: "Erreur latérale moyenne (boards)", shortLabel: "Err. Latérale", category: "attack", type: "number" },
+  { key: "trajectoryVariability", label: "Variabilité de trajectoire", shortLabel: "Var. Traj.", category: "attack", type: "number" },
+  { key: "releaseRepeatability", label: "Répétabilité du point de lâcher", shortLabel: "Répét. Lâcher", category: "attack", type: "number", max: 100 },
+  
+  // General / Competition
+  { key: "gamesPlayed", label: "Parties jouées", shortLabel: "Parties", category: "general", type: "number" },
+  { key: "seriesScore", label: "Score série (3 parties)", shortLabel: "Série", category: "general", type: "number" },
+  { key: "placement", label: "Classement", shortLabel: "Place", category: "general", type: "number" },
+];
+
+export type SportType = "XV" | "7" | "football" | "handball" | "volleyball" | "judo" | "academie" | "national_team" | "bowling";
 
 export function getStatsForSport(sportType: SportType | string): StatField[] {
   switch (sportType) {
@@ -149,8 +175,11 @@ export function getStatsForSport(sportType: SportType | string): StatField[] {
       return HANDBALL_STATS;
     case "volleyball":
       return VOLLEYBALL_STATS;
+    case "judo":
     case "Judo":
       return JUDO_STATS;
+    case "bowling":
+      return BOWLING_STATS;
     default:
       return RUGBY_STATS;
   }
@@ -165,12 +194,21 @@ export function getStatCategories(sportType: SportType | string): { key: string;
   ];
   
   // Judo uses different terminology
-  if (sportType === "Judo") {
+  if (sportType === "judo" || sportType === "Judo") {
     return [
       { key: "general", label: "Général" },
       { key: "scoring", label: "Scores" },
       { key: "attack", label: "Techniques" },
       { key: "defense", label: "Défense" },
+    ];
+  }
+  
+  // Bowling uses different terminology
+  if (sportType === "bowling") {
+    return [
+      { key: "general", label: "Général" },
+      { key: "scoring", label: "Scores" },
+      { key: "attack", label: "Précision" },
     ];
   }
   

@@ -30,22 +30,13 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { EXERCISE_CATEGORIES, getCategoryLabel } from "@/lib/constants/exerciseCategories";
+import { getTrainingTypesForSport, trainingTypeHasExercises } from "@/lib/constants/trainingTypes";
 
 interface AddSessionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   categoryId: string;
 }
-
-const trainingTypes = [
-  { value: "collectif", label: "Collectif", hasExercises: false },
-  { value: "technique_individuelle", label: "Technique Individuelle", hasExercises: false },
-  { value: "physique", label: "Physique", hasExercises: true },
-  { value: "musculation", label: "Musculation", hasExercises: true },
-  { value: "reathlétisation", label: "Réathlétisation", hasExercises: true },
-  { value: "repos", label: "Repos", hasExercises: false },
-  { value: "test", label: "Test", hasExercises: false },
-];
 
 interface Exercise {
   exercise_name: string;
@@ -92,8 +83,25 @@ export function AddSessionDialog({
   const queryClient = useQueryClient();
   const exercisesSectionRef = useRef<HTMLDivElement | null>(null);
 
-  const selectedTrainingType = trainingTypes.find((t) => t.value === type);
-  const showExerciseSection = selectedTrainingType?.hasExercises || false;
+  // Fetch category to get sport type
+  const { data: category } = useQuery({
+    queryKey: ["category-sport-type", categoryId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("categories")
+        .select("rugby_type")
+        .eq("id", categoryId)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: open,
+  });
+
+  const sportType = category?.rugby_type;
+  const trainingTypes = getTrainingTypesForSport(sportType);
+  
+  const showExerciseSection = trainingTypeHasExercises(type);
 
   // When a training type with exercises is selected, ensure UI is ready
   useEffect(() => {
@@ -329,8 +337,7 @@ export function AddSessionDialog({
   // Handle type change to auto-add empty exercise
   const handleTypeChange = (newType: string) => {
     setType(newType);
-    const newTrainingType = trainingTypes.find(t => t.value === newType);
-    if (newTrainingType?.hasExercises && exercises.length === 0) {
+    if (trainingTypeHasExercises(newType) && exercises.length === 0) {
       setExercises([emptyExercise(0)]);
     }
   };

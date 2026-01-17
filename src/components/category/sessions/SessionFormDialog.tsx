@@ -40,6 +40,7 @@ import {
 import { cn } from "@/lib/utils";
 import { EXERCISE_CATEGORIES, getCategoryLabel } from "@/lib/constants/exerciseCategories";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { getTrainingTypesForSport, trainingTypeHasExercises } from "@/lib/constants/trainingTypes";
 
 interface SessionFormDialogProps {
   open: boolean;
@@ -47,16 +48,6 @@ interface SessionFormDialogProps {
   categoryId: string;
   editSession?: any | null;
 }
-
-const trainingTypes = [
-  { value: "collectif", label: "Collectif" },
-  { value: "technique_individuelle", label: "Technique Individuelle" },
-  { value: "physique", label: "Physique" },
-  { value: "musculation", label: "Musculation" },
-  { value: "reathlétisation", label: "Réathlétisation" },
-  { value: "repos", label: "Repos" },
-  { value: "test", label: "Test" },
-];
 
 // Set types for exercise groupings
 const SET_TYPES = [
@@ -126,6 +117,23 @@ export function SessionFormDialog({
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [showLibraryFor, setShowLibraryFor] = useState<number | null>(null);
+
+  // Fetch category to get sport type
+  const { data: category } = useQuery({
+    queryKey: ["category-sport-type", categoryId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("categories")
+        .select("rugby_type")
+        .eq("id", categoryId)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: open,
+  });
+
+  const trainingTypes = getTrainingTypesForSport(category?.rugby_type);
 
   // Fetch players
   const { data: players } = useQuery({

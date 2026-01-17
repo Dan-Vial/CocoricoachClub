@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog,
@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { getTrainingTypesForSport } from "@/lib/constants/trainingTypes";
 
 interface Session {
   id: string;
@@ -38,16 +39,6 @@ interface EditSessionDialogProps {
   session: Session | null;
 }
 
-const trainingTypes = [
-  { value: "collectif", label: "Collectif" },
-  { value: "technique_individuelle", label: "Technique Individuelle" },
-  { value: "physique", label: "Physique" },
-  { value: "musculation", label: "Musculation" },
-  { value: "reathlétisation", label: "Réathlétisation" },
-  { value: "repos", label: "Repos" },
-  { value: "test", label: "Test" },
-];
-
 export function EditSessionDialog({
   open,
   onOpenChange,
@@ -61,6 +52,23 @@ export function EditSessionDialog({
   const [intensity, setIntensity] = useState("");
   const [notes, setNotes] = useState("");
   const queryClient = useQueryClient();
+
+  // Fetch category to get sport type
+  const { data: category } = useQuery({
+    queryKey: ["category-sport-type", categoryId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("categories")
+        .select("rugby_type")
+        .eq("id", categoryId)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: open,
+  });
+
+  const trainingTypes = getTrainingTypesForSport(category?.rugby_type);
 
   useEffect(() => {
     if (session) {
