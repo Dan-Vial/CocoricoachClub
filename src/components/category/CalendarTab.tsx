@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -22,31 +22,12 @@ import { SessionTemplatesSection } from "@/components/planning/SessionTemplatesS
 import { SeasonObjectivesSection } from "@/components/planning/SeasonObjectivesSection";
 import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 import { exportCalendarToPdf, printElement } from "@/lib/pdfExport";
+import { getTrainingTypesForSport, TRAINING_TYPE_COLORS } from "@/lib/constants/trainingTypes";
+import { isIndividualSport } from "@/lib/constants/sportTypes";
 
 interface CalendarTabProps {
   categoryId: string;
 }
-
-const trainingTypeLabels: Record<string, string> = {
-  collectif: "Collectif",
-  technique_individuelle: "Technique Individuelle",
-  physique: "Physique",
-  musculation: "Musculation",
-  repos: "Repos",
-  test: "Test",
-  reathlétisation: "Réathlétisation",
-};
-
-const trainingTypeColors: Record<string, string> = {
-  collectif: "bg-training-collectif",
-  technique_individuelle: "bg-training-technique",
-  physique: "bg-training-physique",
-  musculation: "bg-training-musculation",
-  repos: "bg-training-repos",
-  test: "bg-training-test",
-  reathlétisation: "bg-amber-500",
-  match: "bg-rose-500",
-};
 
 export function CalendarTab({ categoryId }: CalendarTabProps) {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -140,6 +121,35 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
       toast.error("Erreur lors du décalage de la séance");
     },
   });
+
+  // Fetch category to get sport type
+  const { data: category } = useQuery({
+    queryKey: ["category-sport-type", categoryId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("categories")
+        .select("rugby_type")
+        .eq("id", categoryId)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Get training types based on sport type
+  const sportType = category?.rugby_type;
+  const trainingTypes = useMemo(() => getTrainingTypesForSport(sportType), [sportType]);
+  
+  // Create labels and colors maps from training types
+  const trainingTypeLabels = useMemo(() => {
+    const labels: Record<string, string> = {};
+    trainingTypes.forEach(t => {
+      labels[t.value] = t.label;
+    });
+    return labels;
+  }, [trainingTypes]);
+
+  const trainingTypeColors = TRAINING_TYPE_COLORS;
 
   const { data: sessions, isLoading: isLoadingSessions } = useQuery({
     queryKey: ["training_sessions", categoryId],
@@ -365,7 +375,9 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
               <div className="flex flex-wrap gap-3 justify-center text-sm">
                 <div className="flex items-center gap-2">
                   <div className="h-3 w-3 rounded-full bg-rose-500" />
-                  <span className="text-muted-foreground">Match</span>
+                  <span className="text-muted-foreground">
+                    {isIndividualSport(sportType || "") ? "Compétition" : "Match"}
+                  </span>
                 </div>
                 {Object.entries(trainingTypeLabels).map(([key, label]) => (
                   <div key={key} className="flex items-center gap-2">
