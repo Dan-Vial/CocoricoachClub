@@ -66,15 +66,19 @@ export default function PublicView() {
   }, [searchParams, validateToken]);
 
   const handleContinue = () => {
+    // IMPORTANT: In public access mode we must use public routes that fetch data
+    // through the backend function (bypasses RLS) instead of navigating to the
+    // authenticated app routes.
     if (categoryId) {
-      // Navigate to the real category page (public context allows access)
-      navigate(`/categories/${categoryId}`);
-    } else if (clubId) {
-      // Navigate to the real club page
-      navigate(`/clubs/${clubId}`);
-    } else {
-      navigate("/");
+      navigate(`/public/categories/${categoryId}`);
+      return;
     }
+
+    // Club-level public pages are not implemented yet.
+    // Keep the user on this screen instead of routing to /clubs/:id where data
+    // would be blocked by RLS.
+    setStatus("error");
+    setErrorMessage("Lien valide, mais l'accès public au club complet n'est pas encore disponible. Demandez un lien catégorie.");
   };
 
   return (
