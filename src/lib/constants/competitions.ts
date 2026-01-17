@@ -539,8 +539,13 @@ export const BOWLING_COMPETITIONS: CompetitionCategory[] = [
 
 // Get competitions by sport type
 export const getCompetitionsBySport = (sportType: string): CompetitionCategory[] => {
+  // Handle exact matches first for rugby types
+  if (["XV", "7", "XIII", "academie", "national_team", "national"].includes(sportType)) {
+    return RUGBY_COMPETITIONS;
+  }
+  
   // Handle new sport subtypes (e.g., bowling_club, judo_academie)
-  const baseSport = sportType.split('_')[0];
+  const baseSport = sportType.split('_')[0].toLowerCase();
   
   switch (baseSport) {
     case "football":
@@ -557,13 +562,8 @@ export const getCompetitionsBySport = (sportType: string): CompetitionCategory[]
       return BOWLING_COMPETITIONS;
     case "aviron":
       return AVIRON_COMPETITIONS;
-    case "XV":
-    case "7":
-    case "XIII":
-    case "academie":
-    case "national":
-      return RUGBY_COMPETITIONS;
     default:
+      // Check if it looks like a rugby type
       return RUGBY_COMPETITIONS;
   }
 };
