@@ -32,6 +32,8 @@ interface AddMatchCalendarDialogProps {
   sportType?: string;
 }
 
+const CUSTOM_COMPETITION_VALUE = "__custom__";
+
 export function AddMatchCalendarDialog({
   open,
   onOpenChange,
@@ -43,6 +45,7 @@ export function AddMatchCalendarDialog({
   
   const [opponent, setOpponent] = useState("");
   const [competition, setCompetition] = useState("");
+  const [customCompetition, setCustomCompetition] = useState("");
   const [matchDate, setMatchDate] = useState("");
   const [matchTime, setMatchTime] = useState("");
   const [location, setLocation] = useState("");
@@ -50,12 +53,15 @@ export function AddMatchCalendarDialog({
   const [notes, setNotes] = useState("");
   const queryClient = useQueryClient();
 
+  const isCustomSelected = competition === CUSTOM_COMPETITION_VALUE;
+  const finalCompetition = isCustomSelected ? customCompetition : competition;
+
   const addMatch = useMutation({
     mutationFn: async () => {
       const { error } = await supabase.from("matches").insert({
         category_id: categoryId,
         opponent: isIndividual ? (opponent || "Compétition") : opponent,
-        competition: competition || null,
+        competition: finalCompetition || null,
         match_date: matchDate,
         match_time: matchTime || null,
         location: location || null,
@@ -78,6 +84,7 @@ export function AddMatchCalendarDialog({
   const resetForm = () => {
     setOpponent("");
     setCompetition("");
+    setCustomCompetition("");
     setMatchDate("");
     setMatchTime("");
     setLocation("");
@@ -94,6 +101,11 @@ export function AddMatchCalendarDialog({
     // For individual sports, opponent is optional
     if (!isIndividual && !opponent) {
       toast.error("Veuillez remplir les champs obligatoires");
+      return;
+    }
+    // If custom is selected, require the custom field
+    if (isCustomSelected && !customCompetition.trim()) {
+      toast.error("Veuillez saisir le nom de la compétition");
       return;
     }
     addMatch.mutate();
@@ -142,9 +154,30 @@ export function AddMatchCalendarDialog({
                     ))}
                   </SelectGroup>
                 ))}
+                <SelectGroup>
+                  <SelectLabel className="text-xs font-semibold text-muted-foreground">
+                    Personnalisé
+                  </SelectLabel>
+                  <SelectItem value={CUSTOM_COMPETITION_VALUE}>
+                    ✏️ Autre (saisie libre)
+                  </SelectItem>
+                </SelectGroup>
               </SelectContent>
             </Select>
           </div>
+
+          {isCustomSelected && (
+            <div className="space-y-2">
+              <Label htmlFor="customCompetition">Nom de la compétition *</Label>
+              <Input
+                id="customCompetition"
+                value={customCompetition}
+                onChange={(e) => setCustomCompetition(e.target.value)}
+                placeholder="Saisissez le nom de la compétition..."
+                required
+              />
+            </div>
+          )}
 
           {isIndividual && (
             <div className="space-y-2">
