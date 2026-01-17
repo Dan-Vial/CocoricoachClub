@@ -3,6 +3,7 @@ import { Trophy, Swords, Flag, Award } from "lucide-react";
 import { MatchesTab } from "@/components/category/MatchesTab";
 import { TournamentsTab } from "@/components/category/TournamentsTab";
 import { NationalTeamTab } from "@/components/category/national-team/NationalTeamTab";
+import { isIndividualSport } from "@/lib/constants/sportTypes";
 
 interface CompetitionTabProps {
   categoryId: string;
@@ -12,11 +13,12 @@ interface CompetitionTabProps {
 }
 
 export function CompetitionTab({ categoryId, isRugby7, isNationalTeam, sportType }: CompetitionTabProps) {
-  const isJudo = sportType === "Judo";
+  // Check if this is an individual sport (judo, bowling, aviron)
+  const isIndividual = isIndividualSport(sportType || "");
   
   // Labels adaptés selon le sport
-  const matchLabel = isJudo ? "Compétitions" : "Matchs";
-  const matchIcon = isJudo ? <Award className="h-4 w-4 shrink-0" /> : <Swords className="h-4 w-4 shrink-0" />;
+  const matchLabel = isIndividual ? "Compétitions" : "Matchs";
+  const matchIcon = isIndividual ? <Award className="h-4 w-4 shrink-0" /> : <Swords className="h-4 w-4 shrink-0" />;
 
   return (
     <Tabs defaultValue="matches" className="space-y-4">

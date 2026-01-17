@@ -539,7 +539,10 @@ export const BOWLING_COMPETITIONS: CompetitionCategory[] = [
 
 // Get competitions by sport type
 export const getCompetitionsBySport = (sportType: string): CompetitionCategory[] => {
-  switch (sportType) {
+  // Handle new sport subtypes (e.g., bowling_club, judo_academie)
+  const baseSport = sportType.split('_')[0];
+  
+  switch (baseSport) {
     case "football":
       return FOOTBALL_COMPETITIONS;
     case "handball":
@@ -556,8 +559,10 @@ export const getCompetitionsBySport = (sportType: string): CompetitionCategory[]
       return AVIRON_COMPETITIONS;
     case "XV":
     case "7":
+    case "XIII":
     case "academie":
-    case "national_team":
+    case "national":
+      return RUGBY_COMPETITIONS;
     default:
       return RUGBY_COMPETITIONS;
   }
