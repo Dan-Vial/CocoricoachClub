@@ -269,12 +269,184 @@ export const JUDO_TESTS: FieldTest[] = [
   },
 ];
 
+// Basketball field tests
+export const BASKETBALL_TESTS: FieldTest[] = [
+  { 
+    value: "yo_yo_ir1", 
+    label: "Yo-Yo IR1", 
+    description: "Intermittent Recovery Level 1",
+    unit: "m", 
+    inputType: "level",
+    hasLevel: true,
+    levels: YO_YO_LEVELS
+  },
+  { 
+    value: "lane_agility", 
+    label: "Lane Agility Test", 
+    description: "Test d'agilité dans le couloir NBA",
+    unit: "sec", 
+    inputType: "time" 
+  },
+  { 
+    value: "3_4_court_sprint", 
+    label: "3/4 Court Sprint", 
+    description: "Sprint 3/4 de terrain",
+    unit: "sec", 
+    inputType: "time" 
+  },
+  { 
+    value: "shuttle_run", 
+    label: "Shuttle Run", 
+    description: "Course navette",
+    unit: "sec", 
+    inputType: "time" 
+  },
+  { 
+    value: "t_test", 
+    label: "T-Test Agility", 
+    description: "Test d'agilité en T",
+    unit: "sec", 
+    inputType: "time" 
+  },
+  { 
+    value: "reactive_agility", 
+    label: "Reactive Agility Test", 
+    description: "Test d'agilité réactive",
+    unit: "sec", 
+    inputType: "time" 
+  },
+];
+
+// Aviron (Rowing) field tests
+export const AVIRON_TESTS: FieldTest[] = [
+  { 
+    value: "2000m_ergo", 
+    label: "Test 2000m Ergomètre", 
+    description: "Test maximal sur ergomètre",
+    unit: "sec", 
+    inputType: "time" 
+  },
+  { 
+    value: "6000m_ergo", 
+    label: "Test 6000m Ergomètre", 
+    description: "Test d'endurance ergomètre",
+    unit: "sec", 
+    inputType: "time" 
+  },
+  { 
+    value: "500m_ergo", 
+    label: "Test 500m Ergomètre", 
+    description: "Test puissance courte",
+    unit: "sec", 
+    inputType: "time" 
+  },
+  { 
+    value: "step_test", 
+    label: "Step Test (Lactate)", 
+    description: "Test paliers avec lactate",
+    unit: "watts", 
+    inputType: "score" 
+  },
+  { 
+    value: "max_power_10s", 
+    label: "Puissance Max 10s", 
+    description: "Test de puissance maximale 10 secondes",
+    unit: "watts", 
+    inputType: "score" 
+  },
+  { 
+    value: "vo2max_ergo", 
+    label: "VO2max Ergomètre", 
+    description: "Test VO2max sur ergomètre",
+    unit: "ml/kg/min", 
+    inputType: "score" 
+  },
+  { 
+    value: "1min_ergo", 
+    label: "Test 1 minute", 
+    description: "Distance maximale en 1 minute",
+    unit: "m", 
+    inputType: "distance" 
+  },
+  { 
+    value: "stroke_power", 
+    label: "Test puissance coup", 
+    description: "Puissance moyenne par coup d'aviron",
+    unit: "watts", 
+    inputType: "score" 
+  },
+];
+
+// Bowling field tests
+export const BOWLING_TESTS: FieldTest[] = [
+  { 
+    value: "accuracy_test", 
+    label: "Test de précision", 
+    description: "Taux de réussite sur cible (10 lancers)",
+    unit: "%", 
+    inputType: "score" 
+  },
+  { 
+    value: "strike_consistency", 
+    label: "Test consistance strikes", 
+    description: "Nombre de strikes sur 20 lancers",
+    unit: "strikes", 
+    inputType: "count" 
+  },
+  { 
+    value: "spare_conversion", 
+    label: "Test conversion spares", 
+    description: "Taux de conversion des spares",
+    unit: "%", 
+    inputType: "score" 
+  },
+  { 
+    value: "split_conversion", 
+    label: "Test conversion splits", 
+    description: "Taux de conversion des splits difficiles",
+    unit: "%", 
+    inputType: "score" 
+  },
+  { 
+    value: "release_speed", 
+    label: "Vitesse de lâcher", 
+    description: "Vitesse moyenne de la balle au lâcher",
+    unit: "km/h", 
+    inputType: "speed" 
+  },
+  { 
+    value: "rev_rate", 
+    label: "Rev Rate", 
+    description: "Taux de rotation de la balle (RPM)",
+    unit: "rpm", 
+    inputType: "score" 
+  },
+  { 
+    value: "entry_angle", 
+    label: "Angle d'entrée", 
+    description: "Angle d'entrée moyen dans les quilles",
+    unit: "°", 
+    inputType: "score" 
+  },
+  { 
+    value: "board_accuracy", 
+    label: "Précision board", 
+    description: "Écart moyen par rapport au board ciblé",
+    unit: "boards", 
+    inputType: "score" 
+  },
+];
+
 // Get tests for a specific sport type
 export const getFieldTestsForSport = (sportType: string): SportFieldTests => {
-  switch (sportType) {
-    case "XV":
+  // Extract base sport from subtypes (e.g., "aviron_club" -> "aviron")
+  const baseSport = sportType.includes("_") ? sportType.split("_")[0].toLowerCase() : sportType.toLowerCase();
+  
+  switch (baseSport) {
+    case "xv":
     case "7":
     case "15":
+    case "xiii":
     case "academie":
     case "national_team":
       return { sportType, sportLabel: "Rugby", tests: RUGBY_TESTS };
@@ -286,6 +458,12 @@ export const getFieldTestsForSport = (sportType: string): SportFieldTests => {
       return { sportType, sportLabel: "Judo", tests: JUDO_TESTS };
     case "volleyball":
       return { sportType, sportLabel: "Volleyball", tests: VOLLEYBALL_TESTS };
+    case "basketball":
+      return { sportType, sportLabel: "Basketball", tests: BASKETBALL_TESTS };
+    case "aviron":
+      return { sportType, sportLabel: "Aviron", tests: AVIRON_TESTS };
+    case "bowling":
+      return { sportType, sportLabel: "Bowling", tests: BOWLING_TESTS };
     default:
       return { sportType, sportLabel: "Rugby", tests: RUGBY_TESTS };
   }
@@ -296,7 +474,7 @@ export const getAllFieldTests = (): FieldTest[] => {
   const allTests: FieldTest[] = [];
   const seenValues = new Set<string>();
   
-  [RUGBY_TESTS, FOOTBALL_TESTS, HANDBALL_TESTS, JUDO_TESTS, VOLLEYBALL_TESTS].forEach(tests => {
+  [RUGBY_TESTS, FOOTBALL_TESTS, HANDBALL_TESTS, JUDO_TESTS, VOLLEYBALL_TESTS, BASKETBALL_TESTS, AVIRON_TESTS, BOWLING_TESTS].forEach(tests => {
     tests.forEach(test => {
       if (!seenValues.has(test.value)) {
         seenValues.add(test.value);
