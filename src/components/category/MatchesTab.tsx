@@ -10,6 +10,7 @@ import { PlayerCumulativeStats } from "./matches/PlayerCumulativeStats";
 import { isFuture, isPast } from "date-fns";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useViewerModeContext } from "@/contexts/ViewerModeContext";
+import { isIndividualSport } from "@/lib/constants/sportTypes";
 
 interface MatchesTabProps {
   categoryId: string;
@@ -20,13 +21,14 @@ export function MatchesTab({ categoryId, sportType }: MatchesTabProps) {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const { isViewer } = useViewerModeContext();
 
-  const isJudo = sportType === "Judo";
+  // Check if this is an individual sport (judo, bowling)
+  const isIndividual = isIndividualSport(sportType || "");
   
   // Labels adaptés selon le sport
-  const itemLabel = isJudo ? "compétition" : "match";
-  const itemLabelPlural = isJudo ? "compétitions" : "matchs";
-  const itemLabelCapital = isJudo ? "Compétition" : "Match";
-  const itemLabelPluralCapital = isJudo ? "Compétitions" : "Matchs";
+  const itemLabel = isIndividual ? "compétition" : "match";
+  const itemLabelPlural = isIndividual ? "compétitions" : "matchs";
+  const itemLabelCapital = isIndividual ? "Compétition" : "Match";
+  const itemLabelPluralCapital = isIndividual ? "Compétitions" : "Matchs";
 
   const { data: matches, isLoading } = useQuery({
     queryKey: ["matches", categoryId],
@@ -73,7 +75,7 @@ export function MatchesTab({ categoryId, sportType }: MatchesTabProps) {
                 {!isViewer && (
                   <Button onClick={() => setIsAddDialogOpen(true)} className="gap-2">
                     <Plus className="h-4 w-4" />
-                    Ajouter {isJudo ? "une" : "un"} {itemLabel}
+                    Ajouter {isIndividual ? "une" : "un"} {itemLabel}
                   </Button>
                 )}
               </div>
@@ -83,12 +85,12 @@ export function MatchesTab({ categoryId, sportType }: MatchesTabProps) {
                 <div className="text-center py-12">
                   <Calendar className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                   <p className="text-muted-foreground mb-4">
-                    {isJudo ? "Aucune compétition programmée" : "Aucun match programmé"} pour cette catégorie
+                    {isIndividual ? "Aucune compétition programmée" : "Aucun match programmé"} pour cette catégorie
                   </p>
                   {!isViewer && (
                     <Button onClick={() => setIsAddDialogOpen(true)} className="gap-2">
                       <Plus className="h-4 w-4" />
-                      Créer {isJudo ? "la première compétition" : "le premier match"}
+                      Créer {isIndividual ? "la première compétition" : "le premier match"}
                     </Button>
                   )}
                 </div>
@@ -110,7 +112,7 @@ export function MatchesTab({ categoryId, sportType }: MatchesTabProps) {
                   {pastMatches.length > 0 && (
                     <div>
                       <h3 className="text-lg font-semibold mb-4 text-muted-foreground">
-                        {itemLabelPluralCapital} passé{isJudo ? "e" : ""}s ({pastMatches.length})
+                        {itemLabelPluralCapital} passé{isIndividual ? "e" : ""}s ({pastMatches.length})
                       </h3>
                       <div className="space-y-3">
                         {[...pastMatches].reverse().map((match) => (
