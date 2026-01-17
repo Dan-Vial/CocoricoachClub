@@ -120,9 +120,14 @@ export function SportMatchStatsDialog({
           playerName: player?.name || "Joueur",
         };
 
+        // Get sport_data from existing stats if available
+        const existingSportData = (existing as { sport_data?: Record<string, number> })?.sport_data || {};
+
         sportStats.forEach(stat => {
           const snakeKey = stat.key.replace(/([A-Z])/g, '_$1').toLowerCase();
-          const value = existing?.[stat.key as keyof typeof existing] ?? 
+          // First check sport_data, then legacy columns
+          const value = existingSportData[stat.key] ?? 
+                       existing?.[stat.key as keyof typeof existing] ?? 
                        existing?.[snakeKey as keyof typeof existing] ?? 
                        0;
           playerStats[stat.key] = typeof value === 'number' ? value : 0;
@@ -156,27 +161,37 @@ export function SportMatchStatsDialog({
 
       // Insert new stats for all sports
       if (statsData.length > 0) {
-        // Build stats array with proper typing
-        const statsToInsert = statsData.map((s) => ({
-          match_id: matchId,
-          player_id: s.playerId,
-          // Rugby stats (these columns exist in the database)
-          tries: Number(s.tries) || 0,
-          conversions: Number(s.conversions) || 0,
-          penalties_scored: Number(s.penaltiesScored) || 0,
-          drop_goals: Number(s.dropGoals) || 0,
-          tackles: Number(s.tackles) || 0,
-          tackles_missed: Number(s.tacklesMissed) || 0,
-          defensive_recoveries: Number(s.defensiveRecoveries) || 0,
-          carries: Number(s.carries) || 0,
-          meters_gained: Number(s.metersGained) || 0,
-          offloads: Number(s.offloads) || 0,
-          turnovers_won: Number(s.turnoversWon) || 0,
-          breakthroughs: Number(s.breakthroughs) || 0,
-          total_contacts: Number(s.totalContacts) || 0,
-          yellow_cards: Number(s.yellowCards) || 0,
-          red_cards: Number(s.redCards) || 0,
-        }));
+        // Build sport-specific data object for each player
+        const statsToInsert = statsData.map((s) => {
+          // Build sport_data JSON with all sport-specific stats
+          const sportData: Record<string, number> = {};
+          sportStats.forEach(stat => {
+            sportData[stat.key] = Number(s[stat.key]) || 0;
+          });
+
+          return {
+            match_id: matchId,
+            player_id: s.playerId,
+            // Keep rugby stats for backwards compatibility
+            tries: Number(s.tries) || 0,
+            conversions: Number(s.conversions) || 0,
+            penalties_scored: Number(s.penaltiesScored) || 0,
+            drop_goals: Number(s.dropGoals) || 0,
+            tackles: Number(s.tackles) || 0,
+            tackles_missed: Number(s.tacklesMissed) || 0,
+            defensive_recoveries: Number(s.defensiveRecoveries) || 0,
+            carries: Number(s.carries) || 0,
+            meters_gained: Number(s.metersGained) || 0,
+            offloads: Number(s.offloads) || 0,
+            turnovers_won: Number(s.turnoversWon) || 0,
+            breakthroughs: Number(s.breakthroughs) || 0,
+            total_contacts: Number(s.totalContacts) || 0,
+            yellow_cards: Number(s.yellowCards) || 0,
+            red_cards: Number(s.redCards) || 0,
+            // Store all sport-specific stats in the JSONB column
+            sport_data: sportData,
+          };
+        });
 
         const { error } = await supabase.from("player_match_stats").insert(statsToInsert);
         if (error) throw error;
@@ -281,101 +296,70 @@ export function SportMatchStatsDialog({
 
         {selectedPlayer && (
           <Tabs defaultValue="general" className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className={`grid w-full ${statCategories.length === 3 ? 'grid-cols-3' : 'grid-cols-4'}`}>
               {statCategories.map(cat => (
                 <TabsTrigger key={cat.key} value={cat.key}>{cat.label}</TabsTrigger>
               ))}
             </TabsList>
 
             <ScrollArea className="h-[350px] mt-4">
-              <TabsContent value="general" className="space-y-4 mt-0">
-                {!isIndividual && (
-                  <div className="p-4 rounded-lg border bg-card">
-                    <h4 className="font-semibold mb-3 text-base text-primary">
-                      Informations du match
-                    </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div>
-                        <Label className="text-sm">Temps de jeu effectif (min)</Label>
-                        <Input
-                          type="number"
-                          value={effectivePlayTime}
-                          onChange={(e) => setEffectivePlayTime(parseInt(e.target.value) || 0)}
-                          min={0}
-                          max={120}
-                          className="h-9 mt-1"
-                          placeholder="Ex: 80"
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-sm">Séquence la plus longue (sec)</Label>
-                        <Input
-                          type="number"
-                          value={longestPlaySequence}
-                          onChange={(e) => setLongestPlaySequence(parseInt(e.target.value) || 0)}
-                          min={0}
-                          className="h-9 mt-1"
-                          placeholder="Ex: 180"
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-sm">Séquence moyenne (sec)</Label>
-                        <Input
-                          type="number"
-                          step="0.1"
-                          value={averagePlaySequence}
-                          onChange={(e) => setAveragePlaySequence(parseFloat(e.target.value) || 0)}
-                          min={0}
-                          className="h-9 mt-1"
-                          placeholder="Ex: 45.5"
-                        />
+              {statCategories.map(cat => (
+                <TabsContent key={cat.key} value={cat.key} className="space-y-4 mt-0">
+                  {cat.key === "general" && !isIndividual && (
+                    <div className="p-4 rounded-lg border bg-card">
+                      <h4 className="font-semibold mb-3 text-base text-primary">
+                        Informations du match
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <Label className="text-sm">Temps de jeu effectif (min)</Label>
+                          <Input
+                            type="number"
+                            value={effectivePlayTime}
+                            onChange={(e) => setEffectivePlayTime(parseInt(e.target.value) || 0)}
+                            min={0}
+                            max={120}
+                            className="h-9 mt-1"
+                            placeholder="Ex: 80"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-sm">Séquence la plus longue (sec)</Label>
+                          <Input
+                            type="number"
+                            value={longestPlaySequence}
+                            onChange={(e) => setLongestPlaySequence(parseInt(e.target.value) || 0)}
+                            min={0}
+                            className="h-9 mt-1"
+                            placeholder="Ex: 180"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-sm">Séquence moyenne (sec)</Label>
+                          <Input
+                            type="number"
+                            step="0.1"
+                            value={averagePlaySequence}
+                            onChange={(e) => setAveragePlaySequence(parseFloat(e.target.value) || 0)}
+                            min={0}
+                            className="h-9 mt-1"
+                            placeholder="Ex: 45.5"
+                          />
+                        </div>
                       </div>
                     </div>
+                  )}
+                  
+                  <div className="p-4 rounded-lg border bg-card">
+                    <h4 className="font-semibold mb-3 text-base text-primary">
+                      {selectedPlayer.playerName} - {cat.label}
+                    </h4>
+                    <div className={`grid ${cat.key === "scoring" ? "grid-cols-4" : "grid-cols-3"} gap-3`}>
+                      {sportStats.filter(s => s.category === cat.key).map(stat => renderStatInput(selectedPlayer, stat))}
+                    </div>
                   </div>
-                )}
-                
-                <div className="p-4 rounded-lg border bg-card">
-                  <h4 className="font-semibold mb-3 text-base text-primary">
-                    {selectedPlayer.playerName} - Statistiques générales
-                  </h4>
-                  <div className="grid grid-cols-3 gap-3">
-                    {sportStats.filter(s => s.category === "general").map(stat => renderStatInput(selectedPlayer, stat))}
-                  </div>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="scoring" className="space-y-4 mt-0">
-                <div className="p-4 rounded-lg border bg-card">
-                  <h4 className="font-semibold mb-3 text-base text-primary">
-                    {selectedPlayer.playerName} - Score
-                  </h4>
-                  <div className="grid grid-cols-4 gap-3">
-                    {sportStats.filter(s => s.category === "scoring").map(stat => renderStatInput(selectedPlayer, stat))}
-                  </div>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="attack" className="space-y-4 mt-0">
-                <div className="p-4 rounded-lg border bg-card">
-                  <h4 className="font-semibold mb-3 text-base text-primary">
-                    {selectedPlayer.playerName} - Attaque
-                  </h4>
-                  <div className="grid grid-cols-3 gap-3">
-                    {sportStats.filter(s => s.category === "attack").map(stat => renderStatInput(selectedPlayer, stat))}
-                  </div>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="defense" className="space-y-4 mt-0">
-                <div className="p-4 rounded-lg border bg-card">
-                  <h4 className="font-semibold mb-3 text-base text-primary">
-                    {selectedPlayer.playerName} - Défense
-                  </h4>
-                  <div className="grid grid-cols-3 gap-3">
-                    {sportStats.filter(s => s.category === "defense").map(stat => renderStatInput(selectedPlayer, stat))}
-                  </div>
-                </div>
-              </TabsContent>
+                </TabsContent>
+              ))}
             </ScrollArea>
           </Tabs>
         )}

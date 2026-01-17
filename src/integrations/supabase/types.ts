@@ -2403,6 +2403,7 @@ export type Database = {
           penalties_scored: number | null
           player_id: string
           red_cards: number | null
+          sport_data: Json | null
           tackles: number | null
           tackles_missed: number | null
           total_contacts: number | null
@@ -2425,6 +2426,7 @@ export type Database = {
           penalties_scored?: number | null
           player_id: string
           red_cards?: number | null
+          sport_data?: Json | null
           tackles?: number | null
           tackles_missed?: number | null
           total_contacts?: number | null
@@ -2447,6 +2449,7 @@ export type Database = {
           penalties_scored?: number | null
           player_id?: string
           red_cards?: number | null
+          sport_data?: Json | null
           tackles?: number | null
           tackles_missed?: number | null
           total_contacts?: number | null
