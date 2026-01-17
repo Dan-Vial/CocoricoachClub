@@ -5017,6 +5017,14 @@ export type Database = {
         }
         Returns: string
       }
+      user_is_conversation_admin: {
+        Args: { _conversation_id: string; _user_id: string }
+        Returns: boolean
+      }
+      user_participates_in_conversation: {
+        Args: { _conversation_id: string; _user_id: string }
+        Returns: boolean
+      }
       validate_public_token: { Args: { _token: string }; Returns: Json }
     }
     Enums: {
