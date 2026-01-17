@@ -154,34 +154,32 @@ export function SportMatchStatsDialog({
       // Delete existing stats
       await supabase.from("player_match_stats").delete().eq("match_id", matchId);
 
-      // Insert new stats (only for rugby-compatible fields for now)
+      // Insert new stats for all sports
       if (statsData.length > 0) {
-        const isRugby = ["XV", "7", "academie", "national_team"].includes(sportType);
-        
-        if (isRugby) {
-          const { error } = await supabase.from("player_match_stats").insert(
-            statsData.map((s) => ({
-              match_id: matchId,
-              player_id: s.playerId,
-              tries: Number(s.tries) || 0,
-              conversions: Number(s.conversions) || 0,
-              penalties_scored: Number(s.penaltiesScored) || 0,
-              drop_goals: Number(s.dropGoals) || 0,
-              tackles: Number(s.tackles) || 0,
-              tackles_missed: Number(s.tacklesMissed) || 0,
-              defensive_recoveries: Number(s.defensiveRecoveries) || 0,
-              carries: Number(s.carries) || 0,
-              meters_gained: Number(s.metersGained) || 0,
-              offloads: Number(s.offloads) || 0,
-              turnovers_won: Number(s.turnoversWon) || 0,
-              breakthroughs: Number(s.breakthroughs) || 0,
-              total_contacts: Number(s.totalContacts) || 0,
-              yellow_cards: Number(s.yellowCards) || 0,
-              red_cards: Number(s.redCards) || 0,
-            }))
-          );
-          if (error) throw error;
-        }
+        // Build stats array with proper typing
+        const statsToInsert = statsData.map((s) => ({
+          match_id: matchId,
+          player_id: s.playerId,
+          // Rugby stats (these columns exist in the database)
+          tries: Number(s.tries) || 0,
+          conversions: Number(s.conversions) || 0,
+          penalties_scored: Number(s.penaltiesScored) || 0,
+          drop_goals: Number(s.dropGoals) || 0,
+          tackles: Number(s.tackles) || 0,
+          tackles_missed: Number(s.tacklesMissed) || 0,
+          defensive_recoveries: Number(s.defensiveRecoveries) || 0,
+          carries: Number(s.carries) || 0,
+          meters_gained: Number(s.metersGained) || 0,
+          offloads: Number(s.offloads) || 0,
+          turnovers_won: Number(s.turnoversWon) || 0,
+          breakthroughs: Number(s.breakthroughs) || 0,
+          total_contacts: Number(s.totalContacts) || 0,
+          yellow_cards: Number(s.yellowCards) || 0,
+          red_cards: Number(s.redCards) || 0,
+        }));
+
+        const { error } = await supabase.from("player_match_stats").insert(statsToInsert);
+        if (error) throw error;
       }
     },
     onSuccess: () => {
@@ -190,7 +188,8 @@ export function SportMatchStatsDialog({
       toast.success("Statistiques enregistrées");
       onOpenChange(false);
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("Error saving stats:", error);
       toast.error("Erreur lors de l'enregistrement");
     },
   });
