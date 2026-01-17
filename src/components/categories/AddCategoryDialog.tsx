@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -12,10 +12,22 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
 import { categorySchema } from "@/lib/validations";
-import { SPORT_TYPES, SportType, getRugbyTypes, getOtherSportTypes } from "@/lib/constants/sportTypes";
+import { 
+  SportType, 
+  MainSportCategory, 
+  MAIN_SPORTS, 
+  RUGBY_SUBTYPES, 
+  getOtherSportSubtypes 
+} from "@/lib/constants/sportTypes";
 
 interface AddCategoryDialogProps {
   open: boolean;
@@ -29,13 +41,26 @@ export function AddCategoryDialog({
   clubId,
 }: AddCategoryDialogProps) {
   const [categoryName, setCategoryName] = useState("");
-  const [sportType, setSportType] = useState<SportType>("XV");
+  const [mainSport, setMainSport] = useState<MainSportCategory>("rugby");
+  const [sportSubType, setSportSubType] = useState<SportType>("XV");
   const [gender, setGender] = useState<"masculine" | "feminine">("masculine");
   const [validationError, setValidationError] = useState("");
   const queryClient = useQueryClient();
 
-  const rugbyTypes = getRugbyTypes();
-  const otherSports = getOtherSportTypes();
+  // Get available subtypes based on selected main sport
+  const availableSubtypes = mainSport === "rugby" 
+    ? RUGBY_SUBTYPES 
+    : getOtherSportSubtypes(mainSport);
+
+  // Reset subtype when main sport changes
+  useEffect(() => {
+    const subtypes = mainSport === "rugby" 
+      ? RUGBY_SUBTYPES 
+      : getOtherSportSubtypes(mainSport);
+    if (subtypes.length > 0) {
+      setSportSubType(subtypes[0].value);
+    }
+  }, [mainSport]);
 
   const addCategory = useMutation({
     mutationFn: async (data: { name: string; rugby_type: SportType; gender: "masculine" | "feminine" }) => {
@@ -53,7 +78,8 @@ export function AddCategoryDialog({
       queryClient.invalidateQueries({ queryKey: ["categories", clubId] });
       toast.success("Catégorie ajoutée avec succès");
       setCategoryName("");
-      setSportType("XV");
+      setMainSport("rugby");
+      setSportSubType("XV");
       setGender("masculine");
       onOpenChange(false);
     },
@@ -73,7 +99,7 @@ export function AddCategoryDialog({
       return;
     }
 
-    addCategory.mutate({ name: result.data.name, rugby_type: sportType, gender: gender });
+    addCategory.mutate({ name: result.data.name, rugby_type: sportSubType, gender: gender });
   };
 
   return (
@@ -100,6 +126,7 @@ export function AddCategoryDialog({
                 <p className="text-sm text-destructive">{validationError}</p>
               )}
             </div>
+            
             <div className="space-y-2">
               <Label>Genre</Label>
               <RadioGroup value={gender} onValueChange={(value: "masculine" | "feminine") => setGender(value)}>
@@ -114,37 +141,43 @@ export function AddCategoryDialog({
               </RadioGroup>
             </div>
             
-            <div className="space-y-3">
-              <Label>Type de sport</Label>
-              
-              {/* Rugby options */}
+            <div className="space-y-4">
               <div className="space-y-2">
-                <p className="text-sm font-medium text-muted-foreground">Rugby</p>
-                <RadioGroup value={sportType} onValueChange={(value: SportType) => setSportType(value)}>
-                  {rugbyTypes.map((type) => (
-                    <div key={type.value} className="flex items-center space-x-2">
-                      <RadioGroupItem value={type.value} id={`sport-${type.value}`} />
-                      <Label htmlFor={`sport-${type.value}`} className="cursor-pointer font-normal">
-                        {type.label}
-                      </Label>
-                    </div>
-                  ))}
-                </RadioGroup>
+                <Label>Sport</Label>
+                <Select 
+                  value={mainSport} 
+                  onValueChange={(value: MainSportCategory) => setMainSport(value)}
+                >
+                  <SelectTrigger className="w-full bg-background">
+                    <SelectValue placeholder="Sélectionner un sport" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border z-50">
+                    {MAIN_SPORTS.map((sport) => (
+                      <SelectItem key={sport.value} value={sport.value}>
+                        {sport.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
-              {/* Other sports */}
-              <div className="space-y-2 pt-2 border-t">
-                <p className="text-sm font-medium text-muted-foreground">Autres sports</p>
-                <RadioGroup value={sportType} onValueChange={(value: SportType) => setSportType(value)}>
-                  {otherSports.map((type) => (
-                    <div key={type.value} className="flex items-center space-x-2">
-                      <RadioGroupItem value={type.value} id={`sport-${type.value}`} />
-                      <Label htmlFor={`sport-${type.value}`} className="cursor-pointer font-normal">
-                        {type.label}
-                      </Label>
-                    </div>
-                  ))}
-                </RadioGroup>
+              <div className="space-y-2">
+                <Label>Type</Label>
+                <Select 
+                  value={sportSubType} 
+                  onValueChange={(value: SportType) => setSportSubType(value)}
+                >
+                  <SelectTrigger className="w-full bg-background">
+                    <SelectValue placeholder="Sélectionner un type" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border z-50">
+                    {availableSubtypes.map((subtype) => (
+                      <SelectItem key={subtype.value} value={subtype.value}>
+                        {subtype.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </div>
