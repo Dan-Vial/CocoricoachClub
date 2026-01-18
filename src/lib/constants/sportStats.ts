@@ -33,8 +33,14 @@ export const RUGBY_STATS: StatField[] = [
   { key: "redCards", label: "Cartons rouges", shortLabel: "Rouges", category: "general", type: "number" },
 ];
 
-// Football stats
+// Football stats - Mise à jour avec nouvelles statistiques
 export const FOOTBALL_STATS: StatField[] = [
+  // General
+  { key: "minutesPlayed", label: "Minutes jouées", shortLabel: "Min.", category: "general", type: "number" },
+  { key: "totalDistance", label: "Distance totale (m)", shortLabel: "Distance", category: "general", type: "number" },
+  { key: "sprintCount", label: "Nombre de sprints", shortLabel: "Sprints", category: "general", type: "number" },
+  { key: "yellowCards", label: "Cartons jaunes", shortLabel: "Jaunes", category: "general", type: "number" },
+  { key: "redCards", label: "Cartons rouges", shortLabel: "Rouges", category: "general", type: "number" },
   // Scoring
   { key: "goals", label: "Buts", shortLabel: "Buts", category: "scoring", type: "number" },
   { key: "assists", label: "Passes décisives", shortLabel: "Assists", category: "scoring", type: "number" },
@@ -43,6 +49,7 @@ export const FOOTBALL_STATS: StatField[] = [
   // Attack
   { key: "passes", label: "Passes réussies", shortLabel: "Passes", category: "attack", type: "number" },
   { key: "passAccuracy", label: "% Passes réussies", shortLabel: "% Passes", category: "attack", type: "number", max: 100 },
+  { key: "duelsWon", label: "Duels gagnés", shortLabel: "Duels", category: "attack", type: "number" },
   { key: "dribbles", label: "Dribbles réussis", shortLabel: "Dribbles", category: "attack", type: "number" },
   { key: "crosses", label: "Centres", shortLabel: "Centres", category: "attack", type: "number" },
   { key: "keyPasses", label: "Passes clés", shortLabel: "P. clés", category: "attack", type: "number" },
@@ -53,38 +60,44 @@ export const FOOTBALL_STATS: StatField[] = [
   { key: "blockedShots", label: "Tirs bloqués", shortLabel: "Bloqués", category: "defense", type: "number" },
   { key: "foulsCommitted", label: "Fautes commises", shortLabel: "Fautes", category: "defense", type: "number" },
   { key: "foulsWon", label: "Fautes subies", shortLabel: "F. subies", category: "defense", type: "number" },
-  // General
-  { key: "yellowCards", label: "Cartons jaunes", shortLabel: "Jaunes", category: "general", type: "number" },
-  { key: "redCards", label: "Cartons rouges", shortLabel: "Rouges", category: "general", type: "number" },
-  { key: "saves", label: "Arrêts (gardien)", shortLabel: "Arrêts", category: "general", type: "number" },
+  { key: "saves", label: "Arrêts (gardien)", shortLabel: "Arrêts", category: "defense", type: "number" },
 ];
 
-// Handball stats
+// Handball stats - Mise à jour avec nouvelles statistiques
 export const HANDBALL_STATS: StatField[] = [
+  // General
+  { key: "playingTime", label: "Temps de jeu (min)", shortLabel: "Temps jeu", category: "general", type: "number" },
+  { key: "yellowCards", label: "Cartons jaunes", shortLabel: "Jaunes", category: "general", type: "number" },
+  { key: "redCards", label: "Cartons rouges", shortLabel: "Rouges", category: "general", type: "number" },
+  { key: "twoMinutes", label: "Exclusions 2 min", shortLabel: "2 min", category: "general", type: "number" },
   // Scoring
   { key: "goals", label: "Buts", shortLabel: "Buts", category: "scoring", type: "number" },
-  { key: "assists", label: "Passes décisives", shortLabel: "Assists", category: "scoring", type: "number" },
   { key: "shots", label: "Tirs", shortLabel: "Tirs", category: "scoring", type: "number" },
-  { key: "shootingPercentage", label: "% Réussite tir", shortLabel: "% Tir", category: "scoring", type: "number", max: 100 },
+  { key: "shootingPercentage", label: "% Réussite tirs", shortLabel: "% Tir", category: "scoring", type: "number", max: 100 },
+  { key: "assists", label: "Passes décisives", shortLabel: "Assists", category: "scoring", type: "number" },
   { key: "sevenMeters", label: "7 mètres marqués", shortLabel: "7m", category: "scoring", type: "number" },
   // Attack
   { key: "passes", label: "Passes", shortLabel: "Passes", category: "attack", type: "number" },
   { key: "technicalFaults", label: "Fautes techniques", shortLabel: "F. tech.", category: "attack", type: "number" },
   { key: "turnoversLost", label: "Pertes de balle", shortLabel: "Pertes", category: "attack", type: "number" },
+  { key: "foulsCommitted", label: "Fautes commises", shortLabel: "Fautes", category: "attack", type: "number" },
   // Defense
   { key: "steals", label: "Interceptions", shortLabel: "Interc.", category: "defense", type: "number" },
   { key: "blocks", label: "Contres", shortLabel: "Contres", category: "defense", type: "number" },
   { key: "saves", label: "Arrêts (gardien)", shortLabel: "Arrêts", category: "defense", type: "number" },
   { key: "savePercentage", label: "% Arrêts", shortLabel: "% Arrêts", category: "defense", type: "number", max: 100 },
-  // General
-  { key: "twoMinutes", label: "Exclusions 2 min", shortLabel: "2 min", category: "general", type: "number" },
-  { key: "yellowCards", label: "Cartons jaunes", shortLabel: "Jaunes", category: "general", type: "number" },
-  { key: "redCards", label: "Cartons rouges", shortLabel: "Rouges", category: "general", type: "number" },
 ];
 
-// Volleyball stats
+// Volleyball stats - Mise à jour avec nouvelles statistiques
 export const VOLLEYBALL_STATS: StatField[] = [
+  // General
+  { key: "setsPlayed", label: "Sets joués", shortLabel: "Sets", category: "general", type: "number" },
+  { key: "playingTime", label: "Temps de jeu (min)", shortLabel: "Temps jeu", category: "general", type: "number" },
+  { key: "jumpCount", label: "Nombre de sauts", shortLabel: "Sauts", category: "general", type: "number" },
+  { key: "attackJumps", label: "Sauts d'attaque", shortLabel: "S. attaque", category: "general", type: "number" },
+  { key: "blockJumps", label: "Sauts de contre", shortLabel: "S. contre", category: "general", type: "number" },
   // Scoring
+  { key: "points", label: "Points marqués", shortLabel: "Points", category: "scoring", type: "number" },
   { key: "kills", label: "Points marqués (kill)", shortLabel: "Kills", category: "scoring", type: "number" },
   { key: "aces", label: "Aces", shortLabel: "Aces", category: "scoring", type: "number" },
   { key: "attackErrors", label: "Erreurs d'attaque", shortLabel: "Err. att.", category: "scoring", type: "number" },
@@ -100,12 +113,14 @@ export const VOLLEYBALL_STATS: StatField[] = [
   { key: "blockAssists", label: "Contres assistés", shortLabel: "C. assist.", category: "defense", type: "number" },
   { key: "digs", label: "Réceptions défensives", shortLabel: "Digs", category: "defense", type: "number" },
   { key: "receptionErrors", label: "Erreurs de réception", shortLabel: "Err. réc.", category: "defense", type: "number" },
-  // General
-  { key: "points", label: "Points totaux", shortLabel: "Points", category: "general", type: "number" },
 ];
 
-// Basketball stats
+// Basketball stats - Mise à jour avec nouvelles statistiques
 export const BASKETBALL_STATS: StatField[] = [
+  // General
+  { key: "minutesPlayed", label: "Minutes jouées", shortLabel: "Min.", category: "general", type: "number" },
+  { key: "personalFouls", label: "Fautes personnelles", shortLabel: "Fautes", category: "general", type: "number" },
+  { key: "plusMinus", label: "+/-", shortLabel: "+/-", category: "general", type: "number" },
   // Scoring
   { key: "points", label: "Points", shortLabel: "Points", category: "scoring", type: "number" },
   { key: "fieldGoalsMade", label: "Paniers réussis", shortLabel: "FG", category: "scoring", type: "number" },
@@ -115,27 +130,34 @@ export const BASKETBALL_STATS: StatField[] = [
   { key: "freeThrowsMade", label: "Lancers francs réussis", shortLabel: "FT", category: "scoring", type: "number" },
   { key: "freeThrowsAttempted", label: "Lancers francs tentés", shortLabel: "FTA", category: "scoring", type: "number" },
   // Attack
-  { key: "assists", label: "Passes décisives", shortLabel: "Assists", category: "attack", type: "number" },
+  { key: "assists", label: "Passes décisives", shortLabel: "Passes", category: "attack", type: "number" },
   { key: "offensiveRebounds", label: "Rebonds offensifs", shortLabel: "RO", category: "attack", type: "number" },
-  { key: "turnovers", label: "Pertes de balle", shortLabel: "Pertes", category: "attack", type: "number" },
+  { key: "turnovers", label: "Ballons perdus", shortLabel: "Pertes", category: "attack", type: "number" },
   // Defense
   { key: "defensiveRebounds", label: "Rebonds défensifs", shortLabel: "RD", category: "defense", type: "number" },
   { key: "totalRebounds", label: "Rebonds totaux", shortLabel: "Reb.", category: "defense", type: "number" },
   { key: "steals", label: "Interceptions", shortLabel: "Steals", category: "defense", type: "number" },
   { key: "blocks", label: "Contres", shortLabel: "Blocks", category: "defense", type: "number" },
-  // General
-  { key: "personalFouls", label: "Fautes personnelles", shortLabel: "Fautes", category: "general", type: "number" },
-  { key: "minutesPlayed", label: "Minutes jouées", shortLabel: "Min.", category: "general", type: "number" },
-  { key: "plusMinus", label: "+/-", shortLabel: "+/-", category: "general", type: "number" },
 ];
 
-// Judo stats - Focus on coach and physical trainer needs
+// Judo stats - Mise à jour avec nouvelles statistiques pour combats multiples
 export const JUDO_STATS: StatField[] = [
+  // General / Physical
+  { key: "combatNumber", label: "Numéro du combat", shortLabel: "N° Combat", category: "general", type: "number" },
+  { key: "combatDuration", label: "Durée du combat (sec)", shortLabel: "Durée", category: "general", type: "number" },
+  { key: "totalFightTime", label: "Durée totale de combat (sec)", shortLabel: "Temps total", category: "general", type: "number" },
+  { key: "engagementTime", label: "Temps d'engagement (sec)", shortLabel: "Engagement", category: "general", type: "number" },
+  { key: "stopTime", label: "Temps d'arrêt (sec)", shortLabel: "Arrêts", category: "general", type: "number" },
+  { key: "competitionWeight", label: "Catégorie de poids (kg)", shortLabel: "Poids", category: "general", type: "number" },
+  { key: "recoveryTime", label: "Temps récupération (min)", shortLabel: "Récup.", category: "general", type: "number" },
+  { key: "perceivedEffort", label: "Effort perçu (RPE 1-10)", shortLabel: "RPE", category: "general", type: "number", max: 10 },
+  
   // Scoring / Results
   { key: "combatResult", label: "Résultat (1=Victoire, 0=Défaite)", shortLabel: "Résultat", category: "scoring", type: "number", max: 1 },
   { key: "ippon", label: "Ippon", shortLabel: "Ippon", category: "scoring", type: "number" },
   { key: "wazaAri", label: "Waza-ari", shortLabel: "Waza-ari", category: "scoring", type: "number" },
   { key: "victoryType", label: "Type victoire (1=Ippon, 2=Waza-ari, 3=Décision)", shortLabel: "Type vic.", category: "scoring", type: "number" },
+  { key: "shido", label: "Shido reçus", shortLabel: "Shido", category: "scoring", type: "number" },
   
   // Attack / Techniques
   { key: "throwAttempts", label: "Tentatives de projection", shortLabel: "Tent. proj.", category: "attack", type: "number" },
@@ -150,48 +172,49 @@ export const JUDO_STATS: StatField[] = [
   { key: "escapes", label: "Sorties au sol", shortLabel: "Sorties", category: "defense", type: "number" },
   { key: "counterAttacks", label: "Contre-attaques", shortLabel: "Contre-att.", category: "defense", type: "number" },
   { key: "gripBreaks", label: "Cassages de garde", shortLabel: "Cass. garde", category: "defense", type: "number" },
-  
-  // General / Physical
-  { key: "combatDuration", label: "Durée du combat (sec)", shortLabel: "Durée", category: "general", type: "number" },
-  { key: "shido", label: "Shido reçus", shortLabel: "Shido", category: "general", type: "number" },
-  { key: "competitionWeight", label: "Poids compétition (kg)", shortLabel: "Poids", category: "general", type: "number" },
-  { key: "recoveryTime", label: "Temps récupération avant prochain combat (min)", shortLabel: "Récup.", category: "general", type: "number" },
-  { key: "perceivedEffort", label: "Effort perçu (RPE 1-10)", shortLabel: "RPE", category: "general", type: "number", max: 10 },
 ];
 
-// Bowling stats - Score and precision focused
+// Bowling stats - Mise à jour avec nouvelles statistiques pour parties multiples
 export const BOWLING_STATS: StatField[] = [
+  // General / Competition
+  { key: "gameNumber", label: "Numéro de partie", shortLabel: "N° Partie", category: "general", type: "number" },
+  { key: "gamesPlayed", label: "Parties jouées", shortLabel: "Parties", category: "general", type: "number" },
+  { key: "placement", label: "Classement", shortLabel: "Place", category: "general", type: "number" },
+  
   // Score statistics
+  { key: "gameScore", label: "Score de la partie", shortLabel: "Score", category: "scoring", type: "number", max: 300 },
   { key: "avgScoreScratch", label: "Score moyen (scratch)", shortLabel: "Moy. Scratch", category: "scoring", type: "number", max: 300 },
   { key: "avgScoreHandicap", label: "Score moyen (handicap)", shortLabel: "Moy. Handi.", category: "scoring", type: "number" },
-  { key: "strikePercentage", label: "% de strikes", shortLabel: "% Strikes", category: "scoring", type: "number", max: 100 },
-  { key: "sparePercentage", label: "% de spares", shortLabel: "% Spares", category: "scoring", type: "number", max: 100 },
-  { key: "splitConversionRate", label: "Split conversion rate", shortLabel: "% Split Conv.", category: "scoring", type: "number", max: 100 },
-  { key: "splitCount", label: "Nombre de splits", shortLabel: "Splits", category: "scoring", type: "number" },
-  { key: "openFrames", label: "Open frames", shortLabel: "Opens", category: "scoring", type: "number" },
-  { key: "pinsPerFrame", label: "Pins par frame", shortLabel: "Pins/Frame", category: "scoring", type: "number" },
   { key: "highGame", label: "Meilleur score partie", shortLabel: "High Game", category: "scoring", type: "number", max: 300 },
+  { key: "seriesScore", label: "Score série (3 parties)", shortLabel: "Série", category: "scoring", type: "number" },
   { key: "totalPins", label: "Total pins", shortLabel: "Total Pins", category: "scoring", type: "number" },
   
   // Precision statistics
-  { key: "targetHitRate", label: "Taux de touche de la cible (board)", shortLabel: "% Cible", category: "attack", type: "number", max: 100 },
-  { key: "avgLateralError", label: "Erreur latérale moyenne (boards)", shortLabel: "Err. Latérale", category: "attack", type: "number" },
-  { key: "trajectoryVariability", label: "Variabilité de trajectoire", shortLabel: "Var. Traj.", category: "attack", type: "number" },
-  { key: "releaseRepeatability", label: "Répétabilité du point de lâcher", shortLabel: "Répét. Lâcher", category: "attack", type: "number", max: 100 },
-  
-  // General / Competition
-  { key: "gamesPlayed", label: "Parties jouées", shortLabel: "Parties", category: "general", type: "number" },
-  { key: "seriesScore", label: "Score série (3 parties)", shortLabel: "Série", category: "general", type: "number" },
-  { key: "placement", label: "Classement", shortLabel: "Place", category: "general", type: "number" },
+  { key: "strikes", label: "Nombre de strikes", shortLabel: "Strikes", category: "attack", type: "number" },
+  { key: "spares", label: "Nombre de spares", shortLabel: "Spares", category: "attack", type: "number" },
+  { key: "strikePercentage", label: "% de strikes", shortLabel: "% Strikes", category: "attack", type: "number", max: 100 },
+  { key: "sparePercentage", label: "% de spares", shortLabel: "% Spares", category: "attack", type: "number", max: 100 },
+  { key: "splitConversionRate", label: "Split conversion rate", shortLabel: "% Split Conv.", category: "attack", type: "number", max: 100 },
+  { key: "splitCount", label: "Nombre de splits", shortLabel: "Splits", category: "attack", type: "number" },
+  { key: "openFrames", label: "Open frames", shortLabel: "Opens", category: "attack", type: "number" },
+  { key: "pinsPerFrame", label: "Pins par frame", shortLabel: "Pins/Frame", category: "attack", type: "number" },
+  { key: "targetHitRate", label: "Taux de touche de la cible", shortLabel: "% Cible", category: "attack", type: "number", max: 100 },
 ];
 
-// Aviron (Rowing) stats - Focus on performance and technique
+// Aviron (Rowing) stats - Mise à jour avec nouvelles statistiques
 export const AVIRON_STATS: StatField[] = [
+  // General
+  { key: "raceDistance", label: "Distance course (m)", shortLabel: "Distance", category: "general", type: "number" },
+  { key: "boatType", label: "Type de bateau (1=1x, 2=2x, 4=4x, 8=8+)", shortLabel: "Bateau", category: "general", type: "number" },
+  { key: "perceivedEffort", label: "Effort perçu (RPE 1-10)", shortLabel: "RPE", category: "general", type: "number", max: 10 },
+  { key: "weatherConditions", label: "Conditions (1=calme, 2=vent léger, 3=vent fort)", shortLabel: "Conditions", category: "general", type: "number" },
+  
   // Performance / Results
   { key: "placement", label: "Classement final", shortLabel: "Place", category: "scoring", type: "number" },
-  { key: "raceTime", label: "Temps de course (sec)", shortLabel: "Temps", category: "scoring", type: "number" },
+  { key: "raceTime", label: "Temps final (sec)", shortLabel: "Temps", category: "scoring", type: "number" },
   { key: "splitTime500m", label: "Split 500m (sec)", shortLabel: "Split 500m", category: "scoring", type: "number" },
   { key: "splitTime1000m", label: "Split 1000m (sec)", shortLabel: "Split 1000m", category: "scoring", type: "number" },
+  { key: "avgSpeed", label: "Vitesse moyenne (m/s)", shortLabel: "Vit. moy.", category: "scoring", type: "number" },
   { key: "finalSprint", label: "Temps sprint final (sec)", shortLabel: "Sprint", category: "scoring", type: "number" },
   
   // Technique / Power
@@ -206,12 +229,6 @@ export const AVIRON_STATS: StatField[] = [
   { key: "avgHeartRate", label: "FC moyenne (bpm)", shortLabel: "FC moy", category: "defense", type: "number" },
   { key: "maxHeartRate", label: "FC max (bpm)", shortLabel: "FC max", category: "defense", type: "number" },
   { key: "lactatePost", label: "Lactate post-course (mmol/L)", shortLabel: "Lactate", category: "defense", type: "number" },
-  
-  // General
-  { key: "raceDistance", label: "Distance course (m)", shortLabel: "Distance", category: "general", type: "number" },
-  { key: "boatType", label: "Type de bateau (1=1x, 2=2x, 4=4x, 8=8+)", shortLabel: "Bateau", category: "general", type: "number" },
-  { key: "perceivedEffort", label: "Effort perçu (RPE 1-10)", shortLabel: "RPE", category: "general", type: "number", max: 10 },
-  { key: "weatherConditions", label: "Conditions (1=calme, 2=vent léger, 3=vent fort)", shortLabel: "Conditions", category: "general", type: "number" },
 ];
 
 export type SportType = "XV" | "7" | "XIII" | "football" | "handball" | "volleyball" | "basketball" | "judo" | "aviron" | "bowling" | "academie" | "national_team";
@@ -277,7 +294,7 @@ export function getStatCategories(sportType: SportType | string): { key: string;
     ];
   }
   
-  // Bowling uses different terminology
+  // Bowling uses different terminology - no defense category
   if (baseSport === "bowling") {
     return [
       { key: "general", label: "Général" },
@@ -298,6 +315,36 @@ export function getStatCategories(sportType: SportType | string): { key: string;
   
   // Basketball uses different terminology
   if (baseSport === "basketball") {
+    return [
+      { key: "general", label: "Général" },
+      { key: "scoring", label: "Score" },
+      { key: "attack", label: "Attaque" },
+      { key: "defense", label: "Défense" },
+    ];
+  }
+
+  // Volleyball
+  if (baseSport === "volleyball") {
+    return [
+      { key: "general", label: "Général" },
+      { key: "scoring", label: "Score" },
+      { key: "attack", label: "Attaque" },
+      { key: "defense", label: "Défense" },
+    ];
+  }
+
+  // Handball
+  if (baseSport === "handball") {
+    return [
+      { key: "general", label: "Général" },
+      { key: "scoring", label: "Score" },
+      { key: "attack", label: "Attaque" },
+      { key: "defense", label: "Défense" },
+    ];
+  }
+
+  // Football
+  if (baseSport === "football") {
     return [
       { key: "general", label: "Général" },
       { key: "scoring", label: "Score" },
