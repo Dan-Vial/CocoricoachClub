@@ -23,7 +23,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Plus, Trash2, Trophy, Target, BarChart3, Swords, Circle } from "lucide-react";
-import { getStatsForSport, getStatCategories, type StatField } from "@/lib/constants/sportStats";
+import { getStatsForSport, getStatCategories, getAggregatedStatsForSport, type StatField } from "@/lib/constants/sportStats";
 
 interface CompetitionRoundsDialogProps {
   open: boolean;
@@ -62,6 +62,7 @@ export function CompetitionRoundsDialog({
 
   const sportStats = getStatsForSport(sportType);
   const statCategories = getStatCategories(sportType);
+  const aggregatedStats = getAggregatedStatsForSport(sportType);
   const isJudo = sportType.toLowerCase().includes("judo");
   const isBowling = sportType.toLowerCase().includes("bowling");
   
@@ -407,24 +408,32 @@ export function CompetitionRoundsDialog({
                             </div>
                           </div>
 
-                          {/* Stats for this round */}
-                          <div>
-                            <Label className="text-xs font-medium">Statistiques</Label>
-                            <div className="grid grid-cols-3 gap-2 mt-2">
-                              {sportStats.slice(0, 9).map(stat => (
-                                <div key={stat.key}>
-                                  <Label className="text-[10px] text-muted-foreground">{stat.shortLabel}</Label>
-                                  <Input
-                                    type="number"
-                                    value={round.stats[stat.key] || 0}
-                                    onChange={(e) => updateRoundStat(selectedPlayer.playerId, round.round_number, stat.key, parseFloat(e.target.value) || 0)}
-                                    min={stat.min ?? 0}
-                                    max={stat.max}
-                                    className="h-7 text-sm"
-                                  />
+                          {/* Stats for this round - organized by category */}
+                          <div className="space-y-3">
+                            {statCategories.map(cat => {
+                              const categoryStats = sportStats.filter(s => s.category === cat.key);
+                              if (categoryStats.length === 0) return null;
+                              return (
+                                <div key={cat.key}>
+                                  <Label className="text-xs font-medium text-primary">{cat.label}</Label>
+                                  <div className="grid grid-cols-3 gap-2 mt-1">
+                                    {categoryStats.map(stat => (
+                                      <div key={stat.key}>
+                                        <Label className="text-[10px] text-muted-foreground">{stat.shortLabel}</Label>
+                                        <Input
+                                          type="number"
+                                          value={round.stats[stat.key] || 0}
+                                          onChange={(e) => updateRoundStat(selectedPlayer.playerId, round.round_number, stat.key, parseFloat(e.target.value) || 0)}
+                                          min={stat.min ?? 0}
+                                          max={stat.max}
+                                          className="h-7 text-sm"
+                                        />
+                                      </div>
+                                    ))}
+                                  </div>
                                 </div>
-                              ))}
-                            </div>
+                              );
+                            })}
                           </div>
 
                           {/* Notes */}
@@ -484,18 +493,27 @@ export function CompetitionRoundsDialog({
                               </div>
                             </div>
 
-                            {/* Aggregated stats */}
+                            {/* Aggregated stats by category */}
                             {Object.keys(aggregated).length > 0 && (
-                              <div>
-                                <h4 className="font-medium mb-2">Statistiques cumulées</h4>
-                                <div className="grid grid-cols-3 gap-2">
-                                  {sportStats.filter(s => aggregated[s.key] !== undefined).slice(0, 9).map(stat => (
-                                    <div key={stat.key} className="p-2 rounded border text-center">
-                                      <p className="text-lg font-bold">{aggregated[stat.key]}</p>
-                                      <p className="text-xs text-muted-foreground">{stat.shortLabel}</p>
+                              <div className="space-y-3">
+                                <h4 className="font-medium">Statistiques cumulées</h4>
+                                {statCategories.map(cat => {
+                                  const categoryStats = sportStats.filter(s => s.category === cat.key && aggregated[s.key] !== undefined);
+                                  if (categoryStats.length === 0) return null;
+                                  return (
+                                    <div key={cat.key}>
+                                      <p className="text-sm font-medium text-primary mb-2">{cat.label}</p>
+                                      <div className="grid grid-cols-3 gap-2">
+                                        {categoryStats.map(stat => (
+                                          <div key={stat.key} className="p-2 rounded border text-center">
+                                            <p className="text-lg font-bold">{aggregated[stat.key]}</p>
+                                            <p className="text-xs text-muted-foreground">{stat.shortLabel}</p>
+                                          </div>
+                                        ))}
+                                      </div>
                                     </div>
-                                  ))}
-                                </div>
+                                  );
+                                })}
                               </div>
                             )}
                           </>
