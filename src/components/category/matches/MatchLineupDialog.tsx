@@ -94,7 +94,7 @@ export function MatchLineupDialog({
         const existing = existingLineup?.find((l) => l.player_id === player.id);
         return {
           playerId: player.id,
-          playerName: player.name || "Joueur inconnu",
+          playerName: player.name || "Athlète inconnu",
           isStarter: existing?.is_starter ?? false,
           position: existing?.position ?? "",
           minutesPlayed: existing?.minutes_played ?? 0,
@@ -207,7 +207,7 @@ export function MatchLineupDialog({
         <div className="flex gap-4 text-sm text-muted-foreground mb-2 flex-shrink-0 flex-wrap">
           <span className="flex items-center gap-1">
             <UserCheck className="h-4 w-4" />
-            {selectedCount} {isIndividual ? "participants" : "joueurs"}
+            {selectedCount} {isIndividual ? "participants" : "athlètes"}
           </span>
           {!isIndividual && (
             <>
@@ -250,7 +250,7 @@ export function MatchLineupDialog({
                     </div>
                   </div>
                 )) : (
-                  <p className="text-center text-muted-foreground py-4">Aucun joueur dans cette catégorie</p>
+                  <p className="text-center text-muted-foreground py-4">Aucun athlète dans cette catégorie</p>
                 )}
               </div>
             ) : (
@@ -333,7 +333,7 @@ export function MatchLineupDialog({
                       )}
                     </div>
                   )) : (
-                    <p className="text-center text-muted-foreground py-4">Aucun joueur dans cette catégorie</p>
+                    <p className="text-center text-muted-foreground py-4">Aucun athlète dans cette catégorie</p>
                   )}
                 </div>
               )

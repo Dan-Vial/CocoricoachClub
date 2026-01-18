@@ -127,7 +127,7 @@ export function SmartAlertsPanel({ categoryId }: SmartAlertsPanelProps) {
           <div className="text-center py-8 text-muted-foreground">
             <Check className="h-12 w-12 mx-auto mb-2 text-green-500" />
             <p>Aucune alerte active</p>
-            <p className="text-sm">Tous vos joueurs sont en bonne forme !</p>
+            <p className="text-sm">Tous vos athlètes sont en bonne forme !</p>
           </div>
         ) : (
           <ScrollArea className="h-[400px] pr-4">

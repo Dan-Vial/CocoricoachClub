@@ -45,14 +45,14 @@ export function AddPlayerDialog({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["players", categoryId] });
-      toast.success("Joueur ajouté avec succès");
+      toast.success("Athlète ajouté avec succès");
       setPlayerName("");
       setBirthYear("");
       setBirthDate("");
       onOpenChange(false);
     },
     onError: () => {
-      toast.error("Erreur lors de l'ajout du joueur");
+      toast.error("Erreur lors de l'ajout de l'athlète");
     },
   });
 
@@ -82,12 +82,12 @@ export function AddPlayerDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Ajouter un nouveau joueur</DialogTitle>
+          <DialogTitle>Ajouter un nouvel athlète</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="playerName">Nom du joueur</Label>
+              <Label htmlFor="playerName">Nom de l'athlète</Label>
               <Input
                 id="playerName"
                 value={playerName}

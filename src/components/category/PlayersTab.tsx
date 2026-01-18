@@ -38,10 +38,10 @@ export function PlayersTab({ categoryId }: PlayersTabProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["players", categoryId] });
-      toast.success("Joueur supprimé avec succès");
+      toast.success("Athlète supprimé avec succès");
     },
     onError: () => {
-      toast.error("Erreur lors de la suppression du joueur");
+      toast.error("Erreur lors de la suppression de l'athlète");
     },
   });
 
@@ -53,11 +53,11 @@ export function PlayersTab({ categoryId }: PlayersTabProps) {
     <Card className="bg-gradient-card shadow-md">
       <CardHeader>
         <div className="flex justify-between items-center">
-          <CardTitle>Liste des joueurs</CardTitle>
+          <CardTitle>Liste des athlètes</CardTitle>
           {!isViewer && (
             <Button onClick={() => setIsAddDialogOpen(true)} className="gap-2">
               <Plus className="h-4 w-4" />
-              Ajouter un joueur
+              Ajouter un athlète
             </Button>
           )}
         </div>
@@ -65,11 +65,11 @@ export function PlayersTab({ categoryId }: PlayersTabProps) {
       <CardContent>
         {players && players.length === 0 ? (
           <div className="text-center py-8">
-            <p className="text-muted-foreground mb-4">Aucun joueur dans cette catégorie</p>
+            <p className="text-muted-foreground mb-4">Aucun athlète dans cette catégorie</p>
             {!isViewer && (
               <Button onClick={() => setIsAddDialogOpen(true)} variant="outline" className="gap-2">
                 <Plus className="h-4 w-4" />
-                Ajouter le premier joueur
+                Ajouter le premier athlète
               </Button>
             )}
           </div>
@@ -119,7 +119,7 @@ export function PlayersTab({ categoryId }: PlayersTabProps) {
                             size="icon"
                             onClick={(e) => {
                               e.stopPropagation();
-                              if (confirm(`Êtes-vous sûr de vouloir supprimer ${player.name} ?`)) {
+                              if (confirm(`Êtes-vous sûr de vouloir supprimer l'athlète ${player.name} ?`)) {
                                 deletePlayer.mutate(player.id);
                               }
                             }}

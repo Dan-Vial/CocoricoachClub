@@ -78,19 +78,19 @@ export function GlobalPlayerSearch() {
         onClick={() => setOpen(true)}
       >
         <Search className="h-4 w-4" />
-        <span className="hidden md:inline">Rechercher un joueur...</span>
+        <span className="hidden md:inline">Rechercher un athlète...</span>
         <kbd className="hidden md:inline pointer-events-none h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100">
           <span className="text-xs">⌘</span>K
         </kbd>
       </Button>
 
       <CommandDialog open={open} onOpenChange={setOpen}>
-        <CommandInput placeholder="Rechercher un joueur par nom..." />
+        <CommandInput placeholder="Rechercher un athlète par nom..." />
         <CommandList>
           <CommandEmpty>
-            {isLoading ? "Chargement..." : "Aucun joueur trouvé."}
+            {isLoading ? "Chargement..." : "Aucun athlète trouvé."}
           </CommandEmpty>
-          <CommandGroup heading="Joueurs">
+          <CommandGroup heading="Athlètes">
             {players?.map((player) => {
               const categoryName = player.categories?.name ?? "Catégorie";
               const clubName = player.categories?.clubs?.name;

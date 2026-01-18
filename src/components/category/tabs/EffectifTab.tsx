@@ -17,7 +17,7 @@ export function EffectifTab({ categoryId }: EffectifTabProps) {
         <TabsList className="inline-flex w-max min-w-full gap-1 h-auto bg-muted p-1">
           <TabsTrigger value="players" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">
             <Users className="h-4 w-4 shrink-0" />
-            Joueurs
+            Athlètes
           </TabsTrigger>
           {!isViewer && (
             <TabsTrigger value="collaboration" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">

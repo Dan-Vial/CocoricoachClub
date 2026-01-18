@@ -87,7 +87,7 @@ export function PushNotificationSettings() {
               <p className="font-medium">Notifications activées</p>
               <p className="text-sm text-muted-foreground">
                 {isSubscribed 
-                  ? "Vous recevrez des alertes pour les blessures et retours de joueurs"
+                  ? "Vous recevrez des alertes pour les blessures et retours d'athlètes"
                   : "Activez pour recevoir des alertes importantes"
                 }
               </p>
@@ -128,7 +128,7 @@ export function PushNotificationSettings() {
             </li>
             <li className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-green-500" />
-              Retours imminents de joueurs
+              Retours imminents d'athlètes
             </li>
             <li className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-amber-500" />

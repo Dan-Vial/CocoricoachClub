@@ -96,7 +96,7 @@ export function InjuryReturnAlerts() {
                 className="mt-2"
                 onClick={() => navigate(`/players/${injury.player_id}`)}
               >
-                Voir le profil du joueur
+                Voir le profil de l'athlète
               </Button>
             </AlertDescription>
           </Alert>

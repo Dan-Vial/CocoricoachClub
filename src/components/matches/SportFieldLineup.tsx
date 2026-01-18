@@ -229,7 +229,7 @@ export function SportFieldLineup({
     const sportLabels: Record<string, string> = {
       judo: "Combattants sélectionnés",
       aviron: "Rameurs sélectionnés",
-      bowling: "Joueurs sélectionnés",
+      bowling: "Athlètes sélectionnés",
     };
     const sportMessages: Record<string, string> = {
       judo: "Le judo ne nécessite pas de composition tactique. Utilisez la vue liste.",
@@ -345,7 +345,7 @@ export function SportFieldLineup({
               </p>
               <Select onValueChange={handlePlayerSelect}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner un joueur..." />
+                  <SelectValue placeholder="Sélectionner un athlète..." />
                 </SelectTrigger>
                 <SelectContent>
                   {availablePlayers.map((player) => (
@@ -355,7 +355,7 @@ export function SportFieldLineup({
                   ))}
                   {availablePlayers.length === 0 && (
                     <SelectItem value="none" disabled>
-                      Tous les joueurs sont assignés
+                      Tous les athlètes sont assignés
                     </SelectItem>
                   )}
                 </SelectContent>

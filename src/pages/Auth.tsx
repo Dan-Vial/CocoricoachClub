@@ -104,7 +104,7 @@ export default function Auth() {
         <CardHeader>
           <CardTitle className="text-2xl text-center">Préparation Physique Rugby</CardTitle>
           <CardDescription className="text-center">
-            Connectez-vous pour gérer vos clubs et joueurs
+            Connectez-vous pour gérer vos clubs et athlètes
           </CardDescription>
         </CardHeader>
         <CardContent>

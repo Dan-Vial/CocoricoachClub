@@ -117,7 +117,7 @@ export function SportMatchStatsDialog({
         
         const playerStats: PlayerStats = {
           playerId: l.player_id,
-          playerName: player?.name || "Joueur",
+          playerName: player?.name || "Athlète",
         };
 
         // Get sport_data from existing stats if available
@@ -233,7 +233,7 @@ export function SportMatchStatsDialog({
           <p className="text-muted-foreground text-center py-8">
             {isIndividual 
               ? "Ajoutez d'abord des participants pour saisir leurs statistiques."
-              : "Ajoutez d'abord des joueurs à la composition pour saisir leurs statistiques."
+              : "Ajoutez d'abord des athlètes à la composition pour saisir leurs statistiques."
             }
           </p>
           <Button onClick={() => onOpenChange(false)}>Fermer</Button>
@@ -270,11 +270,11 @@ export function SportMatchStatsDialog({
         <div className="space-y-2">
           <Label className="text-sm font-medium flex items-center gap-2">
             <UserCircle className="h-4 w-4" />
-            {isIndividual ? "Sélectionner un participant" : "Sélectionner un joueur"}
+            {isIndividual ? "Sélectionner un participant" : "Sélectionner un athlète"}
           </Label>
           <Select value={selectedPlayerId} onValueChange={setSelectedPlayerId}>
             <SelectTrigger className="w-full">
-              <SelectValue placeholder={isIndividual ? "Choisir un participant..." : "Choisir un joueur..."} />
+              <SelectValue placeholder={isIndividual ? "Choisir un participant..." : "Choisir un athlète..."} />
             </SelectTrigger>
             <SelectContent>
               {statsData.map((player) => (

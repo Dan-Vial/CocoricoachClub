@@ -821,7 +821,7 @@ export function SessionFormDialog({
                     <div className="flex items-center justify-between">
                       <Label className="flex items-center gap-2 text-base font-medium">
                         <Users className="h-4 w-4" />
-                        Joueurs concernés
+                        Athlètes concernés
                       </Label>
                       <div className="flex gap-2">
                         <Button
