@@ -303,7 +303,7 @@ export function CompetitionRoundsDialog({
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Choisir un athlète..." />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="z-[200]">
               {playerRoundsData.map((player) => (
                 <SelectItem key={player.playerId} value={player.playerId}>
                   <div className="flex items-center gap-2">
@@ -390,7 +390,7 @@ export function CompetitionRoundsDialog({
                                 <SelectTrigger className="h-8">
                                   <SelectValue placeholder="Résultat" />
                                 </SelectTrigger>
-                                <SelectContent>
+                                <SelectContent className="z-[200]">
                                   <SelectItem value="win">
                                     <span className="flex items-center gap-2">
                                       <Trophy className="h-3 w-3 text-green-500" />

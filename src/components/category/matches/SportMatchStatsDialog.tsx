@@ -276,7 +276,7 @@ export function SportMatchStatsDialog({
             <SelectTrigger className="w-full">
               <SelectValue placeholder={isIndividual ? "Choisir un participant..." : "Choisir un athlète..."} />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="z-[200]">
               {statsData.map((player) => (
                 <SelectItem key={player.playerId} value={player.playerId}>
                   <div className="flex items-center gap-2">
