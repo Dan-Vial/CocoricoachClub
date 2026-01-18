@@ -109,7 +109,7 @@ export function AddWellnessDialog({ open, onOpenChange, categoryId }: AddWellnes
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!playerId) {
-      toast.error("Veuillez sélectionner un joueur");
+      toast.error("Veuillez sélectionner un athlète");
       return;
     }
     addWellness.mutate();

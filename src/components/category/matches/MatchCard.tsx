@@ -18,9 +18,11 @@ import {
   Check,
   X,
   Trophy,
+  Swords,
 } from "lucide-react";
 import { MatchLineupDialog } from "./MatchLineupDialog";
 import { SportMatchStatsDialog } from "./SportMatchStatsDialog";
+import { CompetitionRoundsDialog } from "./CompetitionRoundsDialog";
 import { isIndividualSport } from "@/lib/constants/sportTypes";
 
 interface Match {
@@ -45,6 +47,7 @@ interface MatchCardProps {
 export function MatchCard({ match, categoryId }: MatchCardProps) {
   const [isLineupOpen, setIsLineupOpen] = useState(false);
   const [isStatsOpen, setIsStatsOpen] = useState(false);
+  const [isRoundsOpen, setIsRoundsOpen] = useState(false);
   const [isEditingScore, setIsEditingScore] = useState(false);
   const [scoreHome, setScoreHome] = useState(match.score_home?.toString() || "");
   const [scoreAway, setScoreAway] = useState(match.score_away?.toString() || "");
@@ -244,6 +247,18 @@ export function MatchCard({ match, categoryId }: MatchCardProps) {
               <Users className="h-4 w-4" />
               {isIndividual ? `Participants (${lineupCount})` : `Compo (${lineupCount})`}
             </Button>
+            {/* Show rounds button for Judo and Bowling */}
+            {(sportType.toLowerCase().includes("judo") || sportType.toLowerCase().includes("bowling")) && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                onClick={() => setIsRoundsOpen(true)}
+              >
+                <Swords className="h-4 w-4" />
+                {sportType.toLowerCase().includes("judo") ? "Combats" : "Parties"}
+              </Button>
+            )}
             <Button
               variant="outline"
               size="sm"
@@ -283,6 +298,16 @@ export function MatchCard({ match, categoryId }: MatchCardProps) {
         categoryId={categoryId}
         sportType={category?.rugby_type || "XV"}
       />
+
+      {(sportType.toLowerCase().includes("judo") || sportType.toLowerCase().includes("bowling")) && (
+        <CompetitionRoundsDialog
+          open={isRoundsOpen}
+          onOpenChange={setIsRoundsOpen}
+          matchId={match.id}
+          categoryId={categoryId}
+          sportType={sportType}
+        />
+      )}
     </>
   );
 }

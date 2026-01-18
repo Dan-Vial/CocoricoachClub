@@ -87,7 +87,7 @@ export function OfflineSyncProvider({ children }: { children: ReactNode }) {
         setStats(result.stats || null);
         
         toast.success("Données prêtes pour utilisation hors-ligne", {
-          description: `${result.stats?.players || 0} joueurs, ${result.stats?.matches || 0} matchs`,
+          description: `${result.stats?.players || 0} athlètes, ${result.stats?.matches || 0} matchs`,
           duration: 4000,
         });
       } else {

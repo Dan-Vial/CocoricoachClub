@@ -108,12 +108,12 @@ export function PlayerRotationDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Rotation des joueurs</DialogTitle>
+          <DialogTitle>Rotation des athlètes</DialogTitle>
         </DialogHeader>
         
         <div className="space-y-4">
           <div>
-            <h3 className="font-medium mb-2">Joueurs sélectionnés</h3>
+            <h3 className="font-medium mb-2">Athlètes sélectionnés</h3>
             <ScrollArea className="h-64 border rounded-md p-4">
               {rotations && rotations.length > 0 ? (
                 <div className="space-y-2">
@@ -150,14 +150,14 @@ export function PlayerRotationDialog({
                 </div>
               ) : (
                 <p className="text-center text-muted-foreground py-8">
-                  Aucun joueur sélectionné
+                  Aucun athlète sélectionné
                 </p>
               )}
             </ScrollArea>
           </div>
 
           <div>
-            <h3 className="font-medium mb-2">Ajouter un joueur</h3>
+            <h3 className="font-medium mb-2">Ajouter un athlète</h3>
             <ScrollArea className="h-32 border rounded-md p-4">
               {availablePlayers && availablePlayers.length > 0 ? (
                 <div className="space-y-2">
@@ -180,7 +180,7 @@ export function PlayerRotationDialog({
                 </div>
               ) : (
                 <p className="text-center text-muted-foreground py-4">
-                  Tous les joueurs sont déjà ajoutés
+                  Tous les athlètes sont déjà ajoutés
                 </p>
               )}
             </ScrollArea>

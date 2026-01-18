@@ -88,7 +88,7 @@
 
 ---
 
-### 🏃 Joueurs
+### 🏃 Athlètes
 
 #### `players`
 | Colonne | Type | Nullable | Default |

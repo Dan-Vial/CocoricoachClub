@@ -156,7 +156,7 @@ export function ActiveProtocolsDashboard({ categoryId }: ActiveProtocolsDashboar
               </div>
               <div>
                 <p className="text-2xl font-bold">{totalPlayers}</p>
-                <p className="text-sm text-muted-foreground">Joueurs en réhab</p>
+                <p className="text-sm text-muted-foreground">Athlètes en réhab</p>
               </div>
             </div>
           </CardContent>

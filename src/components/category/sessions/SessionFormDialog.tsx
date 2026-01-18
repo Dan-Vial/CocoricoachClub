@@ -896,7 +896,7 @@ export function SessionFormDialog({
 
                         {selectedPlayers.length > 0 && (
                           <Badge variant="secondary" className="w-fit">
-                            {selectedPlayers.length} joueur(s) sélectionné(s)
+                            {selectedPlayers.length} athlète(s) sélectionné(s)
                           </Badge>
                         )}
 
@@ -939,7 +939,7 @@ export function SessionFormDialog({
                       </>
                     ) : (
                       <p className="text-sm text-muted-foreground py-4">
-                        Tous les joueurs de la catégorie seront concernés par cette séance.
+                        Tous les athlètes de la catégorie seront concernés par cette séance.
                       </p>
                     )}
                   </div>

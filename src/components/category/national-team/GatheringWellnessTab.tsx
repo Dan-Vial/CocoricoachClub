@@ -280,7 +280,7 @@ export function GatheringWellnessTab({ categoryId }: GatheringWellnessTabProps) 
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm text-muted-foreground">
-              Joueurs avec douleurs
+              Athlètes avec douleurs
             </CardTitle>
           </CardHeader>
           <CardContent>

@@ -310,7 +310,7 @@ export function InjuryRiskAssessment({ categoryId }: InjuryRiskAssessmentProps) 
           <div className="space-y-4">
             <h4 className="font-semibold text-destructive flex items-center gap-2">
               <AlertTriangle className="h-4 w-4" />
-              Joueurs à Attention Immédiate
+              Athlètes à Attention Immédiate
             </h4>
             <div className="space-y-3">
               {[...criticalPlayers, ...highRiskPlayers].map((player) => (
@@ -364,7 +364,7 @@ export function InjuryRiskAssessment({ categoryId }: InjuryRiskAssessmentProps) 
 
         {/* All Players List */}
         <div className="space-y-4">
-          <h4 className="font-semibold">Tous les Joueurs</h4>
+          <h4 className="font-semibold">Tous les Athlètes</h4>
           <div className="space-y-2">
             {playerRisks.map((player) => (
               <div

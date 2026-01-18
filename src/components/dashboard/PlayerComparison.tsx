@@ -131,14 +131,14 @@ export function PlayerComparison({ categoryIds }: PlayerComparisonProps) {
   return (
     <Card className="bg-gradient-card shadow-md">
       <CardHeader>
-        <CardTitle>Comparaison des Joueurs</CardTitle>
+        <CardTitle>Comparaison des Athlètes</CardTitle>
       </CardHeader>
       <CardContent>
         {comparison && comparison.length > 0 ? (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Joueur</TableHead>
+                <TableHead>Athlète</TableHead>
                 <TableHead>AWCR Moyen</TableHead>
                 <TableHead>Charge Moy.</TableHead>
                 <TableHead>Meilleur 40m</TableHead>

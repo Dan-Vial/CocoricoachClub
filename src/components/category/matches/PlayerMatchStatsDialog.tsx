@@ -216,10 +216,10 @@ export function PlayerMatchStatsDialog({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Statistiques des joueurs</DialogTitle>
+            <DialogTitle>Statistiques des athlètes</DialogTitle>
           </DialogHeader>
           <p className="text-muted-foreground text-center py-8">
-            Ajoutez d'abord des joueurs à la composition pour saisir leurs statistiques.
+            Ajoutez d'abord des athlètes à la composition pour saisir leurs statistiques.
           </p>
           <Button onClick={() => onOpenChange(false)}>Fermer</Button>
         </DialogContent>
@@ -233,7 +233,7 @@ export function PlayerMatchStatsDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <BarChart3 className="h-5 w-5" />
-            Statistiques des joueurs
+            Statistiques des athlètes
           </DialogTitle>
         </DialogHeader>
 

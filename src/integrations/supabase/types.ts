@@ -481,6 +481,89 @@ export type Database = {
         }
         Relationships: []
       }
+      competition_round_stats: {
+        Row: {
+          created_at: string
+          id: string
+          round_id: string
+          stat_data: Json
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          round_id: string
+          stat_data?: Json
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          round_id?: string
+          stat_data?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competition_round_stats_round_id_fkey"
+            columns: ["round_id"]
+            isOneToOne: false
+            referencedRelation: "competition_rounds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      competition_rounds: {
+        Row: {
+          created_at: string
+          id: string
+          match_id: string
+          notes: string | null
+          opponent_name: string | null
+          player_id: string
+          result: string | null
+          round_number: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          match_id: string
+          notes?: string | null
+          opponent_name?: string | null
+          player_id: string
+          result?: string | null
+          round_number?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          match_id?: string
+          notes?: string | null
+          opponent_name?: string | null
+          player_id?: string
+          result?: string | null
+          round_number?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competition_rounds_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "competition_rounds_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       concussion_protocols: {
         Row: {
           category_id: string
