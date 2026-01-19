@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -25,6 +25,7 @@ import { ExerciseLibrarySidebar } from "./ExerciseLibrarySidebar";
 import { Plus, Save } from "lucide-react";
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent } from "@dnd-kit/core";
 import { Badge } from "@/components/ui/badge";
+import { getTrainingTypesForSport } from "@/lib/constants/trainingTypes";
 
 interface ProgramBuilderDialogProps {
   categoryId: string;
@@ -94,8 +95,8 @@ const BODY_ZONES = [
   { value: "core", label: "Core / Gainage" },
 ];
 
-// Theme options
-const THEMES = [
+// Base theme options (terrain sub-options will be dynamic based on sport)
+const BASE_THEMES = [
   { value: "musculation", label: "Musculation", subOptions: [
     { value: "force", label: "Force" },
     { value: "hypertrophie", label: "Hypertrophie" },
@@ -109,14 +110,17 @@ const THEMES = [
     { value: "phase_3", label: "Phase 3 - Puissance" },
     { value: "phase_4", label: "Phase 4 - Sport spécifique" },
   ]},
-  { value: "terrain", label: "Terrain", subOptions: [
-    { value: "physique", label: "Physique général" },
-    { value: "collectif", label: "Collectif" },
-    { value: "bronco", label: "Bronco" },
-    { value: "yoyo_test", label: "Yo-Yo Test" },
-    { value: "vma", label: "VMA" },
-    { value: "intermittent", label: "Intermittent" },
-  ]},
+  { value: "terrain", label: "Terrain", subOptions: [] }, // Will be populated dynamically
+];
+
+// Common terrain sub-options (fallback)
+const COMMON_TERRAIN_OPTIONS = [
+  { value: "physique", label: "Physique général" },
+  { value: "collectif", label: "Collectif" },
+  { value: "bronco", label: "Bronco" },
+  { value: "yoyo_test", label: "Yo-Yo Test" },
+  { value: "vma", label: "VMA" },
+  { value: "intermittent", label: "Intermittent" },
 ];
 
 export function ProgramBuilderDialog({
@@ -135,6 +139,50 @@ export function ProgramBuilderDialog({
   const [weeks, setWeeks] = useState<ProgramWeek[]>([]);
   const [saving, setSaving] = useState(false);
   const [activeExercise, setActiveExercise] = useState<any>(null);
+
+  // Fetch category to get sport type
+  const { data: category } = useQuery({
+    queryKey: ["category-sport", categoryId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("categories")
+        .select("rugby_type")
+        .eq("id", categoryId)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!categoryId && open,
+  });
+
+  // Build THEMES with dynamic terrain options based on sport
+  const THEMES = useMemo(() => {
+    const sportType = category?.rugby_type;
+    const sportTrainingTypes = getTrainingTypesForSport(sportType);
+    
+    // Filter only field/terrain related training types (exclude musculation, physique, etc.)
+    const terrainOptions = sportTrainingTypes
+      .filter(t => {
+        // Include sport-specific types and some common terrain types
+        const isMusculationRelated = ['musculation', 'physique', 'reathlétisation', 'repos', 'test', 'echauffement', 'recuperation'].includes(t.value);
+        return !isMusculationRelated;
+      })
+      .map(t => ({ value: t.value, label: t.label }));
+
+    // Add common terrain options if not already included
+    const existingValues = terrainOptions.map(t => t.value);
+    const additionalCommon = COMMON_TERRAIN_OPTIONS.filter(t => !existingValues.includes(t.value));
+    
+    return BASE_THEMES.map(baseTheme => {
+      if (baseTheme.value === "terrain") {
+        return {
+          ...baseTheme,
+          subOptions: [...terrainOptions, ...additionalCommon],
+        };
+      }
+      return baseTheme;
+    });
+  }, [category?.rugby_type]);
 
   // Get sub-options for selected theme
   const selectedThemeOptions = THEMES.find(t => t.value === theme)?.subOptions || [];
