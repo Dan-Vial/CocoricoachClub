@@ -516,36 +516,60 @@ export type Database = {
       competition_rounds: {
         Row: {
           created_at: string
+          current_conditions: string | null
+          final_time_seconds: number | null
+          gap_to_first: string | null
           id: string
+          lane: number | null
           match_id: string
           notes: string | null
           opponent_name: string | null
+          phase: string | null
           player_id: string
+          ranking: number | null
           result: string | null
           round_number: number
+          temperature_celsius: number | null
           updated_at: string
+          wind_conditions: string | null
         }
         Insert: {
           created_at?: string
+          current_conditions?: string | null
+          final_time_seconds?: number | null
+          gap_to_first?: string | null
           id?: string
+          lane?: number | null
           match_id: string
           notes?: string | null
           opponent_name?: string | null
+          phase?: string | null
           player_id: string
+          ranking?: number | null
           result?: string | null
           round_number?: number
+          temperature_celsius?: number | null
           updated_at?: string
+          wind_conditions?: string | null
         }
         Update: {
           created_at?: string
+          current_conditions?: string | null
+          final_time_seconds?: number | null
+          gap_to_first?: string | null
           id?: string
+          lane?: number | null
           match_id?: string
           notes?: string | null
           opponent_name?: string | null
+          phase?: string | null
           player_id?: string
+          ranking?: number | null
           result?: string | null
           round_number?: number
+          temperature_celsius?: number | null
           updated_at?: string
+          wind_conditions?: string | null
         }
         Relationships: [
           {
@@ -1320,31 +1344,40 @@ export type Database = {
       }
       match_lineups: {
         Row: {
+          boat_type: string | null
           created_at: string
+          crew_role: string | null
           id: string
           is_starter: boolean | null
           match_id: string
           minutes_played: number | null
           player_id: string
           position: string | null
+          seat_position: number | null
         }
         Insert: {
+          boat_type?: string | null
           created_at?: string
+          crew_role?: string | null
           id?: string
           is_starter?: boolean | null
           match_id: string
           minutes_played?: number | null
           player_id: string
           position?: string | null
+          seat_position?: number | null
         }
         Update: {
+          boat_type?: string | null
           created_at?: string
+          crew_role?: string | null
           id?: string
           is_starter?: boolean | null
           match_id?: string
           minutes_played?: number | null
           player_id?: string
           position?: string | null
+          seat_position?: number | null
         }
         Relationships: [
           {
@@ -1365,12 +1398,15 @@ export type Database = {
       }
       matches: {
         Row: {
+          age_category: string | null
           average_play_sequence: number | null
           category_id: string
           competition: string | null
           competition_stage: string | null
           created_at: string
+          distance_meters: number | null
           effective_play_time: number | null
+          event_type: string | null
           id: string
           is_home: boolean | null
           location: string | null
@@ -1384,12 +1420,15 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          age_category?: string | null
           average_play_sequence?: number | null
           category_id: string
           competition?: string | null
           competition_stage?: string | null
           created_at?: string
+          distance_meters?: number | null
           effective_play_time?: number | null
+          event_type?: string | null
           id?: string
           is_home?: boolean | null
           location?: string | null
@@ -1403,12 +1442,15 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          age_category?: string | null
           average_play_sequence?: number | null
           category_id?: string
           competition?: string | null
           competition_stage?: string | null
           created_at?: string
+          distance_meters?: number | null
           effective_play_time?: number | null
+          event_type?: string | null
           id?: string
           is_home?: boolean | null
           location?: string | null

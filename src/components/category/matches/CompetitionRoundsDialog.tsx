@@ -22,7 +22,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Plus, Trash2, Trophy, Target, BarChart3, Swords, Circle } from "lucide-react";
+import { Plus, Trash2, Trophy, Target, BarChart3, Swords, Circle, Ship, Users } from "lucide-react";
 import { getStatsForSport, getStatCategories, getAggregatedStatsForSport, type StatField } from "@/lib/constants/sportStats";
 
 interface CompetitionRoundsDialogProps {
@@ -40,13 +40,65 @@ interface Round {
   result: string;
   notes: string;
   stats: Record<string, number>;
+  // New fields for Aviron/Judo
+  phase: string;
+  lane?: number;
+  wind_conditions?: string;
+  current_conditions?: string;
+  temperature_celsius?: number;
+  final_time_seconds?: number;
+  ranking?: number;
+  gap_to_first?: string;
 }
 
 interface PlayerRounds {
   playerId: string;
   playerName: string;
   rounds: Round[];
+  // Aviron crew info
+  boat_type?: string;
+  crew_role?: string;
+  seat_position?: number;
 }
+
+// Aviron phases
+const AVIRON_PHASES = [
+  { value: "serie", label: "Série" },
+  { value: "repechage", label: "Repêchage" },
+  { value: "quart", label: "Quart de finale" },
+  { value: "demi", label: "Demi-finale" },
+  { value: "petite_finale", label: "Petite finale" },
+  { value: "finale", label: "Finale A" },
+  { value: "finale_b", label: "Finale B" },
+];
+
+// Judo phases
+const JUDO_PHASES = [
+  { value: "poules", label: "Phase de poules" },
+  { value: "repechage", label: "Repêchage" },
+  { value: "huitiemes", label: "Huitièmes de finale" },
+  { value: "quart", label: "Quart de finale" },
+  { value: "demi", label: "Demi-finale" },
+  { value: "bronze", label: "Match pour le bronze" },
+  { value: "finale", label: "Finale" },
+];
+
+// Aviron boat types
+const AVIRON_BOAT_TYPES = [
+  { value: "1x", label: "1x (Skiff)" },
+  { value: "2x", label: "2x (Double)" },
+  { value: "2-", label: "2- (Deux sans barreur)" },
+  { value: "4x", label: "4x (Quatre de couple)" },
+  { value: "4-", label: "4- (Quatre sans barreur)" },
+  { value: "4+", label: "4+ (Quatre avec barreur)" },
+  { value: "8+", label: "8+ (Huit)" },
+];
+
+// Crew roles
+const CREW_ROLES = [
+  { value: "rameur", label: "Rameur" },
+  { value: "barreur", label: "Barreur" },
+];
 
 export function CompetitionRoundsDialog({
   open,
@@ -57,7 +109,7 @@ export function CompetitionRoundsDialog({
 }: CompetitionRoundsDialogProps) {
   const [playerRoundsData, setPlayerRoundsData] = useState<PlayerRounds[]>([]);
   const [selectedPlayerId, setSelectedPlayerId] = useState<string>("");
-  const [activeTab, setActiveTab] = useState<string>("rounds");
+  const [activeTab, setActiveTab] = useState<string>("crew");
   const queryClient = useQueryClient();
 
   const sportStats = getStatsForSport(sportType);
@@ -65,9 +117,11 @@ export function CompetitionRoundsDialog({
   const aggregatedStats = getAggregatedStatsForSport(sportType);
   const isJudo = sportType.toLowerCase().includes("judo");
   const isBowling = sportType.toLowerCase().includes("bowling");
+  const isAviron = sportType.toLowerCase().includes("aviron");
   
-  const roundLabel = isJudo ? "Combat" : isBowling ? "Partie" : "Round";
-  const roundLabelPlural = isJudo ? "Combats" : isBowling ? "Parties" : "Rounds";
+  const phases = isAviron ? AVIRON_PHASES : isJudo ? JUDO_PHASES : [];
+  const roundLabel = isJudo ? "Combat" : isAviron ? "Course" : isBowling ? "Partie" : "Round";
+  const roundLabelPlural = isJudo ? "Combats" : isAviron ? "Courses" : isBowling ? "Parties" : "Rounds";
 
   // Get players in the lineup for this match
   const { data: lineup } = useQuery({
@@ -75,7 +129,7 @@ export function CompetitionRoundsDialog({
     queryFn: async () => {
       const { data, error } = await supabase
         .from("match_lineups")
-        .select("player_id, players(id, name)")
+        .select("player_id, boat_type, crew_role, seat_position, players(id, name)")
         .eq("match_id", matchId);
       if (error) throw error;
       return data;
@@ -107,6 +161,9 @@ export function CompetitionRoundsDialog({
         return {
           playerId: l.player_id,
           playerName: player?.name || "Athlète",
+          boat_type: l.boat_type || undefined,
+          crew_role: l.crew_role || undefined,
+          seat_position: l.seat_position || undefined,
           rounds: playerRounds.map(r => ({
             id: r.id,
             round_number: r.round_number,
@@ -114,6 +171,14 @@ export function CompetitionRoundsDialog({
             result: r.result || "",
             notes: r.notes || "",
             stats: (r.competition_round_stats?.[0]?.stat_data as Record<string, number>) || {},
+            phase: r.phase || "",
+            lane: r.lane || undefined,
+            wind_conditions: r.wind_conditions || undefined,
+            current_conditions: r.current_conditions || undefined,
+            temperature_celsius: r.temperature_celsius || undefined,
+            final_time_seconds: r.final_time_seconds || undefined,
+            ranking: r.ranking || undefined,
+            gap_to_first: r.gap_to_first || undefined,
           })),
         };
       });
@@ -125,10 +190,33 @@ export function CompetitionRoundsDialog({
     }
   }, [lineup, existingRounds, selectedPlayerId]);
 
+  // Update crew info for a player
+  const updatePlayerCrewInfo = (playerId: string, field: string, value: any) => {
+    setPlayerRoundsData(prev => prev.map(p => {
+      if (p.playerId === playerId) {
+        return { ...p, [field]: value };
+      }
+      return p;
+    }));
+  };
+
   const saveRounds = useMutation({
     mutationFn: async () => {
-      // For each player, save their rounds
+      // For each player, save their crew info and rounds
       for (const playerData of playerRoundsData) {
+        // Update crew info in match_lineups if Aviron
+        if (isAviron) {
+          await supabase
+            .from("match_lineups")
+            .update({
+              boat_type: playerData.boat_type || null,
+              crew_role: playerData.crew_role || null,
+              seat_position: playerData.seat_position || null,
+            })
+            .eq("match_id", matchId)
+            .eq("player_id", playerData.playerId);
+        }
+
         // Delete existing rounds for this player in this match
         await supabase
           .from("competition_rounds")
@@ -147,6 +235,14 @@ export function CompetitionRoundsDialog({
               opponent_name: round.opponent_name || null,
               result: round.result || null,
               notes: round.notes || null,
+              phase: round.phase || null,
+              lane: round.lane || null,
+              wind_conditions: round.wind_conditions || null,
+              current_conditions: round.current_conditions || null,
+              temperature_celsius: round.temperature_celsius || null,
+              final_time_seconds: round.final_time_seconds || null,
+              ranking: round.ranking || null,
+              gap_to_first: round.gap_to_first || null,
             })
             .select()
             .single();
@@ -168,7 +264,8 @@ export function CompetitionRoundsDialog({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["competition_rounds", matchId] });
-      toast.success(`${roundLabelPlural} enregistrés`);
+      queryClient.invalidateQueries({ queryKey: ["match_lineup", matchId] });
+      toast.success("Données enregistrées");
       onOpenChange(false);
     },
     onError: (error) => {
@@ -191,6 +288,7 @@ export function CompetitionRoundsDialog({
             result: "",
             notes: "",
             stats: {},
+            phase: "",
           }],
         };
       }
@@ -240,6 +338,26 @@ export function CompetitionRoundsDialog({
     }));
   };
 
+  // Format time from seconds to MM:SS.ms
+  const formatTime = (seconds: number | undefined): string => {
+    if (!seconds) return "";
+    const mins = Math.floor(seconds / 60);
+    const secs = (seconds % 60).toFixed(2);
+    return `${mins}:${secs.padStart(5, '0')}`;
+  };
+
+  // Parse time from MM:SS.ms to seconds
+  const parseTime = (timeStr: string): number | undefined => {
+    if (!timeStr) return undefined;
+    const parts = timeStr.split(':');
+    if (parts.length === 2) {
+      const mins = parseInt(parts[0]) || 0;
+      const secs = parseFloat(parts[1]) || 0;
+      return mins * 60 + secs;
+    }
+    return parseFloat(timeStr) || undefined;
+  };
+
   const hasLineup = lineup && lineup.length > 0;
   const selectedPlayer = playerRoundsData.find(p => p.playerId === selectedPlayerId);
 
@@ -263,8 +381,18 @@ export function CompetitionRoundsDialog({
     const wins = rounds.filter(r => r.result === "win").length;
     const losses = rounds.filter(r => r.result === "loss").length;
     const draws = rounds.filter(r => r.result === "draw").length;
+    
+    // Aviron: best time and average ranking
+    const timesWithValues = rounds.filter(r => r.final_time_seconds);
+    const bestTime = timesWithValues.length > 0 
+      ? Math.min(...timesWithValues.map(r => r.final_time_seconds!)) 
+      : undefined;
+    const rankingsWithValues = rounds.filter(r => r.ranking);
+    const avgRanking = rankingsWithValues.length > 0
+      ? rankingsWithValues.reduce((sum, r) => sum + r.ranking!, 0) / rankingsWithValues.length
+      : undefined;
 
-    return { aggregated, counts, wins, losses, draws, total: rounds.length };
+    return { aggregated, counts, wins, losses, draws, total: rounds.length, bestTime, avgRanking };
   };
 
   if (!hasLineup) {
@@ -273,7 +401,7 @@ export function CompetitionRoundsDialog({
         <DialogContent>
           <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            {isJudo ? <Swords className="h-5 w-5" /> : <Circle className="h-5 w-5" />}
+            {isAviron ? <Ship className="h-5 w-5" /> : isJudo ? <Swords className="h-5 w-5" /> : <Circle className="h-5 w-5" />}
             {roundLabelPlural}
           </DialogTitle>
           </DialogHeader>
@@ -288,10 +416,10 @@ export function CompetitionRoundsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[800px] max-h-[85vh]">
+      <DialogContent className="sm:max-w-[900px] max-h-[90vh]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            {isJudo ? <Swords className="h-5 w-5" /> : <Circle className="h-5 w-5" />}
+            {isAviron ? <Ship className="h-5 w-5" /> : isJudo ? <Swords className="h-5 w-5" /> : <Circle className="h-5 w-5" />}
             Gestion des {roundLabelPlural}
           </DialogTitle>
         </DialogHeader>
@@ -308,6 +436,9 @@ export function CompetitionRoundsDialog({
                 <SelectItem key={player.playerId} value={player.playerId}>
                   <div className="flex items-center gap-2">
                     <span>{player.playerName}</span>
+                    {isAviron && player.boat_type && (
+                      <Badge variant="outline" className="text-xs">{player.boat_type}</Badge>
+                    )}
                     <Badge variant="secondary" className="text-xs">
                       {player.rounds.length} {player.rounds.length === 1 ? roundLabel.toLowerCase() : roundLabelPlural.toLowerCase()}
                     </Badge>
@@ -320,7 +451,13 @@ export function CompetitionRoundsDialog({
 
         {selectedPlayer && (
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className={`grid w-full ${isAviron ? 'grid-cols-3' : 'grid-cols-2'}`}>
+              {isAviron && (
+                <TabsTrigger value="crew" className="gap-2">
+                  <Users className="h-4 w-4" />
+                  Équipage
+                </TabsTrigger>
+              )}
               <TabsTrigger value="rounds" className="gap-2">
                 <Target className="h-4 w-4" />
                 {roundLabelPlural}
@@ -330,6 +467,71 @@ export function CompetitionRoundsDialog({
                 Résumé
               </TabsTrigger>
             </TabsList>
+
+            {/* Crew Tab (Aviron only) */}
+            {isAviron && (
+              <TabsContent value="crew">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Ship className="h-4 w-4" />
+                      Bateau / Équipage - {selectedPlayer.playerName}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <Label>Type de bateau</Label>
+                        <Select 
+                          value={selectedPlayer.boat_type || ""} 
+                          onValueChange={(v) => updatePlayerCrewInfo(selectedPlayer.playerId, "boat_type", v)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Sélectionner..." />
+                          </SelectTrigger>
+                          <SelectContent className="z-[200]">
+                            {AVIRON_BOAT_TYPES.map((boat) => (
+                              <SelectItem key={boat.value} value={boat.value}>
+                                {boat.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Rôle</Label>
+                        <Select 
+                          value={selectedPlayer.crew_role || ""} 
+                          onValueChange={(v) => updatePlayerCrewInfo(selectedPlayer.playerId, "crew_role", v)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Sélectionner..." />
+                          </SelectTrigger>
+                          <SelectContent className="z-[200]">
+                            {CREW_ROLES.map((role) => (
+                              <SelectItem key={role.value} value={role.value}>
+                                {role.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Position (siège)</Label>
+                        <Input
+                          type="number"
+                          min={1}
+                          max={8}
+                          value={selectedPlayer.seat_position || ""}
+                          onChange={(e) => updatePlayerCrewInfo(selectedPlayer.playerId, "seat_position", parseInt(e.target.value) || undefined)}
+                          placeholder="Ex: 3"
+                        />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            )}
 
             <TabsContent value="rounds">
               <ScrollArea className="h-[400px] pr-4">
@@ -342,13 +544,13 @@ export function CompetitionRoundsDialog({
                     className="w-full gap-2"
                   >
                     <Plus className="h-4 w-4" />
-                    Ajouter un {roundLabel.toLowerCase()}
+                    Ajouter {isAviron ? "une course" : isJudo ? "un combat" : `un ${roundLabel.toLowerCase()}`}
                   </Button>
 
                   {selectedPlayer.rounds.length === 0 ? (
                     <div className="text-center py-8 text-muted-foreground">
                       <p>Aucun {roundLabel.toLowerCase()} enregistré</p>
-                      <p className="text-sm">Cliquez sur le bouton ci-dessus pour ajouter un {roundLabel.toLowerCase()}</p>
+                      <p className="text-sm">Cliquez sur le bouton ci-dessus pour ajouter {isAviron ? "une course" : isJudo ? "un combat" : `un ${roundLabel.toLowerCase()}`}</p>
                     </div>
                   ) : (
                     selectedPlayer.rounds.map((round) => (
@@ -356,8 +558,13 @@ export function CompetitionRoundsDialog({
                         <CardHeader className="pb-2">
                           <div className="flex items-center justify-between">
                             <CardTitle className="text-base flex items-center gap-2">
-                              {isJudo ? <Swords className="h-4 w-4" /> : <Circle className="h-4 w-4" />}
+                              {isAviron ? <Ship className="h-4 w-4" /> : isJudo ? <Swords className="h-4 w-4" /> : <Circle className="h-4 w-4" />}
                               {roundLabel} {round.round_number}
+                              {round.phase && (
+                                <Badge variant="outline" className="ml-2">
+                                  {phases.find(p => p.value === round.phase)?.label || round.phase}
+                                </Badge>
+                              )}
                             </CardTitle>
                             <Button
                               variant="ghost"
@@ -370,71 +577,182 @@ export function CompetitionRoundsDialog({
                           </div>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                          {/* Basic round info */}
-                          <div className="grid grid-cols-2 gap-3">
-                            <div>
-                              <Label className="text-xs">Adversaire</Label>
-                              <Input
-                                value={round.opponent_name}
-                                onChange={(e) => updateRound(selectedPlayer.playerId, round.round_number, { opponent_name: e.target.value })}
-                                placeholder="Nom de l'adversaire"
-                                className="h-8"
-                              />
+                          {/* Phase selection */}
+                          {phases.length > 0 && (
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <Label className="text-xs">Phase</Label>
+                                <Select
+                                  value={round.phase}
+                                  onValueChange={(value) => updateRound(selectedPlayer.playerId, round.round_number, { phase: value })}
+                                >
+                                  <SelectTrigger className="h-8">
+                                    <SelectValue placeholder="Sélectionner..." />
+                                  </SelectTrigger>
+                                  <SelectContent className="z-[200]">
+                                    {phases.map((phase) => (
+                                      <SelectItem key={phase.value} value={phase.value}>
+                                        {phase.label}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              {isAviron && (
+                                <div>
+                                  <Label className="text-xs">Couloir</Label>
+                                  <Input
+                                    type="number"
+                                    min={1}
+                                    max={9}
+                                    value={round.lane || ""}
+                                    onChange={(e) => updateRound(selectedPlayer.playerId, round.round_number, { lane: parseInt(e.target.value) || undefined })}
+                                    placeholder="1-9"
+                                    className="h-8"
+                                  />
+                                </div>
+                              )}
                             </div>
-                            <div>
-                              <Label className="text-xs">Résultat</Label>
-                              <Select
-                                value={round.result}
-                                onValueChange={(value) => updateRound(selectedPlayer.playerId, round.round_number, { result: value })}
-                              >
-                                <SelectTrigger className="h-8">
-                                  <SelectValue placeholder="Résultat" />
-                                </SelectTrigger>
-                                <SelectContent className="z-[200]">
-                                  <SelectItem value="win">
-                                    <span className="flex items-center gap-2">
-                                      <Trophy className="h-3 w-3 text-green-500" />
-                                      Victoire
-                                    </span>
-                                  </SelectItem>
-                                  <SelectItem value="loss">
-                                    <span className="text-destructive">Défaite</span>
-                                  </SelectItem>
-                                  <SelectItem value="draw">
-                                    <span className="text-muted-foreground">Égalité</span>
-                                  </SelectItem>
-                                </SelectContent>
-                              </Select>
+                          )}
+
+                          {/* Aviron: Conditions */}
+                          {isAviron && (
+                            <div className="grid grid-cols-3 gap-3">
+                              <div>
+                                <Label className="text-xs">Vent</Label>
+                                <Input
+                                  value={round.wind_conditions || ""}
+                                  onChange={(e) => updateRound(selectedPlayer.playerId, round.round_number, { wind_conditions: e.target.value })}
+                                  placeholder="Ex: Vent de face 10km/h"
+                                  className="h-8"
+                                />
+                              </div>
+                              <div>
+                                <Label className="text-xs">Courant</Label>
+                                <Input
+                                  value={round.current_conditions || ""}
+                                  onChange={(e) => updateRound(selectedPlayer.playerId, round.round_number, { current_conditions: e.target.value })}
+                                  placeholder="Ex: Faible"
+                                  className="h-8"
+                                />
+                              </div>
+                              <div>
+                                <Label className="text-xs">Température (°C)</Label>
+                                <Input
+                                  type="number"
+                                  value={round.temperature_celsius || ""}
+                                  onChange={(e) => updateRound(selectedPlayer.playerId, round.round_number, { temperature_celsius: parseFloat(e.target.value) || undefined })}
+                                  placeholder="20"
+                                  className="h-8"
+                                />
+                              </div>
                             </div>
-                          </div>
+                          )}
+
+                          {/* Aviron: Results */}
+                          {isAviron && (
+                            <div className="grid grid-cols-3 gap-3">
+                              <div>
+                                <Label className="text-xs">Temps final (MM:SS.ms)</Label>
+                                <Input
+                                  value={round.final_time_seconds ? formatTime(round.final_time_seconds) : ""}
+                                  onChange={(e) => updateRound(selectedPlayer.playerId, round.round_number, { final_time_seconds: parseTime(e.target.value) })}
+                                  placeholder="6:45.23"
+                                  className="h-8"
+                                />
+                              </div>
+                              <div>
+                                <Label className="text-xs">Classement</Label>
+                                <Input
+                                  type="number"
+                                  min={1}
+                                  value={round.ranking || ""}
+                                  onChange={(e) => updateRound(selectedPlayer.playerId, round.round_number, { ranking: parseInt(e.target.value) || undefined })}
+                                  placeholder="1"
+                                  className="h-8"
+                                />
+                              </div>
+                              <div>
+                                <Label className="text-xs">Écart au 1er</Label>
+                                <Input
+                                  value={round.gap_to_first || ""}
+                                  onChange={(e) => updateRound(selectedPlayer.playerId, round.round_number, { gap_to_first: e.target.value })}
+                                  placeholder="+2.5s ou +3%"
+                                  className="h-8"
+                                />
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Basic round info for non-Aviron */}
+                          {!isAviron && (
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <Label className="text-xs">Adversaire</Label>
+                                <Input
+                                  value={round.opponent_name}
+                                  onChange={(e) => updateRound(selectedPlayer.playerId, round.round_number, { opponent_name: e.target.value })}
+                                  placeholder="Nom de l'adversaire"
+                                  className="h-8"
+                                />
+                              </div>
+                              <div>
+                                <Label className="text-xs">Résultat</Label>
+                                <Select
+                                  value={round.result}
+                                  onValueChange={(value) => updateRound(selectedPlayer.playerId, round.round_number, { result: value })}
+                                >
+                                  <SelectTrigger className="h-8">
+                                    <SelectValue placeholder="Résultat" />
+                                  </SelectTrigger>
+                                  <SelectContent className="z-[200]">
+                                    <SelectItem value="win">
+                                      <span className="flex items-center gap-2">
+                                        <Trophy className="h-3 w-3 text-green-500" />
+                                        Victoire
+                                      </span>
+                                    </SelectItem>
+                                    <SelectItem value="loss">
+                                      <span className="text-destructive">Défaite</span>
+                                    </SelectItem>
+                                    <SelectItem value="draw">
+                                      <span className="text-muted-foreground">Égalité</span>
+                                    </SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </div>
+                          )}
 
                           {/* Stats for this round - organized by category */}
-                          <div className="space-y-3">
-                            {statCategories.map(cat => {
-                              const categoryStats = sportStats.filter(s => s.category === cat.key);
-                              if (categoryStats.length === 0) return null;
-                              return (
-                                <div key={cat.key}>
-                                  <Label className="text-xs font-medium text-primary">{cat.label}</Label>
-                                  <div className="grid grid-cols-3 gap-2 mt-1">
-                                    {categoryStats.map(stat => (
-                                      <div key={stat.key}>
-                                        <Label className="text-[10px] text-muted-foreground">{stat.shortLabel}</Label>
-                                        <Input
-                                          type="number"
-                                          value={round.stats[stat.key] || 0}
-                                          onChange={(e) => updateRoundStat(selectedPlayer.playerId, round.round_number, stat.key, parseFloat(e.target.value) || 0)}
-                                          min={stat.min ?? 0}
-                                          max={stat.max}
-                                          className="h-7 text-sm"
-                                        />
-                                      </div>
-                                    ))}
+                          {!isAviron && (
+                            <div className="space-y-3">
+                              {statCategories.map(cat => {
+                                const categoryStats = sportStats.filter(s => s.category === cat.key);
+                                if (categoryStats.length === 0) return null;
+                                return (
+                                  <div key={cat.key}>
+                                    <Label className="text-xs font-medium text-primary">{cat.label}</Label>
+                                    <div className="grid grid-cols-3 gap-2 mt-1">
+                                      {categoryStats.map(stat => (
+                                        <div key={stat.key}>
+                                          <Label className="text-[10px] text-muted-foreground">{stat.shortLabel}</Label>
+                                          <Input
+                                            type="number"
+                                            value={round.stats[stat.key] || 0}
+                                            onChange={(e) => updateRoundStat(selectedPlayer.playerId, round.round_number, stat.key, parseFloat(e.target.value) || 0)}
+                                            min={stat.min ?? 0}
+                                            max={stat.max}
+                                            className="h-7 text-sm"
+                                          />
+                                        </div>
+                                      ))}
+                                    </div>
                                   </div>
-                                </div>
-                              );
-                            })}
-                          </div>
+                                );
+                              })}
+                            </div>
+                          )}
 
                           {/* Notes */}
                           <div>
@@ -442,7 +760,7 @@ export function CompetitionRoundsDialog({
                             <Input
                               value={round.notes}
                               onChange={(e) => updateRound(selectedPlayer.playerId, round.round_number, { notes: e.target.value })}
-                              placeholder="Notes sur ce combat/partie"
+                              placeholder={`Notes sur ${isAviron ? 'cette course' : isJudo ? 'ce combat' : 'ce round'}`}
                               className="h-8"
                             />
                           </div>
@@ -471,30 +789,51 @@ export function CompetitionRoundsDialog({
                     <div className="space-y-4">
                       {/* Results summary */}
                       {(() => {
-                        const { wins, losses, draws, total, aggregated } = calculateAggregatedStats(selectedPlayer.rounds);
+                        const { wins, losses, draws, total, aggregated, bestTime, avgRanking } = calculateAggregatedStats(selectedPlayer.rounds);
                         return (
                           <>
-                            <div className="grid grid-cols-4 gap-3 text-center">
-                              <div className="p-3 rounded-lg bg-muted">
-                                <p className="text-2xl font-bold">{total}</p>
-                                <p className="text-xs text-muted-foreground">{roundLabelPlural}</p>
+                            {isAviron ? (
+                              <div className="grid grid-cols-3 gap-3 text-center">
+                                <div className="p-3 rounded-lg bg-muted">
+                                  <p className="text-2xl font-bold">{total}</p>
+                                  <p className="text-xs text-muted-foreground">{roundLabelPlural}</p>
+                                </div>
+                                {bestTime && (
+                                  <div className="p-3 rounded-lg bg-green-100 dark:bg-green-900/20">
+                                    <p className="text-2xl font-bold text-green-600">{formatTime(bestTime)}</p>
+                                    <p className="text-xs text-muted-foreground">Meilleur temps</p>
+                                  </div>
+                                )}
+                                {avgRanking && (
+                                  <div className="p-3 rounded-lg bg-blue-100 dark:bg-blue-900/20">
+                                    <p className="text-2xl font-bold text-blue-600">{avgRanking.toFixed(1)}</p>
+                                    <p className="text-xs text-muted-foreground">Classement moyen</p>
+                                  </div>
+                                )}
                               </div>
-                              <div className="p-3 rounded-lg bg-green-100 dark:bg-green-900/20">
-                                <p className="text-2xl font-bold text-green-600">{wins}</p>
-                                <p className="text-xs text-muted-foreground">Victoires</p>
+                            ) : (
+                              <div className="grid grid-cols-4 gap-3 text-center">
+                                <div className="p-3 rounded-lg bg-muted">
+                                  <p className="text-2xl font-bold">{total}</p>
+                                  <p className="text-xs text-muted-foreground">{roundLabelPlural}</p>
+                                </div>
+                                <div className="p-3 rounded-lg bg-green-100 dark:bg-green-900/20">
+                                  <p className="text-2xl font-bold text-green-600">{wins}</p>
+                                  <p className="text-xs text-muted-foreground">Victoires</p>
+                                </div>
+                                <div className="p-3 rounded-lg bg-red-100 dark:bg-red-900/20">
+                                  <p className="text-2xl font-bold text-destructive">{losses}</p>
+                                  <p className="text-xs text-muted-foreground">Défaites</p>
+                                </div>
+                                <div className="p-3 rounded-lg bg-gray-100 dark:bg-gray-900/20">
+                                  <p className="text-2xl font-bold text-muted-foreground">{draws}</p>
+                                  <p className="text-xs text-muted-foreground">Égalités</p>
+                                </div>
                               </div>
-                              <div className="p-3 rounded-lg bg-red-100 dark:bg-red-900/20">
-                                <p className="text-2xl font-bold text-destructive">{losses}</p>
-                                <p className="text-xs text-muted-foreground">Défaites</p>
-                              </div>
-                              <div className="p-3 rounded-lg bg-gray-100 dark:bg-gray-900/20">
-                                <p className="text-2xl font-bold text-muted-foreground">{draws}</p>
-                                <p className="text-xs text-muted-foreground">Égalités</p>
-                              </div>
-                            </div>
+                            )}
 
-                            {/* Aggregated stats by category */}
-                            {Object.keys(aggregated).length > 0 && (
+                            {/* Aggregated stats by category (non-Aviron) */}
+                            {!isAviron && Object.keys(aggregated).length > 0 && (
                               <div className="space-y-3">
                                 <h4 className="font-medium">Statistiques cumulées</h4>
                                 {statCategories.map(cat => {
@@ -514,6 +853,33 @@ export function CompetitionRoundsDialog({
                                     </div>
                                   );
                                 })}
+                              </div>
+                            )}
+
+                            {/* Aviron: Courses recap */}
+                            {isAviron && selectedPlayer.rounds.length > 0 && (
+                              <div className="space-y-2">
+                                <h4 className="font-medium">Détail des courses</h4>
+                                <div className="space-y-1">
+                                  {selectedPlayer.rounds.map(round => (
+                                    <div key={round.round_number} className="flex items-center justify-between p-2 rounded border text-sm">
+                                      <div className="flex items-center gap-2">
+                                        <Badge variant="outline">{phases.find(p => p.value === round.phase)?.label || `Course ${round.round_number}`}</Badge>
+                                        {round.lane && <span className="text-muted-foreground">Couloir {round.lane}</span>}
+                                      </div>
+                                      <div className="flex items-center gap-4">
+                                        {round.final_time_seconds && (
+                                          <span className="font-mono">{formatTime(round.final_time_seconds)}</span>
+                                        )}
+                                        {round.ranking && (
+                                          <Badge variant={round.ranking === 1 ? "default" : "secondary"}>
+                                            {round.ranking === 1 ? "🥇" : round.ranking === 2 ? "🥈" : round.ranking === 3 ? "🥉" : `${round.ranking}e`}
+                                          </Badge>
+                                        )}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
                               </div>
                             )}
                           </>

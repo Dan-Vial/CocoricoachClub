@@ -34,6 +34,36 @@ interface AddMatchCalendarDialogProps {
 
 const CUSTOM_COMPETITION_VALUE = "__custom__";
 
+// Aviron boat types
+const AVIRON_BOAT_TYPES = [
+  { value: "1x", label: "1x (Skiff)" },
+  { value: "2x", label: "2x (Double)" },
+  { value: "2-", label: "2- (Deux sans barreur)" },
+  { value: "4x", label: "4x (Quatre de couple)" },
+  { value: "4-", label: "4- (Quatre sans barreur)" },
+  { value: "4+", label: "4+ (Quatre avec barreur)" },
+  { value: "8+", label: "8+ (Huit)" },
+];
+
+// Aviron distances
+const AVIRON_DISTANCES = [
+  { value: 500, label: "500m" },
+  { value: 1000, label: "1000m" },
+  { value: 1500, label: "1500m" },
+  { value: 2000, label: "2000m" },
+  { value: 6000, label: "6000m (Tête de rivière)" },
+];
+
+// Age categories
+const AGE_CATEGORIES = [
+  { value: "U15", label: "U15 (Cadet)" },
+  { value: "U17", label: "U17 (Junior)" },
+  { value: "U19", label: "U19" },
+  { value: "U23", label: "U23 (Espoir)" },
+  { value: "senior", label: "Senior" },
+  { value: "master", label: "Master" },
+];
+
 export function AddMatchCalendarDialog({
   open,
   onOpenChange,
@@ -42,6 +72,7 @@ export function AddMatchCalendarDialog({
 }: AddMatchCalendarDialogProps) {
   const competitions = getCompetitionsBySport(sportType);
   const isIndividual = isIndividualSport(sportType);
+  const isAviron = sportType.toLowerCase().includes("aviron");
   
   const [opponent, setOpponent] = useState("");
   const [competition, setCompetition] = useState("");
@@ -52,6 +83,12 @@ export function AddMatchCalendarDialog({
   const [location, setLocation] = useState("");
   const [isHome, setIsHome] = useState(true);
   const [notes, setNotes] = useState("");
+  
+  // Aviron specific fields
+  const [eventType, setEventType] = useState<string>("individual");
+  const [ageCategory, setAgeCategory] = useState("");
+  const [distanceMeters, setDistanceMeters] = useState<number | undefined>();
+  
   const queryClient = useQueryClient();
 
   const COMPETITION_STAGES = [
@@ -79,6 +116,10 @@ export function AddMatchCalendarDialog({
         location: location || null,
         is_home: isHome,
         notes: notes || null,
+        // Aviron specific fields
+        event_type: isAviron ? eventType : (isIndividual ? "individual" : "team"),
+        age_category: ageCategory || null,
+        distance_meters: distanceMeters || null,
       });
       if (error) throw error;
     },
@@ -103,6 +144,9 @@ export function AddMatchCalendarDialog({
     setLocation("");
     setIsHome(true);
     setNotes("");
+    setEventType("individual");
+    setAgeCategory("");
+    setDistanceMeters(undefined);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -126,13 +170,85 @@ export function AddMatchCalendarDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[500px] max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {isIndividual ? "Ajouter une compétition" : "Ajouter un match"}
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Aviron specific: Event type (Individual/Team) */}
+          {isAviron && (
+            <div className="space-y-2">
+              <Label>Type d'épreuve *</Label>
+              <div className="flex gap-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="eventType"
+                    value="individual"
+                    checked={eventType === "individual"}
+                    onChange={(e) => setEventType(e.target.value)}
+                    className="w-4 h-4"
+                  />
+                  <span>Individuel</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="eventType"
+                    value="team"
+                    checked={eventType === "team"}
+                    onChange={(e) => setEventType(e.target.value)}
+                    className="w-4 h-4"
+                  />
+                  <span>Équipage</span>
+                </label>
+              </div>
+            </div>
+          )}
+
+          {/* Age category (for Aviron and other individual sports) */}
+          {isIndividual && (
+            <div className="space-y-2">
+              <Label>Catégorie d'âge</Label>
+              <Select value={ageCategory} onValueChange={setAgeCategory}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner une catégorie" />
+                </SelectTrigger>
+                <SelectContent>
+                  {AGE_CATEGORIES.map((cat) => (
+                    <SelectItem key={cat.value} value={cat.value}>
+                      {cat.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Aviron: Distance */}
+          {isAviron && (
+            <div className="space-y-2">
+              <Label>Distance</Label>
+              <Select 
+                value={distanceMeters?.toString() || ""} 
+                onValueChange={(v) => setDistanceMeters(v ? parseInt(v) : undefined)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner une distance" />
+                </SelectTrigger>
+                <SelectContent>
+                  {AVIRON_DISTANCES.map((dist) => (
+                    <SelectItem key={dist.value} value={dist.value.toString()}>
+                      {dist.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           {!isIndividual && (
             <div className="space-y-2">
               <Label htmlFor="opponent">Adversaire *</Label>
@@ -216,7 +332,7 @@ export function AddMatchCalendarDialog({
                 id="opponent"
                 value={opponent}
                 onChange={(e) => setOpponent(e.target.value)}
-                placeholder="Ex: Tournoi de Paris, Open National..."
+                placeholder="Ex: Tournoi de Paris, Régates Nationales..."
               />
             </div>
           )}
@@ -249,7 +365,7 @@ export function AddMatchCalendarDialog({
               id="location"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
-              placeholder={isIndividual ? "Salle, bowling, dojo..." : "Stade, ville..."}
+              placeholder={isAviron ? "Plan d'eau, bassin..." : isIndividual ? "Salle, bowling, dojo..." : "Stade, ville..."}
             />
           </div>
 
