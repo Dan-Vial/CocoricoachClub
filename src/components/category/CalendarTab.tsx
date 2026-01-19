@@ -2,10 +2,8 @@ import { useState, useRef, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar } from "@/components/ui/calendar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Trash2, Pencil, X, Swords, MapPin, Calendar as CalendarIcon, LayoutTemplate, Target, Clock, Download, Printer } from "lucide-react";
+import { Calendar as CalendarIcon, LayoutTemplate, Target } from "lucide-react";
 import { toast } from "sonner";
 import { AddSessionDialog } from "./AddSessionDialog";
 import { EditSessionDialog } from "./EditSessionDialog";
@@ -15,17 +13,16 @@ import { SessionDetailsDialog } from "./SessionDetailsDialog";
 import { MatchRpeDialog } from "./MatchRpeDialog";
 import { DailySessionsDialog } from "./DailySessionsDialog";
 import { format, isSameDay, startOfWeek, addDays } from "date-fns";
-import { fr } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
 import { WeeklyPlanningCalendar } from "@/components/planning/WeeklyPlanningCalendar";
 import { SessionTemplatesSection } from "@/components/planning/SessionTemplatesSection";
 import { SeasonObjectivesSection } from "@/components/planning/SeasonObjectivesSection";
 import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 import { exportCalendarToPdf, printElement } from "@/lib/pdfExport";
-import { getTrainingTypesForSport, getTrainingTypeColor, TRAINING_TYPE_COLORS } from "@/lib/constants/trainingTypes";
-import { isIndividualSport } from "@/lib/constants/sportTypes";
+import { getTrainingTypesForSport, TRAINING_TYPE_COLORS } from "@/lib/constants/trainingTypes";
 import { DisabledTabTrigger } from "@/components/ui/disabled-tab-trigger";
 import { useViewerSessions, useViewerMatches } from "@/hooks/use-viewer-data";
+import { MonthlyCalendarView } from "./calendar/MonthlyCalendarView";
 
 interface CalendarTabProps {
   categoryId: string;
@@ -151,8 +148,6 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
     return labels;
   }, [trainingTypes]);
 
-  const trainingTypeColors = TRAINING_TYPE_COLORS;
-
   const { data: sessions, isLoading: isLoadingSessions } = useViewerSessions(categoryId);
 
   const { data: matches, isLoading: isLoadingMatches } = useViewerMatches(categoryId);
@@ -196,44 +191,6 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
   };
 
 
-  const getDayContent = (day: Date) => {
-    const daySessions = sessions?.filter((session) =>
-      isSameDay(new Date(session.session_date), day)
-    );
-    const dayMatches = matches?.filter((match) =>
-      isSameDay(new Date(match.match_date), day)
-    );
-    const dayPlanning = weeklyPlanning?.filter((item) =>
-      isSameDay(getWeeklyPlanningDate(item), day)
-    );
-
-    const hasEvents = (daySessions && daySessions.length > 0) || (dayMatches && dayMatches.length > 0) || (dayPlanning && dayPlanning.length > 0);
-    if (!hasEvents) return null;
-
-    return (
-      <div className="flex gap-0.5 justify-center mt-1 flex-wrap">
-        {dayMatches?.slice(0, 1).map((_, index) => (
-          <div
-            key={`match-${index}`}
-            className="h-1.5 w-1.5 rounded-full bg-rose-500"
-          />
-        ))}
-        {daySessions?.slice(0, 2).map((session, index) => (
-          <div
-            key={`session-${index}`}
-            className={`h-1.5 w-1.5 rounded-full ${getTrainingTypeColor(session.training_type)}`}
-          />
-        ))}
-        {dayPlanning?.slice(0, 2).map((item, index) => (
-          <div
-            key={`planning-${index}`}
-            className={`h-1.5 w-1.5 rounded-full ${item.template?.session_type ? getTrainingTypeColor(item.template.session_type) : "bg-primary"}`}
-          />
-        ))}
-      </div>
-    );
-  };
-
   const isLoading = isLoadingSessions || isLoadingMatches || isLoadingPlanning;
 
   if (isLoading) {
@@ -268,111 +225,18 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
         </TabsList>
 
         <TabsContent value="global">
-          <Card className="bg-gradient-card shadow-md">
-            <CardHeader>
-              <div className="flex justify-between items-center flex-wrap gap-4">
-                <CardTitle>
-                  {isIndividualSport(sportType || "") 
-                    ? "Calendrier des entraînements et compétitions" 
-                    : "Calendrier des entraînements et matchs"}
-                </CardTitle>
-                <div className="flex gap-2 flex-wrap">
-                  <Button variant="outline" size="icon" onClick={handlePrint} title="Imprimer">
-                    <Printer className="h-4 w-4" />
-                  </Button>
-                  <Button variant="outline" size="icon" onClick={handleExportPdf} title="Exporter PDF">
-                    <Download className="h-4 w-4" />
-                  </Button>
-                  {!isViewer && (
-                    <>
-                      <Button onClick={() => setIsAddMatchDialogOpen(true)} variant="outline" className="gap-2">
-                        <Swords className="h-4 w-4" />
-                        {isIndividualSport(sportType || "") ? "Ajouter une compétition" : "Ajouter un match"}
-                      </Button>
-                      <Button onClick={() => setIsAddDialogOpen(true)} className="gap-2">
-                        <Plus className="h-4 w-4" />
-                        Ajouter une séance
-                      </Button>
-                    </>
-                  )}
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-6" ref={calendarContentRef}>
-              <div className="flex flex-col items-center gap-4">
-                <div className="text-center">
-                  <p className="text-sm text-muted-foreground mb-2">
-                    Cliquez sur un jour pour voir les séances détaillées
-                  </p>
-                </div>
-                <Calendar
-                  mode="single"
-                  selected={selectedDate}
-                  onSelect={(day) => {
-                    if (day) {
-                      handleDayClick(day);
-                    }
-                  }}
-                  locale={fr}
-                  numberOfMonths={1}
-                  className="rounded-md border bg-card pointer-events-auto p-4"
-                  classNames={{
-                    months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
-                    month: "space-y-4",
-                    caption: "flex justify-center pt-1 relative items-center",
-                    caption_label: "text-base font-semibold",
-                    table: "w-full border-collapse",
-                    head_row: "flex",
-                    head_cell: "text-muted-foreground rounded-md w-12 h-10 font-medium text-sm",
-                    row: "flex w-full mt-2",
-                    cell: "h-12 w-12 text-center text-sm p-0 relative [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
-                    day: "h-12 w-12 p-0 font-normal aria-selected:opacity-100 hover:bg-accent hover:text-accent-foreground rounded-md cursor-pointer",
-                    day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground",
-                    day_today: "bg-accent text-accent-foreground font-semibold",
-                    day_outside: "text-muted-foreground opacity-50",
-                    day_disabled: "text-muted-foreground opacity-50",
-                  }}
-                  modifiers={{
-                    hasSession: (day) =>
-                      sessions?.some((session) =>
-                        isSameDay(new Date(session.session_date), day)
-                      ) || false,
-                    hasMatch: (day) =>
-                      matches?.some((match) =>
-                        isSameDay(new Date(match.match_date), day)
-                      ) || false,
-                  }}
-                  modifiersClassNames={{
-                    hasSession: "font-bold",
-                    hasMatch: "font-bold text-rose-600",
-                  }}
-                  components={{
-                    DayContent: ({ date }) => (
-                      <div className="relative w-full h-full flex flex-col items-center justify-center">
-                        <span className="text-sm">{format(date, "d")}</span>
-                        {getDayContent(date)}
-                      </div>
-                    ),
-                  }}
-                />
-              </div>
-
-              <div className="flex flex-wrap gap-3 justify-center text-sm">
-                <div className="flex items-center gap-2">
-                  <div className="h-3 w-3 rounded-full bg-rose-500" />
-                  <span className="text-muted-foreground">
-                    {isIndividualSport(sportType || "") ? "Compétition" : "Match"}
-                  </span>
-                </div>
-                {Object.entries(trainingTypeLabels).map(([key, label]) => (
-                  <div key={key} className="flex items-center gap-2">
-                    <div className={`h-3 w-3 rounded-full ${trainingTypeColors[key] || "bg-muted"}`} />
-                    <span className="text-muted-foreground">{label}</span>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+          <MonthlyCalendarView
+            sessions={sessions || []}
+            matches={matches || []}
+            sportType={sportType}
+            trainingTypeLabels={trainingTypeLabels}
+            onDayClick={handleDayClick}
+            onAddSession={() => setIsAddDialogOpen(true)}
+            onAddMatch={() => setIsAddMatchDialogOpen(true)}
+            onPrint={handlePrint}
+            onExportPdf={handleExportPdf}
+            isViewer={isViewer}
+          />
         </TabsContent>
 
         <TabsContent value="weekly">
@@ -487,7 +351,7 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
             setIsDailyDialogOpen(false);
           }}
           trainingTypeLabels={trainingTypeLabels}
-          trainingTypeColors={trainingTypeColors}
+          trainingTypeColors={TRAINING_TYPE_COLORS}
           isViewer={isViewer}
         />
       )}
