@@ -104,8 +104,26 @@ const SelectItem = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.Item>
 >(({ className, children, textValue, ...props }, ref) => {
   const isPrimitiveChild = typeof children === "string" || typeof children === "number";
+
+  const extractText = (node: React.ReactNode): string | undefined => {
+    if (node === null || node === undefined || typeof node === "boolean") return undefined;
+    if (typeof node === "string" || typeof node === "number") return String(node);
+    if (Array.isArray(node)) {
+      const parts = node
+        .map(extractText)
+        .filter(Boolean)
+        .join(" ")
+        .trim();
+      return parts || undefined;
+    }
+    if (React.isValidElement(node)) {
+      return extractText(node.props.children);
+    }
+    return undefined;
+  };
+
   const computedTextValue =
-    textValue ?? (isPrimitiveChild ? String(children) : undefined);
+    textValue ?? (isPrimitiveChild ? String(children) : extractText(children));
 
   return (
     <SelectPrimitive.Item
@@ -128,7 +146,8 @@ const SelectItem = React.forwardRef<
       ) : (
         <>
           {/*
-            Radix Select a besoin d'un ItemText "texte" pour la navigation clavier/typeahead.
+            Radix Select a besoin d'un ItemText "texte" pour la navigation clavier/typeahead
+            et pour rendre la valeur sélectionnée dans le trigger.
             On le garde (invisible) et on affiche un layout riche côté UI.
           */}
           <SelectPrimitive.ItemText className="sr-only">
