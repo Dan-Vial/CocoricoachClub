@@ -22,7 +22,7 @@ import { SessionTemplatesSection } from "@/components/planning/SessionTemplatesS
 import { SeasonObjectivesSection } from "@/components/planning/SeasonObjectivesSection";
 import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 import { exportCalendarToPdf, printElement } from "@/lib/pdfExport";
-import { getTrainingTypesForSport, TRAINING_TYPE_COLORS } from "@/lib/constants/trainingTypes";
+import { getTrainingTypesForSport, getTrainingTypeColor, TRAINING_TYPE_COLORS } from "@/lib/constants/trainingTypes";
 import { isIndividualSport } from "@/lib/constants/sportTypes";
 import { DisabledTabTrigger } from "@/components/ui/disabled-tab-trigger";
 import { useViewerSessions, useViewerMatches } from "@/hooks/use-viewer-data";
@@ -221,13 +221,13 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
         {daySessions?.slice(0, 2).map((session, index) => (
           <div
             key={`session-${index}`}
-            className={`h-1.5 w-1.5 rounded-full ${trainingTypeColors[session.training_type] || "bg-muted"}`}
+            className={`h-1.5 w-1.5 rounded-full ${getTrainingTypeColor(session.training_type)}`}
           />
         ))}
         {dayPlanning?.slice(0, 2).map((item, index) => (
           <div
             key={`planning-${index}`}
-            className={`h-1.5 w-1.5 rounded-full ${item.template?.session_type ? trainingTypeColors[item.template.session_type] || "bg-primary" : "bg-primary"}`}
+            className={`h-1.5 w-1.5 rounded-full ${item.template?.session_type ? getTrainingTypeColor(item.template.session_type) : "bg-primary"}`}
           />
         ))}
       </div>

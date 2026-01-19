@@ -25,7 +25,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
-import { Users, UserCheck, AlertTriangle, Plus, Trash2, Dumbbell, ChevronDown, ChevronUp, Library, Copy } from "lucide-react";
+import { Users, UserCheck, AlertTriangle, Plus, Trash2, Dumbbell, ChevronDown, ChevronUp, Library, Copy, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -72,6 +72,8 @@ export function AddSessionDialog({
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const [type, setType] = useState("");
+  const [customType, setCustomType] = useState("");
+  const [showCustomInput, setShowCustomInput] = useState(false);
   const [intensity, setIntensity] = useState("");
   const [notes, setNotes] = useState("");
   const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
@@ -170,7 +172,7 @@ export function AddSessionDialog({
           session_date: date,
           session_start_time: startTime || null,
           session_end_time: endTime || null,
-          training_type: type as any,
+          training_type: effectiveType,
           intensity: intensity ? parseInt(intensity) : null,
           notes: notes || null,
         }])
@@ -249,6 +251,8 @@ export function AddSessionDialog({
     setStartTime("");
     setEndTime("");
     setType("");
+    setCustomType("");
+    setShowCustomInput(false);
     setIntensity("");
     setNotes("");
     setSelectedPlayers([]);
@@ -272,8 +276,11 @@ export function AddSessionDialog({
       return;
     }
     
-    if (date && type) {
+    const hasValidType = effectiveType && effectiveType.trim().length > 0;
+    if (date && hasValidType) {
       addSession.mutate();
+    } else if (!hasValidType) {
+      toast.error("Veuillez sélectionner ou saisir un type d'entraînement");
     }
   };
 
@@ -336,11 +343,21 @@ export function AddSessionDialog({
 
   // Handle type change to auto-add empty exercise
   const handleTypeChange = (newType: string) => {
-    setType(newType);
-    if (trainingTypeHasExercises(newType) && exercises.length === 0) {
-      setExercises([emptyExercise(0)]);
+    if (newType === "_custom") {
+      setShowCustomInput(true);
+      setType("");
+    } else {
+      setShowCustomInput(false);
+      setType(newType);
+      setCustomType("");
+      if (trainingTypeHasExercises(newType) && exercises.length === 0) {
+        setExercises([emptyExercise(0)]);
+      }
     }
   };
+
+  // Get the actual training type to use (custom or selected)
+  const effectiveType = showCustomInput && customType.trim() ? customType.trim() : type;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -386,21 +403,49 @@ export function AddSessionDialog({
 
               <div className="space-y-2">
                 <Label htmlFor="type">Type d'entraînement *</Label>
-                <Select value={type} onValueChange={handleTypeChange} required>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner un type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {trainingTypes.map((t) => (
-                      <SelectItem key={t.value} value={t.value}>
-                        <span className="flex items-center gap-2">
-                          {t.label}
-                          {t.hasExercises && <Dumbbell className="h-3 w-3 text-muted-foreground" />}
+                {!showCustomInput ? (
+                  <Select value={type} onValueChange={handleTypeChange}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Sélectionner un type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {trainingTypes.map((t) => (
+                        <SelectItem key={t.value} value={t.value}>
+                          <span className="flex items-center gap-2">
+                            {t.label}
+                            {t.hasExercises && <Dumbbell className="h-3 w-3 text-muted-foreground" />}
+                          </span>
+                        </SelectItem>
+                      ))}
+                      <SelectItem value="_custom">
+                        <span className="flex items-center gap-2 text-primary">
+                          <Plus className="h-3 w-3" />
+                          Autre (personnalisé)
                         </span>
                       </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Nom du type d'entraînement..."
+                      value={customType}
+                      onChange={(e) => setCustomType(e.target.value)}
+                      className="flex-1"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => {
+                        setShowCustomInput(false);
+                        setCustomType("");
+                      }}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -758,7 +803,7 @@ export function AddSessionDialog({
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Annuler
             </Button>
-            <Button type="submit" disabled={!date || !type || addSession.isPending}>
+            <Button type="submit" disabled={!date || (!type && !customType.trim()) || addSession.isPending}>
               {addSession.isPending ? "Ajout..." : "Ajouter"}
             </Button>
           </DialogFooter>

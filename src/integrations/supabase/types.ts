@@ -4702,7 +4702,7 @@ export type Database = {
           session_date: string
           session_end_time: string | null
           session_start_time: string | null
-          training_type: Database["public"]["Enums"]["training_type"]
+          training_type: string
         }
         Insert: {
           category_id: string
@@ -4713,7 +4713,7 @@ export type Database = {
           session_date: string
           session_end_time?: string | null
           session_start_time?: string | null
-          training_type: Database["public"]["Enums"]["training_type"]
+          training_type: string
         }
         Update: {
           category_id?: string
@@ -4724,7 +4724,7 @@ export type Database = {
           session_date?: string
           session_end_time?: string | null
           session_start_time?: string | null
-          training_type?: Database["public"]["Enums"]["training_type"]
+          training_type?: string
         }
         Relationships: [
           {
@@ -5130,14 +5130,6 @@ export type Database = {
       injury_severity: "légère" | "modérée" | "grave"
       injury_status: "active" | "recovering" | "healed"
       period_type: "préparation" | "compétition" | "récupération" | "trêve"
-      training_type:
-        | "collectif"
-        | "technique_individuelle"
-        | "physique"
-        | "musculation"
-        | "repos"
-        | "test"
-        | "reathlétisation"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -5276,15 +5268,6 @@ export const Constants = {
       injury_severity: ["légère", "modérée", "grave"],
       injury_status: ["active", "recovering", "healed"],
       period_type: ["préparation", "compétition", "récupération", "trêve"],
-      training_type: [
-        "collectif",
-        "technique_individuelle",
-        "physique",
-        "musculation",
-        "repos",
-        "test",
-        "reathlétisation",
-      ],
     },
   },
 } as const

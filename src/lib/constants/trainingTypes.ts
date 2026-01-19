@@ -190,7 +190,14 @@ export const TRAINING_TYPE_COLORS: Record<string, string> = {
   bowling_technique: "bg-teal-500",
   bowling_spare: "bg-lime-500",
   bowling_game: "bg-green-600",
+  // Default for custom types
+  _default: "bg-gray-500",
 };
+
+// Get color for a training type (with fallback for custom types)
+export function getTrainingTypeColor(value: string): string {
+  return TRAINING_TYPE_COLORS[value] || TRAINING_TYPE_COLORS._default;
+}
 
 // Training type labels mapping (for display)
 export const TRAINING_TYPE_LABELS: Record<string, string> = {
