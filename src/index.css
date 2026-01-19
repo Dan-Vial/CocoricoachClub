@@ -2,145 +2,183 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+/* 
+Performance Planner Design System
+=================================
+Institutional, modern, high-performance oriented identity
+For professional clubs, elite training centers, and federations
+
+Color Palette:
+- Deep Blue (#0B1F3A): Trust, scientific expertise
+- Cyan Performance (#17A2B8): Progression, validation, positive states  
+- Controlled Orange (#F28C28): Load alerts, attention points, important actions
+- Light Background (#F5F7FA): Optimal data readability
+- Dark Gray Text (#1F2933): Primary text color
+
 All colors MUST be HSL.
 */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 150 20% 15%;
+    /* Deep Blue Primary - Trust & Expertise */
+    --background: 214 33% 97%;
+    --foreground: 207 22% 16%;
 
     --card: 0 0% 100%;
-    --card-foreground: 150 20% 15%;
+    --card-foreground: 207 22% 16%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 150 20% 15%;
+    --popover-foreground: 207 22% 16%;
 
-    --primary: 145 65% 25%;
+    /* Deep Blue Primary #0B1F3A */
+    --primary: 214 70% 14%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 150 30% 95%;
-    --secondary-foreground: 145 65% 25%;
+    --secondary: 214 30% 94%;
+    --secondary-foreground: 214 70% 14%;
 
-    --muted: 150 20% 96%;
-    --muted-foreground: 150 10% 45%;
+    --muted: 214 20% 95%;
+    --muted-foreground: 207 15% 40%;
 
-    --accent: 25 95% 53%;
+    /* Cyan Performance #17A2B8 - Progression & Validation */
+    --accent: 188 76% 40%;
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 84.2% 60.2%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --warning: 38 92% 50%;
+    /* Controlled Orange #F28C28 - Alerts & Attention */
+    --warning: 32 89% 55%;
     --warning-foreground: 0 0% 100%;
 
-    /* Status colors - consistent color code */
-    --status-optimal: 142 76% 36%;
-    --status-attention: 38 92% 50%;
+    /* Status colors - Performance indicators */
+    --status-optimal: 188 76% 40%;
+    --status-attention: 32 89% 55%;
     --status-critical: 0 84% 60%;
     
     /* Risk gradient colors */
-    --risk-low: 142 76% 36%;
-    --risk-medium: 38 92% 50%;
+    --risk-low: 160 60% 42%;
+    --risk-medium: 32 89% 55%;
     --risk-high: 0 84% 60%;
 
-    --border: 150 20% 90%;
-    --input: 150 20% 90%;
-    --ring: 145 65% 25%;
+    /* Success/Positive states */
+    --success: 160 60% 42%;
+    --success-foreground: 0 0% 100%;
 
-    --radius: 0.75rem;
+    --border: 214 20% 90%;
+    --input: 214 20% 90%;
+    --ring: 188 76% 40%;
+
+    --radius: 0.5rem;
     
-    --gradient-hero: linear-gradient(135deg, hsl(145 65% 25%), hsl(145 55% 35%));
-    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%), hsl(150 20% 98%));
+    /* Gradients */
+    --gradient-hero: linear-gradient(135deg, hsl(214 70% 14%), hsl(214 60% 22%));
+    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%), hsl(214 20% 98%));
+    --gradient-performance: linear-gradient(135deg, hsl(188 76% 40%), hsl(188 70% 48%));
     
-    --shadow-sm: 0 2px 8px hsl(145 65% 25% / 0.08);
-    --shadow-md: 0 4px 16px hsl(145 65% 25% / 0.12);
-    --shadow-lg: 0 8px 32px hsl(145 65% 25% / 0.16);
+    /* Shadows - subtle and professional */
+    --shadow-sm: 0 1px 3px hsl(214 70% 14% / 0.06), 0 1px 2px hsl(214 70% 14% / 0.04);
+    --shadow-md: 0 4px 6px hsl(214 70% 14% / 0.07), 0 2px 4px hsl(214 70% 14% / 0.05);
+    --shadow-lg: 0 10px 15px hsl(214 70% 14% / 0.08), 0 4px 6px hsl(214 70% 14% / 0.05);
     
-    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-smooth: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 
-    /* Training type colors */
-    --training-collectif: 220 70% 50%;
-    --training-technique: 280 65% 60%;
-    --training-physique: 160 60% 45%;
-    --training-musculation: 30 70% 50%;
-    --training-repos: 210 15% 60%;
-    --training-test: 350 70% 55%;
+    /* Training type colors - professional palette */
+    --training-collectif: 214 70% 50%;
+    --training-technique: 188 76% 40%;
+    --training-physique: 160 60% 42%;
+    --training-musculation: 32 70% 50%;
+    --training-repos: 214 15% 55%;
+    --training-test: 280 55% 55%;
 
-    --sidebar-background: 0 0% 98%;
+    /* Sidebar - Deep blue theme */
+    --sidebar-background: 214 70% 14%;
+    --sidebar-foreground: 214 20% 95%;
+    --sidebar-primary: 188 76% 40%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 214 60% 22%;
+    --sidebar-accent-foreground: 214 20% 95%;
+    --sidebar-border: 214 50% 25%;
+    --sidebar-ring: 188 76% 40%;
 
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Chart colors */
+    --chart-1: 188 76% 40%;
+    --chart-2: 214 70% 50%;
+    --chart-3: 160 60% 42%;
+    --chart-4: 32 89% 55%;
+    --chart-5: 280 55% 55%;
   }
 
   .dark {
-    --background: 150 25% 8%;
-    --foreground: 150 10% 95%;
+    /* Dark mode - maintain institutional feel */
+    --background: 214 40% 10%;
+    --foreground: 214 15% 92%;
 
-    --card: 150 20% 12%;
-    --card-foreground: 150 10% 95%;
+    --card: 214 35% 14%;
+    --card-foreground: 214 15% 92%;
 
-    --popover: 150 20% 12%;
-    --popover-foreground: 150 10% 95%;
+    --popover: 214 35% 14%;
+    --popover-foreground: 214 15% 92%;
 
-    --primary: 145 65% 45%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 188 76% 45%;
+    --primary-foreground: 214 70% 10%;
 
-    --secondary: 150 20% 18%;
-    --secondary-foreground: 150 10% 95%;
+    --secondary: 214 30% 20%;
+    --secondary-foreground: 214 15% 92%;
 
-    --muted: 150 20% 18%;
-    --muted-foreground: 150 10% 65%;
+    --muted: 214 25% 18%;
+    --muted-foreground: 214 15% 60%;
 
-    --accent: 25 95% 53%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 188 76% 50%;
+    --accent-foreground: 214 70% 10%;
 
-    --destructive: 0 62.8% 50%;
+    --destructive: 0 72% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    --warning: 38 92% 50%;
+    --warning: 32 89% 55%;
     --warning-foreground: 0 0% 100%;
 
-    /* Status colors - consistent color code */
-    --status-optimal: 142 76% 46%;
-    --status-attention: 38 92% 55%;
+    /* Status colors */
+    --status-optimal: 188 76% 50%;
+    --status-attention: 32 89% 60%;
     --status-critical: 0 72% 55%;
     
     /* Risk gradient colors */
-    --risk-low: 142 76% 46%;
-    --risk-medium: 38 92% 55%;
+    --risk-low: 160 60% 48%;
+    --risk-medium: 32 89% 60%;
     --risk-high: 0 72% 55%;
 
-    --border: 150 20% 20%;
-    --input: 150 20% 20%;
-    --ring: 145 65% 45%;
+    --success: 160 60% 48%;
+    --success-foreground: 0 0% 100%;
+
+    --border: 214 30% 22%;
+    --input: 214 30% 22%;
+    --ring: 188 76% 50%;
     
-    --gradient-hero: linear-gradient(135deg, hsl(145 65% 35%), hsl(145 55% 45%));
-    --gradient-card: linear-gradient(180deg, hsl(150 20% 12%), hsl(150 20% 14%));
+    --gradient-hero: linear-gradient(135deg, hsl(214 50% 18%), hsl(214 45% 25%));
+    --gradient-card: linear-gradient(180deg, hsl(214 35% 14%), hsl(214 35% 16%));
+    --gradient-performance: linear-gradient(135deg, hsl(188 76% 45%), hsl(188 70% 52%));
     
-    --shadow-sm: 0 2px 8px hsl(0 0% 0% / 0.2);
-    --shadow-md: 0 4px 16px hsl(0 0% 0% / 0.3);
-    --shadow-lg: 0 8px 32px hsl(0 0% 0% / 0.4);
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --shadow-sm: 0 1px 3px hsl(0 0% 0% / 0.2);
+    --shadow-md: 0 4px 6px hsl(0 0% 0% / 0.25);
+    --shadow-lg: 0 10px 15px hsl(0 0% 0% / 0.3);
+
+    /* Sidebar - Dark theme */
+    --sidebar-background: 214 45% 8%;
+    --sidebar-foreground: 214 15% 92%;
+    --sidebar-primary: 188 76% 50%;
+    --sidebar-primary-foreground: 214 70% 10%;
+    --sidebar-accent: 214 40% 16%;
+    --sidebar-accent-foreground: 214 15% 92%;
+    --sidebar-border: 214 35% 18%;
+    --sidebar-ring: 188 76% 50%;
+
+    /* Chart colors - slightly brighter for dark mode */
+    --chart-1: 188 76% 50%;
+    --chart-2: 214 65% 55%;
+    --chart-3: 160 60% 48%;
+    --chart-4: 32 89% 60%;
+    --chart-5: 280 55% 60%;
   }
 }
 
@@ -150,7 +188,18 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  /* Improve readability for data-heavy interfaces */
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold tracking-tight;
+  }
+
+  /* Tables for data display */
+  table {
+    @apply text-sm;
   }
 }
 
@@ -161,5 +210,44 @@ All colors MUST be HSL.
   }
   .no-scrollbar::-webkit-scrollbar {
     display: none;
+  }
+
+  /* Data visualization utilities */
+  .data-card {
+    @apply bg-card rounded-lg border shadow-sm p-4;
+  }
+
+  .metric-value {
+    @apply text-2xl font-bold tracking-tight;
+  }
+
+  .metric-label {
+    @apply text-sm text-muted-foreground;
+  }
+
+  /* KPI Cards */
+  .kpi-positive {
+    @apply text-accent;
+  }
+
+  .kpi-warning {
+    @apply text-warning;
+  }
+
+  .kpi-critical {
+    @apply text-destructive;
+  }
+
+  /* Performance indicators */
+  .indicator-optimal {
+    @apply bg-status-optimal text-white;
+  }
+
+  .indicator-attention {
+    @apply bg-status-attention text-white;
+  }
+
+  .indicator-critical {
+    @apply bg-status-critical text-white;
   }
 }
