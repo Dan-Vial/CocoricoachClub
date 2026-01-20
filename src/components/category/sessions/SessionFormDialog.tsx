@@ -38,7 +38,7 @@ import {
   Copy,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { EXERCISE_CATEGORIES, getCategoryLabel, getCategoriesForSport, isCategoryForSport } from "@/lib/constants/exerciseCategories";
+import { EXERCISE_CATEGORIES, getCategoryLabel, getCategoriesForSport, isCategoryForSport, isErgCategory } from "@/lib/constants/exerciseCategories";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getTrainingTypesForSport, trainingTypeHasExercises } from "@/lib/constants/trainingTypes";
 import { QuickAddExerciseDialog } from "@/components/library/QuickAddExerciseDialog";
@@ -64,6 +64,16 @@ const SET_TYPES = [
   { value: "amrap", label: "AMRAP" },
 ] as const;
 
+// Erg-specific data structure for cardio machines
+interface ErgData {
+  duration_seconds?: number;
+  distance_meters?: number;
+  calories?: number;
+  watts?: number;
+  rpm?: number;
+  stroke_rate?: number;
+}
+
 interface Exercise {
   id?: string;
   exercise_name: string;
@@ -79,6 +89,8 @@ interface Exercise {
   library_exercise_id: string | null;
   set_type: string;
   group_id: string | null;
+  // Erg-specific fields
+  erg_data?: ErgData;
 }
 
 const emptyExercise = (index: number): Exercise => ({
@@ -95,6 +107,7 @@ const emptyExercise = (index: number): Exercise => ({
   library_exercise_id: null,
   set_type: "normal",
   group_id: null,
+  erg_data: undefined,
 });
 
 export function SessionFormDialog({
@@ -712,96 +725,217 @@ export function SessionFormDialog({
                               </div>
                             </div>
 
-                            {/* Row 2: Sets, Reps, Weight, Rest */}
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                              <div>
-                                <Label className="text-xs text-muted-foreground">Séries</Label>
-                                <Input
-                                  type="number"
-                                  min="1"
-                                  className="h-8 text-xs"
-                                  value={exercise.sets}
-                                  onChange={(e) =>
-                                    updateExercise(index, "sets", parseInt(e.target.value) || 1)
-                                  }
-                                />
-                              </div>
-                              <div>
-                                <Label className="text-xs text-muted-foreground">Reps</Label>
-                                <Input
-                                  type="number"
-                                  min="1"
-                                  className="h-8 text-xs"
-                                  value={exercise.reps || ""}
-                                  onChange={(e) =>
-                                    updateExercise(
-                                      index,
-                                      "reps",
-                                      e.target.value ? parseInt(e.target.value) : null
-                                    )
-                                  }
-                                />
-                              </div>
-                              <div>
-                                <Label className="text-xs text-muted-foreground flex items-center gap-1">
-                                  Poids
-                                  <button
-                                    type="button"
-                                    className="text-[10px] px-1 py-0.5 rounded bg-muted hover:bg-muted/80"
-                                    onClick={() => updateExercise(index, "weight_mode", exercise.weight_mode === "kg" ? "percent_rm" : "kg")}
-                                  >
-                                    {exercise.weight_mode === "kg" ? "kg" : "% RM"}
-                                  </button>
-                                </Label>
-                                {exercise.weight_mode === "kg" ? (
+                            {/* Row 2: Conditional inputs based on exercise type */}
+                            {isErgCategory(exercise.exercise_category) ? (
+                              // Erg-specific inputs
+                              <div className="grid grid-cols-2 sm:grid-cols-6 gap-2">
+                                <div>
+                                  <Label className="text-xs text-muted-foreground">Temps (s)</Label>
                                   <Input
                                     type="number"
-                                    step="0.5"
+                                    min="0"
                                     className="h-8 text-xs"
-                                    placeholder="kg"
-                                    value={exercise.weight_kg || ""}
+                                    placeholder="300"
+                                    value={exercise.erg_data?.duration_seconds || ""}
                                     onChange={(e) =>
-                                      updateExercise(
-                                        index,
-                                        "weight_kg",
-                                        e.target.value ? parseFloat(e.target.value) : null
-                                      )
+                                      updateExercise(index, "erg_data", {
+                                        ...exercise.erg_data,
+                                        duration_seconds: e.target.value ? parseInt(e.target.value) : undefined,
+                                      })
                                     }
                                   />
-                                ) : (
+                                </div>
+                                <div>
+                                  <Label className="text-xs text-muted-foreground">Distance (m)</Label>
                                   <Input
                                     type="number"
-                                    min="1"
-                                    max="100"
+                                    min="0"
                                     className="h-8 text-xs"
-                                    placeholder="% RM"
-                                    value={exercise.weight_percent_rm || ""}
+                                    placeholder="2000"
+                                    value={exercise.erg_data?.distance_meters || ""}
+                                    onChange={(e) =>
+                                      updateExercise(index, "erg_data", {
+                                        ...exercise.erg_data,
+                                        distance_meters: e.target.value ? parseInt(e.target.value) : undefined,
+                                      })
+                                    }
+                                  />
+                                </div>
+                                <div>
+                                  <Label className="text-xs text-muted-foreground">Calories</Label>
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    className="h-8 text-xs"
+                                    placeholder="50"
+                                    value={exercise.erg_data?.calories || ""}
+                                    onChange={(e) =>
+                                      updateExercise(index, "erg_data", {
+                                        ...exercise.erg_data,
+                                        calories: e.target.value ? parseInt(e.target.value) : undefined,
+                                      })
+                                    }
+                                  />
+                                </div>
+                                <div>
+                                  <Label className="text-xs text-muted-foreground">Watts</Label>
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    className="h-8 text-xs"
+                                    placeholder="150"
+                                    value={exercise.erg_data?.watts || ""}
+                                    onChange={(e) =>
+                                      updateExercise(index, "erg_data", {
+                                        ...exercise.erg_data,
+                                        watts: e.target.value ? parseInt(e.target.value) : undefined,
+                                      })
+                                    }
+                                  />
+                                </div>
+                                <div>
+                                  <Label className="text-xs text-muted-foreground">RPM</Label>
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    className="h-8 text-xs"
+                                    placeholder="80"
+                                    value={exercise.erg_data?.rpm || ""}
+                                    onChange={(e) =>
+                                      updateExercise(index, "erg_data", {
+                                        ...exercise.erg_data,
+                                        rpm: e.target.value ? parseInt(e.target.value) : undefined,
+                                      })
+                                    }
+                                  />
+                                </div>
+                                {/* Show stroke rate for rower */}
+                                {(exercise.exercise_category === "rowerg" || exercise.exercise_name.toLowerCase().includes("row")) && (
+                                  <div>
+                                    <Label className="text-xs text-muted-foreground">Stroke/min</Label>
+                                    <Input
+                                      type="number"
+                                      min="0"
+                                      className="h-8 text-xs"
+                                      placeholder="28"
+                                      value={exercise.erg_data?.stroke_rate || ""}
+                                      onChange={(e) =>
+                                        updateExercise(index, "erg_data", {
+                                          ...exercise.erg_data,
+                                          stroke_rate: e.target.value ? parseInt(e.target.value) : undefined,
+                                        })
+                                      }
+                                    />
+                                  </div>
+                                )}
+                                <div>
+                                  <Label className="text-xs text-muted-foreground">Repos (sec)</Label>
+                                  <Input
+                                    type="number"
+                                    className="h-8 text-xs"
+                                    value={exercise.rest_seconds || ""}
                                     onChange={(e) =>
                                       updateExercise(
                                         index,
-                                        "weight_percent_rm",
+                                        "rest_seconds",
                                         e.target.value ? parseInt(e.target.value) : null
                                       )
                                     }
                                   />
-                                )}
+                                </div>
                               </div>
-                              <div>
-                                <Label className="text-xs text-muted-foreground">Repos (sec)</Label>
-                                <Input
-                                  type="number"
-                                  className="h-8 text-xs"
-                                  value={exercise.rest_seconds || ""}
-                                  onChange={(e) =>
-                                    updateExercise(
-                                      index,
-                                      "rest_seconds",
-                                      e.target.value ? parseInt(e.target.value) : null
-                                    )
-                                  }
-                                />
+                            ) : (
+                              // Standard Sets, Reps, Weight, Rest
+                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                <div>
+                                  <Label className="text-xs text-muted-foreground">Séries</Label>
+                                  <Input
+                                    type="number"
+                                    min="1"
+                                    className="h-8 text-xs"
+                                    value={exercise.sets}
+                                    onChange={(e) =>
+                                      updateExercise(index, "sets", parseInt(e.target.value) || 1)
+                                    }
+                                  />
+                                </div>
+                                <div>
+                                  <Label className="text-xs text-muted-foreground">Reps</Label>
+                                  <Input
+                                    type="number"
+                                    min="1"
+                                    className="h-8 text-xs"
+                                    value={exercise.reps || ""}
+                                    onChange={(e) =>
+                                      updateExercise(
+                                        index,
+                                        "reps",
+                                        e.target.value ? parseInt(e.target.value) : null
+                                      )
+                                    }
+                                  />
+                                </div>
+                                <div>
+                                  <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                                    Poids
+                                    <button
+                                      type="button"
+                                      className="text-[10px] px-1 py-0.5 rounded bg-muted hover:bg-muted/80"
+                                      onClick={() => updateExercise(index, "weight_mode", exercise.weight_mode === "kg" ? "percent_rm" : "kg")}
+                                    >
+                                      {exercise.weight_mode === "kg" ? "kg" : "% RM"}
+                                    </button>
+                                  </Label>
+                                  {exercise.weight_mode === "kg" ? (
+                                    <Input
+                                      type="number"
+                                      step="0.5"
+                                      className="h-8 text-xs"
+                                      placeholder="kg"
+                                      value={exercise.weight_kg || ""}
+                                      onChange={(e) =>
+                                        updateExercise(
+                                          index,
+                                          "weight_kg",
+                                          e.target.value ? parseFloat(e.target.value) : null
+                                        )
+                                      }
+                                    />
+                                  ) : (
+                                    <Input
+                                      type="number"
+                                      min="1"
+                                      max="100"
+                                      className="h-8 text-xs"
+                                      placeholder="% RM"
+                                      value={exercise.weight_percent_rm || ""}
+                                      onChange={(e) =>
+                                        updateExercise(
+                                          index,
+                                          "weight_percent_rm",
+                                          e.target.value ? parseInt(e.target.value) : null
+                                        )
+                                      }
+                                    />
+                                  )}
+                                </div>
+                                <div>
+                                  <Label className="text-xs text-muted-foreground">Repos (sec)</Label>
+                                  <Input
+                                    type="number"
+                                    className="h-8 text-xs"
+                                    value={exercise.rest_seconds || ""}
+                                    onChange={(e) =>
+                                      updateExercise(
+                                        index,
+                                        "rest_seconds",
+                                        e.target.value ? parseInt(e.target.value) : null
+                                      )
+                                    }
+                                  />
+                                </div>
                               </div>
-                            </div>
+                            )}
 
                             <div>
                               <Label className="text-xs text-muted-foreground">Notes</Label>

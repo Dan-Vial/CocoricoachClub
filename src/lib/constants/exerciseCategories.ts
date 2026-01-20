@@ -44,6 +44,14 @@ export const EXERCISE_CATEGORIES: ExerciseCategory[] = [
   { value: "prophylaxis", label: "Prophylaxie / Prévention", group: "reathletisation" },
   { value: "eccentric", label: "Travail excentrique", group: "reathletisation" },
   
+  // Ergomètres / Machines Cardio
+  { value: "ergometre", label: "Ergomètre / Machine Cardio", group: "cardio_machines" },
+  { value: "skierg", label: "SkiErg", group: "cardio_machines" },
+  { value: "rowerg", label: "RowErg (Rameur)", group: "cardio_machines" },
+  { value: "assault_bike", label: "Assault Bike", group: "cardio_machines" },
+  { value: "echo_bike", label: "Echo Bike", group: "cardio_machines" },
+  { value: "bikeerg", label: "BikeErg", group: "cardio_machines" },
+  
   // Terrain - Général
   { value: "cardio", label: "Cardio", group: "terrain" },
   { value: "terrain", label: "Terrain (courses, sprints...)", group: "terrain" },
@@ -186,10 +194,21 @@ export function isCategoryForSport(categoryValue: string, sportType?: string): b
 export const CATEGORY_GROUPS = [
   { value: "all", label: "Tous" },
   { value: "musculation", label: "Musculation" },
+  { value: "cardio_machines", label: "Ergomètres" },
   { value: "reathletisation", label: "Réathlétisation" },
   { value: "terrain", label: "Terrain" },
   { value: "stretching_mobility", label: "Stretching / Mobilité" },
 ] as const;
+
+// Liste des catégories d'ergomètres (machines cardio avec métriques spécifiques)
+export const ERG_CATEGORIES = [
+  "ergometre", "skierg", "rowerg", "assault_bike", "echo_bike", "bikeerg"
+];
+
+// Check if an exercise category is an ergometer
+export function isErgCategory(category: string): boolean {
+  return ERG_CATEGORIES.includes(category);
+}
 
 export const EXERCISE_SUBCATEGORIES = [
   // Musculation

@@ -27,6 +27,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { TEST_CATEGORIES, getTestLabel } from "@/lib/constants/testCategories";
+import { isErgCategory } from "@/lib/constants/exerciseCategories";
 
 interface DropSet {
   reps: string;
@@ -38,10 +39,21 @@ interface ClusterSet {
   rest_seconds: number;
 }
 
+// Erg-specific data structure for cardio machines
+interface ErgData {
+  duration_seconds?: number;
+  distance_meters?: number;
+  calories?: number;
+  watts?: number;
+  rpm?: number;
+  stroke_rate?: number; // For rower
+}
+
 interface ProgramExercise {
   id: string;
   exercise_name: string;
   library_exercise_id?: string;
+  exercise_category?: string; // Category to detect erg exercises
   order_index: number;
   method: string;
   sets: number;
@@ -56,6 +68,8 @@ interface ProgramExercise {
   cluster_sets?: ClusterSet[];
   is_rm_test?: boolean;
   rm_test_type?: string;
+  // Erg-specific fields
+  erg_data?: ErgData;
 }
 
 interface ProgramSession {
@@ -619,124 +633,256 @@ export function ProgramSessionCard({
 
                   {/* Exercise parameters */}
                   {!exercise.is_rm_test && (
-                    <div className="grid grid-cols-6 gap-2">
-                      <div className="space-y-1 col-span-2">
-                        <label className="text-xs text-muted-foreground">Méthode</label>
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <div>
-                                <Select
-                                  value={exercise.method}
-                                  onValueChange={(value) => {
-                                    if (LINKABLE_METHODS.includes(value)) {
-                                      startLinking(index, value);
-                                    } else if (DROP_METHODS.includes(value)) {
-                                      initDropSets(index, value);
-                                    } else if (value === "cluster") {
-                                      initClusterSets(index);
-                                    } else {
-                                      updateMultipleFields(index, {
-                                        method: value,
-                                        drop_sets: undefined,
-                                        cluster_sets: undefined,
-                                      });
-                                    }
-                                  }}
-                                >
-                                  <SelectTrigger className="h-8 text-xs">
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {EXERCISE_METHODS.map((method) => (
-                                      <SelectItem key={method.value} value={method.value}>
-                                        <div className="flex flex-col">
-                                          <span>{method.label}</span>
-                                          <span className="text-xs text-muted-foreground">
-                                            {method.description}
-                                          </span>
-                                        </div>
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>{getMethodDescription(exercise.method)}</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </div>
-
-                      {!isInDropMode && !isInClusterMode && (
-                        <>
+                    <>
+                      {/* Check if this is an erg exercise */}
+                      {isErgCategory(exercise.exercise_category || "") ? (
+                        // Erg-specific inputs
+                        <div className="grid grid-cols-6 gap-2">
                           <div className="space-y-1">
-                            <label className="text-xs text-muted-foreground">Séries</label>
-                            <Input
-                              type="number"
-                              min={1}
-                              value={exercise.sets}
-                              onChange={(e) =>
-                                updateExercise(index, "sets", parseInt(e.target.value) || 1)
-                              }
-                              className="h-8 text-sm"
-                            />
-                          </div>
-
-                          <div className="space-y-1">
-                            <label className="text-xs text-muted-foreground">Reps</label>
-                            <Input
-                              value={exercise.reps}
-                              onChange={(e) => updateExercise(index, "reps", e.target.value)}
-                              placeholder="10"
-                              className="h-8 text-sm"
-                            />
-                          </div>
-
-                          <div className="space-y-1">
-                            <label className="text-xs text-muted-foreground">%1RM</label>
+                            <label className="text-xs text-muted-foreground">Temps (s)</label>
                             <Input
                               type="number"
                               min={0}
-                              max={100}
-                              value={exercise.percentage_1rm || ""}
+                              value={exercise.erg_data?.duration_seconds || ""}
                               onChange={(e) =>
-                                updateExercise(
-                                  index,
-                                  "percentage_1rm",
-                                  e.target.value ? parseInt(e.target.value) : null
-                                )
+                                updateExercise(index, "erg_data", {
+                                  ...exercise.erg_data,
+                                  duration_seconds: e.target.value ? parseInt(e.target.value) : undefined,
+                                })
                               }
-                              placeholder="75"
+                              placeholder="300"
                               className="h-8 text-sm"
                             />
                           </div>
-                        </>
-                      )}
 
-                      {/* Show rest only on last exercise of group or for non-grouped */}
-                      {(!isGrouped || groupInfo?.isLast) && (
-                        <div className="space-y-1">
-                          <label className="text-xs text-muted-foreground">
-                            Repos{isGrouped ? " bloc" : ""} (s)
-                          </label>
-                          <Input
-                            type="number"
-                            min={0}
-                            value={exercise.rest_seconds}
-                            onChange={(e) =>
-                              updateExercise(
-                                index,
-                                "rest_seconds",
-                                parseInt(e.target.value) || 0
-                              )
-                            }
-                            className="h-8 text-sm"
-                          />
+                          <div className="space-y-1">
+                            <label className="text-xs text-muted-foreground">Distance (m)</label>
+                            <Input
+                              type="number"
+                              min={0}
+                              value={exercise.erg_data?.distance_meters || ""}
+                              onChange={(e) =>
+                                updateExercise(index, "erg_data", {
+                                  ...exercise.erg_data,
+                                  distance_meters: e.target.value ? parseInt(e.target.value) : undefined,
+                                })
+                              }
+                              placeholder="2000"
+                              className="h-8 text-sm"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-xs text-muted-foreground">Calories</label>
+                            <Input
+                              type="number"
+                              min={0}
+                              value={exercise.erg_data?.calories || ""}
+                              onChange={(e) =>
+                                updateExercise(index, "erg_data", {
+                                  ...exercise.erg_data,
+                                  calories: e.target.value ? parseInt(e.target.value) : undefined,
+                                })
+                              }
+                              placeholder="50"
+                              className="h-8 text-sm"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-xs text-muted-foreground">Watts</label>
+                            <Input
+                              type="number"
+                              min={0}
+                              value={exercise.erg_data?.watts || ""}
+                              onChange={(e) =>
+                                updateExercise(index, "erg_data", {
+                                  ...exercise.erg_data,
+                                  watts: e.target.value ? parseInt(e.target.value) : undefined,
+                                })
+                              }
+                              placeholder="150"
+                              className="h-8 text-sm"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-xs text-muted-foreground">RPM</label>
+                            <Input
+                              type="number"
+                              min={0}
+                              value={exercise.erg_data?.rpm || ""}
+                              onChange={(e) =>
+                                updateExercise(index, "erg_data", {
+                                  ...exercise.erg_data,
+                                  rpm: e.target.value ? parseInt(e.target.value) : undefined,
+                                })
+                              }
+                              placeholder="80"
+                              className="h-8 text-sm"
+                            />
+                          </div>
+
+                          {/* Show stroke rate only for rower */}
+                          {(exercise.exercise_category === "rowerg" || exercise.exercise_name.toLowerCase().includes("row")) && (
+                            <div className="space-y-1">
+                              <label className="text-xs text-muted-foreground">Stroke/min</label>
+                              <Input
+                                type="number"
+                                min={0}
+                                value={exercise.erg_data?.stroke_rate || ""}
+                                onChange={(e) =>
+                                  updateExercise(index, "erg_data", {
+                                    ...exercise.erg_data,
+                                    stroke_rate: e.target.value ? parseInt(e.target.value) : undefined,
+                                  })
+                                }
+                                placeholder="28"
+                                className="h-8 text-sm"
+                              />
+                            </div>
+                          )}
+
+                          {/* Rest for erg exercises */}
+                          <div className="space-y-1">
+                            <label className="text-xs text-muted-foreground">Repos (s)</label>
+                            <Input
+                              type="number"
+                              min={0}
+                              value={exercise.rest_seconds}
+                              onChange={(e) =>
+                                updateExercise(
+                                  index,
+                                  "rest_seconds",
+                                  parseInt(e.target.value) || 0
+                                )
+                              }
+                              className="h-8 text-sm"
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        // Standard sets/reps inputs
+                        <div className="grid grid-cols-6 gap-2">
+                          <div className="space-y-1 col-span-2">
+                            <label className="text-xs text-muted-foreground">Méthode</label>
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <div>
+                                    <Select
+                                      value={exercise.method}
+                                      onValueChange={(value) => {
+                                        if (LINKABLE_METHODS.includes(value)) {
+                                          startLinking(index, value);
+                                        } else if (DROP_METHODS.includes(value)) {
+                                          initDropSets(index, value);
+                                        } else if (value === "cluster") {
+                                          initClusterSets(index);
+                                        } else {
+                                          updateMultipleFields(index, {
+                                            method: value,
+                                            drop_sets: undefined,
+                                            cluster_sets: undefined,
+                                          });
+                                        }
+                                      }}
+                                    >
+                                      <SelectTrigger className="h-8 text-xs">
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {EXERCISE_METHODS.map((method) => (
+                                          <SelectItem key={method.value} value={method.value}>
+                                            <div className="flex flex-col">
+                                              <span>{method.label}</span>
+                                              <span className="text-xs text-muted-foreground">
+                                                {method.description}
+                                              </span>
+                                            </div>
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>{getMethodDescription(exercise.method)}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </div>
+
+                          {!isInDropMode && !isInClusterMode && (
+                            <>
+                              <div className="space-y-1">
+                                <label className="text-xs text-muted-foreground">Séries</label>
+                                <Input
+                                  type="number"
+                                  min={1}
+                                  value={exercise.sets}
+                                  onChange={(e) =>
+                                    updateExercise(index, "sets", parseInt(e.target.value) || 1)
+                                  }
+                                  className="h-8 text-sm"
+                                />
+                              </div>
+
+                              <div className="space-y-1">
+                                <label className="text-xs text-muted-foreground">Reps</label>
+                                <Input
+                                  value={exercise.reps}
+                                  onChange={(e) => updateExercise(index, "reps", e.target.value)}
+                                  placeholder="10"
+                                  className="h-8 text-sm"
+                                />
+                              </div>
+
+                              <div className="space-y-1">
+                                <label className="text-xs text-muted-foreground">%1RM</label>
+                                <Input
+                                  type="number"
+                                  min={0}
+                                  max={100}
+                                  value={exercise.percentage_1rm || ""}
+                                  onChange={(e) =>
+                                    updateExercise(
+                                      index,
+                                      "percentage_1rm",
+                                      e.target.value ? parseInt(e.target.value) : null
+                                    )
+                                  }
+                                  placeholder="75"
+                                  className="h-8 text-sm"
+                                />
+                              </div>
+                            </>
+                          )}
+
+                          {/* Show rest only on last exercise of group or for non-grouped */}
+                          {(!isGrouped || groupInfo?.isLast) && (
+                            <div className="space-y-1">
+                              <label className="text-xs text-muted-foreground">
+                                Repos{isGrouped ? " bloc" : ""} (s)
+                              </label>
+                              <Input
+                                type="number"
+                                min={0}
+                                value={exercise.rest_seconds}
+                                onChange={(e) =>
+                                  updateExercise(
+                                    index,
+                                    "rest_seconds",
+                                    parseInt(e.target.value) || 0
+                                  )
+                                }
+                                className="h-8 text-sm"
+                              />
+                            </div>
+                          )}
                         </div>
                       )}
-                    </div>
+                    </>
                   )}
 
                   {/* Drop sets / Pyramid configuration */}
