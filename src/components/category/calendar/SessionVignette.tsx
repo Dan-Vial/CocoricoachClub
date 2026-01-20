@@ -78,17 +78,24 @@ export function SessionVignette({
     >
       {/* Main Session Block */}
       <div
-        {...(isDraggable && !isViewer ? { ...attributes, ...listeners } : {})}
         className={cn(
-          "rounded-lg px-2 py-1.5 text-white text-[11px] font-medium cursor-pointer transition-all relative",
+          "rounded-lg px-2 py-1.5 text-white text-[11px] font-medium transition-all relative",
           bgColor,
-          isDraggable && !isViewer && "cursor-grab active:cursor-grabbing",
           isDragging && "shadow-lg ring-2 ring-primary/50"
         )}
       >
+        {/* Drag handle - only visible and active when NOT hovered */}
+        {!isHovered && !isDragging && isDraggable && !isViewer && (
+          <div
+            {...attributes}
+            {...listeners}
+            className="absolute inset-0 cursor-grab active:cursor-grabbing"
+          />
+        )}
+
         {/* Session content - hidden when hovered to show actions */}
         <div className={cn(
-          "flex items-center gap-1.5 transition-opacity",
+          "flex items-center gap-1.5 transition-opacity pointer-events-none",
           isHovered && !isDragging && "opacity-0"
         )}>
           {startTime && (
