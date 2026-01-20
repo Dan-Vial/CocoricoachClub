@@ -236,6 +236,29 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
             onPrint={handlePrint}
             onExportPdf={handleExportPdf}
             isViewer={isViewer}
+            onEditSession={(session) => {
+              setEditingSession({
+                id: session.id,
+                session_date: session.session_date,
+                session_start_time: session.session_start_time,
+                session_end_time: session.session_end_time,
+                training_type: session.training_type,
+                intensity: null,
+                notes: session.notes,
+              });
+              setIsEditDialogOpen(true);
+            }}
+            onViewSession={(session) => {
+              setSelectedSession({
+                id: session.id,
+                date: session.session_date,
+                type: session.training_type === "test" ? "test" : "training",
+              });
+            }}
+            onDeleteSession={(sessionId) => deleteSession.mutate(sessionId)}
+            onRescheduleSession={(sessionId, newDate) => {
+              rescheduleSession.mutate({ sessionId, newDate });
+            }}
           />
         </TabsContent>
 
