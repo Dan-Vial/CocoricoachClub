@@ -152,7 +152,12 @@ const SelectItem = React.forwardRef<
         <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
       ) : (
         <>
-          <SelectPrimitive.ItemText>{computedTextValue}</SelectPrimitive.ItemText>
+          {/* Hidden text for typeahead and trigger display */}
+          <SelectPrimitive.ItemText className="sr-only">
+            {computedTextValue ?? "Option"}
+          </SelectPrimitive.ItemText>
+          {/* Rich visible content in dropdown */}
+          {children}
         </>
       )}
     </SelectPrimitive.Item>
