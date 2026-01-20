@@ -149,19 +149,18 @@ const SelectItem = React.forwardRef<
       </span>
 
       {/*
-        IMPORTANT:
         Radix Select uses ItemText to render the selected value in the trigger.
-        When options include rich JSX (badges, icons, etc.), we keep ItemText as a
-        clean string (computedTextValue) so the trigger never shows concatenated
-        text like "NomStats".
-
-        If callers need rich visuals, they should be implemented outside of the
-        Select trigger (or via a custom trigger), because Radix does not support
-        separate "trigger label" vs "dropdown label" trees.
+        We show ONLY the clean text in ItemText (for trigger display).
+        The rich visual content (children) is rendered separately for the dropdown.
       */}
-      <SelectPrimitive.ItemText>
-        {isPrimitiveChild ? children : (computedTextValue ?? "Option")}
+      <SelectPrimitive.ItemText className="sr-only">
+        {computedTextValue ?? "Option"}
       </SelectPrimitive.ItemText>
+      
+      {/* Visible content in dropdown - show full rich children or fallback to text */}
+      <span className="flex-1">
+        {isPrimitiveChild ? children : (children ?? computedTextValue ?? "Option")}
+      </span>
     </SelectPrimitive.Item>
   );
 });
