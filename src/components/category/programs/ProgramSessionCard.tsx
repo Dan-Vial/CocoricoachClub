@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { X, GripVertical, Link2, Unlink, Plus, Minus, FlaskConical, ChevronDown, Info } from "lucide-react";
+import { X, GripVertical, Link2, Unlink, Plus, Minus, FlaskConical, Check, Info } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -21,20 +21,15 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
-import { TEST_CATEGORIES, getTestLabel } from "@/lib/constants/testCategories";
+import { TEST_CATEGORIES } from "@/lib/constants/testCategories";
 import { isErgCategory } from "@/lib/constants/exerciseCategories";
 import { cn } from "@/lib/utils";
 import {
   TRAINING_STYLES,
   getTrainingStyleConfig,
   isLinkableMethod,
-  isDropMethod,
-  isClusterMethod,
+  isDropMethod as checkIsDropMethod,
+  isClusterMethod as checkIsClusterMethod,
   getMaxExercisesForMethod,
   LINKABLE_METHODS,
   DROP_METHODS,
@@ -51,21 +46,20 @@ interface ClusterSet {
   rest_seconds: number;
 }
 
-// Erg-specific data structure for cardio machines
 interface ErgData {
   duration_seconds?: number;
   distance_meters?: number;
   calories?: number;
   watts?: number;
   rpm?: number;
-  stroke_rate?: number; // For rower
+  stroke_rate?: number;
 }
 
 interface ProgramExercise {
   id: string;
   exercise_name: string;
   library_exercise_id?: string;
-  exercise_category?: string; // Category to detect erg exercises
+  exercise_category?: string;
   order_index: number;
   method: string;
   sets: number;
@@ -80,7 +74,6 @@ interface ProgramExercise {
   cluster_sets?: ClusterSet[];
   is_rm_test?: boolean;
   rm_test_type?: string;
-  // Erg-specific fields
   erg_data?: ErgData;
 }
 
@@ -110,6 +103,13 @@ const DAYS_OF_WEEK = [
   { value: 7, label: "Dim" },
 ];
 
+// Group exercises by group_id for visual grouping
+interface ExerciseGroup {
+  groupId: string | null;
+  exercises: { exercise: ProgramExercise; index: number }[];
+  method: string;
+}
+
 export function ProgramSessionCard({
   session,
   onUpdate,
@@ -131,6 +131,38 @@ export function ProgramSessionCard({
         setSelectedForLinking([]);
       }
     }
+  }, [session.exercises]);
+
+  // Organize exercises into groups for rendering
+  const exerciseGroups = useMemo(() => {
+    const groups: ExerciseGroup[] = [];
+    const processedGroupIds = new Set<string>();
+
+    session.exercises.forEach((exercise, index) => {
+      if (exercise.group_id) {
+        if (!processedGroupIds.has(exercise.group_id)) {
+          processedGroupIds.add(exercise.group_id);
+          const groupExercises = session.exercises
+            .map((ex, idx) => ({ exercise: ex, index: idx }))
+            .filter(({ exercise: ex }) => ex.group_id === exercise.group_id)
+            .sort((a, b) => (a.exercise.group_order || 0) - (b.exercise.group_order || 0));
+          
+          groups.push({
+            groupId: exercise.group_id,
+            exercises: groupExercises,
+            method: exercise.method,
+          });
+        }
+      } else {
+        groups.push({
+          groupId: null,
+          exercises: [{ exercise, index }],
+          method: exercise.method,
+        });
+      }
+    });
+
+    return groups;
   }, [session.exercises]);
 
   const updateExercise = (index: number, field: string, value: any) => {
@@ -176,13 +208,7 @@ export function ProgramSessionCard({
   };
 
   const getMaxCountForMethod = (method: string): number => {
-    switch (method) {
-      case "biset": return 2;
-      case "superset": return 2;
-      case "triset": return 3;
-      case "giant_set": return 10; // Arbitrary large number
-      default: return 2;
-    }
+    return getMaxExercisesForMethod(method);
   };
 
   const startLinking = (index: number, method: string) => {
@@ -195,10 +221,9 @@ export function ProgramSessionCard({
     if (!linkingFrom) return;
     
     const exercise = session.exercises[targetIndex];
-    if (exercise.group_id) return; // Already in a group
+    if (exercise.group_id) return;
     
     if (selectedForLinking.includes(targetIndex)) {
-      // Don't allow removing the original exercise
       if (targetIndex === linkingFrom.index) return;
       setSelectedForLinking(prev => prev.filter(i => i !== targetIndex));
     } else {
@@ -238,9 +263,9 @@ export function ProgramSessionCard({
     setSelectedForLinking([]);
   };
 
-  const unlinkExercise = (exercise: ProgramExercise) => {
+  const unlinkGroup = (groupId: string) => {
     const newExercises = session.exercises.map((ex) => {
-      if (ex.group_id === exercise.group_id) {
+      if (ex.group_id === groupId) {
         return { ...ex, group_id: undefined, group_order: undefined, method: "normal" };
       }
       return ex;
@@ -256,24 +281,32 @@ export function ProgramSessionCard({
     
     let dropSets: DropSet[] = [];
     
-    if (method === "dropset") {
-      // Dropset: même reps, charge diminue de 10-15% à chaque série
+    if (method === "drop_set") {
       dropSets = Array.from({ length: sets }, (_, i) => ({
         reps: String(baseReps),
         percentage: Math.max(basePercentage - (i * 12), 40),
       }));
     } else if (method === "pyramid_up") {
-      // Pyramide montante: charge augmente, reps diminuent
       dropSets = Array.from({ length: sets }, (_, i) => ({
         reps: String(Math.max(baseReps - (i * 2), 2)),
         percentage: Math.min(basePercentage + (i * 5), 100),
       }));
     } else if (method === "pyramid_down") {
-      // Pyramide descendante: charge diminue, reps augmentent
       dropSets = Array.from({ length: sets }, (_, i) => ({
         reps: String(baseReps + (i * 2)),
         percentage: Math.max(basePercentage - (i * 5), 50),
       }));
+    } else if (method === "pyramid_full") {
+      const halfSets = Math.ceil(sets / 2);
+      const upPhase = Array.from({ length: halfSets }, (_, i) => ({
+        reps: String(Math.max(baseReps - (i * 2), 2)),
+        percentage: Math.min(basePercentage + (i * 5), 100),
+      }));
+      const downPhase = Array.from({ length: sets - halfSets }, (_, i) => ({
+        reps: String(Math.max(baseReps - (halfSets - 2 - i) * 2, 2)),
+        percentage: Math.min(basePercentage + (halfSets - 2 - i) * 5, 100),
+      }));
+      dropSets = [...upPhase, ...downPhase];
     }
     
     updateMultipleFields(index, {
@@ -283,20 +316,19 @@ export function ProgramSessionCard({
     });
   };
 
-  const initClusterSets = (index: number) => {
+  const initClusterSets = (index: number, method: string) => {
     const exercise = session.exercises[index];
     const totalReps = parseInt(exercise.reps) || 12;
     const numClusters = 4;
     const repsPerCluster = Math.ceil(totalReps / numClusters);
     
-    // Cluster: mini-séries avec micro-repos
     const clusterSets: ClusterSet[] = Array.from({ length: numClusters }, () => ({
       reps: repsPerCluster,
-      rest_seconds: 15,
+      rest_seconds: method === "rest_pause" ? 15 : 10,
     }));
     
     updateMultipleFields(index, {
-      method: "cluster",
+      method,
       cluster_sets: clusterSets,
     });
   };
@@ -359,7 +391,7 @@ export function ProgramSessionCard({
     if (isTest) {
       updateMultipleFields(index, {
         is_rm_test: true,
-        rm_test_type: "squat_1rm", // Default to squat 1RM
+        rm_test_type: "squat_1rm",
         method: "normal",
         sets: 1,
         reps: "1",
@@ -375,7 +407,6 @@ export function ProgramSessionCard({
   };
 
   const setTestType = (index: number, testType: string) => {
-    // Determine reps based on test type
     let reps = "1";
     if (testType.includes("3rm")) reps = "3";
     else if (testType.includes("5rm")) reps = "5";
@@ -403,26 +434,651 @@ export function ProgramSessionCard({
     return getTrainingStyleConfig(method).description || "";
   };
 
-  const getGroupInfo = (exercise: ProgramExercise) => {
-    if (!exercise.group_id) return null;
-    const groupExercises = session.exercises.filter(
-      (e) => e.group_id === exercise.group_id
-    );
-    return {
-      total: groupExercises.length,
-      isLast: exercise.group_order === groupExercises.length,
-      isFirst: exercise.group_order === 1,
-    };
-  };
-
   const isLinkable = (index: number) => {
     if (!linkingFrom) return false;
     const exercise = session.exercises[index];
     return !exercise.group_id;
   };
 
-  const isDropMethod = (method: string) => DROP_METHODS.includes(method);
-  const isClusterMethod = (method: string) => method === "cluster";
+  const isInDropMode = (method: string) => checkIsDropMethod(method);
+  const isInClusterMode = (method: string) => checkIsClusterMethod(method);
+
+  // Render a single exercise card
+  const renderExerciseCard = (
+    exercise: ProgramExercise,
+    index: number,
+    isGrouped: boolean,
+    exerciseNumber?: number
+  ) => {
+    const isSelected = selectedForLinking.includes(index);
+    const styleConfig = getTrainingStyleConfig(exercise.method);
+    const dropMode = isInDropMode(exercise.method);
+    const clusterMode = isInClusterMode(exercise.method);
+
+    const getExerciseStyle = () => {
+      if (linkingFrom && isLinkable(index)) {
+        const linkStyle = getTrainingStyleConfig(linkingFrom.method);
+        return isSelected
+          ? cn("border-2", linkStyle.borderColor, linkStyle.bgColor)
+          : cn("border-2 border-dashed", linkStyle.borderColor, "hover:opacity-80");
+      }
+      if (exercise.is_rm_test) {
+        return "border-amber-500/50 bg-amber-50 dark:bg-amber-950/20";
+      }
+      if (dropMode || clusterMode) {
+        return cn("border", styleConfig.borderColor, styleConfig.bgColor);
+      }
+      return "bg-background border-border";
+    };
+
+    return (
+      <div
+        className={cn(
+          "flex flex-col gap-2 p-3 rounded-lg border transition-all",
+          getExerciseStyle(),
+          linkingFrom && isLinkable(index) && "cursor-pointer"
+        )}
+        onClick={() => {
+          if (linkingFrom && isLinkable(index)) {
+            toggleExerciseForLinking(index);
+          }
+        }}
+      >
+        {/* Exercise header */}
+        <div className="flex items-center gap-2">
+          <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab" />
+          
+          {isGrouped && exerciseNumber && (
+            <Badge className={cn("text-white text-xs", styleConfig.color || "bg-primary")}>
+              Exercice {exerciseNumber}
+            </Badge>
+          )}
+          
+          <span className="font-medium flex-1">{exercise.exercise_name}</span>
+
+          {exercise.is_rm_test && (
+            <Badge className="bg-amber-500 text-white text-xs">
+              <FlaskConical className="h-3 w-3 mr-1" />
+              Test: {getTestTypeLabel(exercise.rm_test_type || "")}
+            </Badge>
+          )}
+
+          {!isGrouped && (dropMode || clusterMode) && (
+            <Badge className={cn("text-white text-xs", styleConfig.color || "bg-primary")}>
+              {getMethodLabel(exercise.method)}
+            </Badge>
+          )}
+
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={(e) => {
+              e.stopPropagation();
+              deleteExercise(index);
+            }}
+            className="h-6 w-6 text-destructive hover:text-destructive"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+
+        {/* RM Test toggle */}
+        <div className="flex items-center gap-4 border-b pb-2">
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id={`rm-test-${exercise.id}`}
+              checked={exercise.is_rm_test || false}
+              onCheckedChange={(checked) => toggleRmTest(index, !!checked)}
+            />
+            <Label htmlFor={`rm-test-${exercise.id}`} className="text-xs cursor-pointer">
+              Test RM
+            </Label>
+          </div>
+          {exercise.is_rm_test && (
+            <Select
+              value={exercise.rm_test_type || "squat_1rm"}
+              onValueChange={(v) => setTestType(index, v)}
+            >
+              <SelectTrigger className="h-7 w-48 text-xs">
+                <SelectValue placeholder="Choisir un test..." />
+              </SelectTrigger>
+              <SelectContent className="max-h-80">
+                {TEST_CATEGORIES.map((category) => (
+                  <SelectGroup key={category.value}>
+                    <SelectLabel className="text-xs font-semibold bg-muted/50">
+                      {category.label}
+                    </SelectLabel>
+                    {category.tests.map((test) => (
+                      <SelectItem key={test.value} value={test.value} className="text-xs">
+                        {test.label} {test.unit && `(${test.unit})`}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        </div>
+
+        {/* Exercise parameters */}
+        {!exercise.is_rm_test && (
+          <>
+            {isErgCategory(exercise.exercise_category || "") ? (
+              // Erg-specific inputs
+              <div className="grid grid-cols-6 gap-2">
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Temps (s)</label>
+                  <Input
+                    type="number"
+                    min={0}
+                    value={exercise.erg_data?.duration_seconds || ""}
+                    onChange={(e) =>
+                      updateExercise(index, "erg_data", {
+                        ...exercise.erg_data,
+                        duration_seconds: e.target.value ? parseInt(e.target.value) : undefined,
+                      })
+                    }
+                    placeholder="300"
+                    className="h-8 text-sm"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Distance (m)</label>
+                  <Input
+                    type="number"
+                    min={0}
+                    value={exercise.erg_data?.distance_meters || ""}
+                    onChange={(e) =>
+                      updateExercise(index, "erg_data", {
+                        ...exercise.erg_data,
+                        distance_meters: e.target.value ? parseInt(e.target.value) : undefined,
+                      })
+                    }
+                    placeholder="2000"
+                    className="h-8 text-sm"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Calories</label>
+                  <Input
+                    type="number"
+                    min={0}
+                    value={exercise.erg_data?.calories || ""}
+                    onChange={(e) =>
+                      updateExercise(index, "erg_data", {
+                        ...exercise.erg_data,
+                        calories: e.target.value ? parseInt(e.target.value) : undefined,
+                      })
+                    }
+                    placeholder="50"
+                    className="h-8 text-sm"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Watts</label>
+                  <Input
+                    type="number"
+                    min={0}
+                    value={exercise.erg_data?.watts || ""}
+                    onChange={(e) =>
+                      updateExercise(index, "erg_data", {
+                        ...exercise.erg_data,
+                        watts: e.target.value ? parseInt(e.target.value) : undefined,
+                      })
+                    }
+                    placeholder="150"
+                    className="h-8 text-sm"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">RPM</label>
+                  <Input
+                    type="number"
+                    min={0}
+                    value={exercise.erg_data?.rpm || ""}
+                    onChange={(e) =>
+                      updateExercise(index, "erg_data", {
+                        ...exercise.erg_data,
+                        rpm: e.target.value ? parseInt(e.target.value) : undefined,
+                      })
+                    }
+                    placeholder="80"
+                    className="h-8 text-sm"
+                  />
+                </div>
+
+                {(exercise.exercise_category === "rowerg" || exercise.exercise_name.toLowerCase().includes("row")) && (
+                  <div className="space-y-1">
+                    <label className="text-xs text-muted-foreground">Stroke/min</label>
+                    <Input
+                      type="number"
+                      min={0}
+                      value={exercise.erg_data?.stroke_rate || ""}
+                      onChange={(e) =>
+                        updateExercise(index, "erg_data", {
+                          ...exercise.erg_data,
+                          stroke_rate: e.target.value ? parseInt(e.target.value) : undefined,
+                        })
+                      }
+                      placeholder="28"
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                )}
+
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Repos (s)</label>
+                  <Input
+                    type="number"
+                    min={0}
+                    value={exercise.rest_seconds}
+                    onChange={(e) =>
+                      updateExercise(index, "rest_seconds", parseInt(e.target.value) || 0)
+                    }
+                    className="h-8 text-sm"
+                  />
+                </div>
+              </div>
+            ) : (
+              // Standard sets/reps inputs
+              <div className="grid grid-cols-6 gap-2">
+                {!isGrouped && (
+                  <div className="space-y-1 col-span-2">
+                    <label className="text-xs text-muted-foreground">Méthode</label>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div>
+                            <Select
+                              value={exercise.method}
+                              onValueChange={(value) => {
+                                if (LINKABLE_METHODS.includes(value)) {
+                                  startLinking(index, value);
+                                } else if (DROP_METHODS.includes(value)) {
+                                  initDropSets(index, value);
+                                } else if (CLUSTER_METHODS.includes(value)) {
+                                  initClusterSets(index, value);
+                                } else {
+                                  updateMultipleFields(index, {
+                                    method: value,
+                                    drop_sets: undefined,
+                                    cluster_sets: undefined,
+                                  });
+                                }
+                              }}
+                            >
+                              <SelectTrigger className="h-8 text-xs">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent className="max-h-80">
+                                {TRAINING_STYLES.map((style) => (
+                                  <SelectItem key={style.value} value={style.value}>
+                                    <div className="flex items-center gap-2">
+                                      {style.color && (
+                                        <div className={cn("w-2 h-2 rounded-full", style.color)} />
+                                      )}
+                                      <span>{style.label}</span>
+                                    </div>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>{getMethodDescription(exercise.method)}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                )}
+
+                {!dropMode && !clusterMode && (
+                  <>
+                    <div className="space-y-1">
+                      <label className="text-xs text-muted-foreground">Séries</label>
+                      <Input
+                        type="number"
+                        min={1}
+                        value={exercise.sets}
+                        onChange={(e) =>
+                          updateExercise(index, "sets", parseInt(e.target.value) || 1)
+                        }
+                        className="h-8 text-sm"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-xs text-muted-foreground">Reps</label>
+                      <Input
+                        value={exercise.reps}
+                        onChange={(e) => updateExercise(index, "reps", e.target.value)}
+                        placeholder="10"
+                        className="h-8 text-sm"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-xs text-muted-foreground">%1RM</label>
+                      <Input
+                        type="number"
+                        min={0}
+                        max={100}
+                        value={exercise.percentage_1rm || ""}
+                        onChange={(e) =>
+                          updateExercise(
+                            index,
+                            "percentage_1rm",
+                            e.target.value ? parseInt(e.target.value) : null
+                          )
+                        }
+                        placeholder="75"
+                        className="h-8 text-sm"
+                      />
+                    </div>
+
+                    {!isGrouped && (
+                      <div className="space-y-1">
+                        <label className="text-xs text-muted-foreground">Repos (s)</label>
+                        <Input
+                          type="number"
+                          min={0}
+                          value={exercise.rest_seconds}
+                          onChange={(e) =>
+                            updateExercise(index, "rest_seconds", parseInt(e.target.value) || 0)
+                          }
+                          className="h-8 text-sm"
+                        />
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Drop sets / Pyramid configuration */}
+        {dropMode && exercise.drop_sets && (
+          <div className="mt-2 space-y-2 bg-muted/50 p-3 rounded-lg">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium">
+                {exercise.method === "drop_set" && "Drop Set - Même reps, charge décroissante"}
+                {exercise.method === "pyramid_up" && "Pyramide Montante - ↑ charge, ↓ reps"}
+                {exercise.method === "pyramid_down" && "Pyramide Descendante - ↓ charge, ↑ reps"}
+                {exercise.method === "pyramid_full" && "Pyramide Complète ↑↓"}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  addDropSet(index);
+                }}
+                className="h-6 text-xs"
+              >
+                <Plus className="h-3 w-3 mr-1" />
+                Série
+              </Button>
+            </div>
+            
+            <div className="space-y-1">
+              <div className="grid grid-cols-4 gap-2 text-xs text-muted-foreground font-medium mb-1">
+                <span>Set</span>
+                <span>% 1RM</span>
+                <span>Reps</span>
+                <span></span>
+              </div>
+              {exercise.drop_sets.map((dropSet, setIndex) => (
+                <div key={setIndex} className="grid grid-cols-4 gap-2 items-center bg-background/50 p-2 rounded">
+                  <span className="text-xs font-medium">Set {setIndex + 1}</span>
+                  <div className="flex items-center gap-1">
+                    <Input
+                      type="number"
+                      value={dropSet.percentage}
+                      onChange={(e) => updateDropSet(index, setIndex, "percentage", parseInt(e.target.value) || 0)}
+                      className="h-7 text-xs"
+                    />
+                    <span className="text-xs">%</span>
+                  </div>
+                  <Input
+                    value={dropSet.reps}
+                    onChange={(e) => updateDropSet(index, setIndex, "reps", e.target.value)}
+                    className="h-7 text-xs"
+                    placeholder="10"
+                  />
+                  {exercise.drop_sets!.length > 2 && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeDropSet(index, setIndex);
+                      }}
+                      className="h-6 w-6 text-destructive"
+                    >
+                      <Minus className="h-3 w-3" />
+                    </Button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Cluster sets configuration */}
+        {clusterMode && exercise.cluster_sets && (
+          <div className="mt-2 space-y-2 bg-muted/50 p-3 rounded-lg">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium">
+                {exercise.method === "cluster" && "Cluster - Mini-séries avec micro-repos"}
+                {exercise.method === "rest_pause" && "Rest-Pause - Séries à l'échec avec pauses"}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  addClusterSet(index);
+                }}
+                className="h-6 text-xs"
+              >
+                <Plus className="h-3 w-3 mr-1" />
+                Mini-série
+              </Button>
+            </div>
+            
+            <div className="space-y-1">
+              <div className="grid grid-cols-4 gap-2 text-xs text-muted-foreground font-medium mb-1">
+                <span>Mini-série</span>
+                <span>Reps</span>
+                <span>Micro-repos</span>
+                <span></span>
+              </div>
+              {exercise.cluster_sets.map((clusterSet, setIndex) => (
+                <div key={setIndex} className="grid grid-cols-4 gap-2 items-center bg-background/50 p-2 rounded">
+                  <span className="text-xs font-medium">#{setIndex + 1}</span>
+                  <Input
+                    type="number"
+                    value={clusterSet.reps}
+                    onChange={(e) => updateClusterSet(index, setIndex, "reps", parseInt(e.target.value) || 1)}
+                    className="h-7 text-xs"
+                  />
+                  <div className="flex items-center gap-1">
+                    <Input
+                      type="number"
+                      value={clusterSet.rest_seconds}
+                      onChange={(e) => updateClusterSet(index, setIndex, "rest_seconds", parseInt(e.target.value) || 0)}
+                      className="h-7 text-xs"
+                    />
+                    <span className="text-xs">s</span>
+                  </div>
+                  {exercise.cluster_sets!.length > 2 && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeClusterSet(index, setIndex);
+                      }}
+                      className="h-6 w-6 text-destructive"
+                    >
+                      <Minus className="h-3 w-3" />
+                    </Button>
+                  )}
+                </div>
+              ))}
+            </div>
+            
+            <div className="grid grid-cols-2 gap-2 pt-2 border-t">
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">%1RM</label>
+                <Input
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={exercise.percentage_1rm || ""}
+                  onChange={(e) =>
+                    updateExercise(
+                      index,
+                      "percentage_1rm",
+                      e.target.value ? parseInt(e.target.value) : null
+                    )
+                  }
+                  placeholder="85"
+                  className="h-8 text-sm"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">Repos final (s)</label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={exercise.rest_seconds}
+                  onChange={(e) =>
+                    updateExercise(index, "rest_seconds", parseInt(e.target.value) || 0)
+                  }
+                  className="h-8 text-sm"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Tempo field */}
+        {!exercise.is_rm_test && (
+          <div className="flex items-center gap-2 pt-2 border-t">
+            <label className="text-xs text-muted-foreground">Tempo</label>
+            <Input
+              value={exercise.tempo || ""}
+              onChange={(e) => updateExercise(index, "tempo", e.target.value)}
+              placeholder="3-1-2-0"
+              className="h-7 text-xs w-24"
+            />
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // Render a group of exercises with colored container
+  const renderExerciseGroup = (group: ExerciseGroup) => {
+    if (!group.groupId) {
+      // Single ungrouped exercise
+      const { exercise, index } = group.exercises[0];
+      return (
+        <div key={`single-${index}`}>
+          {renderExerciseCard(exercise, index, false)}
+        </div>
+      );
+    }
+
+    // Grouped exercises with colored container
+    const styleConfig = getTrainingStyleConfig(group.method);
+    const maxExercises = getMaxExercisesForMethod(group.method);
+    const lastExercise = group.exercises[group.exercises.length - 1];
+
+    return (
+      <div
+        key={group.groupId}
+        className={cn(
+          "rounded-xl border-2 p-4 space-y-3",
+          styleConfig.borderColor,
+          styleConfig.bgColor
+        )}
+      >
+        {/* Group header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Badge className={cn("text-white text-sm px-3 py-1", styleConfig.color)}>
+              {styleConfig.label}
+            </Badge>
+            <span className="text-sm font-medium text-muted-foreground">
+              {group.exercises.length}/{maxExercises} exercices
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-7 w-7">
+                    <Info className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-xs">
+                  <p className="text-xs">{styleConfig.description}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => unlinkGroup(group.groupId!)}
+              className="h-7 text-xs"
+            >
+              <Unlink className="h-3 w-3 mr-1" />
+              Annuler
+            </Button>
+          </div>
+        </div>
+
+        {/* Group exercises */}
+        <div className="space-y-2">
+          {group.exercises.map(({ exercise, index }, i) => (
+            <div key={exercise.id}>
+              {renderExerciseCard(exercise, index, true, i + 1)}
+            </div>
+          ))}
+        </div>
+
+        {/* Group completion message */}
+        {group.exercises.length >= 2 && (
+          <div className="flex items-center justify-center gap-2 text-sm text-green-600 dark:text-green-400 pt-2">
+            <Check className="h-4 w-4" />
+            Bloc complet ! Configurez les paramètres puis validez.
+          </div>
+        )}
+
+        {/* Rest after group */}
+        <div className="flex items-center gap-3 pt-2 border-t border-border/50">
+          <label className="text-xs text-muted-foreground">Repos après le bloc (s)</label>
+          <Input
+            type="number"
+            min={0}
+            value={lastExercise.exercise.rest_seconds}
+            onChange={(e) =>
+              updateExercise(lastExercise.index, "rest_seconds", parseInt(e.target.value) || 0)
+            }
+            className="h-8 text-sm w-24"
+          />
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div
@@ -468,26 +1124,32 @@ export function ProgramSessionCard({
 
       {/* Linking mode indicator */}
       {linkingFrom && (
-        <div className="p-3 bg-primary/10 border-b space-y-2">
+        <div className={cn(
+          "p-3 border-b space-y-2",
+          getTrainingStyleConfig(linkingFrom.method).bgColor
+        )}>
           <div className="flex items-center justify-between">
-            <span className="text-sm text-primary font-medium">
-              Mode liaison: {getMethodLabel(linkingFrom.method)}
-            </span>
-            <span className="text-xs text-muted-foreground">
-              {selectedForLinking.length}/{linkingFrom.maxCount} exercices
-            </span>
+            <div className="flex items-center gap-2">
+              <Badge className={cn("text-white", getTrainingStyleConfig(linkingFrom.method).color)}>
+                {getMethodLabel(linkingFrom.method)}
+              </Badge>
+              <span className="text-sm font-medium">
+                {selectedForLinking.length}/{linkingFrom.maxCount} exercices
+              </span>
+            </div>
           </div>
           <p className="text-xs text-muted-foreground">
-            Cliquez sur les exercices à lier (max {linkingFrom.maxCount})
+            Cliquez sur les exercices à lier ensemble (max {linkingFrom.maxCount})
           </p>
           <div className="flex gap-2">
             <Button
               size="sm"
               onClick={confirmLinking}
               disabled={selectedForLinking.length < 2}
+              className={cn("text-white", getTrainingStyleConfig(linkingFrom.method).color)}
             >
               <Link2 className="h-3 w-3 mr-1" />
-              Lier ({selectedForLinking.length})
+              Valider le bloc
             </Button>
             <Button variant="outline" size="sm" onClick={cancelLinking}>
               Annuler
@@ -497,627 +1159,13 @@ export function ProgramSessionCard({
       )}
 
       {/* Exercises */}
-      <div className="p-3 space-y-2 min-h-[80px]">
+      <div className="p-3 space-y-3 min-h-[80px]">
         {session.exercises.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-4">
             Glissez des exercices ici
           </p>
         ) : (
-          session.exercises.map((exercise, index) => {
-            const groupInfo = getGroupInfo(exercise);
-            const isGrouped = !!exercise.group_id;
-            const showConnector = isGrouped && exercise.group_order && exercise.group_order > 1;
-            const isInDropMode = isDropMethod(exercise.method);
-            const isInClusterMode = isClusterMethod(exercise.method);
-            const isSelected = selectedForLinking.includes(index);
-            const styleConfig = getTrainingStyleConfig(exercise.method);
-
-            // Get dynamic styling based on method
-            const getExerciseStyle = () => {
-              if (isGrouped) {
-                return cn(
-                  "border-2",
-                  styleConfig.borderColor,
-                  styleConfig.bgColor
-                );
-              }
-              if (linkingFrom && isLinkable(index)) {
-                const linkStyle = getTrainingStyleConfig(linkingFrom.method);
-                return isSelected
-                  ? cn("border-2", linkStyle.borderColor, linkStyle.bgColor)
-                  : cn("border-2 border-dashed", linkStyle.borderColor, "hover:opacity-80");
-              }
-              if (exercise.is_rm_test) {
-                return "border-amber-500/50 bg-amber-50 dark:bg-amber-950/20";
-              }
-              if (isInDropMode || isInClusterMode) {
-                return cn("border", styleConfig.borderColor, styleConfig.bgColor);
-              }
-              return "bg-muted/30 border-border";
-            };
-
-            return (
-              <div key={exercise.id} className="relative">
-                {/* Connector for grouped exercises */}
-                {showConnector && (
-                  <div className="flex items-center gap-2 py-1 ml-4">
-                    <div className={cn("w-0.5 h-4 -mt-3", styleConfig.color || "bg-primary")} />
-                    <span className={cn("text-xs font-medium", styleConfig.color ? "opacity-80" : "text-primary")}>
-                      + enchaîné (pas de repos)
-                    </span>
-                  </div>
-                )}
-
-                <div
-                  className={cn(
-                    "flex flex-col gap-2 p-3 rounded-lg border transition-all cursor-pointer",
-                    getExerciseStyle()
-                  )}
-                  onClick={() => {
-                    if (linkingFrom && isLinkable(index)) {
-                      toggleExerciseForLinking(index);
-                    }
-                  }}
-                >
-                  {/* Exercise header */}
-                  <div className="flex items-center gap-2">
-                    <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab" />
-                    <span className="font-medium flex-1">{exercise.exercise_name}</span>
-
-                    {exercise.is_rm_test && (
-                      <Badge className="bg-amber-500 text-white text-xs">
-                        <FlaskConical className="h-3 w-3 mr-1" />
-                        Test: {getTestTypeLabel(exercise.rm_test_type || "")}
-                      </Badge>
-                    )}
-
-                    {isGrouped && (
-                      <>
-                        <Badge className={cn("text-white text-xs", styleConfig.color || "bg-primary")}>
-                          {getMethodLabel(exercise.method)} ({groupInfo?.total})
-                        </Badge>
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-6 w-6"
-                              >
-                                <Info className="h-3 w-3" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent side="top" className="max-w-xs">
-                              <p className="text-xs">{styleConfig.description}</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            unlinkExercise(exercise);
-                          }}
-                          className="h-6 px-2"
-                        >
-                          <Unlink className="h-3 w-3 mr-1" />
-                          Délier
-                        </Button>
-                      </>
-                    )}
-
-                    {(isInDropMode || isInClusterMode) && !isGrouped && (
-                      <Badge className={cn("text-white text-xs", styleConfig.color || "bg-primary")}>
-                        {getMethodLabel(exercise.method)}
-                      </Badge>
-                    )}
-
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        deleteExercise(index);
-                      }}
-                      className="h-6 w-6 text-destructive hover:text-destructive"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-
-                  {/* RM Test toggle */}
-                  <div className="flex items-center gap-4 border-b pb-2">
-                    <div className="flex items-center gap-2">
-                      <Checkbox
-                        id={`rm-test-${exercise.id}`}
-                        checked={exercise.is_rm_test || false}
-                        onCheckedChange={(checked) => toggleRmTest(index, !!checked)}
-                      />
-                      <Label htmlFor={`rm-test-${exercise.id}`} className="text-xs cursor-pointer">
-                        Test RM
-                      </Label>
-                    </div>
-                    {exercise.is_rm_test && (
-                      <Select
-                        value={exercise.rm_test_type || "squat_1rm"}
-                        onValueChange={(v) => setTestType(index, v)}
-                      >
-                        <SelectTrigger className="h-7 w-48 text-xs">
-                          <SelectValue placeholder="Choisir un test..." />
-                        </SelectTrigger>
-                        <SelectContent className="max-h-80">
-                          {TEST_CATEGORIES.map((category) => (
-                            <SelectGroup key={category.value}>
-                              <SelectLabel className="text-xs font-semibold bg-muted/50">
-                                {category.label}
-                              </SelectLabel>
-                              {category.tests.map((test) => (
-                                <SelectItem key={test.value} value={test.value} className="text-xs">
-                                  {test.label} {test.unit && `(${test.unit})`}
-                                </SelectItem>
-                              ))}
-                            </SelectGroup>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                  </div>
-
-                  {/* Exercise parameters */}
-                  {!exercise.is_rm_test && (
-                    <>
-                      {/* Check if this is an erg exercise */}
-                      {isErgCategory(exercise.exercise_category || "") ? (
-                        // Erg-specific inputs
-                        <div className="grid grid-cols-6 gap-2">
-                          <div className="space-y-1">
-                            <label className="text-xs text-muted-foreground">Temps (s)</label>
-                            <Input
-                              type="number"
-                              min={0}
-                              value={exercise.erg_data?.duration_seconds || ""}
-                              onChange={(e) =>
-                                updateExercise(index, "erg_data", {
-                                  ...exercise.erg_data,
-                                  duration_seconds: e.target.value ? parseInt(e.target.value) : undefined,
-                                })
-                              }
-                              placeholder="300"
-                              className="h-8 text-sm"
-                            />
-                          </div>
-
-                          <div className="space-y-1">
-                            <label className="text-xs text-muted-foreground">Distance (m)</label>
-                            <Input
-                              type="number"
-                              min={0}
-                              value={exercise.erg_data?.distance_meters || ""}
-                              onChange={(e) =>
-                                updateExercise(index, "erg_data", {
-                                  ...exercise.erg_data,
-                                  distance_meters: e.target.value ? parseInt(e.target.value) : undefined,
-                                })
-                              }
-                              placeholder="2000"
-                              className="h-8 text-sm"
-                            />
-                          </div>
-
-                          <div className="space-y-1">
-                            <label className="text-xs text-muted-foreground">Calories</label>
-                            <Input
-                              type="number"
-                              min={0}
-                              value={exercise.erg_data?.calories || ""}
-                              onChange={(e) =>
-                                updateExercise(index, "erg_data", {
-                                  ...exercise.erg_data,
-                                  calories: e.target.value ? parseInt(e.target.value) : undefined,
-                                })
-                              }
-                              placeholder="50"
-                              className="h-8 text-sm"
-                            />
-                          </div>
-
-                          <div className="space-y-1">
-                            <label className="text-xs text-muted-foreground">Watts</label>
-                            <Input
-                              type="number"
-                              min={0}
-                              value={exercise.erg_data?.watts || ""}
-                              onChange={(e) =>
-                                updateExercise(index, "erg_data", {
-                                  ...exercise.erg_data,
-                                  watts: e.target.value ? parseInt(e.target.value) : undefined,
-                                })
-                              }
-                              placeholder="150"
-                              className="h-8 text-sm"
-                            />
-                          </div>
-
-                          <div className="space-y-1">
-                            <label className="text-xs text-muted-foreground">RPM</label>
-                            <Input
-                              type="number"
-                              min={0}
-                              value={exercise.erg_data?.rpm || ""}
-                              onChange={(e) =>
-                                updateExercise(index, "erg_data", {
-                                  ...exercise.erg_data,
-                                  rpm: e.target.value ? parseInt(e.target.value) : undefined,
-                                })
-                              }
-                              placeholder="80"
-                              className="h-8 text-sm"
-                            />
-                          </div>
-
-                          {/* Show stroke rate only for rower */}
-                          {(exercise.exercise_category === "rowerg" || exercise.exercise_name.toLowerCase().includes("row")) && (
-                            <div className="space-y-1">
-                              <label className="text-xs text-muted-foreground">Stroke/min</label>
-                              <Input
-                                type="number"
-                                min={0}
-                                value={exercise.erg_data?.stroke_rate || ""}
-                                onChange={(e) =>
-                                  updateExercise(index, "erg_data", {
-                                    ...exercise.erg_data,
-                                    stroke_rate: e.target.value ? parseInt(e.target.value) : undefined,
-                                  })
-                                }
-                                placeholder="28"
-                                className="h-8 text-sm"
-                              />
-                            </div>
-                          )}
-
-                          {/* Rest for erg exercises */}
-                          <div className="space-y-1">
-                            <label className="text-xs text-muted-foreground">Repos (s)</label>
-                            <Input
-                              type="number"
-                              min={0}
-                              value={exercise.rest_seconds}
-                              onChange={(e) =>
-                                updateExercise(
-                                  index,
-                                  "rest_seconds",
-                                  parseInt(e.target.value) || 0
-                                )
-                              }
-                              className="h-8 text-sm"
-                            />
-                          </div>
-                        </div>
-                      ) : (
-                        // Standard sets/reps inputs
-                        <div className="grid grid-cols-6 gap-2">
-                          <div className="space-y-1 col-span-2">
-                            <label className="text-xs text-muted-foreground">Méthode</label>
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <div>
-                                    <Select
-                                      value={exercise.method}
-                                      onValueChange={(value) => {
-                                        if (LINKABLE_METHODS.includes(value)) {
-                                          startLinking(index, value);
-                                        } else if (DROP_METHODS.includes(value)) {
-                                          initDropSets(index, value);
-                                        } else if (value === "cluster") {
-                                          initClusterSets(index);
-                                        } else {
-                                          updateMultipleFields(index, {
-                                            method: value,
-                                            drop_sets: undefined,
-                                            cluster_sets: undefined,
-                                          });
-                                        }
-                                      }}
-                                    >
-                                      <SelectTrigger className="h-8 text-xs">
-                                        <SelectValue />
-                                      </SelectTrigger>
-                                      <SelectContent className="max-h-80">
-                                        {TRAINING_STYLES.map((style) => (
-                                          <SelectItem key={style.value} value={style.value}>
-                                            <div className="flex items-center gap-2">
-                                              {style.color && (
-                                                <div className={cn("w-2 h-2 rounded-full", style.color)} />
-                                              )}
-                                              <span>{style.label}</span>
-                                            </div>
-                                          </SelectItem>
-                                        ))}
-                                      </SelectContent>
-                                    </Select>
-                                  </div>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>{getMethodDescription(exercise.method)}</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                          </div>
-
-                          {!isInDropMode && !isInClusterMode && (
-                            <>
-                              <div className="space-y-1">
-                                <label className="text-xs text-muted-foreground">Séries</label>
-                                <Input
-                                  type="number"
-                                  min={1}
-                                  value={exercise.sets}
-                                  onChange={(e) =>
-                                    updateExercise(index, "sets", parseInt(e.target.value) || 1)
-                                  }
-                                  className="h-8 text-sm"
-                                />
-                              </div>
-
-                              <div className="space-y-1">
-                                <label className="text-xs text-muted-foreground">Reps</label>
-                                <Input
-                                  value={exercise.reps}
-                                  onChange={(e) => updateExercise(index, "reps", e.target.value)}
-                                  placeholder="10"
-                                  className="h-8 text-sm"
-                                />
-                              </div>
-
-                              <div className="space-y-1">
-                                <label className="text-xs text-muted-foreground">%1RM</label>
-                                <Input
-                                  type="number"
-                                  min={0}
-                                  max={100}
-                                  value={exercise.percentage_1rm || ""}
-                                  onChange={(e) =>
-                                    updateExercise(
-                                      index,
-                                      "percentage_1rm",
-                                      e.target.value ? parseInt(e.target.value) : null
-                                    )
-                                  }
-                                  placeholder="75"
-                                  className="h-8 text-sm"
-                                />
-                              </div>
-                            </>
-                          )}
-
-                          {/* Show rest only on last exercise of group or for non-grouped */}
-                          {(!isGrouped || groupInfo?.isLast) && (
-                            <div className="space-y-1">
-                              <label className="text-xs text-muted-foreground">
-                                Repos{isGrouped ? " bloc" : ""} (s)
-                              </label>
-                              <Input
-                                type="number"
-                                min={0}
-                                value={exercise.rest_seconds}
-                                onChange={(e) =>
-                                  updateExercise(
-                                    index,
-                                    "rest_seconds",
-                                    parseInt(e.target.value) || 0
-                                  )
-                                }
-                                className="h-8 text-sm"
-                              />
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </>
-                  )}
-
-                  {/* Drop sets / Pyramid configuration */}
-                  {isInDropMode && exercise.drop_sets && (
-                    <div className="mt-2 space-y-2 bg-orange-50 dark:bg-orange-950/20 p-3 rounded-lg">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium">
-                          {exercise.method === "dropset" && "Drop Set - Même reps, charge décroissante"}
-                          {exercise.method === "pyramid_up" && "Pyramide Montante - ↑ charge, ↓ reps"}
-                          {exercise.method === "pyramid_down" && "Pyramide Descendante - ↓ charge, ↑ reps"}
-                        </span>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            addDropSet(index);
-                          }}
-                          className="h-6 text-xs"
-                        >
-                          <Plus className="h-3 w-3 mr-1" />
-                          Série
-                        </Button>
-                      </div>
-                      
-                      <div className="space-y-1">
-                        <div className="grid grid-cols-4 gap-2 text-xs text-muted-foreground font-medium mb-1">
-                          <span>Set</span>
-                          <span>% 1RM</span>
-                          <span>Reps</span>
-                          <span></span>
-                        </div>
-                        {exercise.drop_sets.map((dropSet, setIndex) => (
-                          <div key={setIndex} className="grid grid-cols-4 gap-2 items-center bg-background/50 p-2 rounded">
-                            <span className="text-xs font-medium">Set {setIndex + 1}</span>
-                            <div className="flex items-center gap-1">
-                              <Input
-                                type="number"
-                                value={dropSet.percentage}
-                                onChange={(e) => updateDropSet(index, setIndex, "percentage", parseInt(e.target.value) || 0)}
-                                className="h-7 text-xs"
-                              />
-                              <span className="text-xs">%</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Input
-                                value={dropSet.reps}
-                                onChange={(e) => updateDropSet(index, setIndex, "reps", e.target.value)}
-                                className="h-7 text-xs"
-                                placeholder="10"
-                              />
-                            </div>
-                            {exercise.drop_sets!.length > 2 && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  removeDropSet(index, setIndex);
-                                }}
-                                className="h-6 w-6 text-destructive"
-                              >
-                                <Minus className="h-3 w-3" />
-                              </Button>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Cluster sets configuration */}
-                  {isInClusterMode && exercise.cluster_sets && (
-                    <div className="mt-2 space-y-2 bg-blue-50 dark:bg-blue-950/20 p-3 rounded-lg">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium">
-                          Cluster - Mini-séries avec micro-repos (10-20s)
-                        </span>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            addClusterSet(index);
-                          }}
-                          className="h-6 text-xs"
-                        >
-                          <Plus className="h-3 w-3 mr-1" />
-                          Mini-série
-                        </Button>
-                      </div>
-                      
-                      <div className="space-y-1">
-                        <div className="grid grid-cols-4 gap-2 text-xs text-muted-foreground font-medium mb-1">
-                          <span>Mini-série</span>
-                          <span>Reps</span>
-                          <span>Micro-repos</span>
-                          <span></span>
-                        </div>
-                        {exercise.cluster_sets.map((clusterSet, setIndex) => (
-                          <div key={setIndex} className="grid grid-cols-4 gap-2 items-center bg-background/50 p-2 rounded">
-                            <span className="text-xs font-medium">#{setIndex + 1}</span>
-                            <Input
-                              type="number"
-                              value={clusterSet.reps}
-                              onChange={(e) => updateClusterSet(index, setIndex, "reps", parseInt(e.target.value) || 1)}
-                              className="h-7 text-xs"
-                            />
-                            <div className="flex items-center gap-1">
-                              <Input
-                                type="number"
-                                value={clusterSet.rest_seconds}
-                                onChange={(e) => updateClusterSet(index, setIndex, "rest_seconds", parseInt(e.target.value) || 0)}
-                                className="h-7 text-xs"
-                              />
-                              <span className="text-xs">s</span>
-                            </div>
-                            {exercise.cluster_sets!.length > 2 && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  removeClusterSet(index, setIndex);
-                                }}
-                                className="h-6 w-6 text-destructive"
-                              >
-                                <Minus className="h-3 w-3" />
-                              </Button>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                      
-                      {/* %1RM and final rest for cluster */}
-                      <div className="grid grid-cols-2 gap-2 pt-2 border-t">
-                        <div className="space-y-1">
-                          <label className="text-xs text-muted-foreground">%1RM</label>
-                          <Input
-                            type="number"
-                            min={0}
-                            max={100}
-                            value={exercise.percentage_1rm || ""}
-                            onChange={(e) =>
-                              updateExercise(
-                                index,
-                                "percentage_1rm",
-                                e.target.value ? parseInt(e.target.value) : null
-                              )
-                            }
-                            placeholder="85"
-                            className="h-8 text-sm"
-                          />
-                        </div>
-                        <div className="space-y-1">
-                          <label className="text-xs text-muted-foreground">Repos final (s)</label>
-                          <Input
-                            type="number"
-                            min={0}
-                            value={exercise.rest_seconds}
-                            onChange={(e) =>
-                              updateExercise(
-                                index,
-                                "rest_seconds",
-                                parseInt(e.target.value) || 0
-                              )
-                            }
-                            className="h-8 text-sm"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Tempo field */}
-                  {!exercise.is_rm_test && (
-                    <div className="flex items-center gap-2 pt-2 border-t">
-                      <label className="text-xs text-muted-foreground">Tempo</label>
-                      <Input
-                        value={exercise.tempo || ""}
-                        onChange={(e) => updateExercise(index, "tempo", e.target.value)}
-                        placeholder="3-1-2-0"
-                        className="h-7 text-xs w-24"
-                      />
-                    </div>
-                  )}
-                </div>
-
-                {/* Rest indicator for grouped exercises */}
-                {isGrouped && groupInfo?.isLast && (
-                  <div className="flex items-center gap-2 mt-2 ml-4">
-                    <Badge variant="secondary" className="bg-primary/10 text-primary">
-                      Repos {exercise.rest_seconds}s
-                    </Badge>
-                    <span className="text-xs text-muted-foreground">
-                      après le bloc de {groupInfo.total} exercices
-                    </span>
-                  </div>
-                )}
-              </div>
-            );
-          })
+          exerciseGroups.map((group) => renderExerciseGroup(group))
         )}
       </div>
     </div>

@@ -337,6 +337,9 @@ export const DROP_METHODS = ["drop_set", "pyramid_up", "pyramid_down", "pyramid_
 // Methods that use cluster sets configuration
 export const CLUSTER_METHODS = ["cluster", "rest_pause"];
 
+// Special methods with specific UI (e.g., Tabata, 5x5)
+export const SPECIAL_METHODS = ["five_by_five", "tabata", "death_by", "super_pletnev", "isometric_overcoming", "isometric_yielding"];
+
 // Get method by value
 export const isLinkableMethod = (method: string): boolean => LINKABLE_METHODS.includes(method);
 export const isDropMethod = (method: string): boolean => DROP_METHODS.includes(method);
