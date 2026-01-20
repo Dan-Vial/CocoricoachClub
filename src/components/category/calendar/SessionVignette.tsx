@@ -64,42 +64,25 @@ export function SessionVignette({
   return (
     <div
       ref={setNodeRef}
-      style={style}
+      style={{
+        ...style,
+        zIndex: isHovered ? 50 : undefined,
+      }}
       className={cn(
         "relative group",
-        isDragging && "opacity-50"
+        isDragging && "opacity-50",
+        isHovered && "z-50"
       )}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Main Session Block */}
-      <div
-        {...(isDraggable && !isViewer ? { ...attributes, ...listeners } : {})}
-        className={cn(
-          "rounded-lg px-2 py-1.5 text-white text-[11px] font-medium cursor-pointer transition-all",
-          bgColor,
-          isDraggable && !isViewer && "cursor-grab active:cursor-grabbing",
-          isDragging && "shadow-lg ring-2 ring-primary/50"
-        )}
-      >
-        <div className="flex items-center gap-1.5">
-          {startTime && (
-            <>
-              <span className="font-bold">{startTime}</span>
-              <span className="opacity-70">•</span>
-            </>
-          )}
-          <span className="truncate opacity-90">{label}</span>
-        </div>
-      </div>
-
-      {/* Hover Actions Overlay */}
+      {/* Hover Actions Overlay - positioned ABOVE the session */}
       {isHovered && !isDragging && (
         <div 
-          className="absolute left-0 right-0 -bottom-1 translate-y-full z-20 animate-fade-in"
+          className="absolute left-0 right-0 bottom-full mb-1 z-[100] animate-fade-in"
           onMouseEnter={() => setIsHovered(true)}
         >
-          <div className="bg-card/95 backdrop-blur-sm rounded-lg shadow-lg border border-border/50 p-1.5 flex items-center justify-center gap-1">
+          <div className="bg-card border border-border rounded-lg shadow-xl p-1.5 flex items-center justify-center gap-1">
             {/* Preview */}
             <button
               onClick={(e) => handleActionClick(e, onPreview)}
@@ -144,6 +127,27 @@ export function SessionVignette({
           </div>
         </div>
       )}
+
+      {/* Main Session Block */}
+      <div
+        {...(isDraggable && !isViewer ? { ...attributes, ...listeners } : {})}
+        className={cn(
+          "rounded-lg px-2 py-1.5 text-white text-[11px] font-medium cursor-pointer transition-all",
+          bgColor,
+          isDraggable && !isViewer && "cursor-grab active:cursor-grabbing",
+          isDragging && "shadow-lg ring-2 ring-primary/50"
+        )}
+      >
+        <div className="flex items-center gap-1.5">
+          {startTime && (
+            <>
+              <span className="font-bold">{startTime}</span>
+              <span className="opacity-70">•</span>
+            </>
+          )}
+          <span className="truncate opacity-90">{label}</span>
+        </div>
+      </div>
     </div>
   );
 }
