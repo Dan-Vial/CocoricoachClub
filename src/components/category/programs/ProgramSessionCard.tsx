@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { X, GripVertical, Link2, Unlink, Plus, Minus, FlaskConical, ChevronDown } from "lucide-react";
+import { X, GripVertical, Link2, Unlink, Plus, Minus, FlaskConical, ChevronDown, Info } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -28,6 +28,18 @@ import {
 } from "@/components/ui/collapsible";
 import { TEST_CATEGORIES, getTestLabel } from "@/lib/constants/testCategories";
 import { isErgCategory } from "@/lib/constants/exerciseCategories";
+import { cn } from "@/lib/utils";
+import {
+  TRAINING_STYLES,
+  getTrainingStyleConfig,
+  isLinkableMethod,
+  isDropMethod,
+  isClusterMethod,
+  getMaxExercisesForMethod,
+  LINKABLE_METHODS,
+  DROP_METHODS,
+  CLUSTER_METHODS,
+} from "@/lib/constants/trainingStyles";
 
 interface DropSet {
   reps: string;
@@ -87,21 +99,6 @@ interface ProgramSessionCardProps {
   onDelete: () => void;
   canDelete: boolean;
 }
-
-const EXERCISE_METHODS = [
-  { value: "normal", label: "Normal", description: "Exécution classique" },
-  { value: "biset", label: "Biset (2)", description: "2 exercices enchaînés sans repos" },
-  { value: "superset", label: "Superset (2)", description: "2 exercices enchaînés sans repos (agoniste/antagoniste)" },
-  { value: "triset", label: "Triset (3)", description: "3 exercices enchaînés sans repos" },
-  { value: "giant_set", label: "Giant Set (4+)", description: "4+ exercices enchaînés sans repos" },
-  { value: "dropset", label: "Drop Set", description: "Séries avec réduction de charge sans repos" },
-  { value: "pyramid_up", label: "Pyramide ↑", description: "Charge augmente, reps diminuent" },
-  { value: "pyramid_down", label: "Pyramide ↓", description: "Charge diminue, reps augmentent" },
-  { value: "cluster", label: "Cluster", description: "Mini-séries avec micro-repos (10-20s)" },
-];
-
-const LINKABLE_METHODS = ["biset", "superset", "triset", "giant_set"];
-const DROP_METHODS = ["dropset", "pyramid_up", "pyramid_down"];
 
 const DAYS_OF_WEEK = [
   { value: 1, label: "Lun" },
@@ -399,11 +396,11 @@ export function ProgramSessionCard({
   };
 
   const getMethodLabel = (method: string) => {
-    return EXERCISE_METHODS.find((m) => m.value === method)?.label || method;
+    return getTrainingStyleConfig(method).label || method;
   };
 
   const getMethodDescription = (method: string) => {
-    return EXERCISE_METHODS.find((m) => m.value === method)?.description || "";
+    return getTrainingStyleConfig(method).description || "";
   };
 
   const getGroupInfo = (exercise: ProgramExercise) => {
@@ -513,29 +510,49 @@ export function ProgramSessionCard({
             const isInDropMode = isDropMethod(exercise.method);
             const isInClusterMode = isClusterMethod(exercise.method);
             const isSelected = selectedForLinking.includes(index);
+            const styleConfig = getTrainingStyleConfig(exercise.method);
+
+            // Get dynamic styling based on method
+            const getExerciseStyle = () => {
+              if (isGrouped) {
+                return cn(
+                  "border-2",
+                  styleConfig.borderColor,
+                  styleConfig.bgColor
+                );
+              }
+              if (linkingFrom && isLinkable(index)) {
+                const linkStyle = getTrainingStyleConfig(linkingFrom.method);
+                return isSelected
+                  ? cn("border-2", linkStyle.borderColor, linkStyle.bgColor)
+                  : cn("border-2 border-dashed", linkStyle.borderColor, "hover:opacity-80");
+              }
+              if (exercise.is_rm_test) {
+                return "border-amber-500/50 bg-amber-50 dark:bg-amber-950/20";
+              }
+              if (isInDropMode || isInClusterMode) {
+                return cn("border", styleConfig.borderColor, styleConfig.bgColor);
+              }
+              return "bg-muted/30 border-border";
+            };
 
             return (
               <div key={exercise.id} className="relative">
                 {/* Connector for grouped exercises */}
                 {showConnector && (
                   <div className="flex items-center gap-2 py-1 ml-4">
-                    <div className="w-0.5 h-4 bg-primary -mt-3" />
-                    <span className="text-xs text-primary font-medium">+ enchaîné (pas de repos)</span>
+                    <div className={cn("w-0.5 h-4 -mt-3", styleConfig.color || "bg-primary")} />
+                    <span className={cn("text-xs font-medium", styleConfig.color ? "opacity-80" : "text-primary")}>
+                      + enchaîné (pas de repos)
+                    </span>
                   </div>
                 )}
 
                 <div
-                  className={`flex flex-col gap-2 p-3 rounded-lg border transition-all cursor-pointer ${
-                    isGrouped 
-                      ? "border-primary/50 bg-primary/5" 
-                      : linkingFrom && isLinkable(index)
-                        ? isSelected
-                          ? "border-primary border-2 bg-primary/20"
-                          : "border-primary border-dashed hover:bg-primary/10"
-                        : exercise.is_rm_test
-                          ? "border-orange-500/50 bg-orange-50 dark:bg-orange-950/20"
-                          : "bg-muted/30"
-                  }`}
+                  className={cn(
+                    "flex flex-col gap-2 p-3 rounded-lg border transition-all cursor-pointer",
+                    getExerciseStyle()
+                  )}
                   onClick={() => {
                     if (linkingFrom && isLinkable(index)) {
                       toggleExerciseForLinking(index);
@@ -548,7 +565,7 @@ export function ProgramSessionCard({
                     <span className="font-medium flex-1">{exercise.exercise_name}</span>
 
                     {exercise.is_rm_test && (
-                      <Badge className="bg-orange-500 text-white text-xs">
+                      <Badge className="bg-amber-500 text-white text-xs">
                         <FlaskConical className="h-3 w-3 mr-1" />
                         Test: {getTestTypeLabel(exercise.rm_test_type || "")}
                       </Badge>
@@ -556,9 +573,25 @@ export function ProgramSessionCard({
 
                     {isGrouped && (
                       <>
-                        <Badge className="bg-primary/20 text-primary text-xs">
+                        <Badge className={cn("text-white text-xs", styleConfig.color || "bg-primary")}>
                           {getMethodLabel(exercise.method)} ({groupInfo?.total})
                         </Badge>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6"
+                              >
+                                <Info className="h-3 w-3" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="max-w-xs">
+                              <p className="text-xs">{styleConfig.description}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                         <Button
                           variant="ghost"
                           size="sm"
@@ -575,7 +608,7 @@ export function ProgramSessionCard({
                     )}
 
                     {(isInDropMode || isInClusterMode) && !isGrouped && (
-                      <Badge className="bg-orange-500/20 text-orange-600 text-xs">
+                      <Badge className={cn("text-white text-xs", styleConfig.color || "bg-primary")}>
                         {getMethodLabel(exercise.method)}
                       </Badge>
                     )}
@@ -791,14 +824,14 @@ export function ProgramSessionCard({
                                       <SelectTrigger className="h-8 text-xs">
                                         <SelectValue />
                                       </SelectTrigger>
-                                      <SelectContent>
-                                        {EXERCISE_METHODS.map((method) => (
-                                          <SelectItem key={method.value} value={method.value}>
-                                            <div className="flex flex-col">
-                                              <span>{method.label}</span>
-                                              <span className="text-xs text-muted-foreground">
-                                                {method.description}
-                                              </span>
+                                      <SelectContent className="max-h-80">
+                                        {TRAINING_STYLES.map((style) => (
+                                          <SelectItem key={style.value} value={style.value}>
+                                            <div className="flex items-center gap-2">
+                                              {style.color && (
+                                                <div className={cn("w-2 h-2 rounded-full", style.color)} />
+                                              )}
+                                              <span>{style.label}</span>
                                             </div>
                                           </SelectItem>
                                         ))}
