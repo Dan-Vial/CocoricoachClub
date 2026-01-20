@@ -76,13 +76,33 @@ export function SessionVignette({
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Hover Actions Overlay - positioned ABOVE the session */}
-      {isHovered && !isDragging && (
-        <div 
-          className="absolute left-0 right-0 bottom-full mb-1 z-[100] animate-fade-in"
-          onMouseEnter={() => setIsHovered(true)}
-        >
-          <div className="bg-card border border-border rounded-lg shadow-xl p-1.5 flex items-center justify-center gap-1">
+      {/* Main Session Block */}
+      <div
+        {...(isDraggable && !isViewer ? { ...attributes, ...listeners } : {})}
+        className={cn(
+          "rounded-lg px-2 py-1.5 text-white text-[11px] font-medium cursor-pointer transition-all relative",
+          bgColor,
+          isDraggable && !isViewer && "cursor-grab active:cursor-grabbing",
+          isDragging && "shadow-lg ring-2 ring-primary/50"
+        )}
+      >
+        {/* Session content - hidden when hovered to show actions */}
+        <div className={cn(
+          "flex items-center gap-1.5 transition-opacity",
+          isHovered && !isDragging && "opacity-0"
+        )}>
+          {startTime && (
+            <>
+              <span className="font-bold">{startTime}</span>
+              <span className="opacity-70">•</span>
+            </>
+          )}
+          <span className="truncate opacity-90">{label}</span>
+        </div>
+
+        {/* Hover Actions Overlay - displayed ON the session */}
+        {isHovered && !isDragging && (
+          <div className="absolute inset-0 flex items-center justify-center bg-card/95 rounded-lg z-[100] animate-fade-in">
             {/* Preview */}
             <button
               onClick={(e) => handleActionClick(e, onPreview)}
@@ -125,28 +145,7 @@ export function SessionVignette({
               </button>
             )}
           </div>
-        </div>
-      )}
-
-      {/* Main Session Block */}
-      <div
-        {...(isDraggable && !isViewer ? { ...attributes, ...listeners } : {})}
-        className={cn(
-          "rounded-lg px-2 py-1.5 text-white text-[11px] font-medium cursor-pointer transition-all",
-          bgColor,
-          isDraggable && !isViewer && "cursor-grab active:cursor-grabbing",
-          isDragging && "shadow-lg ring-2 ring-primary/50"
         )}
-      >
-        <div className="flex items-center gap-1.5">
-          {startTime && (
-            <>
-              <span className="font-bold">{startTime}</span>
-              <span className="opacity-70">•</span>
-            </>
-          )}
-          <span className="truncate opacity-90">{label}</span>
-        </div>
       </div>
     </div>
   );
