@@ -21,10 +21,11 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { BarChart3, Check, UserCircle } from "lucide-react";
-import { getStatsForSport, getStatCategories, type StatField } from "@/lib/constants/sportStats";
+import { getStatsForSport, getStatCategories, hasGoalkeeperStats, type StatField } from "@/lib/constants/sportStats";
 import { getSportFieldConfig } from "@/lib/constants/sportPositions";
 import { isIndividualSport } from "@/lib/constants/sportTypes";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 
 interface SportMatchStatsDialogProps {
   open: boolean;
@@ -37,7 +38,9 @@ interface SportMatchStatsDialogProps {
 interface PlayerStats {
   playerId: string;
   playerName: string;
-  [key: string]: string | number;
+  position: string;
+  isGoalkeeper: boolean;
+  [key: string]: string | number | boolean;
 }
 
 export function SportMatchStatsDialog({
@@ -54,10 +57,16 @@ export function SportMatchStatsDialog({
   const [averagePlaySequence, setAveragePlaySequence] = useState<number>(0);
   const queryClient = useQueryClient();
 
-  const sportStats = getStatsForSport(sportType);
-  const statCategories = getStatCategories(sportType);
   const fieldConfig = getSportFieldConfig(sportType);
   const isIndividual = isIndividualSport(sportType);
+  const supportsGoalkeeper = hasGoalkeeperStats(sportType);
+  
+  // Get the currently selected player
+  const selectedPlayer = statsData.find(p => p.playerId === selectedPlayerId);
+  
+  // Get stats based on whether current player is a goalkeeper
+  const sportStats = getStatsForSport(sportType, selectedPlayer?.isGoalkeeper ?? false);
+  const statCategories = getStatCategories(sportType);
 
   // Get match data
   const { data: matchData } = useQuery({
@@ -82,13 +91,13 @@ export function SportMatchStatsDialog({
     }
   }, [matchData]);
 
-  // Get players in the lineup for this match
+  // Get players in the lineup for this match with position
   const { data: lineup } = useQuery({
     queryKey: ["match_lineup", matchId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("match_lineups")
-        .select("player_id, players(id, name)")
+        .select("player_id, position, players(id, name)")
         .eq("match_id", matchId);
       if (error) throw error;
       return data;
@@ -111,21 +120,34 @@ export function SportMatchStatsDialog({
 
   useEffect(() => {
     if (lineup && lineup.length > 0) {
+      // Determine all stats needed for initialization
+      const allStats = [
+        ...getStatsForSport(sportType, false),
+        ...getStatsForSport(sportType, true)
+      ];
+      
       const stats = lineup.map((l) => {
         const existing = existingStats?.find((s) => s.player_id === l.player_id);
         const player = l.players as { id: string; name: string } | null;
+        const position = l.position || "";
+        
+        // Check if player is goalkeeper based on position
+        const isGk = position === "1" || position === "GK" || position.toLowerCase().includes("gardien");
+        
+        // Check if existing stats have goalkeeper marker
+        const existingSportData = (existing as { sport_data?: Record<string, number | boolean> })?.sport_data || {};
+        const wasGoalkeeper = existingSportData.isGoalkeeper === true;
         
         const playerStats: PlayerStats = {
           playerId: l.player_id,
           playerName: player?.name || "Athlète",
+          position: position,
+          isGoalkeeper: wasGoalkeeper || (supportsGoalkeeper && isGk),
         };
 
-        // Get sport_data from existing stats if available
-        const existingSportData = (existing as { sport_data?: Record<string, number> })?.sport_data || {};
-
-        sportStats.forEach(stat => {
+        // Get stats for this player (use all possible stats to not lose data)
+        allStats.forEach(stat => {
           const snakeKey = stat.key.replace(/([A-Z])/g, '_$1').toLowerCase();
-          // First check sport_data, then legacy columns
           const value = existingSportData[stat.key] ?? 
                        existing?.[stat.key as keyof typeof existing] ?? 
                        existing?.[snakeKey as keyof typeof existing] ?? 
@@ -142,7 +164,7 @@ export function SportMatchStatsDialog({
         setSelectedPlayerId(stats[0].playerId);
       }
     }
-  }, [lineup, existingStats, sportStats, selectedPlayerId]);
+  }, [lineup, existingStats, sportType, selectedPlayerId, supportsGoalkeeper]);
 
   const saveStats = useMutation({
     mutationFn: async () => {
@@ -216,11 +238,18 @@ export function SportMatchStatsDialog({
   };
 
   const hasLineup = lineup && lineup.length > 0;
-  const selectedPlayer = statsData.find(p => p.playerId === selectedPlayerId);
+
+  // Toggle goalkeeper status for selected player
+  const toggleGoalkeeper = (playerId: string, isGk: boolean) => {
+    setStatsData((prev) =>
+      prev.map((p) => (p.playerId === playerId ? { ...p, isGoalkeeper: isGk } : p))
+    );
+  };
 
   // Check if a player has any stats entered
   const playerHasStats = (player: PlayerStats) => {
-    return sportStats.some(stat => (player[stat.key] as number) > 0);
+    const stats = getStatsForSport(sportType, player.isGoalkeeper);
+    return stats.some(stat => (player[stat.key] as number) > 0);
   };
 
   if (!hasLineup) {
@@ -276,13 +305,17 @@ export function SportMatchStatsDialog({
             <SelectTrigger className="w-full">
               <SelectValue placeholder={isIndividual ? "Choisir un participant..." : "Choisir un athlète..."} />
             </SelectTrigger>
-            <SelectContent className="z-[200]">
+            <SelectContent className="z-[200] bg-popover">
               {statsData.map((player) => (
-                <SelectItem key={player.playerId} value={player.playerId}>
-                  <div className="flex items-center gap-2">
-                    <span>{player.playerName}</span>
+                <SelectItem 
+                  key={player.playerId} 
+                  value={player.playerId}
+                  textValue={player.playerName}
+                >
+                  <div className="flex items-center gap-2 w-full">
+                    <span className="font-medium">{player.playerName}</span>
                     {playerHasStats(player) && (
-                      <Badge variant="secondary" className="text-xs px-1.5 py-0">
+                      <Badge variant="secondary" className="text-xs px-1.5 py-0 ml-auto">
                         <Check className="h-3 w-3 mr-1" />
                         Stats
                       </Badge>
@@ -294,6 +327,25 @@ export function SportMatchStatsDialog({
           </Select>
         </div>
 
+        {/* Goalkeeper toggle for sports that support it */}
+        {selectedPlayer && supportsGoalkeeper && (
+          <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
+            <div className="flex items-center gap-2">
+              <Label htmlFor="goalkeeper-toggle" className="text-sm font-medium">
+                Mode Gardien / Goal
+              </Label>
+              <Badge variant={selectedPlayer.isGoalkeeper ? "default" : "outline"} className="text-xs">
+                {selectedPlayer.isGoalkeeper ? "Gardien" : "Joueur de champ"}
+              </Badge>
+            </div>
+            <Switch
+              id="goalkeeper-toggle"
+              checked={selectedPlayer.isGoalkeeper}
+              onCheckedChange={(checked) => toggleGoalkeeper(selectedPlayer.playerId, checked)}
+            />
+          </div>
+        )}
+
         {selectedPlayer && (
           <Tabs defaultValue="general" className="w-full">
             <TabsList className={`grid w-full ${statCategories.length === 3 ? 'grid-cols-3' : 'grid-cols-4'}`}>
@@ -302,7 +354,7 @@ export function SportMatchStatsDialog({
               ))}
             </TabsList>
 
-            <ScrollArea className="h-[350px] mt-4">
+            <ScrollArea className="h-[300px] mt-4">
               {statCategories.map(cat => (
                 <TabsContent key={cat.key} value={cat.key} className="space-y-4 mt-0">
                   {cat.key === "general" && !isIndividual && (
@@ -351,8 +403,12 @@ export function SportMatchStatsDialog({
                   )}
                   
                   <div className="p-4 rounded-lg border bg-card">
-                    <h4 className="font-semibold mb-3 text-base text-primary">
-                      {selectedPlayer.playerName} - {cat.label}
+                    <h4 className="font-semibold mb-3 text-base text-primary flex items-center gap-2">
+                      {selectedPlayer.playerName}
+                      {selectedPlayer.isGoalkeeper && supportsGoalkeeper && (
+                        <Badge variant="secondary" className="text-xs">Gardien</Badge>
+                      )}
+                      <span className="text-muted-foreground">- {cat.label}</span>
                     </h4>
                     <div className={`grid ${cat.key === "scoring" ? "grid-cols-4" : "grid-cols-3"} gap-3`}>
                       {sportStats.filter(s => s.category === cat.key).map(stat => renderStatInput(selectedPlayer, stat))}

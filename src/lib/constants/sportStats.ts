@@ -62,7 +62,23 @@ export const FOOTBALL_STATS: StatField[] = [
   { key: "blockedShots", label: "Tirs bloqués", shortLabel: "Bloqués", category: "defense", type: "number" },
   { key: "foulsCommitted", label: "Fautes commises", shortLabel: "Fautes", category: "defense", type: "number" },
   { key: "foulsWon", label: "Fautes subies", shortLabel: "F. subies", category: "defense", type: "number" },
-  { key: "saves", label: "Arrêts (gardien)", shortLabel: "Arrêts", category: "defense", type: "number" },
+];
+
+// Football goalkeeper stats
+export const FOOTBALL_GOALKEEPER_STATS: StatField[] = [
+  { key: "minutesPlayed", label: "Minutes jouées", shortLabel: "Min.", category: "general", type: "number" },
+  { key: "yellowCards", label: "Cartons jaunes", shortLabel: "Jaunes", category: "general", type: "number" },
+  { key: "redCards", label: "Cartons rouges", shortLabel: "Rouges", category: "general", type: "number" },
+  { key: "saves", label: "Arrêts", shortLabel: "Arrêts", category: "scoring", type: "number" },
+  { key: "savePercentage", label: "% Arrêts", shortLabel: "% Arrêts", category: "scoring", type: "number", max: 100 },
+  { key: "goalsAgainst", label: "Buts encaissés", shortLabel: "Buts enc.", category: "scoring", type: "number" },
+  { key: "cleanSheets", label: "Clean sheets", shortLabel: "CS", category: "scoring", type: "number" },
+  { key: "penaltiesSaved", label: "Pénaltys arrêtés", shortLabel: "Pén. arrêtés", category: "defense", type: "number" },
+  { key: "highClaims", label: "Sorties aériennes", shortLabel: "Sorties aér.", category: "defense", type: "number" },
+  { key: "punches", label: "Dégagements poings", shortLabel: "Poings", category: "defense", type: "number" },
+  { key: "throwouts", label: "Relances à la main", shortLabel: "Rel. main", category: "attack", type: "number" },
+  { key: "goalKicks", label: "Relances au pied", shortLabel: "Rel. pied", category: "attack", type: "number" },
+  { key: "passAccuracy", label: "% Passes réussies", shortLabel: "% Passes", category: "attack", type: "number", max: 100 },
 ];
 
 // Handball stats
@@ -86,8 +102,21 @@ export const HANDBALL_STATS: StatField[] = [
   // Individual Stats - Defense
   { key: "steals", label: "Interceptions", shortLabel: "Interc.", category: "defense", type: "number" },
   { key: "blocks", label: "Contres", shortLabel: "Contres", category: "defense", type: "number" },
-  { key: "saves", label: "Arrêts (gardien)", shortLabel: "Arrêts", category: "defense", type: "number" },
-  { key: "savePercentage", label: "% Arrêts", shortLabel: "% Arrêts", category: "defense", type: "number", max: 100 },
+];
+
+// Handball goalkeeper stats
+export const HANDBALL_GOALKEEPER_STATS: StatField[] = [
+  { key: "playingTime", label: "Temps de jeu (min)", shortLabel: "Temps jeu", category: "general", type: "number" },
+  { key: "yellowCards", label: "Cartons jaunes", shortLabel: "Jaunes", category: "general", type: "number" },
+  { key: "redCards", label: "Cartons rouges", shortLabel: "Rouges", category: "general", type: "number" },
+  { key: "twoMinutes", label: "Exclusions 2 min", shortLabel: "2 min", category: "general", type: "number" },
+  { key: "saves", label: "Arrêts", shortLabel: "Arrêts", category: "scoring", type: "number" },
+  { key: "savePercentage", label: "% Arrêts", shortLabel: "% Arrêts", category: "scoring", type: "number", max: 100 },
+  { key: "goalsAgainst", label: "Buts encaissés", shortLabel: "Buts enc.", category: "scoring", type: "number" },
+  { key: "sevenMetersSaved", label: "7m arrêtés", shortLabel: "7m arr.", category: "defense", type: "number" },
+  { key: "fastBreakSaves", label: "Arrêts contre-attaque", shortLabel: "Arr. CA", category: "defense", type: "number" },
+  { key: "goals", label: "Buts marqués", shortLabel: "Buts", category: "attack", type: "number" },
+  { key: "assists", label: "Passes décisives", shortLabel: "Assists", category: "attack", type: "number" },
 ];
 
 // Volleyball stats
@@ -265,7 +294,7 @@ function getBaseSport(sportType: string): string {
   return sportType.toLowerCase();
 }
 
-export function getStatsForSport(sportType: SportType | string): StatField[] {
+export function getStatsForSport(sportType: SportType | string, isGoalkeeper: boolean = false): StatField[] {
   const baseSport = getBaseSport(sportType);
   
   switch (baseSport) {
@@ -273,9 +302,9 @@ export function getStatsForSport(sportType: SportType | string): StatField[] {
     case "xv":
       return RUGBY_STATS;
     case "football":
-      return FOOTBALL_STATS;
+      return isGoalkeeper ? FOOTBALL_GOALKEEPER_STATS : FOOTBALL_STATS;
     case "handball":
-      return HANDBALL_STATS;
+      return isGoalkeeper ? HANDBALL_GOALKEEPER_STATS : HANDBALL_STATS;
     case "volleyball":
       return VOLLEYBALL_STATS;
     case "basketball":
@@ -289,6 +318,12 @@ export function getStatsForSport(sportType: SportType | string): StatField[] {
     default:
       return RUGBY_STATS;
   }
+}
+
+// Check if sport has goalkeeper-specific stats
+export function hasGoalkeeperStats(sportType: SportType | string): boolean {
+  const baseSport = getBaseSport(sportType);
+  return ["football", "handball"].includes(baseSport);
 }
 
 export function getAggregatedStatsForSport(sportType: SportType | string): StatField[] {
