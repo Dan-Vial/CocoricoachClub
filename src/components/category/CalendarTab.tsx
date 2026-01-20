@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar as CalendarIcon, LayoutTemplate, Target } from "lucide-react";
 import { toast } from "sonner";
 import { AddSessionDialog } from "./AddSessionDialog";
-import { EditSessionDialog } from "./EditSessionDialog";
+import { SessionFormDialog } from "./sessions/SessionFormDialog";
 import { AddMatchCalendarDialog } from "./matches/AddMatchCalendarDialog";
 import { QuickTestEntryDialog } from "./QuickTestEntryDialog";
 import { SessionDetailsDialog } from "./SessionDetailsDialog";
@@ -32,15 +32,7 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isAddMatchDialogOpen, setIsAddMatchDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [editingSession, setEditingSession] = useState<{
-    id: string;
-    session_date: string;
-    session_start_time: string | null;
-    session_end_time: string | null;
-    training_type: string;
-    intensity: number | null;
-    notes: string | null;
-  } | null>(null);
+  const [editingSession, setEditingSession] = useState<any | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [isDailyDialogOpen, setIsDailyDialogOpen] = useState(false);
   const [selectedSession, setSelectedSession] = useState<{
@@ -265,16 +257,18 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
             onExportPdf={handleExportPdf}
             isViewer={isViewer}
             onEditSession={(session) => {
-              setEditingSession({
-                id: session.id,
-                session_date: session.session_date,
-                session_start_time: session.session_start_time,
-                session_end_time: session.session_end_time,
-                training_type: session.training_type,
-                intensity: null,
-                notes: session.notes,
-              });
-              setIsEditDialogOpen(true);
+              // Fetch full session data for editing
+              supabase
+                .from("training_sessions")
+                .select("*")
+                .eq("id", session.id)
+                .single()
+                .then(({ data }) => {
+                  if (data) {
+                    setEditingSession(data);
+                    setIsEditDialogOpen(true);
+                  }
+                });
             }}
             onViewSession={(session) => {
               setSelectedSession({
@@ -329,14 +323,14 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
         sportType={sportType}
       />
 
-      <EditSessionDialog
+      <SessionFormDialog
         open={isEditDialogOpen}
         onOpenChange={(open) => {
           setIsEditDialogOpen(open);
           if (!open) setEditingSession(null);
         }}
         categoryId={categoryId}
-        session={editingSession}
+        editSession={editingSession}
       />
 
       {selectedSession?.type === "test" && (
