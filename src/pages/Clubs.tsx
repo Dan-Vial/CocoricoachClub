@@ -140,7 +140,7 @@ export default function Clubs() {
           <div className="flex justify-between items-start mb-4">
             <div>
               <h1 className="text-4xl md:text-5xl font-bold text-primary-foreground mb-4">
-                Préparation Physique Rugby
+                Performance Planner
               </h1>
               <p className="text-lg text-primary-foreground/90">
                 Gestion des clubs et suivi des performances

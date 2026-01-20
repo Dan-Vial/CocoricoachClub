@@ -443,7 +443,11 @@ export function CompetitionRoundsDialog({
             </SelectTrigger>
             <SelectContent className="z-[200]">
               {playerRoundsData.map((player) => (
-                <SelectItem key={player.playerId} value={player.playerId}>
+                <SelectItem 
+                  key={player.playerId} 
+                  value={player.playerId}
+                  textValue={player.playerName}
+                >
                   <div className="flex items-center gap-2">
                     <span>{player.playerName}</span>
                     {isAviron && player.boat_type && (

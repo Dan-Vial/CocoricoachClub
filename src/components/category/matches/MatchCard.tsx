@@ -326,7 +326,9 @@ export function MatchCard({ match, categoryId }: MatchCardProps) {
         sportType={category?.rugby_type || "XV"}
       />
 
-      {(sportType.toLowerCase().includes("judo") || sportType.toLowerCase().includes("bowling")) && (
+      {(sportType.toLowerCase().includes("judo") || 
+        sportType.toLowerCase().includes("bowling") || 
+        sportType.toLowerCase().includes("aviron")) && (
         <CompetitionRoundsDialog
           open={isRoundsOpen}
           onOpenChange={setIsRoundsOpen}

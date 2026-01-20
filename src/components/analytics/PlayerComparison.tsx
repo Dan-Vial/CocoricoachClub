@@ -8,10 +8,72 @@ import { useState } from "react";
 
 interface PlayerComparisonProps {
   categoryId: string;
+  sportType?: string;
 }
 
-export function PlayerComparison({ categoryId }: PlayerComparisonProps) {
-  const [comparisonType, setComparisonType] = useState<"40m" | "1600m" | "strength">("40m");
+// Get comparison options based on sport
+const getComparisonOptions = (sportType: string) => {
+  const sport = sportType?.toLowerCase() || "";
+  
+  if (sport.includes("judo")) {
+    return [
+      { value: "sjft", label: "SJFT Index" },
+      { value: "pullups", label: "Tractions Max" },
+      { value: "strength", label: "Force" },
+    ];
+  }
+  
+  if (sport.includes("handball") || sport.includes("basketball")) {
+    return [
+      { value: "sprint30", label: "Sprint 30m" },
+      { value: "cmj", label: "CMJ" },
+      { value: "strength", label: "Force" },
+    ];
+  }
+  
+  if (sport.includes("football")) {
+    return [
+      { value: "sprint30", label: "Sprint 30m" },
+      { value: "ift", label: "30-15 IFT" },
+      { value: "strength", label: "Force" },
+    ];
+  }
+  
+  if (sport.includes("aviron")) {
+    return [
+      { value: "ergo2000", label: "Ergo 2000m" },
+      { value: "power", label: "Puissance" },
+      { value: "strength", label: "Force" },
+    ];
+  }
+  
+  if (sport.includes("volleyball")) {
+    return [
+      { value: "cmj", label: "CMJ" },
+      { value: "dropJump", label: "Drop Jump" },
+      { value: "strength", label: "Force" },
+    ];
+  }
+  
+  if (sport.includes("bowling")) {
+    return [
+      { value: "avgScore", label: "Score Moyen" },
+      { value: "strikeRate", label: "% Strikes" },
+      { value: "strength", label: "Force" },
+    ];
+  }
+  
+  // Default (Rugby)
+  return [
+    { value: "40m", label: "Sprint 40m" },
+    { value: "1600m", label: "Course 1600m" },
+    { value: "strength", label: "Force" },
+  ];
+};
+
+export function PlayerComparison({ categoryId, sportType = "XV" }: PlayerComparisonProps) {
+  const options = getComparisonOptions(sportType);
+  const [comparisonType, setComparisonType] = useState(options[0]?.value || "40m");
 
   const { data: players } = useQuery({
     queryKey: ["players", categoryId],
@@ -52,67 +114,93 @@ export function PlayerComparison({ categoryId }: PlayerComparisonProps) {
     },
   });
 
-  const prepareComparisonData = () => {
-    if (!players || !speedTests || !strengthTests) return [];
+  const { data: jumpTests, isLoading: loadingJump } = useQuery({
+    queryKey: ["jump-tests-comparison", categoryId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("jump_tests")
+        .select("*")
+        .eq("category_id", categoryId)
+        .order("test_date", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
 
-    if (comparisonType === "40m") {
-      return players.map(player => {
+  const { data: genericTests, isLoading: loadingGeneric } = useQuery({
+    queryKey: ["generic-tests-comparison", categoryId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("generic_tests")
+        .select("*")
+        .eq("category_id", categoryId)
+        .order("test_date", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const prepareComparisonData = () => {
+    if (!players) return [];
+
+    return players.map(player => {
+      let value: number | null = null;
+
+      if (comparisonType === "40m" && speedTests) {
         const playerTests = speedTests
           .filter(t => t.player_id === player.id && t.test_type === "40m_sprint")
           .slice(0, 3);
-        
-        const avgTime = playerTests.length > 0
+        value = playerTests.length > 0
           ? playerTests.reduce((sum, t) => sum + Number(t.time_40m_seconds || 0), 0) / playerTests.length
-          : 0;
-
-        return {
-          name: player.name,
-          valeur: avgTime > 0 ? Number(avgTime.toFixed(2)) : null,
-        };
-      }).filter(p => p.valeur !== null);
-    }
-
-    if (comparisonType === "1600m") {
-      return players.map(player => {
+          : null;
+      } else if (comparisonType === "1600m" && speedTests) {
         const playerTests = speedTests
           .filter(t => t.player_id === player.id && t.test_type === "1600m_run")
           .slice(0, 3);
-        
-        const avgTime = playerTests.length > 0
+        value = playerTests.length > 0
           ? playerTests.reduce((sum, t) => {
               const totalSeconds = (Number(t.time_1600m_minutes || 0) * 60) + Number(t.time_1600m_seconds || 0);
               return sum + totalSeconds;
             }, 0) / playerTests.length
-          : 0;
-
-        return {
-          name: player.name,
-          valeur: avgTime > 0 ? Math.round(avgTime) : null,
-        };
-      }).filter(p => p.valeur !== null);
-    }
-
-    if (comparisonType === "strength") {
-      return players.map(player => {
-        const playerTests = strengthTests
-          .filter(t => t.player_id === player.id)
-          .slice(0, 3);
-        
-        const avgWeight = playerTests.length > 0
+          : null;
+      } else if (comparisonType === "strength" && strengthTests) {
+        const playerTests = strengthTests.filter(t => t.player_id === player.id).slice(0, 3);
+        value = playerTests.length > 0
           ? playerTests.reduce((sum, t) => sum + Number(t.weight_kg || 0), 0) / playerTests.length
-          : 0;
+          : null;
+      } else if ((comparisonType === "cmj" || comparisonType === "dropJump") && jumpTests) {
+        const filterType = comparisonType === "cmj" ? "cmj" : "drop";
+        const playerTests = jumpTests
+          .filter(t => t.player_id === player.id && t.test_type?.toLowerCase().includes(filterType))
+          .slice(0, 3);
+        value = playerTests.length > 0
+          ? Math.max(...playerTests.map(t => Number(t.result_cm || 0)))
+          : null;
+      } else if (genericTests) {
+        // Handle generic test types
+        let filter: (t: any) => boolean = () => false;
+        
+        if (comparisonType === "sjft") filter = t => t.test_type?.toLowerCase().includes("sjft");
+        else if (comparisonType === "pullups") filter = t => t.test_type?.toLowerCase().includes("traction");
+        else if (comparisonType === "sprint30") filter = t => t.test_type?.includes("30m");
+        else if (comparisonType === "ift") filter = t => t.test_type?.toLowerCase().includes("30-15");
+        else if (comparisonType === "ergo2000") filter = t => t.test_type?.toLowerCase().includes("ergo") || t.test_type?.includes("2000");
+        else if (comparisonType === "power") filter = t => t.test_type?.toLowerCase().includes("puissance") || t.test_type?.toLowerCase().includes("power");
+        
+        const playerTests = genericTests.filter(t => t.player_id === player.id && filter(t)).slice(0, 3);
+        value = playerTests.length > 0
+          ? playerTests.reduce((sum, t) => sum + Number(t.result_value || 0), 0) / playerTests.length
+          : null;
+      }
 
-        return {
-          name: player.name,
-          valeur: avgWeight > 0 ? Number(avgWeight.toFixed(1)) : null,
-        };
-      }).filter(p => p.valeur !== null);
-    }
-
-    return [];
+      return {
+        name: player.name,
+        valeur: value !== null ? Number(value.toFixed(2)) : null,
+      };
+    }).filter(p => p.valeur !== null);
   };
 
-  if (loadingSpeed || loadingStrength) {
+  if (loadingSpeed || loadingStrength || loadingJump || loadingGeneric) {
     return (
       <div className="flex items-center justify-center p-8">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -121,36 +209,33 @@ export function PlayerComparison({ categoryId }: PlayerComparisonProps) {
   }
 
   const data = prepareComparisonData();
-
-  const getTitle = () => {
-    switch (comparisonType) {
-      case "40m": return "Comparaison Sprint 40m (moy. 3 derniers tests)";
-      case "1600m": return "Comparaison 1600m (moy. 3 derniers tests)";
-      case "strength": return "Comparaison Force (moy. 3 derniers tests)";
-    }
-  };
+  const currentOption = options.find(o => o.value === comparisonType);
 
   const getUnit = () => {
-    switch (comparisonType) {
-      case "40m": return "secondes";
-      case "1600m": return "secondes";
-      case "strength": return "kg";
-    }
+    if (comparisonType === "40m" || comparisonType === "1600m" || comparisonType === "sprint30") return "secondes";
+    if (comparisonType === "strength" || comparisonType === "power") return "kg / watts";
+    if (comparisonType === "cmj" || comparisonType === "dropJump") return "cm";
+    if (comparisonType === "ift") return "km/h";
+    if (comparisonType === "sjft" || comparisonType === "pullups" || comparisonType === "avgScore") return "score";
+    if (comparisonType === "strikeRate") return "%";
+    return "valeur";
   };
 
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
-          <span>Comparaison entre Joueurs</span>
-          <Select value={comparisonType} onValueChange={(value: any) => setComparisonType(value)}>
+          <span>Comparaison entre Athlètes</span>
+          <Select value={comparisonType} onValueChange={setComparisonType}>
             <SelectTrigger className="w-[200px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="40m">Sprint 40m</SelectItem>
-              <SelectItem value="1600m">Course 1600m</SelectItem>
-              <SelectItem value="strength">Force</SelectItem>
+              {options.map(option => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </CardTitle>
@@ -158,7 +243,9 @@ export function PlayerComparison({ categoryId }: PlayerComparisonProps) {
       <CardContent>
         {data.length > 0 ? (
           <div>
-            <h3 className="text-sm font-medium mb-4">{getTitle()}</h3>
+            <h3 className="text-sm font-medium mb-4">
+              Comparaison {currentOption?.label} (moy. 3 derniers tests)
+            </h3>
             <ResponsiveContainer width="100%" height={400}>
               <BarChart data={data}>
                 <CartesianGrid strokeDasharray="3 3" />
