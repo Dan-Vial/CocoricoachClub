@@ -108,6 +108,35 @@ export const EXERCISE_CATEGORIES: ExerciseCategory[] = [
   { value: "bowling_spare", label: "Bowling - Spares", group: "terrain", sport: "bowling" },
   { value: "bowling_strike", label: "Bowling - Strikes", group: "terrain", sport: "bowling" },
   
+  // Terrain - Athlétisme - Sprints
+  { value: "athletisme_starting_blocks", label: "Athlétisme - Travail départs", group: "terrain", sport: "athletisme" },
+  { value: "athletisme_acceleration", label: "Athlétisme - Accélération", group: "terrain", sport: "athletisme" },
+  { value: "athletisme_max_velocity", label: "Athlétisme - Vitesse max", group: "terrain", sport: "athletisme" },
+  { value: "athletisme_sprint_endurance", label: "Athlétisme - Endurance vitesse", group: "terrain", sport: "athletisme" },
+  
+  // Terrain - Athlétisme - Haies
+  { value: "athletisme_hurdle_drills", label: "Athlétisme - Éducatifs haies", group: "terrain", sport: "athletisme" },
+  { value: "athletisme_hurdle_rhythm", label: "Athlétisme - Rythme inter-haies", group: "terrain", sport: "athletisme" },
+  
+  // Terrain - Athlétisme - Demi-fond/Fond
+  { value: "athletisme_intervals", label: "Athlétisme - Fractionné", group: "terrain", sport: "athletisme" },
+  { value: "athletisme_tempo_runs", label: "Athlétisme - Allure seuil", group: "terrain", sport: "athletisme" },
+  { value: "athletisme_long_run", label: "Athlétisme - Sortie longue", group: "terrain", sport: "athletisme" },
+  { value: "athletisme_fartlek", label: "Athlétisme - Fartlek", group: "terrain", sport: "athletisme" },
+  
+  // Terrain - Athlétisme - Sauts
+  { value: "athletisme_approach_work", label: "Athlétisme - Travail course d'élan", group: "terrain", sport: "athletisme" },
+  { value: "athletisme_takeoff_drills", label: "Athlétisme - Éducatifs impulsion", group: "terrain", sport: "athletisme" },
+  { value: "athletisme_flight_drills", label: "Athlétisme - Travail suspension", group: "terrain", sport: "athletisme" },
+  { value: "athletisme_landing", label: "Athlétisme - Réception", group: "terrain", sport: "athletisme" },
+  { value: "athletisme_pole_vault_tech", label: "Athlétisme - Technique perche", group: "terrain", sport: "athletisme" },
+  
+  // Terrain - Athlétisme - Lancers
+  { value: "athletisme_throwing_drills", label: "Athlétisme - Éducatifs lancers", group: "terrain", sport: "athletisme" },
+  { value: "athletisme_rotation_work", label: "Athlétisme - Travail rotation", group: "terrain", sport: "athletisme" },
+  { value: "athletisme_release_drills", label: "Athlétisme - Travail lâcher", group: "terrain", sport: "athletisme" },
+  { value: "athletisme_implement_work", label: "Athlétisme - Travail avec engin", group: "terrain", sport: "athletisme" },
+  
   // Stretching & Mobilité
   { value: "warmup", label: "Échauffement", group: "stretching_mobility" },
   { value: "mobility", label: "Mobilité", group: "stretching_mobility" },
@@ -131,6 +160,7 @@ export const SPORT_OPTIONS = [
   { value: "judo", label: "Judo" },
   { value: "aviron", label: "Aviron" },
   { value: "bowling", label: "Bowling" },
+  { value: "athletisme", label: "Athlétisme" },
 ];
 
 // Normalize sport type to base sport
@@ -138,7 +168,7 @@ export function normalizeToBaseSport(sportType?: string): string | null {
   if (!sportType || sportType === "all") return null;
   
   const normalizedSport = sportType.toLowerCase();
-  if (normalizedSport.startsWith('rugby')) return 'rugby';
+  if (normalizedSport.startsWith('rugby') || ['xv', '7', 'xiii', 'academie', 'national_team'].includes(normalizedSport)) return 'rugby';
   if (normalizedSport.startsWith('football')) return 'football';
   if (normalizedSport.startsWith('handball')) return 'handball';
   if (normalizedSport.startsWith('volleyball')) return 'volleyball';
@@ -146,6 +176,7 @@ export function normalizeToBaseSport(sportType?: string): string | null {
   if (normalizedSport.startsWith('judo')) return 'judo';
   if (normalizedSport.startsWith('aviron')) return 'aviron';
   if (normalizedSport.startsWith('bowling')) return 'bowling';
+  if (normalizedSport.startsWith('athletisme')) return 'athletisme';
   
   return normalizedSport;
 }

@@ -537,6 +537,142 @@ export const BOWLING_COMPETITIONS: CompetitionCategory[] = [
   },
 ];
 
+// Athletics competitions
+export const ATHLETISME_COMPETITIONS: CompetitionCategory[] = [
+  {
+    label: "Championnats en salle",
+    options: [
+      "Championnat Départemental Salle",
+      "Championnat Régional Salle",
+      "Championnat de France Salle",
+      "Championnats d'Europe en Salle",
+      "Championnats du Monde en Salle",
+    ],
+  },
+  {
+    label: "Championnats Jeunes",
+    options: [
+      "Championnat Départemental Minimes",
+      "Championnat Départemental Cadets",
+      "Championnat Départemental Juniors",
+      "Championnat Régional Minimes",
+      "Championnat Régional Cadets",
+      "Championnat Régional Juniors",
+      "Championnat de France Minimes",
+      "Championnat de France Cadets",
+      "Championnat de France Juniors",
+      "Championnat de France Espoirs",
+      "Championnats d'Europe U18",
+      "Championnats d'Europe U20",
+      "Championnats d'Europe U23",
+      "Championnats du Monde U20",
+    ],
+  },
+  {
+    label: "Championnats Seniors - Nationaux",
+    options: [
+      "Championnat Interclubs",
+      "Championnat de France Élite",
+      "Championnat de France National",
+      "Championnat de France Espoirs",
+      "Coupe de France des Clubs",
+      "Meeting National",
+    ],
+  },
+  {
+    label: "Championnats Internationaux",
+    options: [
+      "Championnats d'Europe",
+      "Championnats du Monde",
+      "Jeux Olympiques",
+      "Jeux Méditerranéens",
+      "Jeux de la Francophonie",
+      "Jeux Africains",
+      "Championnats d'Afrique",
+      "Championnats Panarabes",
+    ],
+  },
+  {
+    label: "Meetings Internationaux - Diamond League",
+    options: [
+      "Meeting de Paris (Stade de France)",
+      "Prefontaine Classic (Eugene)",
+      "Bislett Games (Oslo)",
+      "Golden Gala (Rome)",
+      "Meeting de Stockholm",
+      "Weltklasse Zürich",
+      "BAUHAUS-galan (Stockholm)",
+      "Memorial Van Damme (Bruxelles)",
+      "Athletissima (Lausanne)",
+      "Meeting de Monaco",
+      "Doha Diamond League",
+      "Shanghai Diamond League",
+      "Xiamen Diamond League",
+      "Rabat Diamond League",
+      "Silesia Diamond League",
+      "London Diamond League",
+    ],
+  },
+  {
+    label: "Meetings Nationaux",
+    options: [
+      "Meeting de Liévin",
+      "Meeting de Mondeville",
+      "Meeting de Marseille",
+      "Meeting de Lyon",
+      "Meeting de Reims",
+      "Meeting de Nantes",
+      "Decanation",
+      "Meeting Elite Tour",
+    ],
+  },
+  {
+    label: "Cross-Country",
+    options: [
+      "Cross Départemental",
+      "Cross Régional",
+      "Championnat de France de Cross",
+      "Championnats d'Europe de Cross",
+      "Championnats du Monde de Cross",
+    ],
+  },
+  {
+    label: "Courses sur Route",
+    options: [
+      "10 km sur Route",
+      "Semi-Marathon",
+      "Marathon",
+      "Ekiden (Relais Marathon)",
+      "100 km",
+      "Ultra-Trail",
+    ],
+  },
+  {
+    label: "Épreuves combinées",
+    options: [
+      "Décathlon",
+      "Heptathlon",
+      "Pentathlon Salle",
+      "Triathlon (Jeunes)",
+      "Tétrathlon (Jeunes)",
+      "Meeting Multiples Gotzis",
+      "Meeting Multiples Talence",
+    ],
+  },
+  {
+    label: "Autres",
+    options: [
+      "Meeting Local",
+      "Interclubs",
+      "Critérium Régional",
+      "Critérium National",
+      "Sélection Régionale",
+      "Sélection Nationale",
+      "Stage Équipe",
+    ],
+  },
+];
+
 // Get competitions by sport type
 export const getCompetitionsBySport = (sportType: string): CompetitionCategory[] => {
   // Handle exact matches first for rugby types
@@ -562,6 +698,8 @@ export const getCompetitionsBySport = (sportType: string): CompetitionCategory[]
       return BOWLING_COMPETITIONS;
     case "aviron":
       return AVIRON_COMPETITIONS;
+    case "athletisme":
+      return ATHLETISME_COMPETITIONS;
     default:
       // Check if it looks like a rugby type
       return RUGBY_COMPETITIONS;

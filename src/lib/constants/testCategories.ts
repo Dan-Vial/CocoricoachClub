@@ -313,6 +313,128 @@ export const TEST_CATEGORIES: TestCategory[] = [
       { value: "basketball_free_throw", label: "Free Throw %", unit: "%" },
     ],
   },
+  // Athletics specific tests - Sprints
+  {
+    value: "athletisme_sprints",
+    label: "Athlétisme - Sprints",
+    tests: [
+      { value: "athle_60m", label: "60m (Salle)", unit: "s", isTime: true },
+      { value: "athle_100m", label: "100m", unit: "s", isTime: true },
+      { value: "athle_200m", label: "200m", unit: "s", isTime: true },
+      { value: "athle_400m", label: "400m", unit: "s", isTime: true },
+      { value: "athle_reaction_time", label: "Temps de réaction (starting blocks)", unit: "ms", isTime: true },
+      { value: "athle_max_velocity", label: "Vitesse maximale", unit: "m/s" },
+      { value: "athle_split_30m", label: "Split 30m (du 100m)", unit: "s", isTime: true },
+      { value: "athle_split_60m", label: "Split 60m (du 100m)", unit: "s", isTime: true },
+      { value: "athle_flying_30m", label: "30m lancé", unit: "s", isTime: true },
+    ],
+  },
+  // Athletics - Hurdles
+  {
+    value: "athletisme_haies",
+    label: "Athlétisme - Haies",
+    tests: [
+      { value: "athle_60mh", label: "60m Haies (Salle)", unit: "s", isTime: true },
+      { value: "athle_100mh", label: "100m Haies (Femmes)", unit: "s", isTime: true },
+      { value: "athle_110mh", label: "110m Haies (Hommes)", unit: "s", isTime: true },
+      { value: "athle_400mh", label: "400m Haies", unit: "s", isTime: true },
+      { value: "athle_hurdle_technique", label: "Score technique haies", unit: "score" },
+      { value: "athle_hurdle_cadence", label: "Cadence inter-haies", unit: "foulées" },
+    ],
+  },
+  // Athletics - Middle distance
+  {
+    value: "athletisme_demi_fond",
+    label: "Athlétisme - Demi-fond",
+    tests: [
+      { value: "athle_800m", label: "800m", unit: "min.s", isTime: true },
+      { value: "athle_1000m", label: "1000m", unit: "min.s", isTime: true },
+      { value: "athle_1500m", label: "1500m", unit: "min.s", isTime: true },
+      { value: "athle_mile", label: "Mile (1609m)", unit: "min.s", isTime: true },
+      { value: "athle_vma_track", label: "VMA (piste)", unit: "km/h" },
+      { value: "athle_lactate_400m", label: "Split 400m (du 800m)", unit: "s", isTime: true },
+    ],
+  },
+  // Athletics - Long distance
+  {
+    value: "athletisme_fond",
+    label: "Athlétisme - Fond",
+    tests: [
+      { value: "athle_3000m", label: "3000m", unit: "min.s", isTime: true },
+      { value: "athle_3000m_steeple", label: "3000m Steeple", unit: "min.s", isTime: true },
+      { value: "athle_5000m", label: "5000m", unit: "min.s", isTime: true },
+      { value: "athle_10000m", label: "10 000m", unit: "min.s", isTime: true },
+      { value: "athle_half_marathon", label: "Semi-marathon", unit: "h.min.s", isTime: true },
+      { value: "athle_marathon", label: "Marathon", unit: "h.min.s", isTime: true },
+      { value: "athle_cross_country", label: "Cross-country (temps)", unit: "min.s", isTime: true },
+    ],
+  },
+  // Athletics - Jumps
+  {
+    value: "athletisme_sauts",
+    label: "Athlétisme - Sauts",
+    tests: [
+      { value: "athle_long_jump", label: "Saut en longueur", unit: "m" },
+      { value: "athle_triple_jump", label: "Triple saut", unit: "m" },
+      { value: "athle_high_jump", label: "Saut en hauteur", unit: "m" },
+      { value: "athle_pole_vault", label: "Saut à la perche", unit: "m" },
+      { value: "athle_approach_speed_lj", label: "Vitesse d'approche (longueur)", unit: "m/s" },
+      { value: "athle_takeoff_angle", label: "Angle de décollage", unit: "°" },
+      { value: "athle_standing_long_jump", label: "Saut en longueur sans élan", unit: "m" },
+      { value: "athle_standing_triple_jump", label: "Triple saut sans élan", unit: "m" },
+    ],
+  },
+  // Athletics - Throws
+  {
+    value: "athletisme_lancers",
+    label: "Athlétisme - Lancers",
+    tests: [
+      { value: "athle_shot_put", label: "Lancer du poids", unit: "m" },
+      { value: "athle_discus", label: "Lancer du disque", unit: "m" },
+      { value: "athle_hammer", label: "Lancer du marteau", unit: "m" },
+      { value: "athle_javelin", label: "Lancer du javelot", unit: "m" },
+      { value: "athle_medicine_ball_throw", label: "Lancer médecine-ball", unit: "m" },
+      { value: "athle_backward_throw", label: "Lancer arrière par-dessus", unit: "m" },
+      { value: "athle_rotational_velocity", label: "Vitesse de rotation", unit: "rad/s" },
+    ],
+  },
+  // Athletics - Combined events
+  {
+    value: "athletisme_combines",
+    label: "Athlétisme - Épreuves combinées",
+    tests: [
+      { value: "athle_decathlon_total", label: "Total Décathlon", unit: "points" },
+      { value: "athle_heptathlon_total", label: "Total Heptathlon", unit: "points" },
+      { value: "athle_pentathlon_indoor", label: "Total Pentathlon (Salle)", unit: "points" },
+      { value: "athle_combined_day1", label: "Total Jour 1", unit: "points" },
+      { value: "athle_combined_day2", label: "Total Jour 2", unit: "points" },
+    ],
+  },
+  // Judo specific tests
+  {
+    value: "judo_physique",
+    label: "Judo - Tests Physiques",
+    tests: [
+      { value: "judo_uchi_komi_30s", label: "Uchi-komi 30 sec", unit: "reps" },
+      { value: "judo_uchi_komi_1min", label: "Uchi-komi 1 min", unit: "reps" },
+      { value: "judo_grip_strength", label: "Force de préhension (kumi-kata)", unit: "kg" },
+      { value: "judo_pull_ups_judogi", label: "Tractions judogi", unit: "reps" },
+      { value: "judo_rope_climb", label: "Grimper corde (sans jambes)", unit: "s", isTime: true },
+      { value: "judo_flexibility_split", label: "Écart latéral", unit: "cm" },
+      { value: "judo_rotational_power", label: "Puissance rotationnelle", unit: "W" },
+    ],
+  },
+  {
+    value: "judo_combat",
+    label: "Judo - Tests de Combat",
+    tests: [
+      { value: "judo_randori_intensity", label: "Intensité randori (GPS)", unit: "m/min" },
+      { value: "judo_tokui_waza_success", label: "% réussite tokui-waza", unit: "%" },
+      { value: "judo_kumikata_time", label: "Temps prise de kumi-kata", unit: "s", isTime: true },
+      { value: "judo_throwing_frequency", label: "Fréquence de projection", unit: "proj/min" },
+      { value: "judo_golden_score_endurance", label: "Endurance golden score", unit: "score" },
+    ],
+  },
 ];
 
 // Fonction utilitaire pour obtenir le label complet d'un test
@@ -349,29 +471,49 @@ export function getAllTests(): TestOption[] {
 
 // Fonction pour obtenir les catégories de tests par sport
 export function getTestCategoriesForSport(sportType: string): TestCategory[] {
+  const baseSport = sportType?.split('_')[0]?.toLowerCase() || sportType?.toLowerCase();
+  
   const baseCategories = TEST_CATEGORIES.filter(cat => 
-    !cat.value.startsWith("bowling_") && !cat.value.startsWith("basketball_") && !cat.value.startsWith("aviron_")
+    !cat.value.startsWith("bowling_") && 
+    !cat.value.startsWith("basketball_") && 
+    !cat.value.startsWith("aviron_") &&
+    !cat.value.startsWith("athletisme_") &&
+    !cat.value.startsWith("judo_")
   );
   
-  if (sportType === "bowling") {
+  if (baseSport === "bowling") {
     const bowlingCategories = TEST_CATEGORIES.filter(cat => 
       cat.value.startsWith("bowling_")
     );
     return [...baseCategories, ...bowlingCategories];
   }
   
-  if (sportType === "basketball") {
+  if (baseSport === "basketball") {
     const basketballCategories = TEST_CATEGORIES.filter(cat => 
       cat.value.startsWith("basketball_")
     );
     return [...baseCategories, ...basketballCategories];
   }
   
-  if (sportType === "aviron") {
+  if (baseSport === "aviron") {
     const avironCategories = TEST_CATEGORIES.filter(cat => 
       cat.value.startsWith("aviron_")
     );
     return [...baseCategories, ...avironCategories];
+  }
+  
+  if (baseSport === "athletisme") {
+    const athletismeCategories = TEST_CATEGORIES.filter(cat => 
+      cat.value.startsWith("athletisme_")
+    );
+    return [...baseCategories, ...athletismeCategories];
+  }
+  
+  if (baseSport === "judo") {
+    const judoCategories = TEST_CATEGORIES.filter(cat => 
+      cat.value.startsWith("judo_")
+    );
+    return [...baseCategories, ...judoCategories];
   }
   
   return baseCategories;
