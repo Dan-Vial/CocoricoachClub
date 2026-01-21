@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PerformanceEvolution } from "./PerformanceEvolution";
-import { PlayerComparison } from "./PlayerComparison";
+import { MultiAthleteComparison } from "./MultiAthleteComparison";
 import { InjuryRiskPrediction } from "./InjuryRiskPrediction";
 import { PerformanceHeatmap } from "./PerformanceHeatmap";
 import { AIPredictiveDashboard } from "./AIPredictiveDashboard";
@@ -49,7 +49,7 @@ export function AnalyticsTab({ categoryId }: AnalyticsTabProps) {
           </TabsContent>
 
           <TabsContent value="comparison">
-            <PlayerComparison categoryId={categoryId} sportType={sportType} />
+            <MultiAthleteComparison categoryId={categoryId} sportType={sportType} />
           </TabsContent>
 
           <TabsContent value="heatmap">
