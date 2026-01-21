@@ -1196,9 +1196,10 @@ export function getAthleticProfileConfig(sportType: string, playerDiscipline?: s
   return ATHLETIC_PROFILES[mainSport] || ATHLETIC_PROFILES.rugby;
 }
 
-// Helper to get discipline label
+// Helper to get discipline/weight category label
 export function getDisciplineLabel(disciplineValue: string): string {
-  const discipline = [
+  const allOptions = [
+    // Athletics disciplines
     { value: "athletisme_sprints", label: "Sprints" },
     { value: "athletisme_haies", label: "Haies" },
     { value: "athletisme_demi_fond", label: "Demi-fond" },
@@ -1208,6 +1209,23 @@ export function getDisciplineLabel(disciplineValue: string): string {
     { value: "athletisme_sauts_hauteur", label: "Sauts verticaux" },
     { value: "athletisme_lancers", label: "Lancers" },
     { value: "athletisme_combines", label: "Épreuves combinées" },
-  ].find(d => d.value === disciplineValue);
-  return discipline?.label || disciplineValue;
+    // Judo weight categories - Men
+    { value: "judo_-60kg", label: "-60 kg" },
+    { value: "judo_-66kg", label: "-66 kg" },
+    { value: "judo_-73kg", label: "-73 kg" },
+    { value: "judo_-81kg", label: "-81 kg" },
+    { value: "judo_-90kg", label: "-90 kg" },
+    { value: "judo_-100kg", label: "-100 kg" },
+    { value: "judo_+100kg", label: "+100 kg" },
+    // Judo weight categories - Women
+    { value: "judo_-48kg", label: "-48 kg" },
+    { value: "judo_-52kg", label: "-52 kg" },
+    { value: "judo_-57kg", label: "-57 kg" },
+    { value: "judo_-63kg", label: "-63 kg" },
+    { value: "judo_-70kg", label: "-70 kg" },
+    { value: "judo_-78kg", label: "-78 kg" },
+    { value: "judo_+78kg", label: "+78 kg" },
+  ];
+  const found = allOptions.find(d => d.value === disciplineValue);
+  return found?.label || disciplineValue;
 }
