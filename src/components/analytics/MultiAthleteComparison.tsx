@@ -1,8 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from "recharts";
-import { Loader2, Plus, X, Users, Scale } from "lucide-react";
+import { 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, 
+  RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Cell,
+  ComposedChart, Line, Area
+} from "recharts";
+import { Loader2, Plus, X, Users, Scale, Timer, Weight, Zap, Ruler, TrendingUp } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -410,6 +414,55 @@ export function MultiAthleteComparison({ categoryId, sportType = "XV" }: MultiAt
 
   const currentMetric = availableMetrics.find(m => m.value === selectedMetric);
 
+  // Get unit label with icon
+  const getUnitLabel = (unit: string): { label: string; icon: React.ReactNode } => {
+    const unitLower = unit?.toLowerCase() || "";
+    if (unitLower.includes("s") || unitLower.includes("min") || unitLower.includes("time")) {
+      return { label: "Temps", icon: <Timer className="h-4 w-4" /> };
+    }
+    if (unitLower === "kg") {
+      return { label: "Poids (kg)", icon: <Weight className="h-4 w-4" /> };
+    }
+    if (unitLower === "w" || unitLower === "watts") {
+      return { label: "Puissance (W)", icon: <Zap className="h-4 w-4" /> };
+    }
+    if (unitLower === "cm" || unitLower === "m") {
+      return { label: `Distance (${unit})`, icon: <Ruler className="h-4 w-4" /> };
+    }
+    if (unitLower === "%") {
+      return { label: "Pourcentage (%)", icon: <TrendingUp className="h-4 w-4" /> };
+    }
+    if (unitLower === "reps" || unitLower === "score") {
+      return { label: unit === "reps" ? "Répétitions" : "Score", icon: <TrendingUp className="h-4 w-4" /> };
+    }
+    return { label: unit || "Valeur", icon: <TrendingUp className="h-4 w-4" /> };
+  };
+
+  // Format value for display
+  const formatDisplayValue = (value: number, unit: string): string => {
+    if (!value) return "—";
+    const unitLower = unit?.toLowerCase() || "";
+    
+    // Format time values
+    if (unitLower.includes("min.s") || unitLower === "min.s") {
+      const mins = Math.floor(value / 60);
+      const secs = Math.round(value % 60);
+      return `${mins}'${secs.toString().padStart(2, "0")}''`;
+    }
+    if (unitLower === "s" && value > 60) {
+      const mins = Math.floor(value / 60);
+      const secs = (value % 60).toFixed(1);
+      return `${mins}'${secs}''`;
+    }
+    if (unitLower === "s") {
+      return `${value.toFixed(2)}s`;
+    }
+    
+    return `${value.toFixed(value % 1 === 0 ? 0 : 1)} ${unit}`;
+  };
+
+  const unitInfo = currentMetric ? getUnitLabel(currentMetric.unit) : { label: "Valeur", icon: null };
+
   return (
     <div className="space-y-6">
       {/* Athlete Selection */}
@@ -516,43 +569,111 @@ export function MultiAthleteComparison({ categoryId, sportType = "XV" }: MultiAt
 
               <TabsContent value="bar">
                 {chartData.length > 0 ? (
-                  <div>
-                    <h3 className="text-sm font-medium mb-4">
-                      {currentMetric?.label} ({currentMetric?.unit})
-                    </h3>
-                    <ResponsiveContainer width="100%" height={350}>
-                      <BarChart data={chartData}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="name" />
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      {unitInfo.icon}
+                      <span>{currentMetric?.label} — {unitInfo.label}</span>
+                    </div>
+                    <ResponsiveContainer width="100%" height={380}>
+                      <ComposedChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+                        <defs>
+                          {chartData.map((entry, index) => (
+                            <linearGradient key={`gradient-${index}`} id={`colorGradient-${index}`} x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor={entry.fill} stopOpacity={0.9}/>
+                              <stop offset="100%" stopColor={entry.fill} stopOpacity={0.4}/>
+                            </linearGradient>
+                          ))}
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} />
+                        <XAxis 
+                          dataKey="name" 
+                          tick={{ fill: 'hsl(var(--foreground))', fontSize: 12 }}
+                          axisLine={{ stroke: 'hsl(var(--border))' }}
+                          angle={-30}
+                          textAnchor="end"
+                          height={60}
+                        />
                         <YAxis 
+                          tick={{ fill: 'hsl(var(--foreground))', fontSize: 11 }}
+                          axisLine={{ stroke: 'hsl(var(--border))' }}
                           label={{ 
-                            value: currentMetric?.unit || "", 
+                            value: unitInfo.label, 
                             angle: -90, 
-                            position: "insideLeft" 
+                            position: "insideLeft",
+                            style: { fill: 'hsl(var(--muted-foreground))', fontSize: 11 }
                           }} 
                         />
                         <Tooltip 
+                          contentStyle={{
+                            backgroundColor: 'hsl(var(--popover))',
+                            border: '1px solid hsl(var(--border))',
+                            borderRadius: '8px',
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                          }}
+                          labelStyle={{ color: 'hsl(var(--popover-foreground))', fontWeight: 600 }}
                           formatter={(value: number) => [
-                            `${value.toFixed(2)} ${currentMetric?.unit}`,
+                            formatDisplayValue(value, currentMetric?.unit || ""),
                             currentMetric?.label
                           ]}
                         />
                         <Bar 
                           dataKey="valeur" 
                           name={currentMetric?.label}
-                          fill="hsl(var(--primary))"
-                          radius={[4, 4, 0, 0]}
+                          radius={[8, 8, 0, 0]}
+                          barSize={60}
                         >
                           {chartData.map((entry, index) => (
-                            <Bar 
-                              key={`bar-${index}`}
-                              dataKey="valeur"
-                              fill={entry.fill}
+                            <Cell 
+                              key={`cell-${index}`} 
+                              fill={`url(#colorGradient-${index})`}
+                              stroke={entry.fill}
+                              strokeWidth={2}
                             />
                           ))}
                         </Bar>
-                      </BarChart>
+                        {/* Reference line for average */}
+                        <Line 
+                          type="monotone" 
+                          dataKey={() => {
+                            const values = chartData.map(d => d.valeur).filter((v): v is number => v !== null);
+                            return values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : 0;
+                          }}
+                          stroke="hsl(var(--muted-foreground))"
+                          strokeDasharray="5 5"
+                          strokeWidth={2}
+                          dot={false}
+                          name="Moyenne"
+                        />
+                      </ComposedChart>
                     </ResponsiveContainer>
+                    
+                    {/* Visual comparison cards */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
+                      {chartData.map((athlete, index) => (
+                        <div 
+                          key={athlete.name}
+                          className="relative p-4 rounded-xl border-2 bg-gradient-to-br from-background to-muted/30"
+                          style={{ borderColor: ATHLETE_COLORS[index % ATHLETE_COLORS.length] }}
+                        >
+                          <div 
+                            className="absolute top-0 left-0 right-0 h-1 rounded-t-xl"
+                            style={{ backgroundColor: ATHLETE_COLORS[index % ATHLETE_COLORS.length] }}
+                          />
+                          <p className="text-sm font-medium truncate">{athlete.name}</p>
+                          <p 
+                            className="text-2xl font-bold mt-1"
+                            style={{ color: ATHLETE_COLORS[index % ATHLETE_COLORS.length] }}
+                          >
+                            {formatDisplayValue(athlete.valeur || 0, currentMetric?.unit || "")}
+                          </p>
+                          {index === 0 && chartData.length > 1 && (
+                            <Badge variant="secondary" className="mt-2 text-xs">
+                              {currentMetric?.unit?.toLowerCase().includes("s") ? "Meilleur temps" : "Meilleur"}
+                            </Badge>
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 ) : (
                   <p className="text-center text-muted-foreground py-8">
@@ -564,14 +685,22 @@ export function MultiAthleteComparison({ categoryId, sportType = "XV" }: MultiAt
               <TabsContent value="radar">
                 {radarData.length > 0 ? (
                   <div>
-                    <h3 className="text-sm font-medium mb-4">
-                      Profil comparatif (normalisé)
+                    <h3 className="text-sm font-medium mb-4 flex items-center gap-2">
+                      <TrendingUp className="h-4 w-4" />
+                      Profil comparatif (normalisé sur 100)
                     </h3>
-                    <ResponsiveContainer width="100%" height={400}>
+                    <ResponsiveContainer width="100%" height={420}>
                       <RadarChart data={radarData}>
-                        <PolarGrid />
-                        <PolarAngleAxis dataKey="metric" />
-                        <PolarRadiusAxis angle={30} domain={[0, 100]} />
+                        <PolarGrid stroke="hsl(var(--border))" />
+                        <PolarAngleAxis 
+                          dataKey="metric" 
+                          tick={{ fill: 'hsl(var(--foreground))', fontSize: 11 }}
+                        />
+                        <PolarRadiusAxis 
+                          angle={30} 
+                          domain={[0, 100]} 
+                          tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }}
+                        />
                         {selectedAthletes.map((athleteId, index) => {
                           const player = players?.find(p => p.id === athleteId);
                           return (
@@ -581,12 +710,21 @@ export function MultiAthleteComparison({ categoryId, sportType = "XV" }: MultiAt
                               dataKey={player?.name || `Athlete ${index + 1}`}
                               stroke={ATHLETE_COLORS[index % ATHLETE_COLORS.length]}
                               fill={ATHLETE_COLORS[index % ATHLETE_COLORS.length]}
-                              fillOpacity={0.2}
+                              fillOpacity={0.25}
+                              strokeWidth={2}
                             />
                           );
                         })}
-                        <Legend />
-                        <Tooltip />
+                        <Legend 
+                          wrapperStyle={{ paddingTop: '20px' }}
+                        />
+                        <Tooltip 
+                          contentStyle={{
+                            backgroundColor: 'hsl(var(--popover))',
+                            border: '1px solid hsl(var(--border))',
+                            borderRadius: '8px',
+                          }}
+                        />
                       </RadarChart>
                     </ResponsiveContainer>
                   </div>
