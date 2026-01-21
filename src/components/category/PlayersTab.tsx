@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState, useMemo } from "react";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,13 +11,23 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Trash2, ChevronRight } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Plus, Trash2, ChevronRight, Filter } from "lucide-react";
 import { toast } from "sonner";
 import { AddPlayerDialog } from "./AddPlayerDialog";
 import { useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 import { useViewerPlayers } from "@/hooks/use-viewer-data";
+import { getDisciplineLabel } from "@/lib/constants/athleticProfiles";
+import { isAthletismeCategory, ATHLETISME_DISCIPLINES } from "@/lib/constants/sportTypes";
 
 interface PlayersTabProps {
   categoryId: string;
@@ -25,11 +35,46 @@ interface PlayersTabProps {
 
 export function PlayersTab({ categoryId }: PlayersTabProps) {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [disciplineFilter, setDisciplineFilter] = useState<string>("all");
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { isViewer } = useViewerModeContext();
 
   const { data: players, isLoading } = useViewerPlayers(categoryId);
+
+  // Fetch category to check if it's an athletics category
+  const { data: category } = useQuery({
+    queryKey: ["category", categoryId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("categories")
+        .select("rugby_type")
+        .eq("id", categoryId)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const isAthletics = category?.rugby_type ? isAthletismeCategory(category.rugby_type) : false;
+
+  // Get unique disciplines from players
+  const availableDisciplines = useMemo(() => {
+    if (!players) return [];
+    const disciplines = new Set(
+      players
+        .map((p: any) => p.discipline)
+        .filter((d: string | null) => d && d.length > 0)
+    );
+    return Array.from(disciplines) as string[];
+  }, [players]);
+
+  // Filter players by discipline
+  const filteredPlayers = useMemo(() => {
+    if (!players) return [];
+    if (disciplineFilter === "all") return players;
+    return players.filter((p: any) => p.discipline === disciplineFilter);
+  }, [players, disciplineFilter]);
 
   const deletePlayer = useMutation({
     mutationFn: async (playerId: string) => {
@@ -52,21 +97,44 @@ export function PlayersTab({ categoryId }: PlayersTabProps) {
   return (
     <Card className="bg-gradient-card shadow-md">
       <CardHeader>
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
           <CardTitle>Liste des athlètes</CardTitle>
-          {!isViewer && (
-            <Button onClick={() => setIsAddDialogOpen(true)} className="gap-2">
-              <Plus className="h-4 w-4" />
-              Ajouter un athlète
-            </Button>
-          )}
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            {isAthletics && availableDisciplines.length > 0 && (
+              <Select value={disciplineFilter} onValueChange={setDisciplineFilter}>
+                <SelectTrigger className="w-full sm:w-[200px]">
+                  <Filter className="h-4 w-4 mr-2" />
+                  <SelectValue placeholder="Filtrer par discipline" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Toutes les disciplines</SelectItem>
+                  {availableDisciplines.map((discipline) => (
+                    <SelectItem key={discipline} value={discipline}>
+                      {getDisciplineLabel(discipline)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            {!isViewer && (
+              <Button onClick={() => setIsAddDialogOpen(true)} className="gap-2 whitespace-nowrap">
+                <Plus className="h-4 w-4" />
+                <span className="hidden sm:inline">Ajouter un athlète</span>
+                <span className="sm:hidden">Ajouter</span>
+              </Button>
+            )}
+          </div>
         </div>
       </CardHeader>
       <CardContent>
-        {players && players.length === 0 ? (
+        {filteredPlayers && filteredPlayers.length === 0 ? (
           <div className="text-center py-8">
-            <p className="text-muted-foreground mb-4">Aucun athlète dans cette catégorie</p>
-            {!isViewer && (
+            <p className="text-muted-foreground mb-4">
+              {disciplineFilter !== "all" 
+                ? "Aucun athlète dans cette discipline" 
+                : "Aucun athlète dans cette catégorie"}
+            </p>
+            {!isViewer && disciplineFilter === "all" && (
               <Button onClick={() => setIsAddDialogOpen(true)} variant="outline" className="gap-2">
                 <Plus className="h-4 w-4" />
                 Ajouter le premier athlète
@@ -78,12 +146,13 @@ export function PlayersTab({ categoryId }: PlayersTabProps) {
             <TableHeader>
               <TableRow>
                 <TableHead>Nom</TableHead>
+                {isAthletics && <TableHead>Discipline</TableHead>}
                 <TableHead>Date d'ajout</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {players?.map((player) => {
+              {filteredPlayers?.map((player: any) => {
                 const initials = player.name
                   .split(" ")
                   .map((n) => n[0])
@@ -108,6 +177,17 @@ export function PlayersTab({ categoryId }: PlayersTabProps) {
                         <span>{player.name}</span>
                       </div>
                     </TableCell>
+                    {isAthletics && (
+                      <TableCell>
+                        {player.discipline ? (
+                          <Badge variant="outline" className="bg-primary/5">
+                            {getDisciplineLabel(player.discipline)}
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground text-sm">Non définie</span>
+                        )}
+                      </TableCell>
+                    )}
                     <TableCell>
                       {new Date(player.created_at).toLocaleDateString("fr-FR")}
                     </TableCell>

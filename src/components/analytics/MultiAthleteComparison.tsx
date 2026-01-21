@@ -6,12 +6,14 @@ import {
   RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Cell,
   ComposedChart, Line, Area
 } from "recharts";
-import { Loader2, Plus, X, Users, Scale, Timer, Weight, Zap, Ruler, TrendingUp } from "lucide-react";
+import { Loader2, Plus, X, Users, Scale, Timer, Weight, Zap, Ruler, TrendingUp, Filter } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useState, useMemo } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { isAthletismeCategory } from "@/lib/constants/sportTypes";
+import { getDisciplineLabel } from "@/lib/constants/athleticProfiles";
 
 interface MultiAthleteComparisonProps {
   categoryId: string;
@@ -91,14 +93,17 @@ const ATHLETE_COLORS = [
 export function MultiAthleteComparison({ categoryId, sportType = "XV" }: MultiAthleteComparisonProps) {
   const [selectedAthletes, setSelectedAthletes] = useState<string[]>([]);
   const [selectedMetric, setSelectedMetric] = useState<string>("");
+  const [disciplineFilter, setDisciplineFilter] = useState<string>("all");
 
-  // Fetch all players
+  const isAthletics = isAthletismeCategory(sportType);
+
+  // Fetch all players with discipline
   const { data: players, isLoading: loadingPlayers } = useQuery({
     queryKey: ["players-comparison", categoryId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("players")
-        .select("id, name")
+        .select("id, name, discipline")
         .eq("category_id", categoryId)
         .order("name");
       if (error) throw error;
@@ -265,10 +270,39 @@ export function MultiAthleteComparison({ categoryId, sportType = "XV" }: MultiAt
     }
   }, [availableMetrics, selectedMetric]);
 
-  // Get available athletes (not yet selected)
+  // Get unique disciplines from players
+  const availableDisciplines = useMemo(() => {
+    if (!players) return [];
+    const disciplines = new Set(
+      players
+        .map((p) => p.discipline)
+        .filter((d): d is string => !!d && d.length > 0)
+    );
+    return Array.from(disciplines);
+  }, [players]);
+
+  // Get filtered players by discipline
+  const filteredPlayers = useMemo(() => {
+    if (!players) return [];
+    if (disciplineFilter === "all") return players;
+    return players.filter((p) => p.discipline === disciplineFilter);
+  }, [players, disciplineFilter]);
+
+  // Get available athletes (not yet selected) from filtered list
   const availableAthletes = useMemo(() => {
-    return players?.filter(p => !selectedAthletes.includes(p.id)) || [];
-  }, [players, selectedAthletes]);
+    return filteredPlayers?.filter(p => !selectedAthletes.includes(p.id)) || [];
+  }, [filteredPlayers, selectedAthletes]);
+
+  // Function to select all athletes from current filter
+  const selectAllFiltered = () => {
+    const allIds = filteredPlayers.map(p => p.id);
+    setSelectedAthletes(allIds);
+  };
+
+  // Function to clear all selected athletes
+  const clearAllSelected = () => {
+    setSelectedAthletes([]);
+  };
 
   // Add athlete to comparison
   const addAthlete = (athleteId: string) => {
@@ -468,12 +502,57 @@ export function MultiAthleteComparison({ categoryId, sportType = "XV" }: MultiAt
       {/* Athlete Selection */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Users className="h-5 w-5" />
-            Sélection des Athlètes
-          </CardTitle>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Sélection des Athlètes
+            </CardTitle>
+            {isAthletics && availableDisciplines.length > 0 && (
+              <Select value={disciplineFilter} onValueChange={setDisciplineFilter}>
+                <SelectTrigger className="w-full sm:w-[220px]">
+                  <Filter className="h-4 w-4 mr-2" />
+                  <SelectValue placeholder="Filtrer par discipline" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Toutes les disciplines</SelectItem>
+                  {availableDisciplines.map((discipline) => (
+                    <SelectItem key={discipline} value={discipline}>
+                      {getDisciplineLabel(discipline)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Selected athletes count and bulk actions */}
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <p className="text-sm text-muted-foreground">
+              {selectedAthletes.length} athlète{selectedAthletes.length !== 1 ? "s" : ""} sélectionné{selectedAthletes.length !== 1 ? "s" : ""}
+              {disciplineFilter !== "all" && ` (filtre: ${getDisciplineLabel(disciplineFilter)})`}
+            </p>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={selectAllFiltered}
+                disabled={availableAthletes.length === 0}
+              >
+                Tout sélectionner
+              </Button>
+              {selectedAthletes.length > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearAllSelected}
+                >
+                  Tout désélectionner
+                </Button>
+              )}
+            </div>
+          </div>
+
           {/* Selected athletes */}
           <div className="flex flex-wrap gap-2">
             {selectedAthletes.map((athleteId, index) => {
@@ -493,7 +572,14 @@ export function MultiAthleteComparison({ categoryId, sportType = "XV" }: MultiAt
                     className="w-3 h-3 rounded-full" 
                     style={{ backgroundColor: ATHLETE_COLORS[index % ATHLETE_COLORS.length] }}
                   />
-                  {player?.name}
+                  <span>
+                    {player?.name}
+                    {isAthletics && player?.discipline && (
+                      <span className="text-xs opacity-70 ml-1">
+                        ({getDisciplineLabel(player.discipline)})
+                      </span>
+                    )}
+                  </span>
                   <button
                     onClick={() => removeAthlete(athleteId)}
                     className="ml-1 hover:text-destructive"
@@ -515,6 +601,11 @@ export function MultiAthleteComparison({ categoryId, sportType = "XV" }: MultiAt
                 {availableAthletes.map(player => (
                   <SelectItem key={player.id} value={player.id}>
                     {player.name}
+                    {isAthletics && player.discipline && (
+                      <span className="text-xs text-muted-foreground ml-2">
+                        ({getDisciplineLabel(player.discipline)})
+                      </span>
+                    )}
                   </SelectItem>
                 ))}
               </SelectContent>
