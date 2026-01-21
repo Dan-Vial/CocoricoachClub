@@ -27,7 +27,7 @@ import { Badge } from "@/components/ui/badge";
 import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 import { useViewerPlayers } from "@/hooks/use-viewer-data";
 import { getDisciplineLabel } from "@/lib/constants/athleticProfiles";
-import { isAthletismeCategory, ATHLETISME_DISCIPLINES } from "@/lib/constants/sportTypes";
+import { isAthletismeCategory, isJudoCategory } from "@/lib/constants/sportTypes";
 
 interface PlayersTabProps {
   categoryId: string;
@@ -57,6 +57,9 @@ export function PlayersTab({ categoryId }: PlayersTabProps) {
   });
 
   const isAthletics = category?.rugby_type ? isAthletismeCategory(category.rugby_type) : false;
+  const isJudo = category?.rugby_type ? isJudoCategory(category.rugby_type) : false;
+  const hasDisciplineColumn = isAthletics || isJudo;
+  const disciplineColumnLabel = isJudo ? "Catégorie" : "Discipline";
 
   // Get unique disciplines from players
   const availableDisciplines = useMemo(() => {
@@ -100,14 +103,14 @@ export function PlayersTab({ categoryId }: PlayersTabProps) {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
           <CardTitle>Liste des athlètes</CardTitle>
           <div className="flex items-center gap-2 w-full sm:w-auto">
-            {isAthletics && availableDisciplines.length > 0 && (
+            {hasDisciplineColumn && availableDisciplines.length > 0 && (
               <Select value={disciplineFilter} onValueChange={setDisciplineFilter}>
                 <SelectTrigger className="w-full sm:w-[200px]">
                   <Filter className="h-4 w-4 mr-2" />
-                  <SelectValue placeholder="Filtrer par discipline" />
+                  <SelectValue placeholder={isJudo ? "Filtrer par catégorie" : "Filtrer par discipline"} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Toutes les disciplines</SelectItem>
+                  <SelectItem value="all">{isJudo ? "Toutes les catégories" : "Toutes les disciplines"}</SelectItem>
                   {availableDisciplines.map((discipline) => (
                     <SelectItem key={discipline} value={discipline}>
                       {getDisciplineLabel(discipline)}
@@ -131,7 +134,7 @@ export function PlayersTab({ categoryId }: PlayersTabProps) {
           <div className="text-center py-8">
             <p className="text-muted-foreground mb-4">
               {disciplineFilter !== "all" 
-                ? "Aucun athlète dans cette discipline" 
+                ? (isJudo ? "Aucun athlète dans cette catégorie de poids" : "Aucun athlète dans cette discipline")
                 : "Aucun athlète dans cette catégorie"}
             </p>
             {!isViewer && disciplineFilter === "all" && (
@@ -146,7 +149,7 @@ export function PlayersTab({ categoryId }: PlayersTabProps) {
             <TableHeader>
               <TableRow>
                 <TableHead>Nom</TableHead>
-                {isAthletics && <TableHead>Discipline</TableHead>}
+                {hasDisciplineColumn && <TableHead>{disciplineColumnLabel}</TableHead>}
                 <TableHead>Date d'ajout</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -177,7 +180,7 @@ export function PlayersTab({ categoryId }: PlayersTabProps) {
                         <span>{player.name}</span>
                       </div>
                     </TableCell>
-                    {isAthletics && (
+                    {hasDisciplineColumn && (
                       <TableCell>
                         {player.discipline ? (
                           <Badge variant="outline" className="bg-primary/5">

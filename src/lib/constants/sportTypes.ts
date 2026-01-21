@@ -80,6 +80,12 @@ export interface SportSubTypeOption {
   label: string;
 }
 
+// Generic option for player attributes (discipline, weight category)
+export interface PlayerAttributeOption {
+  value: string;
+  label: string;
+}
+
 export const RUGBY_SUBTYPES: SportSubTypeOption[] = [
   { value: "XV", label: "Rugby à XV" },
   { value: "7", label: "Rugby à 7" },
@@ -96,7 +102,7 @@ export const ATHLETISME_CATEGORY_SUBTYPES: SportSubTypeOption[] = [
 ];
 
 // Disciplines for PLAYER creation (used in AddPlayerDialog)
-export const ATHLETISME_DISCIPLINES: SportSubTypeOption[] = [
+export const ATHLETISME_DISCIPLINES: PlayerAttributeOption[] = [
   { value: "athletisme_sprints", label: "Sprints (60m, 100m, 200m, 400m)" },
   { value: "athletisme_haies", label: "Haies (100mH, 110mH, 400mH)" },
   { value: "athletisme_demi_fond", label: "Demi-fond (800m, 1500m, Mile)" },
@@ -106,6 +112,45 @@ export const ATHLETISME_DISCIPLINES: SportSubTypeOption[] = [
   { value: "athletisme_sauts_hauteur", label: "Sauts verticaux (Hauteur, Perche)" },
   { value: "athletisme_lancers", label: "Lancers (Poids, Disque, Marteau, Javelot)" },
   { value: "athletisme_combines", label: "Épreuves combinées (Décathlon, Heptathlon)" },
+];
+
+// Weight categories for Judo (used in AddPlayerDialog)
+export const JUDO_WEIGHT_CATEGORIES_MEN: PlayerAttributeOption[] = [
+  { value: "judo_-60kg", label: "-60 kg" },
+  { value: "judo_-66kg", label: "-66 kg" },
+  { value: "judo_-73kg", label: "-73 kg" },
+  { value: "judo_-81kg", label: "-81 kg" },
+  { value: "judo_-90kg", label: "-90 kg" },
+  { value: "judo_-100kg", label: "-100 kg" },
+  { value: "judo_+100kg", label: "+100 kg" },
+];
+
+export const JUDO_WEIGHT_CATEGORIES_WOMEN: PlayerAttributeOption[] = [
+  { value: "judo_-48kg", label: "-48 kg" },
+  { value: "judo_-52kg", label: "-52 kg" },
+  { value: "judo_-57kg", label: "-57 kg" },
+  { value: "judo_-63kg", label: "-63 kg" },
+  { value: "judo_-70kg", label: "-70 kg" },
+  { value: "judo_-78kg", label: "-78 kg" },
+  { value: "judo_+78kg", label: "+78 kg" },
+];
+
+// Combined weight categories for general selection
+export const JUDO_WEIGHT_CATEGORIES: PlayerAttributeOption[] = [
+  { value: "judo_-48kg", label: "-48 kg (F)" },
+  { value: "judo_-52kg", label: "-52 kg (F)" },
+  { value: "judo_-57kg", label: "-57 kg (F)" },
+  { value: "judo_-60kg", label: "-60 kg (M)" },
+  { value: "judo_-63kg", label: "-63 kg (F)" },
+  { value: "judo_-66kg", label: "-66 kg (M)" },
+  { value: "judo_-70kg", label: "-70 kg (F)" },
+  { value: "judo_-73kg", label: "-73 kg (M)" },
+  { value: "judo_-78kg", label: "-78 kg (F)" },
+  { value: "judo_-81kg", label: "-81 kg (M)" },
+  { value: "judo_+78kg", label: "+78 kg (F)" },
+  { value: "judo_-90kg", label: "-90 kg (M)" },
+  { value: "judo_-100kg", label: "-100 kg (M)" },
+  { value: "judo_+100kg", label: "+100 kg (M)" },
 ];
 
 // Sub-types for other sports (Club, Académie, Équipe Nationale)
@@ -134,6 +179,11 @@ export const getOtherSportSubtypes = (sport: MainSportCategory): SportSubTypeOpt
 // Helper to check if a category is an athletics category
 export const isAthletismeCategory = (rugbyType: string): boolean => {
   return rugbyType?.startsWith("athletisme") || rugbyType === "athletisme";
+};
+
+// Helper to check if a category is a judo category
+export const isJudoCategory = (rugbyType: string): boolean => {
+  return rugbyType?.startsWith("judo") || rugbyType === "judo";
 };
 
 export const SPORT_TYPES: SportTypeOption[] = [

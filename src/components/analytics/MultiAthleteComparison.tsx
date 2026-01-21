@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useState, useMemo } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { isAthletismeCategory } from "@/lib/constants/sportTypes";
+import { isAthletismeCategory, isJudoCategory } from "@/lib/constants/sportTypes";
 import { getDisciplineLabel } from "@/lib/constants/athleticProfiles";
 
 interface MultiAthleteComparisonProps {
@@ -96,7 +96,9 @@ export function MultiAthleteComparison({ categoryId, sportType = "XV" }: MultiAt
   const [disciplineFilter, setDisciplineFilter] = useState<string>("all");
 
   const isAthletics = isAthletismeCategory(sportType);
-
+  const isJudo = isJudoCategory(sportType);
+  const hasDisciplineFilter = isAthletics || isJudo;
+  const disciplineFilterLabel = isJudo ? "catégorie de poids" : "discipline";
   // Fetch all players with discipline
   const { data: players, isLoading: loadingPlayers } = useQuery({
     queryKey: ["players-comparison", categoryId],
@@ -507,14 +509,14 @@ export function MultiAthleteComparison({ categoryId, sportType = "XV" }: MultiAt
               <Users className="h-5 w-5" />
               Sélection des Athlètes
             </CardTitle>
-            {isAthletics && availableDisciplines.length > 0 && (
+            {hasDisciplineFilter && availableDisciplines.length > 0 && (
               <Select value={disciplineFilter} onValueChange={setDisciplineFilter}>
                 <SelectTrigger className="w-full sm:w-[220px]">
                   <Filter className="h-4 w-4 mr-2" />
-                  <SelectValue placeholder="Filtrer par discipline" />
+                  <SelectValue placeholder={`Filtrer par ${disciplineFilterLabel}`} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Toutes les disciplines</SelectItem>
+                  <SelectItem value="all">{isJudo ? "Toutes les catégories" : "Toutes les disciplines"}</SelectItem>
                   {availableDisciplines.map((discipline) => (
                     <SelectItem key={discipline} value={discipline}>
                       {getDisciplineLabel(discipline)}
@@ -574,7 +576,7 @@ export function MultiAthleteComparison({ categoryId, sportType = "XV" }: MultiAt
                   />
                   <span>
                     {player?.name}
-                    {isAthletics && player?.discipline && (
+                    {hasDisciplineFilter && player?.discipline && (
                       <span className="text-xs opacity-70 ml-1">
                         ({getDisciplineLabel(player.discipline)})
                       </span>
@@ -601,7 +603,7 @@ export function MultiAthleteComparison({ categoryId, sportType = "XV" }: MultiAt
                 {availableAthletes.map(player => (
                   <SelectItem key={player.id} value={player.id}>
                     {player.name}
-                    {isAthletics && player.discipline && (
+                    {hasDisciplineFilter && player.discipline && (
                       <span className="text-xs text-muted-foreground ml-2">
                         ({getDisciplineLabel(player.discipline)})
                       </span>

@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { playerSchema } from "@/lib/validations";
-import { ATHLETISME_DISCIPLINES, isAthletismeCategory } from "@/lib/constants/sportTypes";
+import { ATHLETISME_DISCIPLINES, JUDO_WEIGHT_CATEGORIES, isAthletismeCategory, isJudoCategory } from "@/lib/constants/sportTypes";
 
 interface AddPlayerDialogProps {
   open: boolean;
@@ -55,6 +55,8 @@ export function AddPlayerDialog({
   });
 
   const isAthletics = category?.rugby_type ? isAthletismeCategory(category.rugby_type) : false;
+  const isJudo = category?.rugby_type ? isJudoCategory(category.rugby_type) : false;
+  const needsDisciplineSelection = isAthletics || isJudo;
 
   const addPlayer = useMutation({
     mutationFn: async (data: { name: string; birth_year?: number; birth_date?: string; discipline?: string }) => {
@@ -101,6 +103,12 @@ export function AddPlayerDialog({
     // Validate discipline for athletics
     if (isAthletics && !discipline) {
       setValidationError("Veuillez sélectionner une discipline");
+      return;
+    }
+
+    // Validate weight category for judo
+    if (isJudo && !discipline) {
+      setValidationError("Veuillez sélectionner une catégorie de poids");
       return;
     }
 
@@ -151,6 +159,27 @@ export function AddPlayerDialog({
                 </Select>
                 <p className="text-xs text-muted-foreground">
                   Le profilage et les tests seront adaptés à cette discipline
+                </p>
+              </div>
+            )}
+
+            {isJudo && (
+              <div className="space-y-2">
+                <Label htmlFor="weightCategory">Catégorie de poids *</Label>
+                <Select value={discipline} onValueChange={setDiscipline}>
+                  <SelectTrigger className="w-full bg-background">
+                    <SelectValue placeholder="Sélectionner une catégorie" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border z-50">
+                    {JUDO_WEIGHT_CATEGORIES.map((cat) => (
+                      <SelectItem key={cat.value} value={cat.value}>
+                        {cat.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Les athlètes pourront être comparés par catégorie de poids
                 </p>
               </div>
             )}
