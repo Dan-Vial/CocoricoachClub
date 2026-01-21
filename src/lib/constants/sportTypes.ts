@@ -12,6 +12,7 @@ export type SportType =
   | "bowling"
   | "basketball"
   | "aviron"
+  | "athletisme"
   | "football_club"
   | "football_academie"
   | "football_national"
@@ -32,7 +33,20 @@ export type SportType =
   | "bowling_national"
   | "aviron_club"
   | "aviron_academie"
-  | "aviron_national";
+  | "aviron_national"
+  // Athlétisme disciplines
+  | "athletisme_sprints"
+  | "athletisme_haies"
+  | "athletisme_demi_fond"
+  | "athletisme_fond"
+  | "athletisme_marche"
+  | "athletisme_sauts_longueur"
+  | "athletisme_sauts_hauteur"
+  | "athletisme_lancers"
+  | "athletisme_combines"
+  | "athletisme_club"
+  | "athletisme_academie"
+  | "athletisme_national";
 
 export interface SportTypeOption {
   value: SportType;
@@ -41,7 +55,7 @@ export interface SportTypeOption {
 }
 
 // Main sport categories for the first dropdown
-export type MainSportCategory = "rugby" | "football" | "handball" | "volleyball" | "basketball" | "judo" | "bowling" | "aviron";
+export type MainSportCategory = "rugby" | "football" | "handball" | "volleyball" | "basketball" | "judo" | "bowling" | "aviron" | "athletisme";
 
 export interface MainSportOption {
   value: MainSportCategory;
@@ -57,6 +71,7 @@ export const MAIN_SPORTS: MainSportOption[] = [
   { value: "judo", label: "Judo" },
   { value: "bowling", label: "Bowling" },
   { value: "aviron", label: "Aviron" },
+  { value: "athletisme", label: "Athlétisme" },
 ];
 
 // Sub-types for rugby
@@ -73,11 +88,28 @@ export const RUGBY_SUBTYPES: SportSubTypeOption[] = [
   { value: "national_team", label: "Équipe Nationale" },
 ];
 
+// Sub-types for athletics disciplines
+export const ATHLETISME_DISCIPLINES: SportSubTypeOption[] = [
+  { value: "athletisme_sprints", label: "Sprints (60m, 100m, 200m, 400m)" },
+  { value: "athletisme_haies", label: "Haies (100mH, 110mH, 400mH)" },
+  { value: "athletisme_demi_fond", label: "Demi-fond (800m, 1500m, Mile)" },
+  { value: "athletisme_fond", label: "Fond (3000m, 5000m, 10000m, Cross)" },
+  { value: "athletisme_marche", label: "Marche athlétique (10km, 20km, 35km)" },
+  { value: "athletisme_sauts_longueur", label: "Sauts horizontaux (Longueur, Triple)" },
+  { value: "athletisme_sauts_hauteur", label: "Sauts verticaux (Hauteur, Perche)" },
+  { value: "athletisme_lancers", label: "Lancers (Poids, Disque, Marteau, Javelot)" },
+  { value: "athletisme_combines", label: "Épreuves combinées (Décathlon, Heptathlon)" },
+  { value: "athletisme_club", label: "Athlétisme - Club" },
+  { value: "athletisme_academie", label: "Athlétisme - Académie / Pôle Espoir" },
+  { value: "athletisme_national", label: "Athlétisme - Équipe Nationale" },
+];
+
 // Sub-types for other sports (Club, Académie, Équipe Nationale)
 export const getOtherSportSubtypes = (sport: MainSportCategory): SportSubTypeOption[] => {
   if (sport === "rugby") return RUGBY_SUBTYPES;
+  if (sport === "athletisme") return ATHLETISME_DISCIPLINES;
   
-  const sportLabels: Record<Exclude<MainSportCategory, "rugby">, string> = {
+  const sportLabels: Record<Exclude<MainSportCategory, "rugby" | "athletisme">, string> = {
     football: "Football",
     handball: "Handball",
     volleyball: "Volleyball",
@@ -128,6 +160,19 @@ export const SPORT_TYPES: SportTypeOption[] = [
   { value: "judo_national", label: "Judo - Équipe Nationale", category: "individual" },
   { value: "bowling_national", label: "Bowling - Équipe Nationale", category: "individual" },
   { value: "aviron_national", label: "Aviron - Équipe Nationale", category: "individual" },
+  // Athlétisme disciplines
+  { value: "athletisme_sprints", label: "Athlétisme - Sprints", category: "individual" },
+  { value: "athletisme_haies", label: "Athlétisme - Haies", category: "individual" },
+  { value: "athletisme_demi_fond", label: "Athlétisme - Demi-fond", category: "individual" },
+  { value: "athletisme_fond", label: "Athlétisme - Fond", category: "individual" },
+  { value: "athletisme_marche", label: "Athlétisme - Marche athlétique", category: "individual" },
+  { value: "athletisme_sauts_longueur", label: "Athlétisme - Sauts horizontaux", category: "individual" },
+  { value: "athletisme_sauts_hauteur", label: "Athlétisme - Sauts verticaux", category: "individual" },
+  { value: "athletisme_lancers", label: "Athlétisme - Lancers", category: "individual" },
+  { value: "athletisme_combines", label: "Athlétisme - Épreuves combinées", category: "individual" },
+  { value: "athletisme_club", label: "Athlétisme - Club", category: "individual" },
+  { value: "athletisme_academie", label: "Athlétisme - Académie", category: "individual" },
+  { value: "athletisme_national", label: "Athlétisme - Équipe Nationale", category: "individual" },
   // Legacy types (for backwards compatibility)
   { value: "football", label: "Football", category: "team" },
   { value: "handball", label: "Handball", category: "team" },
@@ -136,6 +181,7 @@ export const SPORT_TYPES: SportTypeOption[] = [
   { value: "judo", label: "Judo", category: "individual" },
   { value: "bowling", label: "Bowling", category: "individual" },
   { value: "aviron", label: "Aviron", category: "individual" },
+  { value: "athletisme", label: "Athlétisme", category: "individual" },
 ];
 
 export const getSportLabel = (type: string): string => {
@@ -170,11 +216,22 @@ export const getMainSportFromType = (type: string): MainSportCategory => {
   if (type.startsWith("judo")) return "judo";
   if (type.startsWith("bowling")) return "bowling";
   if (type.startsWith("aviron")) return "aviron";
+  if (type.startsWith("athletisme")) return "athletisme";
   return "rugby"; // default
 };
 
 export const isIndividualSport = (type: string): boolean => {
-  return ["judo", "bowling", "aviron", "judo_club", "judo_academie", "judo_national", "bowling_club", "bowling_academie", "bowling_national", "aviron_club", "aviron_academie", "aviron_national"].includes(type);
+  const individualSports = [
+    "judo", "bowling", "aviron", "athletisme",
+    "judo_club", "judo_academie", "judo_national",
+    "bowling_club", "bowling_academie", "bowling_national",
+    "aviron_club", "aviron_academie", "aviron_national",
+    "athletisme_sprints", "athletisme_haies", "athletisme_demi_fond",
+    "athletisme_fond", "athletisme_marche", "athletisme_sauts_longueur",
+    "athletisme_sauts_hauteur", "athletisme_lancers", "athletisme_combines",
+    "athletisme_club", "athletisme_academie", "athletisme_national"
+  ];
+  return individualSports.includes(type);
 };
 
 export const isTeamSport = (type: string): boolean => {
