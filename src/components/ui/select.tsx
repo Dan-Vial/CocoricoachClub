@@ -150,17 +150,26 @@ const SelectItem = React.forwardRef<
 
       {/*
         Radix Select uses ItemText to render the selected value in the trigger.
-        We show ONLY the clean text in ItemText (for trigger display).
-        The rich visual content (children) is rendered separately for the dropdown.
+        For primitive children (string/number), we let ItemText handle everything normally.
+        For complex JSX children, we use ItemText ONLY for trigger display (hidden in dropdown)
+        and render the rich children visibly in the dropdown list.
       */}
-      <SelectPrimitive.ItemText className="sr-only">
-        {computedTextValue ?? "Option"}
-      </SelectPrimitive.ItemText>
-      
-      {/* Visible content in dropdown - show full rich children or fallback to text */}
-      <span className="flex-1">
-        {isPrimitiveChild ? children : (children ?? computedTextValue ?? "Option")}
-      </span>
+      {isPrimitiveChild ? (
+        <SelectPrimitive.ItemText>
+          {children}
+        </SelectPrimitive.ItemText>
+      ) : (
+        <>
+          {/* Hidden text for trigger display only */}
+          <SelectPrimitive.ItemText className="sr-only">
+            {computedTextValue ?? "Option"}
+          </SelectPrimitive.ItemText>
+          {/* Visible rich content in dropdown */}
+          <span className="flex-1">
+            {children}
+          </span>
+        </>
+      )}
     </SelectPrimitive.Item>
   );
 });
