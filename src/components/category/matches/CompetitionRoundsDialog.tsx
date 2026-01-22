@@ -563,12 +563,14 @@ export function CompetitionRoundsDialog({
 
             {/* Oil Pattern Tab (Bowling only) */}
             {isBowling && (
-              <TabsContent value="oil" className="flex-1 min-h-0 mt-0 overflow-hidden">
-                <ScrollArea className="h-full max-h-[calc(90vh-280px)]">
-                  <BowlingOilPatternSection
-                    matchId={matchId}
-                    categoryId={categoryId}
-                  />
+              <TabsContent value="oil" className="mt-0 overflow-hidden">
+                <ScrollArea className="h-[calc(90vh-300px)]">
+                  <div className="pr-4 pb-4">
+                    <BowlingOilPatternSection
+                      matchId={matchId}
+                      categoryId={categoryId}
+                    />
+                  </div>
                 </ScrollArea>
               </TabsContent>
             )}
