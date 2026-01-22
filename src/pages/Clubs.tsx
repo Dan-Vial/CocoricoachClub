@@ -114,12 +114,31 @@ export default function Clubs() {
         console.error("Delete club error:", error);
         throw error;
       }
+      return clubId;
+    },
+    onMutate: async (clubId: string) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ["clubs"] });
+      
+      // Snapshot previous value
+      const previousClubs = queryClient.getQueryData(["clubs"]);
+      
+      // Optimistically remove the club from the list
+      queryClient.setQueryData(["clubs"], (old: any[] | undefined) => 
+        old ? old.filter((club) => club.id !== clubId) : []
+      );
+      
+      return { previousClubs };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["clubs"] });
       toast.success("Club supprimé avec succès");
     },
-    onError: (error: any) => {
+    onError: (error: any, _clubId, context) => {
+      // Rollback on error
+      if (context?.previousClubs) {
+        queryClient.setQueryData(["clubs"], context.previousClubs);
+      }
       console.error("Delete club mutation error:", error);
       if (error.code === "23503") {
         toast.error("Impossible de supprimer ce club car il contient des catégories. Supprimez d'abord les catégories.");
