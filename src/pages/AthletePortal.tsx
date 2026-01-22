@@ -14,6 +14,7 @@ interface AthleteInfo {
   category_id: string;
   category_name: string;
   club_name: string;
+  sport_type?: string;
 }
 
 export default function AthletePortal() {
@@ -44,6 +45,7 @@ export default function AthletePortal() {
             category_id: data.category_id,
             category_name: data.category_name,
             club_name: data.club_name,
+            sport_type: data.sport_type,
           });
           setStatus("success");
         } else {
@@ -140,7 +142,7 @@ export default function AthletePortal() {
           </TabsContent>
 
           <TabsContent value="matches" className="mt-6">
-            <AthleteMatchStats token={token!} playerId={athleteInfo!.player_id} categoryId={athleteInfo!.category_id} />
+            <AthleteMatchStats token={token!} playerId={athleteInfo!.player_id} categoryId={athleteInfo!.category_id} sportType={athleteInfo?.sport_type} />
           </TabsContent>
         </Tabs>
       </div>

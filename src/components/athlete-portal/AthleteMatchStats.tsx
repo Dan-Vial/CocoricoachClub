@@ -4,16 +4,19 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Trophy, Calendar, CheckCircle2, MapPin, Loader2 } from "lucide-react";
+import { Trophy, Calendar, CheckCircle2, MapPin, Loader2, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
 import { athletePortalHeaders, buildAthletePortalFunctionUrl } from "@/lib/athletePortalClient";
+import { BowlingScoreSheet } from "./BowlingScoreSheet";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface AthleteMatchStatsProps {
   token: string;
   playerId: string;
   categoryId: string;
+  sportType?: string;
 }
 
 interface Match {
@@ -26,12 +29,34 @@ interface Match {
   score_away: number | null;
 }
 
-export function AthleteMatchStats({ token, playerId, categoryId }: AthleteMatchStatsProps) {
+interface BowlingGame {
+  gameNumber: number;
+  score: number;
+  strikes: number;
+  spares: number;
+  splitCount: number;
+  splitConverted: number;
+  splitOnLastThrow: number;
+  singlePinCount: number;
+  singlePinConverted: number;
+  pocketCount: number;
+  strikePercentage: number;
+  sparePercentage: number;
+  splitPercentage: number;
+  singlePinPercentage: number;
+  singlePinConversionRate: number;
+  pocketPercentage: number;
+  openFrames: number;
+}
+
+export function AthleteMatchStats({ token, playerId, categoryId, sportType }: AthleteMatchStatsProps) {
   const [matches, setMatches] = useState<Match[]>([]);
   const [completedMatchIds, setCompletedMatchIds] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
   const [selectedMatch, setSelectedMatch] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showBowlingSheet, setShowBowlingSheet] = useState(false);
+  const [bowlingGames, setBowlingGames] = useState<BowlingGame[]>([]);
   const [stats, setStats] = useState({
     minutes_played: "",
     goals: "",
@@ -39,6 +64,8 @@ export function AthleteMatchStats({ token, playerId, categoryId }: AthleteMatchS
     yellow_cards: "",
     red_cards: "",
   });
+
+  const isBowling = sportType === "bowling";
 
   // Fetch matches
   useEffect(() => {
@@ -180,8 +207,140 @@ export function AthleteMatchStats({ token, playerId, categoryId }: AthleteMatchS
         </CardContent>
       </Card>
 
-      {/* Stats Entry Form */}
-      {selectedMatch && (
+      {/* Bowling: Add Game Button and Games List */}
+      {selectedMatch && isBowling && (
+        <Card className="border-primary">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>Parties de bowling</CardTitle>
+              <Button onClick={() => setShowBowlingSheet(true)} size="sm">
+                <Plus className="h-4 w-4 mr-2" />
+                Ajouter une partie
+              </Button>
+            </div>
+            <CardDescription>
+              Ajoutez vos parties avec la feuille de score interactive
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {bowlingGames.length === 0 ? (
+              <p className="text-center text-muted-foreground py-4">
+                Aucune partie enregistrée. Cliquez sur "Ajouter une partie" pour commencer.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {bowlingGames.map((game, index) => (
+                  <div
+                    key={index}
+                    className="p-4 rounded-lg border bg-muted/30"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <Badge variant="secondary">Partie {game.gameNumber}</Badge>
+                      <span className="text-2xl font-bold text-primary">{game.score}</span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 text-xs text-muted-foreground">
+                      <div>Strikes: {game.strikes} ({game.strikePercentage}%)</div>
+                      <div>Spares: {game.spares} ({game.sparePercentage}%)</div>
+                      <div>Open: {game.openFrames}</div>
+                      <div>Splits: {game.splitConverted}/{game.splitCount}</div>
+                      <div>Poche: {game.pocketPercentage}%</div>
+                      <div>QS conv.: {game.singlePinConversionRate}%</div>
+                    </div>
+                  </div>
+                ))}
+
+                {/* Summary */}
+                {bowlingGames.length > 0 && (
+                  <div className="p-4 rounded-lg bg-primary/10 border border-primary/20 mt-4">
+                    <div className="text-sm font-medium mb-2">Résumé de la compétition</div>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+                      <div>
+                        <div className="text-xs text-muted-foreground">Parties</div>
+                        <div className="text-lg font-bold">{bowlingGames.length}</div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-muted-foreground">Meilleur</div>
+                        <div className="text-lg font-bold">{Math.max(...bowlingGames.map(g => g.score))}</div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-muted-foreground">Moyenne</div>
+                        <div className="text-lg font-bold">
+                          {Math.round(bowlingGames.reduce((sum, g) => sum + g.score, 0) / bowlingGames.length)}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-muted-foreground">Total</div>
+                        <div className="text-lg font-bold">
+                          {bowlingGames.reduce((sum, g) => sum + g.score, 0)}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex gap-3 pt-4">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => {
+                      setSelectedMatch(null);
+                      setBowlingGames([]);
+                    }}
+                  >
+                    Annuler
+                  </Button>
+                  <Button
+                    className="flex-1"
+                    onClick={handleBowlingSubmit}
+                    disabled={isSubmitting || bowlingGames.length === 0}
+                  >
+                    {isSubmitting ? "Enregistrement..." : "Enregistrer la compétition"}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Bowling Score Sheet Dialog */}
+      <Dialog open={showBowlingSheet} onOpenChange={setShowBowlingSheet}>
+        <DialogContent className="max-w-4xl max-h-[95vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Partie {bowlingGames.length + 1}</DialogTitle>
+          </DialogHeader>
+          <BowlingScoreSheet
+            onSave={(stats) => {
+              const newGame: BowlingGame = {
+                gameNumber: bowlingGames.length + 1,
+                score: stats.totalScore,
+                strikes: stats.strikes,
+                spares: stats.spares,
+                splitCount: stats.splitCount,
+                splitConverted: stats.splitConverted,
+                splitOnLastThrow: stats.splitOnLastThrow,
+                singlePinCount: stats.singlePinCount,
+                singlePinConverted: stats.singlePinConverted,
+                pocketCount: stats.pocketCount,
+                strikePercentage: stats.strikePercentage,
+                sparePercentage: stats.sparePercentage,
+                splitPercentage: stats.splitPercentage,
+                singlePinPercentage: stats.singlePinPercentage,
+                singlePinConversionRate: stats.singlePinConversionRate,
+                pocketPercentage: stats.pocketPercentage,
+                openFrames: stats.openFrames,
+              };
+              setBowlingGames(prev => [...prev, newGame]);
+              setShowBowlingSheet(false);
+              toast.success(`Partie ${newGame.gameNumber} enregistrée: ${newGame.score} points`);
+            }}
+            onCancel={() => setShowBowlingSheet(false)}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Stats Entry Form for non-bowling sports */}
+      {selectedMatch && !isBowling && (
         <Card className="border-primary">
           <CardHeader>
             <CardTitle>Vos statistiques</CardTitle>
@@ -258,7 +417,7 @@ export function AthleteMatchStats({ token, playerId, categoryId }: AthleteMatchS
       {completedMatches.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-green-700 dark:text-green-400">
+            <CardTitle className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400">
               <CheckCircle2 className="h-5 w-5" />
               Compétitions complétées
             </CardTitle>
@@ -268,10 +427,10 @@ export function AthleteMatchStats({ token, playerId, categoryId }: AthleteMatchS
               {completedMatches.map((match) => (
                 <div
                   key={match.id}
-                  className="p-3 rounded-lg bg-green-50 dark:bg-green-950/30 flex items-center justify-between"
+                  className="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 flex items-center justify-between"
                 >
                   <div className="flex items-center gap-3">
-                    <CheckCircle2 className="h-4 w-4 text-green-600" />
+                    <CheckCircle2 className="h-4 w-4 text-emerald-600" />
                     <span>
                       {format(parseISO(match.match_date), "d MMMM", { locale: fr })} - vs {match.opponent}
                     </span>
@@ -284,4 +443,34 @@ export function AthleteMatchStats({ token, playerId, categoryId }: AthleteMatchS
       )}
     </div>
   );
+
+  async function handleBowlingSubmit() {
+    if (!selectedMatch || bowlingGames.length === 0) return;
+
+    setIsSubmitting(true);
+    try {
+      const res = await fetch(buildAthletePortalFunctionUrl("submit-bowling-stats", token), {
+        method: "POST",
+        headers: athletePortalHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify({
+          match_id: selectedMatch,
+          games: bowlingGames,
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        toast.success("Statistiques bowling enregistrées !");
+        setCompletedMatchIds(prev => new Set([...prev, selectedMatch]));
+        setSelectedMatch(null);
+        setBowlingGames([]);
+      } else {
+        toast.error(data.error || "Erreur lors de l'enregistrement");
+      }
+    } catch {
+      toast.error("Erreur de connexion");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
 }

@@ -15,6 +15,7 @@ interface AthleteTokenInfo {
   category_name?: string;
   club_id?: string;
   club_name?: string;
+  sport_type?: string;
 }
 
 serve(async (req) => {
@@ -54,6 +55,18 @@ serve(async (req) => {
 
     const { player_id, category_id, player_name, category_name, club_name } = tokenInfo as AthleteTokenInfo;
 
+    // Get sport type from category -> club
+    let sport_type: string | undefined;
+    const { data: categoryData } = await supabase
+      .from("categories")
+      .select("club_id, clubs(sport_type)")
+      .eq("id", category_id)
+      .single();
+    
+    if (categoryData?.clubs && typeof categoryData.clubs === 'object' && 'sport_type' in categoryData.clubs) {
+      sport_type = (categoryData.clubs as { sport_type?: string }).sport_type;
+    }
+
     // Handle different actions
     if (action === "validate") {
       return new Response(
@@ -63,7 +76,8 @@ serve(async (req) => {
           player_name, 
           category_id, 
           category_name, 
-          club_name 
+          club_name,
+          sport_type
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
@@ -240,6 +254,71 @@ serve(async (req) => {
       });
 
       if (insertError) throw insertError;
+
+      return new Response(
+        JSON.stringify({ success: true }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (action === "submit-bowling-stats" && req.method === "POST") {
+      const body = await req.json();
+      const { match_id, games } = body;
+
+      if (!match_id || !games || !Array.isArray(games) || games.length === 0) {
+        return new Response(
+          JSON.stringify({ success: false, error: "Données manquantes" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Insert each game as a competition_round
+      for (const game of games) {
+        const { error: roundError } = await supabase.from("competition_rounds").insert({
+          match_id,
+          player_id,
+          round_number: game.gameNumber,
+          result: "completed",
+        });
+
+        if (roundError) throw roundError;
+
+        // Get the inserted round ID
+        const { data: insertedRound } = await supabase
+          .from("competition_rounds")
+          .select("id")
+          .eq("match_id", match_id)
+          .eq("player_id", player_id)
+          .eq("round_number", game.gameNumber)
+          .single();
+
+        if (insertedRound) {
+          // Insert stats for this round
+          const { error: statsError } = await supabase.from("competition_round_stats").insert({
+            round_id: insertedRound.id,
+            stat_data: {
+              gameScore: game.score,
+              strikes: game.strikes,
+              spares: game.spares,
+              splitCount: game.splitCount,
+              splitConverted: game.splitConverted,
+              splitOnLastThrow: game.splitOnLastThrow,
+              singlePinCount: game.singlePinCount,
+              singlePinConverted: game.singlePinConverted,
+              pocketCount: game.pocketCount,
+              strikePercentage: game.strikePercentage,
+              sparePercentage: game.sparePercentage,
+              splitPercentage: game.splitPercentage,
+              singlePinPercentage: game.singlePinPercentage,
+              singlePinConversionRate: game.singlePinConversionRate,
+              pocketPercentage: game.pocketPercentage,
+              openFrames: game.openFrames,
+            },
+          });
+
+          if (statsError) throw statsError;
+        }
+      }
 
       return new Response(
         JSON.stringify({ success: true }),
