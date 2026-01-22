@@ -603,7 +603,6 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames }: BowlingSc
                       if (!throwData.value) return null;
                       
                       const pocketAllowed = isPocketAllowed(frameIndex, throwIndex, frame);
-                      const singlePinAllowed = isSinglePinAllowed(frameIndex, throwIndex, frame);
                       const isBonusThrow = frameIndex === 9 && throwIndex >= 1 && 
                         frame.throws.slice(0, throwIndex).every(t => t.value === "X");
                       
@@ -631,51 +630,20 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames }: BowlingSc
                           )}
 
                           {throwData.value !== "X" && throwData.value !== "/" && (
-                            <>
-                              <div className="flex items-center gap-2">
-                                <Checkbox
-                                  id={`split-${frameIndex}-${throwIndex}`}
-                                  checked={throwData.isSplit}
-                                  onCheckedChange={() => handleCheckboxChange(frameIndex, throwIndex, "isSplit")}
-                                  disabled={isBonusThrow}
-                                />
-                                <Label 
-                                  htmlFor={`split-${frameIndex}-${throwIndex}`} 
-                                  className={`text-xs ${isBonusThrow ? "text-muted-foreground line-through" : ""}`}
-                                >
-                                  Split{isBonusThrow ? " (exclu)" : ""}
-                                </Label>
-                              </div>
-
-                              {/* Single pin - only when first throw = 9 (1 pin left) */}
-                              {singlePinAllowed && (
-                                <>
-                                  <div className="flex items-center gap-2">
-                                    <Checkbox
-                                      id={`single-${frameIndex}-${throwIndex}`}
-                                      checked={throwData.isSinglePin}
-                                      onCheckedChange={() => handleCheckboxChange(frameIndex, throwIndex, "isSinglePin")}
-                                    />
-                                    <Label htmlFor={`single-${frameIndex}-${throwIndex}`} className="text-xs">
-                                      Quille seule
-                                    </Label>
-                                  </div>
-
-                                  {throwData.isSinglePin && (
-                                    <div className="flex items-center gap-2">
-                                      <Checkbox
-                                        id={`single-conv-${frameIndex}-${throwIndex}`}
-                                        checked={throwData.isSinglePinConverted}
-                                        onCheckedChange={() => handleCheckboxChange(frameIndex, throwIndex, "isSinglePinConverted")}
-                                      />
-                                      <Label htmlFor={`single-conv-${frameIndex}-${throwIndex}`} className="text-xs text-primary">
-                                        Convertie
-                                      </Label>
-                                    </div>
-                                  )}
-                                </>
-                              )}
-                            </>
+                            <div className="flex items-center gap-2">
+                              <Checkbox
+                                id={`split-${frameIndex}-${throwIndex}`}
+                                checked={throwData.isSplit}
+                                onCheckedChange={() => handleCheckboxChange(frameIndex, throwIndex, "isSplit")}
+                                disabled={isBonusThrow}
+                              />
+                              <Label 
+                                htmlFor={`split-${frameIndex}-${throwIndex}`} 
+                                className={`text-xs ${isBonusThrow ? "text-muted-foreground line-through" : ""}`}
+                              >
+                                Split{isBonusThrow ? " (exclu)" : ""}
+                              </Label>
+                            </div>
                           )}
                         </div>
                       );
