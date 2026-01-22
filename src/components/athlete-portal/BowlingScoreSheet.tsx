@@ -5,8 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { Target, TrendingUp, Percent, Save, X } from "lucide-react";
+import { Target, TrendingUp, Save, X } from "lucide-react";
 
 interface ThrowData {
   value: string; // "X", "/", "0"-"9", "-" (miss)
@@ -442,7 +441,7 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames }: BowlingSc
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <ScrollArea className="w-full">
+          <div className="overflow-x-auto">
             <div className="flex gap-1 pb-4 min-w-max">
               {frames.map((frame, frameIndex) => (
                 <div
@@ -470,9 +469,9 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames }: BowlingSc
                             disabled={!editable}
                             className={`w-8 h-8 text-center text-sm font-bold p-0 uppercase ${
                               throwData?.value === "X" 
-                                ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400" 
+                                ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400" 
                                 : throwData?.value === "/" 
-                                  ? "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400"
+                                  ? "bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-400"
                                   : ""
                             }`}
                             placeholder="-"
@@ -489,8 +488,7 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames }: BowlingSc
                 </div>
               ))}
             </div>
-            <ScrollBar orientation="horizontal" />
-          </ScrollArea>
+          </div>
 
           {/* Total Score Display */}
           <div className="mt-4 flex items-center justify-center">
@@ -510,14 +508,14 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames }: BowlingSc
           <CardTitle className="text-lg">Détails des lancers</CardTitle>
         </CardHeader>
         <CardContent>
-          <ScrollArea className="w-full">
+          <div className="overflow-x-auto">
             <div className="space-y-3 min-w-max">
               {frames.map((frame, frameIndex) => (
                 <div key={frameIndex} className="flex items-center gap-3">
                   <div className="w-16 text-sm font-medium text-muted-foreground shrink-0">
                     Frame {frameIndex + 1}
                   </div>
-                  <div className="flex gap-4">
+                  <div className="flex gap-4 flex-wrap">
                     {frame.throws.map((throwData, throwIndex) => {
                       if (!throwData.value) return null;
                       
@@ -527,7 +525,7 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames }: BowlingSc
                       return (
                         <div 
                           key={throwIndex} 
-                          className="flex items-center gap-3 p-2 rounded-lg bg-muted/50 min-w-[200px]"
+                          className="flex items-center gap-3 p-2 rounded-lg bg-muted/50"
                         >
                           <Badge variant="outline" className="shrink-0">
                             L{throwIndex + 1}: {throwData.value}
@@ -579,7 +577,7 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames }: BowlingSc
                                     checked={throwData.isSinglePinConverted}
                                     onCheckedChange={() => handleCheckboxChange(frameIndex, throwIndex, "isSinglePinConverted")}
                                   />
-                                  <Label htmlFor={`single-conv-${frameIndex}-${throwIndex}`} className="text-xs text-green-600">
+                                  <Label htmlFor={`single-conv-${frameIndex}-${throwIndex}`} className="text-xs text-emerald-600">
                                     Convertie
                                   </Label>
                                 </div>
@@ -593,8 +591,7 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames }: BowlingSc
                 </div>
               ))}
             </div>
-            <ScrollBar orientation="horizontal" />
-          </ScrollArea>
+          </div>
         </CardContent>
       </Card>
 

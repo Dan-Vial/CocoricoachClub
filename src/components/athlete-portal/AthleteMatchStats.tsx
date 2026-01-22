@@ -305,37 +305,39 @@ export function AthleteMatchStats({ token, playerId, categoryId, sportType }: At
 
       {/* Bowling Score Sheet Dialog */}
       <Dialog open={showBowlingSheet} onOpenChange={setShowBowlingSheet}>
-        <DialogContent className="max-w-4xl max-h-[95vh] overflow-y-auto">
-          <DialogHeader>
+        <DialogContent className="max-w-4xl h-[95vh] flex flex-col p-0">
+          <DialogHeader className="px-6 pt-6 pb-4 shrink-0">
             <DialogTitle>Partie {bowlingGames.length + 1}</DialogTitle>
           </DialogHeader>
-          <BowlingScoreSheet
-            onSave={(stats) => {
-              const newGame: BowlingGame = {
-                gameNumber: bowlingGames.length + 1,
-                score: stats.totalScore,
-                strikes: stats.strikes,
-                spares: stats.spares,
-                splitCount: stats.splitCount,
-                splitConverted: stats.splitConverted,
-                splitOnLastThrow: stats.splitOnLastThrow,
-                singlePinCount: stats.singlePinCount,
-                singlePinConverted: stats.singlePinConverted,
-                pocketCount: stats.pocketCount,
-                strikePercentage: stats.strikePercentage,
-                sparePercentage: stats.sparePercentage,
-                splitPercentage: stats.splitPercentage,
-                singlePinPercentage: stats.singlePinPercentage,
-                singlePinConversionRate: stats.singlePinConversionRate,
-                pocketPercentage: stats.pocketPercentage,
-                openFrames: stats.openFrames,
-              };
-              setBowlingGames(prev => [...prev, newGame]);
-              setShowBowlingSheet(false);
-              toast.success(`Partie ${newGame.gameNumber} enregistrée: ${newGame.score} points`);
-            }}
-            onCancel={() => setShowBowlingSheet(false)}
-          />
+          <div className="flex-1 overflow-y-auto px-6 pb-6">
+            <BowlingScoreSheet
+              onSave={(stats) => {
+                const newGame: BowlingGame = {
+                  gameNumber: bowlingGames.length + 1,
+                  score: stats.totalScore,
+                  strikes: stats.strikes,
+                  spares: stats.spares,
+                  splitCount: stats.splitCount,
+                  splitConverted: stats.splitConverted,
+                  splitOnLastThrow: stats.splitOnLastThrow,
+                  singlePinCount: stats.singlePinCount,
+                  singlePinConverted: stats.singlePinConverted,
+                  pocketCount: stats.pocketCount,
+                  strikePercentage: stats.strikePercentage,
+                  sparePercentage: stats.sparePercentage,
+                  splitPercentage: stats.splitPercentage,
+                  singlePinPercentage: stats.singlePinPercentage,
+                  singlePinConversionRate: stats.singlePinConversionRate,
+                  pocketPercentage: stats.pocketPercentage,
+                  openFrames: stats.openFrames,
+                };
+                setBowlingGames(prev => [...prev, newGame]);
+                setShowBowlingSheet(false);
+                toast.success(`Partie ${newGame.gameNumber} enregistrée: ${newGame.score} points`);
+              }}
+              onCancel={() => setShowBowlingSheet(false)}
+            />
+          </div>
         </DialogContent>
       </Dialog>
 
