@@ -5194,6 +5194,10 @@ export type Database = {
         Args: { _club_id: string; _user_id: string }
         Returns: boolean
       }
+      has_valid_athlete_token_for_player: {
+        Args: { _player_id: string }
+        Returns: boolean
+      }
       is_approved_user: { Args: { _user_id: string }; Returns: boolean }
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
       log_audit_event: {

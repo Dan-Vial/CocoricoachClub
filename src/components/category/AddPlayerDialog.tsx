@@ -35,6 +35,7 @@ export function AddPlayerDialog({
   categoryId,
 }: AddPlayerDialogProps) {
   const [playerName, setPlayerName] = useState("");
+  const [playerEmail, setPlayerEmail] = useState("");
   const [birthYear, setBirthYear] = useState("");
   const [birthDate, setBirthDate] = useState("");
   const [discipline, setDiscipline] = useState("");
@@ -64,12 +65,13 @@ export function AddPlayerDialog({
   const positions = getPositionsForSport(sportType);
 
   const addPlayer = useMutation({
-    mutationFn: async (data: { name: string; birth_year?: number; birth_date?: string; discipline?: string; position?: string }) => {
+    mutationFn: async (data: { name: string; email?: string; birth_year?: number; birth_date?: string; discipline?: string; position?: string }) => {
       const { error } = await supabase
         .from("players")
         .insert({ 
           name: data.name, 
           category_id: categoryId,
+          email: data.email || null,
           birth_year: data.birth_year,
           birth_date: data.birth_date || null,
           discipline: data.discipline || null,
@@ -81,6 +83,7 @@ export function AddPlayerDialog({
       queryClient.invalidateQueries({ queryKey: ["players", categoryId] });
       toast.success("Athlète ajouté avec succès");
       setPlayerName("");
+      setPlayerEmail("");
       setBirthYear("");
       setBirthDate("");
       setDiscipline("");
@@ -121,6 +124,7 @@ export function AddPlayerDialog({
 
     addPlayer.mutate({
       name: result.data.name,
+      email: playerEmail.trim() || undefined,
       birth_year: result.data.birthYear,
       birth_date: birthDate || undefined,
       discipline: discipline || undefined,
@@ -148,6 +152,20 @@ export function AddPlayerDialog({
                 placeholder="Ex: Jean Dupont"
                 required
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="playerEmail">Email (optionnel)</Label>
+              <Input
+                id="playerEmail"
+                type="email"
+                value={playerEmail}
+                onChange={(e) => setPlayerEmail(e.target.value)}
+                placeholder="athlete@email.com"
+              />
+              <p className="text-xs text-muted-foreground">
+                L'email permettra de générer un lien d'accès athlète
+              </p>
             </div>
 
             {/* Position selector for team sports */}

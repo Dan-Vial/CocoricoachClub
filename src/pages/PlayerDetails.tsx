@@ -20,6 +20,7 @@ import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { GlobalPlayerSearch } from "@/components/search/GlobalPlayerSearch";
 import { TransferPlayerDialog } from "@/components/player/TransferPlayerDialog";
 import { PlayerTransferHistory } from "@/components/player/PlayerTransferHistory";
+import { AthleteAccessSection } from "@/components/player/AthleteAccessSection";
 import { ViewerModeProvider, useViewerModeContext } from "@/contexts/ViewerModeContext";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -244,6 +245,17 @@ function PlayerDetailsContent() {
         <div className="mb-6">
           <PlayerTransferHistory playerId={playerId!} />
         </div>
+
+        {/* Athlete Access Section - only for coaches */}
+        {!isViewer && (
+          <div className="mb-6">
+            <AthleteAccessSection 
+              playerId={playerId!} 
+              categoryId={player.category_id}
+              playerName={player.name}
+            />
+          </div>
+        )}
 
         {/* Player Profile and Biometrics Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
