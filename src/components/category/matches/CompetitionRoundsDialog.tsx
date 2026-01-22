@@ -254,22 +254,33 @@ export function CompetitionRoundsDialog({
           boat_type: l.boat_type || undefined,
           crew_role: l.crew_role || undefined,
           seat_position: l.seat_position || undefined,
-          rounds: playerRounds.map(r => ({
-            id: r.id,
-            round_number: r.round_number,
-            opponent_name: r.opponent_name || "",
-            result: r.result || "",
-            notes: r.notes || "",
-            stats: (r.competition_round_stats?.[0]?.stat_data as Record<string, number>) || {},
-            phase: r.phase || "",
-            lane: r.lane || undefined,
-            wind_conditions: r.wind_conditions || undefined,
-            current_conditions: r.current_conditions || undefined,
-            temperature_celsius: r.temperature_celsius || undefined,
-            final_time_seconds: r.final_time_seconds || undefined,
-            ranking: r.ranking || undefined,
-            gap_to_first: r.gap_to_first || undefined,
-          })),
+          rounds: playerRounds.map(r => {
+            const statData = r.competition_round_stats?.[0]?.stat_data as Record<string, any> || {};
+            // Extract bowling frames if stored in stat_data
+            const bowlingFrames = statData.bowlingFrames as FrameData[] | undefined;
+            // Remove bowlingFrames from stats object for display
+            const { bowlingFrames: _, ...cleanStats } = statData;
+            
+            return {
+              id: r.id,
+              round_number: r.round_number,
+              opponent_name: r.opponent_name || "",
+              result: r.result || "",
+              notes: r.notes || "",
+              stats: cleanStats as Record<string, number>,
+              phase: r.phase || "",
+              lane: r.lane || undefined,
+              wind_conditions: r.wind_conditions || undefined,
+              current_conditions: r.current_conditions || undefined,
+              temperature_celsius: r.temperature_celsius || undefined,
+              final_time_seconds: r.final_time_seconds || undefined,
+              ranking: r.ranking || undefined,
+              gap_to_first: r.gap_to_first || undefined,
+              // For bowling: mark as locked if it has an id (already saved), restore frames
+              isLocked: !!r.id,
+              bowlingFrames: bowlingFrames,
+            };
+          }),
         };
       });
       setPlayerRoundsData(playersData);
@@ -339,14 +350,19 @@ export function CompetitionRoundsDialog({
 
           if (roundError) throw roundError;
 
-          // Insert stats for this round
-          if (Object.keys(round.stats).length > 0) {
+          // Insert stats for this round (include bowling frames if present)
+          const statDataToSave = round.bowlingFrames 
+            ? { ...round.stats, bowlingFrames: round.bowlingFrames }
+            : round.stats;
+          
+          if (Object.keys(statDataToSave).length > 0) {
+            const insertData = {
+              round_id: roundData.id,
+              stat_data: JSON.parse(JSON.stringify(statDataToSave)),
+            };
             const { error: statsError } = await supabase
               .from("competition_round_stats")
-              .insert({
-                round_id: roundData.id,
-                stat_data: round.stats,
-              });
+              .insert(insertData);
             if (statsError) throw statsError;
           }
         }
@@ -877,13 +893,46 @@ export function CompetitionRoundsDialog({
                             </div>
                           )}
 
-                          {/* Bowling: Integrated score sheet */}
+                          {/* Bowling: Phase, Adversaire, then score sheet */}
                           {isBowling && (
-                            <div className={`space-y-4 ${round.isLocked ? "pointer-events-none" : ""}`}>
+                            <div className={`space-y-4 ${round.isLocked ? "opacity-80" : ""}`}>
+                              {/* Phase and opponent info - always visible */}
+                              <div className={`grid grid-cols-2 gap-3 ${round.isLocked ? "pointer-events-none" : ""}`}>
+                                <div>
+                                  <Label className="text-xs">Phase</Label>
+                                  <Select
+                                    value={round.phase}
+                                    onValueChange={(value) => updateRound(selectedPlayer.playerId, round.round_number, { phase: value })}
+                                    disabled={round.isLocked}
+                                  >
+                                    <SelectTrigger className="h-8">
+                                      <SelectValue placeholder="Sélectionner..." />
+                                    </SelectTrigger>
+                                    <SelectContent className="z-[200]">
+                                      {BOWLING_PHASES.map((phase) => (
+                                        <SelectItem key={phase.value} value={phase.value}>
+                                          {phase.label}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                <div>
+                                  <Label className="text-xs">Adversaire</Label>
+                                  <Input
+                                    value={round.opponent_name}
+                                    onChange={(e) => updateRound(selectedPlayer.playerId, round.round_number, { opponent_name: e.target.value })}
+                                    placeholder="Nom de l'adversaire"
+                                    className="h-8"
+                                    disabled={round.isLocked}
+                                  />
+                                </div>
+                              </div>
+
                               {/* Locked state indicator */}
                               {round.isLocked && (
                                 <div className="flex items-center justify-center gap-2 p-3 rounded-lg bg-muted border border-border">
-                                  <CheckCircle className="h-5 w-5 text-primary" />
+                                  <Lock className="h-5 w-5 text-primary" />
                                   <span className="text-sm font-medium text-foreground">
                                     Partie validée - Consultation uniquement
                                   </span>
@@ -891,22 +940,26 @@ export function CompetitionRoundsDialog({
                               )}
 
                               {/* Embedded Bowling Score Sheet */}
-                              <BowlingScoreSheet
-                                key={`bowling-${round.round_number}-${round.isLocked}`}
-                                initialFrames={round.bowlingFrames}
-                                onSave={(stats, frames) => {
-                                  handleBowlingScoreSheetSave(
-                                    selectedPlayer.playerId,
-                                    round.round_number,
-                                    stats,
-                                    frames
-                                  );
-                                }}
-                                onCancel={() => {
-                                  // Remove the round if cancelled (new game not saved)
-                                  removeRound(selectedPlayer.playerId, round.round_number);
-                                }}
-                              />
+                              <div className={round.isLocked ? "pointer-events-none" : ""}>
+                                <BowlingScoreSheet
+                                  key={`bowling-${round.round_number}-${round.isLocked}`}
+                                  initialFrames={round.bowlingFrames}
+                                  onSave={(stats, frames) => {
+                                    handleBowlingScoreSheetSave(
+                                      selectedPlayer.playerId,
+                                      round.round_number,
+                                      stats,
+                                      frames
+                                    );
+                                  }}
+                                  onCancel={() => {
+                                    // Remove the round if cancelled (new game not saved)
+                                    if (!round.isLocked) {
+                                      removeRound(selectedPlayer.playerId, round.round_number);
+                                    }
+                                  }}
+                                />
+                              </div>
                             </div>
                           )}
 
