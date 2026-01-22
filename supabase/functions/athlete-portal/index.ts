@@ -118,7 +118,7 @@ serve(async (req) => {
       // Check player lineup for each match
       const matchIds = matches?.map(m => m.id) || [];
       const { data: lineups } = await supabase
-        .from("match_lineup")
+        .from("match_lineups")
         .select("match_id")
         .eq("player_id", player_id)
         .in("match_id", matchIds);

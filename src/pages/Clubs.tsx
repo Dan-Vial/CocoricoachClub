@@ -110,14 +110,24 @@ export default function Clubs() {
   const deleteClub = useMutation({
     mutationFn: async (clubId: string) => {
       const { error } = await supabase.from("clubs").delete().eq("id", clubId);
-      if (error) throw error;
+      if (error) {
+        console.error("Delete club error:", error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["clubs"] });
       toast.success("Club supprimé avec succès");
     },
-    onError: () => {
-      toast.error("Erreur lors de la suppression du club");
+    onError: (error: any) => {
+      console.error("Delete club mutation error:", error);
+      if (error.code === "23503") {
+        toast.error("Impossible de supprimer ce club car il contient des catégories. Supprimez d'abord les catégories.");
+      } else if (error.message?.includes("policy")) {
+        toast.error("Vous n'avez pas la permission de supprimer ce club.");
+      } else {
+        toast.error("Erreur lors de la suppression du club");
+      }
     },
   });
 
