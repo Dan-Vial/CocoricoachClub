@@ -339,7 +339,8 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
 
           <div className="flex flex-col gap-2">
             {/* Actions dropdown */}
-            <DropdownMenu>
+            {/* modal={false} avoids scroll-jumps/offset issues in some layouts */}
+            <DropdownMenu modal={false}>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" className="gap-2">
                   <Settings className="h-4 w-4" />
@@ -364,7 +365,16 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
                   sportType.toLowerCase().includes("athletisme") ||
                   sportType.toLowerCase().includes("athlétisme") ||
                   sportType.toLowerCase().includes("aviron")) && (
-                  <DropdownMenuItem onClick={() => setIsRoundsOpen(true)}>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      console.log("[COMP_ROUNDS_DEBUG] open rounds", {
+                        matchId: match.id,
+                        categoryId,
+                        sportType,
+                      });
+                      setIsRoundsOpen(true);
+                    }}
+                  >
                     <Swords className="h-4 w-4 mr-2" />
                     {sportType.toLowerCase().includes("judo") ? "Combats" : 
                      sportType.toLowerCase().includes("bowling") ? "Parties" : 

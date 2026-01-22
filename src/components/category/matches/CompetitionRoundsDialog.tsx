@@ -150,14 +150,44 @@ export function CompetitionRoundsDialog({
   const roundLabelPlural = isJudo ? "Combats" : isAviron ? "Courses" : isBowling ? "Parties" : "Rounds";
 
   const openBowlingSheetForRound = (playerId: string, roundNumber: number) => {
+    // Debug signal (visible + console)
+    console.log("[BOWLING_SCORESHEET_DEBUG] open requested", {
+      matchId,
+      categoryId,
+      sportType,
+      isBowling,
+      playerId,
+      roundNumber,
+    });
+
+    if (!isBowling) {
+      toast.error(`Feuille de score indisponible: sportType="${sportType}"`);
+      return;
+    }
+
     setBowlingSheetTarget({ playerId, roundNumber });
     setBowlingSheetOpen(true);
+    toast.message(`Ouverture feuille de score (partie ${roundNumber})…`);
   };
 
   const closeBowlingSheet = () => {
     setBowlingSheetOpen(false);
     setBowlingSheetTarget(null);
   };
+
+  useEffect(() => {
+    if (!open) return;
+    console.log("[BOWLING_SCORESHEET_DEBUG] dialog state", {
+      open,
+      matchId,
+      sportType,
+      isBowling,
+      activeTab,
+      selectedPlayerId,
+      bowlingSheetOpen,
+      bowlingSheetTarget,
+    });
+  }, [open, matchId, sportType, isBowling, activeTab, selectedPlayerId, bowlingSheetOpen, bowlingSheetTarget]);
 
   // Get players in the lineup for this match
   const { data: lineup } = useQuery({
@@ -458,6 +488,12 @@ export function CompetitionRoundsDialog({
             {isAviron ? <Ship className="h-5 w-5" /> : isJudo ? <Swords className="h-5 w-5" /> : <Circle className="h-5 w-5" />}
             Gestion des {roundLabelPlural}
           </DialogTitle>
+          {/* Debug hint to quickly validate sport detection in production */}
+          {sportType && (
+            <p className="text-xs text-muted-foreground">
+              Debug: sportType="{sportType}" • bowling={String(isBowling)}
+            </p>
+          )}
         </DialogHeader>
 
         {/* Bowling Score Sheet (Coach/Admin) - rendered as an overlay inside the same dialog
