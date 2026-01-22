@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, ArrowRightLeft } from "lucide-react";
+import { ArrowLeft, ArrowRightLeft, Edit2, Check, X } from "lucide-react";
 import { PlayerTestsTab } from "@/components/player/PlayerTestsTab";
 import { PlayerCalendarTab } from "@/components/player/PlayerCalendarTab";
 import { PlayerAwcrTab } from "@/components/player/PlayerAwcrTab";
@@ -21,11 +21,19 @@ import { GlobalPlayerSearch } from "@/components/search/GlobalPlayerSearch";
 import { TransferPlayerDialog } from "@/components/player/TransferPlayerDialog";
 import { PlayerTransferHistory } from "@/components/player/PlayerTransferHistory";
 import { ViewerModeProvider, useViewerModeContext } from "@/contexts/ViewerModeContext";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { getPositionsForSport } from "@/lib/constants/sportPositions";
+import { isIndividualSport, ATHLETISME_DISCIPLINES, JUDO_WEIGHT_CATEGORIES, isAthletismeCategory, isJudoCategory, AVIRON_ROLES } from "@/lib/constants/sportTypes";
+import { toast } from "sonner";
 
 function PlayerDetailsContent() {
   const { playerId } = useParams<{ playerId: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [transferDialogOpen, setTransferDialogOpen] = useState(false);
+  const [isEditingPosition, setIsEditingPosition] = useState(false);
+  const [editPosition, setEditPosition] = useState("");
   const { isViewer } = useViewerModeContext();
 
   const { data: player, isLoading } = useQuery({
@@ -40,6 +48,83 @@ function PlayerDetailsContent() {
       return data;
     },
   });
+
+  const sportType = (player?.categories as { rugby_type?: string })?.rugby_type || "XV";
+  const isTeamSport = !isIndividualSport(sportType);
+  const isAthletics = isAthletismeCategory(sportType);
+  const isJudo = isJudoCategory(sportType);
+  const isAviron = sportType.toLowerCase().includes("aviron");
+  const positions = getPositionsForSport(sportType);
+
+  // Get display label for discipline/position/role
+  const getAttributeLabel = () => {
+    if (isAthletics) return "Discipline";
+    if (isJudo) return "Catégorie";
+    if (isAviron) return "Rôle";
+    return "Poste";
+  };
+
+  const getAttributeValue = () => {
+    if (isAthletics || isJudo) {
+      const value = player?.discipline;
+      if (isAthletics) {
+        return ATHLETISME_DISCIPLINES.find(d => d.value === value)?.label || value;
+      }
+      if (isJudo) {
+        return JUDO_WEIGHT_CATEGORIES.find(c => c.value === value)?.label || value;
+      }
+      return value;
+    }
+    if (isAviron) {
+      const value = player?.discipline;
+      return AVIRON_ROLES.find(r => r.value === value)?.label || value;
+    }
+    return player?.position;
+  };
+
+  const updatePosition = useMutation({
+    mutationFn: async (newPosition: string) => {
+      // For athletics/judo/aviron, update discipline field
+      // For team sports, update position field
+      const updateField = (isAthletics || isJudo || isAviron) ? "discipline" : "position";
+      const { error } = await supabase
+        .from("players")
+        .update({ [updateField]: newPosition || null })
+        .eq("id", playerId!);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["player", playerId] });
+      toast.success("Mis à jour avec succès");
+      setIsEditingPosition(false);
+    },
+    onError: () => {
+      toast.error("Erreur lors de la mise à jour");
+    },
+  });
+
+  const handleStartEdit = () => {
+    const currentValue = (isAthletics || isJudo || isAviron) ? player?.discipline : player?.position;
+    setEditPosition(currentValue || "");
+    setIsEditingPosition(true);
+  };
+
+  const handleSavePosition = () => {
+    updatePosition.mutate(editPosition);
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditingPosition(false);
+    setEditPosition("");
+  };
+
+  // Get options for select
+  const getEditOptions = () => {
+    if (isAthletics) return ATHLETISME_DISCIPLINES;
+    if (isJudo) return JUDO_WEIGHT_CATEGORIES;
+    if (isAviron) return AVIRON_ROLES;
+    return positions.map(p => ({ value: p.name, label: `${p.id}. ${p.name}` }));
+  };
 
   if (isLoading) {
     return (
@@ -56,6 +141,9 @@ function PlayerDetailsContent() {
       </div>
     );
   }
+
+  const attributeValue = getAttributeValue();
+  const showAttributeEditor = isTeamSport || isAthletics || isJudo || isAviron;
 
   return (
     <div className="min-h-screen bg-background">
@@ -77,9 +165,67 @@ function PlayerDetailsContent() {
 
         <Card className="mb-6 bg-gradient-card shadow-md">
           <CardHeader className="flex flex-row items-center justify-between">
-            <div>
+            <div className="space-y-2">
               <CardTitle className="text-3xl">{player.name}</CardTitle>
               <p className="text-muted-foreground">{player.categories?.name}</p>
+              
+              {/* Editable position/discipline */}
+              {showAttributeEditor && (
+                <div className="flex items-center gap-2 mt-2">
+                  <span className="text-sm text-muted-foreground">{getAttributeLabel()}:</span>
+                  {isEditingPosition ? (
+                    <div className="flex items-center gap-2">
+                      <Select value={editPosition} onValueChange={setEditPosition}>
+                        <SelectTrigger className="w-[200px] h-8">
+                          <SelectValue placeholder={`Choisir un ${getAttributeLabel().toLowerCase()}`} />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-[300px]">
+                          {getEditOptions().map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8"
+                        onClick={handleSavePosition}
+                        disabled={updatePosition.isPending}
+                      >
+                        <Check className="h-4 w-4 text-primary" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8"
+                        onClick={handleCancelEdit}
+                      >
+                        <X className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      {attributeValue ? (
+                        <Badge variant="secondary">{attributeValue}</Badge>
+                      ) : (
+                        <span className="text-sm text-muted-foreground italic">Non défini</span>
+                      )}
+                      {!isViewer && (
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-6 w-6"
+                          onClick={handleStartEdit}
+                        >
+                          <Edit2 className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
             {!isViewer && (
               <Button

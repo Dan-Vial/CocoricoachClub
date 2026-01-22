@@ -20,7 +20,8 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { playerSchema } from "@/lib/validations";
-import { ATHLETISME_DISCIPLINES, JUDO_WEIGHT_CATEGORIES, isAthletismeCategory, isJudoCategory } from "@/lib/constants/sportTypes";
+import { ATHLETISME_DISCIPLINES, JUDO_WEIGHT_CATEGORIES, isAthletismeCategory, isJudoCategory, isIndividualSport } from "@/lib/constants/sportTypes";
+import { getPositionsForSport } from "@/lib/constants/sportPositions";
 
 interface AddPlayerDialogProps {
   open: boolean;
@@ -37,10 +38,11 @@ export function AddPlayerDialog({
   const [birthYear, setBirthYear] = useState("");
   const [birthDate, setBirthDate] = useState("");
   const [discipline, setDiscipline] = useState("");
+  const [position, setPosition] = useState("");
   const [validationError, setValidationError] = useState("");
   const queryClient = useQueryClient();
 
-  // Fetch category to check if it's an athletics category
+  // Fetch category to check sport type
   const { data: category } = useQuery({
     queryKey: ["category", categoryId],
     queryFn: async () => {
@@ -54,12 +56,15 @@ export function AddPlayerDialog({
     },
   });
 
+  const sportType = category?.rugby_type || "XV";
   const isAthletics = category?.rugby_type ? isAthletismeCategory(category.rugby_type) : false;
   const isJudo = category?.rugby_type ? isJudoCategory(category.rugby_type) : false;
   const needsDisciplineSelection = isAthletics || isJudo;
+  const isTeamSport = !isIndividualSport(sportType);
+  const positions = getPositionsForSport(sportType);
 
   const addPlayer = useMutation({
-    mutationFn: async (data: { name: string; birth_year?: number; birth_date?: string; discipline?: string }) => {
+    mutationFn: async (data: { name: string; birth_year?: number; birth_date?: string; discipline?: string; position?: string }) => {
       const { error } = await supabase
         .from("players")
         .insert({ 
@@ -67,7 +72,8 @@ export function AddPlayerDialog({
           category_id: categoryId,
           birth_year: data.birth_year,
           birth_date: data.birth_date || null,
-          discipline: data.discipline || null
+          discipline: data.discipline || null,
+          position: data.position || null
         });
       if (error) throw error;
     },
@@ -78,6 +84,7 @@ export function AddPlayerDialog({
       setBirthYear("");
       setBirthDate("");
       setDiscipline("");
+      setPosition("");
       onOpenChange(false);
     },
     onError: () => {
@@ -116,7 +123,8 @@ export function AddPlayerDialog({
       name: result.data.name,
       birth_year: result.data.birthYear,
       birth_date: birthDate || undefined,
-      discipline: discipline || undefined
+      discipline: discipline || undefined,
+      position: position || undefined
     });
   };
 
@@ -141,6 +149,25 @@ export function AddPlayerDialog({
                 required
               />
             </div>
+
+            {/* Position selector for team sports */}
+            {isTeamSport && positions.length > 0 && (
+              <div className="space-y-2">
+                <Label htmlFor="position">Poste (optionnel)</Label>
+                <Select value={position} onValueChange={setPosition}>
+                  <SelectTrigger className="w-full bg-background">
+                    <SelectValue placeholder="Sélectionner un poste" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border z-50 max-h-[300px]">
+                    {positions.map((pos) => (
+                      <SelectItem key={pos.id} value={pos.name}>
+                        {pos.id}. {pos.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             {isAthletics && (
               <div className="space-y-2">

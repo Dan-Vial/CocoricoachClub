@@ -153,6 +153,22 @@ export const JUDO_WEIGHT_CATEGORIES: PlayerAttributeOption[] = [
   { value: "judo_+100kg", label: "+100 kg (M)" },
 ];
 
+// Roles for Aviron (Rowing)
+export const AVIRON_ROLES: PlayerAttributeOption[] = [
+  { value: "barreur", label: "Barreur" },
+  { value: "rameur_pointe", label: "Rameur de pointe" },
+  { value: "rameur_couple", label: "Rameur de couple" },
+  { value: "chef_nage", label: "Chef de nage" },
+  { value: "nage_1", label: "Nage 1 (Bow)" },
+  { value: "nage_2", label: "Nage 2" },
+  { value: "nage_3", label: "Nage 3" },
+  { value: "nage_4", label: "Nage 4" },
+  { value: "nage_5", label: "Nage 5" },
+  { value: "nage_6", label: "Nage 6" },
+  { value: "nage_7", label: "Nage 7" },
+  { value: "nage_8", label: "Nage 8 (Stroke)" },
+];
+
 // Sub-types for other sports (Club, Académie, Équipe Nationale)
 export const getOtherSportSubtypes = (sport: MainSportCategory): SportSubTypeOption[] => {
   if (sport === "rugby") return RUGBY_SUBTYPES;
