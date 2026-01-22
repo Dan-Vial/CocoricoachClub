@@ -107,6 +107,19 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
     },
   });
 
+  // Fetch competition rounds count for Judo/Bowling/Aviron/Athletics
+  const { data: roundsCount } = useQuery({
+    queryKey: ["competition_rounds_count", match.id],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("competition_rounds")
+        .select("*", { count: "exact", head: true })
+        .eq("match_id", match.id);
+      if (error) throw error;
+      return count || 0;
+    },
+  });
+
   // Fetch sub-matches for this match (only if not already a sub-match)
   const { data: subMatches } = useQuery({
     queryKey: ["sub_matches", match.id],
@@ -376,9 +389,9 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
                     }}
                   >
                     <Swords className="h-4 w-4 mr-2" />
-                    {sportType.toLowerCase().includes("judo") ? "Combats" : 
-                     sportType.toLowerCase().includes("bowling") ? "Parties" : 
-                     sportType.toLowerCase().includes("aviron") ? "Courses" : "Courses"}
+                    {sportType.toLowerCase().includes("judo") ? `Combats (${roundsCount || 0})` : 
+                     sportType.toLowerCase().includes("bowling") ? `Parties (${roundsCount || 0})` : 
+                     sportType.toLowerCase().includes("aviron") ? `Courses (${roundsCount || 0})` : `Courses (${roundsCount || 0})`}
                   </DropdownMenuItem>
                 )}
                 {canHaveSubMatches && (
