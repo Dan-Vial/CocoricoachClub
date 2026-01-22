@@ -629,19 +629,19 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames }: BowlingSc
                             </div>
                           )}
 
-                          {throwData.value !== "X" && throwData.value !== "/" && (
+                          {/* Split checkbox - only on first throw of each frame */}
+                          {throwIndex === 0 && throwData.value !== "X" && throwData.value !== "/" && (
                             <div className="flex items-center gap-2">
                               <Checkbox
                                 id={`split-${frameIndex}-${throwIndex}`}
                                 checked={throwData.isSplit}
                                 onCheckedChange={() => handleCheckboxChange(frameIndex, throwIndex, "isSplit")}
-                                disabled={isBonusThrow}
                               />
                               <Label 
                                 htmlFor={`split-${frameIndex}-${throwIndex}`} 
-                                className={`text-xs ${isBonusThrow ? "text-muted-foreground line-through" : ""}`}
+                                className="text-xs"
                               >
-                                Split{isBonusThrow ? " (exclu)" : ""}
+                                Split
                               </Label>
                             </div>
                           )}
