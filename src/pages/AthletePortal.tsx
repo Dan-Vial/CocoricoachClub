@@ -6,9 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, User, XCircle, Activity, Trophy } from "lucide-react";
 import { AthleteRpeEntry } from "@/components/athlete-portal/AthleteRpeEntry";
 import { AthleteMatchStats } from "@/components/athlete-portal/AthleteMatchStats";
-
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+import { athletePortalHeaders, buildAthletePortalFunctionUrl } from "@/lib/athletePortalClient";
 
 interface AthleteInfo {
   player_id: string;
@@ -32,13 +30,14 @@ export default function AthletePortal() {
       return;
     }
 
-    // Validate token via edge function
-    fetch(`${SUPABASE_URL}/functions/v1/athlete-portal?token=${token}&action=validate`, {
-      headers: { "apikey": SUPABASE_KEY },
-    })
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) {
+    const url = buildAthletePortalFunctionUrl("validate", token);
+    fetch(url, { headers: athletePortalHeaders() })
+      .then(async (res) => {
+        const data = await res.json().catch(() => ({}));
+        return { ok: res.ok, data };
+      })
+      .then(({ data }) => {
+        if (data?.success) {
           setAthleteInfo({
             player_id: data.player_id,
             player_name: data.player_name,
@@ -49,7 +48,7 @@ export default function AthletePortal() {
           setStatus("success");
         } else {
           setStatus("error");
-          setErrorMessage(data.error || "Ce lien n'est plus valide ou a expiré");
+          setErrorMessage(data?.error || "Ce lien n'est plus valide ou a expiré");
         }
       })
       .catch(() => {

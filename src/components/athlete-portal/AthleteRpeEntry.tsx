@@ -10,9 +10,7 @@ import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
 import { getTrainingTypeLabel } from "@/lib/constants/trainingTypes";
-
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+import { athletePortalHeaders, buildAthletePortalFunctionUrl } from "@/lib/athletePortalClient";
 
 interface AthleteRpeEntryProps {
   token: string;
@@ -39,8 +37,8 @@ export function AthleteRpeEntry({ token, playerId, categoryId }: AthleteRpeEntry
 
   // Fetch sessions
   useEffect(() => {
-    fetch(`${SUPABASE_URL}/functions/v1/athlete-portal?token=${token}&action=sessions`, {
-      headers: { "apikey": SUPABASE_KEY },
+    fetch(buildAthletePortalFunctionUrl("sessions", token), {
+      headers: athletePortalHeaders(),
     })
       .then(res => res.json())
       .then(data => {
@@ -80,12 +78,9 @@ export function AthleteRpeEntry({ token, playerId, categoryId }: AthleteRpeEntry
 
     setIsSubmitting(true);
     try {
-      const res = await fetch(`${SUPABASE_URL}/functions/v1/athlete-portal?token=${token}&action=submit-rpe`, {
+      const res = await fetch(buildAthletePortalFunctionUrl("submit-rpe", token), {
         method: "POST",
-        headers: { 
-          "apikey": SUPABASE_KEY,
-          "Content-Type": "application/json"
-        },
+        headers: athletePortalHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({
           session_id: selectedSession,
           rpe,

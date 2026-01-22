@@ -111,7 +111,8 @@ export function AthleteAccessSection({ playerId, categoryId, playerName }: Athle
   });
 
   const copyLink = (token: string, tokenId: string) => {
-    const url = `${window.location.origin}/athlete-portal?token=${token}`;
+    const safeToken = encodeURIComponent(token);
+    const url = `${window.location.origin}/athlete-portal?token=${safeToken}`;
     navigator.clipboard.writeText(url);
     setCopiedId(tokenId);
     toast.success("Lien copié dans le presse-papier");
@@ -230,7 +231,7 @@ export function AthleteAccessSection({ playerId, categoryId, playerName }: Athle
                 <Button
                   variant="outline"
                   size="icon"
-                  onClick={() => window.open(`/athlete-portal?token=${activeToken.token}`, '_blank')}
+                  onClick={() => window.open(`${window.location.origin}/athlete-portal?token=${encodeURIComponent(activeToken.token)}`, "_blank")}
                   title="Tester le lien"
                 >
                   <ExternalLink className="h-4 w-4" />

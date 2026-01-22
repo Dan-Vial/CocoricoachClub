@@ -8,9 +8,7 @@ import { Trophy, Calendar, CheckCircle2, MapPin, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
-
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+import { athletePortalHeaders, buildAthletePortalFunctionUrl } from "@/lib/athletePortalClient";
 
 interface AthleteMatchStatsProps {
   token: string;
@@ -44,8 +42,8 @@ export function AthleteMatchStats({ token, playerId, categoryId }: AthleteMatchS
 
   // Fetch matches
   useEffect(() => {
-    fetch(`${SUPABASE_URL}/functions/v1/athlete-portal?token=${token}&action=matches`, {
-      headers: { "apikey": SUPABASE_KEY },
+    fetch(buildAthletePortalFunctionUrl("matches", token), {
+      headers: athletePortalHeaders(),
     })
       .then(res => res.json())
       .then(data => {
@@ -66,12 +64,9 @@ export function AthleteMatchStats({ token, playerId, categoryId }: AthleteMatchS
 
     setIsSubmitting(true);
     try {
-      const res = await fetch(`${SUPABASE_URL}/functions/v1/athlete-portal?token=${token}&action=submit-stats`, {
+      const res = await fetch(buildAthletePortalFunctionUrl("submit-stats", token), {
         method: "POST",
-        headers: { 
-          "apikey": SUPABASE_KEY,
-          "Content-Type": "application/json"
-        },
+        headers: athletePortalHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({
           match_id: selectedMatch,
           minutes_played: parseInt(stats.minutes_played) || 0,
