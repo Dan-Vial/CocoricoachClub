@@ -36,7 +36,6 @@ interface BowlingStats {
   strikePercentage: number;
   sparePercentage: number;
   splitPercentage: number;
-  singlePinPercentage: number;
   singlePinConversionRate: number;
   pocketPercentage: number;
   openFrames: number;
@@ -81,7 +80,6 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames }: BowlingSc
     strikePercentage: 0,
     sparePercentage: 0,
     splitPercentage: 0,
-    singlePinPercentage: 0,
     singlePinConversionRate: 0,
     pocketPercentage: 0,
     openFrames: 0,
@@ -210,12 +208,20 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames }: BowlingSc
 
         // Count spares (not including the original strike throws)
         if (throwData.value === "/") {
-          spares++;
-          
           // Check if this spare was a split conversion
           const previousThrow = frame.throws[throwIndex - 1];
           if (previousThrow?.isSplit) {
             splitConverted++;
+            spares++; // Split converti compte dans les spares
+          } else {
+            spares++; // Spare normal
+          }
+        } else if (throwIndex > 0) {
+          // Check if previous throw was a split that was NOT converted
+          const previousThrow = frame.throws[throwIndex - 1];
+          if (previousThrow?.isSplit && throwData.value !== "/") {
+            // Split non converti - ne compte pas dans les opportunités de spare
+            // On va ajuster en soustrayant des opportunités totales
           }
         }
 
@@ -268,25 +274,25 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames }: BowlingSc
     if (tenthFrame.throws[0]?.value === "X") pocketOpportunities++; // 2nd throw after strike
     if (tenthFrame.throws[1]?.value === "X") pocketOpportunities++; // 3rd throw after strike
 
+    // Count unconverted splits to exclude from spare opportunities
+    let unconvertedSplits = splitCount - splitConverted;
+    
     // Calculate percentages
     const strikePercentage = (strikes / 12) * 100;
     
-    // Spare % = (spares + splits convertis) / opportunités de spare
-    const totalSpareOpportunities = Math.max(0, 10 - strikes + (strikes > 10 ? 2 : 0));
+    // Spare % = spares / (opportunités de spare - splits non convertis)
+    // Les splits non convertis ne comptent pas dans le calcul
+    const baseSpareOpportunities = Math.max(0, 10 - strikes + (strikes > 10 ? 2 : 0));
+    const totalSpareOpportunities = Math.max(0, baseSpareOpportunities - unconvertedSplits);
     const sparePercentage = totalSpareOpportunities > 0 
-      ? ((spares) / totalSpareOpportunities) * 100 
+      ? (spares / totalSpareOpportunities) * 100 
       : 0;
 
     const splitPercentage = splitCount > 0 
       ? (splitConverted / splitCount) * 100 
       : 0;
 
-    // Single pin % = how many first throws resulted in 9 pins (single pin situation)
-    // Single pin conversion rate = of those, how many were converted
-    const singlePinPercentage = pocketOpportunities > 0 
-      ? (singlePinCount / pocketOpportunities) * 100 
-      : 0;
-
+    // Single pin conversion rate = of single pin situations, how many were converted
     const singlePinConversionRate = singlePinCount > 0 
       ? (singlePinConverted / singlePinCount) * 100 
       : 0;
@@ -309,7 +315,6 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames }: BowlingSc
       strikePercentage: Math.round(strikePercentage * 10) / 10,
       sparePercentage: Math.round(sparePercentage * 10) / 10,
       splitPercentage: Math.round(splitPercentage * 10) / 10,
-      singlePinPercentage: Math.round(singlePinPercentage * 10) / 10,
       singlePinConversionRate: Math.round(singlePinConversionRate * 10) / 10,
       pocketPercentage: Math.round(pocketPercentage * 10) / 10,
       openFrames,
@@ -683,11 +688,6 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames }: BowlingSc
               value={`${stats.splitPercentage}%`}
               detail={`${stats.splitConverted}/${stats.splitCount} splits`}
               note={stats.splitOnLastThrow > 0 ? `+${stats.splitOnLastThrow} exclu(s)` : undefined}
-            />
-            <StatBox 
-              label="% Quilles seules" 
-              value={`${stats.singlePinPercentage}%`}
-              detail={`${stats.singlePinCount} situations`}
             />
             <StatBox 
               label="% QS converties" 
