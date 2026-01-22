@@ -26,7 +26,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 import { useViewerPlayers } from "@/hooks/use-viewer-data";
-import { getDisciplineLabel } from "@/lib/constants/athleticProfiles";
+import { getDisciplineLabel, getSpecialtyLabel } from "@/lib/constants/athleticProfiles";
 import { isAthletismeCategory, isJudoCategory, isIndividualSport } from "@/lib/constants/sportTypes";
 import { getPositionsForSport } from "@/lib/constants/sportPositions";
 
@@ -143,12 +143,24 @@ export function PlayersTab({ categoryId }: PlayersTabProps) {
   // Get display value for the attribute column
   const getAttributeDisplay = (player: any) => {
     if (showDiscipline) {
-      return player.discipline ? (
-        <Badge variant="outline" className="bg-primary/5">
-          {getDisciplineLabel(player.discipline)}
-        </Badge>
-      ) : (
-        <span className="text-muted-foreground text-sm">—</span>
+      if (!player.discipline) {
+        return <span className="text-muted-foreground text-sm">—</span>;
+      }
+      // For athletics, show discipline + specialty
+      const disciplineLabel = getDisciplineLabel(player.discipline);
+      const specialtyLabel = player.specialty ? getSpecialtyLabel(player.specialty) : null;
+      
+      return (
+        <div className="flex flex-wrap gap-1">
+          <Badge variant="outline" className="bg-primary/5">
+            {disciplineLabel}
+          </Badge>
+          {specialtyLabel && (
+            <Badge variant="secondary" className="font-normal">
+              {specialtyLabel}
+            </Badge>
+          )}
+        </div>
       );
     }
     if (showRole) {

@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { playerSchema } from "@/lib/validations";
-import { ATHLETISME_DISCIPLINES, JUDO_WEIGHT_CATEGORIES, AVIRON_ROLES, isAthletismeCategory, isJudoCategory, isIndividualSport } from "@/lib/constants/sportTypes";
+import { ATHLETISME_DISCIPLINES, ATHLETISME_SPECIALTIES, JUDO_WEIGHT_CATEGORIES, AVIRON_ROLES, isAthletismeCategory, isJudoCategory, isIndividualSport } from "@/lib/constants/sportTypes";
 import { getPositionsForSport } from "@/lib/constants/sportPositions";
 
 interface AddPlayerDialogProps {
@@ -39,6 +39,7 @@ export function AddPlayerDialog({
   const [birthYear, setBirthYear] = useState("");
   const [birthDate, setBirthDate] = useState("");
   const [discipline, setDiscipline] = useState("");
+  const [specialty, setSpecialty] = useState("");
   const [position, setPosition] = useState("");
   const [validationError, setValidationError] = useState("");
   const queryClient = useQueryClient();
@@ -65,8 +66,11 @@ export function AddPlayerDialog({
   const isTeamSport = !isIndividualSport(sportType);
   const positions = getPositionsForSport(sportType);
 
+  // Get available specialties based on selected discipline
+  const availableSpecialties = discipline && isAthletics ? ATHLETISME_SPECIALTIES[discipline] || [] : [];
+
   const addPlayer = useMutation({
-    mutationFn: async (data: { name: string; email?: string; birth_year?: number; birth_date?: string; discipline?: string; position?: string }) => {
+    mutationFn: async (data: { name: string; email?: string; birth_year?: number; birth_date?: string; discipline?: string; specialty?: string; position?: string }) => {
       const { error } = await supabase
         .from("players")
         .insert({ 
@@ -76,8 +80,10 @@ export function AddPlayerDialog({
           birth_year: data.birth_year,
           birth_date: data.birth_date || null,
           discipline: data.discipline || null,
+          specialty: data.specialty || null,
           position: data.position || null
         });
+      if (error) throw error;
       if (error) throw error;
     },
     onSuccess: () => {
@@ -87,6 +93,10 @@ export function AddPlayerDialog({
       setPlayerEmail("");
       setBirthYear("");
       setBirthDate("");
+      setDiscipline("");
+      setSpecialty("");
+      setPosition("");
+      onOpenChange(false);
       setDiscipline("");
       setPosition("");
       onOpenChange(false);
@@ -111,9 +121,13 @@ export function AddPlayerDialog({
       return;
     }
 
-    // Validate discipline for athletics
+    // Validate discipline and specialty for athletics
     if (isAthletics && !discipline) {
       setValidationError("Veuillez sélectionner une discipline");
+      return;
+    }
+    if (isAthletics && discipline && availableSpecialties.length > 0 && !specialty) {
+      setValidationError("Veuillez sélectionner une spécialité");
       return;
     }
 
@@ -135,6 +149,7 @@ export function AddPlayerDialog({
       birth_year: result.data.birthYear,
       birth_date: birthDate || undefined,
       discipline: discipline || undefined,
+      specialty: specialty || undefined,
       position: position || undefined
     });
   };
@@ -197,7 +212,13 @@ export function AddPlayerDialog({
             {isAthletics && (
               <div className="space-y-2">
                 <Label htmlFor="discipline">Discipline *</Label>
-                <Select value={discipline} onValueChange={setDiscipline}>
+                <Select 
+                  value={discipline} 
+                  onValueChange={(val) => {
+                    setDiscipline(val);
+                    setSpecialty(""); // Reset specialty when discipline changes
+                  }}
+                >
                   <SelectTrigger className="w-full bg-background">
                     <SelectValue placeholder="Sélectionner une discipline" />
                   </SelectTrigger>
@@ -209,8 +230,26 @@ export function AddPlayerDialog({
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+            )}
+
+            {isAthletics && discipline && availableSpecialties.length > 0 && (
+              <div className="space-y-2">
+                <Label htmlFor="specialty">Spécialité *</Label>
+                <Select value={specialty} onValueChange={setSpecialty}>
+                  <SelectTrigger className="w-full bg-background">
+                    <SelectValue placeholder="Sélectionner une spécialité" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border z-50">
+                    {availableSpecialties.map((spec) => (
+                      <SelectItem key={spec.value} value={spec.value}>
+                        {spec.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <p className="text-xs text-muted-foreground">
-                  Le profilage et les tests seront adaptés à cette discipline
+                  Permet de comparer les athlètes sur la même épreuve
                 </p>
               </div>
             )}

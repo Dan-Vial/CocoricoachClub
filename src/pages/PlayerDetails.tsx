@@ -25,7 +25,8 @@ import { ViewerModeProvider, useViewerModeContext } from "@/contexts/ViewerModeC
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getPositionsForSport } from "@/lib/constants/sportPositions";
-import { isIndividualSport, ATHLETISME_DISCIPLINES, JUDO_WEIGHT_CATEGORIES, isAthletismeCategory, isJudoCategory, AVIRON_ROLES } from "@/lib/constants/sportTypes";
+import { isIndividualSport, ATHLETISME_DISCIPLINES, ATHLETISME_SPECIALTIES, JUDO_WEIGHT_CATEGORIES, isAthletismeCategory, isJudoCategory, AVIRON_ROLES } from "@/lib/constants/sportTypes";
+import { getDisciplineLabel, getSpecialtyLabel } from "@/lib/constants/athleticProfiles";
 import { toast } from "sonner";
 
 function PlayerDetailsContent() {
@@ -35,6 +36,8 @@ function PlayerDetailsContent() {
   const [transferDialogOpen, setTransferDialogOpen] = useState(false);
   const [isEditingPosition, setIsEditingPosition] = useState(false);
   const [editPosition, setEditPosition] = useState("");
+  const [isEditingSpecialty, setIsEditingSpecialty] = useState(false);
+  const [editSpecialty, setEditSpecialty] = useState("");
   const { isViewer } = useViewerModeContext();
 
   const { data: player, isLoading } = useQuery({
@@ -66,28 +69,36 @@ function PlayerDetailsContent() {
   };
 
   const getAttributeValue = () => {
-    if (isAthletics || isJudo) {
-      const value = player?.discipline;
-      if (isAthletics) {
-        return ATHLETISME_DISCIPLINES.find(d => d.value === value)?.label || value;
-      }
-      if (isJudo) {
-        return JUDO_WEIGHT_CATEGORIES.find(c => c.value === value)?.label || value;
-      }
-      return value;
+    if (isAthletics) {
+      return player?.discipline ? getDisciplineLabel(player.discipline) : null;
+    }
+    if (isJudo) {
+      return player?.discipline ? getDisciplineLabel(player.discipline) : null;
     }
     if (isAviron) {
-      const value = player?.discipline;
+      const value = player?.position;
       return AVIRON_ROLES.find(r => r.value === value)?.label || value;
     }
     return player?.position;
   };
 
+  const getSpecialtyValue = () => {
+    if (isAthletics && player?.specialty) {
+      return getSpecialtyLabel(player.specialty);
+    }
+    return null;
+  };
+
+  // Get available specialties based on current discipline
+  const availableSpecialties = player?.discipline && isAthletics 
+    ? ATHLETISME_SPECIALTIES[player.discipline] || [] 
+    : [];
+
   const updatePosition = useMutation({
     mutationFn: async (newPosition: string) => {
-      // For athletics/judo/aviron, update discipline field
-      // For team sports, update position field
-      const updateField = (isAthletics || isJudo || isAviron) ? "discipline" : "position";
+      // For athletics/judo, update discipline field
+      // For aviron/team sports, update position field
+      const updateField = (isAthletics || isJudo) ? "discipline" : "position";
       const { error } = await supabase
         .from("players")
         .update({ [updateField]: newPosition || null })
@@ -98,14 +109,36 @@ function PlayerDetailsContent() {
       queryClient.invalidateQueries({ queryKey: ["player", playerId] });
       toast.success("Mis à jour avec succès");
       setIsEditingPosition(false);
+      // Reset specialty when discipline changes for athletics
+      if (isAthletics) {
+        setEditSpecialty("");
+      }
     },
     onError: () => {
       toast.error("Erreur lors de la mise à jour");
     },
   });
 
+  const updateSpecialty = useMutation({
+    mutationFn: async (newSpecialty: string) => {
+      const { error } = await supabase
+        .from("players")
+        .update({ specialty: newSpecialty || null })
+        .eq("id", playerId!);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["player", playerId] });
+      toast.success("Spécialité mise à jour");
+      setIsEditingSpecialty(false);
+    },
+    onError: () => {
+      toast.error("Erreur lors de la mise à jour de la spécialité");
+    },
+  });
+
   const handleStartEdit = () => {
-    const currentValue = (isAthletics || isJudo || isAviron) ? player?.discipline : player?.position;
+    const currentValue = (isAthletics || isJudo) ? player?.discipline : player?.position;
     setEditPosition(currentValue || "");
     setIsEditingPosition(true);
   };
@@ -117,6 +150,20 @@ function PlayerDetailsContent() {
   const handleCancelEdit = () => {
     setIsEditingPosition(false);
     setEditPosition("");
+  };
+
+  const handleStartEditSpecialty = () => {
+    setEditSpecialty(player?.specialty || "");
+    setIsEditingSpecialty(true);
+  };
+
+  const handleSaveSpecialty = () => {
+    updateSpecialty.mutate(editSpecialty);
+  };
+
+  const handleCancelEditSpecialty = () => {
+    setIsEditingSpecialty(false);
+    setEditSpecialty("");
   };
 
   // Get options for select
@@ -144,7 +191,9 @@ function PlayerDetailsContent() {
   }
 
   const attributeValue = getAttributeValue();
+  const specialtyValue = getSpecialtyValue();
   const showAttributeEditor = isTeamSport || isAthletics || isJudo || isAviron;
+  const showSpecialtyEditor = isAthletics && player?.discipline;
 
   return (
     <div className="min-h-screen bg-background">
@@ -219,6 +268,64 @@ function PlayerDetailsContent() {
                           variant="ghost"
                           className="h-6 w-6"
                           onClick={handleStartEdit}
+                        >
+                          <Edit2 className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Specialty editor for athletics */}
+              {showSpecialtyEditor && availableSpecialties.length > 0 && (
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-sm text-muted-foreground">Spécialité:</span>
+                  {isEditingSpecialty ? (
+                    <div className="flex items-center gap-2">
+                      <Select value={editSpecialty} onValueChange={setEditSpecialty}>
+                        <SelectTrigger className="w-[180px] h-8">
+                          <SelectValue placeholder="Choisir une spécialité" />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-[300px]">
+                          {availableSpecialties.map((spec) => (
+                            <SelectItem key={spec.value} value={spec.value}>
+                              {spec.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8"
+                        onClick={handleSaveSpecialty}
+                        disabled={updateSpecialty.isPending}
+                      >
+                        <Check className="h-4 w-4 text-primary" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8"
+                        onClick={handleCancelEditSpecialty}
+                      >
+                        <X className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      {specialtyValue ? (
+                        <Badge variant="outline" className="font-normal">{specialtyValue}</Badge>
+                      ) : (
+                        <span className="text-sm text-muted-foreground italic">Non définie</span>
+                      )}
+                      {!isViewer && (
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-6 w-6"
+                          onClick={handleStartEditSpecialty}
                         >
                           <Edit2 className="h-3 w-3" />
                         </Button>

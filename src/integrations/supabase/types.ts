@@ -2901,6 +2901,7 @@ export type Database = {
           name: string
           phone: string | null
           position: string | null
+          specialty: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -2915,6 +2916,7 @@ export type Database = {
           name: string
           phone?: string | null
           position?: string | null
+          specialty?: string | null
         }
         Update: {
           avatar_url?: string | null
@@ -2929,6 +2931,7 @@ export type Database = {
           name?: string
           phone?: string | null
           position?: string | null
+          specialty?: string | null
         }
         Relationships: [
           {

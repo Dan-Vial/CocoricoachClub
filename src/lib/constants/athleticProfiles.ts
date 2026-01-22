@@ -1199,7 +1199,7 @@ export function getAthleticProfileConfig(sportType: string, playerDiscipline?: s
 // Helper to get discipline/weight category label
 export function getDisciplineLabel(disciplineValue: string): string {
   const allOptions = [
-    // Athletics disciplines
+    // Athletics disciplines (short labels)
     { value: "athletisme_sprints", label: "Sprints" },
     { value: "athletisme_haies", label: "Haies" },
     { value: "athletisme_demi_fond", label: "Demi-fond" },
@@ -1228,4 +1228,52 @@ export function getDisciplineLabel(disciplineValue: string): string {
   ];
   const found = allOptions.find(d => d.value === disciplineValue);
   return found?.label || disciplineValue;
+}
+
+// Helper to get specialty label
+export function getSpecialtyLabel(specialtyValue: string): string {
+  const allSpecialties: Record<string, string> = {
+    // Sprints
+    "60m": "60m",
+    "100m": "100m",
+    "200m": "200m",
+    "400m": "400m",
+    // Haies
+    "60mH": "60m Haies",
+    "100mH": "100m Haies",
+    "110mH": "110m Haies",
+    "400mH": "400m Haies",
+    // Demi-fond
+    "800m": "800m",
+    "1500m": "1500m",
+    "mile": "Mile",
+    // Fond
+    "3000m": "3000m",
+    "5000m": "5000m",
+    "10000m": "10000m",
+    "cross": "Cross-country",
+    "semi_marathon": "Semi-marathon",
+    "marathon": "Marathon",
+    // Marche
+    "10km_marche": "10km Marche",
+    "20km_marche": "20km Marche",
+    "35km_marche": "35km Marche",
+    "50km_marche": "50km Marche",
+    // Sauts horizontaux
+    "longueur": "Longueur",
+    "triple_saut": "Triple saut",
+    // Sauts verticaux
+    "hauteur": "Hauteur",
+    "perche": "Perche",
+    // Lancers
+    "poids": "Poids",
+    "disque": "Disque",
+    "marteau": "Marteau",
+    "javelot": "Javelot",
+    // Combinés
+    "pentathlon": "Pentathlon",
+    "heptathlon": "Heptathlon",
+    "decathlon": "Décathlon",
+  };
+  return allSpecialties[specialtyValue] || specialtyValue;
 }

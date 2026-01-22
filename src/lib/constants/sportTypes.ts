@@ -103,16 +103,75 @@ export const ATHLETISME_CATEGORY_SUBTYPES: SportSubTypeOption[] = [
 
 // Disciplines for PLAYER creation (used in AddPlayerDialog)
 export const ATHLETISME_DISCIPLINES: PlayerAttributeOption[] = [
-  { value: "athletisme_sprints", label: "Sprints (60m, 100m, 200m, 400m)" },
-  { value: "athletisme_haies", label: "Haies (100mH, 110mH, 400mH)" },
-  { value: "athletisme_demi_fond", label: "Demi-fond (800m, 1500m, Mile)" },
-  { value: "athletisme_fond", label: "Fond (3000m, 5000m, 10000m, Cross)" },
-  { value: "athletisme_marche", label: "Marche athlétique (10km, 20km, 35km)" },
-  { value: "athletisme_sauts_longueur", label: "Sauts horizontaux (Longueur, Triple)" },
-  { value: "athletisme_sauts_hauteur", label: "Sauts verticaux (Hauteur, Perche)" },
-  { value: "athletisme_lancers", label: "Lancers (Poids, Disque, Marteau, Javelot)" },
-  { value: "athletisme_combines", label: "Épreuves combinées (Décathlon, Heptathlon)" },
+  { value: "athletisme_sprints", label: "Sprints" },
+  { value: "athletisme_haies", label: "Haies" },
+  { value: "athletisme_demi_fond", label: "Demi-fond" },
+  { value: "athletisme_fond", label: "Fond" },
+  { value: "athletisme_marche", label: "Marche athlétique" },
+  { value: "athletisme_sauts_longueur", label: "Sauts horizontaux" },
+  { value: "athletisme_sauts_hauteur", label: "Sauts verticaux" },
+  { value: "athletisme_lancers", label: "Lancers" },
+  { value: "athletisme_combines", label: "Épreuves combinées" },
 ];
+
+// Specialties per discipline for athletics
+export interface SpecialtyOption {
+  value: string;
+  label: string;
+}
+
+export const ATHLETISME_SPECIALTIES: Record<string, SpecialtyOption[]> = {
+  athletisme_sprints: [
+    { value: "60m", label: "60m" },
+    { value: "100m", label: "100m" },
+    { value: "200m", label: "200m" },
+    { value: "400m", label: "400m" },
+  ],
+  athletisme_haies: [
+    { value: "60mH", label: "60m Haies" },
+    { value: "100mH", label: "100m Haies" },
+    { value: "110mH", label: "110m Haies" },
+    { value: "400mH", label: "400m Haies" },
+  ],
+  athletisme_demi_fond: [
+    { value: "800m", label: "800m" },
+    { value: "1500m", label: "1500m" },
+    { value: "mile", label: "Mile" },
+  ],
+  athletisme_fond: [
+    { value: "3000m", label: "3000m" },
+    { value: "5000m", label: "5000m" },
+    { value: "10000m", label: "10000m" },
+    { value: "cross", label: "Cross-country" },
+    { value: "semi_marathon", label: "Semi-marathon" },
+    { value: "marathon", label: "Marathon" },
+  ],
+  athletisme_marche: [
+    { value: "10km_marche", label: "10km Marche" },
+    { value: "20km_marche", label: "20km Marche" },
+    { value: "35km_marche", label: "35km Marche" },
+    { value: "50km_marche", label: "50km Marche" },
+  ],
+  athletisme_sauts_longueur: [
+    { value: "longueur", label: "Longueur" },
+    { value: "triple_saut", label: "Triple saut" },
+  ],
+  athletisme_sauts_hauteur: [
+    { value: "hauteur", label: "Hauteur" },
+    { value: "perche", label: "Perche" },
+  ],
+  athletisme_lancers: [
+    { value: "poids", label: "Poids" },
+    { value: "disque", label: "Disque" },
+    { value: "marteau", label: "Marteau" },
+    { value: "javelot", label: "Javelot" },
+  ],
+  athletisme_combines: [
+    { value: "pentathlon", label: "Pentathlon" },
+    { value: "heptathlon", label: "Heptathlon" },
+    { value: "decathlon", label: "Décathlon" },
+  ],
+};
 
 // Weight categories for Judo (used in AddPlayerDialog)
 export const JUDO_WEIGHT_CATEGORIES_MEN: PlayerAttributeOption[] = [
