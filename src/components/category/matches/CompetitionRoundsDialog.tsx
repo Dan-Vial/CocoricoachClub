@@ -434,7 +434,7 @@ export function CompetitionRoundsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[900px] max-h-[90vh] flex flex-col">
+      <DialogContent className="sm:max-w-[900px] max-h-[90vh] flex flex-col overflow-hidden">
         <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             {isAviron ? <Ship className="h-5 w-5" /> : isJudo ? <Swords className="h-5 w-5" /> : <Circle className="h-5 w-5" />}
@@ -443,7 +443,7 @@ export function CompetitionRoundsDialog({
         </DialogHeader>
 
         {/* Player selector */}
-        <div className="space-y-2">
+        <div className="space-y-2 flex-shrink-0">
           <Label className="text-sm font-medium">Sélectionner un athlète</Label>
           <Select value={selectedPlayerId} onValueChange={setSelectedPlayerId}>
             <SelectTrigger className="w-full">
@@ -472,8 +472,8 @@ export function CompetitionRoundsDialog({
         </div>
 
         {selectedPlayer && (
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex-1 min-h-0 flex flex-col">
-            <TabsList className={`grid w-full ${isAviron ? 'grid-cols-3' : isBowling ? 'grid-cols-3' : 'grid-cols-2'}`}>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex-1 min-h-0 flex flex-col overflow-hidden">
+            <TabsList className={`grid w-full flex-shrink-0 ${isAviron ? 'grid-cols-3' : isBowling ? 'grid-cols-3' : 'grid-cols-2'}`}>
               {isAviron && (
                 <TabsTrigger value="crew" className="gap-2">
                   <Users className="h-4 w-4" />
@@ -571,9 +571,9 @@ export function CompetitionRoundsDialog({
               </TabsContent>
             )}
 
-            <TabsContent value="rounds" className="flex-1 min-h-0 mt-0">
-              <ScrollArea className="h-[350px] pr-4">
-                <div className="space-y-4">
+            <TabsContent value="rounds" className="flex-1 min-h-0 mt-0 overflow-hidden">
+              <ScrollArea className="h-full max-h-[calc(90vh-280px)] pr-4">
+                <div className="space-y-4 pb-4">
                   {/* Add round button */}
                   <Button
                     variant="outline"
@@ -896,7 +896,8 @@ export function CompetitionRoundsDialog({
               </ScrollArea>
             </TabsContent>
 
-            <TabsContent value="summary" className="flex-1 min-h-0 mt-0">
+            <TabsContent value="summary" className="flex-1 min-h-0 mt-0 overflow-hidden">
+              <ScrollArea className="h-full max-h-[calc(90vh-280px)]">
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base flex items-center gap-2">
@@ -1124,11 +1125,12 @@ export function CompetitionRoundsDialog({
                   )}
                 </CardContent>
               </Card>
+              </ScrollArea>
             </TabsContent>
           </Tabs>
         )}
 
-        <div className="flex justify-end gap-2 pt-4 border-t">
+        <div className="flex justify-end gap-2 pt-4 border-t flex-shrink-0 bg-background">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Annuler
           </Button>
