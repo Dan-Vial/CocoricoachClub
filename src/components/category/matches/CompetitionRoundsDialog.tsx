@@ -943,147 +943,27 @@ export function CompetitionRoundsDialog({
                                 </Button>
                               </div>
 
-                              {/* Score et Strikes */}
-                              <div className="grid grid-cols-4 gap-2">
-                                <div className="col-span-1">
+                              {/* Score (lecture seule - rempli par la feuille de score) */}
+                              <div className="grid grid-cols-2 gap-4">
+                                <div>
                                   <Label className="text-xs font-medium">Score</Label>
                                   <Input
                                     type="number"
-                                    onWheel={blurOnWheel}
                                     value={round.stats["gameScore"] || ""}
-                                    onChange={(e) => updateRoundStat(selectedPlayer.playerId, round.round_number, "gameScore", parseFloat(e.target.value) || 0)}
+                                    readOnly
+                                    disabled
                                     max={300}
                                     placeholder="0-300"
-                                    className="h-8 text-center font-bold"
+                                    className="h-8 text-center font-bold bg-muted text-muted-foreground"
                                   />
+                                  <p className="text-[10px] text-muted-foreground mt-1">
+                                    Rempli automatiquement via la feuille de score
+                                  </p>
                                 </div>
-                                <div>
-                                  <Label className="text-xs">Strikes</Label>
-                                  <Input
-                                    type="number"
-                                    onWheel={blurOnWheel}
-                                    value={round.stats["strikes"] || ""}
-                                    onChange={(e) => {
-                                      const strikes = parseFloat(e.target.value) || 0;
-                                      updateRoundStat(selectedPlayer.playerId, round.round_number, "strikes", strikes);
-                                      // Calcul automatique % strikes (max 12 strikes possible)
-                                      const strikePercentage = (strikes / 12) * 100;
-                                      updateRoundStat(selectedPlayer.playerId, round.round_number, "strikePercentage", Math.round(strikePercentage * 10) / 10);
-                                    }}
-                                    max={12}
-                                    placeholder="0"
-                                    className="h-8 text-center"
-                                  />
+                                <div className="text-center">
+                                  <Label className="text-xs">Open frames</Label>
+                                  <p className="text-lg font-bold text-muted-foreground">{round.stats["openFrames"] || 0}</p>
                                 </div>
-                                <div>
-                                  <Label className="text-xs">Spares (hors splits)</Label>
-                                  <Input
-                                    type="number"
-                                    onWheel={blurOnWheel}
-                                    value={round.stats["spares"] || ""}
-                                    onChange={(e) => {
-                                      const spares = parseFloat(e.target.value) || 0;
-                                      updateRoundStat(selectedPlayer.playerId, round.round_number, "spares", spares);
-                                      // Recalcul % spares
-                                      const strikes = round.stats["strikes"] || 0;
-                                      const splitConverted = round.stats["splitConverted"] || 0;
-                                      // Opportunités = 10 frames - strikes + lancers bonus (si < 10 strikes)
-                                      const spareOpportunities = Math.max(0, 10 - strikes);
-                                      updateRoundStat(selectedPlayer.playerId, round.round_number, "spareOpportunities", spareOpportunities);
-                                      // % spares = (spares + splits convertis) / opportunités
-                                      if (spareOpportunities > 0) {
-                                        const sparePercentage = ((spares + splitConverted) / spareOpportunities) * 100;
-                                        updateRoundStat(selectedPlayer.playerId, round.round_number, "sparePercentage", Math.round(sparePercentage * 10) / 10);
-                                      }
-                                    }}
-                                    max={10}
-                                    placeholder="0"
-                                    className="h-8 text-center"
-                                  />
-                                </div>
-                                <div>
-                                  <Label className="text-xs">Opens</Label>
-                                  <Input
-                                    type="number"
-                                    onWheel={blurOnWheel}
-                                    value={round.stats["openFrames"] || ""}
-                                    onChange={(e) => updateRoundStat(selectedPlayer.playerId, round.round_number, "openFrames", parseFloat(e.target.value) || 0)}
-                                    max={10}
-                                    placeholder="0"
-                                    className="h-8 text-center"
-                                  />
-                                </div>
-                              </div>
-
-                              {/* Splits - avec règles spécifiques */}
-                              <div className="p-2 rounded border border-orange-200 bg-orange-50/50 dark:bg-orange-900/10 dark:border-orange-800">
-                                <Label className="text-xs font-medium text-orange-700 dark:text-orange-400 mb-2 block">
-                                  Splits (hors 11e/12e lancer)
-                                </Label>
-                                <div className="grid grid-cols-3 gap-2">
-                                  <div>
-                                    <Label className="text-[10px] text-muted-foreground">Splits total</Label>
-                                    <Input
-                                      type="number"
-                                      onWheel={blurOnWheel}
-                                      value={round.stats["splitCount"] || ""}
-                                      onChange={(e) => {
-                                        const splitCount = parseFloat(e.target.value) || 0;
-                                        updateRoundStat(selectedPlayer.playerId, round.round_number, "splitCount", splitCount);
-                                        // Recalcul % conversion splits
-                                        const splitConverted = round.stats["splitConverted"] || 0;
-                                        if (splitCount > 0) {
-                                          const splitConversionRate = (splitConverted / splitCount) * 100;
-                                          updateRoundStat(selectedPlayer.playerId, round.round_number, "splitConversionRate", Math.round(splitConversionRate * 10) / 10);
-                                        }
-                                      }}
-                                      placeholder="0"
-                                      className="h-8 text-center"
-                                    />
-                                  </div>
-                                  <div>
-                                    <Label className="text-[10px] text-muted-foreground">Splits convertis</Label>
-                                    <Input
-                                      type="number"
-                                      onWheel={blurOnWheel}
-                                      value={round.stats["splitConverted"] || ""}
-                                      onChange={(e) => {
-                                        const splitConverted = parseFloat(e.target.value) || 0;
-                                        updateRoundStat(selectedPlayer.playerId, round.round_number, "splitConverted", splitConverted);
-                                        // Recalcul % conversion splits
-                                        const splitCount = round.stats["splitCount"] || 0;
-                                        if (splitCount > 0) {
-                                          const splitConversionRate = (splitConverted / splitCount) * 100;
-                                          updateRoundStat(selectedPlayer.playerId, round.round_number, "splitConversionRate", Math.round(splitConversionRate * 10) / 10);
-                                        }
-                                        // Recalcul % spares (splits convertis comptent comme spares)
-                                        const spares = round.stats["spares"] || 0;
-                                        const strikes = round.stats["strikes"] || 0;
-                                        const spareOpportunities = Math.max(0, 10 - strikes);
-                                        if (spareOpportunities > 0) {
-                                          const sparePercentage = ((spares + splitConverted) / spareOpportunities) * 100;
-                                          updateRoundStat(selectedPlayer.playerId, round.round_number, "sparePercentage", Math.round(sparePercentage * 10) / 10);
-                                        }
-                                      }}
-                                      placeholder="0"
-                                      className="h-8 text-center"
-                                    />
-                                  </div>
-                                  <div>
-                                    <Label className="text-[10px] text-muted-foreground">Splits 11e/12e (exclus)</Label>
-                                    <Input
-                                      type="number"
-                                      onWheel={blurOnWheel}
-                                      value={round.stats["splitOnLastThrow"] || ""}
-                                      onChange={(e) => updateRoundStat(selectedPlayer.playerId, round.round_number, "splitOnLastThrow", parseFloat(e.target.value) || 0)}
-                                      placeholder="0"
-                                      className="h-8 text-center"
-                                    />
-                                  </div>
-                                </div>
-                                <p className="text-[10px] text-muted-foreground mt-1 italic">
-                                  Les splits sur le 11e/12e lancer ne sont pas comptabilisés dans les stats
-                                </p>
                               </div>
 
                               {/* Pourcentages calculés automatiquement */}
@@ -1109,16 +989,11 @@ export function CompetitionRoundsDialog({
                               </div>
 
                               {/* Stats avancées (issues de la feuille de score) */}
-                              <div className="grid grid-cols-3 gap-2 p-2 rounded bg-muted/30">
+                              <div className="grid grid-cols-2 gap-2 p-2 rounded bg-muted/30">
                                 <div className="text-center">
                                   <Label className="text-[10px] text-muted-foreground">% Poche</Label>
                                   <p className="text-sm font-bold">{(round.stats["pocketPercentage"] || 0).toFixed(1)}%</p>
                                   <p className="text-[10px] text-muted-foreground">{round.stats["pocketCount"] || 0} lancers</p>
-                                </div>
-                                <div className="text-center">
-                                  <Label className="text-[10px] text-muted-foreground">% Quilles seules</Label>
-                                  <p className="text-sm font-bold">{(round.stats["singlePinPercentage"] || 0).toFixed(1)}%</p>
-                                  <p className="text-[10px] text-muted-foreground">{round.stats["singlePinCount"] || 0} situations</p>
                                 </div>
                                 <div className="text-center">
                                   <Label className="text-[10px] text-muted-foreground">% QS converties</Label>
