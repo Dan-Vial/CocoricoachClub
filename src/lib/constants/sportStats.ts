@@ -277,7 +277,112 @@ export const AVIRON_STATS: StatField[] = [
   { key: "lactatePost", label: "Lactate post-course (mmol/L)", shortLabel: "Lactate", category: "defense", type: "number" },
 ];
 
-export type SportType = "XV" | "7" | "XIII" | "football" | "handball" | "volleyball" | "basketball" | "judo" | "aviron" | "bowling" | "academie" | "national_team";
+// Athlétisme (Athletics) stats - discipline-specific
+// Sprint stats
+export const ATHLETISME_SPRINT_STATS: StatField[] = [
+  { key: "time", label: "Temps (sec)", shortLabel: "Temps", category: "scoring", type: "number" },
+  { key: "reactionTime", label: "Temps de réaction (ms)", shortLabel: "Réaction", category: "scoring", type: "number" },
+  { key: "finalRanking", label: "Classement", shortLabel: "Place", category: "scoring", type: "number" },
+  { key: "windSpeed", label: "Vent (m/s)", shortLabel: "Vent", category: "general", type: "number" },
+  { key: "lane", label: "Couloir", shortLabel: "Couloir", category: "general", type: "number", min: 1, max: 9 },
+  { key: "personalBest", label: "Record personnel ?", shortLabel: "RP", category: "general", type: "number", max: 1 },
+];
+
+// Middle/Long distance stats
+export const ATHLETISME_ENDURANCE_STATS: StatField[] = [
+  { key: "time", label: "Temps (sec)", shortLabel: "Temps", category: "scoring", type: "number" },
+  { key: "finalRanking", label: "Classement", shortLabel: "Place", category: "scoring", type: "number" },
+  { key: "split400m", label: "Split 400m (sec)", shortLabel: "400m", category: "attack", type: "number" },
+  { key: "split800m", label: "Split 800m (sec)", shortLabel: "800m", category: "attack", type: "number" },
+  { key: "splitLast400m", label: "Dernier 400m (sec)", shortLabel: "Last 400m", category: "attack", type: "number" },
+  { key: "avgPace", label: "Allure moyenne (sec/km)", shortLabel: "Allure", category: "attack", type: "number" },
+  { key: "personalBest", label: "Record personnel ?", shortLabel: "RP", category: "general", type: "number", max: 1 },
+];
+
+// Hurdles stats
+export const ATHLETISME_HAIES_STATS: StatField[] = [
+  { key: "time", label: "Temps (sec)", shortLabel: "Temps", category: "scoring", type: "number" },
+  { key: "reactionTime", label: "Temps de réaction (ms)", shortLabel: "Réaction", category: "scoring", type: "number" },
+  { key: "finalRanking", label: "Classement", shortLabel: "Place", category: "scoring", type: "number" },
+  { key: "windSpeed", label: "Vent (m/s)", shortLabel: "Vent", category: "general", type: "number" },
+  { key: "lane", label: "Couloir", shortLabel: "Couloir", category: "general", type: "number", min: 1, max: 9 },
+  { key: "hurdlesHit", label: "Haies touchées", shortLabel: "Touchées", category: "defense", type: "number" },
+  { key: "personalBest", label: "Record personnel ?", shortLabel: "RP", category: "general", type: "number", max: 1 },
+];
+
+// Jumps stats (long, triple, high, pole)
+export const ATHLETISME_SAUTS_STATS: StatField[] = [
+  { key: "bestMark", label: "Meilleure marque (cm)", shortLabel: "Marque", category: "scoring", type: "number" },
+  { key: "finalRanking", label: "Classement", shortLabel: "Place", category: "scoring", type: "number" },
+  { key: "attempt1", label: "Essai 1 (cm)", shortLabel: "E1", category: "attack", type: "number" },
+  { key: "attempt2", label: "Essai 2 (cm)", shortLabel: "E2", category: "attack", type: "number" },
+  { key: "attempt3", label: "Essai 3 (cm)", shortLabel: "E3", category: "attack", type: "number" },
+  { key: "attempt4", label: "Essai 4 (cm)", shortLabel: "E4", category: "attack", type: "number" },
+  { key: "attempt5", label: "Essai 5 (cm)", shortLabel: "E5", category: "attack", type: "number" },
+  { key: "attempt6", label: "Essai 6 (cm)", shortLabel: "E6", category: "attack", type: "number" },
+  { key: "windSpeed", label: "Vent (m/s)", shortLabel: "Vent", category: "general", type: "number" },
+  { key: "approachSpeed", label: "Vitesse d'élan (m/s)", shortLabel: "V. Élan", category: "defense", type: "number" },
+  { key: "personalBest", label: "Record personnel ?", shortLabel: "RP", category: "general", type: "number", max: 1 },
+];
+
+// Pole vault specific stats
+export const ATHLETISME_PERCHE_STATS: StatField[] = [
+  { key: "bestHeight", label: "Meilleure barre (cm)", shortLabel: "Hauteur", category: "scoring", type: "number" },
+  { key: "finalRanking", label: "Classement", shortLabel: "Place", category: "scoring", type: "number" },
+  { key: "height1", label: "Barre 1 (cm)", shortLabel: "B1", category: "attack", type: "number" },
+  { key: "attempts1", label: "Essais barre 1", shortLabel: "Ess.1", category: "attack", type: "number" },
+  { key: "height2", label: "Barre 2 (cm)", shortLabel: "B2", category: "attack", type: "number" },
+  { key: "attempts2", label: "Essais barre 2", shortLabel: "Ess.2", category: "attack", type: "number" },
+  { key: "height3", label: "Barre 3 (cm)", shortLabel: "B3", category: "attack", type: "number" },
+  { key: "attempts3", label: "Essais barre 3", shortLabel: "Ess.3", category: "attack", type: "number" },
+  { key: "poleLength", label: "Longueur perche (cm)", shortLabel: "Perche", category: "general", type: "number" },
+  { key: "personalBest", label: "Record personnel ?", shortLabel: "RP", category: "general", type: "number", max: 1 },
+];
+
+// Throws stats (shot put, discus, javelin, hammer)
+export const ATHLETISME_LANCERS_STATS: StatField[] = [
+  { key: "bestMark", label: "Meilleure marque (cm)", shortLabel: "Marque", category: "scoring", type: "number" },
+  { key: "finalRanking", label: "Classement", shortLabel: "Place", category: "scoring", type: "number" },
+  { key: "attempt1", label: "Essai 1 (cm)", shortLabel: "E1", category: "attack", type: "number" },
+  { key: "attempt2", label: "Essai 2 (cm)", shortLabel: "E2", category: "attack", type: "number" },
+  { key: "attempt3", label: "Essai 3 (cm)", shortLabel: "E3", category: "attack", type: "number" },
+  { key: "attempt4", label: "Essai 4 (cm)", shortLabel: "E4", category: "attack", type: "number" },
+  { key: "attempt5", label: "Essai 5 (cm)", shortLabel: "E5", category: "attack", type: "number" },
+  { key: "attempt6", label: "Essai 6 (cm)", shortLabel: "E6", category: "attack", type: "number" },
+  { key: "implementWeight", label: "Poids engin (kg)", shortLabel: "Engin", category: "general", type: "number" },
+  { key: "personalBest", label: "Record personnel ?", shortLabel: "RP", category: "general", type: "number", max: 1 },
+];
+
+// Combined events stats (decathlon, heptathlon)
+export const ATHLETISME_COMBINES_STATS: StatField[] = [
+  { key: "totalPoints", label: "Points totaux", shortLabel: "Points", category: "scoring", type: "number" },
+  { key: "finalRanking", label: "Classement", shortLabel: "Place", category: "scoring", type: "number" },
+  { key: "event1Points", label: "Épreuve 1 (pts)", shortLabel: "E1", category: "attack", type: "number" },
+  { key: "event2Points", label: "Épreuve 2 (pts)", shortLabel: "E2", category: "attack", type: "number" },
+  { key: "event3Points", label: "Épreuve 3 (pts)", shortLabel: "E3", category: "attack", type: "number" },
+  { key: "event4Points", label: "Épreuve 4 (pts)", shortLabel: "E4", category: "attack", type: "number" },
+  { key: "event5Points", label: "Épreuve 5 (pts)", shortLabel: "E5", category: "attack", type: "number" },
+  { key: "personalBest", label: "Record personnel ?", shortLabel: "RP", category: "general", type: "number", max: 1 },
+];
+
+// Default/general athletics stats
+export const ATHLETISME_GENERAL_STATS: StatField[] = [
+  { key: "finalRanking", label: "Classement", shortLabel: "Place", category: "scoring", type: "number" },
+  { key: "result", label: "Résultat (temps/distance)", shortLabel: "Résultat", category: "scoring", type: "number" },
+  { key: "personalBest", label: "Record personnel ?", shortLabel: "RP", category: "general", type: "number", max: 1 },
+  { key: "seasonBest", label: "Meilleure perf saison ?", shortLabel: "SB", category: "general", type: "number", max: 1 },
+];
+
+// Athletics phases
+export const ATHLETISME_PHASES = [
+  { value: "series", label: "Séries" },
+  { value: "repechages", label: "Repêchages" },
+  { value: "quarts", label: "Quarts de finale" },
+  { value: "demis", label: "Demi-finales" },
+  { value: "finale", label: "Finale" },
+];
+
+export type SportType = "XV" | "7" | "XIII" | "football" | "handball" | "volleyball" | "basketball" | "judo" | "aviron" | "bowling" | "academie" | "national_team" | "athletisme";
 
 // Helper function to extract base sport from subtypes like "aviron_club", "judo_academie"
 function getBaseSport(sportType: string): string {
@@ -294,7 +399,7 @@ function getBaseSport(sportType: string): string {
   return sportType.toLowerCase();
 }
 
-export function getStatsForSport(sportType: SportType | string, isGoalkeeper: boolean = false): StatField[] {
+export function getStatsForSport(sportType: SportType | string, isGoalkeeper: boolean = false, discipline?: string): StatField[] {
   const baseSport = getBaseSport(sportType);
   
   switch (baseSport) {
@@ -315,9 +420,59 @@ export function getStatsForSport(sportType: SportType | string, isGoalkeeper: bo
       return BOWLING_STATS;
     case "aviron":
       return AVIRON_STATS;
+    case "athletisme":
+    case "athlétisme":
+      return getAthletismeStatsForDiscipline(discipline);
     default:
       return RUGBY_STATS;
   }
+}
+
+// Get athletics stats based on discipline
+export function getAthletismeStatsForDiscipline(discipline?: string): StatField[] {
+  if (!discipline) return ATHLETISME_GENERAL_STATS;
+  
+  const disc = discipline.toLowerCase();
+  
+  // Sprint disciplines
+  if (disc.includes('100m') || disc.includes('200m') || disc.includes('60m') || disc.includes('sprint')) {
+    return ATHLETISME_SPRINT_STATS;
+  }
+  
+  // Hurdles
+  if (disc.includes('haies') || disc.includes('110m') || disc.includes('400m haies') || disc.includes('hurdles')) {
+    return ATHLETISME_HAIES_STATS;
+  }
+  
+  // Endurance disciplines
+  if (disc.includes('800m') || disc.includes('1500m') || disc.includes('3000m') || disc.includes('5000m') || 
+      disc.includes('10000m') || disc.includes('marathon') || disc.includes('demi-fond') || disc.includes('fond') ||
+      disc.includes('marche') || disc.includes('steeple')) {
+    return ATHLETISME_ENDURANCE_STATS;
+  }
+  
+  // Pole vault
+  if (disc.includes('perche') || disc.includes('pole')) {
+    return ATHLETISME_PERCHE_STATS;
+  }
+  
+  // Other jumps
+  if (disc.includes('saut') || disc.includes('hauteur') || disc.includes('longueur') || disc.includes('triple')) {
+    return ATHLETISME_SAUTS_STATS;
+  }
+  
+  // Throws
+  if (disc.includes('lancer') || disc.includes('poids') || disc.includes('disque') || disc.includes('javelot') || 
+      disc.includes('marteau') || disc.includes('throw')) {
+    return ATHLETISME_LANCERS_STATS;
+  }
+  
+  // Combined events
+  if (disc.includes('décathlon') || disc.includes('heptathlon') || disc.includes('combiné') || disc.includes('pentat')) {
+    return ATHLETISME_COMBINES_STATS;
+  }
+  
+  return ATHLETISME_GENERAL_STATS;
 }
 
 // Check if sport has goalkeeper-specific stats
@@ -417,6 +572,40 @@ export function getStatCategories(sportType: SportType | string): { key: string;
       { key: "defense", label: "Défense" },
     ];
   }
+
+  // Athlétisme
+  if (baseSport === "athletisme" || baseSport === "athlétisme") {
+    return [
+      { key: "general", label: "Général" },
+      { key: "scoring", label: "Performance" },
+      { key: "attack", label: "Essais / Splits" },
+      { key: "defense", label: "Technique" },
+    ];
+  }
   
   return baseCategories;
+}
+
+// Check if sport supports multi-round competition (like Judo, Bowling, Athletics)
+export function supportsCompetitionRounds(sportType: string): boolean {
+  const baseSport = getBaseSport(sportType);
+  return ["judo", "bowling", "aviron", "athletisme", "athlétisme"].includes(baseSport);
+}
+
+// Get phase options for a sport
+export function getCompetitionPhasesForSport(sportType: string): { value: string; label: string }[] {
+  const baseSport = getBaseSport(sportType);
+  
+  if (baseSport === "athletisme" || baseSport === "athlétisme") {
+    return ATHLETISME_PHASES;
+  }
+  
+  // Default phases for other sports
+  return [
+    { value: "poules", label: "Phase de poules" },
+    { value: "huitiemes", label: "Huitièmes" },
+    { value: "quarts", label: "Quarts" },
+    { value: "demies", label: "Demi-finales" },
+    { value: "finale", label: "Finale" },
+  ];
 }

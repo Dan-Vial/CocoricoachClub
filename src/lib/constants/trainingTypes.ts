@@ -8,7 +8,25 @@ export interface TrainingTypeOption {
   forTeamSports?: boolean;
   forIndividualSports?: boolean;
   forSports?: string[]; // If specified, only show for these sports
+  category?: string; // Category for grouping (e.g., "athle_sprint", "athle_haies")
 }
+
+// Category definitions for grouped display
+export interface TrainingTypeCategory {
+  key: string;
+  label: string;
+  forSports?: string[];
+}
+
+// Athletics training type categories
+export const ATHLETISME_TRAINING_CATEGORIES: TrainingTypeCategory[] = [
+  { key: "athle_sprint", label: "Sprint / Vitesse", forSports: ["athletisme"] },
+  { key: "athle_haies", label: "Haies", forSports: ["athletisme"] },
+  { key: "athle_demifond", label: "Demi-fond / Fond", forSports: ["athletisme"] },
+  { key: "athle_sauts", label: "Sauts", forSports: ["athletisme"] },
+  { key: "athle_lancers", label: "Lancers", forSports: ["athletisme"] },
+  { key: "athle_general", label: "Général / Polyvalent", forSports: ["athletisme"] },
+];
 
 // Helper to extract base sport
 function getBaseSport(sportType: string): string {
@@ -85,33 +103,48 @@ export const ALL_TRAINING_TYPES: TrainingTypeOption[] = [
   { value: "bowling_spare", label: "Entraînement Spares", hasExercises: false, forSports: ["bowling"] },
   { value: "bowling_game", label: "Parties d'Entraînement", hasExercises: false, forSports: ["bowling"] },
   
-  // Athlétisme specific
-  { value: "athle_vitesse", label: "Travail de Vitesse", hasExercises: false, forSports: ["athletisme"] },
-  { value: "athle_departs", label: "Travail Départs (Blocs)", hasExercises: false, forSports: ["athletisme"] },
-  { value: "athle_acceleration", label: "Accélération", hasExercises: false, forSports: ["athletisme"] },
-  { value: "athle_vitesse_max", label: "Vitesse Maximale", hasExercises: false, forSports: ["athletisme"] },
-  { value: "athle_endurance_vitesse", label: "Endurance de Vitesse", hasExercises: false, forSports: ["athletisme"] },
-  { value: "athle_haies", label: "Travail Haies", hasExercises: false, forSports: ["athletisme"] },
-  { value: "athle_rythme_haies", label: "Rythme Inter-haies", hasExercises: false, forSports: ["athletisme"] },
-  { value: "athle_fartlek", label: "Fartlek", hasExercises: false, forSports: ["athletisme"] },
-  { value: "athle_tempo_run", label: "Tempo Run", hasExercises: false, forSports: ["athletisme"] },
-  { value: "athle_sortie_longue", label: "Sortie Longue (Endurance)", hasExercises: false, forSports: ["athletisme"] },
-  { value: "athle_fractionne", label: "Fractionné / Intervalles", hasExercises: false, forSports: ["athletisme"] },
-  { value: "athle_seuil", label: "Travail au Seuil", hasExercises: false, forSports: ["athletisme"] },
-  { value: "athle_vma", label: "VMA / VO2max", hasExercises: false, forSports: ["athletisme"] },
-  { value: "athle_cotes", label: "Travail en Côtes", hasExercises: false, forSports: ["athletisme"] },
-  { value: "athle_sauts_technique", label: "Technique de Saut", hasExercises: false, forSports: ["athletisme"] },
-  { value: "athle_course_elan", label: "Course d'Élan", hasExercises: false, forSports: ["athletisme"] },
-  { value: "athle_impulsion", label: "Travail d'Impulsion", hasExercises: false, forSports: ["athletisme"] },
-  { value: "athle_pliometrie", label: "Pliométrie", hasExercises: true, forSports: ["athletisme"] },
-  { value: "athle_lancers_technique", label: "Technique de Lancer", hasExercises: false, forSports: ["athletisme"] },
-  { value: "athle_rotation", label: "Travail de Rotation", hasExercises: false, forSports: ["athletisme"] },
-  { value: "athle_release", label: "Travail de Lâcher", hasExercises: false, forSports: ["athletisme"] },
-  { value: "athle_force_explosive", label: "Force Explosive", hasExercises: true, forSports: ["athletisme"] },
-  { value: "athle_coordination", label: "Coordination / Gammes", hasExercises: false, forSports: ["athletisme"] },
-  { value: "athle_mobilite", label: "Mobilité Spécifique", hasExercises: true, forSports: ["athletisme"] },
-  { value: "athle_marche", label: "Technique Marche", hasExercises: false, forSports: ["athletisme"] },
-  { value: "athle_combines", label: "Épreuves Combinées", hasExercises: false, forSports: ["athletisme"] },
+  // Athlétisme specific - with categories
+  // Sprint / Vitesse
+  { value: "athle_vitesse", label: "Travail de Vitesse", hasExercises: false, forSports: ["athletisme"], category: "athle_sprint" },
+  { value: "athle_departs", label: "Travail Départs (Blocs)", hasExercises: false, forSports: ["athletisme"], category: "athle_sprint" },
+  { value: "athle_acceleration", label: "Accélération", hasExercises: false, forSports: ["athletisme"], category: "athle_sprint" },
+  { value: "athle_vitesse_max", label: "Vitesse Maximale", hasExercises: false, forSports: ["athletisme"], category: "athle_sprint" },
+  { value: "athle_endurance_vitesse", label: "Endurance de Vitesse", hasExercises: false, forSports: ["athletisme"], category: "athle_sprint" },
+  
+  // Haies
+  { value: "athle_haies", label: "Travail Haies", hasExercises: false, forSports: ["athletisme"], category: "athle_haies" },
+  { value: "athle_rythme_haies", label: "Rythme Inter-haies", hasExercises: false, forSports: ["athletisme"], category: "athle_haies" },
+  { value: "athle_haies_technique", label: "Technique de Passage", hasExercises: false, forSports: ["athletisme"], category: "athle_haies" },
+  
+  // Demi-fond / Fond
+  { value: "athle_fartlek", label: "Fartlek", hasExercises: false, forSports: ["athletisme"], category: "athle_demifond" },
+  { value: "athle_tempo_run", label: "Tempo Run", hasExercises: false, forSports: ["athletisme"], category: "athle_demifond" },
+  { value: "athle_sortie_longue", label: "Sortie Longue (Endurance)", hasExercises: false, forSports: ["athletisme"], category: "athle_demifond" },
+  { value: "athle_fractionne", label: "Fractionné / Intervalles", hasExercises: false, forSports: ["athletisme"], category: "athle_demifond" },
+  { value: "athle_seuil", label: "Travail au Seuil", hasExercises: false, forSports: ["athletisme"], category: "athle_demifond" },
+  { value: "athle_vma", label: "VMA / VO2max", hasExercises: false, forSports: ["athletisme"], category: "athle_demifond" },
+  { value: "athle_cotes", label: "Travail en Côtes", hasExercises: false, forSports: ["athletisme"], category: "athle_demifond" },
+  { value: "athle_marche", label: "Technique Marche", hasExercises: false, forSports: ["athletisme"], category: "athle_demifond" },
+  
+  // Sauts
+  { value: "athle_sauts_technique", label: "Technique de Saut", hasExercises: false, forSports: ["athletisme"], category: "athle_sauts" },
+  { value: "athle_course_elan", label: "Course d'Élan", hasExercises: false, forSports: ["athletisme"], category: "athle_sauts" },
+  { value: "athle_impulsion", label: "Travail d'Impulsion", hasExercises: false, forSports: ["athletisme"], category: "athle_sauts" },
+  { value: "athle_pliometrie", label: "Pliométrie", hasExercises: true, forSports: ["athletisme"], category: "athle_sauts" },
+  { value: "athle_perche_technique", label: "Technique Perche", hasExercises: false, forSports: ["athletisme"], category: "athle_sauts" },
+  
+  // Lancers
+  { value: "athle_lancers_technique", label: "Technique de Lancer", hasExercises: false, forSports: ["athletisme"], category: "athle_lancers" },
+  { value: "athle_rotation", label: "Travail de Rotation", hasExercises: false, forSports: ["athletisme"], category: "athle_lancers" },
+  { value: "athle_release", label: "Travail de Lâcher", hasExercises: false, forSports: ["athletisme"], category: "athle_lancers" },
+  { value: "athle_force_explosive", label: "Force Explosive", hasExercises: true, forSports: ["athletisme"], category: "athle_lancers" },
+  { value: "athle_glisse", label: "Technique Glissé (Poids)", hasExercises: false, forSports: ["athletisme"], category: "athle_lancers" },
+  
+  // Général / Polyvalent
+  { value: "athle_coordination", label: "Coordination / Gammes", hasExercises: false, forSports: ["athletisme"], category: "athle_general" },
+  { value: "athle_mobilite", label: "Mobilité Spécifique", hasExercises: true, forSports: ["athletisme"], category: "athle_general" },
+  { value: "athle_combines", label: "Épreuves Combinées", hasExercises: false, forSports: ["athletisme"], category: "athle_general" },
+  { value: "athle_ppg", label: "PPG (Prépa Physique Générale)", hasExercises: true, forSports: ["athletisme"], category: "athle_general" },
   
   // Common to all sports
   { value: "technique_individuelle", label: "Technique Individuelle", hasExercises: false, forTeamSports: true, forIndividualSports: true },
@@ -147,6 +180,50 @@ export function getTrainingTypesForSport(sportType: string | undefined): Trainin
     
     return t.forTeamSports !== false;
   });
+}
+
+// Get training types for a sport grouped by category (for athletics)
+export interface TrainingTypeGroup {
+  category: TrainingTypeCategory;
+  types: TrainingTypeOption[];
+}
+
+export function getTrainingTypesGrouped(sportType: string | undefined): TrainingTypeGroup[] {
+  const types = getTrainingTypesForSport(sportType);
+  const baseSport = sportType ? getBaseSport(sportType) : '';
+  
+  // Only group for athletics
+  if (baseSport !== 'athletisme') {
+    return [];
+  }
+  
+  const groups: TrainingTypeGroup[] = [];
+  
+  // Group athletics types by category
+  ATHLETISME_TRAINING_CATEGORIES.forEach(category => {
+    const categoryTypes = types.filter(t => t.category === category.key);
+    if (categoryTypes.length > 0) {
+      groups.push({ category, types: categoryTypes });
+    }
+  });
+  
+  // Add common types without category
+  const commonTypes = types.filter(t => !t.category);
+  if (commonTypes.length > 0) {
+    groups.push({
+      category: { key: 'common', label: 'Commun' },
+      types: commonTypes
+    });
+  }
+  
+  return groups;
+}
+
+// Check if sport has grouped training types
+export function hasGroupedTrainingTypes(sportType: string | undefined): boolean {
+  if (!sportType) return false;
+  const baseSport = getBaseSport(sportType);
+  return baseSport === 'athletisme';
 }
 
 // Get label for a training type
@@ -219,14 +296,17 @@ export const TRAINING_TYPE_COLORS: Record<string, string> = {
   bowling_technique: "bg-teal-500",
   bowling_spare: "bg-lime-500",
   bowling_game: "bg-green-600",
-  // Athlétisme specific
+  // Athlétisme specific - Sprint
   athle_vitesse: "bg-red-500",
-  athle_departs: "bg-orange-500",
-  athle_acceleration: "bg-amber-500",
-  athle_vitesse_max: "bg-red-600",
+  athle_departs: "bg-red-600",
+  athle_acceleration: "bg-red-400",
+  athle_vitesse_max: "bg-red-700",
   athle_endurance_vitesse: "bg-rose-500",
+  // Athlétisme - Haies
   athle_haies: "bg-yellow-500",
   athle_rythme_haies: "bg-yellow-600",
+  athle_haies_technique: "bg-yellow-400",
+  // Athlétisme - Demi-fond/Fond
   athle_fartlek: "bg-green-500",
   athle_tempo_run: "bg-emerald-500",
   athle_sortie_longue: "bg-teal-500",
@@ -234,18 +314,24 @@ export const TRAINING_TYPE_COLORS: Record<string, string> = {
   athle_seuil: "bg-blue-500",
   athle_vma: "bg-indigo-500",
   athle_cotes: "bg-slate-500",
+  athle_marche: "bg-green-600",
+  // Athlétisme - Sauts
   athle_sauts_technique: "bg-purple-500",
   athle_course_elan: "bg-violet-500",
   athle_impulsion: "bg-fuchsia-500",
   athle_pliometrie: "bg-pink-500",
-  athle_lancers_technique: "bg-orange-600",
-  athle_rotation: "bg-amber-600",
-  athle_release: "bg-red-400",
+  athle_perche_technique: "bg-purple-600",
+  // Athlétisme - Lancers
+  athle_lancers_technique: "bg-orange-500",
+  athle_rotation: "bg-orange-600",
+  athle_release: "bg-amber-500",
   athle_force_explosive: "bg-rose-600",
+  athle_glisse: "bg-orange-400",
+  // Athlétisme - Général
   athle_coordination: "bg-sky-500",
   athle_mobilite: "bg-lime-500",
-  athle_marche: "bg-green-600",
   athle_combines: "bg-gradient-to-r from-purple-500 to-pink-500",
+  athle_ppg: "bg-gray-500",
   // Default for custom types
   _default: "bg-gray-500",
 };
@@ -312,14 +398,17 @@ export const TRAINING_TYPE_LABELS: Record<string, string> = {
   bowling_technique: "Travail Technique",
   bowling_spare: "Entraînement Spares",
   bowling_game: "Parties d'Entraînement",
-  // Athlétisme specific
+  // Athlétisme specific - Sprint
   athle_vitesse: "Travail de Vitesse",
   athle_departs: "Travail Départs (Blocs)",
   athle_acceleration: "Accélération",
   athle_vitesse_max: "Vitesse Maximale",
   athle_endurance_vitesse: "Endurance de Vitesse",
+  // Athlétisme - Haies
   athle_haies: "Travail Haies",
   athle_rythme_haies: "Rythme Inter-haies",
+  athle_haies_technique: "Technique de Passage",
+  // Athlétisme - Demi-fond/Fond
   athle_fartlek: "Fartlek",
   athle_tempo_run: "Tempo Run",
   athle_sortie_longue: "Sortie Longue (Endurance)",
@@ -327,16 +416,22 @@ export const TRAINING_TYPE_LABELS: Record<string, string> = {
   athle_seuil: "Travail au Seuil",
   athle_vma: "VMA / VO2max",
   athle_cotes: "Travail en Côtes",
+  athle_marche: "Technique Marche",
+  // Athlétisme - Sauts
   athle_sauts_technique: "Technique de Saut",
   athle_course_elan: "Course d'Élan",
   athle_impulsion: "Travail d'Impulsion",
   athle_pliometrie: "Pliométrie",
+  athle_perche_technique: "Technique Perche",
+  // Athlétisme - Lancers
   athle_lancers_technique: "Technique de Lancer",
   athle_rotation: "Travail de Rotation",
   athle_release: "Travail de Lâcher",
   athle_force_explosive: "Force Explosive",
+  athle_glisse: "Technique Glissé (Poids)",
+  // Athlétisme - Général
   athle_coordination: "Coordination / Gammes",
   athle_mobilite: "Mobilité Spécifique",
-  athle_marche: "Technique Marche",
   athle_combines: "Épreuves Combinées",
+  athle_ppg: "PPG (Prépa Physique Générale)",
 };

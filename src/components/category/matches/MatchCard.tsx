@@ -274,8 +274,11 @@ export function MatchCard({ match, categoryId }: MatchCardProps) {
               <Users className="h-4 w-4" />
               {isIndividual ? `Participants (${lineupCount})` : `Compo (${lineupCount})`}
             </Button>
-            {/* Show rounds button for Judo and Bowling */}
-            {(sportType.toLowerCase().includes("judo") || sportType.toLowerCase().includes("bowling")) && (
+            {/* Show rounds button for Judo, Bowling, and Athletics */}
+            {(sportType.toLowerCase().includes("judo") || 
+              sportType.toLowerCase().includes("bowling") ||
+              sportType.toLowerCase().includes("athletisme") ||
+              sportType.toLowerCase().includes("athlétisme")) && (
               <Button
                 variant="outline"
                 size="sm"
@@ -283,7 +286,8 @@ export function MatchCard({ match, categoryId }: MatchCardProps) {
                 onClick={() => setIsRoundsOpen(true)}
               >
                 <Swords className="h-4 w-4" />
-                {sportType.toLowerCase().includes("judo") ? "Combats" : "Parties"}
+                {sportType.toLowerCase().includes("judo") ? "Combats" : 
+                 sportType.toLowerCase().includes("bowling") ? "Parties" : "Courses"}
               </Button>
             )}
             <Button
@@ -328,7 +332,9 @@ export function MatchCard({ match, categoryId }: MatchCardProps) {
 
       {(sportType.toLowerCase().includes("judo") || 
         sportType.toLowerCase().includes("bowling") || 
-        sportType.toLowerCase().includes("aviron")) && (
+        sportType.toLowerCase().includes("aviron") ||
+        sportType.toLowerCase().includes("athletisme") ||
+        sportType.toLowerCase().includes("athlétisme")) && (
         <CompetitionRoundsDialog
           open={isRoundsOpen}
           onOpenChange={setIsRoundsOpen}
