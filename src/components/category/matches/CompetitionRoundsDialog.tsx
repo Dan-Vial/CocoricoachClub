@@ -25,6 +25,7 @@ import { toast } from "sonner";
 import { Plus, Trash2, Trophy, Target, BarChart3, Swords, Circle, Ship, Users, Droplet } from "lucide-react";
 import { getStatsForSport, getStatCategories, getAggregatedStatsForSport, type StatField } from "@/lib/constants/sportStats";
 import { BowlingOilPatternSection } from "./BowlingOilPatternSection";
+import { BowlingScoreSheet } from "@/components/athlete-portal/BowlingScoreSheet";
 
 const blurOnWheel = (e: React.WheelEvent<HTMLInputElement>) => {
   // Prevent wheel/trackpad from changing number inputs instead of scrolling the dialog
@@ -125,6 +126,8 @@ export function CompetitionRoundsDialog({
 }: CompetitionRoundsDialogProps) {
   const [playerRoundsData, setPlayerRoundsData] = useState<PlayerRounds[]>([]);
   const [selectedPlayerId, setSelectedPlayerId] = useState<string>("");
+  const [bowlingSheetOpen, setBowlingSheetOpen] = useState(false);
+  const [bowlingSheetTarget, setBowlingSheetTarget] = useState<{ playerId: string; roundNumber: number } | null>(null);
   const queryClient = useQueryClient();
 
   const sportStats = getStatsForSport(sportType);
@@ -145,6 +148,11 @@ export function CompetitionRoundsDialog({
   const phases = isAviron ? AVIRON_PHASES : isJudo ? JUDO_PHASES : isBowling ? BOWLING_PHASES : [];
   const roundLabel = isJudo ? "Combat" : isAviron ? "Course" : isBowling ? "Partie" : "Round";
   const roundLabelPlural = isJudo ? "Combats" : isAviron ? "Courses" : isBowling ? "Parties" : "Rounds";
+
+  const openBowlingSheetForRound = (playerId: string, roundNumber: number) => {
+    setBowlingSheetTarget({ playerId, roundNumber });
+    setBowlingSheetOpen(true);
+  };
 
   // Get players in the lineup for this match
   const { data: lineup } = useQuery({
@@ -777,6 +785,22 @@ export function CompetitionRoundsDialog({
                           {/* Bowling: Simplified stats per game */}
                           {isBowling && (
                             <div className="space-y-3">
+                              <div className="flex items-center justify-between gap-3">
+                                <div className="text-xs text-muted-foreground">
+                                  Saisie recommandée : feuille de score (X, /, 0-9)
+                                </div>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-8 gap-2"
+                                  onClick={() => openBowlingSheetForRound(selectedPlayer.playerId, round.round_number)}
+                                >
+                                  <Target className="h-4 w-4" />
+                                  Feuille de score
+                                </Button>
+                              </div>
+
                               {/* Score et Strikes */}
                               <div className="grid grid-cols-4 gap-2">
                                 <div className="col-span-1">
@@ -924,20 +948,41 @@ export function CompetitionRoundsDialog({
                               <div className="grid grid-cols-3 gap-2 p-2 rounded bg-muted/50">
                                 <div className="text-center">
                                   <Label className="text-[10px] text-muted-foreground">% Strikes</Label>
-                                  <p className="text-sm font-bold text-amber-600">
+                                  <p className="text-sm font-bold">
                                     {(round.stats["strikePercentage"] || 0).toFixed(1)}%
                                   </p>
                                 </div>
                                 <div className="text-center">
                                   <Label className="text-[10px] text-muted-foreground">% Spares (hors splits)</Label>
-                                  <p className="text-sm font-bold text-blue-600">
+                                  <p className="text-sm font-bold">
                                     {(round.stats["sparePercentage"] || 0).toFixed(1)}%
                                   </p>
                                 </div>
                                 <div className="text-center">
                                   <Label className="text-[10px] text-muted-foreground">% Conv. Splits</Label>
-                                  <p className="text-sm font-bold text-orange-600">
+                                  <p className="text-sm font-bold">
                                     {(round.stats["splitConversionRate"] || 0).toFixed(1)}%
+                                  </p>
+                                </div>
+                              </div>
+
+                              {/* Stats avancées (issues de la feuille de score) */}
+                              <div className="grid grid-cols-3 gap-2 p-2 rounded bg-muted/30">
+                                <div className="text-center">
+                                  <Label className="text-[10px] text-muted-foreground">% Poche</Label>
+                                  <p className="text-sm font-bold">{(round.stats["pocketPercentage"] || 0).toFixed(1)}%</p>
+                                  <p className="text-[10px] text-muted-foreground">{round.stats["pocketCount"] || 0} lancers</p>
+                                </div>
+                                <div className="text-center">
+                                  <Label className="text-[10px] text-muted-foreground">% Quilles seules</Label>
+                                  <p className="text-sm font-bold">{(round.stats["singlePinPercentage"] || 0).toFixed(1)}%</p>
+                                  <p className="text-[10px] text-muted-foreground">{round.stats["singlePinCount"] || 0} situations</p>
+                                </div>
+                                <div className="text-center">
+                                  <Label className="text-[10px] text-muted-foreground">% QS converties</Label>
+                                  <p className="text-sm font-bold">{(round.stats["singlePinConversionRate"] || 0).toFixed(1)}%</p>
+                                  <p className="text-[10px] text-muted-foreground">
+                                    {(round.stats["singlePinConverted"] || 0)}/{(round.stats["singlePinCount"] || 0)}
                                   </p>
                                 </div>
                               </div>
@@ -1253,6 +1298,64 @@ export function CompetitionRoundsDialog({
               </ScrollArea>
             </TabsContent>
           </Tabs>
+        )}
+
+        {/* Bowling Score Sheet (Coach/Admin) */}
+        {isBowling && (
+          <Dialog
+            open={bowlingSheetOpen}
+            onOpenChange={(o) => {
+              setBowlingSheetOpen(o);
+              if (!o) setBowlingSheetTarget(null);
+            }}
+          >
+            <DialogContent className="max-w-5xl h-[95vh] flex flex-col p-0">
+              <DialogHeader className="px-6 pt-6 pb-4 shrink-0">
+                <DialogTitle>Feuille de score - {roundLabel}</DialogTitle>
+              </DialogHeader>
+              <div className="flex-1 overflow-y-auto px-6 pb-6">
+                <BowlingScoreSheet
+                  onSave={(sheetStats) => {
+                    if (!bowlingSheetTarget) return;
+                    const { playerId, roundNumber } = bowlingSheetTarget;
+
+                    // Core
+                    updateRoundStat(playerId, roundNumber, "gameScore", sheetStats.totalScore);
+                    updateRoundStat(playerId, roundNumber, "strikes", sheetStats.strikes);
+                    updateRoundStat(playerId, roundNumber, "strikePercentage", sheetStats.strikePercentage);
+                    updateRoundStat(playerId, roundNumber, "spares", sheetStats.spares);
+                    updateRoundStat(playerId, roundNumber, "sparePercentage", sheetStats.sparePercentage);
+                    updateRoundStat(playerId, roundNumber, "openFrames", sheetStats.openFrames);
+
+                    // Splits
+                    updateRoundStat(playerId, roundNumber, "splitCount", sheetStats.splitCount);
+                    updateRoundStat(playerId, roundNumber, "splitConverted", sheetStats.splitConverted);
+                    updateRoundStat(playerId, roundNumber, "splitOnLastThrow", sheetStats.splitOnLastThrow);
+                    updateRoundStat(playerId, roundNumber, "splitConversionRate", sheetStats.splitPercentage);
+
+                    // Spare opportunities (for display/compat)
+                    updateRoundStat(playerId, roundNumber, "spareOpportunities", Math.max(0, 10 - sheetStats.strikes));
+
+                    // Advanced
+                    updateRoundStat(playerId, roundNumber, "pocketCount", sheetStats.pocketCount);
+                    updateRoundStat(playerId, roundNumber, "pocketPercentage", sheetStats.pocketPercentage);
+                    updateRoundStat(playerId, roundNumber, "singlePinCount", sheetStats.singlePinCount);
+                    updateRoundStat(playerId, roundNumber, "singlePinConverted", sheetStats.singlePinConverted);
+                    updateRoundStat(playerId, roundNumber, "singlePinPercentage", sheetStats.singlePinPercentage);
+                    updateRoundStat(playerId, roundNumber, "singlePinConversionRate", sheetStats.singlePinConversionRate);
+
+                    setBowlingSheetOpen(false);
+                    setBowlingSheetTarget(null);
+                    toast.success("Stats bowling remplies depuis la feuille de score");
+                  }}
+                  onCancel={() => {
+                    setBowlingSheetOpen(false);
+                    setBowlingSheetTarget(null);
+                  }}
+                />
+              </div>
+            </DialogContent>
+          </Dialog>
         )}
 
         <div className="flex justify-end gap-2 pt-4 border-t flex-shrink-0 bg-background">

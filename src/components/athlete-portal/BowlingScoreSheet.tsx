@@ -432,10 +432,11 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames }: BowlingSc
 
   // Get cell background color based on throw value
   const getThrowCellStyle = (value: string): string => {
-    if (value === "X") return "bg-emerald-400 text-emerald-950 font-bold";
-    if (value === "/") return "bg-sky-400 text-sky-950 font-bold";
+    // Use semantic tokens only (no hard-coded colors)
+    if (value === "X") return "bg-primary text-primary-foreground font-bold";
+    if (value === "/") return "bg-secondary text-secondary-foreground font-bold";
     if (value === "" || value === "-") return "bg-muted/50";
-    return "bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200";
+    return "bg-accent text-accent-foreground";
   };
 
   return (
@@ -618,7 +619,7 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames }: BowlingSc
                                     checked={throwData.isSinglePinConverted}
                                     onCheckedChange={() => handleCheckboxChange(frameIndex, throwIndex, "isSinglePinConverted")}
                                   />
-                                  <Label htmlFor={`single-conv-${frameIndex}-${throwIndex}`} className="text-xs text-emerald-600">
+                                   <Label htmlFor={`single-conv-${frameIndex}-${throwIndex}`} className="text-xs text-primary">
                                     Convertie
                                   </Label>
                                 </div>
@@ -721,7 +722,7 @@ function StatBox({ label, value, detail, note, highlight }: StatBoxProps) {
       <div className="text-xs text-muted-foreground">{label}</div>
       <div className={`text-xl font-bold ${highlight ? "text-primary" : ""}`}>{value}</div>
       <div className="text-xs text-muted-foreground">{detail}</div>
-      {note && <div className="text-xs text-orange-600 dark:text-orange-400">{note}</div>}
+      {note && <div className="text-xs text-muted-foreground">{note}</div>}
     </div>
   );
 }
