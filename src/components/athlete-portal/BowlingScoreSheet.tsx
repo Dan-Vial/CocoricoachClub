@@ -85,6 +85,15 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames }: BowlingSc
     openFrames: 0,
   });
 
+  // Reset frames when initialFrames changes (for editing existing games)
+  useEffect(() => {
+    if (initialFrames) {
+      setFrames(initialFrames);
+    } else {
+      setFrames(Array.from({ length: 10 }, () => createEmptyFrame()));
+    }
+  }, [initialFrames]);
+
   // Calculate score for a frame
   const calculateFrameScore = useCallback((frameIndex: number, allFrames: FrameData[]): number | null => {
     const frame = allFrames[frameIndex];
