@@ -430,9 +430,17 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames }: BowlingSc
     onSave(stats, frames);
   };
 
+  // Get cell background color based on throw value
+  const getThrowCellStyle = (value: string): string => {
+    if (value === "X") return "bg-emerald-400 text-emerald-950 font-bold";
+    if (value === "/") return "bg-sky-400 text-sky-950 font-bold";
+    if (value === "" || value === "-") return "bg-muted/50";
+    return "bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200";
+  };
+
   return (
     <div className="space-y-6">
-      {/* Score Sheet */}
+      {/* Classic Bowling Score Sheet */}
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-lg flex items-center gap-2">
@@ -440,61 +448,94 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames }: BowlingSc
             Feuille de Score
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-2 sm:p-4">
           <div className="overflow-x-auto">
-            <div className="flex gap-1 pb-4 min-w-max">
-              {frames.map((frame, frameIndex) => (
-                <div
-                  key={frameIndex}
-                  className={`border rounded-lg ${frameIndex === 9 ? "w-32" : "w-24"} shrink-0`}
-                >
-                  {/* Frame number */}
-                  <div className="text-center text-xs font-medium bg-muted py-1 rounded-t-lg border-b">
-                    Frame {frameIndex + 1}
-                  </div>
-                  
-                  {/* Throw inputs */}
-                  <div className="flex justify-center gap-0.5 p-1">
-                    {Array.from({ length: getMaxThrows(frameIndex) }).map((_, throwIndex) => {
-                      const throwData = frame.throws[throwIndex];
-                      const editable = isThrowEditable(frameIndex, throwIndex);
-                      
-                      return (
-                        <div key={throwIndex} className="relative">
-                          <Input
-                            type="text"
-                            maxLength={1}
-                            value={throwData?.value || ""}
-                            onChange={(e) => handleThrowInput(frameIndex, throwIndex, e.target.value)}
-                            disabled={!editable}
-                            className={`w-8 h-8 text-center text-sm font-bold p-0 uppercase ${
-                              throwData?.value === "X" 
-                                ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400" 
-                                : throwData?.value === "/" 
-                                  ? "bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-400"
-                                  : ""
-                            }`}
-                            placeholder="-"
-                          />
+            {/* Classic scoresheet table */}
+            <table className="min-w-max border-collapse border-2 border-foreground/30 mx-auto">
+              <thead>
+                <tr>
+                  <th className="border border-foreground/20 bg-muted px-2 py-1 text-xs font-medium w-8"></th>
+                  {frames.map((_, frameIndex) => (
+                    <th 
+                      key={frameIndex} 
+                      className={`border border-foreground/20 bg-muted px-1 py-1 text-xs font-bold text-center ${
+                        frameIndex === 9 ? "min-w-[90px]" : "min-w-[60px]"
+                      }`}
+                      colSpan={1}
+                    >
+                      {frameIndex + 1}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {/* Throws row - small boxes at top right of each cell */}
+                <tr>
+                  <td className="border border-foreground/20 bg-muted/50 text-xs font-medium text-center px-1">
+                    Joueur
+                  </td>
+                  {frames.map((frame, frameIndex) => {
+                    const maxThrows = getMaxThrows(frameIndex);
+                    const isTenth = frameIndex === 9;
+                    
+                    return (
+                      <td 
+                        key={frameIndex} 
+                        className="border border-foreground/20 p-0 relative h-16"
+                      >
+                        {/* Throw boxes at top */}
+                        <div className={`absolute top-0 right-0 flex ${isTenth ? "" : ""}`}>
+                          {Array.from({ length: maxThrows }).map((_, throwIndex) => {
+                            const throwData = frame.throws[throwIndex];
+                            const editable = isThrowEditable(frameIndex, throwIndex);
+                            const value = throwData?.value || "";
+                            
+                            // For regular frames, first throw takes more space, second is in corner
+                            const isFirstThrow = throwIndex === 0;
+                            const boxSize = isTenth 
+                              ? "w-[30px] h-[28px]" 
+                              : isFirstThrow 
+                                ? "w-[30px] h-[28px]" 
+                                : "w-[28px] h-[28px]";
+                            
+                            return (
+                              <div 
+                                key={throwIndex} 
+                                className={`${boxSize} border-l border-b border-foreground/20 ${
+                                  throwIndex === 0 && !isTenth ? "border-l-0" : ""
+                                }`}
+                              >
+                                <Input
+                                  type="text"
+                                  maxLength={1}
+                                  value={value}
+                                  onChange={(e) => handleThrowInput(frameIndex, throwIndex, e.target.value)}
+                                  disabled={!editable}
+                                  className={`w-full h-full text-center text-sm font-bold p-0 uppercase rounded-none border-0 focus:ring-1 focus:ring-primary ${getThrowCellStyle(value)}`}
+                                  placeholder=""
+                                />
+                              </div>
+                            );
+                          })}
                         </div>
-                      );
-                    })}
-                  </div>
-
-                  {/* Cumulative score */}
-                  <div className="text-center text-lg font-bold py-2 border-t bg-muted/50">
-                    {frame.cumulativeScore ?? "-"}
-                  </div>
-                </div>
-              ))}
-            </div>
+                        
+                        {/* Cumulative score - centered at bottom */}
+                        <div className="absolute bottom-1 left-0 right-0 text-center text-lg font-bold">
+                          {frame.cumulativeScore ?? ""}
+                        </div>
+                      </td>
+                    );
+                  })}
+                </tr>
+              </tbody>
+            </table>
           </div>
 
           {/* Total Score Display */}
           <div className="mt-4 flex items-center justify-center">
-            <div className="bg-primary/10 rounded-xl px-8 py-4">
+            <div className="bg-primary/10 rounded-xl px-8 py-4 border border-primary/20">
               <div className="text-center">
-                <div className="text-sm text-muted-foreground">Score Total</div>
+                <div className="text-sm text-muted-foreground font-medium">Score Total</div>
                 <div className="text-4xl font-bold text-primary">{stats.totalScore}</div>
               </div>
             </div>
