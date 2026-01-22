@@ -24,10 +24,12 @@ import {
   Plus,
   ChevronDown,
   ChevronUp,
+  Lock,
 } from "lucide-react";
 import { MatchLineupDialog } from "./MatchLineupDialog";
 import { SportMatchStatsDialog } from "./SportMatchStatsDialog";
 import { CompetitionRoundsDialog } from "./CompetitionRoundsDialog";
+import { AggregatedRoundStatsDialog } from "./AggregatedRoundStatsDialog";
 import { EditMatchDialog } from "./EditMatchDialog";
 import { AddSubMatchDialog } from "./AddSubMatchDialog";
 import { isIndividualSport } from "@/lib/constants/sportTypes";
@@ -73,6 +75,7 @@ interface MatchCardProps {
 export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardProps) {
   const [isLineupOpen, setIsLineupOpen] = useState(false);
   const [isStatsOpen, setIsStatsOpen] = useState(false);
+  const [isAggregatedStatsOpen, setIsAggregatedStatsOpen] = useState(false);
   const [isRoundsOpen, setIsRoundsOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isAddSubMatchOpen, setIsAddSubMatchOpen] = useState(false);
@@ -139,6 +142,13 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
   const isIndividual = isIndividualSport(sportType);
   const hasSubMatches = subMatches && subMatches.length > 0;
   const canHaveSubMatches = !isIndividual && !isSubMatch && !match.parent_match_id;
+  
+  // Check if this is a sport that uses rounds (Judo, Bowling, Aviron, Athletics)
+  const hasRoundBasedStats = sportType.toLowerCase().includes("judo") || 
+    sportType.toLowerCase().includes("bowling") ||
+    sportType.toLowerCase().includes("athletisme") ||
+    sportType.toLowerCase().includes("athlétisme") ||
+    sportType.toLowerCase().includes("aviron");
 
   const getCompetitionStageLabel = (stage: string): string => {
     const stages: Record<string, string> = {
@@ -369,15 +379,27 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
                   <Users className="h-4 w-4 mr-2" />
                   {isIndividual ? `Participants (${lineupCount})` : `Composition (${lineupCount})`}
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setIsStatsOpen(true)}>
-                  <BarChart3 className="h-4 w-4 mr-2" />
-                  Statistiques
-                </DropdownMenuItem>
-                {(sportType.toLowerCase().includes("judo") || 
-                  sportType.toLowerCase().includes("bowling") ||
-                  sportType.toLowerCase().includes("athletisme") ||
-                  sportType.toLowerCase().includes("athlétisme") ||
-                  sportType.toLowerCase().includes("aviron")) && (
+                {/* Statistiques button - for round-based sports, only enabled when finalized */}
+                {hasRoundBasedStats ? (
+                  <DropdownMenuItem 
+                    onClick={() => isFinalized && setIsAggregatedStatsOpen(true)}
+                    disabled={!isFinalized}
+                    className={!isFinalized ? "opacity-50 cursor-not-allowed" : ""}
+                  >
+                    {isFinalized ? (
+                      <BarChart3 className="h-4 w-4 mr-2" />
+                    ) : (
+                      <Lock className="h-4 w-4 mr-2 text-muted-foreground" />
+                    )}
+                    Statistiques {!isFinalized && "(finaliser d'abord)"}
+                  </DropdownMenuItem>
+                ) : (
+                  <DropdownMenuItem onClick={() => setIsStatsOpen(true)}>
+                    <BarChart3 className="h-4 w-4 mr-2" />
+                    Statistiques
+                  </DropdownMenuItem>
+                )}
+                {hasRoundBasedStats && (
                   <DropdownMenuItem
                     onClick={() => {
                       console.log("[COMP_ROUNDS_DEBUG] open rounds", {
@@ -475,19 +497,29 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
         categoryId={categoryId}
       />
 
-      <SportMatchStatsDialog
-        open={isStatsOpen}
-        onOpenChange={setIsStatsOpen}
-        matchId={match.id}
-        categoryId={categoryId}
-        sportType={category?.rugby_type || "XV"}
-      />
+      {/* For non-round-based sports, use SportMatchStatsDialog */}
+      {!hasRoundBasedStats && (
+        <SportMatchStatsDialog
+          open={isStatsOpen}
+          onOpenChange={setIsStatsOpen}
+          matchId={match.id}
+          categoryId={categoryId}
+          sportType={category?.rugby_type || "XV"}
+        />
+      )}
 
-      {(sportType.toLowerCase().includes("judo") || 
-        sportType.toLowerCase().includes("bowling") || 
-        sportType.toLowerCase().includes("aviron") ||
-        sportType.toLowerCase().includes("athletisme") ||
-        sportType.toLowerCase().includes("athlétisme")) && (
+      {/* For round-based sports, use AggregatedRoundStatsDialog */}
+      {hasRoundBasedStats && (
+        <AggregatedRoundStatsDialog
+          open={isAggregatedStatsOpen}
+          onOpenChange={setIsAggregatedStatsOpen}
+          matchId={match.id}
+          sportType={sportType}
+          competitionName={match.competition || match.opponent || "Compétition"}
+        />
+      )}
+
+      {hasRoundBasedStats && (
         <CompetitionRoundsDialog
           open={isRoundsOpen}
           onOpenChange={setIsRoundsOpen}
