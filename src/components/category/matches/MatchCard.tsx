@@ -21,11 +21,15 @@ import {
   Swords,
   CheckCircle2,
   Settings,
+  Plus,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { MatchLineupDialog } from "./MatchLineupDialog";
 import { SportMatchStatsDialog } from "./SportMatchStatsDialog";
 import { CompetitionRoundsDialog } from "./CompetitionRoundsDialog";
 import { EditMatchDialog } from "./EditMatchDialog";
+import { AddSubMatchDialog } from "./AddSubMatchDialog";
 import { isIndividualSport } from "@/lib/constants/sportTypes";
 import {
   DropdownMenu,
@@ -34,6 +38,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 interface Match {
   id: string;
@@ -52,18 +61,22 @@ interface Match {
   event_type?: string | null;
   age_category?: string | null;
   distance_meters?: number | null;
+  parent_match_id?: string | null;
 }
 
 interface MatchCardProps {
   match: Match;
   categoryId: string;
+  isSubMatch?: boolean;
 }
 
-export function MatchCard({ match, categoryId }: MatchCardProps) {
+export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardProps) {
   const [isLineupOpen, setIsLineupOpen] = useState(false);
   const [isStatsOpen, setIsStatsOpen] = useState(false);
   const [isRoundsOpen, setIsRoundsOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isAddSubMatchOpen, setIsAddSubMatchOpen] = useState(false);
+  const [isSubMatchesExpanded, setIsSubMatchesExpanded] = useState(false);
   const [isEditingScore, setIsEditingScore] = useState(false);
   const [scoreHome, setScoreHome] = useState(match.score_home?.toString() || "");
   const [scoreAway, setScoreAway] = useState(match.score_away?.toString() || "");
@@ -94,8 +107,25 @@ export function MatchCard({ match, categoryId }: MatchCardProps) {
     },
   });
 
+  // Fetch sub-matches for this match (only if not already a sub-match)
+  const { data: subMatches } = useQuery({
+    queryKey: ["sub_matches", match.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("matches")
+        .select("*")
+        .eq("parent_match_id", match.id)
+        .order("match_date", { ascending: true });
+      if (error) throw error;
+      return data as Match[];
+    },
+    enabled: !isSubMatch && !match.parent_match_id,
+  });
+
   const sportType = category?.rugby_type || "XV";
   const isIndividual = isIndividualSport(sportType);
+  const hasSubMatches = subMatches && subMatches.length > 0;
+  const canHaveSubMatches = !isIndividual && !isSubMatch && !match.parent_match_id;
 
   const getCompetitionStageLabel = (stage: string): string => {
     const stages: Record<string, string> = {
@@ -337,6 +367,15 @@ export function MatchCard({ match, categoryId }: MatchCardProps) {
                      sportType.toLowerCase().includes("aviron") ? "Courses" : "Courses"}
                   </DropdownMenuItem>
                 )}
+                {canHaveSubMatches && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => setIsAddSubMatchOpen(true)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Ajouter un match
+                    </DropdownMenuItem>
+                  </>
+                )}
                 <DropdownMenuSeparator />
                 {isFinalized ? (
                   <DropdownMenuItem onClick={() => finalizeMatch.mutate(false)}>
@@ -368,6 +407,31 @@ export function MatchCard({ match, categoryId }: MatchCardProps) {
             </DropdownMenu>
           </div>
         </div>
+
+        {/* Sub-matches section */}
+        {hasSubMatches && (
+          <Collapsible open={isSubMatchesExpanded} onOpenChange={setIsSubMatchesExpanded}>
+            <CollapsibleTrigger asChild>
+              <Button variant="ghost" size="sm" className="w-full mt-3 gap-2 justify-between">
+                <span className="flex items-center gap-2">
+                  <Trophy className="h-4 w-4" />
+                  {subMatches?.length} match{subMatches && subMatches.length > 1 ? "s" : ""} dans cette compétition
+                </span>
+                {isSubMatchesExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="mt-3 space-y-2 pl-4 border-l-2 border-primary/20">
+              {subMatches?.map((subMatch) => (
+                <MatchCard 
+                  key={subMatch.id} 
+                  match={subMatch} 
+                  categoryId={categoryId} 
+                  isSubMatch={true}
+                />
+              ))}
+            </CollapsibleContent>
+          </Collapsible>
+        )}
       </div>
 
       <EditMatchDialog
@@ -403,6 +467,18 @@ export function MatchCard({ match, categoryId }: MatchCardProps) {
           matchId={match.id}
           categoryId={categoryId}
           sportType={sportType}
+        />
+      )}
+
+      {canHaveSubMatches && (
+        <AddSubMatchDialog
+          open={isAddSubMatchOpen}
+          onOpenChange={setIsAddSubMatchOpen}
+          parentMatch={{
+            id: match.id,
+            category_id: match.category_id,
+            competition: match.competition,
+          }}
         />
       )}
     </>

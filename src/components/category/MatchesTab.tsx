@@ -31,8 +31,10 @@ export function MatchesTab({ categoryId, sportType }: MatchesTabProps) {
 
   const { data: matches, isLoading } = useViewerMatches(categoryId);
 
-  const upcomingMatches = matches?.filter((m) => isFuture(new Date(m.match_date))) || [];
-  const pastMatches = matches?.filter((m) => isPast(new Date(m.match_date))) || [];
+  // Filter out sub-matches (they are displayed within their parent match)
+  const parentMatches = matches?.filter((m) => !m.parent_match_id) || [];
+  const upcomingMatches = parentMatches.filter((m) => isFuture(new Date(m.match_date)));
+  const pastMatches = parentMatches.filter((m) => isPast(new Date(m.match_date)));
 
   if (isLoading) {
     return <p className="text-muted-foreground">Chargement...</p>;

@@ -1467,6 +1467,7 @@ export type Database = {
           match_time: string | null
           notes: string | null
           opponent: string
+          parent_match_id: string | null
           score_away: number | null
           score_home: number | null
           updated_at: string
@@ -1490,6 +1491,7 @@ export type Database = {
           match_time?: string | null
           notes?: string | null
           opponent: string
+          parent_match_id?: string | null
           score_away?: number | null
           score_home?: number | null
           updated_at?: string
@@ -1513,6 +1515,7 @@ export type Database = {
           match_time?: string | null
           notes?: string | null
           opponent?: string
+          parent_match_id?: string | null
           score_away?: number | null
           score_home?: number | null
           updated_at?: string
@@ -1523,6 +1526,13 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "matches_parent_match_id_fkey"
+            columns: ["parent_match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
             referencedColumns: ["id"]
           },
         ]
