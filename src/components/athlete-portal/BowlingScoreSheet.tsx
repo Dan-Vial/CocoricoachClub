@@ -629,8 +629,8 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames }: BowlingSc
                             </div>
                           )}
 
-                          {/* Split checkbox - only on first throw of each frame */}
-                          {throwIndex === 0 && throwData.value !== "X" && throwData.value !== "/" && (
+                          {/* Split checkbox - same logic as pocket: first throw contexts */}
+                          {pocketAllowed && throwData.value !== "X" && throwData.value !== "/" && (
                             <div className="flex items-center gap-2">
                               <Checkbox
                                 id={`split-${frameIndex}-${throwIndex}`}
