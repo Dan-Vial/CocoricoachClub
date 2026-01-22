@@ -26,6 +26,11 @@ import { Plus, Trash2, Trophy, Target, BarChart3, Swords, Circle, Ship, Users, D
 import { getStatsForSport, getStatCategories, getAggregatedStatsForSport, type StatField } from "@/lib/constants/sportStats";
 import { BowlingOilPatternSection } from "./BowlingOilPatternSection";
 
+const blurOnWheel = (e: React.WheelEvent<HTMLInputElement>) => {
+  // Prevent wheel/trackpad from changing number inputs instead of scrolling the dialog
+  e.currentTarget.blur();
+};
+
 interface CompetitionRoundsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -576,7 +581,7 @@ export function CompetitionRoundsDialog({
             )}
 
             <TabsContent value="rounds" className="flex-1 min-h-0 mt-0 overflow-hidden">
-              <ScrollArea className="h-full max-h-[calc(90vh-280px)] pr-4">
+              <ScrollArea className="h-[calc(90vh-280px)] pr-4">
                 <div className="space-y-4 pb-4">
                   {/* Add round button */}
                   <Button
@@ -647,6 +652,7 @@ export function CompetitionRoundsDialog({
                                     type="number"
                                     min={1}
                                     max={9}
+                                     onWheel={blurOnWheel}
                                     value={round.lane || ""}
                                     onChange={(e) => updateRound(selectedPlayer.playerId, round.round_number, { lane: parseInt(e.target.value) || undefined })}
                                     placeholder="1-9"
@@ -682,6 +688,7 @@ export function CompetitionRoundsDialog({
                                 <Label className="text-xs">Température (°C)</Label>
                                 <Input
                                   type="number"
+                                  onWheel={blurOnWheel}
                                   value={round.temperature_celsius || ""}
                                   onChange={(e) => updateRound(selectedPlayer.playerId, round.round_number, { temperature_celsius: parseFloat(e.target.value) || undefined })}
                                   placeholder="20"
@@ -708,6 +715,7 @@ export function CompetitionRoundsDialog({
                                 <Input
                                   type="number"
                                   min={1}
+                                  onWheel={blurOnWheel}
                                   value={round.ranking || ""}
                                   onChange={(e) => updateRound(selectedPlayer.playerId, round.round_number, { ranking: parseInt(e.target.value) || undefined })}
                                   placeholder="1"
@@ -775,6 +783,7 @@ export function CompetitionRoundsDialog({
                                   <Label className="text-xs font-medium">Score</Label>
                                   <Input
                                     type="number"
+                                    onWheel={blurOnWheel}
                                     value={round.stats["gameScore"] || ""}
                                     onChange={(e) => updateRoundStat(selectedPlayer.playerId, round.round_number, "gameScore", parseFloat(e.target.value) || 0)}
                                     max={300}
@@ -786,6 +795,7 @@ export function CompetitionRoundsDialog({
                                   <Label className="text-xs">Strikes</Label>
                                   <Input
                                     type="number"
+                                    onWheel={blurOnWheel}
                                     value={round.stats["strikes"] || ""}
                                     onChange={(e) => {
                                       const strikes = parseFloat(e.target.value) || 0;
@@ -803,6 +813,7 @@ export function CompetitionRoundsDialog({
                                   <Label className="text-xs">Spares (hors splits)</Label>
                                   <Input
                                     type="number"
+                                    onWheel={blurOnWheel}
                                     value={round.stats["spares"] || ""}
                                     onChange={(e) => {
                                       const spares = parseFloat(e.target.value) || 0;
@@ -828,6 +839,7 @@ export function CompetitionRoundsDialog({
                                   <Label className="text-xs">Opens</Label>
                                   <Input
                                     type="number"
+                                    onWheel={blurOnWheel}
                                     value={round.stats["openFrames"] || ""}
                                     onChange={(e) => updateRoundStat(selectedPlayer.playerId, round.round_number, "openFrames", parseFloat(e.target.value) || 0)}
                                     max={10}
@@ -847,6 +859,7 @@ export function CompetitionRoundsDialog({
                                     <Label className="text-[10px] text-muted-foreground">Splits total</Label>
                                     <Input
                                       type="number"
+                                      onWheel={blurOnWheel}
                                       value={round.stats["splitCount"] || ""}
                                       onChange={(e) => {
                                         const splitCount = parseFloat(e.target.value) || 0;
@@ -866,6 +879,7 @@ export function CompetitionRoundsDialog({
                                     <Label className="text-[10px] text-muted-foreground">Splits convertis</Label>
                                     <Input
                                       type="number"
+                                      onWheel={blurOnWheel}
                                       value={round.stats["splitConverted"] || ""}
                                       onChange={(e) => {
                                         const splitConverted = parseFloat(e.target.value) || 0;
@@ -893,6 +907,7 @@ export function CompetitionRoundsDialog({
                                     <Label className="text-[10px] text-muted-foreground">Splits 11e/12e (exclus)</Label>
                                     <Input
                                       type="number"
+                                      onWheel={blurOnWheel}
                                       value={round.stats["splitOnLastThrow"] || ""}
                                       onChange={(e) => updateRoundStat(selectedPlayer.playerId, round.round_number, "splitOnLastThrow", parseFloat(e.target.value) || 0)}
                                       placeholder="0"
@@ -978,7 +993,7 @@ export function CompetitionRoundsDialog({
             </TabsContent>
 
             <TabsContent value="summary" className="flex-1 min-h-0 mt-0 overflow-hidden">
-              <ScrollArea className="h-full max-h-[calc(90vh-280px)]">
+              <ScrollArea className="h-[calc(90vh-280px)]">
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base flex items-center gap-2">
