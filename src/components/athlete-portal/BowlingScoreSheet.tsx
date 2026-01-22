@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Target, TrendingUp, Save, X, CheckCircle } from "lucide-react";
 
-interface ThrowData {
+export interface ThrowData {
   value: string; // "X", "/", "0"-"9", "-" (miss)
   pins: number;
   isPocket: boolean;
@@ -16,13 +16,13 @@ interface ThrowData {
   isSinglePinConverted: boolean;
 }
 
-interface FrameData {
+export interface FrameData {
   throws: ThrowData[];
   score: number | null;
   cumulativeScore: number | null;
 }
 
-interface BowlingStats {
+export interface BowlingStats {
   totalScore: number;
   strikes: number;
   spares: number;
