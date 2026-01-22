@@ -1,139 +1,62 @@
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
-import { Activity, Calendar, Clock, CheckCircle2 } from "lucide-react";
+import { Activity, Calendar, Clock, CheckCircle2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { useAthleteAccess } from "@/contexts/AthleteAccessContext";
-import { format, parseISO, isAfter, subDays } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
 import { getTrainingTypeLabel } from "@/lib/constants/trainingTypes";
 
-export function AthleteRpeEntry() {
-  const { playerId, categoryId } = useAthleteAccess();
-  const queryClient = useQueryClient();
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+interface AthleteRpeEntryProps {
+  token: string;
+  playerId: string;
+  categoryId: string;
+}
+
+interface Session {
+  id: string;
+  session_date: string;
+  training_type: string;
+  session_start_time: string | null;
+  session_end_time: string | null;
+}
+
+export function AthleteRpeEntry({ token, playerId, categoryId }: AthleteRpeEntryProps) {
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [completedSessionIds, setCompletedSessionIds] = useState<Set<string>>(new Set());
+  const [isLoading, setIsLoading] = useState(true);
   const [selectedSession, setSelectedSession] = useState<string | null>(null);
   const [rpe, setRpe] = useState<number>(5);
   const [duration, setDuration] = useState<string>("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Fetch recent sessions (last 14 days)
-  const { data: sessions, isLoading } = useQuery({
-    queryKey: ["athlete-sessions", categoryId],
-    queryFn: async () => {
-      const twoWeeksAgo = subDays(new Date(), 14).toISOString().split("T")[0];
-      
-      const { data, error } = await supabase
-        .from("training_sessions")
-        .select("*")
-        .eq("category_id", categoryId)
-        .gte("session_date", twoWeeksAgo)
-        .order("session_date", { ascending: false });
-      
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!categoryId,
-  });
-
-  // Fetch existing RPE entries for this player
-  const { data: existingRpe } = useQuery({
-    queryKey: ["athlete-rpe", playerId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("awcr_tracking")
-        .select("training_session_id")
-        .eq("player_id", playerId);
-      
-      if (error) throw error;
-      return new Set(data.map(r => r.training_session_id));
-    },
-    enabled: !!playerId,
-  });
-
-  // Calculate AWCR
-  const calculateAWCR = async (sessionDateStr: string, newLoad: number) => {
-    const sevenDaysAgo = new Date(sessionDateStr);
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-
-    const twentyEightDaysAgo = new Date(sessionDateStr);
-    twentyEightDaysAgo.setDate(twentyEightDaysAgo.getDate() - 28);
-
-    const { data: recentSessions } = await supabase
-      .from("awcr_tracking")
-      .select("training_load")
-      .eq("player_id", playerId)
-      .gte("session_date", sevenDaysAgo.toISOString().split("T")[0])
-      .lt("session_date", sessionDateStr);
-
-    const { data: chronicSessions } = await supabase
-      .from("awcr_tracking")
-      .select("training_load")
-      .eq("player_id", playerId)
-      .gte("session_date", twentyEightDaysAgo.toISOString().split("T")[0])
-      .lt("session_date", sessionDateStr);
-
-    const acuteTotal = (recentSessions?.reduce((sum, s) => sum + (s.training_load || 0), 0) || 0) + newLoad;
-    const chronicTotal = chronicSessions?.reduce((sum, s) => sum + (s.training_load || 0), 0) || 0;
-
-    const acuteAvg = acuteTotal / 7;
-    const chronicAvg = chronicTotal / 28;
-
-    const awcr = chronicAvg > 0 ? acuteAvg / chronicAvg : 0;
-
-    return { acuteLoad: acuteAvg, chronicLoad: chronicAvg, awcr };
-  };
-
-  const submitRpe = useMutation({
-    mutationFn: async () => {
-      if (!selectedSession || !playerId || !categoryId) {
-        throw new Error("Données manquantes");
-      }
-
-      const session = sessions?.find(s => s.id === selectedSession);
-      if (!session) throw new Error("Séance introuvable");
-
-      const durationMin = parseInt(duration) || 60;
-      const trainingLoad = rpe * durationMin;
-
-      const { acuteLoad, chronicLoad, awcr } = await calculateAWCR(
-        session.session_date,
-        trainingLoad
-      );
-
-      const { error } = await supabase.from("awcr_tracking").insert({
-        player_id: playerId,
-        category_id: categoryId,
-        training_session_id: selectedSession,
-        session_date: session.session_date,
-        rpe,
-        duration_minutes: durationMin,
-        training_load: trainingLoad,
-        acute_load: acuteLoad,
-        chronic_load: chronicLoad,
-        awcr,
+  // Fetch sessions
+  useEffect(() => {
+    fetch(`${SUPABASE_URL}/functions/v1/athlete-portal?token=${token}&action=sessions`, {
+      headers: { "apikey": SUPABASE_KEY },
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setSessions(data.sessions || []);
+          setCompletedSessionIds(new Set(data.completedSessionIds || []));
+        }
+        setIsLoading(false);
+      })
+      .catch(() => {
+        setIsLoading(false);
+        toast.error("Erreur lors du chargement des séances");
       });
+  }, [token]);
 
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["athlete-rpe", playerId] });
-      toast.success("RPE enregistré avec succès !");
-      setSelectedSession(null);
-      setRpe(5);
-      setDuration("");
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || "Erreur lors de l'enregistrement");
-    },
-  });
-
-  // Get session default duration
-  const getSessionDuration = (session: any) => {
+  const getSessionDuration = (session: Session) => {
     if (session.session_start_time && session.session_end_time) {
       const start = session.session_start_time.split(":");
       const end = session.session_end_time.split(":");
@@ -146,9 +69,44 @@ export function AthleteRpeEntry() {
 
   const handleSelectSession = (sessionId: string) => {
     setSelectedSession(sessionId);
-    const session = sessions?.find(s => s.id === sessionId);
+    const session = sessions.find(s => s.id === sessionId);
     if (session) {
       setDuration(getSessionDuration(session).toString());
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!selectedSession || !duration) return;
+
+    setIsSubmitting(true);
+    try {
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/athlete-portal?token=${token}&action=submit-rpe`, {
+        method: "POST",
+        headers: { 
+          "apikey": SUPABASE_KEY,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          session_id: selectedSession,
+          rpe,
+          duration: parseInt(duration),
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        toast.success("RPE enregistré avec succès !");
+        setCompletedSessionIds(prev => new Set([...prev, selectedSession]));
+        setSelectedSession(null);
+        setRpe(5);
+        setDuration("");
+      } else {
+        toast.error(data.error || "Erreur lors de l'enregistrement");
+      }
+    } catch {
+      toast.error("Erreur de connexion");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -162,15 +120,15 @@ export function AthleteRpeEntry() {
   if (isLoading) {
     return (
       <Card>
-        <CardContent className="py-8 text-center text-muted-foreground">
-          Chargement des séances...
+        <CardContent className="py-8 flex justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </CardContent>
       </Card>
     );
   }
 
-  const pendingSessions = sessions?.filter(s => !existingRpe?.has(s.id)) || [];
-  const completedSessions = sessions?.filter(s => existingRpe?.has(s.id)) || [];
+  const pendingSessions = sessions.filter(s => !completedSessionIds.has(s.id));
+  const completedSessions = sessions.filter(s => completedSessionIds.has(s.id));
 
   return (
     <div className="space-y-6">
@@ -287,10 +245,10 @@ export function AthleteRpeEntry() {
               </Button>
               <Button
                 className="flex-1"
-                onClick={() => submitRpe.mutate()}
-                disabled={submitRpe.isPending || !duration}
+                onClick={handleSubmit}
+                disabled={isSubmitting || !duration}
               >
-                {submitRpe.isPending ? "Enregistrement..." : "Enregistrer"}
+                {isSubmitting ? "Enregistrement..." : "Enregistrer"}
               </Button>
             </div>
           </CardContent>

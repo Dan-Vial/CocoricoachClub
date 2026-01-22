@@ -1,21 +1,39 @@
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Trophy, Calendar, CheckCircle2, MapPin } from "lucide-react";
+import { Trophy, Calendar, CheckCircle2, MapPin, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { useAthleteAccess } from "@/contexts/AthleteAccessContext";
-import { format, parseISO, subDays } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
 
-export function AthleteMatchStats() {
-  const { playerId, categoryId } = useAthleteAccess();
-  const queryClient = useQueryClient();
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+interface AthleteMatchStatsProps {
+  token: string;
+  playerId: string;
+  categoryId: string;
+}
+
+interface Match {
+  id: string;
+  match_date: string;
+  opponent: string;
+  is_home: boolean;
+  location: string | null;
+  score_home: number | null;
+  score_away: number | null;
+}
+
+export function AthleteMatchStats({ token, playerId, categoryId }: AthleteMatchStatsProps) {
+  const [matches, setMatches] = useState<Match[]>([]);
+  const [completedMatchIds, setCompletedMatchIds] = useState<Set<string>>(new Set());
+  const [isLoading, setIsLoading] = useState(true);
   const [selectedMatch, setSelectedMatch] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [stats, setStats] = useState({
     minutes_played: "",
     goals: "",
@@ -24,108 +42,80 @@ export function AthleteMatchStats() {
     red_cards: "",
   });
 
-  // Fetch recent matches (last 30 days)
-  const { data: matches, isLoading } = useQuery({
-    queryKey: ["athlete-matches", categoryId],
-    queryFn: async () => {
-      const thirtyDaysAgo = subDays(new Date(), 30).toISOString().split("T")[0];
-      
-      const { data, error } = await supabase
-        .from("matches")
-        .select("*")
-        .eq("category_id", categoryId)
-        .gte("match_date", thirtyDaysAgo)
-        .order("match_date", { ascending: false });
-      
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!categoryId,
-  });
+  // Fetch matches
+  useEffect(() => {
+    fetch(`${SUPABASE_URL}/functions/v1/athlete-portal?token=${token}&action=matches`, {
+      headers: { "apikey": SUPABASE_KEY },
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setMatches(data.matches || []);
+          setCompletedMatchIds(new Set(data.completedMatchIds || []));
+        }
+        setIsLoading(false);
+      })
+      .catch(() => {
+        setIsLoading(false);
+        toast.error("Erreur lors du chargement des compétitions");
+      });
+  }, [token]);
 
-  // Check if player is in lineup for matches
-  const { data: lineups } = useQuery({
-    queryKey: ["athlete-lineups", playerId, matches?.map(m => m.id)],
-    queryFn: async () => {
-      const matchIds = matches?.map(m => m.id) || [];
-      if (matchIds.length === 0) return new Set<string>();
-      
-      const { data, error } = await supabase
-        .from("match_lineup" as any)
-        .select("match_id")
-        .eq("player_id", playerId!)
-        .in("match_id", matchIds);
-      
-      if (error) throw error;
-      return new Set((data as any[] || []).map((l) => l.match_id as string));
-    },
-    enabled: !!playerId && !!matches && matches.length > 0,
-  });
+  const handleSubmit = async () => {
+    if (!selectedMatch) return;
 
-  // Fetch existing stats
-  const { data: existingStats } = useQuery({
-    queryKey: ["athlete-match-stats", playerId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("player_match_stats")
-        .select("match_id")
-        .eq("player_id", playerId);
-      
-      if (error) throw error;
-      return new Set(data.map(s => s.match_id));
-    },
-    enabled: !!playerId,
-  });
+    setIsSubmitting(true);
+    try {
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/athlete-portal?token=${token}&action=submit-stats`, {
+        method: "POST",
+        headers: { 
+          "apikey": SUPABASE_KEY,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          match_id: selectedMatch,
+          minutes_played: parseInt(stats.minutes_played) || 0,
+          goals: parseInt(stats.goals) || 0,
+          assists: parseInt(stats.assists) || 0,
+          yellow_cards: parseInt(stats.yellow_cards) || 0,
+          red_cards: parseInt(stats.red_cards) || 0,
+        }),
+      });
 
-  const submitStats = useMutation({
-    mutationFn: async () => {
-      if (!selectedMatch || !playerId) {
-        throw new Error("Données manquantes");
+      const data = await res.json();
+      if (data.success) {
+        toast.success("Statistiques enregistrées !");
+        setCompletedMatchIds(prev => new Set([...prev, selectedMatch]));
+        setSelectedMatch(null);
+        setStats({
+          minutes_played: "",
+          goals: "",
+          assists: "",
+          yellow_cards: "",
+          red_cards: "",
+        });
+      } else {
+        toast.error(data.error || "Erreur lors de l'enregistrement");
       }
-
-      const { error } = await supabase.from("player_match_stats").insert({
-        match_id: selectedMatch,
-        player_id: playerId,
-        minutes_played: parseInt(stats.minutes_played) || 0,
-        goals: parseInt(stats.goals) || 0,
-        assists: parseInt(stats.assists) || 0,
-        yellow_cards: parseInt(stats.yellow_cards) || 0,
-        red_cards: parseInt(stats.red_cards) || 0,
-      });
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["athlete-match-stats", playerId] });
-      toast.success("Statistiques enregistrées !");
-      setSelectedMatch(null);
-      setStats({
-        minutes_played: "",
-        goals: "",
-        assists: "",
-        yellow_cards: "",
-        red_cards: "",
-      });
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || "Erreur lors de l'enregistrement");
-    },
-  });
+    } catch {
+      toast.error("Erreur de connexion");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   if (isLoading) {
     return (
       <Card>
-        <CardContent className="py-8 text-center text-muted-foreground">
-          Chargement des compétitions...
+        <CardContent className="py-8 flex justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </CardContent>
       </Card>
     );
   }
 
-  // Filter matches where player is in lineup
-  const myMatches = matches?.filter(m => lineups?.has(m.id)) || [];
-  const pendingMatches = myMatches.filter(m => !existingStats?.has(m.id));
-  const completedMatches = myMatches.filter(m => existingStats?.has(m.id));
+  const pendingMatches = matches.filter(m => !completedMatchIds.has(m.id));
+  const completedMatches = matches.filter(m => completedMatchIds.has(m.id));
 
   return (
     <div className="space-y-6">
@@ -141,7 +131,7 @@ export function AthleteMatchStats() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {myMatches.length === 0 ? (
+          {matches.length === 0 ? (
             <p className="text-center text-muted-foreground py-4">
               Aucune compétition récente où vous êtes inscrit
             </p>
@@ -259,10 +249,10 @@ export function AthleteMatchStats() {
               </Button>
               <Button
                 className="flex-1"
-                onClick={() => submitStats.mutate()}
-                disabled={submitStats.isPending}
+                onClick={handleSubmit}
+                disabled={isSubmitting}
               >
-                {submitStats.isPending ? "Enregistrement..." : "Enregistrer"}
+                {isSubmitting ? "Enregistrement..." : "Enregistrer"}
               </Button>
             </div>
           </CardContent>

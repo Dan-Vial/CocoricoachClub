@@ -1,39 +1,62 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, User, XCircle, Activity, Trophy, Calendar } from "lucide-react";
-import { useAthleteAccess } from "@/contexts/AthleteAccessContext";
+import { Loader2, User, XCircle, Activity, Trophy } from "lucide-react";
 import { AthleteRpeEntry } from "@/components/athlete-portal/AthleteRpeEntry";
 import { AthleteMatchStats } from "@/components/athlete-portal/AthleteMatchStats";
 
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+interface AthleteInfo {
+  player_id: string;
+  player_name: string;
+  category_id: string;
+  category_name: string;
+  club_name: string;
+}
+
 export default function AthletePortal() {
   const [searchParams] = useSearchParams();
-  const { validateToken, isAthleteAccess, playerId, playerName, categoryName, clubName } = useAthleteAccess();
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [errorMessage, setErrorMessage] = useState("");
+  const [athleteInfo, setAthleteInfo] = useState<AthleteInfo | null>(null);
+  const token = searchParams.get("token");
 
   useEffect(() => {
-    const urlToken = searchParams.get("token");
-
-    if (!urlToken) {
+    if (!token) {
       setStatus("error");
       setErrorMessage("Lien d'accès invalide");
       return;
     }
 
-    validateToken(urlToken).then((success) => {
-      if (success) {
-        setStatus("success");
-      } else {
+    // Validate token via edge function
+    fetch(`${SUPABASE_URL}/functions/v1/athlete-portal?token=${token}&action=validate`, {
+      headers: { "apikey": SUPABASE_KEY },
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setAthleteInfo({
+            player_id: data.player_id,
+            player_name: data.player_name,
+            category_id: data.category_id,
+            category_name: data.category_name,
+            club_name: data.club_name,
+          });
+          setStatus("success");
+        } else {
+          setStatus("error");
+          setErrorMessage(data.error || "Ce lien n'est plus valide ou a expiré");
+        }
+      })
+      .catch(() => {
         setStatus("error");
-        setErrorMessage("Ce lien n'est plus valide ou a expiré");
-      }
-    });
-  }, [searchParams, validateToken]);
+        setErrorMessage("Erreur de connexion au serveur");
+      });
+  }, [token]);
 
   if (status === "loading") {
     return (
@@ -79,10 +102,10 @@ export default function AthletePortal() {
                 <User className="h-8 w-8 text-primary" />
               </div>
               <div>
-                <CardTitle className="text-2xl">{playerName}</CardTitle>
+                <CardTitle className="text-2xl">{athleteInfo?.player_name}</CardTitle>
                 <CardDescription className="flex flex-wrap items-center gap-2 mt-1">
-                  <Badge variant="secondary">{categoryName}</Badge>
-                  <span className="text-muted-foreground">{clubName}</span>
+                  <Badge variant="secondary">{athleteInfo?.category_name}</Badge>
+                  <span className="text-muted-foreground">{athleteInfo?.club_name}</span>
                 </CardDescription>
               </div>
             </div>
@@ -114,11 +137,11 @@ export default function AthletePortal() {
           </TabsList>
 
           <TabsContent value="rpe" className="mt-6">
-            <AthleteRpeEntry />
+            <AthleteRpeEntry token={token!} playerId={athleteInfo!.player_id} categoryId={athleteInfo!.category_id} />
           </TabsContent>
 
           <TabsContent value="matches" className="mt-6">
-            <AthleteMatchStats />
+            <AthleteMatchStats token={token!} playerId={athleteInfo!.player_id} categoryId={athleteInfo!.category_id} />
           </TabsContent>
         </Tabs>
       </div>
