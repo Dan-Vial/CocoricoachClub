@@ -109,11 +109,23 @@ export default function Clubs() {
 
   const deleteClub = useMutation({
     mutationFn: async (clubId: string) => {
-      const { error } = await supabase.from("clubs").delete().eq("id", clubId);
+      // Use .select() to get the deleted row - if empty, RLS blocked it
+      const { data, error } = await supabase
+        .from("clubs")
+        .delete()
+        .eq("id", clubId)
+        .select("id");
+      
       if (error) {
         console.error("Delete club error:", error);
         throw error;
       }
+      
+      // If no rows were deleted, RLS blocked the operation
+      if (!data || data.length === 0) {
+        throw new Error("permission_denied");
+      }
+      
       return clubId;
     },
     onMutate: async (clubId: string) => {
@@ -142,7 +154,7 @@ export default function Clubs() {
       console.error("Delete club mutation error:", error);
       if (error.code === "23503") {
         toast.error("Impossible de supprimer ce club car il contient des catégories. Supprimez d'abord les catégories.");
-      } else if (error.message?.includes("policy")) {
+      } else if (error.message === "permission_denied" || error.message?.includes("policy")) {
         toast.error("Vous n'avez pas la permission de supprimer ce club.");
       } else {
         toast.error("Erreur lors de la suppression du club");
