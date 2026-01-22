@@ -43,7 +43,6 @@ interface BowlingGame {
   strikePercentage: number;
   sparePercentage: number;
   splitPercentage: number;
-  singlePinPercentage: number;
   singlePinConversionRate: number;
   pocketPercentage: number;
   openFrames: number;
@@ -326,7 +325,6 @@ export function AthleteMatchStats({ token, playerId, categoryId, sportType }: At
                   strikePercentage: stats.strikePercentage,
                   sparePercentage: stats.sparePercentage,
                   splitPercentage: stats.splitPercentage,
-                  singlePinPercentage: stats.singlePinPercentage,
                   singlePinConversionRate: stats.singlePinConversionRate,
                   pocketPercentage: stats.pocketPercentage,
                   openFrames: stats.openFrames,

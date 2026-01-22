@@ -567,7 +567,6 @@ export function CompetitionRoundsDialog({
                   updateRoundStat(playerId, roundNumber, "pocketPercentage", sheetStats.pocketPercentage);
                   updateRoundStat(playerId, roundNumber, "singlePinCount", sheetStats.singlePinCount);
                   updateRoundStat(playerId, roundNumber, "singlePinConverted", sheetStats.singlePinConverted);
-                  updateRoundStat(playerId, roundNumber, "singlePinPercentage", sheetStats.singlePinPercentage);
                   updateRoundStat(playerId, roundNumber, "singlePinConversionRate", sheetStats.singlePinConversionRate);
 
                   closeBowlingSheet();
