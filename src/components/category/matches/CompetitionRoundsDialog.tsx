@@ -129,6 +129,7 @@ export function CompetitionRoundsDialog({
 }: CompetitionRoundsDialogProps) {
   const [playerRoundsData, setPlayerRoundsData] = useState<PlayerRounds[]>([]);
   const [selectedPlayerId, setSelectedPlayerId] = useState<string>("");
+  const [isDataInitialized, setIsDataInitialized] = useState(false);
   const queryClient = useQueryClient();
 
   const sportStats = getStatsForSport(sportType);
@@ -242,7 +243,11 @@ export function CompetitionRoundsDialog({
     enabled: !!matchId,
   });
 
+  // Initialize data only once when lineup and existingRounds are loaded
   useEffect(() => {
+    // Only initialize once to prevent overwriting local state (new rounds added by user)
+    if (isDataInitialized) return;
+    
     if (lineup && lineup.length > 0) {
       const playersData = lineup.map((l) => {
         const player = l.players as { id: string; name: string } | null;
@@ -284,13 +289,14 @@ export function CompetitionRoundsDialog({
         };
       });
       setPlayerRoundsData(playersData);
+      setIsDataInitialized(true);
       
       // Only set the default selected player if not already set
       if (!selectedPlayerId && playersData.length > 0) {
         setSelectedPlayerId(playersData[0].playerId);
       }
     }
-  }, [lineup, existingRounds]); // Removed selectedPlayerId from deps to avoid infinite loop
+  }, [lineup, existingRounds, isDataInitialized, selectedPlayerId]);
 
   // Update crew info for a player
   const updatePlayerCrewInfo = (playerId: string, field: string, value: any) => {
