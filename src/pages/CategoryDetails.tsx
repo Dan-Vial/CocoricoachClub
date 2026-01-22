@@ -197,11 +197,11 @@ function CategoryDetailsContent() {
                 <span className="hidden sm:inline">Planification</span>
                 <span className="sm:hidden">Planning</span>
               </TabsTrigger>
-              {/* Performance - Grisé en mode viewer */}
+              {/* Entrainement - Grisé en mode viewer */}
               <DisabledTabTrigger value="performance" isDisabled={isViewer} className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">
                 <Zap className="h-4 w-4 shrink-0" />
-                <span className="hidden sm:inline">Performance</span>
-                <span className="sm:hidden">Perf</span>
+                <span className="hidden sm:inline">Entrainement</span>
+                <span className="sm:hidden">Entraîn</span>
               </DisabledTabTrigger>
               <TabsTrigger value="sante" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">
                 <Heart className="h-4 w-4 shrink-0" />

@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Trash2, ChevronRight, Filter } from "lucide-react";
+import { Plus, Trash2, Filter, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { AddPlayerDialog } from "./AddPlayerDialog";
 import { useNavigate } from "react-router-dom";
@@ -27,7 +27,21 @@ import { Badge } from "@/components/ui/badge";
 import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 import { useViewerPlayers } from "@/hooks/use-viewer-data";
 import { getDisciplineLabel } from "@/lib/constants/athleticProfiles";
-import { isAthletismeCategory, isJudoCategory } from "@/lib/constants/sportTypes";
+import { isAthletismeCategory, isJudoCategory, isIndividualSport } from "@/lib/constants/sportTypes";
+import { getPositionsForSport } from "@/lib/constants/sportPositions";
+
+// Aviron roles
+const AVIRON_ROLES = [
+  { value: "barreur", label: "Barreur" },
+  { value: "rameur", label: "Rameur" },
+  { value: "chef_nage", label: "Chef de nage" },
+];
+
+function getAvironRoleLabel(role: string | null): string {
+  if (!role) return "";
+  const found = AVIRON_ROLES.find(r => r.value === role);
+  return found ? found.label : role;
+}
 
 interface PlayersTabProps {
   categoryId: string;
@@ -42,7 +56,7 @@ export function PlayersTab({ categoryId }: PlayersTabProps) {
 
   const { data: players, isLoading } = useViewerPlayers(categoryId);
 
-  // Fetch category to check if it's an athletics category
+  // Fetch category to check sport type
   const { data: category } = useQuery({
     queryKey: ["category", categoryId],
     queryFn: async () => {
@@ -56,28 +70,66 @@ export function PlayersTab({ categoryId }: PlayersTabProps) {
     },
   });
 
-  const isAthletics = category?.rugby_type ? isAthletismeCategory(category.rugby_type) : false;
-  const isJudo = category?.rugby_type ? isJudoCategory(category.rugby_type) : false;
-  const hasDisciplineColumn = isAthletics || isJudo;
-  const disciplineColumnLabel = isJudo ? "Catégorie" : "Discipline";
+  const sportType = category?.rugby_type || "XV";
+  const isAthletics = isAthletismeCategory(sportType);
+  const isJudo = isJudoCategory(sportType);
+  const isAviron = sportType.toLowerCase().includes("aviron");
+  const isIndividual = isIndividualSport(sportType);
+  
+  // Determine which attribute column to show
+  const showDiscipline = isAthletics || isJudo;
+  const showRole = isAviron;
+  const showPosition = !isIndividual && !showDiscipline && !showRole;
+  
+  const attributeColumnLabel = isJudo 
+    ? "Catégorie" 
+    : isAthletics 
+      ? "Discipline" 
+      : isAviron 
+        ? "Rôle" 
+        : "Poste";
 
-  // Get unique disciplines from players
-  const availableDisciplines = useMemo(() => {
+  // Get positions for the sport (for dropdown display)
+  const positions = useMemo(() => getPositionsForSport(sportType), [sportType]);
+  const uniquePositionNames = useMemo(() => {
+    const names = new Set(positions.map(p => p.name));
+    return Array.from(names);
+  }, [positions]);
+
+  // Get unique disciplines/positions from players for filtering
+  const availableFilters = useMemo(() => {
     if (!players) return [];
-    const disciplines = new Set(
-      players
-        .map((p: any) => p.discipline)
-        .filter((d: string | null) => d && d.length > 0)
-    );
-    return Array.from(disciplines) as string[];
-  }, [players]);
+    if (showDiscipline) {
+      const disciplines = new Set(
+        players
+          .map((p: any) => p.discipline)
+          .filter((d: string | null) => d && d.length > 0)
+      );
+      return Array.from(disciplines) as string[];
+    }
+    if (showPosition) {
+      const positions = new Set(
+        players
+          .map((p: any) => p.position)
+          .filter((p: string | null) => p && p.length > 0)
+      );
+      return Array.from(positions) as string[];
+    }
+    return [];
+  }, [players, showDiscipline, showPosition]);
 
-  // Filter players by discipline
+  // Filter players
   const filteredPlayers = useMemo(() => {
     if (!players) return [];
     if (disciplineFilter === "all") return players;
-    return players.filter((p: any) => p.discipline === disciplineFilter);
-  }, [players, disciplineFilter]);
+    if (showDiscipline) {
+      return players.filter((p: any) => p.discipline === disciplineFilter);
+    }
+    if (showPosition) {
+      return players.filter((p: any) => p.position === disciplineFilter);
+    }
+    return players;
+  }, [players, disciplineFilter, showDiscipline, showPosition]);
 
   const deletePlayer = useMutation({
     mutationFn: async (playerId: string) => {
@@ -93,9 +145,46 @@ export function PlayersTab({ categoryId }: PlayersTabProps) {
     },
   });
 
+  // Get display value for the attribute column
+  const getAttributeDisplay = (player: any) => {
+    if (showDiscipline) {
+      return player.discipline ? (
+        <Badge variant="outline" className="bg-primary/5">
+          {getDisciplineLabel(player.discipline)}
+        </Badge>
+      ) : (
+        <span className="text-muted-foreground text-sm">—</span>
+      );
+    }
+    if (showRole) {
+      return player.position ? (
+        <Badge variant="outline" className="bg-blue-500/10 text-blue-700 dark:text-blue-300">
+          {getAvironRoleLabel(player.position)}
+        </Badge>
+      ) : (
+        <span className="text-muted-foreground text-sm">—</span>
+      );
+    }
+    if (showPosition) {
+      return player.position ? (
+        <Badge variant="secondary" className="font-normal">
+          {player.position}
+        </Badge>
+      ) : (
+        <span className="text-muted-foreground text-sm">—</span>
+      );
+    }
+    return null;
+  };
+
   if (isLoading) {
     return <p className="text-muted-foreground">Chargement...</p>;
   }
+
+  const hasAttributeColumn = showDiscipline || showPosition || showRole;
+  const filterPlaceholder = showDiscipline 
+    ? (isJudo ? "Filtrer par catégorie" : "Filtrer par discipline")
+    : "Filtrer par poste";
 
   return (
     <Card className="bg-gradient-card shadow-md">
@@ -103,17 +192,21 @@ export function PlayersTab({ categoryId }: PlayersTabProps) {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
           <CardTitle>Liste des athlètes</CardTitle>
           <div className="flex items-center gap-2 w-full sm:w-auto">
-            {hasDisciplineColumn && availableDisciplines.length > 0 && (
+            {hasAttributeColumn && availableFilters.length > 0 && (
               <Select value={disciplineFilter} onValueChange={setDisciplineFilter}>
                 <SelectTrigger className="w-full sm:w-[200px]">
                   <Filter className="h-4 w-4 mr-2" />
-                  <SelectValue placeholder={isJudo ? "Filtrer par catégorie" : "Filtrer par discipline"} />
+                  <SelectValue placeholder={filterPlaceholder} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">{isJudo ? "Toutes les catégories" : "Toutes les disciplines"}</SelectItem>
-                  {availableDisciplines.map((discipline) => (
-                    <SelectItem key={discipline} value={discipline}>
-                      {getDisciplineLabel(discipline)}
+                  <SelectItem value="all">
+                    {showDiscipline 
+                      ? (isJudo ? "Toutes les catégories" : "Toutes les disciplines")
+                      : "Tous les postes"}
+                  </SelectItem>
+                  {availableFilters.map((filter) => (
+                    <SelectItem key={filter} value={filter}>
+                      {showDiscipline ? getDisciplineLabel(filter) : filter}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -134,7 +227,9 @@ export function PlayersTab({ categoryId }: PlayersTabProps) {
           <div className="text-center py-8">
             <p className="text-muted-foreground mb-4">
               {disciplineFilter !== "all" 
-                ? (isJudo ? "Aucun athlète dans cette catégorie de poids" : "Aucun athlète dans cette discipline")
+                ? (showDiscipline 
+                    ? (isJudo ? "Aucun athlète dans cette catégorie de poids" : "Aucun athlète dans cette discipline")
+                    : "Aucun athlète à ce poste")
                 : "Aucun athlète dans cette catégorie"}
             </p>
             {!isViewer && disciplineFilter === "all" && (
@@ -149,8 +244,7 @@ export function PlayersTab({ categoryId }: PlayersTabProps) {
             <TableHeader>
               <TableRow>
                 <TableHead>Nom</TableHead>
-                {hasDisciplineColumn && <TableHead>{disciplineColumnLabel}</TableHead>}
-                <TableHead>Date d'ajout</TableHead>
+                {hasAttributeColumn && <TableHead>{attributeColumnLabel}</TableHead>}
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -158,7 +252,7 @@ export function PlayersTab({ categoryId }: PlayersTabProps) {
               {filteredPlayers?.map((player: any) => {
                 const initials = player.name
                   .split(" ")
-                  .map((n) => n[0])
+                  .map((n: string) => n[0])
                   .join("")
                   .toUpperCase()
                   .slice(0, 2);
@@ -180,20 +274,11 @@ export function PlayersTab({ categoryId }: PlayersTabProps) {
                         <span>{player.name}</span>
                       </div>
                     </TableCell>
-                    {hasDisciplineColumn && (
+                    {hasAttributeColumn && (
                       <TableCell>
-                        {player.discipline ? (
-                          <Badge variant="outline" className="bg-primary/5">
-                            {getDisciplineLabel(player.discipline)}
-                          </Badge>
-                        ) : (
-                          <span className="text-muted-foreground text-sm">Non définie</span>
-                        )}
+                        {getAttributeDisplay(player)}
                       </TableCell>
                     )}
-                    <TableCell>
-                      {new Date(player.created_at).toLocaleDateString("fr-FR")}
-                    </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
                         {!isViewer && (
@@ -211,11 +296,17 @@ export function PlayersTab({ categoryId }: PlayersTabProps) {
                           </Button>
                         )}
                         <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => navigate(`/players/${player.id}`)}
+                          variant="outline"
+                          size="sm"
+                          className="gap-1.5"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/players/${player.id}`);
+                          }}
                         >
-                          <ChevronRight className="h-4 w-4" />
+                          <Eye className="h-4 w-4" />
+                          <span className="hidden sm:inline">Voir le profil complet</span>
+                          <span className="sm:hidden">Profil</span>
                         </Button>
                       </div>
                     </TableCell>
