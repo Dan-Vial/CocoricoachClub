@@ -340,26 +340,38 @@ export function CompetitionRoundsDialog({
     },
   });
 
-  const addRound = (playerId: string) => {
-    setPlayerRoundsData(prev => prev.map(p => {
-      if (p.playerId === playerId) {
-        const newRoundNumber = p.rounds.length > 0 
-          ? Math.max(...p.rounds.map(r => r.round_number)) + 1 
-          : 1;
-        return {
-          ...p,
-          rounds: [...p.rounds, {
-            round_number: newRoundNumber,
-            opponent_name: "",
-            result: "",
-            notes: "",
-            stats: {},
-            phase: "",
-          }],
-        };
-      }
-      return p;
-    }));
+  const addRound = (playerId: string, opts?: { openBowlingSheet?: boolean }) => {
+    const player = playerRoundsData.find((p) => p.playerId === playerId);
+    const newRoundNumber = player && player.rounds.length > 0
+      ? Math.max(...player.rounds.map((r) => r.round_number)) + 1
+      : 1;
+
+    setPlayerRoundsData((prev) =>
+      prev.map((p) => {
+        if (p.playerId === playerId) {
+          return {
+            ...p,
+            rounds: [
+              ...p.rounds,
+              {
+                round_number: newRoundNumber,
+                opponent_name: "",
+                result: "",
+                notes: "",
+                stats: {},
+                phase: "",
+              },
+            ],
+          };
+        }
+        return p;
+      }),
+    );
+
+    if (opts?.openBowlingSheet && isBowling) {
+      // When user wants to enter bowling data, open the scoresheet right away.
+      openBowlingSheetForRound(playerId, newRoundNumber);
+    }
   };
 
   const removeRound = (playerId: string, roundNumber: number) => {
@@ -707,17 +719,22 @@ export function CompetitionRoundsDialog({
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => addRound(selectedPlayer.playerId)}
+                    onClick={() => addRound(selectedPlayer.playerId, { openBowlingSheet: isBowling })}
                     className="w-full gap-2"
                   >
                     <Plus className="h-4 w-4" />
                     Ajouter {isAviron ? "une course" : isJudo ? "un combat" : `un ${roundLabel.toLowerCase()}`}
+                    {isBowling ? " (feuille de score)" : ""}
                   </Button>
 
                   {selectedPlayer.rounds.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
+                    <div className="text-center py-8 text-muted-foreground space-y-2">
                       <p>Aucun {roundLabel.toLowerCase()} enregistré</p>
-                      <p className="text-sm">Cliquez sur le bouton ci-dessus pour ajouter {isAviron ? "une course" : isJudo ? "un combat" : `un ${roundLabel.toLowerCase()}`}</p>
+                      <p className="text-sm">
+                        {isBowling
+                          ? "Cliquez sur “Ajouter une partie (feuille de score)” pour saisir X / / 0-9."
+                          : `Cliquez sur le bouton ci-dessus pour ajouter ${isAviron ? "une course" : isJudo ? "un combat" : `un ${roundLabel.toLowerCase()}`}.`}
+                      </p>
                     </div>
                   ) : (
                     selectedPlayer.rounds.map((round) => (
