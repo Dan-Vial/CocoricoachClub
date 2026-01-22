@@ -178,7 +178,6 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames }: BowlingSc
     let totalThrows = 0;
     let openFrames = 0;
     let firstThrowCount = 0;
-    let spareOpportunities = 0;
 
     allFrames.forEach((frame, frameIndex) => {
       const isTenthFrame = frameIndex === 9;
@@ -188,7 +187,10 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames }: BowlingSc
         
         totalThrows++;
         
-        if (throwData.isPocket) {
+        // Pocket count - only on "first throws" of frames
+        // In 10th frame: throw 0, throw 1 if throw 0 was strike, throw 2 if throw 1 was strike
+        const isFirstThrowContext = isPocketAllowed(frameIndex, throwIndex, frame);
+        if (throwData.isPocket && isFirstThrowContext) {
           pocketCount++;
         }
 
@@ -197,13 +199,18 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames }: BowlingSc
           strikes++;
           if (!isTenthFrame || throwIndex === 0) {
             firstThrowCount++;
+          } else if (isTenthFrame && throwIndex === 1) {
+            // 2nd throw of 10th frame being a strike counts as first throw context
+            firstThrowCount++;
+          } else if (isTenthFrame && throwIndex === 2 && frame.throws[1]?.value === "X") {
+            // 3rd throw after 2nd was strike counts as first throw context
+            firstThrowCount++;
           }
         }
 
         // Count spares (not including the original strike throws)
         if (throwData.value === "/") {
           spares++;
-          spareOpportunities++;
           
           // Check if this spare was a split conversion
           const previousThrow = frame.throws[throwIndex - 1];
@@ -228,7 +235,8 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames }: BowlingSc
           }
         }
 
-        // Count single pins
+        // Count single pins - ONLY on first throw of each frame where result = 9 (leaving 1 pin)
+        // The logic: first throw = 9 pins means 1 pin left = single pin situation
         if (throwData.isSinglePin) {
           singlePinCount++;
           if (throwData.isSinglePinConverted) {
@@ -243,43 +251,46 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames }: BowlingSc
         const second = frame.throws[1];
         if (first.value !== "X" && second.value !== "/") {
           openFrames++;
-          spareOpportunities++;
         }
-      }
-
-      // For frames with first throw that's not a strike, it's a spare opportunity
-      if (!isTenthFrame && frame.throws[0] && frame.throws[0].value !== "X") {
-        // Already counted in open frames or spares
       }
     });
 
     // Calculate last frame cumulative score as total
     const totalScore = allFrames[9].cumulativeScore || 0;
 
+    // First throw contexts count (for pocket %)
+    // Frames 1-9: 1 each = 9, plus up to 3 in 10th frame depending on strikes
+    let pocketOpportunities = 9; // frames 1-9
+    const tenthFrame = allFrames[9];
+    pocketOpportunities++; // 1st throw of 10th
+    if (tenthFrame.throws[0]?.value === "X") pocketOpportunities++; // 2nd throw after strike
+    if (tenthFrame.throws[1]?.value === "X") pocketOpportunities++; // 3rd throw after strike
+
     // Calculate percentages
-    const strikePercentage = firstThrowCount > 0 ? (strikes / 12) * 100 : 0;
+    const strikePercentage = (strikes / 12) * 100;
     
     // Spare % = (spares + splits convertis) / opportunités de spare
-    const effectiveSpares = spares; // spares already excludes splits that weren't converted
     const totalSpareOpportunities = Math.max(0, 10 - strikes + (strikes > 10 ? 2 : 0));
     const sparePercentage = totalSpareOpportunities > 0 
-      ? ((effectiveSpares) / totalSpareOpportunities) * 100 
+      ? ((spares) / totalSpareOpportunities) * 100 
       : 0;
 
     const splitPercentage = splitCount > 0 
       ? (splitConverted / splitCount) * 100 
       : 0;
 
-    const singlePinPercentage = totalThrows > 0 
-      ? (singlePinCount / totalThrows) * 100 
+    // Single pin % = how many first throws resulted in 9 pins (single pin situation)
+    // Single pin conversion rate = of those, how many were converted
+    const singlePinPercentage = pocketOpportunities > 0 
+      ? (singlePinCount / pocketOpportunities) * 100 
       : 0;
 
     const singlePinConversionRate = singlePinCount > 0 
       ? (singlePinConverted / singlePinCount) * 100 
       : 0;
 
-    const pocketPercentage = firstThrowCount > 0 
-      ? (pocketCount / firstThrowCount) * 100 
+    const pocketPercentage = pocketOpportunities > 0 
+      ? (pocketCount / pocketOpportunities) * 100 
       : 0;
 
     return {
@@ -302,6 +313,36 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames }: BowlingSc
       openFrames,
     };
   }, []);
+
+  // Helper: Check if pocket checkbox is allowed for this throw
+  const isPocketAllowed = (frameIndex: number, throwIndex: number, frame: FrameData): boolean => {
+    const isTenthFrame = frameIndex === 9;
+    
+    // Frames 1-9: only first throw
+    if (!isTenthFrame) {
+      return throwIndex === 0;
+    }
+    
+    // 10th frame:
+    // - 1st throw: always allowed
+    // - 2nd throw: only if 1st was a strike (fresh pins)
+    // - 3rd throw: only if 2nd was a strike (fresh pins)
+    if (throwIndex === 0) return true;
+    if (throwIndex === 1) return frame.throws[0]?.value === "X";
+    if (throwIndex === 2) return frame.throws[1]?.value === "X";
+    
+    return false;
+  };
+
+  // Helper: Check if single pin situation applies (first throw = 9 pins)
+  const isSinglePinAllowed = (frameIndex: number, throwIndex: number, frame: FrameData): boolean => {
+    // Same logic as pocket - only on "first throw" contexts
+    if (!isPocketAllowed(frameIndex, throwIndex, frame)) return false;
+    
+    // And the throw value must be "9" (leaving 1 pin)
+    const throwData = frame.throws[throwIndex];
+    return throwData?.value === "9";
+  };
 
   // Update stats when frames change
   useEffect(() => {
@@ -561,6 +602,8 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames }: BowlingSc
                     {frame.throws.map((throwData, throwIndex) => {
                       if (!throwData.value) return null;
                       
+                      const pocketAllowed = isPocketAllowed(frameIndex, throwIndex, frame);
+                      const singlePinAllowed = isSinglePinAllowed(frameIndex, throwIndex, frame);
                       const isBonusThrow = frameIndex === 9 && throwIndex >= 1 && 
                         frame.throws.slice(0, throwIndex).every(t => t.value === "X");
                       
@@ -573,16 +616,19 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames }: BowlingSc
                             L{throwIndex + 1}: {throwData.value}
                           </Badge>
                           
-                          <div className="flex items-center gap-2">
-                            <Checkbox
-                              id={`pocket-${frameIndex}-${throwIndex}`}
-                              checked={throwData.isPocket}
-                              onCheckedChange={() => handleCheckboxChange(frameIndex, throwIndex, "isPocket")}
-                            />
-                            <Label htmlFor={`pocket-${frameIndex}-${throwIndex}`} className="text-xs">
-                              Poche
-                            </Label>
-                          </div>
+                          {/* Pocket checkbox - only on first throw contexts */}
+                          {pocketAllowed && (
+                            <div className="flex items-center gap-2">
+                              <Checkbox
+                                id={`pocket-${frameIndex}-${throwIndex}`}
+                                checked={throwData.isPocket}
+                                onCheckedChange={() => handleCheckboxChange(frameIndex, throwIndex, "isPocket")}
+                              />
+                              <Label htmlFor={`pocket-${frameIndex}-${throwIndex}`} className="text-xs">
+                                Boule en poche
+                              </Label>
+                            </div>
+                          )}
 
                           {throwData.value !== "X" && throwData.value !== "/" && (
                             <>
@@ -601,28 +647,33 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames }: BowlingSc
                                 </Label>
                               </div>
 
-                              <div className="flex items-center gap-2">
-                                <Checkbox
-                                  id={`single-${frameIndex}-${throwIndex}`}
-                                  checked={throwData.isSinglePin}
-                                  onCheckedChange={() => handleCheckboxChange(frameIndex, throwIndex, "isSinglePin")}
-                                />
-                                <Label htmlFor={`single-${frameIndex}-${throwIndex}`} className="text-xs">
-                                  Quille seule
-                                </Label>
-                              </div>
+                              {/* Single pin - only when first throw = 9 (1 pin left) */}
+                              {singlePinAllowed && (
+                                <>
+                                  <div className="flex items-center gap-2">
+                                    <Checkbox
+                                      id={`single-${frameIndex}-${throwIndex}`}
+                                      checked={throwData.isSinglePin}
+                                      onCheckedChange={() => handleCheckboxChange(frameIndex, throwIndex, "isSinglePin")}
+                                    />
+                                    <Label htmlFor={`single-${frameIndex}-${throwIndex}`} className="text-xs">
+                                      Quille seule
+                                    </Label>
+                                  </div>
 
-                              {throwData.isSinglePin && (
-                                <div className="flex items-center gap-2">
-                                  <Checkbox
-                                    id={`single-conv-${frameIndex}-${throwIndex}`}
-                                    checked={throwData.isSinglePinConverted}
-                                    onCheckedChange={() => handleCheckboxChange(frameIndex, throwIndex, "isSinglePinConverted")}
-                                  />
-                                   <Label htmlFor={`single-conv-${frameIndex}-${throwIndex}`} className="text-xs text-primary">
-                                    Convertie
-                                  </Label>
-                                </div>
+                                  {throwData.isSinglePin && (
+                                    <div className="flex items-center gap-2">
+                                      <Checkbox
+                                        id={`single-conv-${frameIndex}-${throwIndex}`}
+                                        checked={throwData.isSinglePinConverted}
+                                        onCheckedChange={() => handleCheckboxChange(frameIndex, throwIndex, "isSinglePinConverted")}
+                                      />
+                                      <Label htmlFor={`single-conv-${frameIndex}-${throwIndex}`} className="text-xs text-primary">
+                                        Convertie
+                                      </Label>
+                                    </div>
+                                  )}
+                                </>
                               )}
                             </>
                           )}
