@@ -285,11 +285,12 @@ export function CompetitionRoundsDialog({
       });
       setPlayerRoundsData(playersData);
       
+      // Only set the default selected player if not already set
       if (!selectedPlayerId && playersData.length > 0) {
         setSelectedPlayerId(playersData[0].playerId);
       }
     }
-  }, [lineup, existingRounds, selectedPlayerId]);
+  }, [lineup, existingRounds]); // Removed selectedPlayerId from deps to avoid infinite loop
 
   // Update crew info for a player
   const updatePlayerCrewInfo = (playerId: string, field: string, value: any) => {
