@@ -19,11 +19,21 @@ import {
   X,
   Trophy,
   Swords,
+  CheckCircle2,
+  Settings,
 } from "lucide-react";
 import { MatchLineupDialog } from "./MatchLineupDialog";
 import { SportMatchStatsDialog } from "./SportMatchStatsDialog";
 import { CompetitionRoundsDialog } from "./CompetitionRoundsDialog";
+import { EditMatchDialog } from "./EditMatchDialog";
 import { isIndividualSport } from "@/lib/constants/sportTypes";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface Match {
   id: string;
@@ -38,6 +48,10 @@ interface Match {
   category_id: string;
   competition: string | null;
   competition_stage: string | null;
+  is_finalized?: boolean;
+  event_type?: string | null;
+  age_category?: string | null;
+  distance_meters?: number | null;
 }
 
 interface MatchCardProps {
@@ -49,6 +63,7 @@ export function MatchCard({ match, categoryId }: MatchCardProps) {
   const [isLineupOpen, setIsLineupOpen] = useState(false);
   const [isStatsOpen, setIsStatsOpen] = useState(false);
   const [isRoundsOpen, setIsRoundsOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
   const [isEditingScore, setIsEditingScore] = useState(false);
   const [scoreHome, setScoreHome] = useState(match.score_home?.toString() || "");
   const [scoreAway, setScoreAway] = useState(match.score_away?.toString() || "");
@@ -129,8 +144,26 @@ export function MatchCard({ match, categoryId }: MatchCardProps) {
     },
   });
 
+  const finalizeMatch = useMutation({
+    mutationFn: async (finalized: boolean) => {
+      const { error } = await supabase
+        .from("matches")
+        .update({ is_finalized: finalized })
+        .eq("id", match.id);
+      if (error) throw error;
+    },
+    onSuccess: (_, finalized) => {
+      queryClient.invalidateQueries({ queryKey: ["matches", categoryId] });
+      toast.success(finalized ? "Compétition finalisée" : "Compétition réouverte");
+    },
+    onError: () => {
+      toast.error("Erreur lors de la mise à jour");
+    },
+  });
+
   const matchDate = new Date(match.match_date);
   const isPast = matchDate < new Date();
+  const isFinalized = match.is_finalized === true;
 
   return (
     <>
