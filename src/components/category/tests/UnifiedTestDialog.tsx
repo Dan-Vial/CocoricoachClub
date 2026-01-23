@@ -24,18 +24,20 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { PlayerSelection } from "./PlayerSelection";
-import { TEST_CATEGORIES, TestCategory, TestOption } from "@/lib/constants/testCategories";
+import { TEST_CATEGORIES, TestCategory, TestOption, getTestCategoriesForSport } from "@/lib/constants/testCategories";
 
 interface UnifiedTestDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   categoryId: string;
+  sportType?: string;
 }
 
 export function UnifiedTestDialog({
   open,
   onOpenChange,
   categoryId,
+  sportType,
 }: UnifiedTestDialogProps) {
   const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
   const [selectionMode, setSelectionMode] = useState<"all" | "specific">("all");
@@ -63,7 +65,10 @@ export function UnifiedTestDialog({
     ? (players || []) 
     : (players || []).filter(p => selectedPlayers.includes(p.id));
 
-  const currentCategory = TEST_CATEGORIES.find(c => c.value === selectedCategory);
+  // Get filtered test categories based on sport type
+  const filteredTestCategories = getTestCategoriesForSport(sportType || "");
+  
+  const currentCategory = filteredTestCategories.find(c => c.value === selectedCategory);
   const currentTest = currentCategory?.tests.find(t => t.value === selectedTest);
 
   const addTests = useMutation({
@@ -146,7 +151,7 @@ export function UnifiedTestDialog({
                     <SelectValue placeholder="Sélectionner une catégorie" />
                   </SelectTrigger>
                   <SelectContent>
-                    {TEST_CATEGORIES.map((category) => (
+                    {filteredTestCategories.map((category) => (
                       <SelectItem key={category.value} value={category.value}>
                         {category.label}
                       </SelectItem>
