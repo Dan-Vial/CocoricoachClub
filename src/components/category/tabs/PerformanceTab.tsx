@@ -14,6 +14,7 @@ import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 import { DisabledTabTrigger } from "@/components/ui/disabled-tab-trigger";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Lock } from "lucide-react";
+import { isRugbyType } from "@/lib/constants/sportTypes";
 
 interface PerformanceTabProps {
   categoryId: string;
@@ -56,6 +57,10 @@ export function PerformanceTab({ categoryId }: PerformanceTabProps) {
     },
   });
 
+  const sportType = category?.rugby_type || "";
+  // GPS Data uniquement pour Football et Rugby
+  const showGpsTab = isRugbyType(sportType) || sportType.toLowerCase().includes("football");
+
   // En mode viewer, l'onglet Performance entier est désactivé
   if (isViewer) {
     return <PerformanceDisabledMessage />;
@@ -97,11 +102,13 @@ export function PerformanceTab({ categoryId }: PerformanceTabProps) {
             <span className="hidden sm:inline">Prépa Physique</span>
             <span className="sm:hidden">Prépa</span>
           </TabsTrigger>
-          <TabsTrigger value="gps" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">
-            <MapPin className="h-4 w-4 shrink-0" />
-            <span className="hidden sm:inline">Data GPS</span>
-            <span className="sm:hidden">GPS</span>
-          </TabsTrigger>
+          {showGpsTab && (
+            <TabsTrigger value="gps" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">
+              <MapPin className="h-4 w-4 shrink-0" />
+              <span className="hidden sm:inline">Data GPS</span>
+              <span className="sm:hidden">GPS</span>
+            </TabsTrigger>
+          )}
         </TabsList>
       </div>
 
@@ -133,9 +140,11 @@ export function PerformanceTab({ categoryId }: PerformanceTabProps) {
         <PhysicalPreparationTab categoryId={categoryId} />
       </TabsContent>
 
-      <TabsContent value="gps">
-        <GpsDataTab categoryId={categoryId} />
-      </TabsContent>
+      {showGpsTab && (
+        <TabsContent value="gps">
+          <GpsDataTab categoryId={categoryId} />
+        </TabsContent>
+      )}
     </Tabs>
   );
 }

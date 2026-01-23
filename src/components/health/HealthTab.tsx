@@ -17,6 +17,9 @@ import {
 } from "lucide-react";
 import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 import { DisabledTabTrigger } from "@/components/ui/disabled-tab-trigger";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { isRugbyType } from "@/lib/constants/sportTypes";
 
 interface HealthTabProps {
   categoryId: string;
@@ -24,6 +27,23 @@ interface HealthTabProps {
 
 export function HealthTab({ categoryId }: HealthTabProps) {
   const { isViewer } = useViewerModeContext();
+
+  // Fetch category sport type
+  const { data: category } = useQuery({
+    queryKey: ["category-sport-type-health", categoryId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("categories")
+        .select("rugby_type")
+        .eq("id", categoryId)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const sportType = category?.rugby_type || "";
+  const isRugby = isRugbyType(sportType);
 
   return (
     <div className="space-y-6">
@@ -41,11 +61,13 @@ export function HealthTab({ categoryId }: HealthTabProps) {
             Blessures
           </DisabledTabTrigger>
           
-          {/* Protocole Commotion - Grisé en mode viewer */}
-          <DisabledTabTrigger value="concussion" isDisabled={isViewer} className="flex items-center gap-2">
-            <Brain className="h-4 w-4" />
-            Protocole Commotion
-          </DisabledTabTrigger>
+          {/* Protocole Commotion - Uniquement pour Rugby */}
+          {isRugby && (
+            <DisabledTabTrigger value="concussion" isDisabled={isViewer} className="flex items-center gap-2">
+              <Brain className="h-4 w-4" />
+              Protocole Commotion
+            </DisabledTabTrigger>
+          )}
           
           {/* Suivi Médical - Accessible en viewer */}
           <TabsTrigger value="medical" className="flex items-center gap-2">
@@ -82,7 +104,7 @@ export function HealthTab({ categoryId }: HealthTabProps) {
           </TabsContent>
         )}
 
-        {!isViewer && (
+        {!isViewer && isRugby && (
           <TabsContent value="concussion">
             <ConcussionProtocolTab categoryId={categoryId} />
           </TabsContent>
