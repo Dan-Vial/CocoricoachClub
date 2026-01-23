@@ -13,6 +13,7 @@ import {
   hasGroupedTrainingTypes,
   type TrainingTypeOption,
 } from "@/lib/constants/trainingTypes";
+import { Plus, Dumbbell } from "lucide-react";
 
 interface GroupedTrainingTypeSelectProps {
   value: string;
@@ -20,6 +21,8 @@ interface GroupedTrainingTypeSelectProps {
   sportType?: string;
   required?: boolean;
   placeholder?: string;
+  showCustomOption?: boolean;
+  showExerciseIcon?: boolean;
 }
 
 export function GroupedTrainingTypeSelect({
@@ -28,6 +31,8 @@ export function GroupedTrainingTypeSelect({
   sportType,
   required = false,
   placeholder = "Sélectionner un type",
+  showCustomOption = false,
+  showExerciseIcon = false,
 }: GroupedTrainingTypeSelectProps) {
   const hasGroups = hasGroupedTrainingTypes(sportType);
   const groups = getTrainingTypesGrouped(sportType);
@@ -40,19 +45,32 @@ export function GroupedTrainingTypeSelect({
         <SelectTrigger>
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
-        <SelectContent className="max-h-[400px]">
+        <SelectContent className="max-h-[400px] bg-popover z-50">
           {groups.map((group) => (
             <SelectGroup key={group.category.key}>
-              <SelectLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wide bg-muted/50 py-2">
+              <SelectLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wide bg-muted py-2 px-2 sticky -top-1 z-10">
                 {group.category.label}
               </SelectLabel>
               {group.types.map((t) => (
                 <SelectItem key={t.value} value={t.value} className="pl-6">
-                  {t.label}
+                  <span className="flex items-center gap-2">
+                    {t.label}
+                    {showExerciseIcon && t.hasExercises && (
+                      <Dumbbell className="h-3 w-3 text-muted-foreground" />
+                    )}
+                  </span>
                 </SelectItem>
               ))}
             </SelectGroup>
           ))}
+          {showCustomOption && (
+            <SelectItem value="_custom">
+              <span className="flex items-center gap-2 text-primary">
+                <Plus className="h-3 w-3" />
+                Autre (personnalisé)
+              </span>
+            </SelectItem>
+          )}
         </SelectContent>
       </Select>
     );
@@ -64,12 +82,25 @@ export function GroupedTrainingTypeSelect({
       <SelectTrigger>
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
-      <SelectContent>
+      <SelectContent className="bg-popover z-50">
         {flatTypes.map((t) => (
           <SelectItem key={t.value} value={t.value}>
-            {t.label}
+            <span className="flex items-center gap-2">
+              {t.label}
+              {showExerciseIcon && t.hasExercises && (
+                <Dumbbell className="h-3 w-3 text-muted-foreground" />
+              )}
+            </span>
           </SelectItem>
         ))}
+        {showCustomOption && (
+          <SelectItem value="_custom">
+            <span className="flex items-center gap-2 text-primary">
+              <Plus className="h-3 w-3" />
+              Autre (personnalisé)
+            </span>
+          </SelectItem>
+        )}
       </SelectContent>
     </Select>
   );
