@@ -30,7 +30,7 @@ export function TestsTab({ categoryId, sportType }: TestsTabProps) {
           </TabsList>
 
           <TabsContent value="all" className="space-y-6">
-            <GenericTestsSection categoryId={categoryId} />
+            <GenericTestsSection categoryId={categoryId} sportType={sportType} />
           </TabsContent>
 
           <TabsContent value="running" className="space-y-6">

@@ -25,19 +25,23 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { UnifiedTestDialog } from "./UnifiedTestDialog";
-import { TEST_CATEGORIES, getTestLabel } from "@/lib/constants/testCategories";
+import { TEST_CATEGORIES, getTestLabel, getTestCategoriesForSport } from "@/lib/constants/testCategories";
 import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 
 interface GenericTestsSectionProps {
   categoryId: string;
+  sportType?: string;
 }
 
-export function GenericTestsSection({ categoryId }: GenericTestsSectionProps) {
+export function GenericTestsSection({ categoryId, sportType }: GenericTestsSectionProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [filterCategory, setFilterCategory] = useState<string>("all");
   const [filterTestType, setFilterTestType] = useState<string>("all");
   const queryClient = useQueryClient();
   const { isViewer } = useViewerModeContext();
+
+  // Get filtered test categories based on sport type
+  const filteredTestCategories = getTestCategoriesForSport(sportType || "");
 
   const { data: tests, isLoading } = useQuery({
     queryKey: ["generic_tests", categoryId, filterCategory, filterTestType],
@@ -75,7 +79,7 @@ export function GenericTestsSection({ categoryId }: GenericTestsSectionProps) {
     },
   });
 
-  const selectedCategory = TEST_CATEGORIES.find(c => c.value === filterCategory);
+  const selectedCategory = filteredTestCategories.find(c => c.value === filterCategory);
 
   const handleCategoryFilterChange = (value: string) => {
     setFilterCategory(value);
@@ -107,7 +111,7 @@ export function GenericTestsSection({ categoryId }: GenericTestsSectionProps) {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Toutes catégories</SelectItem>
-              {TEST_CATEGORIES.map((category) => (
+              {filteredTestCategories.map((category) => (
                 <SelectItem key={category.value} value={category.value}>
                   {category.label}
                 </SelectItem>
@@ -206,6 +210,7 @@ export function GenericTestsSection({ categoryId }: GenericTestsSectionProps) {
         open={isDialogOpen}
         onOpenChange={setIsDialogOpen}
         categoryId={categoryId}
+        sportType={sportType}
       />
     </Card>
   );
