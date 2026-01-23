@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { GroupedTrainingTypeSelect } from "@/components/category/sessions/GroupedTrainingTypeSelect";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -412,27 +413,14 @@ export function AddSessionDialog({
               <div className="space-y-2">
                 <Label htmlFor="type">Type d'entraînement *</Label>
                 {!showCustomInput ? (
-                  <Select value={type} onValueChange={handleTypeChange}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Sélectionner un type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {trainingTypes.map((t) => (
-                        <SelectItem key={t.value} value={t.value}>
-                          <span className="flex items-center gap-2">
-                            {t.label}
-                            {t.hasExercises && <Dumbbell className="h-3 w-3 text-muted-foreground" />}
-                          </span>
-                        </SelectItem>
-                      ))}
-                      <SelectItem value="_custom">
-                        <span className="flex items-center gap-2 text-primary">
-                          <Plus className="h-3 w-3" />
-                          Autre (personnalisé)
-                        </span>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <GroupedTrainingTypeSelect
+                    value={type}
+                    onValueChange={handleTypeChange}
+                    sportType={sportType}
+                    showCustomOption={true}
+                    showExerciseIcon={true}
+                    placeholder="Sélectionner un type"
+                  />
                 ) : (
                   <div className="flex gap-2">
                     <Input
