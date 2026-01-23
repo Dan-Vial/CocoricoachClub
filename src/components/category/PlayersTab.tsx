@@ -27,7 +27,7 @@ import { Badge } from "@/components/ui/badge";
 import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 import { useViewerPlayers } from "@/hooks/use-viewer-data";
 import { getDisciplineLabel, getSpecialtyLabel } from "@/lib/constants/athleticProfiles";
-import { isAthletismeCategory, isJudoCategory, isIndividualSport } from "@/lib/constants/sportTypes";
+import { isAthletismeCategory, isJudoCategory, isIndividualSport, ATHLETISME_SPECIALTIES } from "@/lib/constants/sportTypes";
 import { getPositionsForSport } from "@/lib/constants/sportPositions";
 
 import { AVIRON_ROLES } from "@/lib/constants/sportTypes";
@@ -140,32 +140,72 @@ export function PlayersTab({ categoryId }: PlayersTabProps) {
     },
   });
 
+  // Mutation pour mettre à jour la spécialité
+  const updateSpecialty = useMutation({
+    mutationFn: async ({ playerId, specialty }: { playerId: string; specialty: string }) => {
+      const { error } = await supabase
+        .from("players")
+        .update({ specialty })
+        .eq("id", playerId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["players", categoryId] });
+      toast.success("Spécialité mise à jour");
+    },
+    onError: () => {
+      toast.error("Erreur lors de la mise à jour");
+    },
+  });
+
   // Get display value for the attribute column
   const getAttributeDisplay = (player: any) => {
     if (showDiscipline) {
       if (!player.discipline) {
         return <span className="text-muted-foreground text-sm">—</span>;
       }
-      // For athletics, show discipline + specialty
+      // For athletics, show discipline + specialty (with inline edit)
       const disciplineLabel = getDisciplineLabel(player.discipline);
       const specialtyLabel = player.specialty ? getSpecialtyLabel(player.specialty) : null;
+      const availableSpecialties = isAthletics && player.discipline ? ATHLETISME_SPECIALTIES[player.discipline] || [] : [];
       
       return (
-        <div className="flex flex-wrap gap-1">
+        <div className="flex flex-wrap items-center gap-1">
           <Badge variant="outline" className="bg-primary/5">
             {disciplineLabel}
           </Badge>
-          {specialtyLabel && (
+          {isAthletics && availableSpecialties.length > 0 && !isViewer ? (
+            <Select 
+              value={player.specialty || ""} 
+              onValueChange={(val) => {
+                updateSpecialty.mutate({ playerId: player.id, specialty: val });
+              }}
+            >
+              <SelectTrigger 
+                className="h-6 w-auto min-w-[80px] px-2 text-xs border-dashed"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <SelectValue placeholder="+ Spécialité" />
+              </SelectTrigger>
+              <SelectContent onClick={(e) => e.stopPropagation()}>
+                {availableSpecialties.map((spec) => (
+                  <SelectItem key={spec.value} value={spec.value}>
+                    {spec.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : specialtyLabel ? (
             <Badge variant="secondary" className="font-normal">
               {specialtyLabel}
             </Badge>
-          )}
+          ) : null}
         </div>
       );
     }
     if (showRole) {
       return player.position ? (
-        <Badge variant="outline" className="bg-blue-500/10 text-blue-700 dark:text-blue-300">
+        <Badge variant="outline" className="bg-accent text-accent-foreground">
           {getAvironRoleLabel(player.position)}
         </Badge>
       ) : (

@@ -437,10 +437,142 @@ export const BOWLING_TESTS: FieldTest[] = [
   },
 ];
 
+// Athletics field tests
+export const ATHLETISME_TESTS: FieldTest[] = [
+  { 
+    value: "vma_test", 
+    label: "Test VMA", 
+    description: "Vitesse Maximale Aérobie",
+    unit: "km/h", 
+    inputType: "speed" 
+  },
+  { 
+    value: "cooper_test", 
+    label: "Test de Cooper", 
+    description: "Distance parcourue en 12 minutes",
+    unit: "m", 
+    inputType: "distance" 
+  },
+  { 
+    value: "sprint_30m", 
+    label: "Sprint 30m", 
+    description: "Sprint linéaire 30 mètres",
+    unit: "sec", 
+    inputType: "time" 
+  },
+  { 
+    value: "sprint_60m", 
+    label: "Sprint 60m", 
+    description: "Sprint linéaire 60 mètres",
+    unit: "sec", 
+    inputType: "time" 
+  },
+  { 
+    value: "sprint_100m", 
+    label: "Sprint 100m", 
+    description: "Sprint linéaire 100 mètres",
+    unit: "sec", 
+    inputType: "time" 
+  },
+  { 
+    value: "sprint_200m", 
+    label: "Sprint 200m", 
+    description: "Sprint 200 mètres",
+    unit: "sec", 
+    inputType: "time" 
+  },
+  { 
+    value: "reaction_time", 
+    label: "Temps de réaction", 
+    description: "Temps de réaction au départ",
+    unit: "ms", 
+    inputType: "score" 
+  },
+  { 
+    value: "block_start", 
+    label: "Test starting blocks", 
+    description: "Qualité de départ (analyse vidéo)",
+    unit: "score", 
+    inputType: "score" 
+  },
+  { 
+    value: "hurdle_technique", 
+    label: "Technique haies", 
+    description: "Évaluation technique passage haies",
+    unit: "score", 
+    inputType: "score" 
+  },
+  { 
+    value: "long_jump_approach", 
+    label: "Approche longueur", 
+    description: "Vitesse d'approche saut longueur",
+    unit: "m/s", 
+    inputType: "speed" 
+  },
+  { 
+    value: "pole_vault_approach", 
+    label: "Approche perche", 
+    description: "Vitesse d'approche saut à la perche",
+    unit: "m/s", 
+    inputType: "speed" 
+  },
+  { 
+    value: "shot_put_distance", 
+    label: "Lancer poids", 
+    description: "Distance lancer du poids",
+    unit: "m", 
+    inputType: "distance" 
+  },
+  { 
+    value: "discus_distance", 
+    label: "Lancer disque", 
+    description: "Distance lancer du disque",
+    unit: "m", 
+    inputType: "distance" 
+  },
+  { 
+    value: "javelin_distance", 
+    label: "Lancer javelot", 
+    description: "Distance lancer du javelot",
+    unit: "m", 
+    inputType: "distance" 
+  },
+  { 
+    value: "lactate_threshold", 
+    label: "Seuil lactique", 
+    description: "Vitesse au seuil lactique",
+    unit: "km/h", 
+    inputType: "speed" 
+  },
+  { 
+    value: "vo2max", 
+    label: "VO2max", 
+    description: "Consommation maximale d'oxygène",
+    unit: "ml/kg/min", 
+    inputType: "score" 
+  },
+  { 
+    value: "walking_technique", 
+    label: "Technique marche", 
+    description: "Évaluation technique marche athlétique",
+    unit: "score", 
+    inputType: "score" 
+  },
+];
+
 // Get tests for a specific sport type
 export const getFieldTestsForSport = (sportType: string): SportFieldTests => {
   // Extract base sport from subtypes (e.g., "aviron_club" -> "aviron")
   const baseSport = sportType.includes("_") ? sportType.split("_")[0].toLowerCase() : sportType.toLowerCase();
+  
+  // Check for athletics categories
+  const athleticsCategories = [
+    "athletisme", "sprints", "demi_fond", "fond", "haies", 
+    "sauts_horizontaux", "sauts_verticaux", "lancers", "combines", "marche"
+  ];
+  if (athleticsCategories.includes(baseSport)) {
+    return { sportType, sportLabel: "Athlétisme", tests: ATHLETISME_TESTS };
+  }
   
   switch (baseSport) {
     case "xv":
@@ -474,7 +606,7 @@ export const getAllFieldTests = (): FieldTest[] => {
   const allTests: FieldTest[] = [];
   const seenValues = new Set<string>();
   
-  [RUGBY_TESTS, FOOTBALL_TESTS, HANDBALL_TESTS, JUDO_TESTS, VOLLEYBALL_TESTS, BASKETBALL_TESTS, AVIRON_TESTS, BOWLING_TESTS].forEach(tests => {
+  [RUGBY_TESTS, FOOTBALL_TESTS, HANDBALL_TESTS, JUDO_TESTS, VOLLEYBALL_TESTS, BASKETBALL_TESTS, AVIRON_TESTS, BOWLING_TESTS, ATHLETISME_TESTS].forEach(tests => {
     tests.forEach(test => {
       if (!seenValues.has(test.value)) {
         seenValues.add(test.value);

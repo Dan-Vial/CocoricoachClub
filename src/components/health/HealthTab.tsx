@@ -48,7 +48,7 @@ export function HealthTab({ categoryId }: HealthTabProps) {
   return (
     <div className="space-y-6">
       <Tabs defaultValue="dashboard" className="space-y-6">
-        <TabsList className="flex-wrap h-auto gap-2">
+        <TabsList className="flex-wrap h-auto gap-2 justify-center">
           {/* Dashboard Coach - Accessible en viewer */}
           <TabsTrigger value="dashboard" className="flex items-center gap-2">
             <LayoutDashboard className="h-4 w-4" />
