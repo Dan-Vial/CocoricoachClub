@@ -53,12 +53,14 @@ export function GroupedTrainingTypeSelect({
               </SelectLabel>
               {group.types.map((t) => (
                 <SelectItem key={t.value} value={t.value} className="pl-6">
-                  <span className="flex items-center gap-2">
-                    {t.label}
-                    {showExerciseIcon && t.hasExercises && (
+                  {showExerciseIcon && t.hasExercises ? (
+                    <span className="flex items-center gap-2">
+                      {t.label}
                       <Dumbbell className="h-3 w-3 text-muted-foreground" />
-                    )}
-                  </span>
+                    </span>
+                  ) : (
+                    t.label
+                  )}
                 </SelectItem>
               ))}
             </SelectGroup>
@@ -85,12 +87,14 @@ export function GroupedTrainingTypeSelect({
       <SelectContent className="bg-popover z-50">
         {flatTypes.map((t) => (
           <SelectItem key={t.value} value={t.value}>
-            <span className="flex items-center gap-2">
-              {t.label}
-              {showExerciseIcon && t.hasExercises && (
+            {showExerciseIcon && t.hasExercises ? (
+              <span className="flex items-center gap-2">
+                {t.label}
                 <Dumbbell className="h-3 w-3 text-muted-foreground" />
-              )}
-            </span>
+              </span>
+            ) : (
+              t.label
+            )}
           </SelectItem>
         ))}
         {showCustomOption && (
