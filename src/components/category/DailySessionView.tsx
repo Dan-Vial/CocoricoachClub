@@ -31,6 +31,7 @@ import {
   type WellnessEntry 
 } from "@/lib/wellnessCalculations";
 import { cn } from "@/lib/utils";
+import { useFieldMode } from "@/contexts/FieldModeContext";
 
 interface DailySessionViewProps {
   categoryId: string;
@@ -47,7 +48,7 @@ interface AtRiskPlayer {
 }
 
 export function DailySessionView({ categoryId }: DailySessionViewProps) {
-  const [fieldMode, setFieldMode] = useState(false);
+  const { fieldMode, setFieldMode } = useFieldMode();
   const [showOnlyAtRisk, setShowOnlyAtRisk] = useState(false);
   const today = format(new Date(), "yyyy-MM-dd");
 
