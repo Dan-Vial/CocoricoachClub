@@ -371,6 +371,7 @@ export interface CardioBlockConfig {
   showReps: boolean;
   showSets: boolean;
   showWorkRest: boolean;
+  showRestBetweenRounds: boolean;
   durationLabel: string;
   roundsLabel: string;
 }
@@ -384,6 +385,7 @@ export const getCardioBlockConfig = (method: string): CardioBlockConfig => {
         showReps: true,
         showSets: false,
         showWorkRest: false,
+        showRestBetweenRounds: false,
         durationLabel: "Durée AMRAP (min)",
         roundsLabel: "",
       };
@@ -394,6 +396,7 @@ export const getCardioBlockConfig = (method: string): CardioBlockConfig => {
         showReps: true,
         showSets: false,
         showWorkRest: false,
+        showRestBetweenRounds: false,
         durationLabel: "",
         roundsLabel: "Tours à compléter",
       };
@@ -404,6 +407,7 @@ export const getCardioBlockConfig = (method: string): CardioBlockConfig => {
         showReps: true,
         showSets: false,
         showWorkRest: false,
+        showRestBetweenRounds: true,
         durationLabel: "",
         roundsLabel: "Nombre de tours",
       };
@@ -414,6 +418,7 @@ export const getCardioBlockConfig = (method: string): CardioBlockConfig => {
         showReps: true,
         showSets: false,
         showWorkRest: false,
+        showRestBetweenRounds: false,
         durationLabel: "Durée EMOM (min)",
         roundsLabel: "",
       };
@@ -424,6 +429,7 @@ export const getCardioBlockConfig = (method: string): CardioBlockConfig => {
         showReps: false,
         showSets: false,
         showWorkRest: true,
+        showRestBetweenRounds: false,
         durationLabel: "",
         roundsLabel: "Nombre de cycles",
       };
@@ -434,6 +440,7 @@ export const getCardioBlockConfig = (method: string): CardioBlockConfig => {
         showReps: true,
         showSets: false,
         showWorkRest: false,
+        showRestBetweenRounds: false,
         durationLabel: "",
         roundsLabel: "",
       };
@@ -444,6 +451,7 @@ export const getCardioBlockConfig = (method: string): CardioBlockConfig => {
         showReps: true,
         showSets: true,
         showWorkRest: false,
+        showRestBetweenRounds: false,
         durationLabel: "",
         roundsLabel: "",
       };

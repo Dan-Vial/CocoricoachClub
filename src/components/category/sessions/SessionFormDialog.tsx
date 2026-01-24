@@ -107,6 +107,7 @@ interface BlockConfig {
   rounds?: number;
   work_seconds?: number;
   rest_seconds?: number;
+  rest_between_rounds?: number;
 }
 
 interface Exercise {
@@ -161,9 +162,9 @@ interface ExerciseGroup {
 }
 
 // Droppable zone component for exercises
-function DroppableExerciseZone({ children }: { children: React.ReactNode }) {
+function DroppableExerciseZone({ children, id = "exercise-drop-zone" }: { children: React.ReactNode; id?: string }) {
   const { setNodeRef, isOver } = useDroppable({
-    id: "exercise-drop-zone",
+    id,
   });
 
   return (
@@ -172,6 +173,26 @@ function DroppableExerciseZone({ children }: { children: React.ReactNode }) {
       className={cn(
         "h-full transition-colors rounded-lg",
         isOver && "bg-primary/5 ring-2 ring-primary ring-dashed"
+      )}
+    >
+      {children}
+    </div>
+  );
+}
+
+// Droppable zone for method groups (superset, triset, etc.)
+function DroppableGroupZone({ children, groupId, isActive }: { children: React.ReactNode; groupId: string; isActive: boolean }) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: `group-${groupId}`,
+    data: { groupId },
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={cn(
+        "transition-all rounded-lg",
+        isActive && isOver && "ring-2 ring-primary ring-dashed bg-primary/10"
       )}
     >
       {children}
@@ -590,7 +611,47 @@ export function SessionFormDialog({
     const droppedExercise = active.data.current;
     if (!droppedExercise) return;
 
-    // Add the dropped exercise to the list
+    const overId = String(over.id);
+    
+    // Check if dropped on a group zone
+    if (overId.startsWith("group-")) {
+      const groupId = overId.replace("group-", "");
+      const groupExercises = exercises.filter(e => e.group_id === groupId);
+      const groupMethod = groupExercises[0]?.set_type || "normal";
+      const maxExercises = getMaxExercisesForMethod(groupMethod);
+      
+      if (groupExercises.length >= maxExercises) {
+        toast.error(`Maximum ${maxExercises} exercices pour cette méthode`);
+        return;
+      }
+      
+      const newExercise: Exercise = {
+        exercise_name: droppedExercise.name,
+        exercise_category: droppedExercise.category,
+        sets: 3,
+        reps: "10",
+        weight_kg: null,
+        weight_percent_rm: null,
+        weight_mode: "kg",
+        rest_seconds: 90,
+        notes: "",
+        order_index: exercises.length,
+        library_exercise_id: droppedExercise.id,
+        set_type: groupMethod,
+        group_id: groupId,
+        group_order: groupExercises.length + 1,
+        erg_data: undefined,
+        drop_sets: undefined,
+        cluster_sets: undefined,
+        block_config: undefined,
+      };
+      
+      setExercises([...exercises, newExercise]);
+      toast.success(`${droppedExercise.name} ajouté au bloc`);
+      return;
+    }
+
+    // Add the dropped exercise to the list (normal drop)
     const newExercise: Exercise = {
       exercise_name: droppedExercise.name,
       exercise_category: droppedExercise.category,
@@ -1459,16 +1520,21 @@ export function SessionFormDialog({
     const isCardioBlock = isCardioBlockMethod(group.method);
     const cardioConfig = isCardioBlock ? getCardioBlockConfig(group.method) : null;
     const blockConfig = blockConfigs[group.groupId] || {};
+    const canAcceptMore = group.exercises.length < maxExercises;
 
     return (
-      <div
-        key={group.groupId}
-        className={cn(
-          "rounded-xl border-2 p-4 space-y-3",
-          styleConfig.borderColor,
-          styleConfig.bgColor
-        )}
+      <DroppableGroupZone 
+        key={group.groupId} 
+        groupId={group.groupId} 
+        isActive={!!activeExercise && canAcceptMore}
       >
+        <div
+          className={cn(
+            "rounded-xl border-2 p-4 space-y-3",
+            styleConfig.borderColor,
+            styleConfig.bgColor
+          )}
+        >
         {/* Group header */}
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-3">
@@ -1562,6 +1628,19 @@ export function SessionFormDialog({
                 </div>
               </>
             )}
+            {cardioConfig.showRestBetweenRounds && (
+              <div className="flex items-center gap-2">
+                <Label className="text-xs text-muted-foreground">Repos entre tours (s)</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  className="h-8 w-20 text-xs"
+                  value={blockConfig.rest_between_rounds || ""}
+                  onChange={(e) => updateBlockConfig(group.groupId!, "rest_between_rounds", e.target.value ? parseInt(e.target.value) : undefined)}
+                  placeholder="60"
+                />
+              </div>
+            )}
           </div>
         )}
 
@@ -1611,7 +1690,8 @@ export function SessionFormDialog({
             />
           </div>
         )}
-      </div>
+        </div>
+      </DroppableGroupZone>
     );
   };
 
