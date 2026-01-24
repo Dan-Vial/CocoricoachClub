@@ -107,6 +107,10 @@ function PlayerDetailsContent() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["player", playerId] });
+      // Also invalidate the players list so changes appear immediately in the list
+      if (player?.category_id) {
+        queryClient.invalidateQueries({ queryKey: ["players", player.category_id] });
+      }
       toast.success("Mis à jour avec succès");
       setIsEditingPosition(false);
       // Reset specialty when discipline changes for athletics
