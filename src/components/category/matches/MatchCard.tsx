@@ -516,6 +516,7 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
           matchId={match.id}
           sportType={sportType}
           competitionName={match.competition || match.opponent || "Compétition"}
+          competitionDate={match.match_date}
         />
       )}
 

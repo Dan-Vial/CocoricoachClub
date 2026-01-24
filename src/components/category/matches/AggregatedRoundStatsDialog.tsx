@@ -10,8 +10,12 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart3, Trophy, Target, Percent, Circle, Swords, Ship } from "lucide-react";
+import { BarChart3, Trophy, Target, Percent, Circle, Swords, Ship, Printer, FileDown } from "lucide-react";
 import { getAggregatedStatsForSport } from "@/lib/constants/sportStats";
+import { toast } from "sonner";
+import jsPDF from "jspdf";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
 
 interface AggregatedRoundStatsDialogProps {
   open: boolean;
@@ -19,6 +23,7 @@ interface AggregatedRoundStatsDialogProps {
   matchId: string;
   sportType: string;
   competitionName: string;
+  competitionDate?: string;
 }
 
 interface PlayerAggregatedStats {
@@ -31,6 +36,22 @@ interface PlayerAggregatedStats {
   bestTime?: number;
   avgRanking?: number;
   stats: Record<string, number>;
+  // Judo specific computed stats
+  judoComputed?: {
+    winPercentage: number;
+    ipponPerCombat: number;
+    wazaariPerCombat: number;
+    avgCombatDuration: number;
+    avgShidoPerCombat: number;
+    goldenScorePercent: number;
+    goldenScoreWins: number;
+    goldenScoreLosses: number;
+    nageWazaPercent: number;
+    neWazaPercent: number;
+    winsBeforeLimit: number;
+    lostByPenaltyPercent: number;
+    dominantSide: string;
+  };
 }
 
 export function AggregatedRoundStatsDialog({
@@ -39,6 +60,7 @@ export function AggregatedRoundStatsDialog({
   matchId,
   sportType,
   competitionName,
+  competitionDate,
 }: AggregatedRoundStatsDialogProps) {
   const isJudo = sportType.toLowerCase().includes("judo");
   const isBowling = sportType.toLowerCase().includes("bowling");
@@ -116,6 +138,58 @@ export function AggregatedRoundStatsDialog({
       });
     });
 
+    // Compute Judo-specific aggregated stats
+    playerMap.forEach((pStats) => {
+      if (isJudo && pStats.roundCount > 0) {
+        const totalCombats = pStats.roundCount;
+        const wins = pStats.wins;
+        const losses = pStats.losses;
+        
+        // Calculate computed stats
+        const totalIppon = pStats.stats.victoryModeIppon || 0;
+        const totalWazaari = pStats.stats.victoryModeWazaari || 0;
+        const totalDuration = pStats.stats.combatDuration || 0;
+        const totalShido = pStats.stats.shidoReceived || 0;
+        const totalGoldenScore = pStats.stats.goldenScore || 0;
+        const totalNageWaza = pStats.stats.techniqueNageWaza || 0;
+        const totalNeWaza = pStats.stats.techniqueNeWaza || 0;
+        const totalDominantRight = pStats.stats.dominantSideRight || 0;
+        const totalDominantLeft = pStats.stats.dominantSideLeft || 0;
+        const totalHansoku = pStats.stats.hansokuMake || 0;
+        
+        // Wins in golden score - estimate from combats with GS that are wins
+        // For now, assume GS wins = combats with goldenScore=1 that are also wins
+        const gsWins = Math.min(totalGoldenScore, wins);
+        const gsLosses = Math.max(0, totalGoldenScore - gsWins);
+        
+        // Wins before limit = wins by ippon or waza-ari (not decision)
+        const winsBeforeLimit = totalIppon + totalWazaari;
+        const winsBeforeLimitPercent = wins > 0 ? (winsBeforeLimit / wins) * 100 : 0;
+        
+        // Lost by penalty = losses where hansoku-make happened
+        const lostByPenalty = totalHansoku;
+        const lostByPenaltyPercent = losses > 0 ? (lostByPenalty / losses) * 100 : 0;
+        
+        pStats.judoComputed = {
+          winPercentage: totalCombats > 0 ? (wins / totalCombats) * 100 : 0,
+          ipponPerCombat: totalCombats > 0 ? totalIppon / totalCombats : 0,
+          wazaariPerCombat: totalCombats > 0 ? totalWazaari / totalCombats : 0,
+          avgCombatDuration: totalCombats > 0 ? totalDuration / totalCombats : 0,
+          avgShidoPerCombat: totalCombats > 0 ? totalShido / totalCombats : 0,
+          goldenScorePercent: totalCombats > 0 ? (totalGoldenScore / totalCombats) * 100 : 0,
+          goldenScoreWins: gsWins,
+          goldenScoreLosses: gsLosses,
+          nageWazaPercent: (totalNageWaza + totalNeWaza) > 0 
+            ? (totalNageWaza / (totalNageWaza + totalNeWaza)) * 100 : 50,
+          neWazaPercent: (totalNageWaza + totalNeWaza) > 0 
+            ? (totalNeWaza / (totalNageWaza + totalNeWaza)) * 100 : 50,
+          winsBeforeLimit: winsBeforeLimitPercent,
+          lostByPenaltyPercent,
+          dominantSide: totalDominantRight >= totalDominantLeft ? "Droite" : "Gauche",
+        };
+      }
+    });
+
     playerStats.push(...playerMap.values());
   }
 
@@ -126,10 +200,17 @@ export function AggregatedRoundStatsDialog({
     return `${mins}:${secs.padStart(5, '0')}`;
   };
 
+  // Format duration in min:sec
+  const formatDuration = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.round(seconds % 60);
+    return `${mins}'${secs.toString().padStart(2, '0')}''`;
+  };
+
   // Get the stat label and format value
   const formatStatValue = (key: string, value: number, roundCount: number): string => {
     // For percentages, calculate average
-    if (key.toLowerCase().includes("percentage") || key.toLowerCase().includes("rate")) {
+    if (key.toLowerCase().includes("percentage") || key.toLowerCase().includes("rate") || key.toLowerCase().includes("percent")) {
       return `${(value / Math.max(1, roundCount)).toFixed(1)}%`;
     }
     // For scores, show total if bowling
@@ -157,13 +238,33 @@ export function AggregatedRoundStatsDialog({
       singlePinCount: "Quilles seules",
       singlePinConverted: "Q. seules converties",
       singlePinConversionRate: "% Conv. Q. seules",
-      // Judo
-      ippon: "Ippon",
-      wazaari: "Waza-ari",
-      yuko: "Yuko",
-      shido: "Shido",
+      // Judo - Per combat
+      combatResult: "Résultat",
+      victoryModeIppon: "Victoires par Ippon",
+      victoryModeWazaari: "Victoires par Waza-ari",
+      victoryModeDecision: "Victoires par Décision",
+      victoryModeHansoku: "Victoires par Hansoku",
+      finalScore: "Score total",
+      combatDuration: "Durée totale (sec)",
+      attackAttempts: "Attaques tentées",
+      attackEffective: "Attaques efficaces",
+      techniqueNageWaza: "Techniques Nage-waza",
+      techniqueNeWaza: "Techniques Ne-waza",
+      shidoReceived: "Shido reçus",
+      shidoProvoked: "Shido provoqués",
       hansokuMake: "Hansoku-make",
-      goldenScore: "Golden Score",
+      groundTimeSeconds: "Temps au sol (sec)",
+      immobilizationAttempts: "Tent. immobilisation",
+      armLockAttempts: "Tent. clé de bras",
+      chokeAttempts: "Tent. étranglement",
+      neWazaSuccess: "Réussites ne-waza",
+      effectiveEngagementTime: "Temps engagement (sec)",
+      passivityPhases: "Phases passivité",
+      goldenScore: "Combats en Golden Score",
+      goldenScoreDuration: "Durée Golden Score (sec)",
+      attacksReceived: "Attaques subies",
+      scoresConceded: "Scores concédés",
+      attacksNeutralized: "Attaques neutralisées",
       // Aviron
       strokeRate: "Coups/minute",
       heartRate: "FC moyenne",
@@ -183,12 +284,180 @@ export function AggregatedRoundStatsDialog({
     }
     if (isJudo) {
       return [
-        { label: "Ippon", value: stats.ippon || 0, suffix: "" },
-        { label: "Waza-ari", value: stats.wazaari || 0, suffix: "" },
-        { label: "Shido", value: stats.shido || 0, suffix: "" },
+        { label: "Ippon", value: stats.victoryModeIppon || 0, suffix: "" },
+        { label: "Waza-ari", value: stats.victoryModeWazaari || 0, suffix: "" },
+        { label: "Shido reçus", value: stats.shidoReceived || 0, suffix: "" },
       ];
     }
     return [];
+  };
+
+  // PDF Export function
+  const exportToPDF = () => {
+    if (playerStats.length === 0) {
+      toast.error("Aucune statistique à exporter");
+      return;
+    }
+
+    try {
+      const pdf = new jsPDF();
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      let yPos = 20;
+
+      // Header
+      pdf.setFontSize(18);
+      pdf.setFont("helvetica", "bold");
+      pdf.text(`Statistiques - ${competitionName}`, pageWidth / 2, yPos, { align: "center" });
+      yPos += 8;
+
+      // Date
+      if (competitionDate) {
+        pdf.setFontSize(12);
+        pdf.setFont("helvetica", "normal");
+        const formattedDate = format(new Date(competitionDate), "d MMMM yyyy", { locale: fr });
+        pdf.text(formattedDate, pageWidth / 2, yPos, { align: "center" });
+        yPos += 8;
+      }
+
+      pdf.setFontSize(10);
+      pdf.text(`Généré le ${format(new Date(), "d MMMM yyyy à HH:mm", { locale: fr })}`, pageWidth / 2, yPos, { align: "center" });
+      yPos += 15;
+
+      // For each player
+      playerStats.forEach((player, playerIndex) => {
+        // Check if we need a new page
+        if (yPos > 250) {
+          pdf.addPage();
+          yPos = 20;
+        }
+
+        // Player header
+        pdf.setFillColor(59, 130, 246); // Blue
+        pdf.rect(10, yPos - 5, pageWidth - 20, 10, "F");
+        pdf.setTextColor(255, 255, 255);
+        pdf.setFontSize(12);
+        pdf.setFont("helvetica", "bold");
+        pdf.text(player.playerName, 15, yPos + 2);
+        pdf.text(`${player.roundCount} ${roundLabel}`, pageWidth - 15, yPos + 2, { align: "right" });
+        pdf.setTextColor(0, 0, 0);
+        yPos += 15;
+
+        // Win/Loss record
+        pdf.setFontSize(10);
+        pdf.setFont("helvetica", "normal");
+        pdf.text(`Victoires: ${player.wins} | Défaites: ${player.losses}${player.draws > 0 ? ` | Nuls: ${player.draws}` : ""}`, 15, yPos);
+        yPos += 8;
+
+        // Judo specific computed stats
+        if (isJudo && player.judoComputed) {
+          const jc = player.judoComputed;
+
+          // Section: Résultats
+          pdf.setFillColor(240, 240, 240);
+          pdf.rect(10, yPos - 3, pageWidth - 20, 7, "F");
+          pdf.setFont("helvetica", "bold");
+          pdf.text("RÉSULTATS DE LA COMPÉTITION", 15, yPos + 2);
+          yPos += 12;
+          pdf.setFont("helvetica", "normal");
+          pdf.text(`% de victoires: ${jc.winPercentage.toFixed(1)}%`, 15, yPos);
+          yPos += 6;
+
+          // Section: Scoring
+          pdf.setFillColor(240, 240, 240);
+          pdf.rect(10, yPos - 3, pageWidth - 20, 7, "F");
+          pdf.setFont("helvetica", "bold");
+          pdf.text("SCORING", 15, yPos + 2);
+          yPos += 12;
+          pdf.setFont("helvetica", "normal");
+          pdf.text(`Ippon/combat: ${jc.ipponPerCombat.toFixed(2)} | Waza-ari/combat: ${jc.wazaariPerCombat.toFixed(2)}`, 15, yPos);
+          yPos += 6;
+          pdf.text(`% victoires avant limite: ${jc.winsBeforeLimit.toFixed(1)}%`, 15, yPos);
+          yPos += 8;
+
+          // Section: Attaque & Style
+          pdf.setFillColor(240, 240, 240);
+          pdf.rect(10, yPos - 3, pageWidth - 20, 7, "F");
+          pdf.setFont("helvetica", "bold");
+          pdf.text("ATTAQUE & STYLE", 15, yPos + 2);
+          yPos += 12;
+          pdf.setFont("helvetica", "normal");
+          pdf.text(`% Nage-waza: ${jc.nageWazaPercent.toFixed(1)}% | % Ne-waza: ${jc.neWazaPercent.toFixed(1)}%`, 15, yPos);
+          yPos += 6;
+          pdf.text(`Côté dominant: ${jc.dominantSide}`, 15, yPos);
+          yPos += 8;
+
+          // Section: Discipline
+          pdf.setFillColor(240, 240, 240);
+          pdf.rect(10, yPos - 3, pageWidth - 20, 7, "F");
+          pdf.setFont("helvetica", "bold");
+          pdf.text("DISCIPLINE", 15, yPos + 2);
+          yPos += 12;
+          pdf.setFont("helvetica", "normal");
+          pdf.text(`Moyenne Shido/combat: ${jc.avgShidoPerCombat.toFixed(2)}`, 15, yPos);
+          yPos += 6;
+          pdf.text(`% combats perdus par pénalités: ${jc.lostByPenaltyPercent.toFixed(1)}%`, 15, yPos);
+          yPos += 8;
+
+          // Section: Physique & Endurance
+          pdf.setFillColor(240, 240, 240);
+          pdf.rect(10, yPos - 3, pageWidth - 20, 7, "F");
+          pdf.setFont("helvetica", "bold");
+          pdf.text("PHYSIQUE & ENDURANCE", 15, yPos + 2);
+          yPos += 12;
+          pdf.setFont("helvetica", "normal");
+          pdf.text(`Temps moyen combats: ${formatDuration(jc.avgCombatDuration)}`, 15, yPos);
+          yPos += 6;
+          pdf.text(`% combats en Golden Score: ${jc.goldenScorePercent.toFixed(1)}%`, 15, yPos);
+          yPos += 6;
+          pdf.text(`Performance GS: ${jc.goldenScoreWins}V / ${jc.goldenScoreLosses}D`, 15, yPos);
+          yPos += 10;
+        }
+
+        // Generic stats display
+        if (!isJudo && Object.keys(player.stats).length > 0) {
+          pdf.setFillColor(240, 240, 240);
+          pdf.rect(10, yPos - 3, pageWidth - 20, 7, "F");
+          pdf.setFont("helvetica", "bold");
+          pdf.text("STATISTIQUES DÉTAILLÉES", 15, yPos + 2);
+          yPos += 12;
+          pdf.setFont("helvetica", "normal");
+
+          Object.entries(player.stats)
+            .filter(([key]) => !key.includes("bowlingFrames"))
+            .forEach(([key, value]) => {
+              if (yPos > 270) {
+                pdf.addPage();
+                yPos = 20;
+              }
+              pdf.text(`${getStatLabel(key)}: ${formatStatValue(key, value, player.roundCount)}`, 15, yPos);
+              yPos += 5;
+            });
+          yPos += 5;
+        }
+
+        // Aviron best time
+        if (isAviron && player.bestTime) {
+          pdf.text(`Meilleur temps: ${formatTime(player.bestTime)}`, 15, yPos);
+          yPos += 10;
+        }
+
+        // Separator between players
+        if (playerIndex < playerStats.length - 1) {
+          yPos += 5;
+          pdf.setDrawColor(200, 200, 200);
+          pdf.line(10, yPos, pageWidth - 10, yPos);
+          yPos += 10;
+        }
+      });
+
+      // Save PDF
+      const filename = `stats_${competitionName.replace(/[^a-zA-Z0-9]/g, "_")}_${format(new Date(), "yyyy-MM-dd")}.pdf`;
+      pdf.save(filename);
+      toast.success("PDF exporté avec succès");
+    } catch (error) {
+      console.error("Erreur export PDF:", error);
+      toast.error("Erreur lors de l'export PDF");
+    }
   };
 
   return (
@@ -199,9 +468,22 @@ export function AggregatedRoundStatsDialog({
             <BarChart3 className="h-5 w-5" />
             Statistiques - {competitionName}
           </DialogTitle>
-          <p className="text-sm text-muted-foreground">
-            Résumé des statistiques agrégées depuis les {roundLabel.toLowerCase()}
-          </p>
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">
+              Résumé des statistiques agrégées depuis les {roundLabel.toLowerCase()}
+            </p>
+            {playerStats.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={exportToPDF}
+                className="gap-2"
+              >
+                <FileDown className="h-4 w-4" />
+                Exporter PDF
+              </Button>
+            )}
+          </div>
         </DialogHeader>
 
         <ScrollArea className="flex-1">
@@ -241,46 +523,181 @@ export function AggregatedRoundStatsDialog({
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    {/* Highlighted stats */}
-                    {getHighlightedStats(player.stats, player.roundCount).length > 0 && (
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-                        {getHighlightedStats(player.stats, player.roundCount).map((stat, idx) => (
-                          <div key={idx} className="p-3 rounded-lg bg-primary/5 text-center">
-                            <p className="text-xs text-muted-foreground">{stat.label}</p>
-                            <p className="text-lg font-bold text-primary">
-                              {stat.value}{stat.suffix}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Best time for Aviron */}
-                    {isAviron && player.bestTime && (
-                      <div className="p-3 rounded-lg bg-accent/50 mb-4">
-                        <p className="text-xs text-muted-foreground">Meilleur temps</p>
-                        <p className="text-lg font-bold text-primary">{formatTime(player.bestTime)}</p>
-                      </div>
-                    )}
-
-                    {/* All stats */}
-                    {Object.keys(player.stats).length > 0 && (
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                        {Object.entries(player.stats)
-                          .filter(([key]) => !key.includes("bowlingFrames"))
-                          .map(([key, value]) => (
-                            <div key={key} className="flex justify-between items-center p-2 rounded bg-muted/30">
-                              <span className="text-sm text-muted-foreground">{getStatLabel(key)}</span>
-                              <span className="font-medium">{formatStatValue(key, value, player.roundCount)}</span>
+                    {/* Judo-specific comprehensive stats */}
+                    {isJudo && player.judoComputed && (
+                      <div className="space-y-4">
+                        {/* Section: Résultats */}
+                        <div>
+                          <h4 className="text-sm font-semibold text-primary mb-2 flex items-center gap-2">
+                            <Trophy className="h-4 w-4" />
+                            Résultats de la compétition
+                          </h4>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                            <div className="p-2 rounded bg-muted/50 text-center">
+                              <p className="text-xs text-muted-foreground">Combats</p>
+                              <p className="font-bold">{player.roundCount}</p>
                             </div>
-                          ))}
+                            <div className="p-2 rounded bg-primary/10 text-center">
+                              <p className="text-xs text-muted-foreground">% Victoires</p>
+                              <p className="font-bold text-primary">{player.judoComputed.winPercentage.toFixed(1)}%</p>
+                            </div>
+                            <div className="p-2 rounded bg-green-100 dark:bg-green-900/20 text-center">
+                              <p className="text-xs text-muted-foreground">Victoires</p>
+                              <p className="font-bold text-green-600">{player.wins}</p>
+                            </div>
+                            <div className="p-2 rounded bg-red-100 dark:bg-red-900/20 text-center">
+                              <p className="text-xs text-muted-foreground">Défaites</p>
+                              <p className="font-bold text-red-600">{player.losses}</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Section: Scoring */}
+                        <div>
+                          <h4 className="text-sm font-semibold text-primary mb-2 flex items-center gap-2">
+                            <Target className="h-4 w-4" />
+                            Scoring
+                          </h4>
+                          <div className="grid grid-cols-3 gap-2">
+                            <div className="p-2 rounded bg-muted/50 text-center">
+                              <p className="text-xs text-muted-foreground">Ippon/combat</p>
+                              <p className="font-bold">{player.judoComputed.ipponPerCombat.toFixed(2)}</p>
+                            </div>
+                            <div className="p-2 rounded bg-muted/50 text-center">
+                              <p className="text-xs text-muted-foreground">Waza-ari/combat</p>
+                              <p className="font-bold">{player.judoComputed.wazaariPerCombat.toFixed(2)}</p>
+                            </div>
+                            <div className="p-2 rounded bg-muted/50 text-center">
+                              <p className="text-xs text-muted-foreground">% avant limite</p>
+                              <p className="font-bold">{player.judoComputed.winsBeforeLimit.toFixed(1)}%</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Section: Attaque & Style */}
+                        <div>
+                          <h4 className="text-sm font-semibold text-primary mb-2 flex items-center gap-2">
+                            <Swords className="h-4 w-4" />
+                            Attaque & Style
+                          </h4>
+                          <div className="grid grid-cols-3 gap-2">
+                            <div className="p-2 rounded bg-muted/50 text-center">
+                              <p className="text-xs text-muted-foreground">% Nage-waza</p>
+                              <p className="font-bold">{player.judoComputed.nageWazaPercent.toFixed(1)}%</p>
+                            </div>
+                            <div className="p-2 rounded bg-muted/50 text-center">
+                              <p className="text-xs text-muted-foreground">% Ne-waza</p>
+                              <p className="font-bold">{player.judoComputed.neWazaPercent.toFixed(1)}%</p>
+                            </div>
+                            <div className="p-2 rounded bg-muted/50 text-center">
+                              <p className="text-xs text-muted-foreground">Côté dominant</p>
+                              <p className="font-bold">{player.judoComputed.dominantSide}</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Section: Discipline */}
+                        <div>
+                          <h4 className="text-sm font-semibold text-primary mb-2">Discipline</h4>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div className="p-2 rounded bg-muted/50 text-center">
+                              <p className="text-xs text-muted-foreground">Moy. Shido/combat</p>
+                              <p className="font-bold">{player.judoComputed.avgShidoPerCombat.toFixed(2)}</p>
+                            </div>
+                            <div className="p-2 rounded bg-muted/50 text-center">
+                              <p className="text-xs text-muted-foreground">% perdus par pénalités</p>
+                              <p className="font-bold">{player.judoComputed.lostByPenaltyPercent.toFixed(1)}%</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Section: Physique & Endurance */}
+                        <div>
+                          <h4 className="text-sm font-semibold text-primary mb-2">Physique & Endurance</h4>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                            <div className="p-2 rounded bg-muted/50 text-center">
+                              <p className="text-xs text-muted-foreground">Durée moy.</p>
+                              <p className="font-bold">{formatDuration(player.judoComputed.avgCombatDuration)}</p>
+                            </div>
+                            <div className="p-2 rounded bg-muted/50 text-center">
+                              <p className="text-xs text-muted-foreground">% Golden Score</p>
+                              <p className="font-bold">{player.judoComputed.goldenScorePercent.toFixed(1)}%</p>
+                            </div>
+                            <div className="p-2 rounded bg-green-100 dark:bg-green-900/20 text-center">
+                              <p className="text-xs text-muted-foreground">Vic. en GS</p>
+                              <p className="font-bold text-green-600">{player.judoComputed.goldenScoreWins}</p>
+                            </div>
+                            <div className="p-2 rounded bg-red-100 dark:bg-red-900/20 text-center">
+                              <p className="text-xs text-muted-foreground">Déf. en GS</p>
+                              <p className="font-bold text-red-600">{player.judoComputed.goldenScoreLosses}</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* All raw stats */}
+                        {Object.keys(player.stats).length > 0 && (
+                          <div>
+                            <h4 className="text-sm font-semibold text-muted-foreground mb-2">Détails bruts</h4>
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                              {Object.entries(player.stats)
+                                .filter(([key]) => !key.includes("bowlingFrames"))
+                                .map(([key, value]) => (
+                                  <div key={key} className="flex justify-between items-center p-2 rounded bg-muted/30">
+                                    <span className="text-xs text-muted-foreground">{getStatLabel(key)}</span>
+                                    <span className="font-medium text-sm">{formatStatValue(key, value, player.roundCount)}</span>
+                                  </div>
+                                ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
 
-                    {Object.keys(player.stats).length === 0 && (
-                      <p className="text-sm text-muted-foreground text-center py-2">
-                        Pas de statistiques détaillées disponibles
-                      </p>
+                    {/* Non-Judo sports: Original display */}
+                    {!isJudo && (
+                      <>
+                        {/* Highlighted stats */}
+                        {getHighlightedStats(player.stats, player.roundCount).length > 0 && (
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                            {getHighlightedStats(player.stats, player.roundCount).map((stat, idx) => (
+                              <div key={idx} className="p-3 rounded-lg bg-primary/5 text-center">
+                                <p className="text-xs text-muted-foreground">{stat.label}</p>
+                                <p className="text-lg font-bold text-primary">
+                                  {stat.value}{stat.suffix}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Best time for Aviron */}
+                        {isAviron && player.bestTime && (
+                          <div className="p-3 rounded-lg bg-accent/50 mb-4">
+                            <p className="text-xs text-muted-foreground">Meilleur temps</p>
+                            <p className="text-lg font-bold text-primary">{formatTime(player.bestTime)}</p>
+                          </div>
+                        )}
+
+                        {/* All stats */}
+                        {Object.keys(player.stats).length > 0 && (
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                            {Object.entries(player.stats)
+                              .filter(([key]) => !key.includes("bowlingFrames"))
+                              .map(([key, value]) => (
+                                <div key={key} className="flex justify-between items-center p-2 rounded bg-muted/30">
+                                  <span className="text-sm text-muted-foreground">{getStatLabel(key)}</span>
+                                  <span className="font-medium">{formatStatValue(key, value, player.roundCount)}</span>
+                                </div>
+                              ))}
+                          </div>
+                        )}
+
+                        {Object.keys(player.stats).length === 0 && (
+                          <p className="text-sm text-muted-foreground text-center py-2">
+                            Pas de statistiques détaillées disponibles
+                          </p>
+                        )}
+                      </>
                     )}
                   </CardContent>
                 </Card>
@@ -289,8 +706,14 @@ export function AggregatedRoundStatsDialog({
           )}
         </ScrollArea>
 
-        <div className="flex justify-end pt-4 border-t flex-shrink-0">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+        <div className="flex justify-between pt-4 border-t flex-shrink-0">
+          {playerStats.length > 0 && (
+            <Button variant="outline" onClick={exportToPDF} className="gap-2">
+              <Printer className="h-4 w-4" />
+              Imprimer
+            </Button>
+          )}
+          <Button variant="outline" onClick={() => onOpenChange(false)} className={playerStats.length === 0 ? "ml-auto" : ""}>
             Fermer
           </Button>
         </div>
