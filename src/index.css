@@ -180,7 +180,44 @@ All colors MUST be HSL.
     --chart-4: 32 89% 60%;
     --chart-5: 280 55% 60%;
   }
-}
+  }
+
+  /* Field Mode - High contrast dark theme for outdoor use */
+  .field-mode {
+    --background: 215 28% 10%;
+    --foreground: 210 20% 95%;
+
+    --card: 215 25% 14%;
+    --card-foreground: 210 20% 95%;
+
+    --popover: 215 25% 14%;
+    --popover-foreground: 210 20% 95%;
+
+    --primary: 200 85% 55%;
+    --primary-foreground: 215 28% 10%;
+
+    --secondary: 215 25% 20%;
+    --secondary-foreground: 210 20% 95%;
+
+    --muted: 215 20% 18%;
+    --muted-foreground: 210 15% 65%;
+
+    --accent: 200 85% 55%;
+    --accent-foreground: 215 28% 10%;
+
+    --destructive: 0 85% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --warning: 38 95% 55%;
+    --warning-foreground: 0 0% 0%;
+
+    --success: 145 65% 50%;
+    --success-foreground: 0 0% 0%;
+
+    --border: 215 25% 25%;
+    --input: 215 25% 20%;
+    --ring: 200 85% 55%;
+  }
 
 @layer base {
   * {
