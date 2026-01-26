@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -62,6 +62,21 @@ export function AddWellnessDialog({ open, onOpenChange, categoryId }: AddWellnes
       return data;
     },
   });
+
+  // Reset form values when player changes (except playerId and date)
+  useEffect(() => {
+    if (playerId) {
+      setSleepQuality(3);
+      setSleepDuration(3);
+      setGeneralFatigue(3);
+      setStressLevel(3);
+      setSorenessUpper(1);
+      setSorenessLower(1);
+      setHasSpecificPain(false);
+      setPainLocation("");
+      setNotes("");
+    }
+  }, [playerId]);
 
   const addWellness = useMutation({
     mutationFn: async () => {
