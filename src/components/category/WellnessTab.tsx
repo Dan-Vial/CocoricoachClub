@@ -6,13 +6,16 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, AlertTriangle } from "lucide-react";
+import { Plus, AlertTriangle, Calendar, X } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { AddWellnessDialog } from "./AddWellnessDialog";
 import { InjuryRiskAssessment } from "./InjuryRiskAssessment";
 import { MenstrualCycleSection } from "./MenstrualCycleSection";
 import { useViewerModeContext } from "@/contexts/ViewerModeContext";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
 
 interface WellnessTabProps {
   categoryId: string;
@@ -32,6 +35,7 @@ const getScoreBadge = (score: number) => {
 
 export function WellnessTab({ categoryId }: WellnessTabProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [filterDate, setFilterDate] = useState<Date | undefined>(undefined);
   const { isViewer } = useViewerModeContext();
 
   const { data: category } = useQuery({
@@ -66,7 +70,7 @@ export function WellnessTab({ categoryId }: WellnessTabProps) {
     return <div className="text-muted-foreground">Chargement...</div>;
   }
 
-  const calculateWellnessScore = (entry: typeof wellnessData[0]) => {
+  const calculateWellnessScore = (entry: NonNullable<typeof wellnessData>[0]) => {
     const avg = (
       entry.sleep_quality +
       entry.sleep_duration +
@@ -77,6 +81,11 @@ export function WellnessTab({ categoryId }: WellnessTabProps) {
     ) / 6;
     return avg.toFixed(1);
   };
+
+  // Filter wellness data by selected date
+  const filteredWellnessData = filterDate
+    ? wellnessData?.filter(entry => entry.tracking_date === format(filterDate, "yyyy-MM-dd"))
+    : wellnessData;
 
   return (
     <div className="space-y-6">
@@ -92,26 +101,62 @@ export function WellnessTab({ categoryId }: WellnessTabProps) {
         <TabsContent value="tracking">
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                   <CardTitle>Wellness & Soreness</CardTitle>
                   <CardDescription>
                     Suivi du bien-être et des douleurs musculaires des joueurs
                   </CardDescription>
                 </div>
-                {!isViewer && (
-                  <Button onClick={() => setIsDialogOpen(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Nouvelle entrée
-                  </Button>
-                )}
+                <div className="flex items-center gap-2">
+                  {/* Date filter */}
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "justify-start text-left font-normal",
+                          !filterDate && "text-muted-foreground"
+                        )}
+                      >
+                        <Calendar className="mr-2 h-4 w-4" />
+                        {filterDate ? format(filterDate, "dd MMM yyyy", { locale: fr }) : "Filtrer par date"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="end">
+                      <CalendarComponent
+                        mode="single"
+                        selected={filterDate}
+                        onSelect={setFilterDate}
+                        locale={fr}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  {filterDate && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setFilterDate(undefined)}
+                      title="Effacer le filtre"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                  {!isViewer && (
+                    <Button onClick={() => setIsDialogOpen(true)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Nouvelle entrée
+                    </Button>
+                  )}
+                </div>
               </div>
             </CardHeader>
             <CardContent>
-        {!wellnessData || wellnessData.length === 0 ? (
+        {!filteredWellnessData || filteredWellnessData.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
-            <p>Aucune donnée wellness enregistrée.</p>
-            {!isViewer && (
+            <p>{filterDate ? `Aucune donnée wellness pour le ${format(filterDate, "dd MMMM yyyy", { locale: fr })}.` : "Aucune donnée wellness enregistrée."}</p>
+            {!isViewer && !filterDate && (
               <Button 
                 variant="outline" 
                 className="mt-4"
@@ -141,7 +186,7 @@ export function WellnessTab({ categoryId }: WellnessTabProps) {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {wellnessData.map((entry) => (
+                  {filteredWellnessData.map((entry) => (
                     <TableRow key={entry.id}>
                       <TableCell className="font-medium">
                         {entry.players?.name}
