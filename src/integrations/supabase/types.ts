@@ -5052,6 +5052,7 @@ export type Database = {
           general_fatigue: number
           has_specific_pain: boolean
           id: string
+          notes: string | null
           pain_location: string | null
           player_id: string
           sleep_duration: number
@@ -5067,6 +5068,7 @@ export type Database = {
           general_fatigue: number
           has_specific_pain?: boolean
           id?: string
+          notes?: string | null
           pain_location?: string | null
           player_id: string
           sleep_duration: number
@@ -5082,6 +5084,7 @@ export type Database = {
           general_fatigue?: number
           has_specific_pain?: boolean
           id?: string
+          notes?: string | null
           pain_location?: string | null
           player_id?: string
           sleep_duration?: number

@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 
 interface AddWellnessDialogProps {
@@ -47,6 +48,7 @@ export function AddWellnessDialog({ open, onOpenChange, categoryId }: AddWellnes
   const [sorenessLower, setSorenessLower] = useState(1);
   const [hasSpecificPain, setHasSpecificPain] = useState(false);
   const [painLocation, setPainLocation] = useState("");
+  const [notes, setNotes] = useState("");
 
   const { data: players } = useQuery({
     queryKey: ["players", categoryId],
@@ -75,6 +77,7 @@ export function AddWellnessDialog({ open, onOpenChange, categoryId }: AddWellnes
         soreness_lower_body: sorenessLower,
         has_specific_pain: hasSpecificPain,
         pain_location: hasSpecificPain ? painLocation : null,
+        notes: notes.trim() || null,
       });
       if (error) throw error;
     },
@@ -104,6 +107,7 @@ export function AddWellnessDialog({ open, onOpenChange, categoryId }: AddWellnes
     setSorenessLower(1);
     setHasSpecificPain(false);
     setPainLocation("");
+    setNotes("");
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -253,6 +257,21 @@ export function AddWellnessDialog({ open, onOpenChange, categoryId }: AddWellnes
                 />
               </div>
             )}
+          </div>
+
+          {/* Notes / Commentaires section */}
+          <div className="space-y-2">
+            <Label htmlFor="wellness-notes">Notes / Commentaires du coach</Label>
+            <Textarea
+              id="wellness-notes"
+              placeholder="Ex: Mauvaise nuit suite à un voyage, stress lié à un examen, fatigue post-compétition..."
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              className="min-h-[80px]"
+            />
+            <p className="text-xs text-muted-foreground">
+              Notez les raisons des scores élevés ou tout contexte important
+            </p>
           </div>
 
           <div className="flex justify-end gap-2">
