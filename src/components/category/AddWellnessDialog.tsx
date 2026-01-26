@@ -80,6 +80,7 @@ export function AddWellnessDialog({ open, onOpenChange, categoryId }: AddWellnes
 
   const addWellness = useMutation({
     mutationFn: async () => {
+      const playerName = players?.find(p => p.id === playerId)?.name || "Athlète";
       const { error } = await supabase.from("wellness_tracking").insert({
         player_id: playerId,
         category_id: categoryId,
@@ -95,12 +96,16 @@ export function AddWellnessDialog({ open, onOpenChange, categoryId }: AddWellnes
         notes: notes.trim() || null,
       });
       if (error) throw error;
+      return playerName;
     },
-    onSuccess: () => {
+    onSuccess: (playerName) => {
       queryClient.invalidateQueries({ queryKey: ["wellness_tracking", categoryId] });
-      toast.success("Données wellness enregistrées");
+      toast.success(`Wellness enregistré pour ${playerName}`);
+      // Reset form but keep dialog open and keep the same date
+      const currentDate = date;
       resetForm();
-      onOpenChange(false);
+      setDate(currentDate);
+      // Dialog stays open for next athlete
     },
     onError: (error: any) => {
       if (error.code === "23505") {
