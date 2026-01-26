@@ -19,7 +19,9 @@ import {
   Activity,
   TrendingDown,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  Smile,
+  Plus
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -32,6 +34,7 @@ import {
 } from "@/lib/wellnessCalculations";
 import { cn } from "@/lib/utils";
 import { useFieldMode } from "@/contexts/FieldModeContext";
+import { AddWellnessDialog } from "./AddWellnessDialog";
 
 interface DailySessionViewProps {
   categoryId: string;
@@ -50,6 +53,7 @@ interface AtRiskPlayer {
 export function DailySessionView({ categoryId }: DailySessionViewProps) {
   const { fieldMode, setFieldMode } = useFieldMode();
   const [showOnlyAtRisk, setShowOnlyAtRisk] = useState(false);
+  const [wellnessDialogOpen, setWellnessDialogOpen] = useState(false);
   const today = format(new Date(), "yyyy-MM-dd");
 
   // Fetch today's sessions
@@ -338,6 +342,41 @@ export function DailySessionView({ categoryId }: DailySessionViewProps) {
         </div>
       </div>
 
+      {/* Quick Wellness Entry Section */}
+      <div className={cn(
+        "flex flex-wrap items-center justify-between gap-4 p-4 rounded-lg border-2",
+        fieldMode 
+          ? "bg-slate-800 border-blue-500/50" 
+          : "bg-primary/5 border-primary/20"
+      )}>
+        <div className="flex items-center gap-3">
+          <div className={cn(
+            "p-2 rounded-lg",
+            fieldMode ? "bg-blue-900/50" : "bg-primary/10"
+          )}>
+            <Smile className={cn("h-6 w-6", fieldMode ? "text-blue-400" : "text-primary")} />
+          </div>
+          <div>
+            <h3 className={cn("font-semibold", fieldMode && "text-white")}>
+              Wellness du jour
+            </h3>
+            <p className={cn("text-sm", fieldMode ? "text-slate-400" : "text-muted-foreground")}>
+              Saisir rapidement l'état d'un athlète
+            </p>
+          </div>
+        </div>
+        <Button 
+          onClick={() => setWellnessDialogOpen(true)}
+          className={cn(
+            "gap-2",
+            fieldMode && "bg-blue-600 hover:bg-blue-500"
+          )}
+        >
+          <Plus className="h-4 w-4" />
+          Ajouter Wellness
+        </Button>
+      </div>
+
       {/* Alert Summary */}
       {(criticalCount > 0 || highCount > 0) && (
         <div className={cn(
@@ -574,6 +613,13 @@ export function DailySessionView({ categoryId }: DailySessionViewProps) {
           </CardContent>
         </Card>
       </div>
+
+      {/* Wellness Dialog */}
+      <AddWellnessDialog 
+        open={wellnessDialogOpen} 
+        onOpenChange={setWellnessDialogOpen} 
+        categoryId={categoryId} 
+      />
     </div>
   );
 }
