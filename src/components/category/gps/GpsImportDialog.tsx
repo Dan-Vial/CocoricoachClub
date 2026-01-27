@@ -59,102 +59,111 @@ const METRIC_LABELS: Record<MetricKey, string> = {
   sprint_count: 'Nombre de sprints',
 };
 
-const KNOWN_COLUMN_MAPPINGS: Record<string, MetricKey> = {
-  // Player name variations
-  'player': 'player_name',
-  'player name': 'player_name',
-  'athlete': 'player_name',
-  'athlete name': 'player_name',
-  'name': 'player_name',
-  'nom': 'player_name',
-  'joueur': 'player_name',
+// Helper to normalize headers for matching (remove accents, lowercase, trim)
+const normalizeHeader = (header: string): string => {
+  return header
+    .toLowerCase()
+    .trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // Remove accents
+    .replace(/\s+/g, ' '); // Normalize spaces
+};
+
+// Function to find the best metric match for a header
+const findMetricMapping = (header: string): MetricKey | null => {
+  const normalized = normalizeHeader(header);
   
-  // Distance variations
-  'total distance': 'total_distance_m',
-  'total distance (m)': 'total_distance_m',
-  'distance (m)': 'total_distance_m',
-  'distance': 'total_distance_m',
-  'distance totale': 'total_distance_m',
-  'dist totale (m)': 'total_distance_m',
-  'dist totale': 'total_distance_m',
+  // Player name patterns
+  if (/^(player|athlete|nom|joueur|name)/.test(normalized) || 
+      /player\s*name/.test(normalized) ||
+      /athlete\s*name/.test(normalized)) {
+    return 'player_name';
+  }
   
-  // High speed distance
-  'high speed distance': 'high_speed_distance_m',
-  'high speed distance (m)': 'high_speed_distance_m',
-  'hsr': 'high_speed_distance_m',
-  'hsr (m)': 'high_speed_distance_m',
-  'high speed running': 'high_speed_distance_m',
-  'distance haute intensité': 'high_speed_distance_m',
-  'dist > 18 km/h': 'high_speed_distance_m',
-  'dist > 18km/h': 'high_speed_distance_m',
-  'dist>18km/h': 'high_speed_distance_m',
-  '%dist > 18 km/h': 'high_speed_distance_m',
+  // Max speed / Vmax patterns - CHECK FIRST before distance
+  if (/v\s*max/.test(normalized) || 
+      /vitesse\s*max/.test(normalized) ||
+      /max\s*speed/.test(normalized) ||
+      /top\s*speed/.test(normalized) ||
+      /peak\s*speed/.test(normalized) ||
+      /maximum\s*speed/.test(normalized)) {
+    return 'max_speed_ms';
+  }
   
-  // Sprint distance
-  'sprint distance': 'sprint_distance_m',
-  'sprint distance (m)': 'sprint_distance_m',
-  'sprinting': 'sprint_distance_m',
-  'distance sprint': 'sprint_distance_m',
-  'dist > 24 km/h': 'sprint_distance_m',
-  'dist > 24km/h': 'sprint_distance_m',
-  'dist>24km/h': 'sprint_distance_m',
-  'dist > 27 km/h': 'sprint_distance_m',
-  'dist > 27km/h': 'sprint_distance_m',
-  'dist>27km/h': 'sprint_distance_m',
+  // Sprint distance patterns (>24, >27 km/h)
+  if (/sprint\s*dist/.test(normalized) ||
+      /dist.*sprint/.test(normalized) ||
+      /dist.*>.*2[4-7]/.test(normalized) ||
+      /sprinting/.test(normalized)) {
+    return 'sprint_distance_m';
+  }
   
-  // Max speed
-  'max speed': 'max_speed_ms',
-  'max speed (m/s)': 'max_speed_ms',
-  'maximum speed': 'max_speed_ms',
-  'top speed': 'max_speed_ms',
-  'vitesse max': 'max_speed_ms',
-  'peak speed': 'max_speed_ms',
-  'vmax': 'max_speed_ms',
-  'vmax (km/h)': 'max_speed_ms',
-  'vmax(km/h)': 'max_speed_ms',
-  'vmax (m/s)': 'max_speed_ms',
-  'vmax(m/s)': 'max_speed_ms',
+  // High speed distance patterns (>18, >20, >21 km/h, HSR)
+  if (/hsr/.test(normalized) ||
+      /high\s*speed/.test(normalized) ||
+      /haute\s*intensite/.test(normalized) ||
+      /dist.*>.*1[8-9]/.test(normalized) ||
+      /dist.*>.*2[0-1]/.test(normalized)) {
+    return 'high_speed_distance_m';
+  }
   
-  // Player load
-  'player load': 'player_load',
-  'playerload': 'player_load',
-  'load': 'player_load',
-  'body load': 'player_load',
-  'charge joueur': 'player_load',
-  'tot pl': 'player_load',
-  'total pl': 'player_load',
-  'pl': 'player_load',
+  // Total distance patterns (must not match high speed or sprint)
+  if ((/distance\s*totale/.test(normalized) ||
+       /total\s*distance/.test(normalized) ||
+       /dist\s*totale/.test(normalized) ||
+       (normalized === 'distance') ||
+       (normalized === 'distance (m)') ||
+       /^dist\s*\(m\)$/.test(normalized)) &&
+      !normalized.includes('>') &&
+      !normalized.includes('sprint') &&
+      !normalized.includes('hsr') &&
+      !normalized.includes('high')) {
+    return 'total_distance_m';
+  }
   
-  // Accelerations
-  'accelerations': 'accelerations',
-  'accel': 'accelerations',
-  'acc': 'accelerations',
-  'accélérations': 'accelerations',
-  "nombre d'accél": 'accelerations',
-  "nombre d'accél (> 2,5 m/s)": 'accelerations',
-  "nb accel": 'accelerations',
+  // Player load patterns
+  if (/player\s*load/.test(normalized) ||
+      /playerload/.test(normalized) ||
+      /body\s*load/.test(normalized) ||
+      /charge\s*joueur/.test(normalized) ||
+      /^(tot\s*)?pl$/.test(normalized) ||
+      /^load$/.test(normalized)) {
+    return 'player_load';
+  }
   
-  // Decelerations
-  'decelerations': 'decelerations',
-  'decel': 'decelerations',
-  'dec': 'decelerations',
-  'décélérations': 'decelerations',
-  "nombre de décél": 'decelerations',
-  "nombre de décél (< 2,5 m/s)": 'decelerations',
-  "nb decel": 'decelerations',
+  // Accelerations patterns
+  if (/accel/.test(normalized) ||
+      /acc[eé]l[eé]ration/.test(normalized) ||
+      /nb\s*accel/.test(normalized) ||
+      /nombre\s*d'?accel/.test(normalized)) {
+    return 'accelerations';
+  }
   
-  // Duration
-  'duration': 'duration_minutes',
-  'duration (min)': 'duration_minutes',
-  'time': 'duration_minutes',
-  'session duration': 'duration_minutes',
-  'durée': 'duration_minutes',
+  // Decelerations patterns
+  if (/decel/.test(normalized) ||
+      /d[eé]c[eé]l[eé]ration/.test(normalized) ||
+      /nb\s*decel/.test(normalized) ||
+      /nombre\s*d[eé]?c[eé]l/.test(normalized)) {
+    return 'decelerations';
+  }
   
-  // Sprint count
-  'sprint count': 'sprint_count',
-  'sprints': 'sprint_count',
-  'number of sprints': 'sprint_count',
-  'nb sprints': 'sprint_count',
+  // Duration patterns
+  if (/duration/.test(normalized) ||
+      /duree/.test(normalized) ||
+      /session\s*time/.test(normalized) ||
+      /^time/.test(normalized)) {
+    return 'duration_minutes';
+  }
+  
+  // Sprint count patterns
+  if (/sprint\s*count/.test(normalized) ||
+      /nb\s*sprint/.test(normalized) ||
+      /number\s*of\s*sprint/.test(normalized) ||
+      /^sprints?$/.test(normalized)) {
+    return 'sprint_count';
+  }
+  
+  return null;
 };
 
 export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuccess }: GpsImportDialogProps) {
@@ -235,10 +244,9 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
       const dataRows = rows.slice(1);
       setCsvData(dataRows);
 
-      // Build column configurations with auto-mapping
+      // Build column configurations with auto-mapping using the smart matcher
       const columnConfigs: ColumnConfig[] = headerRow.map((header, index) => {
-        const headerLower = header.toLowerCase().trim();
-        const mappedTo = KNOWN_COLUMN_MAPPINGS[headerLower] || null;
+        const mappedTo = findMetricMapping(header);
         const exampleValue = dataRows[0]?.[index]?.trim() || '';
         
         return {
