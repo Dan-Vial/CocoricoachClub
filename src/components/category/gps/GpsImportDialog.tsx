@@ -14,6 +14,7 @@ import { Upload, FileText, Check, AlertCircle, Loader2, Link2, Eye, EyeOff } fro
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { parseCsvText } from "@/lib/csv";
 
 interface Player {
   id: string;
@@ -72,6 +73,11 @@ const normalizeHeader = (header: string): string => {
 // Function to find the best metric match for a header
 const findMetricMapping = (header: string): MetricKey | null => {
   const normalized = normalizeHeader(header);
+
+  // Avoid auto-mapping percentage columns (ex: "% Vmax", "%dist > 18 km/h")
+  if (normalized.includes("%") || normalized.includes("percent")) {
+    return null;
+  }
   
   // Player name patterns
   if (/^(player|athlete|nom|joueur|name)/.test(normalized) || 
@@ -214,26 +220,7 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
     const reader = new FileReader();
     reader.onload = (event) => {
       const text = event.target?.result as string;
-      const lines = text.split(/\r?\n/).filter(line => line.trim());
-      const rows = lines.map(line => {
-        const result: string[] = [];
-        let current = '';
-        let inQuotes = false;
-        
-        for (let i = 0; i < line.length; i++) {
-          const char = line[i];
-          if (char === '"') {
-            inQuotes = !inQuotes;
-          } else if ((char === ',' || char === ';') && !inQuotes) {
-            result.push(current.trim());
-            current = '';
-          } else {
-            current += char;
-          }
-        }
-        result.push(current.trim());
-        return result;
-      });
+      const { rows } = parseCsvText(text);
 
       if (rows.length < 2) {
         toast.error("Le fichier doit contenir au moins une ligne d'en-tête et une ligne de données");
@@ -247,7 +234,8 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
       // Build column configurations with auto-mapping using the smart matcher
       const columnConfigs: ColumnConfig[] = headerRow.map((header, index) => {
         const mappedTo = findMetricMapping(header);
-        const exampleValue = dataRows[0]?.[index]?.trim() || '';
+        const exampleValue =
+          dataRows.find(r => (r?.[index] ?? "").trim().length > 0)?.[index]?.trim() || "";
         
         return {
           index,
