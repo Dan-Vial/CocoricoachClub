@@ -15,6 +15,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { parseCsvText } from "@/lib/csv";
+import {
+  COLUMN_GROUP_LABELS,
+  METRIC_LABELS,
+  findMetricMapping,
+  guessColumnGroup,
+  parseNumberLoose,
+  toMetersPerSecond,
+  type ColumnGroup,
+  type MetricKey,
+} from "./gpsImportUtils";
 
 interface Player {
   id: string;
@@ -41,136 +51,10 @@ interface ColumnConfig {
   index: number;
   header: string;
   visible: boolean;
-  mappedTo: string | null; // 'player_name' | 'total_distance_m' | etc.
+  mappedTo: MetricKey | null;
+  group: ColumnGroup;
   exampleValue: string;
 }
-
-type MetricKey = 'player_name' | 'total_distance_m' | 'high_speed_distance_m' | 'sprint_distance_m' | 'max_speed_ms' | 'player_load' | 'accelerations' | 'decelerations' | 'duration_minutes' | 'sprint_count';
-
-const METRIC_LABELS: Record<MetricKey, string> = {
-  player_name: 'Nom du joueur',
-  total_distance_m: 'Distance totale (m)',
-  high_speed_distance_m: 'Distance haute intensité (m)',
-  sprint_distance_m: 'Distance sprint (m)',
-  max_speed_ms: 'Vitesse max',
-  player_load: 'Player Load',
-  accelerations: 'Accélérations',
-  decelerations: 'Décélérations',
-  duration_minutes: 'Durée (min)',
-  sprint_count: 'Nombre de sprints',
-};
-
-// Helper to normalize headers for matching (remove accents, lowercase, trim)
-const normalizeHeader = (header: string): string => {
-  return header
-    .toLowerCase()
-    .trim()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '') // Remove accents
-    .replace(/\s+/g, ' '); // Normalize spaces
-};
-
-// Function to find the best metric match for a header
-const findMetricMapping = (header: string): MetricKey | null => {
-  const normalized = normalizeHeader(header);
-
-  // Avoid auto-mapping percentage columns (ex: "% Vmax", "%dist > 18 km/h")
-  if (normalized.includes("%") || normalized.includes("percent")) {
-    return null;
-  }
-  
-  // Player name patterns
-  if (/^(player|athlete|nom|joueur|name)/.test(normalized) || 
-      /player\s*name/.test(normalized) ||
-      /athlete\s*name/.test(normalized)) {
-    return 'player_name';
-  }
-  
-  // Max speed / Vmax patterns - CHECK FIRST before distance
-  if (/v\s*max/.test(normalized) || 
-      /vitesse\s*max/.test(normalized) ||
-      /max\s*speed/.test(normalized) ||
-      /top\s*speed/.test(normalized) ||
-      /peak\s*speed/.test(normalized) ||
-      /maximum\s*speed/.test(normalized)) {
-    return 'max_speed_ms';
-  }
-  
-  // Sprint distance patterns (>24, >27 km/h)
-  if (/sprint\s*dist/.test(normalized) ||
-      /dist.*sprint/.test(normalized) ||
-      /dist.*>.*2[4-7]/.test(normalized) ||
-      /sprinting/.test(normalized)) {
-    return 'sprint_distance_m';
-  }
-  
-  // High speed distance patterns (>18, >20, >21 km/h, HSR)
-  if (/hsr/.test(normalized) ||
-      /high\s*speed/.test(normalized) ||
-      /haute\s*intensite/.test(normalized) ||
-      /dist.*>.*1[8-9]/.test(normalized) ||
-      /dist.*>.*2[0-1]/.test(normalized)) {
-    return 'high_speed_distance_m';
-  }
-  
-  // Total distance patterns (must not match high speed or sprint)
-  if ((/distance\s*totale/.test(normalized) ||
-       /total\s*distance/.test(normalized) ||
-       /dist\s*totale/.test(normalized) ||
-       (normalized === 'distance') ||
-       (normalized === 'distance (m)') ||
-       /^dist\s*\(m\)$/.test(normalized)) &&
-      !normalized.includes('>') &&
-      !normalized.includes('sprint') &&
-      !normalized.includes('hsr') &&
-      !normalized.includes('high')) {
-    return 'total_distance_m';
-  }
-  
-  // Player load patterns
-  if (/player\s*load/.test(normalized) ||
-      /playerload/.test(normalized) ||
-      /body\s*load/.test(normalized) ||
-      /charge\s*joueur/.test(normalized) ||
-      /^(tot\s*)?pl$/.test(normalized) ||
-      /^load$/.test(normalized)) {
-    return 'player_load';
-  }
-  
-  // Accelerations patterns
-  if (/accel/.test(normalized) ||
-      /acc[eé]l[eé]ration/.test(normalized) ||
-      /nb\s*accel/.test(normalized) ||
-      /nombre\s*d'?accel/.test(normalized)) {
-    return 'accelerations';
-  }
-  
-  // Decelerations patterns
-  if (/decel/.test(normalized) ||
-      /d[eé]c[eé]l[eé]ration/.test(normalized) ||
-      /nb\s*decel/.test(normalized) ||
-      /nombre\s*d[eé]?c[eé]l/.test(normalized)) {
-    return 'decelerations';
-  }
-  
-  // Duration patterns
-  if (/duration/.test(normalized) ||
-      /duree/.test(normalized) ||
-      /session\s*time/.test(normalized) ||
-      /^time/.test(normalized)) {
-    return 'duration_minutes';
-  }
-  
-  // Sprint count patterns
-  if (/sprint\s*count/.test(normalized) ||
-      /nb\s*sprint/.test(normalized) ||
-      /number\s*of\s*sprint/.test(normalized) ||
-      /^sprints?$/.test(normalized)) {
-    return 'sprint_count';
-  }
-  
-  return null;
-};
 
 export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuccess }: GpsImportDialogProps) {
   const [step, setStep] = useState<'upload' | 'columns' | 'preview' | 'importing'>('upload');
@@ -234,6 +118,7 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
       // Build column configurations with auto-mapping using the smart matcher
       const columnConfigs: ColumnConfig[] = headerRow.map((header, index) => {
         const mappedTo = findMetricMapping(header);
+        const group = guessColumnGroup(header, mappedTo);
         const exampleValue =
           dataRows.find(r => (r?.[index] ?? "").trim().length > 0)?.[index]?.trim() || "";
         
@@ -242,6 +127,7 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
           header: header || `Colonne ${index + 1}`,
           visible: true, // All columns visible by default
           mappedTo,
+          group,
           exampleValue,
         };
       });
@@ -282,6 +168,10 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
     ));
   };
 
+  const setColumnGroup = (index: number, group: ColumnGroup) => {
+    setColumns(prev => prev.map(col => (col.index === index ? { ...col, group } : col)));
+  };
+
   const setColumnMapping = (index: number, mappedTo: MetricKey | null) => {
     setColumns(prev => {
       // First, clear any existing mapping to this metric
@@ -311,8 +201,8 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
       const rawData: Record<string, string | number> = {};
       columns.forEach(col => {
         const value = row[col.index] || '';
-        const numValue = parseFloat(value.replace(',', '.'));
-        rawData[col.header] = isNaN(numValue) ? value : numValue;
+        const numValue = parseNumberLoose(value);
+        rawData[col.header] = numValue === null ? value : numValue;
       });
       
       return { 
@@ -326,12 +216,6 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
     setParsedRows(rows);
     setStep('preview');
   }, [playerNameColumnIndex, csvData, columns, matchPlayerByName]);
-
-  const parseNumber = (value: string | number | undefined): number | null => {
-    if (value === undefined || value === null || value === '') return null;
-    const num = typeof value === 'number' ? value : parseFloat(String(value).replace(',', '.'));
-    return isNaN(num) ? null : num;
-  };
 
   const getColumnValue = useCallback((rawData: Record<string, string | number>, metricKey: MetricKey): string | number | null => {
     const col = columns.find(c => c.mappedTo === metricKey);
@@ -358,15 +242,19 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
         session_name: sessionName || null,
         training_session_id: selectedSessionId || null,
         source,
-        total_distance_m: parseNumber(getColumnValue(row.rawData, 'total_distance_m')),
-        high_speed_distance_m: parseNumber(getColumnValue(row.rawData, 'high_speed_distance_m')),
-        sprint_distance_m: parseNumber(getColumnValue(row.rawData, 'sprint_distance_m')),
-        max_speed_ms: parseNumber(getColumnValue(row.rawData, 'max_speed_ms')),
-        player_load: parseNumber(getColumnValue(row.rawData, 'player_load')),
-        accelerations: parseNumber(getColumnValue(row.rawData, 'accelerations')),
-        decelerations: parseNumber(getColumnValue(row.rawData, 'decelerations')),
-        duration_minutes: parseNumber(getColumnValue(row.rawData, 'duration_minutes')),
-        sprint_count: parseNumber(getColumnValue(row.rawData, 'sprint_count')),
+        total_distance_m: parseNumberLoose(getColumnValue(row.rawData, 'total_distance_m')),
+        high_speed_distance_m: parseNumberLoose(getColumnValue(row.rawData, 'high_speed_distance_m')),
+        sprint_distance_m: parseNumberLoose(getColumnValue(row.rawData, 'sprint_distance_m')),
+        max_speed_ms: (() => {
+          const col = columns.find(c => c.mappedTo === 'max_speed_ms');
+          if (!col) return null;
+          return toMetersPerSecond(row.rawData[col.header], col.header);
+        })(),
+        player_load: parseNumberLoose(getColumnValue(row.rawData, 'player_load')),
+        accelerations: parseNumberLoose(getColumnValue(row.rawData, 'accelerations')),
+        decelerations: parseNumberLoose(getColumnValue(row.rawData, 'decelerations')),
+        duration_minutes: parseNumberLoose(getColumnValue(row.rawData, 'duration_minutes')),
+        sprint_count: parseNumberLoose(getColumnValue(row.rawData, 'sprint_count')),
         raw_data: row.rawData, // Always save ALL columns
       }));
 
@@ -378,10 +266,10 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
 
       // Update AWCR tracking with GPS Player Load
       const playersWithGpsLoad = validRows
-        .filter(row => parseNumber(getColumnValue(row.rawData, 'player_load')) !== null)
+        .filter(row => parseNumberLoose(getColumnValue(row.rawData, 'player_load')) !== null)
         .map(row => ({
           playerId: row.matchedPlayerId!,
-          playerLoad: parseNumber(getColumnValue(row.rawData, 'player_load'))
+          playerLoad: parseNumberLoose(getColumnValue(row.rawData, 'player_load'))
         }));
 
       if (playersWithGpsLoad.length > 0) {
@@ -563,6 +451,7 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
                     <TableRow>
                       <TableHead className="w-[60px]">Afficher</TableHead>
                       <TableHead>En-tête CSV</TableHead>
+                      <TableHead className="w-[200px]">Catégorie</TableHead>
                       <TableHead className="w-[180px]">Exemple</TableHead>
                       <TableHead className="w-[220px]">Mapper vers</TableHead>
                     </TableRow>
@@ -592,6 +481,20 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
                               </Badge>
                             )}
                           </div>
+                        </TableCell>
+                        <TableCell>
+                          <Select value={col.group} onValueChange={(v) => setColumnGroup(col.index, v as ColumnGroup)}>
+                            <SelectTrigger className="h-8">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {(Object.keys(COLUMN_GROUP_LABELS) as ColumnGroup[]).map((g) => (
+                                <SelectItem key={g} value={g}>
+                                  {COLUMN_GROUP_LABELS[g]}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </TableCell>
                         <TableCell className="text-muted-foreground text-sm truncate max-w-[180px]">
                           {col.exampleValue || '-'}
@@ -650,8 +553,9 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
                 </Badge>
               </div>
 
-              <ScrollArea className="h-[450px] border rounded-lg">
-                <Table>
+              <div className="h-[450px] overflow-auto border rounded-lg">
+                <div className="w-max min-w-full">
+                  <Table>
                   <TableHeader className="sticky top-0 bg-background z-10">
                     <TableRow>
                       <TableHead className="w-[60px] sticky left-0 bg-background">Import</TableHead>
@@ -660,6 +564,9 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
                       {visibleColumns.map(col => (
                         <TableHead key={col.index} className="min-w-[100px]">
                           <div className="flex flex-col">
+                            <span className="text-[11px] text-muted-foreground font-normal">
+                              {COLUMN_GROUP_LABELS[col.group]}
+                            </span>
                             <span>{col.header}</span>
                             {col.mappedTo && (
                               <span className="text-xs text-primary font-normal">
@@ -721,8 +628,9 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
                       </TableRow>
                     ))}
                   </TableBody>
-                </Table>
-              </ScrollArea>
+                  </Table>
+                </div>
+              </div>
 
               <div className="flex justify-between">
                 <Button variant="outline" onClick={() => setStep('columns')}>
