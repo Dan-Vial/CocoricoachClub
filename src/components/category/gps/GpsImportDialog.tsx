@@ -373,6 +373,26 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
 
       if (error) throw error;
 
+      // Update AWCR tracking with GPS Player Load for players that have AWCR entries on this date
+      const playersWithGpsLoad = validRows
+        .filter(row => parseNumber(row.data.player_load) !== null)
+        .map(row => ({
+          playerId: row.matchedPlayerId!,
+          playerLoad: parseNumber(row.data.player_load)
+        }));
+
+      if (playersWithGpsLoad.length > 0) {
+        // Update existing AWCR entries with GPS player load
+        for (const { playerId, playerLoad } of playersWithGpsLoad) {
+          await supabase
+            .from('awcr_tracking')
+            .update({ gps_player_load: playerLoad })
+            .eq('category_id', categoryId)
+            .eq('player_id', playerId)
+            .eq('session_date', sessionDate);
+        }
+      }
+
       toast.success(`${validRows.length} sessions GPS importées avec succès`);
       resetState();
       onSuccess();
