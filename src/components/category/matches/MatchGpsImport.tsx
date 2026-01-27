@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -23,7 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Upload, FileCheck, AlertCircle, User, Satellite, Check } from "lucide-react";
+import { Upload, AlertCircle, User, Satellite, Check, ArrowRight, Link2 } from "lucide-react";
 
 interface Player {
   id: string;
@@ -31,19 +31,17 @@ interface Player {
   position?: string;
 }
 
-interface GpsPlayerData {
+interface CsvRow {
   playerName: string;
-  matchedPlayer: Player | null;
-  total_distance_m?: number;
-  high_speed_distance_m?: number;
-  sprint_distance_m?: number;
-  max_speed_ms?: number;
-  player_load?: number;
-  accelerations?: number;
-  decelerations?: number;
-  duration_minutes?: number;
-  sprint_count?: number;
-  raw_data?: Record<string, unknown>;
+  rowIndex: number;
+  rawData: Record<string, string>;
+}
+
+interface PlayerMapping {
+  csvPlayerName: string;
+  rowIndex: number;
+  matchedPlayerId: string | null;
+  rawData: Record<string, string>;
 }
 
 interface MatchGpsImportProps {
@@ -55,8 +53,7 @@ interface MatchGpsImportProps {
   players: Player[];
 }
 
-const CSV_COLUMN_MAPPINGS: Record<string, string> = {
-  // Common column names -> our field names
+const DATA_COLUMN_MAPPINGS: Record<string, string> = {
   'total distance': 'total_distance_m',
   'total_distance': 'total_distance_m',
   'distance (m)': 'total_distance_m',
@@ -82,44 +79,36 @@ const CSV_COLUMN_MAPPINGS: Record<string, string> = {
   'sprints': 'sprint_count',
   'sprint count': 'sprint_count',
   'sprint_count': 'sprint_count',
-  'player': 'player_name',
-  'player name': 'player_name',
-  'player_name': 'player_name',
-  'name': 'player_name',
-  'athlete': 'player_name',
 };
 
 function parseCSV(csvText: string): { headers: string[]; rows: string[][] } {
   const lines = csvText.trim().split(/\r?\n/);
   if (lines.length < 2) return { headers: [], rows: [] };
   
-  const headers = lines[0].split(/[,;\t]/).map(h => h.trim().toLowerCase());
-  const rows = lines.slice(1).map(line => line.split(/[,;\t]/).map(cell => cell.trim()));
+  const parseRow = (line: string): string[] => {
+    const result: string[] = [];
+    let current = '';
+    let inQuotes = false;
+    
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      if (char === '"') {
+        inQuotes = !inQuotes;
+      } else if ((char === ',' || char === ';' || char === '\t') && !inQuotes) {
+        result.push(current.trim());
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    result.push(current.trim());
+    return result;
+  };
+  
+  const headers = parseRow(lines[0]);
+  const rows = lines.slice(1).map(line => parseRow(line));
   
   return { headers, rows };
-}
-
-function matchPlayerName(csvName: string, players: Player[]): Player | null {
-  const normalizedCsvName = csvName.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-  
-  // Try exact match first
-  let match = players.find(p => 
-    p.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") === normalizedCsvName
-  );
-  if (match) return match;
-  
-  // Try partial match (last name)
-  const csvParts = normalizedCsvName.split(/\s+/);
-  for (const part of csvParts) {
-    if (part.length < 2) continue;
-    match = players.find(p => {
-      const playerNormalized = p.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-      return playerNormalized.includes(part) || part.includes(playerNormalized.split(/\s+/).pop() || "");
-    });
-    if (match) return match;
-  }
-  
-  return null;
 }
 
 export function MatchGpsImport({
@@ -130,31 +119,39 @@ export function MatchGpsImport({
   matchDate,
   players,
 }: MatchGpsImportProps) {
-  const [gpsData, setGpsData] = useState<GpsPlayerData[]>([]);
-  const [detectedSource, setDetectedSource] = useState<string>("unknown");
+  const [step, setStep] = useState<'upload' | 'mapping'>('upload');
+  const [csvHeaders, setCsvHeaders] = useState<string[]>([]);
+  const [csvRows, setCsvRows] = useState<string[][]>([]);
+  const [selectedPlayerColumn, setSelectedPlayerColumn] = useState<string>('');
+  const [playerMappings, setPlayerMappings] = useState<PlayerMapping[]>([]);
+  const [detectedSource, setDetectedSource] = useState<string>("manual");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
 
   const resetState = () => {
-    setGpsData([]);
-    setDetectedSource("unknown");
+    setStep('upload');
+    setCsvHeaders([]);
+    setCsvRows([]);
+    setSelectedPlayerColumn('');
+    setPlayerMappings([]);
+    setDetectedSource("manual");
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
   };
 
-  const safeParseFloat = (value: string | undefined): number | undefined => {
-    if (!value || value.trim() === '') return undefined;
+  const safeParseFloat = (value: string | undefined): number | null => {
+    if (!value || value.trim() === '') return null;
     const cleaned = value.replace(',', '.').replace(/[^\d.-]/g, '');
     const num = parseFloat(cleaned);
-    return isNaN(num) ? undefined : num;
+    return isNaN(num) ? null : num;
   };
 
-  const safeParseInt = (value: string | undefined): number | undefined => {
-    if (!value || value.trim() === '') return undefined;
+  const safeParseInt = (value: string | undefined): number | null => {
+    if (!value || value.trim() === '') return null;
     const cleaned = value.replace(/[^\d-]/g, '');
     const num = parseInt(cleaned, 10);
-    return isNaN(num) ? undefined : num;
+    return isNaN(num) ? null : num;
   };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -178,76 +175,21 @@ export function MatchGpsImport({
         }
 
         // Detect source based on columns
+        const headerStr = headers.join(' ').toLowerCase();
         let source = "manual";
-        if (headers.some(h => h.includes("catapult"))) source = "catapult";
-        else if (headers.some(h => h.includes("statsports"))) source = "statsports";
-        else if (headers.some(h => h.includes("polar"))) source = "polar";
-        else if (headers.some(h => h.includes("gpexe"))) source = "gpexe";
+        if (headerStr.includes("catapult")) source = "catapult";
+        else if (headerStr.includes("statsports")) source = "statsports";
+        else if (headerStr.includes("polar")) source = "polar";
+        else if (headerStr.includes("gpexe")) source = "gpexe";
         setDetectedSource(source);
 
-        // Map columns
-        const columnMap: Record<string, number> = {};
-        headers.forEach((header, index) => {
-          const mapped = CSV_COLUMN_MAPPINGS[header];
-          if (mapped) columnMap[mapped] = index;
-        });
-
-        // Check if we have a player column
-        if (columnMap.player_name === undefined) {
-          toast.error("Colonne 'joueur' ou 'player' non trouvée dans le fichier CSV");
-          return;
-        }
-
-        // Parse rows with error handling
-        const parsedData: GpsPlayerData[] = [];
+        setCsvHeaders(headers);
+        setCsvRows(rows);
         
-        for (const row of rows) {
-          try {
-            if (row.length === 0 || !row.some(cell => cell?.trim())) continue;
-            
-            const playerName = columnMap.player_name !== undefined && row[columnMap.player_name] 
-              ? row[columnMap.player_name].trim() 
-              : "";
-            
-            if (!playerName) continue;
-
-            const rawData: Record<string, unknown> = {};
-            headers.forEach((header, idx) => {
-              if (row[idx] !== undefined) {
-                rawData[header] = row[idx];
-              }
-            });
-            
-            parsedData.push({
-              playerName,
-              matchedPlayer: matchPlayerName(playerName, players),
-              total_distance_m: safeParseFloat(row[columnMap.total_distance_m]),
-              high_speed_distance_m: safeParseFloat(row[columnMap.high_speed_distance_m]),
-              sprint_distance_m: safeParseFloat(row[columnMap.sprint_distance_m]),
-              max_speed_ms: safeParseFloat(row[columnMap.max_speed_ms]),
-              player_load: safeParseFloat(row[columnMap.player_load]),
-              accelerations: safeParseInt(row[columnMap.accelerations]),
-              decelerations: safeParseInt(row[columnMap.decelerations]),
-              duration_minutes: safeParseFloat(row[columnMap.duration_minutes]),
-              sprint_count: safeParseInt(row[columnMap.sprint_count]),
-              raw_data: rawData,
-            });
-          } catch (rowError) {
-            console.warn("Erreur parsing ligne CSV:", rowError);
-            // Continue with other rows
-          }
-        }
-
-        if (parsedData.length === 0) {
-          toast.error("Aucune donnée valide trouvée dans le fichier");
-          return;
-        }
-
-        setGpsData(parsedData);
-        toast.success(`${parsedData.length} lignes importées`);
+        toast.success(`${rows.length} lignes chargées - Sélectionnez la colonne joueur`);
       } catch (error) {
         console.error("Erreur lors du parsing CSV:", error);
-        toast.error("Erreur lors de la lecture du fichier CSV. Vérifiez le format.");
+        toast.error("Erreur lors de la lecture du fichier CSV");
       }
     };
     
@@ -258,47 +200,99 @@ export function MatchGpsImport({
     reader.readAsText(file);
   };
 
-  const updatePlayerMatch = (index: number, playerId: string) => {
-    setGpsData(prev => {
-      const updated = [...prev];
-      updated[index] = {
-        ...updated[index],
-        matchedPlayer: players.find(p => p.id === playerId) || null,
-      };
-      return updated;
+  const handlePlayerColumnSelect = (columnName: string) => {
+    setSelectedPlayerColumn(columnName);
+    
+    const columnIndex = csvHeaders.findIndex(h => h === columnName);
+    if (columnIndex === -1) return;
+
+    // Extract unique player names from the selected column
+    const uniquePlayers = new Map<string, { rowIndex: number; rawData: Record<string, string> }>();
+    
+    csvRows.forEach((row, rowIndex) => {
+      const playerName = row[columnIndex]?.trim();
+      if (playerName && !uniquePlayers.has(playerName)) {
+        const rawData: Record<string, string> = {};
+        csvHeaders.forEach((header, idx) => {
+          rawData[header] = row[idx] || '';
+        });
+        uniquePlayers.set(playerName, { rowIndex, rawData });
+      }
     });
+
+    // Create mappings with auto-match attempt
+    const mappings: PlayerMapping[] = Array.from(uniquePlayers.entries()).map(([name, data]) => {
+      // Try to auto-match
+      const normalizedName = name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      const autoMatch = players.find(p => {
+        const pName = p.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        return pName === normalizedName || 
+               pName.includes(normalizedName) || 
+               normalizedName.includes(pName);
+      });
+
+      return {
+        csvPlayerName: name,
+        rowIndex: data.rowIndex,
+        matchedPlayerId: autoMatch?.id || null,
+        rawData: data.rawData,
+      };
+    });
+
+    setPlayerMappings(mappings);
+    setStep('mapping');
+  };
+
+  const updatePlayerMapping = (csvPlayerName: string, playerId: string | null) => {
+    setPlayerMappings(prev => 
+      prev.map(m => 
+        m.csvPlayerName === csvPlayerName 
+          ? { ...m, matchedPlayerId: playerId === "__none__" ? null : playerId }
+          : m
+      )
+    );
+  };
+
+  const getDataValue = (rawData: Record<string, string>, fieldName: string): string | undefined => {
+    for (const [header, value] of Object.entries(rawData)) {
+      const normalizedHeader = header.toLowerCase().trim();
+      if (DATA_COLUMN_MAPPINGS[normalizedHeader] === fieldName) {
+        return value;
+      }
+    }
+    return undefined;
   };
 
   const saveGpsData = useMutation({
     mutationFn: async () => {
-      const matchedData = gpsData.filter(d => d.matchedPlayer);
+      const matchedMappings = playerMappings.filter(m => m.matchedPlayerId);
       
-      if (matchedData.length === 0) {
+      if (matchedMappings.length === 0) {
         throw new Error("Aucun athlète associé");
       }
 
-      const gpsRecords = matchedData.map(d => ({
-        player_id: d.matchedPlayer!.id,
+      const gpsRecords = matchedMappings.map(m => ({
+        player_id: m.matchedPlayerId!,
         category_id: categoryId,
         match_id: matchId,
         session_date: matchDate,
         source: detectedSource,
-        total_distance_m: d.total_distance_m ?? null,
-        high_speed_distance_m: d.high_speed_distance_m ?? null,
-        sprint_distance_m: d.sprint_distance_m ?? null,
-        max_speed_ms: d.max_speed_ms ?? null,
-        player_load: d.player_load ?? null,
-        accelerations: d.accelerations ?? null,
-        decelerations: d.decelerations ?? null,
-        duration_minutes: d.duration_minutes ?? null,
-        sprint_count: d.sprint_count ?? null,
-        raw_data: d.raw_data ? JSON.parse(JSON.stringify(d.raw_data)) : null,
+        total_distance_m: safeParseFloat(getDataValue(m.rawData, 'total_distance_m')),
+        high_speed_distance_m: safeParseFloat(getDataValue(m.rawData, 'high_speed_distance_m')),
+        sprint_distance_m: safeParseFloat(getDataValue(m.rawData, 'sprint_distance_m')),
+        max_speed_ms: safeParseFloat(getDataValue(m.rawData, 'max_speed_ms')),
+        player_load: safeParseFloat(getDataValue(m.rawData, 'player_load')),
+        accelerations: safeParseInt(getDataValue(m.rawData, 'accelerations')),
+        decelerations: safeParseInt(getDataValue(m.rawData, 'decelerations')),
+        duration_minutes: safeParseFloat(getDataValue(m.rawData, 'duration_minutes')),
+        sprint_count: safeParseInt(getDataValue(m.rawData, 'sprint_count')),
+        raw_data: m.rawData,
       }));
 
       const { error } = await supabase.from("gps_sessions").insert(gpsRecords);
       if (error) throw error;
       
-      return matchedData.length;
+      return matchedMappings.length;
     },
     onSuccess: (count) => {
       queryClient.invalidateQueries({ queryKey: ["gps-sessions", categoryId] });
@@ -313,49 +307,89 @@ export function MatchGpsImport({
     },
   });
 
-  const matchedCount = gpsData.filter(d => d.matchedPlayer).length;
-  const unmatchedCount = gpsData.filter(d => !d.matchedPlayer).length;
+  const matchedCount = playerMappings.filter(m => m.matchedPlayerId).length;
+  const unmatchedCount = playerMappings.filter(m => !m.matchedPlayerId).length;
+  const validPlayers = players.filter(p => p.id && p.id.trim() !== "");
 
   return (
-    <Dialog open={open} onOpenChange={(open) => { if (!open) resetState(); onOpenChange(open); }}>
-      <DialogContent className="sm:max-w-[600px] max-h-[85vh] flex flex-col">
+    <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) resetState(); onOpenChange(isOpen); }}>
+      <DialogContent className="sm:max-w-[700px] max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Satellite className="h-5 w-5" />
             Importer données GPS - Match
           </DialogTitle>
           <DialogDescription>
-            Importez un fichier CSV contenant les données GPS des athlètes pour ce match.
+            {step === 'upload' && "Chargez votre fichier CSV et sélectionnez la colonne contenant les noms des joueurs."}
+            {step === 'mapping' && "Associez chaque joueur du fichier à un athlète de votre équipe."}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 flex-1 min-h-0">
-          {/* File Upload */}
-          <div className="space-y-2">
-            <Label>Fichier CSV</Label>
-            <div className="flex gap-2">
-              <Input
-                ref={fileInputRef}
-                type="file"
-                accept=".csv"
-                onChange={handleFileUpload}
-                className="flex-1"
-              />
-              {gpsData.length > 0 && (
-                <Button variant="outline" size="icon" onClick={resetState}>
-                  <AlertCircle className="h-4 w-4" />
-                </Button>
+        <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+          {step === 'upload' && (
+            <div className="space-y-4">
+              {/* File Upload */}
+              <div className="space-y-2">
+                <Label>Fichier CSV</Label>
+                <Input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".csv"
+                  onChange={handleFileUpload}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Formats supportés: Catapult, Statsports, Polar, GPExe ou CSV générique
+                </p>
+              </div>
+
+              {/* Column Selection */}
+              {csvHeaders.length > 0 && (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline">{detectedSource}</Badge>
+                    <Badge variant="secondary">{csvRows.length} lignes</Badge>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label>Sélectionnez la colonne contenant les noms des joueurs</Label>
+                    <Select 
+                      value={selectedPlayerColumn} 
+                      onValueChange={handlePlayerColumnSelect}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Choisir la colonne joueur..." />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-[300px]">
+                        {csvHeaders.map((header, idx) => (
+                          <SelectItem key={`${header}-${idx}`} value={header}>
+                            <div className="flex items-center gap-2">
+                              <User className="h-3 w-3" />
+                              <span className="font-medium">{header}</span>
+                              <span className="text-xs text-muted-foreground ml-2">
+                                (ex: {csvRows[0]?.[idx] || 'vide'})
+                              </span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              )}
+
+              {csvHeaders.length === 0 && (
+                <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                  <Upload className="h-12 w-12 mb-4 opacity-50" />
+                  <p>Sélectionnez un fichier CSV à importer</p>
+                </div>
               )}
             </div>
-            <p className="text-xs text-muted-foreground">
-              Formats supportés: Catapult, Statsports, Polar, GPExe ou CSV générique
-            </p>
-          </div>
+          )}
 
-          {/* Preview */}
-          {gpsData.length > 0 && (
-            <>
-              <div className="flex items-center gap-2 flex-wrap">
+          {step === 'mapping' && (
+            <div className="flex flex-col h-full min-h-0">
+              {/* Status badges */}
+              <div className="flex items-center gap-2 flex-wrap mb-4">
                 <Badge variant="outline">{detectedSource}</Badge>
                 <Badge variant="secondary" className="text-primary">
                   <Check className="h-3 w-3 mr-1" />
@@ -367,69 +401,100 @@ export function MatchGpsImport({
                     {unmatchedCount} non associés
                   </Badge>
                 )}
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setStep('upload')}
+                  className="ml-auto"
+                >
+                  ← Retour
+                </Button>
               </div>
 
-              <ScrollArea className="flex-1 max-h-[300px]">
+              {/* Player mappings */}
+              <ScrollArea className="flex-1 pr-4" style={{ maxHeight: 'calc(90vh - 280px)' }}>
                 <div className="space-y-2">
-                  {gpsData.map((data, index) => (
-                    <Card key={index} className={data.matchedPlayer ? "border-primary/30" : "border-destructive/30"}>
-                      <CardContent className="p-3">
-                        <div className="flex items-center gap-3">
-                          <div className="flex-1">
-                            <p className="text-sm font-medium">{data.playerName}</p>
-                            <div className="flex gap-2 text-xs text-muted-foreground mt-1 flex-wrap">
-                              {data.total_distance_m && <span>{Math.round(data.total_distance_m)}m</span>}
-                              {data.max_speed_ms && <span>{data.max_speed_ms.toFixed(1)} m/s</span>}
-                              {data.sprint_count && <span>{data.sprint_count} sprints</span>}
+                  {playerMappings.map((mapping) => {
+                    const matchedPlayer = validPlayers.find(p => p.id === mapping.matchedPlayerId);
+                    const distance = getDataValue(mapping.rawData, 'total_distance_m');
+                    const maxSpeed = getDataValue(mapping.rawData, 'max_speed_ms');
+                    
+                    return (
+                      <Card 
+                        key={mapping.csvPlayerName} 
+                        className={mapping.matchedPlayerId ? "border-primary/30 bg-primary/5" : "border-destructive/30"}
+                      >
+                        <CardContent className="p-3">
+                          <div className="flex items-center gap-3">
+                            {/* CSV Player Name */}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium truncate">{mapping.csvPlayerName}</p>
+                              <div className="flex gap-2 text-xs text-muted-foreground mt-1">
+                                {distance && <span>{Math.round(parseFloat(distance.replace(',', '.')) || 0)}m</span>}
+                                {maxSpeed && <span>{parseFloat(maxSpeed.replace(',', '.'))?.toFixed(1) || '-'} m/s</span>}
+                              </div>
                             </div>
-                          </div>
-                          <Select
-                            value={data.matchedPlayer?.id || ""}
-                            onValueChange={(value) => updatePlayerMatch(index, value)}
-                          >
-                            <SelectTrigger className="w-[180px]">
-                              <SelectValue placeholder="Associer un athlète" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {players
-                                .filter((player) => player.id && player.id.trim() !== "")
-                                .map((player) => (
+
+                            {/* Arrow */}
+                            <div className="flex items-center">
+                              <ArrowRight className={`h-4 w-4 ${mapping.matchedPlayerId ? 'text-primary' : 'text-muted-foreground'}`} />
+                            </div>
+
+                            {/* Athlete Select */}
+                            <Select
+                              value={mapping.matchedPlayerId || "__none__"}
+                              onValueChange={(value) => updatePlayerMapping(mapping.csvPlayerName, value)}
+                            >
+                              <SelectTrigger className="w-[200px]">
+                                <SelectValue placeholder="Associer un athlète" />
+                              </SelectTrigger>
+                              <SelectContent className="max-h-[250px] z-[200]">
+                                <SelectItem value="__none__">
+                                  <span className="text-muted-foreground">Non associé</span>
+                                </SelectItem>
+                                {validPlayers.map((player) => (
                                   <SelectItem key={player.id} value={player.id}>
                                     <div className="flex items-center gap-2">
                                       <User className="h-3 w-3" />
-                                      {player.name}
+                                      <span>{player.name}</span>
+                                      {player.position && (
+                                        <Badge variant="outline" className="text-xs ml-1">
+                                          {player.position}
+                                        </Badge>
+                                      )}
                                     </div>
                                   </SelectItem>
                                 ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                              </SelectContent>
+                            </Select>
+
+                            {/* Status indicator */}
+                            {mapping.matchedPlayerId && (
+                              <Check className="h-4 w-4 text-primary" />
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </div>
               </ScrollArea>
-            </>
-          )}
-
-          {gpsData.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-              <Upload className="h-12 w-12 mb-4 opacity-50" />
-              <p>Sélectionnez un fichier CSV à importer</p>
             </div>
           )}
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="mt-4">
           <Button variant="outline" onClick={() => { resetState(); onOpenChange(false); }}>
             Annuler
           </Button>
-          <Button
-            onClick={() => saveGpsData.mutate()}
-            disabled={saveGpsData.isPending || matchedCount === 0}
-          >
-            {saveGpsData.isPending ? "Import..." : `Importer ${matchedCount} données`}
-          </Button>
+          {step === 'mapping' && (
+            <Button
+              onClick={() => saveGpsData.mutate()}
+              disabled={saveGpsData.isPending || matchedCount === 0}
+            >
+              {saveGpsData.isPending ? "Import..." : `Importer ${matchedCount} données`}
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
