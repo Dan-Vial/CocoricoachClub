@@ -3,11 +3,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Trophy, Calendar, Activity } from "lucide-react";
+import { Trophy, Calendar } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { getStatsForSport, getStatCategories, type StatField } from "@/lib/constants/sportStats";
+import { getStatCategories } from "@/lib/constants/sportStats";
+import { useStatPreferences } from "@/hooks/use-stat-preferences";
 
 interface PlayerMatchesTabProps {
   playerId: string;
@@ -17,7 +18,10 @@ interface PlayerMatchesTabProps {
 }
 
 export function PlayerMatchesTab({ playerId, categoryId, playerName, sportType = "XV" }: PlayerMatchesTabProps) {
-  const sportStats = getStatsForSport(sportType);
+  const { stats: sportStats, isLoading: loadingStats } = useStatPreferences({
+    categoryId,
+    sportType,
+  });
   const statCategories = getStatCategories(sportType);
 
   const { data: matchStats, isLoading } = useQuery({
@@ -51,7 +55,7 @@ export function PlayerMatchesTab({ playerId, categoryId, playerName, sportType =
     },
   });
 
-  if (isLoading) {
+  if (isLoading || loadingStats) {
     return <p className="text-muted-foreground">Chargement des statistiques...</p>;
   }
 

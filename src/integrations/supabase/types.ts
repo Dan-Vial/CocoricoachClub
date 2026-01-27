@@ -493,6 +493,7 @@ export type Database = {
       category_stat_preferences: {
         Row: {
           category_id: string
+          enabled_custom_stats: string[] | null
           enabled_stats: string[]
           id: string
           sport_type: string
@@ -501,6 +502,7 @@ export type Database = {
         }
         Insert: {
           category_id: string
+          enabled_custom_stats?: string[] | null
           enabled_stats?: string[]
           id?: string
           sport_type: string
@@ -509,6 +511,7 @@ export type Database = {
         }
         Update: {
           category_id?: string
+          enabled_custom_stats?: string[] | null
           enabled_stats?: string[]
           id?: string
           sport_type?: string
@@ -860,6 +863,59 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "conversations_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      custom_stats: {
+        Row: {
+          category_id: string
+          category_type: string
+          created_at: string
+          created_by: string | null
+          id: string
+          key: string
+          label: string
+          max_value: number | null
+          measurement_type: string
+          min_value: number | null
+          short_label: string
+          unit: string | null
+        }
+        Insert: {
+          category_id: string
+          category_type?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          key: string
+          label: string
+          max_value?: number | null
+          measurement_type?: string
+          min_value?: number | null
+          short_label: string
+          unit?: string | null
+        }
+        Update: {
+          category_id?: string
+          category_type?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          key?: string
+          label?: string
+          max_value?: number | null
+          measurement_type?: string
+          min_value?: number | null
+          short_label?: string
+          unit?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_stats_category_id_fkey"
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categories"
