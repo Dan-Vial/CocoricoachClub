@@ -11,57 +11,104 @@ export interface StatField {
   isMatchLevel?: boolean; // If true, this stat is for the whole match, not per player
 }
 
-// Rugby stats (XV, 7s, XIII)
+// Rugby stats (XV, 7s, XIII) - Enriched
 export const RUGBY_STATS: StatField[] = [
   // Individual Stats - Scoring
   { key: "tries", label: "Essais", shortLabel: "Essais", category: "scoring", type: "number" },
+  { key: "tryAssists", label: "Passes décisives (essai)", shortLabel: "Assists", category: "scoring", type: "number" },
   { key: "conversions", label: "Transformations", shortLabel: "Transfo.", category: "scoring", type: "number" },
+  { key: "conversionAttempts", label: "Tentatives transfo.", shortLabel: "Tent. tr.", category: "scoring", type: "number" },
   { key: "penaltiesScored", label: "Pénalités marquées", shortLabel: "Pénalités", category: "scoring", type: "number" },
+  { key: "penaltyAttempts", label: "Tentatives pénalités", shortLabel: "Tent. pén.", category: "scoring", type: "number" },
   { key: "dropGoals", label: "Drop goals", shortLabel: "Drops", category: "scoring", type: "number" },
+  { key: "dropAttempts", label: "Tentatives drops", shortLabel: "Tent. drop", category: "scoring", type: "number" },
+  { key: "points", label: "Points marqués", shortLabel: "Points", category: "scoring", type: "number" },
   // Individual Stats - Attack
   { key: "carries", label: "Ballons portés", shortLabel: "Portés", category: "attack", type: "number" },
   { key: "metersGained", label: "Mètres gagnés", shortLabel: "Mètres", category: "attack", type: "number" },
+  { key: "postContactMeters", label: "Mètres après contact", shortLabel: "Post-contact", category: "attack", type: "number" },
   { key: "offloads", label: "Offloads", shortLabel: "Offloads", category: "attack", type: "number" },
   { key: "breakthroughs", label: "Franchissements", shortLabel: "Franch.", category: "attack", type: "number" },
+  { key: "defendersBeaten", label: "Défenseurs battus", shortLabel: "Déf. battus", category: "attack", type: "number" },
   { key: "turnoversWon", label: "Turnovers gagnés", shortLabel: "Turnovers", category: "attack", type: "number" },
   { key: "totalContacts", label: "Contacts totaux", shortLabel: "Contacts", category: "attack", type: "number" },
+  { key: "passes", label: "Passes", shortLabel: "Passes", category: "attack", type: "number" },
+  { key: "kicksFromHand", label: "Jeux au pied", shortLabel: "Coups pied", category: "attack", type: "number" },
+  { key: "kickMeters", label: "Mètres au pied", shortLabel: "M. pied", category: "attack", type: "number" },
+  { key: "lineBreaks", label: "Lignes cassées", shortLabel: "L. cassées", category: "attack", type: "number" },
+  { key: "cleanBreaks", label: "Percées nettes", shortLabel: "Percées", category: "attack", type: "number" },
   // Individual Stats - Defense
   { key: "tackles", label: "Plaquages réalisés", shortLabel: "Plaquages", category: "defense", type: "number" },
   { key: "tacklesMissed", label: "Plaquages ratés", shortLabel: "Ratés", category: "defense", type: "number" },
+  { key: "tackleSuccess", label: "% plaquages réussis", shortLabel: "% Plaq.", category: "defense", type: "number", max: 100 },
+  { key: "dominantTackles", label: "Plaquages dominants", shortLabel: "Plaq. dom.", category: "defense", type: "number" },
   { key: "defensiveRecoveries", label: "Ballons récupérés", shortLabel: "Récup.", category: "defense", type: "number" },
+  { key: "turnoversLost", label: "Ballons perdus", shortLabel: "Pertes", category: "defense", type: "number" },
+  { key: "penaltiesConceded", label: "Pénalités concédées", shortLabel: "Pén. conc.", category: "defense", type: "number" },
+  { key: "jackalWins", label: "Grattages réussis", shortLabel: "Grattages", category: "defense", type: "number" },
+  // Scrum & Lineout
+  { key: "scrumWon", label: "Mêlées gagnées", shortLabel: "Mêlées", category: "attack", type: "number" },
+  { key: "scrumPenaltiesWon", label: "Pén. mêlées gagnées", shortLabel: "Pén. mêl.", category: "attack", type: "number" },
+  { key: "lineoutWon", label: "Touches gagnées", shortLabel: "Touches", category: "attack", type: "number" },
+  { key: "lineoutSteals", label: "Touches volées", shortLabel: "T. volées", category: "defense", type: "number" },
   // Individual Stats - General
   { key: "minutesPlayed", label: "Minutes jouées", shortLabel: "Min.", category: "general", type: "number" },
+  { key: "starts", label: "Titularisations", shortLabel: "Titu.", category: "general", type: "number" },
   { key: "yellowCards", label: "Cartons jaunes", shortLabel: "Jaunes", category: "general", type: "number" },
   { key: "redCards", label: "Cartons rouges", shortLabel: "Rouges", category: "general", type: "number" },
+  { key: "manOfMatch", label: "Homme du match", shortLabel: "HDM", category: "general", type: "number", max: 1 },
 ];
 
-// Football stats
+// Football stats - Enriched
 export const FOOTBALL_STATS: StatField[] = [
   // Individual Stats - General
   { key: "minutesPlayed", label: "Minutes jouées", shortLabel: "Min.", category: "general", type: "number" },
+  { key: "starts", label: "Titularisations", shortLabel: "Titu.", category: "general", type: "number" },
   { key: "totalDistance", label: "Distance totale (m)", shortLabel: "Distance", category: "general", type: "number" },
   { key: "sprintCount", label: "Nombre de sprints", shortLabel: "Sprints", category: "general", type: "number" },
+  { key: "sprintDistance", label: "Distance sprints (m)", shortLabel: "Dist. sprint", category: "general", type: "number" },
+  { key: "topSpeed", label: "Vitesse max (km/h)", shortLabel: "V. max", category: "general", type: "number" },
   { key: "yellowCards", label: "Cartons jaunes", shortLabel: "Jaunes", category: "general", type: "number" },
   { key: "redCards", label: "Cartons rouges", shortLabel: "Rouges", category: "general", type: "number" },
+  { key: "manOfMatch", label: "Homme du match", shortLabel: "HDM", category: "general", type: "number", max: 1 },
   // Individual Stats - Scoring
   { key: "goals", label: "Buts", shortLabel: "Buts", category: "scoring", type: "number" },
+  { key: "penaltyGoals", label: "Buts sur penalty", shortLabel: "Pén. marqués", category: "scoring", type: "number" },
+  { key: "headedGoals", label: "Buts de la tête", shortLabel: "Têtes", category: "scoring", type: "number" },
   { key: "assists", label: "Passes décisives", shortLabel: "Assists", category: "scoring", type: "number" },
   { key: "shotsOnTarget", label: "Tirs cadrés", shortLabel: "Tirs cadrés", category: "scoring", type: "number" },
   { key: "shotsOffTarget", label: "Tirs non cadrés", shortLabel: "Tirs NC", category: "scoring", type: "number" },
+  { key: "shotsBlocked", label: "Tirs contrés", shortLabel: "Contrés", category: "scoring", type: "number" },
+  { key: "bigChances", label: "Grosses occasions", shortLabel: "Grosses occ.", category: "scoring", type: "number" },
+  { key: "bigChancesMissed", label: "Grosses occ. ratées", shortLabel: "Occ. ratées", category: "scoring", type: "number" },
+  { key: "xG", label: "Expected Goals (xG)", shortLabel: "xG", category: "scoring", type: "number" },
   // Individual Stats - Attack
   { key: "passes", label: "Passes réussies", shortLabel: "Passes", category: "attack", type: "number" },
+  { key: "passesAttempted", label: "Passes tentées", shortLabel: "P. tent.", category: "attack", type: "number" },
   { key: "passAccuracy", label: "% Passes réussies", shortLabel: "% Passes", category: "attack", type: "number", max: 100 },
+  { key: "longBalls", label: "Longs ballons réussis", shortLabel: "Longs B.", category: "attack", type: "number" },
+  { key: "throughBalls", label: "Passes en profondeur", shortLabel: "Profondeur", category: "attack", type: "number" },
   { key: "duelsWon", label: "Duels gagnés", shortLabel: "Duels", category: "attack", type: "number" },
+  { key: "aerialDuelsWon", label: "Duels aériens gagnés", shortLabel: "D. aériens", category: "attack", type: "number" },
   { key: "dribbles", label: "Dribbles réussis", shortLabel: "Dribbles", category: "attack", type: "number" },
+  { key: "dribblesAttempted", label: "Dribbles tentés", shortLabel: "Drib. tent.", category: "attack", type: "number" },
   { key: "crosses", label: "Centres", shortLabel: "Centres", category: "attack", type: "number" },
+  { key: "crossesAccurate", label: "Centres réussis", shortLabel: "C. réussis", category: "attack", type: "number" },
   { key: "keyPasses", label: "Passes clés", shortLabel: "P. clés", category: "attack", type: "number" },
+  { key: "touches", label: "Touches de balle", shortLabel: "Touches", category: "attack", type: "number" },
+  { key: "possessionWon", label: "Ballons récupérés", shortLabel: "Récup.", category: "attack", type: "number" },
+  { key: "possessionLost", label: "Ballons perdus", shortLabel: "Pertes", category: "attack", type: "number" },
   // Individual Stats - Defense
   { key: "tackles", label: "Tacles", shortLabel: "Tacles", category: "defense", type: "number" },
+  { key: "tacklesWon", label: "Tacles réussis", shortLabel: "T. réussis", category: "defense", type: "number" },
   { key: "interceptions", label: "Interceptions", shortLabel: "Interc.", category: "defense", type: "number" },
   { key: "clearances", label: "Dégagements", shortLabel: "Dégag.", category: "defense", type: "number" },
   { key: "blockedShots", label: "Tirs bloqués", shortLabel: "Bloqués", category: "defense", type: "number" },
   { key: "foulsCommitted", label: "Fautes commises", shortLabel: "Fautes", category: "defense", type: "number" },
   { key: "foulsWon", label: "Fautes subies", shortLabel: "F. subies", category: "defense", type: "number" },
+  { key: "offsidesCaught", label: "Hors-jeux provoqués", shortLabel: "HJ prov.", category: "defense", type: "number" },
+  { key: "errorsLeadingToGoal", label: "Erreurs menant au but", shortLabel: "Err. but", category: "defense", type: "number" },
+  { key: "ownGoals", label: "Buts contre son camp", shortLabel: "CSC", category: "defense", type: "number" },
 ];
 
 // Football goalkeeper stats
@@ -81,27 +128,38 @@ export const FOOTBALL_GOALKEEPER_STATS: StatField[] = [
   { key: "passAccuracy", label: "% Passes réussies", shortLabel: "% Passes", category: "attack", type: "number", max: 100 },
 ];
 
-// Handball stats
+// Handball stats - Enriched
 export const HANDBALL_STATS: StatField[] = [
   // Individual Stats - General
   { key: "playingTime", label: "Temps de jeu (min)", shortLabel: "Temps jeu", category: "general", type: "number" },
+  { key: "starts", label: "Titularisations", shortLabel: "Titu.", category: "general", type: "number" },
   { key: "yellowCards", label: "Cartons jaunes", shortLabel: "Jaunes", category: "general", type: "number" },
   { key: "redCards", label: "Cartons rouges", shortLabel: "Rouges", category: "general", type: "number" },
   { key: "twoMinutes", label: "Exclusions 2 min", shortLabel: "2 min", category: "general", type: "number" },
+  { key: "manOfMatch", label: "Homme du match", shortLabel: "HDM", category: "general", type: "number", max: 1 },
   // Individual Stats - Scoring
   { key: "goals", label: "Buts", shortLabel: "Buts", category: "scoring", type: "number" },
   { key: "shots", label: "Tirs", shortLabel: "Tirs", category: "scoring", type: "number" },
   { key: "shootingPercentage", label: "% Réussite tirs", shortLabel: "% Tir", category: "scoring", type: "number", max: 100 },
+  { key: "goalsFromWing", label: "Buts ailier", shortLabel: "B. ailier", category: "scoring", type: "number" },
+  { key: "goalsFromPivot", label: "Buts pivot", shortLabel: "B. pivot", category: "scoring", type: "number" },
+  { key: "goalsFromBackcourt", label: "Buts arrière", shortLabel: "B. arrière", category: "scoring", type: "number" },
+  { key: "goalsFromFastBreak", label: "Buts contre-attaque", shortLabel: "B. CA", category: "scoring", type: "number" },
   { key: "assists", label: "Passes décisives", shortLabel: "Assists", category: "scoring", type: "number" },
   { key: "sevenMeters", label: "7 mètres marqués", shortLabel: "7m", category: "scoring", type: "number" },
+  { key: "sevenMetersAttempted", label: "7 mètres tentés", shortLabel: "7m tent.", category: "scoring", type: "number" },
   // Individual Stats - Attack
   { key: "passes", label: "Passes", shortLabel: "Passes", category: "attack", type: "number" },
   { key: "technicalFaults", label: "Fautes techniques", shortLabel: "F. tech.", category: "attack", type: "number" },
   { key: "turnoversLost", label: "Pertes de balle", shortLabel: "Pertes", category: "attack", type: "number" },
   { key: "foulsCommitted", label: "Fautes commises", shortLabel: "Fautes", category: "attack", type: "number" },
+  { key: "foulsWon", label: "Fautes subies", shortLabel: "F. subies", category: "attack", type: "number" },
+  { key: "sevenMetersWon", label: "7m obtenus", shortLabel: "7m obt.", category: "attack", type: "number" },
   // Individual Stats - Defense
   { key: "steals", label: "Interceptions", shortLabel: "Interc.", category: "defense", type: "number" },
   { key: "blocks", label: "Contres", shortLabel: "Contres", category: "defense", type: "number" },
+  { key: "blockedShots", label: "Tirs bloqués", shortLabel: "T. bloqués", category: "defense", type: "number" },
+  { key: "forcedTurnovers", label: "Pertes provoquées", shortLabel: "Pertes prov.", category: "defense", type: "number" },
 ];
 
 // Handball goalkeeper stats
@@ -119,56 +177,85 @@ export const HANDBALL_GOALKEEPER_STATS: StatField[] = [
   { key: "assists", label: "Passes décisives", shortLabel: "Assists", category: "attack", type: "number" },
 ];
 
-// Volleyball stats
+// Volleyball stats - Enriched
 export const VOLLEYBALL_STATS: StatField[] = [
   // Individual Stats - General
   { key: "setsPlayed", label: "Sets joués", shortLabel: "Sets", category: "general", type: "number" },
   { key: "playingTime", label: "Temps de jeu (min)", shortLabel: "Temps jeu", category: "general", type: "number" },
+  { key: "starts", label: "Titularisations", shortLabel: "Titu.", category: "general", type: "number" },
   { key: "jumpCount", label: "Nombre de sauts", shortLabel: "Sauts", category: "general", type: "number" },
   { key: "attackJumps", label: "Sauts d'attaque", shortLabel: "S. attaque", category: "general", type: "number" },
   { key: "blockJumps", label: "Sauts de contre", shortLabel: "S. contre", category: "general", type: "number" },
+  { key: "manOfMatch", label: "Joueur du match", shortLabel: "JDM", category: "general", type: "number", max: 1 },
   // Individual Stats - Scoring
   { key: "points", label: "Points marqués", shortLabel: "Points", category: "scoring", type: "number" },
   { key: "kills", label: "Points marqués (kill)", shortLabel: "Kills", category: "scoring", type: "number" },
   { key: "aces", label: "Aces", shortLabel: "Aces", category: "scoring", type: "number" },
+  { key: "acePercentage", label: "% Aces", shortLabel: "% Aces", category: "scoring", type: "number", max: 100 },
   { key: "attackErrors", label: "Erreurs d'attaque", shortLabel: "Err. att.", category: "scoring", type: "number" },
   { key: "attackAttempts", label: "Tentatives d'attaque", shortLabel: "Tent. att.", category: "scoring", type: "number" },
   { key: "attackPercentage", label: "% Attaque", shortLabel: "% Att.", category: "scoring", type: "number", max: 100 },
+  { key: "killPercentage", label: "% Kill", shortLabel: "% Kill", category: "scoring", type: "number", max: 100 },
   // Individual Stats - Attack
   { key: "sets", label: "Passes (sets)", shortLabel: "Sets", category: "attack", type: "number" },
   { key: "setAssists", label: "Passes décisives", shortLabel: "Assists", category: "attack", type: "number" },
+  { key: "setErrors", label: "Erreurs de passe", shortLabel: "Err. passe", category: "attack", type: "number" },
   { key: "serviceErrors", label: "Erreurs au service", shortLabel: "Err. serv.", category: "attack", type: "number" },
+  { key: "serviceAttempts", label: "Services tentés", shortLabel: "Serv. tent.", category: "attack", type: "number" },
+  { key: "serviceAcePercentage", label: "% Ace service", shortLabel: "% Ace", category: "attack", type: "number", max: 100 },
   // Individual Stats - Defense
   { key: "blocks", label: "Contres", shortLabel: "Contres", category: "defense", type: "number" },
   { key: "blockSolos", label: "Contres solo", shortLabel: "C. solo", category: "defense", type: "number" },
   { key: "blockAssists", label: "Contres assistés", shortLabel: "C. assist.", category: "defense", type: "number" },
+  { key: "blockErrors", label: "Erreurs de contre", shortLabel: "Err. contre", category: "defense", type: "number" },
   { key: "digs", label: "Réceptions défensives", shortLabel: "Digs", category: "defense", type: "number" },
+  { key: "digErrors", label: "Erreurs de réception déf.", shortLabel: "Err. dig", category: "defense", type: "number" },
   { key: "receptionErrors", label: "Erreurs de réception", shortLabel: "Err. réc.", category: "defense", type: "number" },
+  { key: "receptionAttempts", label: "Réceptions tentées", shortLabel: "Réc. tent.", category: "defense", type: "number" },
+  { key: "receptionPercentage", label: "% Réception", shortLabel: "% Réc.", category: "defense", type: "number", max: 100 },
+  { key: "perfectReceptions", label: "Réceptions parfaites", shortLabel: "Réc. parf.", category: "defense", type: "number" },
 ];
 
-// Basketball stats
+// Basketball stats - Enriched
 export const BASKETBALL_STATS: StatField[] = [
   // Individual Stats - General
   { key: "minutesPlayed", label: "Minutes jouées", shortLabel: "Min.", category: "general", type: "number" },
+  { key: "starts", label: "Titularisations", shortLabel: "Titu.", category: "general", type: "number" },
   { key: "personalFouls", label: "Fautes personnelles", shortLabel: "Fautes", category: "general", type: "number" },
+  { key: "technicalFouls", label: "Fautes techniques", shortLabel: "F. tech.", category: "general", type: "number" },
   { key: "plusMinus", label: "+/-", shortLabel: "+/-", category: "general", type: "number" },
+  { key: "efficiency", label: "Efficacité (EFF)", shortLabel: "EFF", category: "general", type: "number" },
+  { key: "manOfMatch", label: "MVP", shortLabel: "MVP", category: "general", type: "number", max: 1 },
   // Individual Stats - Scoring
   { key: "points", label: "Points", shortLabel: "Points", category: "scoring", type: "number" },
   { key: "fieldGoalsMade", label: "Paniers réussis", shortLabel: "FG", category: "scoring", type: "number" },
   { key: "fieldGoalsAttempted", label: "Paniers tentés", shortLabel: "FGA", category: "scoring", type: "number" },
+  { key: "fieldGoalPercentage", label: "% Paniers", shortLabel: "FG%", category: "scoring", type: "number", max: 100 },
   { key: "threePointersMade", label: "3 points réussis", shortLabel: "3P", category: "scoring", type: "number" },
   { key: "threePointersAttempted", label: "3 points tentés", shortLabel: "3PA", category: "scoring", type: "number" },
+  { key: "threePointPercentage", label: "% 3 points", shortLabel: "3P%", category: "scoring", type: "number", max: 100 },
+  { key: "twoPointersMade", label: "2 points réussis", shortLabel: "2P", category: "scoring", type: "number" },
+  { key: "twoPointersAttempted", label: "2 points tentés", shortLabel: "2PA", category: "scoring", type: "number" },
   { key: "freeThrowsMade", label: "Lancers francs réussis", shortLabel: "FT", category: "scoring", type: "number" },
   { key: "freeThrowsAttempted", label: "Lancers francs tentés", shortLabel: "FTA", category: "scoring", type: "number" },
+  { key: "freeThrowPercentage", label: "% Lancers francs", shortLabel: "FT%", category: "scoring", type: "number", max: 100 },
+  { key: "pointsInPaint", label: "Points dans la raquette", shortLabel: "Raquette", category: "scoring", type: "number" },
+  { key: "fastBreakPoints", label: "Points contre-attaque", shortLabel: "CA", category: "scoring", type: "number" },
+  { key: "secondChancePoints", label: "2nde chance", shortLabel: "2nde ch.", category: "scoring", type: "number" },
   // Individual Stats - Attack
   { key: "assists", label: "Passes décisives", shortLabel: "Passes", category: "attack", type: "number" },
   { key: "offensiveRebounds", label: "Rebonds offensifs", shortLabel: "RO", category: "attack", type: "number" },
   { key: "turnovers", label: "Ballons perdus", shortLabel: "Pertes", category: "attack", type: "number" },
+  { key: "assistTurnoverRatio", label: "Ratio Pass/Pertes", shortLabel: "A/TO", category: "attack", type: "number" },
+  { key: "screenAssists", label: "Assists sur écran", shortLabel: "Écrans", category: "attack", type: "number" },
   // Individual Stats - Defense
   { key: "defensiveRebounds", label: "Rebonds défensifs", shortLabel: "RD", category: "defense", type: "number" },
   { key: "totalRebounds", label: "Rebonds totaux", shortLabel: "Reb.", category: "defense", type: "number" },
   { key: "steals", label: "Interceptions", shortLabel: "Steals", category: "defense", type: "number" },
   { key: "blocks", label: "Contres", shortLabel: "Blocks", category: "defense", type: "number" },
+  { key: "blocksAgainst", label: "Tirs contrés subis", shortLabel: "Contrés", category: "defense", type: "number" },
+  { key: "deflections", label: "Déviations", shortLabel: "Dév.", category: "defense", type: "number" },
+  { key: "chargesTaken", label: "Fautes offensives provoquées", shortLabel: "Charges", category: "defense", type: "number" },
 ];
 
 // Judo stats - Per combat/round statistics
