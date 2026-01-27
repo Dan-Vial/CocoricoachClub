@@ -11,7 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Satellite, ClipboardList, Users, WifiOff } from "lucide-react";
+import { Plus, Satellite, ClipboardList, Users, WifiOff, Zap } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { AddAwcrDialog } from "./AddAwcrDialog";
 import { QuickTeamRpeDialog } from "./QuickTeamRpeDialog";
@@ -21,6 +21,20 @@ import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 
 interface AwcrTabProps {
   categoryId: string;
+}
+
+interface AwcrEntry {
+  id: string;
+  player_id: string;
+  session_date: string;
+  rpe: number;
+  duration_minutes: number;
+  training_load: number | null;
+  acute_load: number | null;
+  chronic_load: number | null;
+  awcr: number | null;
+  gps_player_load: number | null;
+  players: { name: string } | null;
 }
 
 export function AwcrTab({ categoryId }: AwcrTabProps) {
@@ -39,7 +53,7 @@ export function AwcrTab({ categoryId }: AwcrTabProps) {
         .eq("category_id", categoryId)
         .order("session_date", { ascending: false });
       if (error) throw error;
-      return data;
+      return data as AwcrEntry[];
     },
   });
 
@@ -130,7 +144,13 @@ export function AwcrTab({ categoryId }: AwcrTabProps) {
                   <TableHead>Source</TableHead>
                   <TableHead>RPE</TableHead>
                   <TableHead>Durée (min)</TableHead>
-                  <TableHead>Charge</TableHead>
+                  <TableHead>Charge RPE</TableHead>
+                  <TableHead className="text-primary">
+                    <div className="flex items-center gap-1">
+                      <Zap className="h-3 w-3" />
+                      Player Load GPS
+                    </div>
+                  </TableHead>
                   <TableHead>Charge Aiguë</TableHead>
                   <TableHead>Charge Chronique</TableHead>
                   <TableHead>AWCR</TableHead>
@@ -144,14 +164,25 @@ export function AwcrTab({ categoryId }: AwcrTabProps) {
                       {new Date(entry.session_date).toLocaleDateString("fr-FR")}
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline" className="text-xs">
-                        <ClipboardList className="h-3 w-3 mr-1" />
-                        RPE
-                      </Badge>
+                      <div className="flex gap-1">
+                        <Badge variant="outline" className="text-xs">
+                          <ClipboardList className="h-3 w-3 mr-1" />
+                          RPE
+                        </Badge>
+                        {entry.gps_player_load && (
+                          <Badge variant="secondary" className="text-xs">
+                            <Satellite className="h-3 w-3 mr-1" />
+                            GPS
+                          </Badge>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>{entry.rpe}/10</TableCell>
                     <TableCell>{entry.duration_minutes}</TableCell>
                     <TableCell className="font-semibold">{entry.training_load}</TableCell>
+                    <TableCell className="text-primary font-medium">
+                      {entry.gps_player_load ? entry.gps_player_load.toFixed(1) : "-"}
+                    </TableCell>
                     <TableCell>{entry.acute_load?.toFixed(1) || "-"}</TableCell>
                     <TableCell>{entry.chronic_load?.toFixed(1) || "-"}</TableCell>
                     <TableCell>

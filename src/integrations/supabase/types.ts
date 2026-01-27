@@ -175,6 +175,7 @@ export type Database = {
           chronic_load: number | null
           created_at: string
           duration_minutes: number
+          gps_player_load: number | null
           id: string
           player_id: string
           rpe: number
@@ -189,6 +190,7 @@ export type Database = {
           chronic_load?: number | null
           created_at?: string
           duration_minutes?: number
+          gps_player_load?: number | null
           id?: string
           player_id: string
           rpe: number
@@ -203,6 +205,7 @@ export type Database = {
           chronic_load?: number | null
           created_at?: string
           duration_minutes?: number
+          gps_player_load?: number | null
           id?: string
           player_id?: string
           rpe?: number
