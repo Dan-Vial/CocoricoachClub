@@ -9,11 +9,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Upload, FileText, Check, AlertCircle, Loader2, Link2 } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Upload, FileText, Check, AlertCircle, Loader2, Link2, Eye, EyeOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { fr } from "date-fns/locale";
 
 interface Player {
   id: string;
@@ -33,24 +33,33 @@ interface ParsedRow {
   playerName: string;
   matchedPlayerId: string | null;
   include: boolean;
-  data: Record<string, string | number>;
+  rawData: Record<string, string | number>;
 }
 
-interface ColumnMapping {
-  player_name: string;
-  session_date: string;
-  total_distance_m: string;
-  high_speed_distance_m: string;
-  sprint_distance_m: string;
-  max_speed_ms: string;
-  player_load: string;
-  accelerations: string;
-  decelerations: string;
-  duration_minutes: string;
-  sprint_count: string;
+interface ColumnConfig {
+  index: number;
+  header: string;
+  visible: boolean;
+  mappedTo: string | null; // 'player_name' | 'total_distance_m' | etc.
+  exampleValue: string;
 }
 
-const KNOWN_COLUMN_MAPPINGS: Record<string, keyof ColumnMapping> = {
+type MetricKey = 'player_name' | 'total_distance_m' | 'high_speed_distance_m' | 'sprint_distance_m' | 'max_speed_ms' | 'player_load' | 'accelerations' | 'decelerations' | 'duration_minutes' | 'sprint_count';
+
+const METRIC_LABELS: Record<MetricKey, string> = {
+  player_name: 'Nom du joueur',
+  total_distance_m: 'Distance totale (m)',
+  high_speed_distance_m: 'Distance haute intensité (m)',
+  sprint_distance_m: 'Distance sprint (m)',
+  max_speed_ms: 'Vitesse max',
+  player_load: 'Player Load',
+  accelerations: 'Accélérations',
+  decelerations: 'Décélérations',
+  duration_minutes: 'Durée (min)',
+  sprint_count: 'Nombre de sprints',
+};
+
+const KNOWN_COLUMN_MAPPINGS: Record<string, MetricKey> = {
   // Player name variations
   'player': 'player_name',
   'player name': 'player_name',
@@ -60,17 +69,14 @@ const KNOWN_COLUMN_MAPPINGS: Record<string, keyof ColumnMapping> = {
   'nom': 'player_name',
   'joueur': 'player_name',
   
-  // Date variations
-  'date': 'session_date',
-  'session date': 'session_date',
-  'session_date': 'session_date',
-  
   // Distance variations
   'total distance': 'total_distance_m',
   'total distance (m)': 'total_distance_m',
   'distance (m)': 'total_distance_m',
   'distance': 'total_distance_m',
   'distance totale': 'total_distance_m',
+  'dist totale (m)': 'total_distance_m',
+  'dist totale': 'total_distance_m',
   
   // High speed distance
   'high speed distance': 'high_speed_distance_m',
@@ -79,6 +85,10 @@ const KNOWN_COLUMN_MAPPINGS: Record<string, keyof ColumnMapping> = {
   'hsr (m)': 'high_speed_distance_m',
   'high speed running': 'high_speed_distance_m',
   'distance haute intensité': 'high_speed_distance_m',
+  'dist > 18 km/h': 'high_speed_distance_m',
+  'dist > 18km/h': 'high_speed_distance_m',
+  'dist>18km/h': 'high_speed_distance_m',
+  '%dist > 18 km/h': 'high_speed_distance_m',
   
   // Sprint distance
   'sprint distance': 'sprint_distance_m',
@@ -139,27 +149,18 @@ const KNOWN_COLUMN_MAPPINGS: Record<string, keyof ColumnMapping> = {
   'time': 'duration_minutes',
   'session duration': 'duration_minutes',
   'durée': 'duration_minutes',
-  'mètres/minute': 'duration_minutes',
   
   // Sprint count
   'sprint count': 'sprint_count',
   'sprints': 'sprint_count',
   'number of sprints': 'sprint_count',
   'nb sprints': 'sprint_count',
-  
-  // High speed distance - additional French mappings
-  'dist > 18 km/h': 'high_speed_distance_m',
-  'dist > 18km/h': 'high_speed_distance_m',
-  'dist>18km/h': 'high_speed_distance_m',
-  'dist totale (m)': 'total_distance_m',
-  'dist totale': 'total_distance_m',
 };
 
 export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuccess }: GpsImportDialogProps) {
-  const [step, setStep] = useState<'upload' | 'mapping' | 'preview' | 'importing'>('upload');
+  const [step, setStep] = useState<'upload' | 'columns' | 'preview' | 'importing'>('upload');
   const [csvData, setCsvData] = useState<string[][]>([]);
-  const [headers, setHeaders] = useState<string[]>([]);
-  const [columnMapping, setColumnMapping] = useState<Partial<ColumnMapping>>({});
+  const [columns, setColumns] = useState<ColumnConfig[]>([]);
   const [parsedRows, setParsedRows] = useState<ParsedRow[]>([]);
   const [sessionDate, setSessionDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [sessionName, setSessionName] = useState('');
@@ -168,33 +169,6 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
   const [isImporting, setIsImporting] = useState(false);
 
   const validPlayers = useMemo(() => players.filter(p => p.id && p.id.trim() !== ""), [players]);
-  const playersById = useMemo(() => new Map(validPlayers.map(p => [p.id, p])), [validPlayers]);
-  const columnOptions = useMemo(
-    () =>
-      headers.map((h, idx) => {
-        const headerLabel = h?.trim() ? h : `Colonne ${idx + 1}`;
-        // Get example value from first data row
-        const exampleValue = csvData[0]?.[idx]?.trim() || '';
-        const preview = exampleValue ? ` (ex: ${exampleValue.substring(0, 15)}${exampleValue.length > 15 ? '…' : ''})` : '';
-        return {
-          id: `col_${idx}`,
-          index: idx,
-          label: headerLabel,
-          preview: preview,
-          fullLabel: `${headerLabel}${preview}`,
-        };
-      }),
-    [headers, csvData]
-  );
-
-  const getColumnIndex = useCallback((mappingValue: string | undefined): number => {
-    if (!mappingValue) return -1;
-    const m = mappingValue.match(/^col_(\d+)$/);
-    if (m) return Number(m[1]);
-    // fallback (legacy): mapping stored as header label
-    const idx = headers.indexOf(mappingValue);
-    return idx;
-  }, [headers]);
 
   // Fetch existing training sessions for linking
   const { data: trainingSessions } = useQuery({
@@ -215,8 +189,7 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
   const resetState = useCallback(() => {
     setStep('upload');
     setCsvData([]);
-    setHeaders([]);
-    setColumnMapping({});
+    setColumns([]);
     setParsedRows([]);
     setSessionDate(format(new Date(), 'yyyy-MM-dd'));
     setSessionName('');
@@ -234,7 +207,6 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
       const text = event.target?.result as string;
       const lines = text.split(/\r?\n/).filter(line => line.trim());
       const rows = lines.map(line => {
-        // Handle quoted CSV values
         const result: string[] = [];
         let current = '';
         let inQuotes = false;
@@ -259,29 +231,36 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
         return;
       }
 
-      const headerRow = rows[0].map(h => h.toLowerCase().trim());
-      setHeaders(rows[0]);
-      setCsvData(rows.slice(1));
+      const headerRow = rows[0];
+      const dataRows = rows.slice(1);
+      setCsvData(dataRows);
 
-      // Auto-detect column mappings
-      const autoMapping: Partial<ColumnMapping> = {};
-      headerRow.forEach((header, index) => {
-        const mappedField = KNOWN_COLUMN_MAPPINGS[header];
-        if (mappedField) {
-          autoMapping[mappedField] = `col_${index}`;
-        }
+      // Build column configurations with auto-mapping
+      const columnConfigs: ColumnConfig[] = headerRow.map((header, index) => {
+        const headerLower = header.toLowerCase().trim();
+        const mappedTo = KNOWN_COLUMN_MAPPINGS[headerLower] || null;
+        const exampleValue = dataRows[0]?.[index]?.trim() || '';
+        
+        return {
+          index,
+          header: header || `Colonne ${index + 1}`,
+          visible: true, // All columns visible by default
+          mappedTo,
+          exampleValue,
+        };
       });
-      setColumnMapping(autoMapping);
+      
+      setColumns(columnConfigs);
       
       // Detect source based on headers
-      const headerStr = headerRow.join(' ');
+      const headerStr = headerRow.join(' ').toLowerCase();
       if (headerStr.includes('playerload') || headerStr.includes('catapult')) {
         setSource('catapult');
       } else if (headerStr.includes('statsports') || headerStr.includes('apex')) {
         setSource('statsports');
       }
 
-      setStep('mapping');
+      setStep('columns');
     };
     reader.readAsText(file);
   }, []);
@@ -290,12 +269,9 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
     if (!name) return null;
     const searchName = name.toLowerCase().trim();
     
-    // Try exact match first
     let match = validPlayers.find(p => p.name.toLowerCase() === searchName);
-    
     if (match) return match;
     
-    // Try partial match
     match = validPlayers.find(p =>
       p.name.toLowerCase().includes(searchName) ||
       searchName.includes(p.name.toLowerCase())
@@ -304,47 +280,68 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
     return match || null;
   }, [validPlayers]);
 
-  const handleProceedToPreview = useCallback(() => {
-    if (!columnMapping.player_name) {
-      toast.error("Veuillez mapper la colonne du nom du joueur");
-      return;
-    }
+  const toggleColumnVisibility = (index: number) => {
+    setColumns(prev => prev.map(col => 
+      col.index === index ? { ...col, visible: !col.visible } : col
+    ));
+  };
 
-    const playerNameIndex = getColumnIndex(columnMapping.player_name);
-    if (playerNameIndex === -1) {
-      toast.error("Colonne du joueur invalide");
+  const setColumnMapping = (index: number, mappedTo: MetricKey | null) => {
+    setColumns(prev => {
+      // First, clear any existing mapping to this metric
+      const cleared = prev.map(col => 
+        col.mappedTo === mappedTo ? { ...col, mappedTo: null } : col
+      );
+      // Then set the new mapping
+      return cleared.map(col => 
+        col.index === index ? { ...col, mappedTo } : col
+      );
+    });
+  };
+
+  const playerNameColumnIndex = columns.find(c => c.mappedTo === 'player_name')?.index ?? -1;
+
+  const handleProceedToPreview = useCallback(() => {
+    if (playerNameColumnIndex === -1) {
+      toast.error("Veuillez sélectionner la colonne contenant le nom du joueur");
       return;
     }
     
     const rows: ParsedRow[] = csvData.map(row => {
-      const playerName = row[playerNameIndex] || '';
+      const playerName = row[playerNameColumnIndex] || '';
       const matchedPlayer = matchPlayerByName(playerName);
       
-      const data: Record<string, string | number> = {};
-      Object.entries(columnMapping).forEach(([field, header]) => {
-        if (header) {
-          const index = getColumnIndex(header);
-          if (index !== -1) {
-            const value = row[index];
-            // Parse numbers
-            const numValue = parseFloat(value?.replace(',', '.') || '');
-            data[field] = isNaN(numValue) ? value : numValue;
-          }
-        }
+      // Build raw_data from ALL columns (visible or not)
+      const rawData: Record<string, string | number> = {};
+      columns.forEach(col => {
+        const value = row[col.index] || '';
+        const numValue = parseFloat(value.replace(',', '.'));
+        rawData[col.header] = isNaN(numValue) ? value : numValue;
       });
       
-      return { playerName, matchedPlayerId: matchedPlayer?.id ?? null, include: true, data };
+      return { 
+        playerName, 
+        matchedPlayerId: matchedPlayer?.id ?? null, 
+        include: true, 
+        rawData 
+      };
     }).filter(row => row.playerName);
 
     setParsedRows(rows);
     setStep('preview');
-  }, [columnMapping, headers, csvData, matchPlayerByName, getColumnIndex]);
+  }, [playerNameColumnIndex, csvData, columns, matchPlayerByName]);
 
   const parseNumber = (value: string | number | undefined): number | null => {
     if (value === undefined || value === null || value === '') return null;
     const num = typeof value === 'number' ? value : parseFloat(String(value).replace(',', '.'));
     return isNaN(num) ? null : num;
   };
+
+  const getColumnValue = useCallback((rawData: Record<string, string | number>, metricKey: MetricKey): string | number | null => {
+    const col = columns.find(c => c.mappedTo === metricKey);
+    if (!col) return null;
+    return rawData[col.header] ?? null;
+  }, [columns]);
 
   const handleImport = async () => {
     const validRows = parsedRows.filter(row => row.include && row.matchedPlayerId);
@@ -365,16 +362,16 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
         session_name: sessionName || null,
         training_session_id: selectedSessionId || null,
         source,
-        total_distance_m: parseNumber(row.data.total_distance_m),
-        high_speed_distance_m: parseNumber(row.data.high_speed_distance_m),
-        sprint_distance_m: parseNumber(row.data.sprint_distance_m),
-        max_speed_ms: parseNumber(row.data.max_speed_ms),
-        player_load: parseNumber(row.data.player_load),
-        accelerations: parseNumber(row.data.accelerations),
-        decelerations: parseNumber(row.data.decelerations),
-        duration_minutes: parseNumber(row.data.duration_minutes),
-        sprint_count: parseNumber(row.data.sprint_count),
-        raw_data: row.data,
+        total_distance_m: parseNumber(getColumnValue(row.rawData, 'total_distance_m')),
+        high_speed_distance_m: parseNumber(getColumnValue(row.rawData, 'high_speed_distance_m')),
+        sprint_distance_m: parseNumber(getColumnValue(row.rawData, 'sprint_distance_m')),
+        max_speed_ms: parseNumber(getColumnValue(row.rawData, 'max_speed_ms')),
+        player_load: parseNumber(getColumnValue(row.rawData, 'player_load')),
+        accelerations: parseNumber(getColumnValue(row.rawData, 'accelerations')),
+        decelerations: parseNumber(getColumnValue(row.rawData, 'decelerations')),
+        duration_minutes: parseNumber(getColumnValue(row.rawData, 'duration_minutes')),
+        sprint_count: parseNumber(getColumnValue(row.rawData, 'sprint_count')),
+        raw_data: row.rawData, // Always save ALL columns
       }));
 
       const { error } = await supabase
@@ -383,16 +380,15 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
 
       if (error) throw error;
 
-      // Update AWCR tracking with GPS Player Load for players that have AWCR entries on this date
+      // Update AWCR tracking with GPS Player Load
       const playersWithGpsLoad = validRows
-        .filter(row => parseNumber(row.data.player_load) !== null)
+        .filter(row => parseNumber(getColumnValue(row.rawData, 'player_load')) !== null)
         .map(row => ({
           playerId: row.matchedPlayerId!,
-          playerLoad: parseNumber(row.data.player_load)
+          playerLoad: parseNumber(getColumnValue(row.rawData, 'player_load'))
         }));
 
       if (playersWithGpsLoad.length > 0) {
-        // Update existing AWCR entries with GPS player load
         for (const { playerId, playerLoad } of playersWithGpsLoad) {
           await supabase
             .from('awcr_tracking')
@@ -422,15 +418,14 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
     onOpenChange(open);
   };
 
-  const matchedCount = parsedRows.filter(r => r.matchedPlayerId).length;
-  const unmatchedCount = parsedRows.filter(r => !r.matchedPlayerId).length;
-
+  const visibleColumns = columns.filter(c => c.visible);
+  const mappedMetricsCount = columns.filter(c => c.mappedTo).length;
   const effectiveMatchedCount = parsedRows.filter(r => r.include && r.matchedPlayerId).length;
   const effectiveUnmatchedCount = parsedRows.filter(r => r.include && !r.matchedPlayerId).length;
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Upload className="h-5 w-5" />
@@ -438,13 +433,14 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
           </DialogTitle>
           <DialogDescription>
             {step === 'upload' && "Sélectionnez un fichier CSV exporté de Catapult ou STATSports"}
-            {step === 'mapping' && "Vérifiez le mapping des colonnes"}
-            {step === 'preview' && "Vérifiez les données avant import"}
+            {step === 'columns' && "Cochez les colonnes à afficher et mappez les métriques GPS"}
+            {step === 'preview' && "Vérifiez les données et associez les joueurs avant import"}
             {step === 'importing' && "Import en cours..."}
           </DialogDescription>
         </DialogHeader>
 
         <div className="flex-1 min-h-0 overflow-y-auto">
+          {/* STEP 1: Upload */}
           {step === 'upload' && (
             <div className="space-y-6">
               <div className="border-2 border-dashed rounded-lg p-8 text-center">
@@ -490,9 +486,11 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
             </div>
           )}
 
-          {step === 'mapping' && (
-            <div className="flex flex-col h-full min-h-0 gap-4">
-              <div className="grid grid-cols-2 gap-4">
+          {/* STEP 2: Column Selection & Mapping */}
+          {step === 'columns' && (
+            <div className="flex flex-col gap-4">
+              {/* Session settings */}
+              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <Label>Date de la session *</Label>
                   <Input
@@ -500,35 +498,31 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
                     value={sessionDate}
                     onChange={(e) => setSessionDate(e.target.value)}
                   />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Toutes les données seront enregistrées à cette date
-                  </p>
                 </div>
                 <div>
-                  <Label>Nom de la session (optionnel)</Label>
+                  <Label>Nom de la session</Label>
                   <Input
                     placeholder="Ex: Entraînement du mardi"
                     value={sessionName}
                     onChange={(e) => setSessionName(e.target.value)}
                   />
                 </div>
+                <div>
+                  <Label>Source des données</Label>
+                  <Select value={source} onValueChange={(v: 'catapult' | 'statsports' | 'manual') => setSource(v)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="catapult">Catapult</SelectItem>
+                      <SelectItem value="statsports">STATSports</SelectItem>
+                      <SelectItem value="manual">Manuel</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
-              <div>
-                <Label>Source des données</Label>
-                <Select value={source} onValueChange={(v: 'catapult' | 'statsports' | 'manual') => setSource(v)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="catapult">Catapult</SelectItem>
-                    <SelectItem value="statsports">STATSports</SelectItem>
-                    <SelectItem value="manual">Manuel</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Link to existing training session */}
+              {/* Link to training session */}
               {trainingSessions && trainingSessions.length > 0 && (
                 <div className="p-3 rounded-lg border bg-muted/50">
                   <Label className="flex items-center gap-2 mb-2">
@@ -539,7 +533,7 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
                     value={selectedSessionId || "__none__"} 
                     onValueChange={(v) => setSelectedSessionId(v === "__none__" ? "" : v)}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="w-full md:w-1/2">
                       <SelectValue placeholder="Sélectionner une séance..." />
                     </SelectTrigger>
                     <SelectContent>
@@ -552,297 +546,99 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
                       ))}
                     </SelectContent>
                   </Select>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Les données GPS seront liées à cette séance
-                  </p>
                 </div>
               )}
 
-              {/* Summary of auto-detected columns */}
-              <div className="flex flex-wrap gap-2 p-3 bg-muted/50 rounded-lg">
-                <span className="text-sm font-medium">Colonnes détectées:</span>
-                {columnMapping.player_name && <Badge variant="default" className="text-xs">Joueur ✓</Badge>}
-                {columnMapping.total_distance_m && <Badge variant="default" className="text-xs">Distance ✓</Badge>}
-                {columnMapping.sprint_distance_m && <Badge variant="default" className="text-xs">Sprint ✓</Badge>}
-                {columnMapping.max_speed_ms && <Badge variant="default" className="text-xs">V.Max ✓</Badge>}
-                {columnMapping.player_load && <Badge variant="default" className="text-xs">Load ✓</Badge>}
-                {columnMapping.high_speed_distance_m && <Badge variant="secondary" className="text-xs">HSR ✓</Badge>}
-                {columnMapping.accelerations && <Badge variant="secondary" className="text-xs">Accél ✓</Badge>}
-                {columnMapping.decelerations && <Badge variant="secondary" className="text-xs">Décél ✓</Badge>}
-                {!columnMapping.sprint_distance_m && <Badge variant="destructive" className="text-xs">Sprint ?</Badge>}
-                {!columnMapping.max_speed_ms && <Badge variant="destructive" className="text-xs">V.Max ?</Badge>}
+              {/* Summary badges */}
+              <div className="flex flex-wrap gap-2 items-center">
+                <span className="text-sm font-medium">Colonnes:</span>
+                <Badge variant="outline">{columns.length} total</Badge>
+                <Badge variant="default">{visibleColumns.length} visibles</Badge>
+                <Badge variant="secondary">{mappedMetricsCount} mappées</Badge>
+                {playerNameColumnIndex === -1 && (
+                  <Badge variant="destructive">Joueur non mappé !</Badge>
+                )}
               </div>
 
-              <ScrollArea className="border rounded-md p-4 h-[350px]">
-                <div className="space-y-4">
-                  {/* Player name - required */}
-                  <div className="p-3 rounded-lg border-2 border-primary/20 bg-primary/5">
-                    <Label className="flex items-center gap-2 mb-2">
-                      Colonne Nom du joueur *
-                      {columnMapping.player_name ? (
-                        <Badge variant="default" className="text-xs"><Check className="h-3 w-3 mr-1" />Détecté</Badge>
-                      ) : (
-                        <Badge variant="destructive" className="text-xs"><AlertCircle className="h-3 w-3 mr-1" />Requis</Badge>
-                      )}
-                    </Label>
-                    <Select
-                      value={columnMapping.player_name || '__unmapped__'}
-                      onValueChange={(v) => setColumnMapping(m => ({ ...m, player_name: v === '__unmapped__' ? '' : v }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Sélectionner..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="__unmapped__">Non mappé</SelectItem>
-                        {columnOptions.map(opt => (
-                          <SelectItem key={opt.id} value={opt.id}>
-                            {opt.fullLabel}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Key metrics in highlighted section */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="p-3 rounded-lg border bg-card">
-                      <Label className="flex items-center gap-2 mb-2">
-                        Distance totale (m)
-                        {columnMapping.total_distance_m && <Badge variant="default" className="text-xs"><Check className="h-3 w-3" /></Badge>}
-                      </Label>
-                      <Select
-                        value={columnMapping.total_distance_m || '__unmapped__'}
-                        onValueChange={(v) => setColumnMapping(m => ({ ...m, total_distance_m: v === '__unmapped__' ? '' : v }))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Sélectionner..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="__unmapped__">Non mappé</SelectItem>
-                          {columnOptions.map(opt => (
-                            <SelectItem key={opt.id} value={opt.id}>
-                              {opt.fullLabel}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="p-3 rounded-lg border bg-card">
-                      <Label className="flex items-center gap-2 mb-2">
-                        Player Load
-                        {columnMapping.player_load && <Badge variant="default" className="text-xs"><Check className="h-3 w-3" /></Badge>}
-                      </Label>
-                      <Select
-                        value={columnMapping.player_load || '__unmapped__'}
-                        onValueChange={(v) => setColumnMapping(m => ({ ...m, player_load: v === '__unmapped__' ? '' : v }))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Sélectionner..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="__unmapped__">Non mappé</SelectItem>
-                          {columnOptions.map(opt => (
-                            <SelectItem key={opt.id} value={opt.id}>
-                              {opt.fullLabel}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  {/* Sprint & Speed - often problematic, highlight if missing */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className={`p-3 rounded-lg border ${!columnMapping.sprint_distance_m ? 'border-destructive/50 bg-destructive/5' : 'bg-card'}`}>
-                      <Label className="flex items-center gap-2 mb-2">
-                        Distance sprint (m)
-                        {columnMapping.sprint_distance_m ? (
-                          <Badge variant="default" className="text-xs"><Check className="h-3 w-3" /></Badge>
-                        ) : (
-                          <Badge variant="outline" className="text-xs text-destructive">À mapper</Badge>
-                        )}
-                      </Label>
-                      <Select
-                        value={columnMapping.sprint_distance_m || '__unmapped__'}
-                        onValueChange={(v) => setColumnMapping(m => ({ ...m, sprint_distance_m: v === '__unmapped__' ? '' : v }))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Sélectionner..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="__unmapped__">Non mappé</SelectItem>
-                          {columnOptions.map(opt => (
-                            <SelectItem key={opt.id} value={opt.id}>
-                              {opt.fullLabel}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <p className="text-xs text-muted-foreground mt-1">Ex: Dist &gt; 27km/h, Dist &gt; 24km/h</p>
-                    </div>
-                    <div className={`p-3 rounded-lg border ${!columnMapping.max_speed_ms ? 'border-destructive/50 bg-destructive/5' : 'bg-card'}`}>
-                      <Label className="flex items-center gap-2 mb-2">
-                        Vitesse max (m/s ou km/h)
-                        {columnMapping.max_speed_ms ? (
-                          <Badge variant="default" className="text-xs"><Check className="h-3 w-3" /></Badge>
-                        ) : (
-                          <Badge variant="outline" className="text-xs text-destructive">À mapper</Badge>
-                        )}
-                      </Label>
-                      <Select
-                        value={columnMapping.max_speed_ms || '__unmapped__'}
-                        onValueChange={(v) => setColumnMapping(m => ({ ...m, max_speed_ms: v === '__unmapped__' ? '' : v }))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Sélectionner..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="__unmapped__">Non mappé</SelectItem>
-                          {columnOptions.map(opt => (
-                            <SelectItem key={opt.id} value={opt.id}>
-                              {opt.fullLabel}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <p className="text-xs text-muted-foreground mt-1">Ex: Vmax (km/h), Max Speed</p>
-                    </div>
-                  </div>
-
-                  {/* Other metrics */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="p-3 rounded-lg border bg-card">
-                      <Label className="flex items-center gap-2 mb-2">
-                        Distance haute intensité (m)
-                        {columnMapping.high_speed_distance_m && <Badge variant="secondary" className="text-xs"><Check className="h-3 w-3" /></Badge>}
-                      </Label>
-                      <Select
-                        value={columnMapping.high_speed_distance_m || '__unmapped__'}
-                        onValueChange={(v) => setColumnMapping(m => ({ ...m, high_speed_distance_m: v === '__unmapped__' ? '' : v }))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Sélectionner..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="__unmapped__">Non mappé</SelectItem>
-                          {columnOptions.map(opt => (
-                            <SelectItem key={opt.id} value={opt.id}>
-                              {opt.fullLabel}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="p-3 rounded-lg border bg-card">
-                      <Label className="flex items-center gap-2 mb-2">
-                        Accélérations
-                        {columnMapping.accelerations && <Badge variant="secondary" className="text-xs"><Check className="h-3 w-3" /></Badge>}
-                      </Label>
-                      <Select
-                        value={columnMapping.accelerations || '__unmapped__'}
-                        onValueChange={(v) => setColumnMapping(m => ({ ...m, accelerations: v === '__unmapped__' ? '' : v }))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Sélectionner..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="__unmapped__">Non mappé</SelectItem>
-                          {columnOptions.map(opt => (
-                            <SelectItem key={opt.id} value={opt.id}>
-                              {opt.fullLabel}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="p-3 rounded-lg border bg-card">
-                      <Label className="flex items-center gap-2 mb-2">
-                        Décélérations
-                        {columnMapping.decelerations && <Badge variant="secondary" className="text-xs"><Check className="h-3 w-3" /></Badge>}
-                      </Label>
-                      <Select
-                        value={columnMapping.decelerations || '__unmapped__'}
-                        onValueChange={(v) => setColumnMapping(m => ({ ...m, decelerations: v === '__unmapped__' ? '' : v }))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Sélectionner..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="__unmapped__">Non mappé</SelectItem>
-                          {columnOptions.map(opt => (
-                            <SelectItem key={opt.id} value={opt.id}>
-                              {opt.fullLabel}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="p-3 rounded-lg border bg-card">
-                      <Label className="flex items-center gap-2 mb-2">
-                        Durée (min)
-                        {columnMapping.duration_minutes && <Badge variant="secondary" className="text-xs"><Check className="h-3 w-3" /></Badge>}
-                      </Label>
-                      <Select
-                        value={columnMapping.duration_minutes || '__unmapped__'}
-                        onValueChange={(v) => setColumnMapping(m => ({ ...m, duration_minutes: v === '__unmapped__' ? '' : v }))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Sélectionner..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="__unmapped__">Non mappé</SelectItem>
-                          {columnOptions.map(opt => (
-                            <SelectItem key={opt.id} value={opt.id}>
-                              {opt.fullLabel}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div className="p-3 rounded-lg border bg-card">
-                    <Label className="flex items-center gap-2 mb-2">
-                      Nombre de sprints
-                      {columnMapping.sprint_count && <Badge variant="secondary" className="text-xs"><Check className="h-3 w-3" /></Badge>}
-                    </Label>
-                    <Select
-                      value={columnMapping.sprint_count || '__unmapped__'}
-                      onValueChange={(v) => setColumnMapping(m => ({ ...m, sprint_count: v === '__unmapped__' ? '' : v }))}
-                    >
-                      <SelectTrigger className="w-full md:w-1/2">
-                        <SelectValue placeholder="Sélectionner..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="__unmapped__">Non mappé</SelectItem>
-                        {columnOptions.map(opt => (
-                          <SelectItem key={opt.id} value={opt.id}>
-                            {opt.fullLabel}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
+              {/* Column list with checkboxes */}
+              <ScrollArea className="h-[400px] border rounded-lg">
+                <Table>
+                  <TableHeader className="sticky top-0 bg-background z-10">
+                    <TableRow>
+                      <TableHead className="w-[60px]">Afficher</TableHead>
+                      <TableHead>En-tête CSV</TableHead>
+                      <TableHead className="w-[180px]">Exemple</TableHead>
+                      <TableHead className="w-[220px]">Mapper vers</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {columns.map((col) => (
+                      <TableRow key={col.index} className={!col.visible ? 'opacity-50' : ''}>
+                        <TableCell>
+                          <Checkbox
+                            checked={col.visible}
+                            onCheckedChange={() => toggleColumnVisibility(col.index)}
+                            aria-label={`Afficher ${col.header}`}
+                          />
+                        </TableCell>
+                        <TableCell className="font-medium">
+                          <div className="flex items-center gap-2">
+                            {col.visible ? (
+                              <Eye className="h-4 w-4 text-muted-foreground" />
+                            ) : (
+                              <EyeOff className="h-4 w-4 text-muted-foreground" />
+                            )}
+                            {col.header}
+                            {col.mappedTo && (
+                              <Badge variant="default" className="text-xs">
+                                <Check className="h-3 w-3 mr-1" />
+                                {METRIC_LABELS[col.mappedTo]}
+                              </Badge>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground text-sm truncate max-w-[180px]">
+                          {col.exampleValue || '-'}
+                        </TableCell>
+                        <TableCell>
+                          <Select
+                            value={col.mappedTo || '__none__'}
+                            onValueChange={(v) => setColumnMapping(col.index, v === '__none__' ? null : v as MetricKey)}
+                          >
+                            <SelectTrigger className="h-8">
+                              <SelectValue placeholder="Non mappé" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="__none__">Non mappé</SelectItem>
+                              {(Object.keys(METRIC_LABELS) as MetricKey[]).map(key => (
+                                <SelectItem key={key} value={key}>
+                                  {METRIC_LABELS[key]}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </ScrollArea>
 
-              <div className="flex justify-end gap-2">
+              <div className="flex justify-between">
                 <Button variant="outline" onClick={() => setStep('upload')}>
                   Retour
                 </Button>
-                <Button onClick={handleProceedToPreview}>
-                  Continuer
+                <Button onClick={handleProceedToPreview} disabled={playerNameColumnIndex === -1}>
+                  Continuer vers l'aperçu
                 </Button>
               </div>
             </div>
           )}
 
+          {/* STEP 3: Preview & Player Association */}
           {step === 'preview' && (
-            <div className="flex flex-col h-full min-h-0 gap-4">
-              <div className="flex gap-4">
+            <div className="flex flex-col gap-4">
+              <div className="flex gap-4 flex-wrap">
                 <Badge variant="default" className="gap-1">
                   <Check className="h-3 w-3" />
                   {effectiveMatchedCount} joueurs associés
@@ -853,55 +649,63 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
                     {effectiveUnmatchedCount} non trouvés
                   </Badge>
                 )}
+                <Badge variant="outline">
+                  {visibleColumns.length} colonnes affichées
+                </Badge>
               </div>
 
-              <div className="border rounded-md overflow-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-muted sticky top-0">
-                    <tr>
-                      <th className="text-left p-2">Importer</th>
-                      <th className="text-left p-2">Statut</th>
-                      <th className="text-left p-2">Nom CSV</th>
-                      <th className="text-left p-2">Joueur associé</th>
-                      <th className="text-right p-2">Distance</th>
-                      <th className="text-right p-2">Player Load</th>
-                      <th className="text-right p-2">Vitesse Max</th>
-                    </tr>
-                  </thead>
-                  <tbody>
+              <ScrollArea className="h-[450px] border rounded-lg">
+                <Table>
+                  <TableHeader className="sticky top-0 bg-background z-10">
+                    <TableRow>
+                      <TableHead className="w-[60px] sticky left-0 bg-background">Import</TableHead>
+                      <TableHead className="w-[50px]">Statut</TableHead>
+                      <TableHead className="w-[200px]">Joueur associé</TableHead>
+                      {visibleColumns.map(col => (
+                        <TableHead key={col.index} className="min-w-[100px]">
+                          <div className="flex flex-col">
+                            <span>{col.header}</span>
+                            {col.mappedTo && (
+                              <span className="text-xs text-primary font-normal">
+                                → {METRIC_LABELS[col.mappedTo]}
+                              </span>
+                            )}
+                          </div>
+                        </TableHead>
+                      ))}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
                     {parsedRows.map((row, i) => (
-                      <tr key={i} className={row.include && !row.matchedPlayerId ? 'bg-destructive/10' : ''}>
-                        <td className="p-2">
+                      <TableRow key={i} className={row.include && !row.matchedPlayerId ? 'bg-destructive/10' : ''}>
+                        <TableCell className="sticky left-0 bg-background">
                           <Checkbox
                             checked={row.include}
                             onCheckedChange={(checked) => {
-                              const isChecked = checked === true;
-                              setParsedRows(prev => prev.map((r, idx) => idx === i ? { ...r, include: isChecked } : r));
+                              setParsedRows(prev => prev.map((r, idx) => 
+                                idx === i ? { ...r, include: checked === true } : r
+                              ));
                             }}
-                            aria-label="Inclure à l'import"
                           />
-                        </td>
-                        <td className="p-2">
+                        </TableCell>
+                        <TableCell>
                           {row.matchedPlayerId ? (
                             <Check className="h-4 w-4 text-primary" />
                           ) : (
                             <AlertCircle className="h-4 w-4 text-destructive" />
                           )}
-                        </td>
-                        <td className="p-2">{row.playerName}</td>
-                        <td className="p-2">
+                        </TableCell>
+                        <TableCell>
                           <Select
                             value={row.matchedPlayerId || "__none__"}
                             onValueChange={(v) => {
                               setParsedRows(prev => prev.map((r, idx) =>
-                                idx === i
-                                  ? { ...r, matchedPlayerId: v === "__none__" ? null : v }
-                                  : r
+                                idx === i ? { ...r, matchedPlayerId: v === "__none__" ? null : v } : r
                               ));
                             }}
                           >
-                            <SelectTrigger className="w-[240px]">
-                              <SelectValue placeholder="Associer un athlète" />
+                            <SelectTrigger className="w-[180px]">
+                              <SelectValue placeholder="Associer..." />
                             </SelectTrigger>
                             <SelectContent className="max-h-[250px] z-[200]">
                               <SelectItem value="__none__">Non associé</SelectItem>
@@ -912,24 +716,20 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
                               ))}
                             </SelectContent>
                           </Select>
-                        </td>
-                        <td className="p-2 text-right">
-                          {row.data.total_distance_m ? `${row.data.total_distance_m} m` : '-'}
-                        </td>
-                        <td className="p-2 text-right">
-                          {row.data.player_load != null && row.data.player_load !== '' ? row.data.player_load : '-'}
-                        </td>
-                        <td className="p-2 text-right">
-                          {row.data.max_speed_ms != null && row.data.max_speed_ms !== '' ? `${row.data.max_speed_ms}` : '-'}
-                        </td>
-                      </tr>
+                        </TableCell>
+                        {visibleColumns.map(col => (
+                          <TableCell key={col.index} className="text-sm">
+                            {row.rawData[col.header] ?? '-'}
+                          </TableCell>
+                        ))}
+                      </TableRow>
                     ))}
-                  </tbody>
-                </table>
-              </div>
+                  </TableBody>
+                </Table>
+              </ScrollArea>
 
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setStep('mapping')}>
+              <div className="flex justify-between">
+                <Button variant="outline" onClick={() => setStep('columns')}>
                   Retour
                 </Button>
                 <Button onClick={handleImport} disabled={effectiveMatchedCount === 0}>
@@ -939,6 +739,7 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
             </div>
           )}
 
+          {/* STEP 4: Importing */}
           {step === 'importing' && (
             <div className="flex flex-col items-center justify-center py-12">
               <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
