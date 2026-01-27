@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,10 +8,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Upload, FileText, Check, AlertCircle, Loader2 } from "lucide-react";
+import { Upload, FileText, Check, AlertCircle, Loader2, Link2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { fr } from "date-fns/locale";
 
 interface Player {
   id: string;
@@ -131,8 +133,25 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
   const [parsedRows, setParsedRows] = useState<ParsedRow[]>([]);
   const [sessionDate, setSessionDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [sessionName, setSessionName] = useState('');
+  const [selectedSessionId, setSelectedSessionId] = useState<string>('');
   const [source, setSource] = useState<'catapult' | 'statsports' | 'manual'>('manual');
   const [isImporting, setIsImporting] = useState(false);
+
+  // Fetch existing training sessions for linking
+  const { data: trainingSessions } = useQuery({
+    queryKey: ["training-sessions-for-gps", categoryId, sessionDate],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("training_sessions")
+        .select("id, session_date, training_type, session_start_time")
+        .eq("category_id", categoryId)
+        .eq("session_date", sessionDate)
+        .order("session_start_time", { ascending: true });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!sessionDate,
+  });
 
   const resetState = useCallback(() => {
     setStep('upload');
@@ -142,6 +161,7 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
     setParsedRows([]);
     setSessionDate(format(new Date(), 'yyyy-MM-dd'));
     setSessionName('');
+    setSelectedSessionId('');
     setSource('manual');
     setIsImporting(false);
   }, []);
@@ -280,6 +300,7 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
         player_id: row.matchedPlayer!.id,
         session_date: sessionDate,
         session_name: sessionName || null,
+        training_session_id: selectedSessionId || null,
         source,
         total_distance_m: parseNumber(row.data.total_distance_m),
         high_speed_distance_m: parseNumber(row.data.high_speed_distance_m),
@@ -417,6 +438,33 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Link to existing training session */}
+              {trainingSessions && trainingSessions.length > 0 && (
+                <div className="p-3 rounded-lg border bg-muted/50">
+                  <Label className="flex items-center gap-2 mb-2">
+                    <Link2 className="h-4 w-4" />
+                    Lier à une séance existante (optionnel)
+                  </Label>
+                  <Select value={selectedSessionId} onValueChange={setSelectedSessionId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Sélectionner une séance..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Aucune liaison</SelectItem>
+                      {trainingSessions.map((session) => (
+                        <SelectItem key={session.id} value={session.id}>
+                          {session.training_type}
+                          {session.session_start_time && ` - ${session.session_start_time.slice(0, 5)}`}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Les données GPS seront liées à cette séance
+                  </p>
+                </div>
+              )}
 
               <ScrollArea className="h-[300px] border rounded-md p-4">
                 <div className="space-y-4">

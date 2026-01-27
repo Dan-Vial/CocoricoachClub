@@ -20,12 +20,13 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { BarChart3, Check, UserCircle } from "lucide-react";
+import { BarChart3, Check, UserCircle, Settings2 } from "lucide-react";
 import { getStatsForSport, getStatCategories, hasGoalkeeperStats, type StatField } from "@/lib/constants/sportStats";
 import { getSportFieldConfig } from "@/lib/constants/sportPositions";
 import { isIndividualSport } from "@/lib/constants/sportTypes";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { useStatPreferences } from "@/hooks/use-stat-preferences";
 
 interface SportMatchStatsDialogProps {
   open: boolean;
@@ -64,8 +65,16 @@ export function SportMatchStatsDialog({
   // Get the currently selected player
   const selectedPlayer = statsData.find(p => p.playerId === selectedPlayerId);
   
-  // Get stats based on whether current player is a goalkeeper
-  const sportStats = getStatsForSport(sportType, selectedPlayer?.isGoalkeeper ?? false);
+  // Get stats from preferences (filtered based on category settings)
+  const { stats: filteredStats, allStats: allSportStats } = useStatPreferences({
+    categoryId,
+    sportType,
+    matchId,
+    isGoalkeeper: selectedPlayer?.isGoalkeeper ?? false,
+  });
+  
+  // Use filtered stats if preferences exist, otherwise use all stats
+  const sportStats = filteredStats.length > 0 ? filteredStats : getStatsForSport(sportType, selectedPlayer?.isGoalkeeper ?? false);
   const statCategories = getStatCategories(sportType);
 
   // Get match data

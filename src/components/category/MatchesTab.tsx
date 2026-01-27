@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Calendar, BarChart3 } from "lucide-react";
+import { Plus, Calendar, BarChart3, Settings2 } from "lucide-react";
 import { AddMatchCalendarDialog } from "./matches/AddMatchCalendarDialog";
 import { MatchCard } from "./matches/MatchCard";
 import { PlayerCumulativeStats } from "./matches/PlayerCumulativeStats";
@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 import { isIndividualSport } from "@/lib/constants/sportTypes";
 import { useViewerMatches } from "@/hooks/use-viewer-data";
+import { StatPreferencesDialog } from "./settings/StatPreferencesDialog";
 
 interface MatchesTabProps {
   categoryId: string;
@@ -18,10 +19,12 @@ interface MatchesTabProps {
 
 export function MatchesTab({ categoryId, sportType }: MatchesTabProps) {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isStatPrefsOpen, setIsStatPrefsOpen] = useState(false);
   const { isViewer } = useViewerModeContext();
 
   // Check if this is an individual sport (judo, bowling)
   const isIndividual = isIndividualSport(sportType || "");
+  const isBowling = (sportType || "").toLowerCase().includes("bowling");
   
   // Labels adaptés selon le sport
   const itemLabel = isIndividual ? "compétition" : "match";
@@ -63,10 +66,23 @@ export function MatchesTab({ categoryId, sportType }: MatchesTabProps) {
                   Gestion des {itemLabelPlural}
                 </CardTitle>
                 {!isViewer && (
-                  <Button onClick={() => setIsAddDialogOpen(true)} className="gap-2">
-                    <Plus className="h-4 w-4" />
-                    Ajouter {isIndividual ? "une" : "un"} {itemLabel}
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    {!isBowling && (
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setIsStatPrefsOpen(true)}
+                        className="gap-1"
+                      >
+                        <Settings2 className="h-4 w-4" />
+                        <span className="hidden sm:inline">Personnaliser stats</span>
+                      </Button>
+                    )}
+                    <Button onClick={() => setIsAddDialogOpen(true)} className="gap-2">
+                      <Plus className="h-4 w-4" />
+                      Ajouter {isIndividual ? "une" : "un"} {itemLabel}
+                    </Button>
+                  </div>
                 )}
               </div>
             </CardHeader>
@@ -128,6 +144,15 @@ export function MatchesTab({ categoryId, sportType }: MatchesTabProps) {
         categoryId={categoryId}
         sportType={sportType || "XV"}
       />
+
+      {!isBowling && sportType && (
+        <StatPreferencesDialog
+          open={isStatPrefsOpen}
+          onOpenChange={setIsStatPrefsOpen}
+          categoryId={categoryId}
+          sportType={sportType}
+        />
+      )}
     </div>
   );
 }

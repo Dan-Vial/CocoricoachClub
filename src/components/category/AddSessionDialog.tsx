@@ -33,7 +33,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { EXERCISE_CATEGORIES, getCategoryLabel, getCategoriesForSport, isCategoryForSport } from "@/lib/constants/exerciseCategories";
 import { getTrainingTypesForSport, trainingTypeHasExercises } from "@/lib/constants/trainingTypes";
 import { QuickAddExerciseDialog } from "@/components/library/QuickAddExerciseDialog";
-
+import { SessionGpsImport, type GpsPlayerData } from "@/components/category/gps/SessionGpsImport";
 interface AddSessionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -83,6 +83,7 @@ export function AddSessionDialog({
   const [searchQuery, setSearchQuery] = useState("");
   const [showLibraryFor, setShowLibraryFor] = useState<number | null>(null);
   const [showAddExerciseDialog, setShowAddExerciseDialog] = useState(false);
+  const [gpsData, setGpsData] = useState<GpsPlayerData[]>([]);
   const queryClient = useQueryClient();
   const exercisesSectionRef = useRef<HTMLDivElement | null>(null);
 
@@ -237,14 +238,48 @@ export function AddSessionDialog({
         if (exerciseError) throw exerciseError;
       }
 
+      // If GPS data was imported, create GPS session records linked to this session
+      const validGpsData = gpsData.filter(d => d.matchedPlayer);
+      if (validGpsData.length > 0) {
+        const gpsRecords = validGpsData.map(d => ({
+          category_id: categoryId,
+          player_id: d.matchedPlayer!.id,
+          session_date: date,
+          session_name: type || null,
+          training_session_id: sessionData.id,
+          source: 'catapult' as const,
+          total_distance_m: d.total_distance_m,
+          high_speed_distance_m: d.high_speed_distance_m,
+          sprint_distance_m: d.sprint_distance_m,
+          max_speed_ms: d.max_speed_ms,
+          player_load: d.player_load,
+          accelerations: d.accelerations,
+          decelerations: d.decelerations,
+          duration_minutes: d.duration_minutes,
+          sprint_count: d.sprint_count,
+          raw_data: d.raw_data,
+        }));
+
+        const { error: gpsError } = await supabase
+          .from("gps_sessions")
+          .insert(gpsRecords);
+        
+        if (gpsError) throw gpsError;
+      }
+
       return sessionData;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["training_sessions", categoryId] });
       queryClient.invalidateQueries({ queryKey: ["training_attendance"] });
       queryClient.invalidateQueries({ queryKey: ["gym-exercises"] });
+      queryClient.invalidateQueries({ queryKey: ["gps-sessions", categoryId] });
       const exerciseCount = exercises.filter(e => e.exercise_name.trim()).length;
-      toast.success(`Séance ajoutée${exerciseCount > 0 ? ` avec ${exerciseCount} exercice(s)` : ''}`);
+      const gpsCount = gpsData.filter(d => d.matchedPlayer).length;
+      let message = "Séance ajoutée";
+      if (exerciseCount > 0) message += ` avec ${exerciseCount} exercice(s)`;
+      if (gpsCount > 0) message += ` et ${gpsCount} données GPS`;
+      toast.success(message);
       resetForm();
       onOpenChange(false);
     },
@@ -266,6 +301,7 @@ export function AddSessionDialog({
     setShowExercises(true);
     setSearchQuery("");
     setShowLibraryFor(null);
+    setGpsData([]);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -431,6 +467,13 @@ export function AddSessionDialog({
                   rows={2}
                 />
               </div>
+
+              {/* GPS Import Section */}
+              <SessionGpsImport
+                players={players?.map(p => ({ id: p.id, name: p.name, position: p.position })) || []}
+                gpsData={gpsData}
+                onGpsDataChange={setGpsData}
+              />
 
               {/* Exercises Section - Only shown for certain training types */}
               {showExerciseSection && (
