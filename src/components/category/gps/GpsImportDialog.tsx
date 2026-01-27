@@ -446,12 +446,15 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
                     <Link2 className="h-4 w-4" />
                     Lier à une séance existante (optionnel)
                   </Label>
-                  <Select value={selectedSessionId} onValueChange={setSelectedSessionId}>
+                  <Select 
+                    value={selectedSessionId || "__none__"} 
+                    onValueChange={(v) => setSelectedSessionId(v === "__none__" ? "" : v)}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Sélectionner une séance..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Aucune liaison</SelectItem>
+                      <SelectItem value="__none__">Aucune liaison</SelectItem>
                       {trainingSessions.map((session) => (
                         <SelectItem key={session.id} value={session.id}>
                           {session.training_type}
@@ -488,14 +491,14 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
                     <div>
                       <Label>Distance totale (m)</Label>
                       <Select
-                        value={columnMapping.total_distance_m || ''}
-                        onValueChange={(v) => setColumnMapping(m => ({ ...m, total_distance_m: v }))}
+                        value={columnMapping.total_distance_m || '__unmapped__'}
+                        onValueChange={(v) => setColumnMapping(m => ({ ...m, total_distance_m: v === '__unmapped__' ? '' : v }))}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Sélectionner..." />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">Non mappé</SelectItem>
+                          <SelectItem value="__unmapped__">Non mappé</SelectItem>
                           {headers.map(h => (
                             <SelectItem key={h} value={h}>{h}</SelectItem>
                           ))}
@@ -508,14 +511,14 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
                     <div>
                       <Label>Distance haute intensité (m)</Label>
                       <Select
-                        value={columnMapping.high_speed_distance_m || ''}
-                        onValueChange={(v) => setColumnMapping(m => ({ ...m, high_speed_distance_m: v }))}
+                        value={columnMapping.high_speed_distance_m || '__unmapped__'}
+                        onValueChange={(v) => setColumnMapping(m => ({ ...m, high_speed_distance_m: v === '__unmapped__' ? '' : v }))}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Sélectionner..." />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">Non mappé</SelectItem>
+                          <SelectItem value="__unmapped__">Non mappé</SelectItem>
                           {headers.map(h => (
                             <SelectItem key={h} value={h}>{h}</SelectItem>
                           ))}
@@ -525,14 +528,14 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
                     <div>
                       <Label>Distance sprint (m)</Label>
                       <Select
-                        value={columnMapping.sprint_distance_m || ''}
-                        onValueChange={(v) => setColumnMapping(m => ({ ...m, sprint_distance_m: v }))}
+                        value={columnMapping.sprint_distance_m || '__unmapped__'}
+                        onValueChange={(v) => setColumnMapping(m => ({ ...m, sprint_distance_m: v === '__unmapped__' ? '' : v }))}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Sélectionner..." />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">Non mappé</SelectItem>
+                          <SelectItem value="__unmapped__">Non mappé</SelectItem>
                           {headers.map(h => (
                             <SelectItem key={h} value={h}>{h}</SelectItem>
                           ))}
@@ -545,14 +548,14 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
                     <div>
                       <Label>Vitesse max (m/s)</Label>
                       <Select
-                        value={columnMapping.max_speed_ms || ''}
-                        onValueChange={(v) => setColumnMapping(m => ({ ...m, max_speed_ms: v }))}
+                        value={columnMapping.max_speed_ms || '__unmapped__'}
+                        onValueChange={(v) => setColumnMapping(m => ({ ...m, max_speed_ms: v === '__unmapped__' ? '' : v }))}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Sélectionner..." />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">Non mappé</SelectItem>
+                          <SelectItem value="__unmapped__">Non mappé</SelectItem>
                           {headers.map(h => (
                             <SelectItem key={h} value={h}>{h}</SelectItem>
                           ))}
@@ -562,14 +565,14 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
                     <div>
                       <Label>Player Load</Label>
                       <Select
-                        value={columnMapping.player_load || ''}
-                        onValueChange={(v) => setColumnMapping(m => ({ ...m, player_load: v }))}
+                        value={columnMapping.player_load || '__unmapped__'}
+                        onValueChange={(v) => setColumnMapping(m => ({ ...m, player_load: v === '__unmapped__' ? '' : v }))}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Sélectionner..." />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">Non mappé</SelectItem>
+                          <SelectItem value="__unmapped__">Non mappé</SelectItem>
                           {headers.map(h => (
                             <SelectItem key={h} value={h}>{h}</SelectItem>
                           ))}
@@ -582,14 +585,14 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
                     <div>
                       <Label>Accélérations</Label>
                       <Select
-                        value={columnMapping.accelerations || ''}
-                        onValueChange={(v) => setColumnMapping(m => ({ ...m, accelerations: v }))}
+                        value={columnMapping.accelerations || '__unmapped__'}
+                        onValueChange={(v) => setColumnMapping(m => ({ ...m, accelerations: v === '__unmapped__' ? '' : v }))}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Sélectionner..." />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">Non mappé</SelectItem>
+                          <SelectItem value="__unmapped__">Non mappé</SelectItem>
                           {headers.map(h => (
                             <SelectItem key={h} value={h}>{h}</SelectItem>
                           ))}
@@ -599,14 +602,14 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
                     <div>
                       <Label>Décélérations</Label>
                       <Select
-                        value={columnMapping.decelerations || ''}
-                        onValueChange={(v) => setColumnMapping(m => ({ ...m, decelerations: v }))}
+                        value={columnMapping.decelerations || '__unmapped__'}
+                        onValueChange={(v) => setColumnMapping(m => ({ ...m, decelerations: v === '__unmapped__' ? '' : v }))}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Sélectionner..." />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">Non mappé</SelectItem>
+                          <SelectItem value="__unmapped__">Non mappé</SelectItem>
                           {headers.map(h => (
                             <SelectItem key={h} value={h}>{h}</SelectItem>
                           ))}
@@ -619,14 +622,14 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
                     <div>
                       <Label>Durée (min)</Label>
                       <Select
-                        value={columnMapping.duration_minutes || ''}
-                        onValueChange={(v) => setColumnMapping(m => ({ ...m, duration_minutes: v }))}
+                        value={columnMapping.duration_minutes || '__unmapped__'}
+                        onValueChange={(v) => setColumnMapping(m => ({ ...m, duration_minutes: v === '__unmapped__' ? '' : v }))}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Sélectionner..." />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">Non mappé</SelectItem>
+                          <SelectItem value="__unmapped__">Non mappé</SelectItem>
                           {headers.map(h => (
                             <SelectItem key={h} value={h}>{h}</SelectItem>
                           ))}
@@ -636,14 +639,14 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
                     <div>
                       <Label>Nombre de sprints</Label>
                       <Select
-                        value={columnMapping.sprint_count || ''}
-                        onValueChange={(v) => setColumnMapping(m => ({ ...m, sprint_count: v }))}
+                        value={columnMapping.sprint_count || '__unmapped__'}
+                        onValueChange={(v) => setColumnMapping(m => ({ ...m, sprint_count: v === '__unmapped__' ? '' : v }))}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Sélectionner..." />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">Non mappé</SelectItem>
+                          <SelectItem value="__unmapped__">Non mappé</SelectItem>
                           {headers.map(h => (
                             <SelectItem key={h} value={h}>{h}</SelectItem>
                           ))}
