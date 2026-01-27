@@ -161,12 +161,20 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
   const playersById = useMemo(() => new Map(validPlayers.map(p => [p.id, p])), [validPlayers]);
   const columnOptions = useMemo(
     () =>
-      headers.map((h, idx) => ({
-        id: `col_${idx}`,
-        index: idx,
-        label: h?.trim() ? h : `Colonne ${idx + 1}`,
-      })),
-    [headers]
+      headers.map((h, idx) => {
+        const headerLabel = h?.trim() ? h : `Colonne ${idx + 1}`;
+        // Get example value from first data row
+        const exampleValue = csvData[0]?.[idx]?.trim() || '';
+        const preview = exampleValue ? ` (ex: ${exampleValue.substring(0, 15)}${exampleValue.length > 15 ? '…' : ''})` : '';
+        return {
+          id: `col_${idx}`,
+          index: idx,
+          label: headerLabel,
+          preview: preview,
+          fullLabel: `${headerLabel}${preview}`,
+        };
+      }),
+    [headers, csvData]
   );
 
   const getColumnIndex = useCallback((mappingValue: string | undefined): number => {
@@ -533,7 +541,7 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
                           <SelectItem value="__unmapped__">Non mappé</SelectItem>
                           {columnOptions.map(opt => (
                             <SelectItem key={opt.id} value={opt.id}>
-                              {opt.label}
+                              {opt.fullLabel}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -552,7 +560,7 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
                           <SelectItem value="__unmapped__">Non mappé</SelectItem>
                           {columnOptions.map(opt => (
                             <SelectItem key={opt.id} value={opt.id}>
-                              {opt.label}
+                              {opt.fullLabel}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -574,7 +582,7 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
                           <SelectItem value="__unmapped__">Non mappé</SelectItem>
                           {columnOptions.map(opt => (
                             <SelectItem key={opt.id} value={opt.id}>
-                              {opt.label}
+                              {opt.fullLabel}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -593,7 +601,7 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
                           <SelectItem value="__unmapped__">Non mappé</SelectItem>
                           {columnOptions.map(opt => (
                             <SelectItem key={opt.id} value={opt.id}>
-                              {opt.label}
+                              {opt.fullLabel}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -615,7 +623,7 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
                           <SelectItem value="__unmapped__">Non mappé</SelectItem>
                           {columnOptions.map(opt => (
                             <SelectItem key={opt.id} value={opt.id}>
-                              {opt.label}
+                              {opt.fullLabel}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -634,7 +642,7 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
                           <SelectItem value="__unmapped__">Non mappé</SelectItem>
                           {columnOptions.map(opt => (
                             <SelectItem key={opt.id} value={opt.id}>
-                              {opt.label}
+                              {opt.fullLabel}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -656,7 +664,7 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
                           <SelectItem value="__unmapped__">Non mappé</SelectItem>
                           {columnOptions.map(opt => (
                             <SelectItem key={opt.id} value={opt.id}>
-                              {opt.label}
+                              {opt.fullLabel}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -675,7 +683,7 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
                           <SelectItem value="__unmapped__">Non mappé</SelectItem>
                           {columnOptions.map(opt => (
                             <SelectItem key={opt.id} value={opt.id}>
-                              {opt.label}
+                              {opt.fullLabel}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -697,7 +705,7 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
                           <SelectItem value="__unmapped__">Non mappé</SelectItem>
                           {columnOptions.map(opt => (
                             <SelectItem key={opt.id} value={opt.id}>
-                              {opt.label}
+                              {opt.fullLabel}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -716,7 +724,7 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
                           <SelectItem value="__unmapped__">Non mappé</SelectItem>
                           {columnOptions.map(opt => (
                             <SelectItem key={opt.id} value={opt.id}>
-                              {opt.label}
+                              {opt.fullLabel}
                             </SelectItem>
                           ))}
                         </SelectContent>
