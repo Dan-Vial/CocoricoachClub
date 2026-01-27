@@ -388,7 +388,7 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 min-h-0 overflow-hidden">
+        <div className="flex-1 min-h-0 overflow-y-auto">
           {step === 'upload' && (
             <div className="space-y-6">
               <div className="border-2 border-dashed rounded-lg p-8 text-center">
@@ -499,7 +499,7 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
                 </div>
               )}
 
-              <ScrollArea className="flex-1 min-h-0 border rounded-md p-4">
+              <div className="border rounded-md p-4 overflow-y-auto">
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -706,7 +706,7 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
                     </div>
                   </div>
                 </div>
-              </ScrollArea>
+              </div>
 
               <div className="flex justify-end gap-2">
                 <Button variant="outline" onClick={() => setStep('upload')}>
@@ -734,7 +734,7 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
                 )}
               </div>
 
-              <ScrollArea className="flex-1 min-h-0 border rounded-md">
+              <div className="border rounded-md overflow-auto">
                 <table className="w-full text-sm">
                   <thead className="bg-muted sticky top-0">
                     <tr>
@@ -805,7 +805,7 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
                     ))}
                   </tbody>
                 </table>
-              </ScrollArea>
+              </div>
 
               <div className="flex justify-end gap-2">
                 <Button variant="outline" onClick={() => setStep('mapping')}>
