@@ -490,6 +490,41 @@ export type Database = {
           },
         ]
       }
+      category_stat_preferences: {
+        Row: {
+          category_id: string
+          enabled_stats: string[]
+          id: string
+          sport_type: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          category_id: string
+          enabled_stats?: string[]
+          id?: string
+          sport_type: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          category_id?: string
+          enabled_stats?: string[]
+          id?: string
+          sport_type?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "category_stat_preferences_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: true
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       club_invitations: {
         Row: {
           club_id: string
@@ -1141,6 +1176,7 @@ export type Database = {
           time_zone_4_min: number | null
           time_zone_5_min: number | null
           total_distance_m: number | null
+          training_session_id: string | null
           updated_at: string
         }
         Insert: {
@@ -1171,6 +1207,7 @@ export type Database = {
           time_zone_4_min?: number | null
           time_zone_5_min?: number | null
           total_distance_m?: number | null
+          training_session_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -1201,6 +1238,7 @@ export type Database = {
           time_zone_4_min?: number | null
           time_zone_5_min?: number | null
           total_distance_m?: number | null
+          training_session_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -1216,6 +1254,13 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gps_sessions_training_session_id_fkey"
+            columns: ["training_session_id"]
+            isOneToOne: false
+            referencedRelation: "training_sessions"
             referencedColumns: ["id"]
           },
         ]
@@ -1550,6 +1595,35 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      match_stat_overrides: {
+        Row: {
+          created_at: string
+          enabled_stats: string[]
+          id: string
+          match_id: string
+        }
+        Insert: {
+          created_at?: string
+          enabled_stats?: string[]
+          id?: string
+          match_id: string
+        }
+        Update: {
+          created_at?: string
+          enabled_stats?: string[]
+          id?: string
+          match_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_stat_overrides_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: true
+            referencedRelation: "matches"
             referencedColumns: ["id"]
           },
         ]
