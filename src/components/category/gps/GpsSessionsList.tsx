@@ -5,12 +5,15 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Search, Trash2, Calendar, User, MapPin } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Search, Trash2, Calendar, User, MapPin, Eye } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Json } from "@/integrations/supabase/types";
 
 interface GpsSession {
   id: string;
@@ -26,6 +29,7 @@ interface GpsSession {
   decelerations: number | null;
   sprint_count: number | null;
   duration_minutes: number | null;
+  raw_data: Json | null;
   players: {
     id: string;
     name: string;
@@ -43,6 +47,7 @@ interface GpsSessionsListProps {
 export function GpsSessionsList({ sessions, isLoading, onRefresh, categoryId }: GpsSessionsListProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [detailSession, setDetailSession] = useState<GpsSession | null>(null);
 
   const filteredSessions = sessions.filter(session => {
     const playerName = session.players?.name?.toLowerCase() || '';
@@ -69,6 +74,14 @@ export function GpsSessionsList({ sessions, isLoading, onRefresh, categoryId }: 
     } finally {
       setDeletingId(null);
     }
+  };
+
+  // Parse raw_data to display all imported columns
+  const getRawDataEntries = (rawData: Json | null): [string, string][] => {
+    if (!rawData || typeof rawData !== 'object' || Array.isArray(rawData)) return [];
+    return Object.entries(rawData as Record<string, unknown>)
+      .filter(([_, v]) => v !== null && v !== undefined && v !== '')
+      .map(([k, v]) => [k, String(v)]);
   };
 
   const getSourceBadge = (source: string | null) => {
@@ -170,7 +183,7 @@ export function GpsSessionsList({ sessions, isLoading, onRefresh, categoryId }: 
                       <TableHead className="text-right">V. Max</TableHead>
                       <TableHead className="text-right">Load</TableHead>
                       <TableHead className="text-right">Acc/Dec</TableHead>
-                      <TableHead className="w-10"></TableHead>
+                      <TableHead className="w-20"></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -213,34 +226,45 @@ export function GpsSessionsList({ sessions, isLoading, onRefresh, categoryId }: 
                             : '-'}
                         </TableCell>
                         <TableCell>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button 
-                                variant="ghost" 
-                                size="icon"
-                                className="h-8 w-8 text-destructive hover:text-destructive"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Supprimer cette session ?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Cette action est irréversible.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Annuler</AlertDialogCancel>
-                                <AlertDialogAction 
-                                  onClick={() => handleDelete(session.id)}
-                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          <div className="flex items-center gap-1">
+                            <Button 
+                              variant="ghost" 
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => setDetailSession(session)}
+                              title="Voir toutes les données"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon"
+                                  className="h-8 w-8 text-destructive hover:text-destructive"
                                 >
-                                  Supprimer
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Supprimer cette session ?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Cette action est irréversible.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                  <AlertDialogAction 
+                                    onClick={() => handleDelete(session.id)}
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  >
+                                    Supprimer
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -251,6 +275,90 @@ export function GpsSessionsList({ sessions, isLoading, onRefresh, categoryId }: 
           ))}
         </div>
       </CardContent>
+
+      {/* Detail Dialog for raw_data */}
+      <Dialog open={!!detailSession} onOpenChange={(open) => !open && setDetailSession(null)}>
+        <DialogContent className="max-w-2xl max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <User className="h-5 w-5" />
+              {detailSession?.players?.name || 'Joueur inconnu'} - Données complètes
+            </DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="h-[60vh] pr-4">
+            {detailSession && (
+              <div className="space-y-4">
+                {/* Main metrics summary */}
+                <div className="grid grid-cols-2 gap-3 p-4 bg-muted/50 rounded-lg">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Distance totale</p>
+                    <p className="font-medium">{detailSession.total_distance_m ? `${Math.round(Number(detailSession.total_distance_m))} m` : '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Vitesse max</p>
+                    <p className="font-medium">{detailSession.max_speed_ms ? `${Number(detailSession.max_speed_ms).toFixed(2)} m/s` : '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">HSR</p>
+                    <p className="font-medium">{detailSession.high_speed_distance_m ? `${Math.round(Number(detailSession.high_speed_distance_m))} m` : '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Sprint Distance</p>
+                    <p className="font-medium">{detailSession.sprint_distance_m ? `${Math.round(Number(detailSession.sprint_distance_m))} m` : '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Player Load</p>
+                    <p className="font-medium">{detailSession.player_load ? Number(detailSession.player_load).toFixed(1) : '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Accélérations / Décélérations</p>
+                    <p className="font-medium">{detailSession.accelerations || 0} / {detailSession.decelerations || 0}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Sprints</p>
+                    <p className="font-medium">{detailSession.sprint_count ?? '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Durée</p>
+                    <p className="font-medium">{detailSession.duration_minutes ? `${detailSession.duration_minutes} min` : '-'}</p>
+                  </div>
+                </div>
+
+                {/* All raw CSV columns */}
+                <div>
+                  <h4 className="font-medium mb-2 text-sm">Toutes les données importées (CSV)</h4>
+                  <div className="border rounded-lg overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-1/2">Colonne</TableHead>
+                          <TableHead>Valeur</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {getRawDataEntries(detailSession.raw_data).length > 0 ? (
+                          getRawDataEntries(detailSession.raw_data).map(([key, value]) => (
+                            <TableRow key={key}>
+                              <TableCell className="font-mono text-xs">{key}</TableCell>
+                              <TableCell className="text-sm">{value}</TableCell>
+                            </TableRow>
+                          ))
+                        ) : (
+                          <TableRow>
+                            <TableCell colSpan={2} className="text-center text-muted-foreground">
+                              Aucune donnée brute disponible
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              </div>
+            )}
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
