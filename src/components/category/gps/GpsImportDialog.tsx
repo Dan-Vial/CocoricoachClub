@@ -451,10 +451,10 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
                 <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                 <Label htmlFor="csv-file" className="cursor-pointer">
                   <span className="text-lg font-medium block mb-2">
-                    Glissez votre fichier CSV ici
+                    Importer un fichier CSV
                   </span>
                   <span className="text-sm text-muted-foreground block mb-4">
-                    ou cliquez pour sélectionner
+                    Cliquez pour sélectionner votre fichier
                   </span>
                   <Input
                     id="csv-file"
@@ -494,12 +494,15 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
             <div className="flex flex-col h-full min-h-0 gap-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label>Date de la session</Label>
+                  <Label>Date de la session *</Label>
                   <Input
                     type="date"
                     value={sessionDate}
                     onChange={(e) => setSessionDate(e.target.value)}
                   />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Toutes les données seront enregistrées à cette date
+                  </p>
                 </div>
                 <div>
                   <Label>Nom de la session (optionnel)</Label>
@@ -914,10 +917,10 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
                           {row.data.total_distance_m ? `${row.data.total_distance_m} m` : '-'}
                         </td>
                         <td className="p-2 text-right">
-                          {row.data.player_load !== undefined && row.data.player_load !== '' ? row.data.player_load : '-'}
+                          {row.data.player_load != null && row.data.player_load !== '' ? row.data.player_load : '-'}
                         </td>
                         <td className="p-2 text-right">
-                          {row.data.max_speed_ms !== undefined && row.data.max_speed_ms !== '' ? `${row.data.max_speed_ms} m/s` : '-'}
+                          {row.data.max_speed_ms != null && row.data.max_speed_ms !== '' ? `${row.data.max_speed_ms}` : '-'}
                         </td>
                       </tr>
                     ))}
