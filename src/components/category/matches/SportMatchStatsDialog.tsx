@@ -326,22 +326,24 @@ export function SportMatchStatsDialog({
               <SelectValue placeholder={isIndividual ? "Choisir un participant..." : "Choisir un athlète..."} />
             </SelectTrigger>
             <SelectContent className="z-[200] bg-popover">
-              {statsData.map((player) => (
-                <SelectItem 
-                  key={player.playerId} 
-                  value={player.playerId}
-                >
-                  <div className="flex items-center gap-2 w-full">
-                    <span>{player.playerName}</span>
-                    {playerHasStats(player) && (
-                      <Badge variant="secondary" className="text-xs px-1.5 py-0 ml-auto">
-                        <Check className="h-3 w-3 mr-1" />
-                        Stats
-                      </Badge>
-                    )}
-                  </div>
-                </SelectItem>
-              ))}
+              {statsData
+                .filter((player) => player.playerId && player.playerId.trim() !== "")
+                .map((player) => (
+                  <SelectItem 
+                    key={player.playerId} 
+                    value={player.playerId}
+                  >
+                    <div className="flex items-center gap-2 w-full">
+                      <span>{player.playerName}</span>
+                      {playerHasStats(player) && (
+                        <Badge variant="secondary" className="text-xs px-1.5 py-0 ml-auto">
+                          <Check className="h-3 w-3 mr-1" />
+                          Stats
+                        </Badge>
+                      )}
+                    </div>
+                  </SelectItem>
+                ))}
             </SelectContent>
           </Select>
         </div>
