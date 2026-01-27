@@ -85,6 +85,12 @@ const KNOWN_COLUMN_MAPPINGS: Record<string, keyof ColumnMapping> = {
   'sprint distance (m)': 'sprint_distance_m',
   'sprinting': 'sprint_distance_m',
   'distance sprint': 'sprint_distance_m',
+  'dist > 24 km/h': 'sprint_distance_m',
+  'dist > 24km/h': 'sprint_distance_m',
+  'dist>24km/h': 'sprint_distance_m',
+  'dist > 27 km/h': 'sprint_distance_m',
+  'dist > 27km/h': 'sprint_distance_m',
+  'dist>27km/h': 'sprint_distance_m',
   
   // Max speed
   'max speed': 'max_speed_ms',
@@ -95,7 +101,9 @@ const KNOWN_COLUMN_MAPPINGS: Record<string, keyof ColumnMapping> = {
   'peak speed': 'max_speed_ms',
   'vmax': 'max_speed_ms',
   'vmax (km/h)': 'max_speed_ms',
+  'vmax(km/h)': 'max_speed_ms',
   'vmax (m/s)': 'max_speed_ms',
+  'vmax(m/s)': 'max_speed_ms',
   
   // Player load
   'player load': 'player_load',
@@ -141,8 +149,10 @@ const KNOWN_COLUMN_MAPPINGS: Record<string, keyof ColumnMapping> = {
   
   // High speed distance - additional French mappings
   'dist > 18 km/h': 'high_speed_distance_m',
-  'dist > 24 km/h': 'sprint_distance_m',
-  'dist > 27km/h': 'sprint_distance_m',
+  'dist > 18km/h': 'high_speed_distance_m',
+  'dist>18km/h': 'high_speed_distance_m',
+  'dist totale (m)': 'total_distance_m',
+  'dist totale': 'total_distance_m',
 };
 
 export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuccess }: GpsImportDialogProps) {
