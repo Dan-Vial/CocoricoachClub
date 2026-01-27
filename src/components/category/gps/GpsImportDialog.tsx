@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Upload, FileText, Check, AlertCircle, Loader2, Link2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -30,7 +31,8 @@ interface GpsImportDialogProps {
 
 interface ParsedRow {
   playerName: string;
-  matchedPlayer: Player | null;
+  matchedPlayerId: string | null;
+  include: boolean;
   data: Record<string, string | number>;
 }
 
@@ -137,6 +139,27 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
   const [source, setSource] = useState<'catapult' | 'statsports' | 'manual'>('manual');
   const [isImporting, setIsImporting] = useState(false);
 
+  const validPlayers = useMemo(() => players.filter(p => p.id && p.id.trim() !== ""), [players]);
+  const playersById = useMemo(() => new Map(validPlayers.map(p => [p.id, p])), [validPlayers]);
+  const columnOptions = useMemo(
+    () =>
+      headers.map((h, idx) => ({
+        id: `col_${idx}`,
+        index: idx,
+        label: h?.trim() ? h : `Colonne ${idx + 1}`,
+      })),
+    [headers]
+  );
+
+  const getColumnIndex = useCallback((mappingValue: string | undefined): number => {
+    if (!mappingValue) return -1;
+    const m = mappingValue.match(/^col_(\d+)$/);
+    if (m) return Number(m[1]);
+    // fallback (legacy): mapping stored as header label
+    const idx = headers.indexOf(mappingValue);
+    return idx;
+  }, [headers]);
+
   // Fetch existing training sessions for linking
   const { data: trainingSessions } = useQuery({
     queryKey: ["training-sessions-for-gps", categoryId, sessionDate],
@@ -209,7 +232,7 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
       headerRow.forEach((header, index) => {
         const mappedField = KNOWN_COLUMN_MAPPINGS[header];
         if (mappedField) {
-          autoMapping[mappedField] = rows[0][index];
+          autoMapping[mappedField] = `col_${index}`;
         }
       });
       setColumnMapping(autoMapping);
@@ -232,18 +255,18 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
     const searchName = name.toLowerCase().trim();
     
     // Try exact match first
-    let match = players.find(p => p.name.toLowerCase() === searchName);
+    let match = validPlayers.find(p => p.name.toLowerCase() === searchName);
     
     if (match) return match;
     
     // Try partial match
-    match = players.find(p =>
+    match = validPlayers.find(p =>
       p.name.toLowerCase().includes(searchName) ||
       searchName.includes(p.name.toLowerCase())
     );
     
     return match || null;
-  }, [players]);
+  }, [validPlayers]);
 
   const handleProceedToPreview = useCallback(() => {
     if (!columnMapping.player_name) {
@@ -251,7 +274,11 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
       return;
     }
 
-    const playerNameIndex = headers.indexOf(columnMapping.player_name);
+    const playerNameIndex = getColumnIndex(columnMapping.player_name);
+    if (playerNameIndex === -1) {
+      toast.error("Colonne du joueur invalide");
+      return;
+    }
     
     const rows: ParsedRow[] = csvData.map(row => {
       const playerName = row[playerNameIndex] || '';
@@ -260,7 +287,7 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
       const data: Record<string, string | number> = {};
       Object.entries(columnMapping).forEach(([field, header]) => {
         if (header) {
-          const index = headers.indexOf(header);
+          const index = getColumnIndex(header);
           if (index !== -1) {
             const value = row[index];
             // Parse numbers
@@ -270,12 +297,12 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
         }
       });
       
-      return { playerName, matchedPlayer, data };
+      return { playerName, matchedPlayerId: matchedPlayer?.id ?? null, include: true, data };
     }).filter(row => row.playerName);
 
     setParsedRows(rows);
     setStep('preview');
-  }, [columnMapping, headers, csvData, matchPlayerByName]);
+  }, [columnMapping, headers, csvData, matchPlayerByName, getColumnIndex]);
 
   const parseNumber = (value: string | number | undefined): number | null => {
     if (value === undefined || value === null || value === '') return null;
@@ -284,7 +311,7 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
   };
 
   const handleImport = async () => {
-    const validRows = parsedRows.filter(row => row.matchedPlayer);
+    const validRows = parsedRows.filter(row => row.include && row.matchedPlayerId);
     
     if (validRows.length === 0) {
       toast.error("Aucun joueur n'a pu être associé");
@@ -297,7 +324,7 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
     try {
       const records = validRows.map(row => ({
         category_id: categoryId,
-        player_id: row.matchedPlayer!.id,
+        player_id: row.matchedPlayerId!,
         session_date: sessionDate,
         session_name: sessionName || null,
         training_session_id: selectedSessionId || null,
@@ -339,8 +366,11 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
     onOpenChange(open);
   };
 
-  const matchedCount = parsedRows.filter(r => r.matchedPlayer).length;
-  const unmatchedCount = parsedRows.filter(r => !r.matchedPlayer).length;
+  const matchedCount = parsedRows.filter(r => r.matchedPlayerId).length;
+  const unmatchedCount = parsedRows.filter(r => !r.matchedPlayerId).length;
+
+  const effectiveMatchedCount = parsedRows.filter(r => r.include && r.matchedPlayerId).length;
+  const effectiveUnmatchedCount = parsedRows.filter(r => r.include && !r.matchedPlayerId).length;
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -358,7 +388,7 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 min-h-0 overflow-hidden">
           {step === 'upload' && (
             <div className="space-y-6">
               <div className="border-2 border-dashed rounded-lg p-8 text-center">
@@ -405,7 +435,7 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
           )}
 
           {step === 'mapping' && (
-            <div className="space-y-4">
+            <div className="flex flex-col h-full min-h-0 gap-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label>Date de la session</Label>
@@ -469,21 +499,24 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
                 </div>
               )}
 
-              <ScrollArea className="h-[300px] border rounded-md p-4">
+              <ScrollArea className="flex-1 min-h-0 border rounded-md p-4">
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label>Colonne Nom du joueur *</Label>
                       <Select
-                        value={columnMapping.player_name || ''}
-                        onValueChange={(v) => setColumnMapping(m => ({ ...m, player_name: v }))}
+                        value={columnMapping.player_name || '__unmapped__'}
+                        onValueChange={(v) => setColumnMapping(m => ({ ...m, player_name: v === '__unmapped__' ? '' : v }))}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Sélectionner..." />
                         </SelectTrigger>
                         <SelectContent>
-                          {headers.map(h => (
-                            <SelectItem key={h} value={h}>{h}</SelectItem>
+                          <SelectItem value="__unmapped__">Non mappé</SelectItem>
+                          {columnOptions.map(opt => (
+                            <SelectItem key={opt.id} value={opt.id}>
+                              {opt.label}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -499,8 +532,10 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="__unmapped__">Non mappé</SelectItem>
-                          {headers.map(h => (
-                            <SelectItem key={h} value={h}>{h}</SelectItem>
+                          {columnOptions.map(opt => (
+                            <SelectItem key={opt.id} value={opt.id}>
+                              {opt.label}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -519,8 +554,10 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="__unmapped__">Non mappé</SelectItem>
-                          {headers.map(h => (
-                            <SelectItem key={h} value={h}>{h}</SelectItem>
+                          {columnOptions.map(opt => (
+                            <SelectItem key={opt.id} value={opt.id}>
+                              {opt.label}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -536,8 +573,10 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="__unmapped__">Non mappé</SelectItem>
-                          {headers.map(h => (
-                            <SelectItem key={h} value={h}>{h}</SelectItem>
+                          {columnOptions.map(opt => (
+                            <SelectItem key={opt.id} value={opt.id}>
+                              {opt.label}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -556,8 +595,10 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="__unmapped__">Non mappé</SelectItem>
-                          {headers.map(h => (
-                            <SelectItem key={h} value={h}>{h}</SelectItem>
+                          {columnOptions.map(opt => (
+                            <SelectItem key={opt.id} value={opt.id}>
+                              {opt.label}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -573,8 +614,10 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="__unmapped__">Non mappé</SelectItem>
-                          {headers.map(h => (
-                            <SelectItem key={h} value={h}>{h}</SelectItem>
+                          {columnOptions.map(opt => (
+                            <SelectItem key={opt.id} value={opt.id}>
+                              {opt.label}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -593,8 +636,10 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="__unmapped__">Non mappé</SelectItem>
-                          {headers.map(h => (
-                            <SelectItem key={h} value={h}>{h}</SelectItem>
+                          {columnOptions.map(opt => (
+                            <SelectItem key={opt.id} value={opt.id}>
+                              {opt.label}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -610,8 +655,10 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="__unmapped__">Non mappé</SelectItem>
-                          {headers.map(h => (
-                            <SelectItem key={h} value={h}>{h}</SelectItem>
+                          {columnOptions.map(opt => (
+                            <SelectItem key={opt.id} value={opt.id}>
+                              {opt.label}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -630,8 +677,10 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="__unmapped__">Non mappé</SelectItem>
-                          {headers.map(h => (
-                            <SelectItem key={h} value={h}>{h}</SelectItem>
+                          {columnOptions.map(opt => (
+                            <SelectItem key={opt.id} value={opt.id}>
+                              {opt.label}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -647,8 +696,10 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="__unmapped__">Non mappé</SelectItem>
-                          {headers.map(h => (
-                            <SelectItem key={h} value={h}>{h}</SelectItem>
+                          {columnOptions.map(opt => (
+                            <SelectItem key={opt.id} value={opt.id}>
+                              {opt.label}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -669,24 +720,25 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
           )}
 
           {step === 'preview' && (
-            <div className="space-y-4">
+            <div className="flex flex-col h-full min-h-0 gap-4">
               <div className="flex gap-4">
                 <Badge variant="default" className="gap-1">
                   <Check className="h-3 w-3" />
-                  {matchedCount} joueurs associés
+                  {effectiveMatchedCount} joueurs associés
                 </Badge>
-                {unmatchedCount > 0 && (
+                {effectiveUnmatchedCount > 0 && (
                   <Badge variant="destructive" className="gap-1">
                     <AlertCircle className="h-3 w-3" />
-                    {unmatchedCount} non trouvés
+                    {effectiveUnmatchedCount} non trouvés
                   </Badge>
                 )}
               </div>
 
-              <ScrollArea className="h-[350px] border rounded-md">
+              <ScrollArea className="flex-1 min-h-0 border rounded-md">
                 <table className="w-full text-sm">
                   <thead className="bg-muted sticky top-0">
                     <tr>
+                      <th className="text-left p-2">Importer</th>
                       <th className="text-left p-2">Statut</th>
                       <th className="text-left p-2">Nom CSV</th>
                       <th className="text-left p-2">Joueur associé</th>
@@ -697,17 +749,48 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
                   </thead>
                   <tbody>
                     {parsedRows.map((row, i) => (
-                      <tr key={i} className={!row.matchedPlayer ? 'bg-destructive/10' : ''}>
+                      <tr key={i} className={row.include && !row.matchedPlayerId ? 'bg-destructive/10' : ''}>
                         <td className="p-2">
-                          {row.matchedPlayer ? (
-                            <Check className="h-4 w-4 text-green-500" />
+                          <Checkbox
+                            checked={row.include}
+                            onCheckedChange={(checked) => {
+                              const isChecked = checked === true;
+                              setParsedRows(prev => prev.map((r, idx) => idx === i ? { ...r, include: isChecked } : r));
+                            }}
+                            aria-label="Inclure à l'import"
+                          />
+                        </td>
+                        <td className="p-2">
+                          {row.matchedPlayerId ? (
+                            <Check className="h-4 w-4 text-primary" />
                           ) : (
                             <AlertCircle className="h-4 w-4 text-destructive" />
                           )}
                         </td>
                         <td className="p-2">{row.playerName}</td>
                         <td className="p-2">
-                          {row.matchedPlayer?.name || '-'}
+                          <Select
+                            value={row.matchedPlayerId || "__none__"}
+                            onValueChange={(v) => {
+                              setParsedRows(prev => prev.map((r, idx) =>
+                                idx === i
+                                  ? { ...r, matchedPlayerId: v === "__none__" ? null : v }
+                                  : r
+                              ));
+                            }}
+                          >
+                            <SelectTrigger className="w-[240px]">
+                              <SelectValue placeholder="Associer un athlète" />
+                            </SelectTrigger>
+                            <SelectContent className="max-h-[250px] z-[200]">
+                              <SelectItem value="__none__">Non associé</SelectItem>
+                              {validPlayers.map((p) => (
+                                <SelectItem key={p.id} value={p.id}>
+                                  {p.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </td>
                         <td className="p-2 text-right">
                           {row.data.total_distance_m ? `${row.data.total_distance_m} m` : '-'}
@@ -728,8 +811,8 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
                 <Button variant="outline" onClick={() => setStep('mapping')}>
                   Retour
                 </Button>
-                <Button onClick={handleImport} disabled={matchedCount === 0}>
-                  Importer {matchedCount} sessions
+                <Button onClick={handleImport} disabled={effectiveMatchedCount === 0}>
+                  Importer {effectiveMatchedCount} sessions
                 </Button>
               </div>
             </div>
