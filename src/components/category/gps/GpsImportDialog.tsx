@@ -555,30 +555,58 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
                 </div>
               )}
 
-              <div className="border rounded-md p-4 overflow-y-auto">
+              {/* Summary of auto-detected columns */}
+              <div className="flex flex-wrap gap-2 p-3 bg-muted/50 rounded-lg">
+                <span className="text-sm font-medium">Colonnes détectées:</span>
+                {columnMapping.player_name && <Badge variant="default" className="text-xs">Joueur ✓</Badge>}
+                {columnMapping.total_distance_m && <Badge variant="default" className="text-xs">Distance ✓</Badge>}
+                {columnMapping.sprint_distance_m && <Badge variant="default" className="text-xs">Sprint ✓</Badge>}
+                {columnMapping.max_speed_ms && <Badge variant="default" className="text-xs">V.Max ✓</Badge>}
+                {columnMapping.player_load && <Badge variant="default" className="text-xs">Load ✓</Badge>}
+                {columnMapping.high_speed_distance_m && <Badge variant="secondary" className="text-xs">HSR ✓</Badge>}
+                {columnMapping.accelerations && <Badge variant="secondary" className="text-xs">Accél ✓</Badge>}
+                {columnMapping.decelerations && <Badge variant="secondary" className="text-xs">Décél ✓</Badge>}
+                {!columnMapping.sprint_distance_m && <Badge variant="destructive" className="text-xs">Sprint ?</Badge>}
+                {!columnMapping.max_speed_ms && <Badge variant="destructive" className="text-xs">V.Max ?</Badge>}
+              </div>
+
+              <ScrollArea className="border rounded-md p-4 h-[350px]">
                 <div className="space-y-4">
+                  {/* Player name - required */}
+                  <div className="p-3 rounded-lg border-2 border-primary/20 bg-primary/5">
+                    <Label className="flex items-center gap-2 mb-2">
+                      Colonne Nom du joueur *
+                      {columnMapping.player_name ? (
+                        <Badge variant="default" className="text-xs"><Check className="h-3 w-3 mr-1" />Détecté</Badge>
+                      ) : (
+                        <Badge variant="destructive" className="text-xs"><AlertCircle className="h-3 w-3 mr-1" />Requis</Badge>
+                      )}
+                    </Label>
+                    <Select
+                      value={columnMapping.player_name || '__unmapped__'}
+                      onValueChange={(v) => setColumnMapping(m => ({ ...m, player_name: v === '__unmapped__' ? '' : v }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Sélectionner..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__unmapped__">Non mappé</SelectItem>
+                        {columnOptions.map(opt => (
+                          <SelectItem key={opt.id} value={opt.id}>
+                            {opt.fullLabel}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Key metrics in highlighted section */}
                   <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label>Colonne Nom du joueur *</Label>
-                      <Select
-                        value={columnMapping.player_name || '__unmapped__'}
-                        onValueChange={(v) => setColumnMapping(m => ({ ...m, player_name: v === '__unmapped__' ? '' : v }))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Sélectionner..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="__unmapped__">Non mappé</SelectItem>
-                          {columnOptions.map(opt => (
-                            <SelectItem key={opt.id} value={opt.id}>
-                              {opt.fullLabel}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label>Distance totale (m)</Label>
+                    <div className="p-3 rounded-lg border bg-card">
+                      <Label className="flex items-center gap-2 mb-2">
+                        Distance totale (m)
+                        {columnMapping.total_distance_m && <Badge variant="default" className="text-xs"><Check className="h-3 w-3" /></Badge>}
+                      </Label>
                       <Select
                         value={columnMapping.total_distance_m || '__unmapped__'}
                         onValueChange={(v) => setColumnMapping(m => ({ ...m, total_distance_m: v === '__unmapped__' ? '' : v }))}
@@ -596,71 +624,11 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
                         </SelectContent>
                       </Select>
                     </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label>Distance haute intensité (m)</Label>
-                      <Select
-                        value={columnMapping.high_speed_distance_m || '__unmapped__'}
-                        onValueChange={(v) => setColumnMapping(m => ({ ...m, high_speed_distance_m: v === '__unmapped__' ? '' : v }))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Sélectionner..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="__unmapped__">Non mappé</SelectItem>
-                          {columnOptions.map(opt => (
-                            <SelectItem key={opt.id} value={opt.id}>
-                              {opt.fullLabel}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label>Distance sprint (m)</Label>
-                      <Select
-                        value={columnMapping.sprint_distance_m || '__unmapped__'}
-                        onValueChange={(v) => setColumnMapping(m => ({ ...m, sprint_distance_m: v === '__unmapped__' ? '' : v }))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Sélectionner..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="__unmapped__">Non mappé</SelectItem>
-                          {columnOptions.map(opt => (
-                            <SelectItem key={opt.id} value={opt.id}>
-                              {opt.fullLabel}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label>Vitesse max (m/s)</Label>
-                      <Select
-                        value={columnMapping.max_speed_ms || '__unmapped__'}
-                        onValueChange={(v) => setColumnMapping(m => ({ ...m, max_speed_ms: v === '__unmapped__' ? '' : v }))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Sélectionner..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="__unmapped__">Non mappé</SelectItem>
-                          {columnOptions.map(opt => (
-                            <SelectItem key={opt.id} value={opt.id}>
-                              {opt.fullLabel}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label>Player Load</Label>
+                    <div className="p-3 rounded-lg border bg-card">
+                      <Label className="flex items-center gap-2 mb-2">
+                        Player Load
+                        {columnMapping.player_load && <Badge variant="default" className="text-xs"><Check className="h-3 w-3" /></Badge>}
+                      </Label>
                       <Select
                         value={columnMapping.player_load || '__unmapped__'}
                         onValueChange={(v) => setColumnMapping(m => ({ ...m, player_load: v === '__unmapped__' ? '' : v }))}
@@ -680,9 +648,93 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
                     </div>
                   </div>
 
+                  {/* Sprint & Speed - often problematic, highlight if missing */}
                   <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label>Accélérations</Label>
+                    <div className={`p-3 rounded-lg border ${!columnMapping.sprint_distance_m ? 'border-destructive/50 bg-destructive/5' : 'bg-card'}`}>
+                      <Label className="flex items-center gap-2 mb-2">
+                        Distance sprint (m)
+                        {columnMapping.sprint_distance_m ? (
+                          <Badge variant="default" className="text-xs"><Check className="h-3 w-3" /></Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-xs text-destructive">À mapper</Badge>
+                        )}
+                      </Label>
+                      <Select
+                        value={columnMapping.sprint_distance_m || '__unmapped__'}
+                        onValueChange={(v) => setColumnMapping(m => ({ ...m, sprint_distance_m: v === '__unmapped__' ? '' : v }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Sélectionner..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__unmapped__">Non mappé</SelectItem>
+                          {columnOptions.map(opt => (
+                            <SelectItem key={opt.id} value={opt.id}>
+                              {opt.fullLabel}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground mt-1">Ex: Dist &gt; 27km/h, Dist &gt; 24km/h</p>
+                    </div>
+                    <div className={`p-3 rounded-lg border ${!columnMapping.max_speed_ms ? 'border-destructive/50 bg-destructive/5' : 'bg-card'}`}>
+                      <Label className="flex items-center gap-2 mb-2">
+                        Vitesse max (m/s ou km/h)
+                        {columnMapping.max_speed_ms ? (
+                          <Badge variant="default" className="text-xs"><Check className="h-3 w-3" /></Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-xs text-destructive">À mapper</Badge>
+                        )}
+                      </Label>
+                      <Select
+                        value={columnMapping.max_speed_ms || '__unmapped__'}
+                        onValueChange={(v) => setColumnMapping(m => ({ ...m, max_speed_ms: v === '__unmapped__' ? '' : v }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Sélectionner..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__unmapped__">Non mappé</SelectItem>
+                          {columnOptions.map(opt => (
+                            <SelectItem key={opt.id} value={opt.id}>
+                              {opt.fullLabel}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground mt-1">Ex: Vmax (km/h), Max Speed</p>
+                    </div>
+                  </div>
+
+                  {/* Other metrics */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="p-3 rounded-lg border bg-card">
+                      <Label className="flex items-center gap-2 mb-2">
+                        Distance haute intensité (m)
+                        {columnMapping.high_speed_distance_m && <Badge variant="secondary" className="text-xs"><Check className="h-3 w-3" /></Badge>}
+                      </Label>
+                      <Select
+                        value={columnMapping.high_speed_distance_m || '__unmapped__'}
+                        onValueChange={(v) => setColumnMapping(m => ({ ...m, high_speed_distance_m: v === '__unmapped__' ? '' : v }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Sélectionner..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__unmapped__">Non mappé</SelectItem>
+                          {columnOptions.map(opt => (
+                            <SelectItem key={opt.id} value={opt.id}>
+                              {opt.fullLabel}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="p-3 rounded-lg border bg-card">
+                      <Label className="flex items-center gap-2 mb-2">
+                        Accélérations
+                        {columnMapping.accelerations && <Badge variant="secondary" className="text-xs"><Check className="h-3 w-3" /></Badge>}
+                      </Label>
                       <Select
                         value={columnMapping.accelerations || '__unmapped__'}
                         onValueChange={(v) => setColumnMapping(m => ({ ...m, accelerations: v === '__unmapped__' ? '' : v }))}
@@ -700,8 +752,14 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
                         </SelectContent>
                       </Select>
                     </div>
-                    <div>
-                      <Label>Décélérations</Label>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="p-3 rounded-lg border bg-card">
+                      <Label className="flex items-center gap-2 mb-2">
+                        Décélérations
+                        {columnMapping.decelerations && <Badge variant="secondary" className="text-xs"><Check className="h-3 w-3" /></Badge>}
+                      </Label>
                       <Select
                         value={columnMapping.decelerations || '__unmapped__'}
                         onValueChange={(v) => setColumnMapping(m => ({ ...m, decelerations: v === '__unmapped__' ? '' : v }))}
@@ -719,11 +777,11 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
                         </SelectContent>
                       </Select>
                     </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label>Durée (min)</Label>
+                    <div className="p-3 rounded-lg border bg-card">
+                      <Label className="flex items-center gap-2 mb-2">
+                        Durée (min)
+                        {columnMapping.duration_minutes && <Badge variant="secondary" className="text-xs"><Check className="h-3 w-3" /></Badge>}
+                      </Label>
                       <Select
                         value={columnMapping.duration_minutes || '__unmapped__'}
                         onValueChange={(v) => setColumnMapping(m => ({ ...m, duration_minutes: v === '__unmapped__' ? '' : v }))}
@@ -741,28 +799,32 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
                         </SelectContent>
                       </Select>
                     </div>
-                    <div>
-                      <Label>Nombre de sprints</Label>
-                      <Select
-                        value={columnMapping.sprint_count || '__unmapped__'}
-                        onValueChange={(v) => setColumnMapping(m => ({ ...m, sprint_count: v === '__unmapped__' ? '' : v }))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Sélectionner..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="__unmapped__">Non mappé</SelectItem>
-                          {columnOptions.map(opt => (
-                            <SelectItem key={opt.id} value={opt.id}>
-                              {opt.fullLabel}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                  </div>
+
+                  <div className="p-3 rounded-lg border bg-card">
+                    <Label className="flex items-center gap-2 mb-2">
+                      Nombre de sprints
+                      {columnMapping.sprint_count && <Badge variant="secondary" className="text-xs"><Check className="h-3 w-3" /></Badge>}
+                    </Label>
+                    <Select
+                      value={columnMapping.sprint_count || '__unmapped__'}
+                      onValueChange={(v) => setColumnMapping(m => ({ ...m, sprint_count: v === '__unmapped__' ? '' : v }))}
+                    >
+                      <SelectTrigger className="w-full md:w-1/2">
+                        <SelectValue placeholder="Sélectionner..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__unmapped__">Non mappé</SelectItem>
+                        {columnOptions.map(opt => (
+                          <SelectItem key={opt.id} value={opt.id}>
+                            {opt.fullLabel}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
-              </div>
+              </ScrollArea>
 
               <div className="flex justify-end gap-2">
                 <Button variant="outline" onClick={() => setStep('upload')}>
