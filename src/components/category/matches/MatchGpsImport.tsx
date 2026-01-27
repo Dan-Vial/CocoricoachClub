@@ -391,14 +391,16 @@ export function MatchGpsImport({
                               <SelectValue placeholder="Associer un athlète" />
                             </SelectTrigger>
                             <SelectContent>
-                              {players.map((player) => (
-                                <SelectItem key={player.id} value={player.id}>
-                                  <div className="flex items-center gap-2">
-                                    <User className="h-3 w-3" />
-                                    {player.name}
-                                  </div>
-                                </SelectItem>
-                              ))}
+                              {players
+                                .filter((player) => player.id && player.id.trim() !== "")
+                                .map((player) => (
+                                  <SelectItem key={player.id} value={player.id}>
+                                    <div className="flex items-center gap-2">
+                                      <User className="h-3 w-3" />
+                                      {player.name}
+                                    </div>
+                                  </SelectItem>
+                                ))}
                             </SelectContent>
                           </Select>
                         </div>
