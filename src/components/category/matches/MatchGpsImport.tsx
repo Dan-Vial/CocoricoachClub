@@ -143,61 +143,118 @@ export function MatchGpsImport({
     }
   };
 
+  const safeParseFloat = (value: string | undefined): number | undefined => {
+    if (!value || value.trim() === '') return undefined;
+    const cleaned = value.replace(',', '.').replace(/[^\d.-]/g, '');
+    const num = parseFloat(cleaned);
+    return isNaN(num) ? undefined : num;
+  };
+
+  const safeParseInt = (value: string | undefined): number | undefined => {
+    if (!value || value.trim() === '') return undefined;
+    const cleaned = value.replace(/[^\d-]/g, '');
+    const num = parseInt(cleaned, 10);
+    return isNaN(num) ? undefined : num;
+  };
+
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     const reader = new FileReader();
     reader.onload = (e) => {
-      const csvText = e.target?.result as string;
-      const { headers, rows } = parseCSV(csvText);
-      
-      if (headers.length === 0 || rows.length === 0) {
-        toast.error("Fichier CSV invalide ou vide");
-        return;
+      try {
+        const csvText = e.target?.result as string;
+        if (!csvText || typeof csvText !== 'string') {
+          toast.error("Impossible de lire le fichier");
+          return;
+        }
+
+        const { headers, rows } = parseCSV(csvText);
+        
+        if (headers.length === 0 || rows.length === 0) {
+          toast.error("Fichier CSV invalide ou vide");
+          return;
+        }
+
+        // Detect source based on columns
+        let source = "manual";
+        if (headers.some(h => h.includes("catapult"))) source = "catapult";
+        else if (headers.some(h => h.includes("statsports"))) source = "statsports";
+        else if (headers.some(h => h.includes("polar"))) source = "polar";
+        else if (headers.some(h => h.includes("gpexe"))) source = "gpexe";
+        setDetectedSource(source);
+
+        // Map columns
+        const columnMap: Record<string, number> = {};
+        headers.forEach((header, index) => {
+          const mapped = CSV_COLUMN_MAPPINGS[header];
+          if (mapped) columnMap[mapped] = index;
+        });
+
+        // Check if we have a player column
+        if (columnMap.player_name === undefined) {
+          toast.error("Colonne 'joueur' ou 'player' non trouvée dans le fichier CSV");
+          return;
+        }
+
+        // Parse rows with error handling
+        const parsedData: GpsPlayerData[] = [];
+        
+        for (const row of rows) {
+          try {
+            if (row.length === 0 || !row.some(cell => cell?.trim())) continue;
+            
+            const playerName = columnMap.player_name !== undefined && row[columnMap.player_name] 
+              ? row[columnMap.player_name].trim() 
+              : "";
+            
+            if (!playerName) continue;
+
+            const rawData: Record<string, unknown> = {};
+            headers.forEach((header, idx) => {
+              if (row[idx] !== undefined) {
+                rawData[header] = row[idx];
+              }
+            });
+            
+            parsedData.push({
+              playerName,
+              matchedPlayer: matchPlayerName(playerName, players),
+              total_distance_m: safeParseFloat(row[columnMap.total_distance_m]),
+              high_speed_distance_m: safeParseFloat(row[columnMap.high_speed_distance_m]),
+              sprint_distance_m: safeParseFloat(row[columnMap.sprint_distance_m]),
+              max_speed_ms: safeParseFloat(row[columnMap.max_speed_ms]),
+              player_load: safeParseFloat(row[columnMap.player_load]),
+              accelerations: safeParseInt(row[columnMap.accelerations]),
+              decelerations: safeParseInt(row[columnMap.decelerations]),
+              duration_minutes: safeParseFloat(row[columnMap.duration_minutes]),
+              sprint_count: safeParseInt(row[columnMap.sprint_count]),
+              raw_data: rawData,
+            });
+          } catch (rowError) {
+            console.warn("Erreur parsing ligne CSV:", rowError);
+            // Continue with other rows
+          }
+        }
+
+        if (parsedData.length === 0) {
+          toast.error("Aucune donnée valide trouvée dans le fichier");
+          return;
+        }
+
+        setGpsData(parsedData);
+        toast.success(`${parsedData.length} lignes importées`);
+      } catch (error) {
+        console.error("Erreur lors du parsing CSV:", error);
+        toast.error("Erreur lors de la lecture du fichier CSV. Vérifiez le format.");
       }
-
-      // Detect source based on columns
-      let source = "manual";
-      if (headers.some(h => h.includes("catapult"))) source = "catapult";
-      else if (headers.some(h => h.includes("statsports"))) source = "statsports";
-      else if (headers.some(h => h.includes("polar"))) source = "polar";
-      else if (headers.some(h => h.includes("gpexe"))) source = "gpexe";
-      setDetectedSource(source);
-
-      // Map columns
-      const columnMap: Record<string, number> = {};
-      headers.forEach((header, index) => {
-        const mapped = CSV_COLUMN_MAPPINGS[header];
-        if (mapped) columnMap[mapped] = index;
-      });
-
-      // Parse rows
-      const parsedData: GpsPlayerData[] = rows
-        .filter(row => row.length > 0 && row.some(cell => cell.trim()))
-        .map(row => {
-          const playerName = columnMap.player_name !== undefined ? row[columnMap.player_name] : "";
-          
-          return {
-            playerName,
-            matchedPlayer: matchPlayerName(playerName, players),
-            total_distance_m: columnMap.total_distance_m !== undefined ? parseFloat(row[columnMap.total_distance_m]) || undefined : undefined,
-            high_speed_distance_m: columnMap.high_speed_distance_m !== undefined ? parseFloat(row[columnMap.high_speed_distance_m]) || undefined : undefined,
-            sprint_distance_m: columnMap.sprint_distance_m !== undefined ? parseFloat(row[columnMap.sprint_distance_m]) || undefined : undefined,
-            max_speed_ms: columnMap.max_speed_ms !== undefined ? parseFloat(row[columnMap.max_speed_ms]) || undefined : undefined,
-            player_load: columnMap.player_load !== undefined ? parseFloat(row[columnMap.player_load]) || undefined : undefined,
-            accelerations: columnMap.accelerations !== undefined ? parseInt(row[columnMap.accelerations]) || undefined : undefined,
-            decelerations: columnMap.decelerations !== undefined ? parseInt(row[columnMap.decelerations]) || undefined : undefined,
-            duration_minutes: columnMap.duration_minutes !== undefined ? parseFloat(row[columnMap.duration_minutes]) || undefined : undefined,
-            sprint_count: columnMap.sprint_count !== undefined ? parseInt(row[columnMap.sprint_count]) || undefined : undefined,
-            raw_data: row.reduce((acc, cell, idx) => ({ ...acc, [headers[idx]]: cell }), {}),
-          };
-        })
-        .filter(d => d.playerName);
-
-      setGpsData(parsedData);
-      toast.success(`${parsedData.length} lignes importées`);
     };
+    
+    reader.onerror = () => {
+      toast.error("Erreur lors de la lecture du fichier");
+    };
+    
     reader.readAsText(file);
   };
 
