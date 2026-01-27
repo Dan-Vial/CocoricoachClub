@@ -46,6 +46,9 @@ export const RUGBY_STATS: StatField[] = [
   { key: "turnoversLost", label: "Ballons perdus", shortLabel: "Pertes", category: "defense", type: "number" },
   { key: "penaltiesConceded", label: "Pénalités concédées", shortLabel: "Pén. conc.", category: "defense", type: "number" },
   { key: "jackalWins", label: "Grattages réussis", shortLabel: "Grattages", category: "defense", type: "number" },
+  { key: "defenseCollisions", label: "Nombre de collisions", shortLabel: "Collisions", category: "defense", type: "number" },
+  { key: "defenseCollisionsOver5m", label: "Collision +5m", shortLabel: "Coll. +5m", category: "defense", type: "number" },
+  { key: "defenseCollisionsUnder5m", label: "Collision -5m", shortLabel: "Coll. -5m", category: "defense", type: "number" },
   // Scrum & Lineout
   { key: "scrumWon", label: "Mêlées gagnées", shortLabel: "Mêlées", category: "attack", type: "number" },
   { key: "scrumPenaltiesWon", label: "Pén. mêlées gagnées", shortLabel: "Pén. mêl.", category: "attack", type: "number" },
@@ -54,6 +57,9 @@ export const RUGBY_STATS: StatField[] = [
   // Individual Stats - General
   { key: "minutesPlayed", label: "Minutes jouées", shortLabel: "Min.", category: "general", type: "number" },
   { key: "starts", label: "Titularisations", shortLabel: "Titu.", category: "general", type: "number" },
+  { key: "totalCollisions", label: "Collisions totales", shortLabel: "Collisions", category: "general", type: "number" },
+  { key: "collisionsOver5m", label: "Collision +5m (élan ≥5m)", shortLabel: "Coll. +5m", category: "general", type: "number" },
+  { key: "collisionsUnder5m", label: "Collision -5m (quasi statique)", shortLabel: "Coll. -5m", category: "general", type: "number" },
   { key: "yellowCards", label: "Cartons jaunes", shortLabel: "Jaunes", category: "general", type: "number" },
   { key: "redCards", label: "Cartons rouges", shortLabel: "Rouges", category: "general", type: "number" },
   { key: "manOfMatch", label: "Homme du match", shortLabel: "HDM", category: "general", type: "number", max: 1 },
