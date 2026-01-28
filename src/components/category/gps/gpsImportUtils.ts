@@ -113,60 +113,90 @@ export function findMetricMapping(header: string): MetricKey | null {
     return null;
   }
 
-  // Player name patterns
-  if (
-    /^(player|athlete|nom|joueur|name)/.test(normalized) ||
-    /player\s*name/.test(normalized) ||
-    /athlete\s*name/.test(normalized)
-  ) {
+  // Player name patterns - very flexible for different file formats
+  const playerNamePatterns = [
+    /^(player|athlete|nom|joueur|name)/,
+    /player\s*name/,
+    /athlete\s*name/,
+    /^prenom/,
+    /^first\s*name/,
+    /^last\s*name/,
+    /^full\s*name/,
+    /nom\s*complet/,
+    /^athl[eè]te$/,
+  ];
+  if (playerNamePatterns.some((p) => p.test(normalized))) {
     return "player_name";
   }
 
   // Max speed / Vmax patterns - CHECK FIRST before distance
-  if (
-    /\bvmax\b/.test(normalized) ||
-    /v\s*max/.test(normalized) ||
-    /vitesse\s*max/.test(normalized) ||
-    /max\s*speed/.test(normalized) ||
-    /top\s*speed/.test(normalized) ||
-    /peak\s*speed/.test(normalized) ||
-    /maximum\s*speed/.test(normalized)
-  ) {
+  const vmaxPatterns = [
+    /\bvmax\b/,
+    /v\s*max/,
+    /vitesse\s*max/,
+    /max\s*speed/,
+    /top\s*speed/,
+    /peak\s*speed/,
+    /maximum\s*speed/,
+    /max\s*vel/,
+    /peak\s*vel/,
+    /vitesse\s*de\s*pointe/,
+    /pointe\s*de\s*vitesse/,
+  ];
+  if (vmaxPatterns.some((p) => p.test(normalized))) {
     return "max_speed_ms";
   }
 
-  // Sprint distance patterns (>24, >27 km/h)
-  if (
-    /sprint\s*dist/.test(normalized) ||
-    /dist\s*>\s*2[4-7]/.test(normalized) ||
-    /distance\s*>\s*2[4-7]/.test(normalized) ||
-    /dist.*sprint/.test(normalized) ||
-    /sprinting/.test(normalized)
-  ) {
+  // Sprint distance patterns (>24, >27 km/h, etc.)
+  const sprintDistPatterns = [
+    /sprint\s*dist/,
+    /dist\s*>\s*2[4-7]/,
+    /distance\s*>\s*2[4-7]/,
+    /dist.*sprint/,
+    /sprinting/,
+    /zone\s*6/,
+    /very\s*high\s*speed/,
+    /tres\s*haute\s*intensite/,
+    /z6/,
+  ];
+  if (sprintDistPatterns.some((p) => p.test(normalized))) {
     return "sprint_distance_m";
   }
 
   // High speed distance patterns (>18, >20, >21 km/h, HSR)
-  if (
-    /\bhsr\b/.test(normalized) ||
-    /high\s*speed/.test(normalized) ||
-    /haute\s*intensite/.test(normalized) ||
-    /dist\s*>\s*1[8-9]/.test(normalized) ||
-    /distance\s*>\s*1[8-9]/.test(normalized) ||
-    /dist\s*>\s*2[0-1]/.test(normalized) ||
-    /distance\s*>\s*2[0-1]/.test(normalized)
-  ) {
+  const hsrPatterns = [
+    /\bhsr\b/,
+    /high\s*speed/,
+    /haute\s*intensite/,
+    /dist\s*>\s*1[8-9]/,
+    /distance\s*>\s*1[8-9]/,
+    /dist\s*>\s*2[0-1]/,
+    /distance\s*>\s*2[0-1]/,
+    /zone\s*5/,
+    /z5/,
+    /running\s*>\s*\d+/,
+  ];
+  if (hsrPatterns.some((p) => p.test(normalized))) {
     return "high_speed_distance_m";
   }
 
   // Total distance patterns (must not match high speed or sprint)
+  const totalDistPatterns = [
+    /distance\s*totale/,
+    /total\s*distance/,
+    /dist\s*totale/,
+    /^distance$/,
+    /^distance\s*m$/,
+    /^dist\s*m$/,
+    /^tot\s*dist/,
+    /total\s*dist/,
+    /metres\s*covered/,
+    /meters\s*covered/,
+    /distance\s*covered/,
+    /distance\s*parcourue/,
+  ];
   if (
-    (/distance\s*totale/.test(normalized) ||
-      /total\s*distance/.test(normalized) ||
-      /dist\s*totale/.test(normalized) ||
-      normalized === "distance" ||
-      normalized === "distance m" ||
-      /^dist\s*m$/.test(normalized)) &&
+    totalDistPatterns.some((p) => p.test(normalized)) &&
     !normalized.includes(">") &&
     !normalized.includes("sprint") &&
     !normalized.includes("hsr") &&
@@ -176,40 +206,81 @@ export function findMetricMapping(header: string): MetricKey | null {
   }
 
   // Player load patterns
-  if (
-    /player\s*load/.test(normalized) ||
-    /playerload/.test(normalized) ||
-    /body\s*load/.test(normalized) ||
-    /charge\s*joueur/.test(normalized) ||
-    /^tot\s*pl$/.test(normalized) ||
-    /^pl$/.test(normalized) ||
-    /^load$/.test(normalized)
-  ) {
+  const playerLoadPatterns = [
+    /player\s*load/,
+    /playerload/,
+    /body\s*load/,
+    /charge\s*joueur/,
+    /^tot\s*pl$/,
+    /^pl$/,
+    /^load$/,
+    /metabolic\s*load/,
+    /training\s*load/,
+    /mechanical\s*load/,
+  ];
+  if (playerLoadPatterns.some((p) => p.test(normalized))) {
     return "player_load";
   }
 
   // Accelerations patterns
-  if (/\baccel\b/.test(normalized) || /acceleration/.test(normalized) || /nb\s*accel/.test(normalized)) {
+  const accelPatterns = [
+    /\baccel\b/,
+    /acceleration/,
+    /nb\s*accel/,
+    /accel\s*count/,
+    /^acc$/,
+    /^accelerations?$/,
+    /high\s*accel/,
+    /total\s*accel/,
+    /nombre\s*d?\s*acceleration/,
+  ];
+  if (accelPatterns.some((p) => p.test(normalized)) && !looksLikeRate) {
     return "accelerations";
   }
 
   // Decelerations patterns
-  if (/\bdecel\b/.test(normalized) || /deceleration/.test(normalized) || /nb\s*decel/.test(normalized)) {
+  const decelPatterns = [
+    /\bdecel\b/,
+    /deceleration/,
+    /nb\s*decel/,
+    /decel\s*count/,
+    /^dec$/,
+    /^decelerations?$/,
+    /high\s*decel/,
+    /total\s*decel/,
+    /nombre\s*d?\s*deceleration/,
+  ];
+  if (decelPatterns.some((p) => p.test(normalized)) && !looksLikeRate) {
     return "decelerations";
   }
 
   // Duration patterns
-  if (/duration/.test(normalized) || /duree/.test(normalized) || /session\s*time/.test(normalized) || /^time\b/.test(normalized)) {
+  const durationPatterns = [
+    /duration/,
+    /duree/,
+    /session\s*time/,
+    /^time\b/,
+    /temps\s*de\s*jeu/,
+    /playing\s*time/,
+    /match\s*time/,
+    /training\s*time/,
+    /total\s*time/,
+  ];
+  if (durationPatterns.some((p) => p.test(normalized))) {
     return "duration_minutes";
   }
 
   // Sprint count patterns
-  if (
-    /sprint\s*count/.test(normalized) ||
-    /nb\s*sprint/.test(normalized) ||
-    /number\s*of\s*sprint/.test(normalized) ||
-    /^sprints?$/.test(normalized)
-  ) {
+  const sprintCountPatterns = [
+    /sprint\s*count/,
+    /nb\s*sprint/,
+    /number\s*of\s*sprint/,
+    /^sprints?$/,
+    /total\s*sprint/,
+    /nombre\s*de\s*sprint/,
+    /sprint\s*efforts/,
+  ];
+  if (sprintCountPatterns.some((p) => p.test(normalized)) && !looksLikeRate) {
     return "sprint_count";
   }
 

@@ -183,7 +183,8 @@ All colors MUST be HSL.
   }
 
   /* Field Mode - High contrast dark theme for outdoor use */
-  .field-mode {
+  .field-mode,
+  .field-mode * {
     --background: 215 28% 10%;
     --foreground: 210 20% 95%;
 
@@ -217,6 +218,29 @@ All colors MUST be HSL.
     --border: 215 25% 25%;
     --input: 215 25% 20%;
     --ring: 200 85% 55%;
+
+    /* Chart colors for field mode */
+    --chart-1: 200 85% 55%;
+    --chart-2: 160 60% 48%;
+    --chart-3: 38 95% 55%;
+    --chart-4: 280 55% 60%;
+    --chart-5: 320 70% 55%;
+
+    /* Status colors for field mode */
+    --status-optimal: 145 65% 50%;
+    --status-attention: 38 95% 55%;
+    --status-critical: 0 85% 60%;
+
+    /* Gradient overrides */
+    --gradient-hero: linear-gradient(135deg, hsl(215 28% 12%), hsl(215 25% 18%));
+    --gradient-card: linear-gradient(180deg, hsl(215 25% 14%), hsl(215 25% 16%));
+    --gradient-performance: linear-gradient(135deg, hsl(200 85% 55%), hsl(200 80% 60%));
+  }
+
+  /* Ensure field mode applies to body */
+  body.field-mode {
+    background-color: hsl(215 28% 10%);
+    color: hsl(210 20% 95%);
   }
 
 @layer base {

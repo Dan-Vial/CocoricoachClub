@@ -48,6 +48,7 @@ export function HealthTab({ categoryId }: HealthTabProps) {
   return (
     <div className="space-y-6">
       <Tabs defaultValue="dashboard" className="space-y-6">
+        <div className="flex justify-center">
         <TabsList className="flex-wrap h-auto gap-2 justify-center">
           {/* Dashboard Coach - Accessible en viewer */}
           <TabsTrigger value="dashboard" className="flex items-center gap-2">
@@ -93,6 +94,7 @@ export function HealthTab({ categoryId }: HealthTabProps) {
             Protocoles
           </DisabledTabTrigger>
         </TabsList>
+        </div>
 
         <TabsContent value="dashboard">
           <CoachDashboard categoryId={categoryId} />
