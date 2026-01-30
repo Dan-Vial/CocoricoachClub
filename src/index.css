@@ -315,7 +315,8 @@ All colors MUST be HSL.
 
 /* Print styles for session details */
 @media print {
-  .print-content {
+  .print-content,
+  .print-session {
     background: white !important;
     color: black !important;
     -webkit-print-color-adjust: exact !important;
@@ -323,6 +324,23 @@ All colors MUST be HSL.
   }
   
   .print-exercises {
+    page-break-inside: avoid;
+  }
+  
+  .print-only {
+    display: block !important;
+  }
+  
+  /* Hide print-hidden elements */
+  .print-hidden {
+    display: none !important;
+  }
+  
+  /* Session blocks print styling */
+  .print-session {
+    border: 1px solid #ddd !important;
+    padding: 16px !important;
+    margin-bottom: 12px !important;
     page-break-inside: avoid;
   }
   

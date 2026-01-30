@@ -23,6 +23,7 @@ import { getTrainingTypesForSport, TRAINING_TYPE_COLORS } from "@/lib/constants/
 import { DisabledTabTrigger } from "@/components/ui/disabled-tab-trigger";
 import { useViewerSessions, useViewerMatches } from "@/hooks/use-viewer-data";
 import { MonthlyCalendarView } from "./calendar/MonthlyCalendarView";
+import { WeeklySessionsView } from "./calendar/WeeklySessionsView";
 
 interface CalendarTabProps {
   categoryId: string;
@@ -35,6 +36,7 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
   const [editingSession, setEditingSession] = useState<any | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [isDailyDialogOpen, setIsDailyDialogOpen] = useState(false);
+  const [currentWeek, setCurrentWeek] = useState(new Date());
   const [selectedSession, setSelectedSession] = useState<{
     id: string;
     date: string;
@@ -280,6 +282,29 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
             onDeleteSession={(sessionId) => deleteSession.mutate(sessionId)}
             onRescheduleSession={(sessionId, newDate) => {
               rescheduleSession.mutate({ sessionId, newDate });
+            }}
+          />
+
+          {/* Weekly Sessions View - below monthly */}
+          <WeeklySessionsView
+            sessions={sessions || []}
+            matches={matches || []}
+            sportType={sportType}
+            currentWeek={currentWeek}
+            onWeekChange={setCurrentWeek}
+            onViewSession={(session) => {
+              setSelectedSession({
+                id: session.id,
+                date: session.session_date,
+                type: session.training_type === "test" ? "test" : "training",
+              });
+            }}
+            onViewMatch={(match) => {
+              setSelectedMatch({
+                id: match.id,
+                date: match.match_date,
+                opponent: match.opponent,
+              });
             }}
           />
         </TabsContent>

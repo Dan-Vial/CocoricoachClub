@@ -7,6 +7,7 @@ import { MultiAthleteComparison } from "./MultiAthleteComparison";
 import { InjuryRiskPrediction } from "./InjuryRiskPrediction";
 import { PerformanceHeatmap } from "./PerformanceHeatmap";
 import { AIPredictiveDashboard } from "./AIPredictiveDashboard";
+import { IntensityComparisonDashboard } from "./IntensityComparisonDashboard";
 
 interface AnalyticsTabProps {
   categoryId: string;
@@ -36,12 +37,13 @@ export function AnalyticsTab({ categoryId }: AnalyticsTabProps) {
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="evolution" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="evolution">Évolution</TabsTrigger>
-            <TabsTrigger value="comparison">Comparaison</TabsTrigger>
-            <TabsTrigger value="heatmap">Heatmap</TabsTrigger>
-            <TabsTrigger value="risk">Risques</TabsTrigger>
-            <TabsTrigger value="ai-predict">IA Prédictif</TabsTrigger>
+          <TabsList className="flex flex-wrap h-auto gap-1">
+            <TabsTrigger value="evolution" className="text-xs sm:text-sm">Évolution</TabsTrigger>
+            <TabsTrigger value="comparison" className="text-xs sm:text-sm">Comparaison</TabsTrigger>
+            <TabsTrigger value="intensity" className="text-xs sm:text-sm">Intensité</TabsTrigger>
+            <TabsTrigger value="heatmap" className="text-xs sm:text-sm">Heatmap</TabsTrigger>
+            <TabsTrigger value="risk" className="text-xs sm:text-sm">Risques</TabsTrigger>
+            <TabsTrigger value="ai-predict" className="text-xs sm:text-sm">IA Prédictif</TabsTrigger>
           </TabsList>
 
           <TabsContent value="evolution">
@@ -50,6 +52,10 @@ export function AnalyticsTab({ categoryId }: AnalyticsTabProps) {
 
           <TabsContent value="comparison">
             <MultiAthleteComparison categoryId={categoryId} sportType={sportType} />
+          </TabsContent>
+
+          <TabsContent value="intensity">
+            <IntensityComparisonDashboard categoryId={categoryId} />
           </TabsContent>
 
           <TabsContent value="heatmap">

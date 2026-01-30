@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   Calendar, 
   Dumbbell, 
@@ -21,7 +22,9 @@ import {
   CheckCircle,
   AlertCircle,
   Smile,
-  Plus
+  Plus,
+  Printer,
+  Eye
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -35,6 +38,8 @@ import {
 import { cn } from "@/lib/utils";
 import { useFieldMode } from "@/contexts/FieldModeContext";
 import { AddWellnessDialog } from "./AddWellnessDialog";
+import { GroupedExerciseList } from "./GroupedExerciseList";
+import { printElement } from "@/lib/pdfExport";
 
 interface DailySessionViewProps {
   categoryId: string;
@@ -54,7 +59,15 @@ export function DailySessionView({ categoryId }: DailySessionViewProps) {
   const { fieldMode, setFieldMode } = useFieldMode();
   const [showOnlyAtRisk, setShowOnlyAtRisk] = useState(false);
   const [wellnessDialogOpen, setWellnessDialogOpen] = useState(false);
+  const [expandedSession, setExpandedSession] = useState<string | null>(null);
+  const printRef = useRef<HTMLDivElement>(null);
   const today = format(new Date(), "yyyy-MM-dd");
+
+  const handlePrint = () => {
+    if (printRef.current) {
+      printElement(printRef.current, `Vue du Jour - ${format(new Date(), "PPP", { locale: fr })}`);
+    }
+  };
 
   // Fetch today's sessions
   const { data: todaySessions } = useQuery({
@@ -399,149 +412,164 @@ export function DailySessionView({ categoryId }: DailySessionViewProps) {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4" ref={printRef}>
         {/* Today's Sessions */}
         <Card className={cn(fieldMode && "bg-slate-800 border-slate-700")}>
           <CardHeader className="pb-3">
-            <CardTitle className={cn("flex items-center gap-2", fieldMode && "text-white")}>
-              <Clock className={cn("h-5 w-5", fieldMode ? "text-blue-400" : "text-primary")} />
-              Séances du jour
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className={cn("flex items-center gap-2", fieldMode && "text-white")}>
+                <Clock className={cn("h-5 w-5", fieldMode ? "text-blue-400" : "text-primary")} />
+                Séances du jour
+              </CardTitle>
+              {todaySessions && todaySessions.length > 0 && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handlePrint}
+                  className={cn(fieldMode && "border-slate-600 hover:bg-slate-700")}
+                >
+                  <Printer className="h-4 w-4 mr-1" />
+                  Imprimer
+                </Button>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
-            {!todaySessions || todaySessions.length === 0 ? (
-              <div className={cn(
-                "text-center py-8",
-                fieldMode ? "text-slate-400" : "text-muted-foreground"
-              )}>
-                <Calendar className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                <p>Aucune séance programmée aujourd'hui</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {todaySessions.map((session) => {
-                  const exercises = exercisesBySession[session.id] || [];
-                  // Get unique exercises (by name) with aggregated info
-                  const uniqueExercises = exercises.reduce((acc, ex) => {
-                    const existing = acc.find(e => e.exercise_name === ex.exercise_name);
-                    if (existing) {
-                      existing.count++;
-                    } else {
-                      acc.push({ ...ex, count: 1 });
-                    }
-                    return acc;
-                  }, [] as Array<typeof exercises[0] & { count: number }>);
+            <ScrollArea className="max-h-[500px]">
+              {!todaySessions || todaySessions.length === 0 ? (
+                <div className={cn(
+                  "text-center py-8",
+                  fieldMode ? "text-slate-400" : "text-muted-foreground"
+                )}>
+                  <Calendar className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                  <p>Aucune séance programmée aujourd'hui</p>
+                </div>
+              ) : (
+                <div className="space-y-3 pr-2">
+                  {todaySessions.map((session) => {
+                    const exercises = exercisesBySession[session.id] || [];
+                    const isExpanded = expandedSession === session.id;
 
-                  return (
-                    <div
-                      key={session.id}
-                      className={cn(
-                        "p-4 rounded-lg border-2",
-                        fieldMode 
-                          ? "bg-slate-700 border-slate-600" 
-                          : "bg-muted/50 border-border"
-                      )}
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-3">
-                          <div className={cn(
-                            "p-2 rounded-lg",
-                            session.training_type === "collectif" || session.training_type === "physique"
-                              ? (fieldMode ? "bg-green-900/50" : "bg-green-100") 
-                              : (fieldMode ? "bg-blue-900/50" : "bg-blue-100")
-                          )}>
-                            {getSessionTypeIcon(session.training_type)}
-                          </div>
-                          <div>
-                            <p className={cn("font-semibold", fieldMode && "text-white")}>
-                              {getSessionTypeLabel(session.training_type)}
-                            </p>
-                            {session.notes && (
-                              <p className={cn("text-sm", fieldMode ? "text-slate-400" : "text-muted-foreground")}>
-                                {session.notes}
+                    return (
+                      <div
+                        key={session.id}
+                        className={cn(
+                          "p-4 rounded-lg border-2 print-session",
+                          fieldMode 
+                            ? "bg-slate-700 border-slate-600" 
+                            : "bg-muted/50 border-border"
+                        )}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-3">
+                            <div className={cn(
+                              "p-2 rounded-lg",
+                              session.training_type === "collectif" || session.training_type === "physique"
+                                ? (fieldMode ? "bg-green-900/50" : "bg-green-100") 
+                                : (fieldMode ? "bg-blue-900/50" : "bg-blue-100")
+                            )}>
+                              {getSessionTypeIcon(session.training_type)}
+                            </div>
+                            <div>
+                              <p className={cn("font-semibold", fieldMode && "text-white")}>
+                                {getSessionTypeLabel(session.training_type)}
                               </p>
+                              {session.notes && (
+                                <p className={cn("text-sm", fieldMode ? "text-slate-400" : "text-muted-foreground")}>
+                                  {session.notes}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {session.intensity && (
+                              <Badge className={cn(
+                                "text-lg px-3",
+                                session.intensity >= 8 
+                                  ? "bg-red-500" 
+                                  : session.intensity >= 6 
+                                    ? "bg-yellow-500" 
+                                    : "bg-green-500",
+                                "text-white"
+                              )}>
+                                RPE {session.intensity}
+                              </Badge>
                             )}
                           </div>
                         </div>
-                        {session.intensity && (
-                          <Badge className={cn(
-                            "text-lg px-3",
-                            session.intensity >= 8 
-                              ? "bg-red-500" 
-                              : session.intensity >= 6 
-                                ? "bg-yellow-500" 
-                                : "bg-green-500",
-                            "text-white"
-                          )}>
-                            RPE {session.intensity}
-                          </Badge>
-                        )}
-                      </div>
-                      
-                      <div className={cn(
-                        "flex items-center gap-4 text-sm mb-2",
-                        fieldMode ? "text-slate-400" : "text-muted-foreground"
-                      )}>
-                        {session.session_start_time && (
-                          <span className="flex items-center gap-1">
-                            <Clock className="h-4 w-4" />
-                            {session.session_start_time.slice(0, 5)}
-                            {session.session_end_time && ` - ${session.session_end_time.slice(0, 5)}`}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Exercises details */}
-                      {uniqueExercises.length > 0 && (
+                        
                         <div className={cn(
-                          "mt-3 pt-3 border-t",
-                          fieldMode ? "border-slate-600" : "border-border"
+                          "flex items-center gap-4 text-sm mb-2",
+                          fieldMode ? "text-slate-400" : "text-muted-foreground"
                         )}>
-                          <p className={cn(
-                            "text-xs font-medium mb-2 flex items-center gap-1",
-                            fieldMode ? "text-slate-300" : "text-muted-foreground"
+                          {session.session_start_time && (
+                            <span className="flex items-center gap-1">
+                              <Clock className="h-4 w-4" />
+                              {session.session_start_time.slice(0, 5)}
+                              {session.session_end_time && ` - ${session.session_end_time.slice(0, 5)}`}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Exercises with grouped blocks */}
+                        {exercises.length > 0 && (
+                          <div className={cn(
+                            "mt-3 pt-3 border-t",
+                            fieldMode ? "border-slate-600" : "border-border"
                           )}>
-                            <Dumbbell className="h-3 w-3" />
-                            Exercices prévus ({uniqueExercises.length})
-                          </p>
-                          <div className="space-y-1.5">
-                            {uniqueExercises.slice(0, 6).map((ex, idx) => (
-                              <div 
-                                key={idx}
-                                className={cn(
-                                  "flex items-center justify-between text-sm px-2 py-1.5 rounded",
-                                  fieldMode ? "bg-slate-600/50" : "bg-background"
-                                )}
-                              >
-                                <span className={cn("font-medium", fieldMode && "text-white")}>
-                                  {ex.exercise_name}
-                                </span>
-                                <span className={cn(
-                                  "text-xs",
-                                  fieldMode ? "text-slate-400" : "text-muted-foreground"
-                                )}>
-                                  {ex.sets && ex.reps && `${ex.sets}×${ex.reps}`}
-                                  {ex.weight_kg && ` @ ${ex.weight_kg}kg`}
-                                  {ex.count > 1 && ` (${ex.count} joueurs)`}
-                                </span>
-                              </div>
-                            ))}
-                            {uniqueExercises.length > 6 && (
+                            <div className="flex items-center justify-between mb-2">
                               <p className={cn(
-                                "text-xs text-center pt-1",
+                                "text-xs font-medium flex items-center gap-1",
+                                fieldMode ? "text-slate-300" : "text-muted-foreground"
+                              )}>
+                                <Dumbbell className="h-3 w-3" />
+                                Exercices ({exercises.length})
+                              </p>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className={cn("h-6 text-xs", fieldMode && "hover:bg-slate-600")}
+                                onClick={() => setExpandedSession(isExpanded ? null : session.id)}
+                              >
+                                <Eye className="h-3 w-3 mr-1" />
+                                {isExpanded ? "Réduire" : "Voir tout"}
+                              </Button>
+                            </div>
+                            
+                            {isExpanded ? (
+                              <GroupedExerciseList
+                                exercises={exercises}
+                                fieldMode={fieldMode}
+                                maxHeight="300px"
+                                showScroll={true}
+                                compact={false}
+                              />
+                            ) : (
+                              <GroupedExerciseList
+                                exercises={exercises.slice(0, 4)}
+                                fieldMode={fieldMode}
+                                maxHeight="200px"
+                                showScroll={false}
+                                compact={true}
+                              />
+                            )}
+                            
+                            {!isExpanded && exercises.length > 4 && (
+                              <p className={cn(
+                                "text-xs text-center pt-2",
                                 fieldMode ? "text-slate-500" : "text-muted-foreground"
                               )}>
-                                + {uniqueExercises.length - 6} autres exercices
+                                + {exercises.length - 4} autres exercices
                               </p>
                             )}
                           </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </ScrollArea>
           </CardContent>
         </Card>
 

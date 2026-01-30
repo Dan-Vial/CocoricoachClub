@@ -379,14 +379,39 @@ export function SessionDetailsDialog({
     );
   };
 
+  // Get block and week info from session notes or title
+  const getBlockWeekInfo = () => {
+    if (!session) return null;
+    // Try to extract from notes or training_type
+    const blockName = session.notes?.match(/Bloc\s+(\w+)/i)?.[1] || 
+                      trainingTypeLabels[session.training_type] || 
+                      session.training_type;
+    
+    // Calculate week number from session date
+    const sessionStart = new Date(sessionDate);
+    const yearStart = new Date(sessionStart.getFullYear(), 0, 1);
+    const weekNumber = Math.ceil(((sessionStart.getTime() - yearStart.getTime()) / 86400000 + yearStart.getDay() + 1) / 7);
+    
+    return { blockName, weekNumber };
+  };
+
+  const blockWeekInfo = getBlockWeekInfo();
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
-        <DialogHeader className="flex flex-row items-center justify-between">
-          <DialogTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
-            Séance du {format(new Date(sessionDate), "PPP", { locale: fr })}
-          </DialogTitle>
+      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col overflow-hidden">
+        <DialogHeader className="flex flex-row items-center justify-between shrink-0">
+          <div>
+            <DialogTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5" />
+              Séance du {format(new Date(sessionDate), "PPP", { locale: fr })}
+            </DialogTitle>
+            {blockWeekInfo && (
+              <p className="text-sm text-muted-foreground mt-1">
+                {blockWeekInfo.blockName} - Semaine {blockWeekInfo.weekNumber}
+              </p>
+            )}
+          </div>
           <Button variant="outline" size="icon" onClick={handlePrint} title="Imprimer">
             <Printer className="h-4 w-4" />
           </Button>
@@ -439,10 +464,18 @@ export function SessionDetailsDialog({
               ))}
             </div>
           )}
+
+          {/* Print footer with block/week info */}
+          {blockWeekInfo && (
+            <div className="print-only mt-4 pt-4 border-t text-sm text-muted-foreground hidden print:block">
+              <p className="font-medium">{blockWeekInfo.blockName} - Semaine {blockWeekInfo.weekNumber}</p>
+              <p>Exporté le {format(new Date(), "PPP", { locale: fr })}</p>
+            </div>
+          )}
         </div>
 
-        <Tabs defaultValue="exercises" className="flex-1 flex flex-col overflow-hidden">
-          <TabsList className="grid w-full grid-cols-2">
+        <Tabs defaultValue="exercises" className="flex-1 flex flex-col min-h-0">
+          <TabsList className="grid w-full grid-cols-2 shrink-0">
             <TabsTrigger value="exercises" className="flex items-center gap-1">
               <Dumbbell className="h-4 w-4" />
               Exercices
@@ -456,9 +489,9 @@ export function SessionDetailsDialog({
             </TabsTrigger>
           </TabsList>
 
-          <div className="flex-1 overflow-hidden mt-4">
-            <TabsContent value="exercises" className="h-full m-0">
-              <ScrollArea className="h-[40vh]">
+          <div className="flex-1 min-h-0 mt-4">
+            <TabsContent value="exercises" className="h-full m-0 data-[state=active]:flex data-[state=active]:flex-col">
+              <ScrollArea className="flex-1 h-[50vh] max-h-[50vh]">
                 {!exercises || exercises.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
                     <Dumbbell className="h-12 w-12 mx-auto mb-3 opacity-30" />
@@ -476,8 +509,8 @@ export function SessionDetailsDialog({
               </ScrollArea>
             </TabsContent>
 
-            <TabsContent value="rpe" className="h-full m-0">
-              <ScrollArea className="h-[40vh]">
+            <TabsContent value="rpe" className="h-full m-0 data-[state=active]:flex data-[state=active]:flex-col">
+              <ScrollArea className="flex-1 h-[50vh] max-h-[50vh]">
                 <div className="space-y-2 pr-4">
                   <p className="text-sm text-muted-foreground mb-4">
                     RPE: Rate of Perceived Exertion (0-10). Durée en minutes.
