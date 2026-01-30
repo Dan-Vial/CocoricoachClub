@@ -312,3 +312,59 @@ All colors MUST be HSL.
     @apply bg-status-critical text-white;
   }
 }
+
+/* Print styles for session details */
+@media print {
+  .print-content {
+    background: white !important;
+    color: black !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  
+  .print-exercises {
+    page-break-inside: avoid;
+  }
+  
+  /* Preserve border colors for grouped exercises */
+  .border-blue-500 { border-color: rgb(59, 130, 246) !important; }
+  .border-indigo-500 { border-color: rgb(99, 102, 241) !important; }
+  .border-purple-500 { border-color: rgb(168, 85, 247) !important; }
+  .border-pink-500 { border-color: rgb(236, 72, 153) !important; }
+  .border-red-500 { border-color: rgb(239, 68, 68) !important; }
+  .border-amber-500 { border-color: rgb(245, 158, 11) !important; }
+  .border-emerald-500 { border-color: rgb(16, 185, 129) !important; }
+  .border-lime-500 { border-color: rgb(132, 204, 22) !important; }
+  .border-orange-500, .border-orange-600 { border-color: rgb(249, 115, 22) !important; }
+  .border-rose-500 { border-color: rgb(244, 63, 94) !important; }
+  .border-indigo-600 { border-color: rgb(79, 70, 229) !important; }
+  .border-yellow-500 { border-color: rgb(234, 179, 8) !important; }
+  
+  /* Preserve background colors for grouped exercises */
+  .bg-blue-500\/10 { background-color: rgba(59, 130, 246, 0.1) !important; }
+  .bg-indigo-500\/10 { background-color: rgba(99, 102, 241, 0.1) !important; }
+  .bg-purple-500\/10 { background-color: rgba(168, 85, 247, 0.1) !important; }
+  .bg-pink-500\/10 { background-color: rgba(236, 72, 153, 0.1) !important; }
+  .bg-red-500\/10 { background-color: rgba(239, 68, 68, 0.1) !important; }
+  .bg-amber-500\/10 { background-color: rgba(245, 158, 11, 0.1) !important; }
+  .bg-emerald-500\/10 { background-color: rgba(16, 185, 129, 0.1) !important; }
+  .bg-lime-500\/10 { background-color: rgba(132, 204, 22, 0.1) !important; }
+  .bg-orange-600\/10 { background-color: rgba(249, 115, 22, 0.1) !important; }
+  .bg-rose-500\/10 { background-color: rgba(244, 63, 94, 0.1) !important; }
+  .bg-indigo-600\/10 { background-color: rgba(79, 70, 229, 0.1) !important; }
+  .bg-yellow-500\/10 { background-color: rgba(234, 179, 8, 0.1) !important; }
+  
+  /* Badge colors for print */
+  .bg-blue-500 { background-color: rgb(59, 130, 246) !important; }
+  .bg-indigo-500 { background-color: rgb(99, 102, 241) !important; }
+  .bg-purple-500 { background-color: rgb(168, 85, 247) !important; }
+  .bg-pink-500 { background-color: rgb(236, 72, 153) !important; }
+  .bg-red-500 { background-color: rgb(239, 68, 68) !important; }
+  .bg-amber-500 { background-color: rgb(245, 158, 11) !important; }
+  .bg-emerald-500 { background-color: rgb(16, 185, 129) !important; }
+  .bg-lime-500 { background-color: rgb(132, 204, 22) !important; }
+  .bg-orange-600 { background-color: rgb(249, 115, 22) !important; }
+  .bg-rose-500 { background-color: rgb(244, 63, 94) !important; }
+  .bg-indigo-600 { background-color: rgb(79, 70, 229) !important; }
+  .bg-yellow-500 { background-color: rgb(234, 179, 8) !important; }
+}

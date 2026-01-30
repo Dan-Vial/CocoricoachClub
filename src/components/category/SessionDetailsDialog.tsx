@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -19,6 +19,9 @@ import { fr } from "date-fns/locale";
 import { Dumbbell, Users, Activity, Clock, Calendar, Printer } from "lucide-react";
 import { getCategoryLabel } from "@/lib/constants/exerciseCategories";
 import { printElement } from "@/lib/pdfExport";
+import { getTrainingStyleConfig, isLinkableMethod, isCardioBlockMethod } from "@/lib/constants/trainingStyles";
+import { cn } from "@/lib/utils";
+
 interface SessionDetailsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -40,6 +43,7 @@ const trainingTypeLabels: Record<string, string> = {
 const setTypeLabels: Record<string, string> = {
   normal: "Normal",
   superset: "Superset",
+  biset: "Biset",
   triset: "Triset",
   giant_set: "Giant Set",
   circuit: "Circuit",
@@ -48,7 +52,16 @@ const setTypeLabels: Record<string, string> = {
   cluster: "Cluster",
   emom: "EMOM",
   amrap: "AMRAP",
+  for_time: "For Time",
+  tabata: "Tabata",
+  bulgarian: "Méthode Bulgare",
 };
+
+interface ExerciseGroup {
+  groupId: string | null;
+  exercises: { exercise: any; index: number }[];
+  method: string;
+}
 
 export function SessionDetailsDialog({
   open,
@@ -66,6 +79,7 @@ export function SessionDetailsDialog({
       printElement(printRef.current, `Séance du ${format(new Date(sessionDate), "PPP", { locale: fr })}`);
     }
   };
+  
   // Fetch session details
   const { data: session } = useQuery({
     queryKey: ["session-detail", sessionId],
@@ -104,6 +118,40 @@ export function SessionDetailsDialog({
     },
     enabled: open && !!sessionId,
   });
+
+  // Organize exercises into groups for visual grouping
+  const exerciseGroups = useMemo(() => {
+    if (!exercises) return [];
+    
+    const groups: ExerciseGroup[] = [];
+    const processedGroupIds = new Set<string>();
+
+    exercises.forEach((exercise, index) => {
+      if (exercise.group_id) {
+        if (!processedGroupIds.has(exercise.group_id)) {
+          processedGroupIds.add(exercise.group_id);
+          const groupExercises = exercises
+            .map((ex, idx) => ({ exercise: ex, index: idx }))
+            .filter(({ exercise: ex }) => ex.group_id === exercise.group_id)
+            .sort((a, b) => (a.exercise.group_order || 0) - (b.exercise.group_order || 0));
+          
+          groups.push({
+            groupId: exercise.group_id,
+            exercises: groupExercises,
+            method: exercise.set_type || exercise.method || "superset",
+          });
+        }
+      } else {
+        groups.push({
+          groupId: null,
+          exercises: [{ exercise, index }],
+          method: exercise.set_type || exercise.method || "normal",
+        });
+      }
+    });
+
+    return groups;
+  }, [exercises]);
 
   // Fetch players
   const { data: players } = useQuery({
@@ -240,6 +288,97 @@ export function SessionDetailsDialog({
   const attendedPlayerIds = new Set(attendance?.map(a => a.player_id) || []);
   const playersWithRpe = new Set(existingRpe?.map(r => r.player_id) || []);
 
+  // Render a single exercise card
+  const renderExerciseCard = (ex: any, idx: number, isGrouped: boolean, exerciseNumber?: number) => {
+    const styleConfig = getTrainingStyleConfig(ex.set_type || ex.method || "normal");
+    
+    return (
+      <div key={ex.id || idx} className={cn(
+        "p-3 border rounded-lg",
+        isGrouped ? "bg-background/50" : "bg-card"
+      )}>
+        <div className="flex items-start justify-between gap-2 mb-2">
+          <div className="flex items-center gap-2">
+            {isGrouped && exerciseNumber && (
+              <Badge className={cn("text-white text-xs", styleConfig.color || "bg-primary")}>
+                {exerciseNumber}
+              </Badge>
+            )}
+            {!isGrouped && (
+              <span className="text-sm font-medium text-muted-foreground w-6">
+                {idx + 1}.
+              </span>
+            )}
+            <span className="font-medium">{ex.exercise_name}</span>
+          </div>
+          <div className="flex gap-1">
+            {!isGrouped && ex.set_type && ex.set_type !== "normal" && (
+              <Badge variant="secondary" className="text-xs">
+                {setTypeLabels[ex.set_type] || ex.set_type}
+              </Badge>
+            )}
+            <Badge variant="outline" className="text-xs">
+              {getCategoryLabel(ex.exercise_category)}
+            </Badge>
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
+          <span>{ex.sets} séries</span>
+          {ex.reps && <span>× {ex.reps} reps</span>}
+          {ex.weight_kg && <span>@ {ex.weight_kg} kg</span>}
+          {ex.rest_seconds && <span>- {ex.rest_seconds}s repos</span>}
+          {ex.tempo && <span>Tempo: {ex.tempo}</span>}
+        </div>
+        {ex.notes && (
+          <p className="text-xs text-muted-foreground mt-2 italic">
+            {ex.notes}
+          </p>
+        )}
+      </div>
+    );
+  };
+
+  // Render a grouped block of exercises
+  const renderExerciseGroup = (group: ExerciseGroup, groupIdx: number) => {
+    if (!group.groupId) {
+      // Single exercise, not grouped
+      const { exercise, index } = group.exercises[0];
+      return renderExerciseCard(exercise, index, false);
+    }
+
+    // Grouped exercises (superset, circuit, etc.)
+    const styleConfig = getTrainingStyleConfig(group.method);
+    const isLinkable = isLinkableMethod(group.method) || isCardioBlockMethod(group.method);
+    
+    return (
+      <div
+        key={group.groupId}
+        className={cn(
+          "border-2 rounded-lg p-3 space-y-2",
+          styleConfig.borderColor,
+          styleConfig.bgColor
+        )}
+      >
+        {/* Group header */}
+        <div className="flex items-center gap-2 mb-2">
+          <Badge className={cn("text-white", styleConfig.color || "bg-primary")}>
+            {setTypeLabels[group.method] || styleConfig.label || group.method}
+          </Badge>
+          <span className="text-xs text-muted-foreground">
+            {group.exercises.length} exercices liés
+          </span>
+        </div>
+        
+        {/* Exercises in the group */}
+        <div className="space-y-2">
+          {group.exercises.map(({ exercise, index }, exIdx) => 
+            renderExerciseCard(exercise, index, true, exIdx + 1)
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
@@ -253,7 +392,8 @@ export function SessionDetailsDialog({
           </Button>
         </DialogHeader>
 
-        <div ref={printRef}>
+        {/* Printable content - includes exercises */}
+        <div ref={printRef} className="print-content">
           {session && (
             <div className="flex flex-wrap gap-2 mb-4">
               <Badge variant="secondary" className="flex items-center gap-1">
@@ -284,6 +424,21 @@ export function SessionDetailsDialog({
               {session.notes}
             </p>
           )}
+
+          {/* Exercises section for print */}
+          {exerciseGroups.length > 0 && (
+            <div className="space-y-3 mt-4 print-exercises">
+              <h3 className="font-semibold flex items-center gap-2">
+                <Dumbbell className="h-4 w-4" />
+                Exercices ({exercises?.length || 0})
+              </h3>
+              {exerciseGroups.map((group, idx) => (
+                <div key={group.groupId || idx}>
+                  {renderExerciseGroup(group, idx)}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <Tabs defaultValue="exercises" className="flex-1 flex flex-col overflow-hidden">
@@ -311,37 +466,9 @@ export function SessionDetailsDialog({
                   </div>
                 ) : (
                   <div className="space-y-3 pr-4">
-                    {exercises.map((ex, idx) => (
-                      <div key={ex.id || idx} className="p-3 border rounded-lg bg-card">
-                        <div className="flex items-start justify-between gap-2 mb-2">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium text-muted-foreground w-6">
-                              {idx + 1}.
-                            </span>
-                            <span className="font-medium">{ex.exercise_name}</span>
-                          </div>
-                          <div className="flex gap-1">
-                            {ex.set_type && ex.set_type !== "normal" && (
-                              <Badge variant="secondary" className="text-xs">
-                                {setTypeLabels[ex.set_type] || ex.set_type}
-                              </Badge>
-                            )}
-                            <Badge variant="outline" className="text-xs">
-                              {getCategoryLabel(ex.exercise_category)}
-                            </Badge>
-                          </div>
-                        </div>
-                        <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
-                          <span>{ex.sets} séries</span>
-                          {ex.reps && <span>× {ex.reps} reps</span>}
-                          {ex.weight_kg && <span>@ {ex.weight_kg} kg</span>}
-                          {ex.rest_seconds && <span>- {ex.rest_seconds}s repos</span>}
-                        </div>
-                        {ex.notes && (
-                          <p className="text-xs text-muted-foreground mt-2 italic">
-                            {ex.notes}
-                          </p>
-                        )}
+                    {exerciseGroups.map((group, idx) => (
+                      <div key={group.groupId || idx}>
+                        {renderExerciseGroup(group, idx)}
                       </div>
                     ))}
                   </div>
