@@ -65,6 +65,7 @@ import {
   isCardioBlockMethod,
   isDropMethod,
   isClusterMethod,
+  isBlockMethod,
   getMaxExercisesForMethod,
   getMinExercisesForMethod,
   getCardioBlockConfig,
@@ -72,9 +73,11 @@ import {
   CARDIO_BLOCK_METHODS,
   DROP_METHODS,
   CLUSTER_METHODS,
+  ALL_BLOCK_METHODS,
 } from "@/lib/constants/trainingStyles";
 import { SessionGpsImport, type GpsPlayerData } from "@/components/category/gps/SessionGpsImport";
 import { isRugbyType } from "@/lib/constants/sportTypes";
+import { TrainingMethodBlock } from "./TrainingMethodBlocks";
 
 interface SessionFormDialogProps {
   open: boolean;
@@ -110,6 +113,9 @@ interface BlockConfig {
   work_seconds?: number;
   rest_seconds?: number;
   rest_between_rounds?: number;
+  emom_interval?: number;
+  emom_mode?: "single" | "multi";
+  time_cap_minutes?: number;
 }
 
 interface Exercise {
@@ -132,6 +138,8 @@ interface Exercise {
   drop_sets?: DropSet[];
   cluster_sets?: ClusterSet[];
   block_config?: BlockConfig;
+  tempo?: string;
+  target_rpe?: number;
 }
 
 const emptyExercise = (index: number, groupId?: string, groupOrder?: number, method?: string): Exercise => ({
@@ -153,6 +161,8 @@ const emptyExercise = (index: number, groupId?: string, groupOrder?: number, met
   drop_sets: undefined,
   cluster_sets: undefined,
   block_config: undefined,
+  tempo: undefined,
+  target_rpe: undefined,
 });
 
 // Group exercises by group_id for visual grouping
@@ -610,13 +620,67 @@ export function SessionFormDialog({
 
   // Create a block with empty exercises for linked methods
   const createMethodBlock = (method: string) => {
-    const minExercises = getMinExercisesForMethod(method);
     const groupId = crypto.randomUUID();
     const startIndex = exercises.length;
     
-    const newExercises: Exercise[] = Array.from({ length: minExercises }, (_, i) => 
-      emptyExercise(startIndex + i, groupId, i + 1, method)
-    );
+    // For pyramid methods and 5x5, we only need 1 exercise
+    const isPyramidOrSpecial = isDropMethod(method) || method === "five_by_five";
+    const minExercises = isPyramidOrSpecial ? 1 : getMinExercisesForMethod(method);
+    
+    let newExercises: Exercise[];
+    
+    if (isPyramidOrSpecial) {
+      // Create a single exercise with drop_sets for pyramids
+      const exercise = emptyExercise(startIndex, groupId, 1, method);
+      
+      if (isDropMethod(method)) {
+        // Initialize drop sets based on method
+        const baseReps = 10;
+        const basePercentage = 70;
+        let dropSets: { reps: string; percentage: number }[] = [];
+        
+        if (method === "pyramid_up") {
+          dropSets = [
+            { reps: "12", percentage: 60 },
+            { reps: "10", percentage: 70 },
+            { reps: "8", percentage: 80 },
+          ];
+        } else if (method === "pyramid_down") {
+          dropSets = [
+            { reps: "6", percentage: 85 },
+            { reps: "8", percentage: 75 },
+            { reps: "12", percentage: 65 },
+          ];
+        } else if (method === "pyramid_full") {
+          dropSets = [
+            { reps: "12", percentage: 60 },
+            { reps: "10", percentage: 70 },
+            { reps: "8", percentage: 80 },
+            { reps: "10", percentage: 70 },
+            { reps: "12", percentage: 60 },
+          ];
+        } else if (method === "drop_set") {
+          dropSets = [
+            { reps: "10", percentage: 80 },
+            { reps: "10", percentage: 70 },
+            { reps: "10", percentage: 60 },
+          ];
+        }
+        
+        exercise.drop_sets = dropSets;
+        exercise.sets = dropSets.length;
+      } else if (method === "five_by_five") {
+        exercise.sets = 5;
+        exercise.reps = "5";
+        exercise.weight_percent_rm = 80;
+      }
+      
+      newExercises = [exercise];
+    } else {
+      newExercises = Array.from({ length: minExercises }, (_, i) => 
+        emptyExercise(startIndex + i, groupId, i + 1, method)
+      );
+    }
     
     // Initialize block config for cardio methods
     if (isCardioBlockMethod(method)) {
@@ -626,6 +690,8 @@ export function SessionFormDialog({
         rounds: config.showRounds ? 3 : undefined,
         work_seconds: config.showWorkRest ? 20 : undefined,
         rest_seconds: config.showWorkRest ? 10 : undefined,
+        emom_interval: method === "emom" ? 1 : undefined,
+        emom_mode: method === "emom" ? "single" : undefined,
       };
       setBlockConfigs(prev => ({ ...prev, [groupId]: defaultBlockConfig }));
     }
@@ -1549,184 +1615,36 @@ export function SessionFormDialog({
       );
     }
 
-    const styleConfig = getTrainingStyleConfig(group.method);
     const maxExercises = getMaxExercisesForMethod(group.method);
-    const minExercises = getMinExercisesForMethod(group.method);
-    const lastExercise = group.exercises[group.exercises.length - 1];
-    const isCardioBlock = isCardioBlockMethod(group.method);
-    const cardioConfig = isCardioBlock ? getCardioBlockConfig(group.method) : null;
-    const blockConfig = blockConfigs[group.groupId] || {};
     const canAcceptMore = group.exercises.length < maxExercises;
+    const blockConfig = blockConfigs[group.groupId] || {};
 
+    // Use new TrainingMethodBlock component for block methods
     return (
       <DroppableGroupZone 
         key={group.groupId} 
         groupId={group.groupId} 
         isActive={!!activeExercise && canAcceptMore}
       >
-        <div
-          className={cn(
-            "rounded-xl border-2 p-4 space-y-3",
-            styleConfig.borderColor,
-            styleConfig.bgColor
-          )}
-        >
-        {/* Group header */}
-        <div className="flex items-center justify-between flex-wrap gap-2">
-          <div className="flex items-center gap-3">
-            <Badge className={cn("text-white text-sm px-3 py-1", styleConfig.color)}>
-              {styleConfig.label}
-            </Badge>
-            <span className="text-sm font-medium text-muted-foreground">
-              {group.exercises.length} exercice(s)
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button type="button" variant="ghost" size="icon" className="h-7 w-7">
-                    <Info className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="top" className="max-w-xs">
-                  <p className="text-xs">{styleConfig.description}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => unlinkGroup(group.groupId!)}
-              className="h-7 text-xs"
-            >
-              <Unlink className="h-3 w-3 mr-1" />
-              Dissoudre
-            </Button>
-          </div>
-        </div>
-
-        {/* Block configuration for cardio methods */}
-        {isCardioBlock && cardioConfig && (
-          <div className="flex flex-wrap gap-3 p-3 bg-background/50 rounded-lg border border-dashed">
-            {cardioConfig.showDuration && (
-              <div className="flex items-center gap-2">
-                <Timer className="h-4 w-4 text-muted-foreground" />
-                <Label className="text-xs text-muted-foreground">{cardioConfig.durationLabel}</Label>
-                <Input
-                  type="number"
-                  min="1"
-                  className="h-8 w-20 text-xs"
-                  value={blockConfig.duration_minutes || ""}
-                  onChange={(e) => updateBlockConfig(group.groupId!, "duration_minutes", e.target.value ? parseInt(e.target.value) : undefined)}
-                  placeholder="10"
-                />
-              </div>
-            )}
-            {cardioConfig.showRounds && (
-              <div className="flex items-center gap-2">
-                <Repeat className="h-4 w-4 text-muted-foreground" />
-                <Label className="text-xs text-muted-foreground">{cardioConfig.roundsLabel}</Label>
-                <Input
-                  type="number"
-                  min="1"
-                  className="h-8 w-20 text-xs"
-                  value={blockConfig.rounds || ""}
-                  onChange={(e) => updateBlockConfig(group.groupId!, "rounds", e.target.value ? parseInt(e.target.value) : undefined)}
-                  placeholder="3"
-                />
-              </div>
-            )}
-            {cardioConfig.showWorkRest && (
-              <>
-                <div className="flex items-center gap-2">
-                  <Label className="text-xs text-muted-foreground">Work (s)</Label>
-                  <Input
-                    type="number"
-                    min="1"
-                    className="h-8 w-16 text-xs"
-                    value={blockConfig.work_seconds || ""}
-                    onChange={(e) => updateBlockConfig(group.groupId!, "work_seconds", e.target.value ? parseInt(e.target.value) : undefined)}
-                    placeholder="20"
-                  />
-                </div>
-                <div className="flex items-center gap-2">
-                  <Label className="text-xs text-muted-foreground">Rest (s)</Label>
-                  <Input
-                    type="number"
-                    min="0"
-                    className="h-8 w-16 text-xs"
-                    value={blockConfig.rest_seconds || ""}
-                    onChange={(e) => updateBlockConfig(group.groupId!, "rest_seconds", e.target.value ? parseInt(e.target.value) : undefined)}
-                    placeholder="10"
-                  />
-                </div>
-              </>
-            )}
-            {cardioConfig.showRestBetweenRounds && (
-              <div className="flex items-center gap-2">
-                <Label className="text-xs text-muted-foreground">Repos entre tours (s)</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  className="h-8 w-20 text-xs"
-                  value={blockConfig.rest_between_rounds || ""}
-                  onChange={(e) => updateBlockConfig(group.groupId!, "rest_between_rounds", e.target.value ? parseInt(e.target.value) : undefined)}
-                  placeholder="60"
-                />
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Group exercises */}
-        <div className="space-y-2">
-          {group.exercises.map(({ exercise, index }, i) => (
-            <div key={exercise.id || index}>
-              {renderExerciseCard(exercise, index, true, i + 1, group.method)}
-            </div>
-          ))}
-        </div>
-
-        {/* Add exercise to group button */}
-        {group.exercises.length < maxExercises && (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => addExerciseToGroup(group.groupId!, group.method)}
-            className="w-full"
-          >
-            <Plus className="h-4 w-4 mr-1" />
-            Ajouter un exercice au bloc
-          </Button>
-        )}
-
-        {/* Group completion message */}
-        {group.exercises.length >= minExercises && (
-          <div className="flex items-center justify-center gap-2 text-sm text-green-600 dark:text-green-400 pt-2">
-            <Check className="h-4 w-4" />
-            Bloc configuré
-          </div>
-        )}
-
-        {/* Rest after group - only for non-cardio */}
-        {!isCardioBlock && (
-          <div className="flex items-center gap-3 pt-2 border-t border-border/50">
-            <label className="text-xs text-muted-foreground">Repos après le bloc (s)</label>
-            <Input
-              type="number"
-              min={0}
-              value={lastExercise.exercise.rest_seconds || ""}
-              onChange={(e) =>
-                updateExercise(lastExercise.index, "rest_seconds", e.target.value ? parseInt(e.target.value) : null)
-              }
-              className="h-8 text-sm w-24"
-            />
-          </div>
-        )}
-        </div>
+        <TrainingMethodBlock
+          method={group.method}
+          groupId={group.groupId}
+          exercises={group.exercises}
+          blockConfig={blockConfig}
+          onUpdateExercise={updateExercise}
+          onUpdateMultipleFields={updateMultipleFields}
+          onRemoveExercise={removeExercise}
+          onAddExerciseToGroup={addExerciseToGroup}
+          onUnlinkGroup={unlinkGroup}
+          onUpdateBlockConfig={updateBlockConfig}
+          onSelectFromLibrary={selectFromLibrary}
+          filteredLibrary={filteredLibrary}
+          availableCategories={availableCategories}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          showLibraryFor={showLibraryFor}
+          setShowLibraryFor={setShowLibraryFor}
+        />
       </DroppableGroupZone>
     );
   };
@@ -1736,6 +1654,8 @@ export function SessionFormDialog({
     const blockMethods = [
       ...LINKABLE_METHODS.map(m => getTrainingStyleConfig(m)),
       ...CARDIO_BLOCK_METHODS.map(m => getTrainingStyleConfig(m)),
+      ...DROP_METHODS.map(m => getTrainingStyleConfig(m)),
+      getTrainingStyleConfig("five_by_five"),
     ];
 
     return (

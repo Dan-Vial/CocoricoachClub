@@ -343,11 +343,20 @@ export const CLUSTER_METHODS = ["cluster", "rest_pause"];
 // Special methods with specific UI (e.g., 5x5)
 export const SPECIAL_METHODS = ["five_by_five", "super_pletnev", "isometric_overcoming", "isometric_yielding"];
 
+// All block methods that need the new block UI
+export const ALL_BLOCK_METHODS = [
+  ...LINKABLE_METHODS, 
+  ...CARDIO_BLOCK_METHODS, 
+  ...DROP_METHODS, 
+  "five_by_five"
+];
+
 // Get method by value
 export const isLinkableMethod = (method: string): boolean => LINKABLE_METHODS.includes(method);
 export const isCardioBlockMethod = (method: string): boolean => CARDIO_BLOCK_METHODS.includes(method);
 export const isDropMethod = (method: string): boolean => DROP_METHODS.includes(method);
 export const isClusterMethod = (method: string): boolean => CLUSTER_METHODS.includes(method);
+export const isBlockMethod = (method: string): boolean => ALL_BLOCK_METHODS.includes(method);
 
 // Get min exercises required for a linkable method
 export const getMinExercisesForMethod = (method: string): number => {
