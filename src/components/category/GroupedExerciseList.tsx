@@ -1,10 +1,9 @@
 import { useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dumbbell } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getCategoryLabel } from "@/lib/constants/exerciseCategories";
-import { getTrainingStyleConfig, isLinkableMethod, isCardioBlockMethod } from "@/lib/constants/trainingStyles";
+import { getTrainingStyleConfig } from "@/lib/constants/trainingStyles";
 
 interface Exercise {
   id?: string;
@@ -52,6 +51,7 @@ interface GroupedExerciseListProps {
   maxHeight?: string;
   showScroll?: boolean;
   compact?: boolean;
+  forPrint?: boolean;
 }
 
 export function GroupedExerciseList({
@@ -60,6 +60,7 @@ export function GroupedExerciseList({
   maxHeight = "300px",
   showScroll = true,
   compact = false,
+  forPrint = false,
 }: GroupedExerciseListProps) {
   // Organize exercises into groups
   const exerciseGroups = useMemo(() => {
@@ -180,7 +181,7 @@ export function GroupedExerciseList({
       <div
         key={group.groupId}
         className={cn(
-          "border-2 rounded-lg p-2 space-y-2",
+          "border-2 rounded-lg p-2 space-y-2 print-exercise-group",
           styleConfig.borderColor,
           styleConfig.bgColor,
           fieldMode && "border-opacity-50"
@@ -231,11 +232,14 @@ export function GroupedExerciseList({
     </div>
   );
 
-  if (showScroll) {
+  if (showScroll && !forPrint) {
     return (
-      <ScrollArea className="pr-2" style={{ maxHeight }}>
+      <div 
+        className="overflow-y-auto pr-2" 
+        style={{ maxHeight }}
+      >
         {content}
-      </ScrollArea>
+      </div>
     );
   }
 
