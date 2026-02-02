@@ -38,6 +38,7 @@ interface TestReminder {
   frequency_weeks: number;
   is_active: boolean;
   last_notification_date: string | null;
+  start_date: string | null;
   created_at: string;
 }
 
@@ -48,6 +49,7 @@ export function TestRemindersTab({ categoryId }: TestRemindersTabProps) {
   const [newReminder, setNewReminder] = useState({
     test_type: "VMA",
     frequency_weeks: 6,
+    start_date: format(new Date(), "yyyy-MM-dd"),
   });
   const { isViewer } = useViewerModeContext();
 
@@ -73,6 +75,7 @@ export function TestRemindersTab({ categoryId }: TestRemindersTabProps) {
         category_id: categoryId,
         test_type: newReminder.test_type,
         frequency_weeks: newReminder.frequency_weeks,
+        start_date: newReminder.start_date,
         is_active: true,
       });
 
@@ -81,7 +84,7 @@ export function TestRemindersTab({ categoryId }: TestRemindersTabProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["test-reminders", categoryId] });
       setIsDialogOpen(false);
-      setNewReminder({ test_type: "VMA", frequency_weeks: 6 });
+      setNewReminder({ test_type: "VMA", frequency_weeks: 6, start_date: format(new Date(), "yyyy-MM-dd") });
       toast({
         title: "Rappel créé",
         description: "Le rappel de test a été créé avec succès",
@@ -230,20 +233,43 @@ export function TestRemindersTab({ categoryId }: TestRemindersTabProps) {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="frequency">Fréquence (semaines)</Label>
+                  <Label htmlFor="start-date">Date de début</Label>
                   <Input
-                    id="frequency"
-                    type="number"
-                    min="1"
-                    max="52"
-                    value={newReminder.frequency_weeks}
+                    id="start-date"
+                    type="date"
+                    value={newReminder.start_date}
                     onChange={(e) =>
                       setNewReminder({
                         ...newReminder,
-                        frequency_weeks: parseInt(e.target.value) || 6,
+                        start_date: e.target.value,
                       })
                     }
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Premier rappel à cette date, puis selon la fréquence
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label>Fréquence</Label>
+                  <Select
+                    value={String(newReminder.frequency_weeks)}
+                    onValueChange={(value) =>
+                      setNewReminder({
+                        ...newReminder,
+                        frequency_weeks: parseInt(value),
+                      })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="4">Toutes les 4 semaines</SelectItem>
+                      <SelectItem value="6">Toutes les 6 semaines</SelectItem>
+                      <SelectItem value="8">Toutes les 8 semaines</SelectItem>
+                      <SelectItem value="12">Toutes les 12 semaines</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <Button
                   onClick={() => createReminder.mutate()}
@@ -272,7 +298,9 @@ export function TestRemindersTab({ categoryId }: TestRemindersTabProps) {
                       {getTestTypeLabel(reminder.test_type)}
                     </CardTitle>
                     <CardDescription>
-                      Fréquence: Tous les {reminder.frequency_weeks} semaines
+                      Début: {reminder.start_date 
+                        ? format(new Date(reminder.start_date), "dd MMMM yyyy", { locale: fr })
+                        : "Non défini"} • Fréquence: Tous les {reminder.frequency_weeks} semaines
                     </CardDescription>
                   </div>
                   {!isViewer ? (

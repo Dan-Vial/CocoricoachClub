@@ -370,12 +370,12 @@ export function MedicalRecordsTab({ categoryId }: MedicalRecordsTabProps) {
 
       {/* Add dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Ajouter un document médical</DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-4">
+          <div className="space-y-4 pb-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Joueur *</Label>
