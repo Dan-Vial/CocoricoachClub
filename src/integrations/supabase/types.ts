@@ -531,6 +531,45 @@ export type Database = {
           },
         ]
       }
+      clip_player_associations: {
+        Row: {
+          clip_id: string
+          created_at: string
+          id: string
+          player_id: string
+          role: string | null
+        }
+        Insert: {
+          clip_id: string
+          created_at?: string
+          id?: string
+          player_id: string
+          role?: string | null
+        }
+        Update: {
+          clip_id?: string
+          created_at?: string
+          id?: string
+          player_id?: string
+          role?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clip_player_associations_clip_id_fkey"
+            columns: ["clip_id"]
+            isOneToOne: false
+            referencedRelation: "video_clips"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clip_player_associations_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       club_invitations: {
         Row: {
           club_id: string
@@ -5199,6 +5238,148 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      video_analyses: {
+        Row: {
+          category_id: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          duration_seconds: number | null
+          id: string
+          match_id: string
+          match_start_timestamp: string | null
+          thumbnail_url: string | null
+          title: string
+          updated_at: string
+          video_source: string | null
+          video_url: string | null
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          duration_seconds?: number | null
+          id?: string
+          match_id: string
+          match_start_timestamp?: string | null
+          thumbnail_url?: string | null
+          title: string
+          updated_at?: string
+          video_source?: string | null
+          video_url?: string | null
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          duration_seconds?: number | null
+          id?: string
+          match_id?: string
+          match_start_timestamp?: string | null
+          thumbnail_url?: string | null
+          title?: string
+          updated_at?: string
+          video_source?: string | null
+          video_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_analyses_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "video_analyses_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      video_clips: {
+        Row: {
+          action_category: string | null
+          action_type: string
+          category_id: string
+          clip_url: string
+          created_at: string
+          created_by: string | null
+          duration_seconds: number | null
+          end_time_seconds: number | null
+          id: string
+          match_id: string
+          notes: string | null
+          start_time_seconds: number
+          thumbnail_url: string | null
+          title: string
+          updated_at: string
+          video_analysis_id: string
+        }
+        Insert: {
+          action_category?: string | null
+          action_type: string
+          category_id: string
+          clip_url: string
+          created_at?: string
+          created_by?: string | null
+          duration_seconds?: number | null
+          end_time_seconds?: number | null
+          id?: string
+          match_id: string
+          notes?: string | null
+          start_time_seconds?: number
+          thumbnail_url?: string | null
+          title: string
+          updated_at?: string
+          video_analysis_id: string
+        }
+        Update: {
+          action_category?: string | null
+          action_type?: string
+          category_id?: string
+          clip_url?: string
+          created_at?: string
+          created_by?: string | null
+          duration_seconds?: number | null
+          end_time_seconds?: number | null
+          id?: string
+          match_id?: string
+          notes?: string | null
+          start_time_seconds?: number
+          thumbnail_url?: string | null
+          title?: string
+          updated_at?: string
+          video_analysis_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_clips_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "video_clips_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "video_clips_video_analysis_id_fkey"
+            columns: ["video_analysis_id"]
+            isOneToOne: false
+            referencedRelation: "video_analyses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       weekly_planning: {
         Row: {

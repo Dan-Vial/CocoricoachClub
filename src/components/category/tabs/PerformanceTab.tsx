@@ -1,5 +1,5 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ClipboardCheck, Activity, BarChart3, Dumbbell, MapPin, History, CalendarDays, FolderOpen } from "lucide-react";
+import { ClipboardCheck, Activity, BarChart3, Dumbbell, MapPin, History, CalendarDays, FolderOpen, Video } from "lucide-react";
 import { TestsTab } from "@/components/category/TestsTab";
 import { AwcrTab } from "@/components/category/AwcrTab";
 import { AnalyticsTab } from "@/components/analytics/AnalyticsTab";
@@ -8,6 +8,7 @@ import { GpsDataTab } from "@/components/category/gps/GpsDataTab";
 import { SessionHistoryTimeline } from "@/components/category/history/SessionHistoryTimeline";
 import { SessionsTab } from "@/components/category/sessions/SessionsTab";
 import { ProgramsTab } from "@/components/category/programs/ProgramsTab";
+import { VideoAnalysisTab } from "@/components/category/video/VideoAnalysisTab";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useViewerModeContext } from "@/contexts/ViewerModeContext";
@@ -109,6 +110,13 @@ export function PerformanceTab({ categoryId }: PerformanceTabProps) {
               <span className="sm:hidden">GPS</span>
             </TabsTrigger>
           )}
+          {showGpsTab && (
+            <TabsTrigger value="video" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">
+              <Video className="h-4 w-4 shrink-0" />
+              <span className="hidden sm:inline">Analyse Vidéo</span>
+              <span className="sm:hidden">Vidéo</span>
+            </TabsTrigger>
+          )}
         </TabsList>
       </div>
 
@@ -143,6 +151,12 @@ export function PerformanceTab({ categoryId }: PerformanceTabProps) {
       {showGpsTab && (
         <TabsContent value="gps">
           <GpsDataTab categoryId={categoryId} />
+        </TabsContent>
+      )}
+
+      {showGpsTab && (
+        <TabsContent value="video">
+          <VideoAnalysisTab categoryId={categoryId} />
         </TabsContent>
       )}
     </Tabs>
