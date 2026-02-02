@@ -23,6 +23,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import { Film, Clock, Users, Link } from "lucide-react";
+import { getActionTypesForSport, ACTION_CATEGORIES, getActionTypeLabel } from "@/lib/constants/videoActionTypes";
 
 interface AddClipDialogProps {
   open: boolean;
@@ -30,37 +31,9 @@ interface AddClipDialogProps {
   analysisId: string;
   categoryId: string;
   matchId: string;
+  sportType?: string;
   onSuccess: () => void;
 }
-
-const ACTION_TYPES = [
-  { value: "sprint", label: "Sprint", category: "physical" },
-  { value: "acceleration", label: "Accélération", category: "physical" },
-  { value: "high_intensity_run", label: "Course haute intensité", category: "physical" },
-  { value: "try", label: "Essai", category: "offensive" },
-  { value: "pass", label: "Passe décisive", category: "offensive" },
-  { value: "line_break", label: "Franchissement", category: "offensive" },
-  { value: "offload", label: "Offload", category: "offensive" },
-  { value: "kick", label: "Jeu au pied", category: "offensive" },
-  { value: "tackle", label: "Plaquage", category: "defensive" },
-  { value: "turnover", label: "Turnover", category: "defensive" },
-  { value: "ruck", label: "Ruck", category: "set_piece" },
-  { value: "lineout", label: "Touche", category: "set_piece" },
-  { value: "scrum", label: "Mêlée", category: "set_piece" },
-  { value: "goal", label: "But", category: "offensive" },
-  { value: "shot", label: "Tir", category: "offensive" },
-  { value: "duel", label: "Duel", category: "physical" },
-  { value: "other", label: "Autre", category: "other" },
-];
-
-const ACTION_CATEGORIES = [
-  { value: "offensive", label: "Offensive" },
-  { value: "defensive", label: "Défensive" },
-  { value: "physical", label: "Physique" },
-  { value: "set_piece", label: "Phase statique" },
-  { value: "transition", label: "Transition" },
-  { value: "other", label: "Autre" },
-];
 
 export function AddClipDialog({
   open,
@@ -68,6 +41,7 @@ export function AddClipDialog({
   analysisId,
   categoryId,
   matchId,
+  sportType,
   onSuccess,
 }: AddClipDialogProps) {
   const { user } = useAuth();
@@ -132,7 +106,7 @@ export function AddClipDialog({
           video_analysis_id: analysisId,
           category_id: categoryId,
           match_id: matchId,
-          title: title || ACTION_TYPES.find((a) => a.value === actionType)?.label || actionType,
+          title: title || getActionTypeLabel(actionType) || actionType,
           clip_url: clipUrl,
           start_time_seconds: startTimeSeconds,
           end_time_seconds: endTimeSeconds,
@@ -243,7 +217,7 @@ export function AddClipDialog({
                   <SelectValue placeholder="Sélectionner" />
                 </SelectTrigger>
                 <SelectContent>
-                  {ACTION_TYPES.map((action) => (
+                  {getActionTypesForSport(sportType).map((action) => (
                     <SelectItem key={action.value} value={action.value}>
                       {action.label}
                     </SelectItem>

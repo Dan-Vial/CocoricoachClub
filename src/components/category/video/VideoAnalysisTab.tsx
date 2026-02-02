@@ -13,9 +13,10 @@ import { PlayerClipsView } from "./PlayerClipsView";
 
 interface VideoAnalysisTabProps {
   categoryId: string;
+  sportType?: string;
 }
 
-export function VideoAnalysisTab({ categoryId }: VideoAnalysisTabProps) {
+export function VideoAnalysisTab({ categoryId, sportType }: VideoAnalysisTabProps) {
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [selectedAnalysisId, setSelectedAnalysisId] = useState<string | null>(null);
 
@@ -94,7 +95,11 @@ export function VideoAnalysisTab({ categoryId }: VideoAnalysisTabProps) {
                 </div>
                 <div>
                   <p className="text-sm font-medium">Synchronisation</p>
-                  <p className="text-xs text-muted-foreground">Vidéo + Stats + GPS</p>
+                  <p className="text-xs text-muted-foreground">
+                    Vidéo + Stats{sportType?.toLowerCase().includes("aviron") || 
+                      sportType?.toLowerCase().includes("football") || 
+                      sportType?.toLowerCase().includes("rugby") ? " + GPS" : ""}
+                  </p>
                 </div>
               </div>
               <Button onClick={() => setShowAddDialog(true)}>
@@ -130,11 +135,13 @@ export function VideoAnalysisTab({ categoryId }: VideoAnalysisTabProps) {
               onSelectAnalysis={setSelectedAnalysisId}
               onRefresh={refetch}
               categoryId={categoryId}
+              sportType={sportType}
             />
           ) : (
             <VideoClipViewer
               analysisId={selectedAnalysisId}
               categoryId={categoryId}
+              sportType={sportType}
               onBack={() => setSelectedAnalysisId(null)}
             />
           )}
@@ -143,12 +150,13 @@ export function VideoAnalysisTab({ categoryId }: VideoAnalysisTabProps) {
         <TabsContent value="clips">
           <VideoClipViewer
             categoryId={categoryId}
+            sportType={sportType}
             showAllClips
           />
         </TabsContent>
 
         <TabsContent value="players">
-          <PlayerClipsView categoryId={categoryId} />
+          <PlayerClipsView categoryId={categoryId} sportType={sportType} />
         </TabsContent>
       </Tabs>
 

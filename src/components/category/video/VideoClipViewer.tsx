@@ -26,43 +26,16 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { ClipStatsPanel } from "./ClipStatsPanel";
+import { getActionTypeLabel, getActionCategoryColor, getActionTypesForSport } from "@/lib/constants/videoActionTypes";
 
 interface VideoClipViewerProps {
   analysisId?: string;
   categoryId: string;
+  sportType?: string;
   onBack?: () => void;
   showAllClips?: boolean;
   playerId?: string;
 }
-
-const ACTION_TYPE_LABELS: Record<string, string> = {
-  sprint: "Sprint",
-  acceleration: "Accélération",
-  high_intensity_run: "Course HI",
-  try: "Essai",
-  pass: "Passe",
-  line_break: "Franchissement",
-  offload: "Offload",
-  kick: "Jeu au pied",
-  tackle: "Plaquage",
-  turnover: "Turnover",
-  ruck: "Ruck",
-  lineout: "Touche",
-  scrum: "Mêlée",
-  goal: "But",
-  shot: "Tir",
-  duel: "Duel",
-  other: "Autre",
-};
-
-const ACTION_CATEGORY_COLORS: Record<string, string> = {
-  offensive: "bg-green-500/10 text-green-600",
-  defensive: "bg-red-500/10 text-red-600",
-  physical: "bg-blue-500/10 text-blue-600",
-  set_piece: "bg-purple-500/10 text-purple-600",
-  transition: "bg-yellow-500/10 text-yellow-600",
-  other: "bg-muted text-muted-foreground",
-};
 
 interface ClipData {
   id: string;
@@ -86,6 +59,7 @@ interface ClipData {
 export function VideoClipViewer({
   analysisId,
   categoryId,
+  sportType,
   onBack,
   showAllClips = false,
   playerId,
@@ -273,9 +247,9 @@ export function VideoClipViewer({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Toutes actions</SelectItem>
-                {Object.entries(ACTION_TYPE_LABELS).map(([value, label]) => (
-                  <SelectItem key={value} value={value}>
-                    {label}
+                {getActionTypesForSport(sportType).map((action) => (
+                  <SelectItem key={action.value} value={action.value}>
+                    {action.label}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -337,11 +311,9 @@ export function VideoClipViewer({
                             <div className="flex-1 space-y-2">
                               <div className="flex items-center gap-2">
                                 <Badge
-                                  className={
-                                    ACTION_CATEGORY_COLORS[clip.action_category || "other"]
-                                  }
+                                  className={getActionCategoryColor(clip.action_category)}
                                 >
-                                  {ACTION_TYPE_LABELS[clip.action_type] || clip.action_type}
+                                  {getActionTypeLabel(clip.action_type)}
                                 </Badge>
                                 <span className="text-sm font-medium">{clip.title}</span>
                               </div>
@@ -425,6 +397,7 @@ export function VideoClipViewer({
                 })),
               }}
               categoryId={categoryId}
+              sportType={sportType}
             />
           ) : (
             <Card className="h-full">

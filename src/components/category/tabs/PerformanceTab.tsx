@@ -59,9 +59,21 @@ export function PerformanceTab({ categoryId }: PerformanceTabProps) {
   });
 
   const sportType = category?.rugby_type || "";
-  // GPS Data uniquement pour Football et Rugby
-  const showGpsTab = isRugbyType(sportType) || sportType.toLowerCase().includes("football");
-
+  const sportLower = sportType.toLowerCase();
+  
+  // GPS Data pour Football, Rugby et Aviron
+  const showGpsTab = isRugbyType(sportType) || 
+    sportLower.includes("football") || 
+    sportLower.includes("aviron");
+  
+  // Video Analysis pour Football, Rugby, Aviron, Basketball, Handball, Volleyball
+  const showVideoTab = isRugbyType(sportType) || 
+    sportLower.includes("football") || 
+    sportLower.includes("aviron") || 
+    sportLower.includes("basketball") || 
+    sportLower.includes("handball") || 
+    sportLower.includes("volleyball") ||
+    sportLower.includes("volley");
   // En mode viewer, l'onglet Performance entier est désactivé
   if (isViewer) {
     return <PerformanceDisabledMessage />;
@@ -110,7 +122,7 @@ export function PerformanceTab({ categoryId }: PerformanceTabProps) {
               <span className="sm:hidden">GPS</span>
             </TabsTrigger>
           )}
-          {showGpsTab && (
+          {showVideoTab && (
             <TabsTrigger value="video" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">
               <Video className="h-4 w-4 shrink-0" />
               <span className="hidden sm:inline">Analyse Vidéo</span>
@@ -154,9 +166,9 @@ export function PerformanceTab({ categoryId }: PerformanceTabProps) {
         </TabsContent>
       )}
 
-      {showGpsTab && (
+      {showVideoTab && (
         <TabsContent value="video">
-          <VideoAnalysisTab categoryId={categoryId} />
+          <VideoAnalysisTab categoryId={categoryId} sportType={sportType} />
         </TabsContent>
       )}
     </Tabs>

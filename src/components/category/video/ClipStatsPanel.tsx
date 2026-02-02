@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { getMatchStatsKeysForSport, sportSupportsGps } from "@/lib/constants/videoActionTypes";
 
 interface ClipStatsPanelProps {
   clip: {
@@ -41,10 +42,13 @@ interface ClipStatsPanelProps {
     } | null;
   };
   categoryId: string;
+  sportType?: string;
 }
 
-export function ClipStatsPanel({ clip, categoryId }: ClipStatsPanelProps) {
+export function ClipStatsPanel({ clip, categoryId, sportType }: ClipStatsPanelProps) {
   const playerIds = clip.clip_player_associations?.map((a) => a.player_id) || [];
+  const showGps = sportSupportsGps(sportType);
+  const statsKeys = getMatchStatsKeysForSport(sportType);
 
   // Fetch match stats for involved players
   const { data: matchStats } = useQuery({
@@ -62,7 +66,7 @@ export function ClipStatsPanel({ clip, categoryId }: ClipStatsPanelProps) {
     enabled: playerIds.length > 0,
   });
 
-  // Fetch GPS data for match and players
+  // Fetch GPS data for match and players (only if sport supports GPS)
   const { data: gpsData } = useQuery({
     queryKey: ["clip-gps-data", clip.match_id, playerIds],
     queryFn: async () => {
@@ -75,7 +79,7 @@ export function ClipStatsPanel({ clip, categoryId }: ClipStatsPanelProps) {
       if (error) throw error;
       return data;
     },
-    enabled: playerIds.length > 0,
+    enabled: playerIds.length > 0 && showGps,
   });
 
   // Fetch overall match stats
@@ -176,44 +180,36 @@ export function ClipStatsPanel({ clip, categoryId }: ClipStatsPanelProps) {
                       </Badge>
                     </div>
 
-                    {/* Player Stats */}
-                    {playerStats && (
+                    {/* Player Stats - Dynamic based on sport */}
+                    {playerStats && statsKeys.length > 0 && (
                       <div className="grid grid-cols-3 gap-2 text-xs">
-                        {sportData.tries !== undefined && sportData.tries > 0 && (
-                          <div className="text-center p-1 bg-background rounded">
-                            <p className="font-bold">{sportData.tries}</p>
-                            <p className="text-muted-foreground">Essais</p>
-                          </div>
-                        )}
-                        {sportData.tackles !== undefined && sportData.tackles > 0 && (
-                          <div className="text-center p-1 bg-background rounded">
-                            <p className="font-bold">{sportData.tackles}</p>
-                            <p className="text-muted-foreground">Plaquages</p>
-                          </div>
-                        )}
-                        {sportData.carries !== undefined && sportData.carries > 0 && (
-                          <div className="text-center p-1 bg-background rounded">
-                            <p className="font-bold">{sportData.carries}</p>
-                            <p className="text-muted-foreground">Courses</p>
-                          </div>
-                        )}
+                        {statsKeys.map(({ key, label }) => {
+                          const value = sportData[key];
+                          if (value === undefined || value === 0) return null;
+                          return (
+                            <div key={key} className="text-center p-1 bg-background rounded">
+                              <p className="font-bold">{value}</p>
+                              <p className="text-muted-foreground">{label}</p>
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
 
-                    {/* Player GPS */}
-                    {playerGps && (
+                    {/* Player GPS - Only if sport supports GPS */}
+                    {showGps && playerGps && (
                       <div className="flex items-center gap-3 text-xs">
                         <div className="flex items-center gap-1">
-                          <MapPin className="h-3 w-3 text-blue-500" />
+                          <MapPin className="h-3 w-3 text-primary" />
                           <span>{Math.round((playerGps.total_distance_m || 0) / 1000 * 10) / 10} km</span>
                         </div>
                         <div className="flex items-center gap-1">
-                          <Zap className="h-3 w-3 text-yellow-500" />
+                          <Zap className="h-3 w-3 text-primary" />
                           <span>{Math.round((playerGps.max_speed_ms || 0) * 3.6)} km/h</span>
                         </div>
                         {playerGps.sprint_count && (
                           <div className="flex items-center gap-1">
-                            <Activity className="h-3 w-3 text-green-500" />
+                            <Activity className="h-3 w-3 text-primary" />
                             <span>{playerGps.sprint_count} sprints</span>
                           </div>
                         )}
@@ -234,49 +230,27 @@ export function ClipStatsPanel({ clip, categoryId }: ClipStatsPanelProps) {
 
         <Separator />
 
-        {/* Stats du Match */}
-        {overallMatchStats && overallMatchStats.length > 0 && (
+        {/* Stats du Match - Dynamic based on sport */}
+        {overallMatchStats && overallMatchStats.length > 0 && statsKeys.length > 0 && (
           <div className="space-y-2">
             <h5 className="text-sm font-medium flex items-center gap-2">
               <Trophy className="h-4 w-4" />
               Stats Match (équipe)
             </h5>
             <div className="grid grid-cols-2 gap-2 text-xs">
-              {(() => {
-                const totals = overallMatchStats.reduce(
-                  (acc, stat) => {
-                    const sportData = (stat as { sport_data?: Record<string, number> }).sport_data || {};
-                    return {
-                      tries: acc.tries + (sportData.tries || 0),
-                      tackles: acc.tackles + (sportData.tackles || 0),
-                      carries: acc.carries + (sportData.carries || 0),
-                      passes: acc.passes + (sportData.passes || 0),
-                    };
-                  },
-                  { tries: 0, tackles: 0, carries: 0, passes: 0 }
-                );
-
+              {statsKeys.map(({ key, label }) => {
+                const total = overallMatchStats.reduce((sum, stat) => {
+                  const sportData = (stat as { sport_data?: Record<string, number> }).sport_data || {};
+                  return sum + (sportData[key] || 0);
+                }, 0);
+                
                 return (
-                  <>
-                    <div className="text-center p-2 bg-muted/50 rounded">
-                      <p className="font-bold text-lg">{totals.tries}</p>
-                      <p className="text-muted-foreground">Essais</p>
-                    </div>
-                    <div className="text-center p-2 bg-muted/50 rounded">
-                      <p className="font-bold text-lg">{totals.tackles}</p>
-                      <p className="text-muted-foreground">Plaquages</p>
-                    </div>
-                    <div className="text-center p-2 bg-muted/50 rounded">
-                      <p className="font-bold text-lg">{totals.carries}</p>
-                      <p className="text-muted-foreground">Courses</p>
-                    </div>
-                    <div className="text-center p-2 bg-muted/50 rounded">
-                      <p className="font-bold text-lg">{totals.passes}</p>
-                      <p className="text-muted-foreground">Passes</p>
-                    </div>
-                  </>
+                  <div key={key} className="text-center p-2 bg-muted/50 rounded">
+                    <p className="font-bold text-lg">{total}</p>
+                    <p className="text-muted-foreground">{label}</p>
+                  </div>
                 );
-              })()}
+              })}
             </div>
           </div>
         )}

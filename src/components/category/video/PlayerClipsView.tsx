@@ -11,6 +11,7 @@ import { VideoClipViewer } from "./VideoClipViewer";
 
 interface PlayerClipsViewProps {
   categoryId: string;
+  sportType?: string;
 }
 
 interface PlayerWithClips {
@@ -21,7 +22,7 @@ interface PlayerWithClips {
   clipCount: number;
 }
 
-export function PlayerClipsView({ categoryId }: PlayerClipsViewProps) {
+export function PlayerClipsView({ categoryId, sportType }: PlayerClipsViewProps) {
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -169,6 +170,7 @@ export function PlayerClipsView({ categoryId }: PlayerClipsViewProps) {
         {/* Player Clips */}
         <VideoClipViewer
           categoryId={categoryId}
+          sportType={sportType}
           playerId={selectedPlayerId}
           showAllClips
         />

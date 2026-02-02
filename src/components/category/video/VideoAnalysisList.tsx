@@ -57,6 +57,7 @@ interface VideoAnalysisListProps {
   onSelectAnalysis: (id: string) => void;
   onRefresh: () => void;
   categoryId: string;
+  sportType?: string;
 }
 
 export function VideoAnalysisList({
@@ -64,6 +65,7 @@ export function VideoAnalysisList({
   onSelectAnalysis,
   onRefresh,
   categoryId,
+  sportType,
 }: VideoAnalysisListProps) {
   const queryClient = useQueryClient();
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -263,6 +265,7 @@ export function VideoAnalysisList({
           analysisId={addClipAnalysisId}
           categoryId={categoryId}
           matchId={selectedAnalysis.matches?.id || ""}
+          sportType={sportType}
           onSuccess={() => {
             queryClient.invalidateQueries({ queryKey: ["clip-counts"] });
             queryClient.invalidateQueries({ queryKey: ["video-clips"] });
