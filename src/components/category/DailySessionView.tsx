@@ -29,7 +29,6 @@ import {
   Pencil
 } from "lucide-react";
 import { toast } from "sonner";
-import { GroupedTrainingTypeSelect } from "./sessions/GroupedTrainingTypeSelect";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { subDays } from "date-fns";
@@ -45,6 +44,7 @@ import { AddWellnessDialog } from "./AddWellnessDialog";
 import { GroupedExerciseList } from "./GroupedExerciseList";
 import { printElement, exportSessionToPdf } from "@/lib/pdfExport";
 import { SessionFeedbackDialog } from "./calendar/SessionFeedbackDialog";
+import { EditSessionDialog } from "./EditSessionDialog";
 
 interface DailySessionViewProps {
   categoryId: string;
@@ -69,44 +69,15 @@ export function DailySessionView({ categoryId, categoryName = "Catégorie" }: Da
   const [expandedSession, setExpandedSession] = useState<string | null>(null);
   const [rpeDialogOpen, setRpeDialogOpen] = useState(false);
   const [rpeDialogSession, setRpeDialogSession] = useState<{ id: string; type: string } | null>(null);
-  const [editingSessionType, setEditingSessionType] = useState<string | null>(null);
+  const [editSessionDialogOpen, setEditSessionDialogOpen] = useState(false);
+  const [editingSession, setEditingSession] = useState<any | null>(null);
   const printRef = useRef<HTMLDivElement>(null);
   const today = format(new Date(), "yyyy-MM-dd");
 
-  // Fetch category to get sport type
-  const { data: category } = useQuery({
-    queryKey: ["category-sport-type", categoryId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("categories")
-        .select("rugby_type")
-        .eq("id", categoryId)
-        .single();
-      if (error) throw error;
-      return data;
-    },
-  });
-  const sportType = category?.rugby_type;
-
-  // Mutation to update session training type
-  const updateSessionType = useMutation({
-    mutationFn: async ({ sessionId, trainingType }: { sessionId: string; trainingType: string }) => {
-      const { error } = await supabase
-        .from("training_sessions")
-        .update({ training_type: trainingType })
-        .eq("id", sessionId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["today_sessions", categoryId] });
-      queryClient.invalidateQueries({ queryKey: ["training_sessions", categoryId] });
-      toast.success("Type de séance modifié");
-      setEditingSessionType(null);
-    },
-    onError: () => {
-      toast.error("Erreur lors de la modification");
-    },
-  });
+  const handleEditSession = (session: any) => {
+    setEditingSession(session);
+    setEditSessionDialogOpen(true);
+  };
 
   const handleOpenRpeDialog = (session: { id: string; training_type: string }) => {
     setRpeDialogSession({ id: session.id, type: session.training_type });
@@ -423,7 +394,7 @@ export function DailySessionView({ categoryId, categoryName = "Catégorie" }: Da
               onCheckedChange={setShowOnlyAtRisk}
             />
             <Label htmlFor="at-risk-filter" className={cn(fieldMode && "text-slate-300")}>
-              Joueurs à risque uniquement
+              Athlètes à risque uniquement
             </Label>
           </div>
 
@@ -567,51 +538,26 @@ export function DailySessionView({ categoryId, categoryName = "Catégorie" }: Da
                               {getSessionTypeIcon(session.training_type)}
                             </div>
                             <div className="flex-1">
-                              {editingSessionType === session.id ? (
-                                <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                                  <div className="w-48">
-                                    <GroupedTrainingTypeSelect
-                                      value={session.training_type}
-                                      onValueChange={(value) => {
-                                        updateSessionType.mutate({ sessionId: session.id, trainingType: value });
-                                      }}
-                                      sportType={sportType}
-                                    />
-                                  </div>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setEditingSessionType(null);
-                                    }}
-                                    className="h-7 px-2 text-xs"
-                                  >
-                                    Annuler
-                                  </Button>
-                                </div>
-                              ) : (
-                                <div className="flex items-center gap-2">
-                                  <p className={cn("font-semibold", fieldMode && "text-white")}>
-                                    {getSessionTypeLabel(session.training_type)}
-                                  </p>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setEditingSessionType(session.id);
-                                    }}
-                                    className={cn(
-                                      "h-6 w-6 p-0 opacity-60 hover:opacity-100",
-                                      fieldMode && "text-slate-300 hover:text-white hover:bg-slate-700"
-                                    )}
-                                    title="Modifier le type"
-                                  >
-                                    <Pencil className="h-3.5 w-3.5" />
-                                  </Button>
-                                </div>
-                              )}
+                              <div className="flex items-center gap-2">
+                                <p className={cn("font-semibold", fieldMode && "text-white")}>
+                                  {getSessionTypeLabel(session.training_type)}
+                                </p>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleEditSession(session);
+                                  }}
+                                  className={cn(
+                                    "h-6 w-6 p-0 opacity-60 hover:opacity-100",
+                                    fieldMode && "text-slate-300 hover:text-white hover:bg-slate-700"
+                                  )}
+                                  title="Modifier la séance"
+                                >
+                                  <Pencil className="h-3.5 w-3.5" />
+                                </Button>
+                              </div>
                               {session.session_start_time && (
                                 <p className={cn(
                                   "text-xs",
@@ -813,7 +759,7 @@ export function DailySessionView({ categoryId, categoryName = "Catégorie" }: Da
           <CardHeader className="pb-3">
             <CardTitle className={cn("flex items-center gap-2", fieldMode && "text-white")}>
               <Users className={cn("h-5 w-5", fieldMode ? "text-blue-400" : "text-primary")} />
-              Joueurs ({showOnlyAtRisk ? `${atRiskPlayers.length} à risque` : players?.length || 0})
+              Athlètes ({showOnlyAtRisk ? `${atRiskPlayers.length} à risque` : players?.length || 0})
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -869,7 +815,7 @@ export function DailySessionView({ categoryId, categoryName = "Catégorie" }: Da
                   fieldMode ? "text-slate-400" : "text-muted-foreground"
                 )}>
                   <CheckCircle className="h-12 w-12 mx-auto mb-2 text-green-500" />
-                  <p>Aucun joueur à risque</p>
+                  <p>Aucun athlète à risque</p>
                 </div>
               )}
             </div>
@@ -897,6 +843,14 @@ export function DailySessionView({ categoryId, categoryName = "Catégorie" }: Da
           categoryId={categoryId}
         />
       )}
+
+      {/* Edit Session Dialog */}
+      <EditSessionDialog
+        open={editSessionDialogOpen}
+        onOpenChange={setEditSessionDialogOpen}
+        categoryId={categoryId}
+        session={editingSession}
+      />
     </div>
   );
 }

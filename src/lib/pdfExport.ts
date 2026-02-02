@@ -660,7 +660,21 @@ export const exportPeriodizationToPdf = (
   pdf.save(`periodisation-${categoryName.toLowerCase().replace(/\s+/g, "-")}-${format(new Date(), "yyyy-MM-dd")}.pdf`);
 };
 
-// Export calendar to PDF
+// Training type colors for PDF (matching app colors)
+const trainingTypeColors: Record<string, [number, number, number]> = {
+  collectif: [34, 197, 94], // green-500
+  physique: [59, 130, 246], // blue-500
+  musculation: [168, 85, 247], // purple-500
+  technique_individuelle: [245, 158, 11], // amber-500
+  reathlétisation: [236, 72, 153], // pink-500
+  repos: [100, 116, 139], // slate-500
+  test: [14, 165, 233], // sky-500
+  video: [99, 102, 241], // indigo-500
+  tactique: [6, 182, 212], // cyan-500
+  match: [239, 68, 68], // red-500
+};
+
+// Export calendar to PDF - visual monthly grid matching app display
 export const exportCalendarToPdf = async (
   sessions: any[],
   matches: any[],
@@ -668,72 +682,176 @@ export const exportCalendarToPdf = async (
   dateRange?: { from: Date; to: Date }
 ): Promise<void> => {
   const pdf = new jsPDF({
-    orientation: "portrait",
+    orientation: "landscape",
     unit: "mm",
     format: "a4",
   });
   
-  const margin = 15;
+  const margin = 10;
   const pageWidth = pdf.internal.pageSize.getWidth();
-  const contentWidth = pageWidth - margin * 2;
+  const pageHeight = pdf.internal.pageSize.getHeight();
   
-  const fromDate = dateRange?.from || new Date();
-  const toDate = dateRange?.to || new Date();
+  // Use current month if no date range specified
+  const now = new Date();
+  const currentMonth = dateRange?.from || new Date(now.getFullYear(), now.getMonth(), 1);
   
   // Header
+  const monthYear = format(currentMonth, "MMMM yyyy", { locale: fr });
   let yPos = drawPdfHeader(
     pdf,
     "Calendrier Global",
     categoryName,
-    `Du ${format(fromDate, "dd/MM/yyyy")} au ${format(toDate, "dd/MM/yyyy")}`
+    monthYear.charAt(0).toUpperCase() + monthYear.slice(1)
   );
   
-  // Sessions
-  if (sessions && sessions.length > 0) {
-    yPos = drawSectionTitle(pdf, `Séances (${sessions.length})`, yPos, margin);
+  // Calendar grid setup
+  const gridMargin = margin;
+  const gridWidth = pageWidth - gridMargin * 2;
+  const cellWidth = gridWidth / 7;
+  const dayHeaders = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
+  
+  // Draw day headers
+  pdf.setFillColor(...colors.secondary);
+  dayHeaders.forEach((day, i) => {
+    pdf.rect(gridMargin + i * cellWidth, yPos, cellWidth, 8, 'F');
+    pdf.setTextColor(...colors.white);
+    pdf.setFontSize(9);
+    pdf.setFont("helvetica", "bold");
+    const textWidth = pdf.getTextWidth(day);
+    pdf.text(day, gridMargin + i * cellWidth + (cellWidth - textWidth) / 2, yPos + 5.5);
+  });
+  yPos += 8;
+  
+  // Get first day of month and calculate grid
+  const firstDayOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+  const lastDayOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
+  
+  // Get Monday of the first week
+  let firstMondayOffset = firstDayOfMonth.getDay() - 1;
+  if (firstMondayOffset < 0) firstMondayOffset = 6;
+  const calendarStart = new Date(firstDayOfMonth);
+  calendarStart.setDate(calendarStart.getDate() - firstMondayOffset);
+  
+  // Calculate cell height based on available space
+  const weeksInMonth = Math.ceil((lastDayOfMonth.getDate() + firstMondayOffset) / 7);
+  const availableHeight = pageHeight - yPos - margin;
+  const cellHeight = Math.min(availableHeight / weeksInMonth, 28);
+  
+  // Draw calendar grid
+  let currentDate = new Date(calendarStart);
+  
+  for (let week = 0; week < weeksInMonth; week++) {
+    const weekY = yPos + week * cellHeight;
     
-    const headers = ["Date", "Heure", "Type", "Intensité", "Notes"];
-    const colWidths = [30, 25, 40, 25, 60];
-    yPos = drawTableHeader(pdf, headers, colWidths, yPos, margin);
-    
-    sessions.slice(0, 50).forEach((session, i) => {
-      yPos = checkPageBreak(pdf, yPos, 8);
-      yPos = drawTableRow(pdf, [
-        format(new Date(session.session_date), "dd/MM/yy"),
-        session.session_start_time || "-",
-        session.training_type || "-",
-        session.intensity ? `${session.intensity}/10` : "-",
-        (session.notes || "-").substring(0, 35),
-      ], colWidths, yPos, i % 2 === 1, margin);
-    });
-    yPos += 8;
+    for (let day = 0; day < 7; day++) {
+      const cellX = gridMargin + day * cellWidth;
+      const isCurrentMonth = currentDate.getMonth() === currentMonth.getMonth();
+      const isToday = format(currentDate, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd");
+      const dateStr = format(currentDate, "yyyy-MM-dd");
+      
+      // Cell background
+      if (isToday) {
+        pdf.setFillColor(59, 130, 246, 0.1); // primary/10
+        pdf.rect(cellX, weekY, cellWidth, cellHeight, 'F');
+      } else if (!isCurrentMonth) {
+        pdf.setFillColor(241, 245, 249); // light gray
+        pdf.rect(cellX, weekY, cellWidth, cellHeight, 'F');
+      }
+      
+      // Cell border
+      pdf.setDrawColor(200, 200, 200);
+      pdf.setLineWidth(0.2);
+      pdf.rect(cellX, weekY, cellWidth, cellHeight);
+      
+      // Date number
+      pdf.setFontSize(8);
+      pdf.setFont("helvetica", isToday ? "bold" : "normal");
+      pdf.setTextColor(isCurrentMonth ? 30 : 150, isCurrentMonth ? 41 : 150, isCurrentMonth ? 59 : 150);
+      pdf.text(String(currentDate.getDate()), cellX + 2, weekY + 5);
+      
+      // Find sessions and matches for this date
+      const daySessions = sessions?.filter(s => s.session_date === dateStr) || [];
+      const dayMatches = matches?.filter(m => m.match_date === dateStr) || [];
+      
+      let eventY = weekY + 8;
+      const maxEvents = 3;
+      let eventCount = 0;
+      
+      // Draw matches first (priority)
+      dayMatches.forEach((match) => {
+        if (eventCount >= maxEvents) return;
+        
+        pdf.setFillColor(239, 68, 68); // red-500
+        pdf.roundedRect(cellX + 1.5, eventY, cellWidth - 3, 5, 1, 1, 'F');
+        pdf.setTextColor(...colors.white);
+        pdf.setFontSize(5.5);
+        pdf.setFont("helvetica", "bold");
+        const matchText = `⚔ ${(match.opponent || "Match").substring(0, 12)}`;
+        pdf.text(matchText, cellX + 2.5, eventY + 3.5);
+        
+        eventY += 6;
+        eventCount++;
+      });
+      
+      // Draw sessions
+      daySessions.forEach((session) => {
+        if (eventCount >= maxEvents) return;
+        
+        const typeColor = trainingTypeColors[session.training_type] || colors.secondary;
+        pdf.setFillColor(...typeColor);
+        pdf.roundedRect(cellX + 1.5, eventY, cellWidth - 3, 5, 1, 1, 'F');
+        pdf.setTextColor(...colors.white);
+        pdf.setFontSize(5.5);
+        pdf.setFont("helvetica", "normal");
+        
+        const timePrefix = session.session_start_time ? `${session.session_start_time.slice(0, 5)} ` : "";
+        const typeLabel = session.training_type?.replace(/_/g, " ") || "Séance";
+        const sessionText = `${timePrefix}${typeLabel}`.substring(0, 15);
+        pdf.text(sessionText, cellX + 2.5, eventY + 3.5);
+        
+        eventY += 6;
+        eventCount++;
+      });
+      
+      // Show "+X more" if there are more events
+      const totalEvents = daySessions.length + dayMatches.length;
+      if (totalEvents > maxEvents) {
+        pdf.setTextColor(...colors.muted);
+        pdf.setFontSize(5);
+        pdf.text(`+${totalEvents - maxEvents}`, cellX + cellWidth - 8, weekY + cellHeight - 2);
+      }
+      
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
   }
   
-  // Matches
-  if (matches && matches.length > 0) {
-    yPos = checkPageBreak(pdf, yPos, 30);
-    yPos = drawSectionTitle(pdf, `Matchs (${matches.length})`, yPos, margin);
+  // Legend at the bottom
+  yPos = yPos + weeksInMonth * cellHeight + 5;
+  if (yPos < pageHeight - 15) {
+    pdf.setFontSize(7);
+    pdf.setFont("helvetica", "bold");
+    pdf.setTextColor(...colors.dark);
+    pdf.text("Légende:", margin, yPos);
     
-    const headers = ["Date", "Adversaire", "Lieu", "Compétition", "Score"];
-    const colWidths = [30, 45, 35, 35, 35];
-    yPos = drawTableHeader(pdf, headers, colWidths, yPos, margin);
+    let legendX = margin + 18;
+    const legendItems = [
+      { label: "Match", color: [239, 68, 68] as [number, number, number] },
+      { label: "Collectif", color: [34, 197, 94] as [number, number, number] },
+      { label: "Physique", color: [59, 130, 246] as [number, number, number] },
+      { label: "Musculation", color: [168, 85, 247] as [number, number, number] },
+    ];
     
-    matches.forEach((match, i) => {
-      yPos = checkPageBreak(pdf, yPos, 8);
-      const score = match.score_home !== null && match.score_away !== null
-        ? `${match.score_home} - ${match.score_away}`
-        : "-";
-      yPos = drawTableRow(pdf, [
-        format(new Date(match.match_date), "dd/MM/yy"),
-        match.opponent || "-",
-        match.is_home ? "Domicile" : "Extérieur",
-        match.competition || "-",
-        score,
-      ], colWidths, yPos, i % 2 === 1, margin);
+    legendItems.forEach((item) => {
+      pdf.setFillColor(...item.color);
+      pdf.roundedRect(legendX, yPos - 3, 3, 3, 0.5, 0.5, 'F');
+      pdf.setFont("helvetica", "normal");
+      pdf.setTextColor(...colors.dark);
+      pdf.text(item.label, legendX + 4, yPos);
+      legendX += pdf.getTextWidth(item.label) + 10;
     });
   }
   
-  pdf.save(`calendrier-${categoryName.toLowerCase().replace(/\s+/g, "-")}-${format(new Date(), "yyyy-MM-dd")}.pdf`);
+  pdf.save(`calendrier-${categoryName.toLowerCase().replace(/\s+/g, "-")}-${format(currentMonth, "yyyy-MM")}.pdf`);
 };
 
 // Print function
