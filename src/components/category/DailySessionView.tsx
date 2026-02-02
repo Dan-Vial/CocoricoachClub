@@ -482,7 +482,7 @@ export function DailySessionView({ categoryId, categoryName = "Catégorie" }: Da
             </div>
           </CardHeader>
           <CardContent>
-            <ScrollArea className="max-h-[500px]">
+            <ScrollArea className="h-[500px]">
               {!todaySessions || todaySessions.length === 0 ? (
                 <div className={cn(
                   "text-center py-8",
@@ -644,13 +644,14 @@ export function DailySessionView({ categoryId, categoryName = "Catégorie" }: Da
                                     Exercices ({exercises.length})
                                   </span>
                                 </div>
-                                <GroupedExerciseList
-                                  exercises={exercises}
-                                  fieldMode={fieldMode}
-                                  maxHeight="400px"
-                                  showScroll={true}
-                                  compact={false}
-                                />
+                                <ScrollArea className="h-[400px]">
+                                  <GroupedExerciseList
+                                    exercises={exercises}
+                                    fieldMode={fieldMode}
+                                    showScroll={false}
+                                    compact={false}
+                                  />
+                                </ScrollArea>
                               </div>
                             ) : (
                               <p className={cn(
