@@ -139,6 +139,8 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
     onSettled: () => {
       // Always refetch after error or success
       queryClient.invalidateQueries({ queryKey: ["training_sessions", categoryId] });
+      queryClient.invalidateQueries({ queryKey: ["today_sessions", categoryId] });
+      queryClient.invalidateQueries({ queryKey: ["today_session_exercises"] });
     },
   });
 
@@ -198,6 +200,8 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["training_sessions", categoryId] });
+      queryClient.invalidateQueries({ queryKey: ["today_sessions", categoryId] });
+      queryClient.invalidateQueries({ queryKey: ["today_session_exercises"] });
       toast.success("Séance supprimée avec succès");
     },
     onError: () => {

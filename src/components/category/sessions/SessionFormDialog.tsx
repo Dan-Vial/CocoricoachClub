@@ -575,6 +575,8 @@ export function SessionFormDialog({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["training_sessions", categoryId] });
+      queryClient.invalidateQueries({ queryKey: ["today_sessions", categoryId] });
+      queryClient.invalidateQueries({ queryKey: ["today_session_exercises"] });
       queryClient.invalidateQueries({ queryKey: ["training_attendance"] });
       queryClient.invalidateQueries({ queryKey: ["gym-exercises"] });
       queryClient.invalidateQueries({ queryKey: ["gps-sessions", categoryId] });

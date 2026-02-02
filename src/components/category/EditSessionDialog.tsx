@@ -100,6 +100,8 @@ export function EditSessionDialog({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["training_sessions", categoryId] });
+      queryClient.invalidateQueries({ queryKey: ["today_sessions", categoryId] });
+      queryClient.invalidateQueries({ queryKey: ["today_session_exercises"] });
       toast.success("Séance modifiée avec succès");
       onOpenChange(false);
     },
