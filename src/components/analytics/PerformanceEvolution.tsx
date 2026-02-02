@@ -1,10 +1,16 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { 
+  LineChart, Line, AreaChart, Area, BarChart, Bar,
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer 
+} from "recharts";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { Loader2 } from "lucide-react";
+import { Loader2, LineChartIcon, BarChart3, AreaChartIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 interface PerformanceEvolutionProps {
   categoryId: string;
@@ -71,7 +77,10 @@ const getSportCharts = (sportType: string) => {
   ];
 };
 
+type ChartType = "line" | "bar" | "area";
+
 export function PerformanceEvolution({ categoryId, sportType = "XV" }: PerformanceEvolutionProps) {
+  const [chartType, setChartType] = useState<ChartType>("line");
   const chartConfigs = getSportCharts(sportType);
 
   const { data: players } = useQuery({
@@ -207,8 +216,118 @@ export function PerformanceEvolution({ categoryId, sportType = "XV" }: Performan
     );
   }
 
+  const renderChart = (data: { date: string; moyenne: number }[]) => {
+    const commonProps = {
+      data,
+      children: (
+        <>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="date" />
+          <YAxis />
+          <Tooltip />
+          <Legend />
+        </>
+      ),
+    };
+
+    if (chartType === "bar") {
+      return (
+        <BarChart data={data}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="date" />
+          <YAxis />
+          <Tooltip />
+          <Legend />
+          <Bar 
+            dataKey="moyenne" 
+            name="Moyenne équipe" 
+            fill="hsl(var(--primary))" 
+            radius={[4, 4, 0, 0]}
+          />
+        </BarChart>
+      );
+    }
+
+    if (chartType === "area") {
+      return (
+        <AreaChart data={data}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="date" />
+          <YAxis />
+          <Tooltip />
+          <Legend />
+          <Area 
+            type="monotone" 
+            dataKey="moyenne" 
+            name="Moyenne équipe" 
+            stroke="hsl(var(--primary))" 
+            fill="hsl(var(--primary))"
+            fillOpacity={0.3}
+          />
+        </AreaChart>
+      );
+    }
+
+    return (
+      <LineChart data={data}>
+        <CartesianGrid strokeDasharray="3 3" />
+        <XAxis dataKey="date" />
+        <YAxis />
+        <Tooltip />
+        <Legend />
+        <Line 
+          type="monotone" 
+          dataKey="moyenne" 
+          name="Moyenne équipe" 
+          stroke="hsl(var(--primary))" 
+          strokeWidth={2}
+        />
+      </LineChart>
+    );
+  };
+
   return (
     <div className="space-y-6">
+      {/* Chart type selector */}
+      <div className="flex items-center justify-end gap-1 border rounded-lg p-1 w-fit ml-auto bg-muted/30">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setChartType("line")}
+          className={cn(
+            "h-8 px-3 gap-1.5",
+            chartType === "line" && "bg-background shadow-sm"
+          )}
+        >
+          <LineChartIcon className="h-4 w-4" />
+          Ligne
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setChartType("bar")}
+          className={cn(
+            "h-8 px-3 gap-1.5",
+            chartType === "bar" && "bg-background shadow-sm"
+          )}
+        >
+          <BarChart3 className="h-4 w-4" />
+          Barres
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setChartType("area")}
+          className={cn(
+            "h-8 px-3 gap-1.5",
+            chartType === "area" && "bg-background shadow-sm"
+          )}
+        >
+          <AreaChartIcon className="h-4 w-4" />
+          Aire
+        </Button>
+      </div>
+
       {chartConfigs.map((config) => {
         const data = prepareData(config.key, config.testFilter, config.testType);
         
@@ -220,20 +339,7 @@ export function PerformanceEvolution({ categoryId, sportType = "XV" }: Performan
             <CardContent>
               {data.length > 0 ? (
                 <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={data}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Line 
-                      type="monotone" 
-                      dataKey="moyenne" 
-                      name="Moyenne équipe" 
-                      stroke="hsl(var(--primary))" 
-                      strokeWidth={2}
-                    />
-                  </LineChart>
+                  {renderChart(data)}
                 </ResponsiveContainer>
               ) : (
                 <p className="text-muted-foreground text-center py-8">Aucune donnée disponible</p>

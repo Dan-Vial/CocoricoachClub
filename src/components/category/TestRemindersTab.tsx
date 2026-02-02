@@ -40,6 +40,7 @@ interface TestReminder {
   last_notification_date: string | null;
   start_date: string | null;
   created_at: string;
+  updated_at?: string;
 }
 
 export function TestRemindersTab({ categoryId }: TestRemindersTabProps) {

@@ -4784,6 +4784,7 @@ export type Database = {
           id: string
           is_active: boolean
           last_notification_date: string | null
+          start_date: string | null
           test_type: string
           updated_at: string | null
         }
@@ -4794,6 +4795,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           last_notification_date?: string | null
+          start_date?: string | null
           test_type: string
           updated_at?: string | null
         }
@@ -4804,6 +4806,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           last_notification_date?: string | null
+          start_date?: string | null
           test_type?: string
           updated_at?: string | null
         }
