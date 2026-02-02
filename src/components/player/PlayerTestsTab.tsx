@@ -67,6 +67,21 @@ export function PlayerTestsTab({ playerId, categoryId }: PlayerTestsTabProps) {
     },
   });
 
+  // Fetch generic tests for strength/musculation category
+  const { data: genericStrengthTests } = useQuery({
+    queryKey: ["generic_strength_tests", playerId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("generic_tests")
+        .select("*")
+        .eq("player_id", playerId)
+        .eq("test_category", "musculation")
+        .order("test_date", { ascending: true });
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const { data: mobilityTests } = useQuery({
     queryKey: ["mobility_tests", playerId],
     queryFn: async () => {
@@ -164,7 +179,25 @@ export function PlayerTestsTab({ playerId, categoryId }: PlayerTestsTabProps) {
       vma: test.vma_kmh,
     }));
 
-  const strengthData = strengthTests?.reduce((acc, test) => {
+  // Combine strength tests from both tables
+  const allStrengthTests = [
+    ...(strengthTests?.map(test => ({
+      id: test.id,
+      test_date: test.test_date,
+      test_name: test.test_name,
+      weight_kg: test.weight_kg,
+      source: "strength_tests" as const,
+    })) || []),
+    ...(genericStrengthTests?.map(test => ({
+      id: test.id,
+      test_date: test.test_date,
+      test_name: test.test_type?.replace(/_/g, " ") || "Test",
+      weight_kg: test.result_value,
+      source: "generic_tests" as const,
+    })) || []),
+  ].sort((a, b) => new Date(a.test_date).getTime() - new Date(b.test_date).getTime());
+
+  const strengthData = allStrengthTests.reduce((acc, test) => {
     const date = new Date(test.test_date).toLocaleDateString("fr-FR");
     const existing = acc.find((item) => item.date === date);
     if (existing) {
@@ -175,7 +208,7 @@ export function PlayerTestsTab({ playerId, categoryId }: PlayerTestsTabProps) {
     return acc;
   }, [] as any[]);
 
-  const strengthTestNames = [...new Set(strengthTests?.map((test) => test.test_name) || [])];
+  const strengthTestNames = [...new Set(allStrengthTests.map((test) => test.test_name) || [])];
 
   // Prepare mobility data for charts
   const mobilityChartData = mobilityTests?.reduce((acc, test) => {
@@ -382,7 +415,7 @@ export function PlayerTestsTab({ playerId, categoryId }: PlayerTestsTabProps) {
               <CardTitle>Historique des tests de musculation</CardTitle>
             </CardHeader>
             <CardContent>
-              {strengthTests && strengthTests.length > 0 ? (
+              {allStrengthTests && allStrengthTests.length > 0 ? (
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
@@ -394,7 +427,7 @@ export function PlayerTestsTab({ playerId, categoryId }: PlayerTestsTabProps) {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {strengthTests.map((test) => (
+                      {allStrengthTests.slice().reverse().map((test) => (
                         <TableRow key={test.id}>
                           <TableCell>{new Date(test.test_date).toLocaleDateString("fr-FR")}</TableCell>
                           <TableCell>{test.test_name}</TableCell>

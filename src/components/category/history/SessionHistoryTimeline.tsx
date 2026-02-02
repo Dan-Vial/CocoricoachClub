@@ -167,6 +167,24 @@ export function SessionHistoryTimeline({ categoryId, playerId }: SessionHistoryT
     },
   });
 
+  // Fetch generic tests (from session builder)
+  const { data: genericTests } = useQuery({
+    queryKey: ["session-history-generic-tests", categoryId, startDate, playerId],
+    queryFn: async () => {
+      let query = supabase
+        .from("generic_tests")
+        .select("*, players(name)")
+        .eq("category_id", categoryId)
+        .gte("test_date", startDate);
+      
+      if (playerId) query = query.eq("player_id", playerId);
+      
+      const { data, error } = await query;
+      if (error) throw error;
+      return data;
+    },
+  });
+
   // Fetch matches
   const { data: matches } = useQuery({
     queryKey: ["session-history-matches", categoryId, startDate],
@@ -263,6 +281,23 @@ export function SessionHistoryTimeline({ categoryId, playerId }: SessionHistoryT
         subtitle: `${test.result_cm}cm`,
         icon: <TrendingUp className="h-4 w-4" />,
         color: "bg-amber-500",
+        data: test,
+      });
+    });
+
+    // Generic tests (from session builder)
+    genericTests?.forEach((test) => {
+      const testLabel = test.test_type?.replace(/_/g, " ") || test.test_category;
+      const resultValue = `${test.result_value}${test.result_unit ? ` ${test.result_unit}` : ""}`;
+      
+      events.push({
+        id: `generic-${test.id}`,
+        date: test.test_date,
+        type: "test",
+        title: `Test ${testLabel}`,
+        subtitle: resultValue,
+        icon: <TestTube className="h-4 w-4" />,
+        color: "bg-emerald-500",
         data: test,
       });
     });
