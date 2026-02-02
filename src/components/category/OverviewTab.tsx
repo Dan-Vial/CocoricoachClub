@@ -8,13 +8,14 @@ import { Separator } from "@/components/ui/separator";
 
 interface OverviewTabProps {
   categoryId: string;
+  categoryName?: string;
 }
 
-export function OverviewTab({ categoryId }: OverviewTabProps) {
+export function OverviewTab({ categoryId, categoryName }: OverviewTabProps) {
   return (
     <div className="space-y-6">
       {/* Daily Session View - Top Priority */}
-      <DailySessionView categoryId={categoryId} />
+      <DailySessionView categoryId={categoryId} categoryName={categoryName} />
       
       <Separator />
 

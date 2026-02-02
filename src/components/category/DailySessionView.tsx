@@ -39,10 +39,11 @@ import { cn } from "@/lib/utils";
 import { useFieldMode } from "@/contexts/FieldModeContext";
 import { AddWellnessDialog } from "./AddWellnessDialog";
 import { GroupedExerciseList } from "./GroupedExerciseList";
-import { printElement } from "@/lib/pdfExport";
+import { printElement, exportSessionToPdf } from "@/lib/pdfExport";
 
 interface DailySessionViewProps {
   categoryId: string;
+  categoryName?: string;
 }
 
 interface AtRiskPlayer {
@@ -55,7 +56,7 @@ interface AtRiskPlayer {
   trend: string | null;
 }
 
-export function DailySessionView({ categoryId }: DailySessionViewProps) {
+export function DailySessionView({ categoryId, categoryName = "Catégorie" }: DailySessionViewProps) {
   const { fieldMode, setFieldMode } = useFieldMode();
   const [showOnlyAtRisk, setShowOnlyAtRisk] = useState(false);
   const [wellnessDialogOpen, setWellnessDialogOpen] = useState(false);
@@ -67,6 +68,10 @@ export function DailySessionView({ categoryId }: DailySessionViewProps) {
     if (printRef.current) {
       printElement(printRef.current, `Vue du Jour - ${format(new Date(), "PPP", { locale: fr })}`);
     }
+  };
+
+  const handlePrintSession = (session: any, exercises: any[]) => {
+    exportSessionToPdf(session, exercises, categoryName);
   };
 
   // Fetch today's sessions
@@ -534,6 +539,25 @@ export function DailySessionView({ categoryId }: DailySessionViewProps) {
                             "p-4 pt-0 border-t",
                             fieldMode ? "border-slate-600" : "border-border"
                           )}>
+                            {/* Print button for this session */}
+                            <div className="flex justify-end mb-3 mt-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handlePrintSession(session, exercises);
+                                }}
+                                className={cn(
+                                  "gap-1.5",
+                                  fieldMode && "border-slate-600 hover:bg-slate-700"
+                                )}
+                              >
+                                <Printer className="h-3.5 w-3.5" />
+                                Imprimer cette séance
+                              </Button>
+                            </div>
+
                             {session.notes && (
                               <p className={cn(
                                 "text-sm mb-3 italic",

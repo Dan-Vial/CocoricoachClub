@@ -281,7 +281,71 @@ export const exportWeeklyPlanningToPdf = (
   pdf.save(`planning-hebdo-${format(weekStartDate, "yyyy-MM-dd")}.pdf`);
 };
 
-// Export session details to PDF
+// Training method colors for PDF
+const methodColors: Record<string, [number, number, number]> = {
+  superset: [59, 130, 246], // blue-500
+  biset: [99, 102, 241], // indigo-500
+  triset: [168, 85, 247], // purple-500
+  giant_set: [236, 72, 153], // pink-500
+  drop_set: [239, 68, 68], // red-500
+  rest_pause: [245, 158, 11], // amber-500
+  pyramid_up: [16, 185, 129], // emerald-500
+  pyramid_down: [20, 184, 166], // teal-500
+  pyramid_full: [6, 182, 212], // cyan-500
+  five_by_five: [14, 165, 233], // sky-500
+  cluster: [249, 115, 22], // orange-500
+  bulgarian: [217, 70, 239], // fuchsia-500
+  amrap: [244, 63, 94], // rose-500
+  for_time: [234, 88, 12], // orange-600
+  circuit: [132, 204, 22], // lime-500
+  tabata: [234, 179, 8], // yellow-500
+  emom: [79, 70, 229], // indigo-600
+  death_by: [220, 38, 38], // red-600
+};
+
+// Helper to get week number
+const getWeekNumber = (date: Date): number => {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+};
+
+// Group exercises by group_id
+const groupExercisesForPdf = (exercises: any[]): { groupId: string | null; exercises: any[]; method: string }[] => {
+  if (!exercises || exercises.length === 0) return [];
+  
+  const groups: { groupId: string | null; exercises: any[]; method: string }[] = [];
+  const processedGroupIds = new Set<string>();
+
+  exercises.forEach((exercise) => {
+    if (exercise.group_id) {
+      if (!processedGroupIds.has(exercise.group_id)) {
+        processedGroupIds.add(exercise.group_id);
+        const groupExercises = exercises
+          .filter((ex) => ex.group_id === exercise.group_id)
+          .sort((a, b) => (a.group_order || 0) - (b.group_order || 0));
+        
+        groups.push({
+          groupId: exercise.group_id,
+          exercises: groupExercises,
+          method: exercise.set_type || exercise.method || "superset",
+        });
+      }
+    } else {
+      groups.push({
+        groupId: null,
+        exercises: [exercise],
+        method: exercise.set_type || exercise.method || "normal",
+      });
+    }
+  });
+
+  return groups;
+};
+
+// Export session details to PDF with enhanced design
 export const exportSessionToPdf = (
   session: any,
   exercises: any[],
@@ -296,75 +360,212 @@ export const exportSessionToPdf = (
   const margin = 15;
   const pageWidth = pdf.internal.pageSize.getWidth();
   const contentWidth = pageWidth - margin * 2;
+  const sessionDate = new Date(session.session_date);
+  const weekNum = getWeekNumber(sessionDate);
   
-  // Header
-  let yPos = drawPdfHeader(
-    pdf,
-    `Séance ${session.training_type || ""}`,
-    categoryName,
-    format(new Date(session.session_date), "EEEE dd MMMM yyyy", { locale: fr })
-  );
+  // Header with week number
+  pdf.setFillColor(...colors.primary);
+  pdf.rect(0, 0, pageWidth, 40, 'F');
   
-  // Session info
-  yPos = drawSectionTitle(pdf, "Informations de la séance", yPos, margin);
+  pdf.setTextColor(...colors.white);
+  pdf.setFontSize(20);
+  pdf.setFont("helvetica", "bold");
+  pdf.text(session.training_type || "Séance", margin, 18);
+  
+  pdf.setFontSize(12);
+  pdf.setFont("helvetica", "normal");
+  pdf.text(categoryName, margin, 27);
+  
+  pdf.setFontSize(10);
+  pdf.text(format(sessionDate, "EEEE dd MMMM yyyy", { locale: fr }), margin, 35);
+  
+  // Week number badge
+  pdf.setFillColor(...colors.secondary);
+  pdf.roundedRect(pageWidth - margin - 25, 10, 25, 15, 2, 2, 'F');
+  pdf.setTextColor(...colors.white);
+  pdf.setFontSize(9);
+  pdf.setFont("helvetica", "bold");
+  pdf.text(`S${weekNum}`, pageWidth - margin - 17, 19.5);
+  
+  let yPos = 50;
+  pdf.setTextColor(...colors.dark);
+  
+  // Session info card
+  pdf.setFillColor(...colors.light);
+  pdf.roundedRect(margin, yPos, contentWidth, 20, 2, 2, 'F');
   
   pdf.setFontSize(9);
+  pdf.setFont("helvetica", "normal");
   const infos = [
-    `Type: ${session.training_type || "-"}`,
-    `Horaires: ${session.session_start_time || "-"} - ${session.session_end_time || "-"}`,
-    `Intensité: ${session.intensity || "-"}/10`,
-  ];
-  infos.forEach((info) => {
-    pdf.text(info, margin, yPos);
-    yPos += 5;
-  });
-  yPos += 5;
+    session.session_start_time ? `🕐 ${session.session_start_time.slice(0, 5)}${session.session_end_time ? ` - ${session.session_end_time.slice(0, 5)}` : ""}` : null,
+    session.intensity ? `💪 Intensité: ${session.intensity}/10` : null,
+    exercises.length > 0 ? `📋 ${exercises.length} exercices` : null,
+  ].filter(Boolean);
   
-  // Exercises table
+  let xInfo = margin + 5;
+  infos.forEach((info) => {
+    if (info) {
+      pdf.text(info, xInfo, yPos + 12);
+      xInfo += 55;
+    }
+  });
+  yPos += 28;
+  
+  // Notes section
+  if (session.notes) {
+    pdf.setFillColor(255, 251, 235); // amber-50
+    pdf.roundedRect(margin, yPos, contentWidth, 15, 2, 2, 'F');
+    pdf.setDrawColor(234, 179, 8); // amber-500
+    pdf.setLineWidth(0.5);
+    pdf.roundedRect(margin, yPos, contentWidth, 15, 2, 2, 'S');
+    
+    pdf.setFontSize(8);
+    pdf.setTextColor(...colors.dark);
+    const noteLines = pdf.splitTextToSize(session.notes, contentWidth - 10);
+    pdf.text(noteLines.slice(0, 2), margin + 5, yPos + 8);
+    yPos += 20;
+  }
+  
+  // Exercises section
   if (exercises && exercises.length > 0) {
-    yPos = drawSectionTitle(pdf, "Exercices", yPos, margin);
+    yPos = drawSectionTitle(pdf, "Programme d'exercices", yPos, margin);
+    yPos += 2;
     
-    const headers = ["Exercice", "Séries", "Reps", "Charge", "Repos", "RPE", "Type"];
-    const colWidths = [50, 18, 18, 22, 18, 15, 30];
+    const exerciseGroups = groupExercisesForPdf(exercises);
     
-    yPos = drawTableHeader(pdf, headers, colWidths, yPos, margin);
-    
-    let totalTonnage = 0;
-    exercises.forEach((ex, i) => {
-      yPos = checkPageBreak(pdf, yPos, 8);
-      const tonnage = (ex.weight_kg || 0) * (ex.sets || 0) * (ex.reps || 0);
-      totalTonnage += tonnage;
+    exerciseGroups.forEach((group) => {
+      yPos = checkPageBreak(pdf, yPos, 35);
       
-      yPos = drawTableRow(pdf, [
-        ex.exercise_name || "-",
-        String(ex.sets || "-"),
-        String(ex.reps || "-"),
-        ex.weight_kg ? `${ex.weight_kg}kg` : "-",
-        ex.rest_seconds ? `${ex.rest_seconds}s` : "-",
-        String(ex.rpe || "-"),
-        ex.set_type || "standard",
-      ], colWidths, yPos, i % 2 === 1, margin);
+      if (group.groupId) {
+        // Grouped exercises (superset, circuit, etc.)
+        const methodColor = methodColors[group.method] || colors.secondary;
+        const methodLabel = {
+          superset: "Superset",
+          biset: "Biset",
+          triset: "Triset",
+          giant_set: "Giant Set",
+          circuit: "Circuit",
+          amrap: "AMRAP",
+          for_time: "For Time",
+          emom: "EMOM",
+          tabata: "Tabata",
+          bulgarian: "Bulgare",
+          drop_set: "Drop Set",
+          death_by: "Death By",
+        }[group.method] || group.method;
+        
+        // Draw block container with colored border
+        const blockHeight = 12 + group.exercises.length * 14;
+        pdf.setDrawColor(...methodColor);
+        pdf.setLineWidth(1);
+        pdf.roundedRect(margin, yPos, contentWidth, blockHeight, 2, 2, 'S');
+        
+        // Block background
+        pdf.setFillColor(methodColor[0], methodColor[1], methodColor[2], 0.1);
+        pdf.roundedRect(margin + 0.5, yPos + 0.5, contentWidth - 1, blockHeight - 1, 2, 2, 'F');
+        
+        // Method badge
+        pdf.setFillColor(...methodColor);
+        pdf.roundedRect(margin + 3, yPos + 3, 25, 6, 1, 1, 'F');
+        pdf.setTextColor(...colors.white);
+        pdf.setFontSize(7);
+        pdf.setFont("helvetica", "bold");
+        pdf.text(methodLabel, margin + 5, yPos + 7);
+        
+        // Exercises count
+        pdf.setTextColor(...colors.muted);
+        pdf.setFontSize(7);
+        pdf.setFont("helvetica", "normal");
+        pdf.text(`${group.exercises.length} exercices`, margin + 32, yPos + 7);
+        
+        let exY = yPos + 12;
+        group.exercises.forEach((ex, exIdx) => {
+          pdf.setTextColor(...methodColor);
+          pdf.setFont("helvetica", "bold");
+          pdf.setFontSize(8);
+          pdf.text(`${exIdx + 1}.`, margin + 5, exY + 4);
+          
+          pdf.setTextColor(...colors.dark);
+          pdf.setFont("helvetica", "normal");
+          pdf.text(ex.exercise_name || "-", margin + 12, exY + 4);
+          
+          // Details
+          pdf.setFontSize(7);
+          pdf.setTextColor(...colors.muted);
+          const details = [
+            `${ex.sets || 0}×${ex.reps || 0}`,
+            ex.weight_kg ? `${ex.weight_kg}kg` : null,
+            ex.rest_seconds ? `${ex.rest_seconds}s repos` : null,
+          ].filter(Boolean).join(" • ");
+          pdf.text(details, margin + 80, exY + 4);
+          
+          exY += 14;
+        });
+        
+        yPos += blockHeight + 5;
+      } else {
+        // Single exercise
+        const ex = group.exercises[0];
+        const method = ex.set_type || "normal";
+        const methodColor = methodColors[method];
+        
+        if (methodColor && method !== "normal") {
+          // Colored single exercise
+          pdf.setDrawColor(...methodColor);
+          pdf.setLineWidth(0.5);
+          pdf.roundedRect(margin, yPos, contentWidth, 14, 2, 2, 'S');
+          pdf.setFillColor(methodColor[0], methodColor[1], methodColor[2], 0.05);
+          pdf.roundedRect(margin + 0.3, yPos + 0.3, contentWidth - 0.6, 13.4, 2, 2, 'F');
+        } else {
+          // Normal exercise with light background
+          pdf.setFillColor(...colors.light);
+          pdf.roundedRect(margin, yPos, contentWidth, 14, 2, 2, 'F');
+        }
+        
+        pdf.setTextColor(...colors.dark);
+        pdf.setFontSize(9);
+        pdf.setFont("helvetica", "bold");
+        pdf.text(ex.exercise_name || "-", margin + 4, yPos + 9);
+        
+        // Details on the right
+        pdf.setFontSize(8);
+        pdf.setFont("helvetica", "normal");
+        pdf.setTextColor(...colors.muted);
+        const details = [
+          `${ex.sets || 0} × ${ex.reps || 0}`,
+          ex.weight_kg ? `${ex.weight_kg}kg` : null,
+          ex.rest_seconds ? `${ex.rest_seconds}s` : null,
+          ex.tempo ? `T:${ex.tempo}` : null,
+        ].filter(Boolean).join(" | ");
+        const detailsWidth = pdf.getTextWidth(details);
+        pdf.text(details, pageWidth - margin - detailsWidth - 4, yPos + 9);
+        
+        yPos += 18;
+      }
     });
     
     // Totals
     yPos += 5;
+    yPos = checkPageBreak(pdf, yPos, 15);
+    
+    let totalTonnage = 0;
+    let totalSets = 0;
+    exercises.forEach((ex) => {
+      totalTonnage += (ex.weight_kg || 0) * (ex.sets || 0) * (ex.reps || 0);
+      totalSets += ex.sets || 0;
+    });
+    
+    pdf.setFillColor(...colors.dark);
+    pdf.roundedRect(margin, yPos, contentWidth, 12, 2, 2, 'F');
+    pdf.setTextColor(...colors.white);
+    pdf.setFontSize(9);
     pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(10);
-    pdf.text(`Tonnage total: ${totalTonnage.toLocaleString()} kg`, margin, yPos);
-    pdf.text(`Nombre d'exercices: ${exercises.length}`, margin + 80, yPos);
+    pdf.text(`📊 Tonnage: ${totalTonnage.toLocaleString()} kg`, margin + 5, yPos + 8);
+    pdf.text(`📋 ${exercises.length} exercices`, margin + 65, yPos + 8);
+    pdf.text(`🔄 ${totalSets} séries`, margin + 110, yPos + 8);
   }
   
-  // Notes
-  if (session.notes) {
-    yPos += 10;
-    yPos = drawSectionTitle(pdf, "Notes", yPos, margin);
-    pdf.setFontSize(8);
-    pdf.setFont("helvetica", "normal");
-    const lines = pdf.splitTextToSize(session.notes, contentWidth);
-    pdf.text(lines, margin, yPos);
-  }
-  
-  pdf.save(`seance-${session.training_type || "training"}-${format(new Date(session.session_date), "yyyy-MM-dd")}.pdf`);
+  pdf.save(`seance-${session.training_type || "training"}-${format(sessionDate, "yyyy-MM-dd")}.pdf`);
 };
 
 // Export periodization to PDF

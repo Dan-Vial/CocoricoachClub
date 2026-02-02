@@ -223,7 +223,7 @@ function CategoryDetailsContent() {
           </div>
 
           <TabsContent value="overview" className="space-y-4">
-            <OverviewTab categoryId={categoryId!} />
+            <OverviewTab categoryId={categoryId!} categoryName={displayCategoryName} />
           </TabsContent>
 
           <TabsContent value="effectif" className="space-y-4">
