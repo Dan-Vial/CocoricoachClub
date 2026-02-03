@@ -491,7 +491,7 @@ export function SessionDetailsDialog({
 
           <div className="flex-1 min-h-0 mt-4">
             <TabsContent value="exercises" className="h-full m-0 data-[state=active]:flex data-[state=active]:flex-col">
-              <ScrollArea className="flex-1 h-[50vh] max-h-[50vh]">
+              <ScrollArea className="flex-1 h-[60vh]">
                 {!exercises || exercises.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
                     <Dumbbell className="h-12 w-12 mx-auto mb-3 opacity-30" />

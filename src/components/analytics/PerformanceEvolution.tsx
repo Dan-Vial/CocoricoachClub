@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +10,7 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Loader2, LineChartIcon, BarChart3, AreaChartIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
 interface PerformanceEvolutionProps {
@@ -17,84 +18,28 @@ interface PerformanceEvolutionProps {
   sportType?: string;
 }
 
-// Get sport-specific chart configurations
-const getSportCharts = (sportType: string) => {
-  const sport = sportType?.toLowerCase() || "";
-  
-  if (sport.includes("judo")) {
-    return [
-      { key: "sjft", title: "Évolution SJFT Index", unit: "score", testFilter: (t: any) => t.test_type?.toLowerCase().includes("sjft") },
-      { key: "pullups", title: "Évolution Tractions Max", unit: "répétitions", testFilter: (t: any) => t.test_type?.toLowerCase().includes("traction") },
-      { key: "strength", title: "Évolution Force (kg)", unit: "kg" },
-    ];
-  }
-  
-  if (sport.includes("handball") || sport.includes("basketball")) {
-    return [
-      { key: "sprint30", title: "Évolution Sprint 30m (secondes)", unit: "secondes", testFilter: (t: any) => t.test_type?.includes("30m") },
-      { key: "cmj", title: "Évolution CMJ (cm)", unit: "cm", testType: "cmj" },
-      { key: "strength", title: "Évolution Force (kg)", unit: "kg" },
-    ];
-  }
-  
-  if (sport.includes("football")) {
-    return [
-      { key: "sprint30", title: "Évolution Sprint 30m (secondes)", unit: "secondes", testFilter: (t: any) => t.test_type?.includes("30m") },
-      { key: "ift", title: "Évolution 30-15 IFT (km/h)", unit: "km/h", testFilter: (t: any) => t.test_type?.toLowerCase().includes("30-15") },
-      { key: "strength", title: "Évolution Force (kg)", unit: "kg" },
-    ];
-  }
-  
-  if (sport.includes("aviron")) {
-    return [
-      { key: "ergo2000", title: "Évolution Ergo 2000m", unit: "temps", testFilter: (t: any) => t.test_type?.toLowerCase().includes("ergo") || t.test_type?.includes("2000") },
-      { key: "power", title: "Évolution Puissance (W)", unit: "watts", testFilter: (t: any) => t.test_type?.toLowerCase().includes("puissance") || t.test_type?.toLowerCase().includes("power") },
-      { key: "strength", title: "Évolution Force (kg)", unit: "kg" },
-    ];
-  }
-  
-  if (sport.includes("volleyball")) {
-    return [
-      { key: "cmj", title: "Évolution CMJ (cm)", unit: "cm", testType: "cmj" },
-      { key: "dropJump", title: "Évolution Drop Jump (cm)", unit: "cm", testType: "drop" },
-      { key: "strength", title: "Évolution Force (kg)", unit: "kg" },
-    ];
-  }
-  
-  if (sport.includes("bowling")) {
-    return [
-      { key: "avgScore", title: "Évolution Score Moyen", unit: "points" },
-      { key: "strikeRate", title: "Évolution % Strikes", unit: "%" },
-      { key: "strength", title: "Évolution Force (kg)", unit: "kg" },
-    ];
-  }
-  
-  // Default (Rugby)
-  return [
-    { key: "40m", title: "Évolution Sprint 40m (secondes)", unit: "secondes" },
-    { key: "1600m", title: "Évolution 1600m (secondes)", unit: "secondes" },
-    { key: "strength", title: "Évolution Tests Force (kg)", unit: "kg" },
-  ];
-};
-
 type ChartType = "line" | "bar" | "area";
+
+interface DiscoveredTest {
+  key: string;
+  label: string;
+  unit: string;
+  source: "speed" | "strength" | "jump" | "generic";
+}
+
+// Format test type to readable label
+const formatTestLabel = (testType: string): string => {
+  return testType
+    .replace(/_/g, " ")
+    .replace(/(\d+)m/g, "$1m")
+    .split(" ")
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+};
 
 export function PerformanceEvolution({ categoryId, sportType = "XV" }: PerformanceEvolutionProps) {
   const [chartType, setChartType] = useState<ChartType>("line");
-  const chartConfigs = getSportCharts(sportType);
-
-  const { data: players } = useQuery({
-    queryKey: ["players", categoryId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("players")
-        .select("*")
-        .eq("category_id", categoryId)
-        .order("name");
-      if (error) throw error;
-      return data;
-    },
-  });
+  const [selectedTest, setSelectedTest] = useState<string>("");
 
   const { data: speedTests, isLoading: loadingSpeed } = useQuery({
     queryKey: ["speed-tests-evolution", categoryId],
@@ -148,65 +93,173 @@ export function PerformanceEvolution({ categoryId, sportType = "XV" }: Performan
     },
   });
 
-  const prepareData = (chartKey: string, testFilter?: (t: any) => boolean, testType?: string) => {
-    const dateMap = new Map();
+  // Dynamically discover all available tests
+  const availableTests = useMemo(() => {
+    const tests: DiscoveredTest[] = [];
+    const addedKeys = new Set<string>();
 
-    if (chartKey === "40m" && speedTests) {
-      const tests = speedTests.filter(t => t.test_type === "40m_sprint");
-      tests.forEach(test => {
-        const date = test.test_date;
-        if (!dateMap.has(date)) dateMap.set(date, { total: 0, count: 0 });
-        const entry = dateMap.get(date);
-        entry.total += Number(test.time_40m_seconds || 0);
-        entry.count += 1;
+    // Discover speed tests
+    if (speedTests?.length) {
+      const speedTypes = new Set(speedTests.map(t => t.test_type).filter(Boolean));
+      speedTypes.forEach(type => {
+        if (type && !addedKeys.has(type)) {
+          tests.push({
+            key: type,
+            label: formatTestLabel(type),
+            unit: type.includes("1600") ? "min.s" : "s",
+            source: "speed",
+          });
+          addedKeys.add(type);
+        }
       });
-    } else if (chartKey === "1600m" && speedTests) {
-      const tests = speedTests.filter(t => t.test_type === "1600m_run");
-      tests.forEach(test => {
-        const date = test.test_date;
-        if (!dateMap.has(date)) dateMap.set(date, { total: 0, count: 0 });
-        const entry = dateMap.get(date);
-        const totalSeconds = (Number(test.time_1600m_minutes || 0) * 60) + Number(test.time_1600m_seconds || 0);
-        entry.total += totalSeconds;
-        entry.count += 1;
+    }
+
+    // Discover strength tests
+    if (strengthTests?.length) {
+      const strengthTypes = new Set(strengthTests.map(t => t.test_name).filter(Boolean));
+      strengthTypes.forEach(type => {
+        if (type && !addedKeys.has(type)) {
+          tests.push({
+            key: type,
+            label: formatTestLabel(type),
+            unit: "kg",
+            source: "strength",
+          });
+          addedKeys.add(type);
+        }
       });
-    } else if (chartKey === "strength" && strengthTests) {
-      strengthTests.forEach(test => {
-        const date = test.test_date;
-        if (!dateMap.has(date)) dateMap.set(date, { total: 0, count: 0 });
-        const entry = dateMap.get(date);
-        entry.total += Number(test.weight_kg || 0);
-        entry.count += 1;
+    }
+
+    // Discover jump tests
+    if (jumpTests?.length) {
+      const jumpTypes = new Set(jumpTests.map(t => t.test_type).filter(Boolean));
+      jumpTypes.forEach(type => {
+        if (type && !addedKeys.has(type)) {
+          tests.push({
+            key: type,
+            label: formatTestLabel(type),
+            unit: "cm",
+            source: "jump",
+          });
+          addedKeys.add(type);
+        }
       });
-    } else if ((chartKey === "cmj" || chartKey === "dropJump") && jumpTests) {
-      const filtered = testType 
-        ? jumpTests.filter(t => t.test_type?.toLowerCase().includes(testType))
-        : jumpTests;
-      filtered.forEach(test => {
-        const date = test.test_date;
-        if (!dateMap.has(date)) dateMap.set(date, { total: 0, count: 0 });
-        const entry = dateMap.get(date);
-        entry.total += Number(test.result_cm || 0);
-        entry.count += 1;
+    }
+
+    // Discover generic tests
+    if (genericTests?.length) {
+      const genericTypes = new Set(genericTests.map(t => t.test_type).filter(Boolean));
+      genericTypes.forEach(type => {
+        if (type && !addedKeys.has(type)) {
+          const sample = genericTests.find(t => t.test_type === type);
+          tests.push({
+            key: type,
+            label: formatTestLabel(type),
+            unit: sample?.result_unit || "",
+            source: "generic",
+          });
+          addedKeys.add(type);
+        }
       });
-    } else if (testFilter && genericTests) {
-      const filtered = genericTests.filter(testFilter);
-      filtered.forEach(test => {
-        const date = test.test_date;
-        if (!dateMap.has(date)) dateMap.set(date, { total: 0, count: 0 });
-        const entry = dateMap.get(date);
-        entry.total += Number(test.result_value || 0);
-        entry.count += 1;
-      });
+    }
+
+    return tests;
+  }, [speedTests, strengthTests, jumpTests, genericTests]);
+
+  // Auto-select first test when available
+  useMemo(() => {
+    if (availableTests.length > 0 && !selectedTest) {
+      setSelectedTest(availableTests[0].key);
+    }
+  }, [availableTests, selectedTest]);
+
+  // Prepare data for selected test
+  const chartData = useMemo(() => {
+    if (!selectedTest) return [];
+
+    const test = availableTests.find(t => t.key === selectedTest);
+    if (!test) return [];
+
+    const dateMap = new Map<string, { total: number; count: number }>();
+
+    switch (test.source) {
+      case "speed":
+        speedTests?.filter(t => t.test_type === selectedTest).forEach(t => {
+          const date = t.test_date;
+          if (!dateMap.has(date)) dateMap.set(date, { total: 0, count: 0 });
+          const entry = dateMap.get(date)!;
+          
+          if (selectedTest.includes("1600")) {
+            const totalSec = (Number(t.time_1600m_minutes || 0) * 60) + Number(t.time_1600m_seconds || 0);
+            if (totalSec > 0) {
+              entry.total += totalSec;
+              entry.count += 1;
+            }
+          } else if (selectedTest.includes("40m")) {
+            const time = Number(t.time_40m_seconds || 0);
+            if (time > 0) {
+              entry.total += time;
+              entry.count += 1;
+            }
+          } else {
+            // Other speed tests - use 40m time field
+            const time = Number(t.time_40m_seconds || 0);
+            if (time > 0) {
+              entry.total += time;
+              entry.count += 1;
+            }
+          }
+        });
+        break;
+
+      case "strength":
+        strengthTests?.filter(t => t.test_name === selectedTest).forEach(t => {
+          const date = t.test_date;
+          if (!dateMap.has(date)) dateMap.set(date, { total: 0, count: 0 });
+          const entry = dateMap.get(date)!;
+          const weight = Number(t.weight_kg || 0);
+          if (weight > 0) {
+            entry.total += weight;
+            entry.count += 1;
+          }
+        });
+        break;
+
+      case "jump":
+        jumpTests?.filter(t => t.test_type === selectedTest).forEach(t => {
+          const date = t.test_date;
+          if (!dateMap.has(date)) dateMap.set(date, { total: 0, count: 0 });
+          const entry = dateMap.get(date)!;
+          const result = Number(t.result_cm || 0);
+          if (result > 0) {
+            entry.total += result;
+            entry.count += 1;
+          }
+        });
+        break;
+
+      case "generic":
+        genericTests?.filter(t => t.test_type === selectedTest).forEach(t => {
+          const date = t.test_date;
+          if (!dateMap.has(date)) dateMap.set(date, { total: 0, count: 0 });
+          const entry = dateMap.get(date)!;
+          const result = Number(t.result_value || 0);
+          if (result > 0) {
+            entry.total += result;
+            entry.count += 1;
+          }
+        });
+        break;
     }
 
     return Array.from(dateMap.entries())
       .map(([date, entry]) => ({
         date: format(new Date(date), "dd/MM", { locale: fr }),
+        rawDate: date,
         moyenne: entry.count > 0 ? Number((entry.total / entry.count).toFixed(2)) : 0,
       }))
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-  };
+      .sort((a, b) => new Date(a.rawDate).getTime() - new Date(b.rawDate).getTime());
+  }, [selectedTest, availableTests, speedTests, strengthTests, jumpTests, genericTests]);
 
   if (loadingSpeed || loadingStrength || loadingJump || loadingGeneric) {
     return (
@@ -216,20 +269,9 @@ export function PerformanceEvolution({ categoryId, sportType = "XV" }: Performan
     );
   }
 
-  const renderChart = (data: { date: string; moyenne: number }[]) => {
-    const commonProps = {
-      data,
-      children: (
-        <>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="date" />
-          <YAxis />
-          <Tooltip />
-          <Legend />
-        </>
-      ),
-    };
+  const currentTest = availableTests.find(t => t.key === selectedTest);
 
+  const renderChart = (data: { date: string; moyenne: number }[]) => {
     if (chartType === "bar") {
       return (
         <BarChart data={data}>
@@ -286,68 +328,100 @@ export function PerformanceEvolution({ categoryId, sportType = "XV" }: Performan
     );
   };
 
+  if (availableTests.length === 0) {
+    return (
+      <Card>
+        <CardContent className="py-12">
+          <p className="text-center text-muted-foreground">
+            Aucun test enregistré. Ajoutez des tests dans l'onglet "Tests" pour voir l'évolution.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      {/* Chart type selector */}
-      <div className="flex items-center justify-end gap-1 border rounded-lg p-1 w-fit ml-auto bg-muted/30">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setChartType("line")}
-          className={cn(
-            "h-8 px-3 gap-1.5",
-            chartType === "line" && "bg-background shadow-sm"
-          )}
-        >
-          <LineChartIcon className="h-4 w-4" />
-          Ligne
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setChartType("bar")}
-          className={cn(
-            "h-8 px-3 gap-1.5",
-            chartType === "bar" && "bg-background shadow-sm"
-          )}
-        >
-          <BarChart3 className="h-4 w-4" />
-          Barres
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setChartType("area")}
-          className={cn(
-            "h-8 px-3 gap-1.5",
-            chartType === "area" && "bg-background shadow-sm"
-          )}
-        >
-          <AreaChartIcon className="h-4 w-4" />
-          Aire
-        </Button>
+      {/* Controls */}
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        {/* Test selector */}
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium text-muted-foreground">Test :</span>
+          <Select value={selectedTest} onValueChange={setSelectedTest}>
+            <SelectTrigger className="w-[250px]">
+              <SelectValue placeholder="Sélectionner un test" />
+            </SelectTrigger>
+            <SelectContent>
+              {availableTests.map((test) => (
+                <SelectItem key={test.key} value={test.key}>
+                  {test.label} {test.unit && `(${test.unit})`}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Chart type selector */}
+        <div className="flex items-center gap-1 border rounded-lg p-1 bg-muted/30">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setChartType("line")}
+            className={cn(
+              "h-8 px-3 gap-1.5",
+              chartType === "line" && "bg-background shadow-sm"
+            )}
+          >
+            <LineChartIcon className="h-4 w-4" />
+            Ligne
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setChartType("bar")}
+            className={cn(
+              "h-8 px-3 gap-1.5",
+              chartType === "bar" && "bg-background shadow-sm"
+            )}
+          >
+            <BarChart3 className="h-4 w-4" />
+            Barres
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setChartType("area")}
+            className={cn(
+              "h-8 px-3 gap-1.5",
+              chartType === "area" && "bg-background shadow-sm"
+            )}
+          >
+            <AreaChartIcon className="h-4 w-4" />
+            Aire
+          </Button>
+        </div>
       </div>
 
-      {chartConfigs.map((config) => {
-        const data = prepareData(config.key, config.testFilter, config.testType);
-        
-        return (
-          <Card key={config.key}>
-            <CardHeader>
-              <CardTitle>{config.title}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {data.length > 0 ? (
-                <ResponsiveContainer width="100%" height={300}>
-                  {renderChart(data)}
-                </ResponsiveContainer>
-              ) : (
-                <p className="text-muted-foreground text-center py-8">Aucune donnée disponible</p>
-              )}
-            </CardContent>
-          </Card>
-        );
-      })}
+      {/* Chart */}
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            Évolution {currentTest?.label || "Test"} 
+            {currentTest?.unit && ` (${currentTest.unit})`}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {chartData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={350}>
+              {renderChart(chartData)}
+            </ResponsiveContainer>
+          ) : (
+            <p className="text-muted-foreground text-center py-8">
+              Aucune donnée disponible pour ce test
+            </p>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
