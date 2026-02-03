@@ -1,11 +1,12 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Activity, BarChart3, Dumbbell, MapPin, History, Video } from "lucide-react";
+import { Activity, BarChart3, Dumbbell, MapPin, History, Video, Zap } from "lucide-react";
 import { AwcrTab } from "@/components/category/AwcrTab";
 import { AnalyticsTab } from "@/components/analytics/AnalyticsTab";
 import { PhysicalPreparationTab } from "@/components/category/PhysicalPreparationTab";
 import { GpsDataTab } from "@/components/category/gps/GpsDataTab";
 import { SessionHistoryTimeline } from "@/components/category/history/SessionHistoryTimeline";
 import { VideoAnalysisTab } from "@/components/category/video/VideoAnalysisTab";
+import { TrainingLoadTab } from "@/components/training-load/TrainingLoadTab";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useViewerModeContext } from "@/contexts/ViewerModeContext";
@@ -77,12 +78,13 @@ export function PerformanceTab({ categoryId }: PerformanceTabProps) {
   }
 
   return (
-    <Tabs defaultValue="awcr" className="space-y-4">
+    <Tabs defaultValue="training-load" className="space-y-4">
       <div className="overflow-x-auto -mx-4 px-4 pb-2">
         <TabsList className="inline-flex w-max min-w-full gap-1 h-auto bg-muted p-1">
-          <TabsTrigger value="awcr" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">
-            <Activity className="h-4 w-4 shrink-0" />
-            AWCR
+          <TabsTrigger value="training-load" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">
+            <Zap className="h-4 w-4 shrink-0" />
+            <span className="hidden sm:inline">Charge d'entraînement</span>
+            <span className="sm:hidden">Charge</span>
           </TabsTrigger>
           <TabsTrigger value="history" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">
             <History className="h-4 w-4 shrink-0" />
@@ -112,11 +114,16 @@ export function PerformanceTab({ categoryId }: PerformanceTabProps) {
               <span className="sm:hidden">Vidéo</span>
             </TabsTrigger>
           )}
+          <TabsTrigger value="awcr" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">
+            <Activity className="h-4 w-4 shrink-0" />
+            <span className="hidden sm:inline">AWCR (Classique)</span>
+            <span className="sm:hidden">AWCR</span>
+          </TabsTrigger>
         </TabsList>
       </div>
 
-      <TabsContent value="awcr">
-        <AwcrTab categoryId={categoryId} />
+      <TabsContent value="training-load">
+        <TrainingLoadTab categoryId={categoryId} />
       </TabsContent>
 
       <TabsContent value="history">
@@ -142,6 +149,10 @@ export function PerformanceTab({ categoryId }: PerformanceTabProps) {
           <VideoAnalysisTab categoryId={categoryId} sportType={sportType} />
         </TabsContent>
       )}
+
+      <TabsContent value="awcr">
+        <AwcrTab categoryId={categoryId} />
+      </TabsContent>
     </Tabs>
   );
 }

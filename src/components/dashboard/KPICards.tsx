@@ -3,6 +3,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Activity, TrendingUp, AlertTriangle, Users } from "lucide-react";
+import { 
+  calculateEWMASeries, 
+  transformToDailyLoadData,
+  DailyLoadData 
+} from "@/lib/trainingLoadCalculations";
 
 interface KPICardsProps {
   categoryIds: string[];
@@ -10,9 +15,12 @@ interface KPICardsProps {
 
 export function KPICards({ categoryIds }: KPICardsProps) {
   const { data: kpis, isLoading } = useQuery({
-    queryKey: ["kpis", categoryIds],
+    queryKey: ["kpis-ewma", categoryIds],
     queryFn: async () => {
       if (categoryIds.length === 0) return null;
+
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - 56); // 8 weeks of data
 
       const [playersRes, awcrRes, injuriesRes, testsRes] = await Promise.all([
         supabase
@@ -21,11 +29,10 @@ export function KPICards({ categoryIds }: KPICardsProps) {
           .in("category_id", categoryIds),
         supabase
           .from("awcr_tracking")
-          .select("awcr")
+          .select("session_date, rpe, duration_minutes, training_load")
           .in("category_id", categoryIds)
-          .not("awcr", "is", null)
-          .order("session_date", { ascending: false })
-          .limit(100),
+          .gte("session_date", startDate.toISOString().split("T")[0])
+          .order("session_date", { ascending: true }),
         supabase
           .from("injuries")
           .select("id, status")
@@ -39,15 +46,29 @@ export function KPICards({ categoryIds }: KPICardsProps) {
       ]);
 
       const totalPlayers = playersRes.data?.length || 0;
-      const avgAwcr = awcrRes.data && awcrRes.data.length > 0
-        ? awcrRes.data.reduce((sum, row) => sum + Number(row.awcr), 0) / awcrRes.data.length
-        : 0;
       const activeInjuries = injuriesRes.data?.length || 0;
       const recentTests = testsRes.data?.length || 0;
 
+      // Calculate EWMA from awcr data
+      let avgEwmaRatio = 0;
+      if (awcrRes.data && awcrRes.data.length > 0) {
+        const dailyData: DailyLoadData[] = awcrRes.data.map(entry => ({
+          date: entry.session_date,
+          rpe: entry.rpe || 0,
+          duration: entry.duration_minutes || 0,
+          sRPE: entry.training_load || (entry.rpe * entry.duration_minutes) || 0,
+        }));
+
+        const ewmaResults = calculateEWMASeries(dailyData, "sRPE");
+        if (ewmaResults.length > 0) {
+          // Get the latest ratio
+          avgEwmaRatio = ewmaResults[ewmaResults.length - 1].ratio;
+        }
+      }
+
       return {
         totalPlayers,
-        avgAwcr: Number(avgAwcr.toFixed(2)),
+        avgEwmaRatio: Number(avgEwmaRatio.toFixed(2)),
         activeInjuries,
         recentTests,
       };
@@ -67,10 +88,16 @@ export function KPICards({ categoryIds }: KPICardsProps) {
 
   if (!kpis) return null;
 
-  const getAwcrColor = (awcr: number) => {
-    if (awcr < 0.8) return "text-blue-500";
-    if (awcr > 1.3) return "text-red-500";
+  const getRatioColor = (ratio: number) => {
+    if (ratio < 0.8 || ratio > 1.5) return "text-red-500";
+    if (ratio < 0.85 || ratio > 1.3) return "text-yellow-500";
     return "text-green-500";
+  };
+
+  const getRatioStatus = (ratio: number) => {
+    if (ratio >= 0.85 && ratio <= 1.3) return "Zone optimale";
+    if (ratio >= 0.8 && ratio <= 1.5) return "Vigilance";
+    return "Hors zone";
   };
 
   return (
@@ -88,15 +115,15 @@ export function KPICards({ categoryIds }: KPICardsProps) {
 
       <Card className="bg-gradient-card shadow-md">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">AWCR Moyen</CardTitle>
+          <CardTitle className="text-sm font-medium">Ratio EWMA</CardTitle>
           <Activity className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className={`text-2xl font-bold ${getAwcrColor(kpis.avgAwcr)}`}>
-            {kpis.avgAwcr}
+          <div className={`text-2xl font-bold ${getRatioColor(kpis.avgEwmaRatio)}`}>
+            {kpis.avgEwmaRatio}
           </div>
           <p className="text-xs text-muted-foreground">
-            {kpis.avgAwcr >= 0.8 && kpis.avgAwcr <= 1.3 ? "Zone optimale" : "Hors zone"}
+            {getRatioStatus(kpis.avgEwmaRatio)}
           </p>
         </CardContent>
       </Card>

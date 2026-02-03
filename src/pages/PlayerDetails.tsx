@@ -9,6 +9,7 @@ import { ArrowLeft, ArrowRightLeft, Edit2, Check, X } from "lucide-react";
 import { PlayerTestsTab } from "@/components/player/PlayerTestsTab";
 import { PlayerCalendarTab } from "@/components/player/PlayerCalendarTab";
 import { PlayerAwcrTab } from "@/components/player/PlayerAwcrTab";
+import { PlayerTrainingLoadCard } from "@/components/player/PlayerTrainingLoadCard";
 import { PlayerProfile } from "@/components/player/PlayerProfile";
 import { PlayerInjuriesTab } from "@/components/player/PlayerInjuriesTab";
 import { PlayerBiometrics } from "@/components/player/PlayerBiometrics";
@@ -395,17 +396,28 @@ function PlayerDetailsContent() {
           />
         </div>
 
-        <Tabs defaultValue="tests" className="space-y-6">
+        <Tabs defaultValue="charge" className="space-y-6">
           <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8">
+            <TabsTrigger value="charge">Charge</TabsTrigger>
             <TabsTrigger value="tests">Tests</TabsTrigger>
             <TabsTrigger value="matches">Matchs</TabsTrigger>
             <TabsTrigger value="calendar">Calendrier</TabsTrigger>
-            <TabsTrigger value="awcr">AWCR</TabsTrigger>
             <TabsTrigger value="wellness">Wellness</TabsTrigger>
             <TabsTrigger value="nutrition">Nutrition</TabsTrigger>
             <TabsTrigger value="academy">Académie</TabsTrigger>
             <TabsTrigger value="injuries">Blessures</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="charge">
+            <div className="space-y-6">
+              <PlayerTrainingLoadCard 
+                playerId={playerId!} 
+                categoryId={player.category_id} 
+                playerName={player.name}
+              />
+              <PlayerAwcrTab playerId={playerId!} categoryId={player.category_id} />
+            </div>
+          </TabsContent>
 
           <TabsContent value="tests">
             <PlayerTestsTab playerId={playerId!} categoryId={player.category_id} />
@@ -424,9 +436,6 @@ function PlayerDetailsContent() {
             <PlayerCalendarTab playerId={playerId!} categoryId={player.category_id} />
           </TabsContent>
 
-          <TabsContent value="awcr">
-            <PlayerAwcrTab playerId={playerId!} categoryId={player.category_id} />
-          </TabsContent>
 
           <TabsContent value="wellness">
             <PlayerWellnessTab playerId={playerId!} categoryId={player.category_id} />

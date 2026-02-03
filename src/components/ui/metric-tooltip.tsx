@@ -51,14 +51,28 @@ export function MetricTooltip({
 
 // Predefined tooltips for common metrics
 export const METRIC_TOOLTIPS = {
+  ewmaRatio: {
+    title: "Ratio EWMA (Exponential Weighted Moving Average)",
+    description: "Rapport entre la charge aiguë EWMA (7 jours) et la charge chronique EWMA (28 jours). Plus précis que l'AWCR classique car les données récentes ont plus de poids.",
+    optimalRange: "0.85 - 1.30",
+    warningText: "> 1.5 = surcharge | < 0.8 = désentraînement",
+  },
+  ewmaAcute: {
+    title: "EWMA Aiguë (7 jours)",
+    description: "Moyenne exponentielle pondérée de la charge sur les 7 derniers jours. Les séances récentes ont plus d'impact que les anciennes.",
+  },
+  ewmaChronic: {
+    title: "EWMA Chronique (28 jours)",
+    description: "Moyenne exponentielle pondérée de la charge sur les 28 derniers jours. Représente la capacité d'entraînement de base de l'athlète.",
+  },
   awcr: {
     title: "AWCR (Acute:Chronic Workload Ratio)",
-    description: "Rapport entre la charge aiguë (7 jours) et la charge chronique (28 jours). Permet d'évaluer le risque de blessure lié à la surcharge.",
+    description: "Rapport entre la charge aiguë (7 jours) et la charge chronique (28 jours). Méthode classique avec moyenne simple.",
     optimalRange: "0.8 - 1.3",
     warningText: "> 1.5 = risque de blessure élevé | < 0.8 = désentraînement",
   },
   trainingLoad: {
-    title: "Charge d'entraînement",
+    title: "Charge d'entraînement (sRPE)",
     description: "Calculée en multipliant la durée de la séance par le RPE (perception de l'effort). Unité arbitraire (UA).",
     optimalRange: "Variable selon le joueur",
   },
@@ -80,8 +94,20 @@ export const METRIC_TOOLTIPS = {
   },
   fitnessScore: {
     title: "Score de Forme Global",
-    description: "Score composite calculé à partir de l'AWCR, du wellness et des performances aux tests. Échelle de 0 à 100.",
+    description: "Score composite calculé à partir de l'EWMA, du wellness et des performances aux tests. Échelle de 0 à 100.",
     optimalRange: "> 70",
     warningText: "< 50 = forme insuffisante",
+  },
+  hsr: {
+    title: "HSR (High Speed Running)",
+    description: "Distance parcourue à haute intensité (généralement > 19.8 km/h ou personnalisable). Indicateur de charge tissulaire.",
+  },
+  playerLoad: {
+    title: "Player Load (GPS)",
+    description: "Mesure de la charge externe basée sur les accélérations 3D captées par le GPS. Unité arbitraire fournie par Catapult/STATSports.",
+  },
+  accDec: {
+    title: "Accélérations / Décélérations",
+    description: "Nombre de changements de vitesse au-dessus d'un seuil défini. Indicateur de charge mécanique sur les tissus.",
   },
 };
