@@ -56,6 +56,18 @@ export const EXERCISE_CATEGORIES: ExerciseCategory[] = [
   { value: "sled_push", label: "Sled Push", group: "cardio_machines" },
   { value: "sled_pull", label: "Sled Pull", group: "cardio_machines" },
   
+  // Running / Course à pied
+  { value: "running_ef", label: "Course - Endurance Fondamentale", group: "running" },
+  { value: "running_seuil", label: "Course - Seuil", group: "running" },
+  { value: "running_vma", label: "Course - VMA", group: "running" },
+  { value: "running_fractionne", label: "Course - Fractionné", group: "running" },
+  { value: "running_sprint", label: "Course - Sprint", group: "running" },
+  { value: "running_cote", label: "Course - Côte", group: "running" },
+  { value: "running_fartlek", label: "Course - Fartlek", group: "running" },
+  { value: "running_tempo", label: "Course - Tempo", group: "running" },
+  { value: "running_recup", label: "Course - Récupération", group: "running" },
+  { value: "running_ppg", label: "Course - PPG / Éducatifs", group: "running" },
+  
   // Terrain - Général
   { value: "cardio", label: "Cardio", group: "terrain" },
   { value: "terrain", label: "Terrain (courses, sprints...)", group: "terrain" },
@@ -230,10 +242,18 @@ export const CATEGORY_GROUPS = [
   { value: "all", label: "Tous" },
   { value: "musculation", label: "Musculation" },
   { value: "cardio_machines", label: "Ergomètres" },
+  { value: "running", label: "Course à pied" },
   { value: "reathletisation", label: "Réathlétisation" },
   { value: "terrain", label: "Terrain" },
   { value: "stretching_mobility", label: "Stretching / Mobilité" },
 ] as const;
+
+// Liste des catégories de course à pied (métriques spécialisées)
+export const RUNNING_CATEGORIES = [
+  "running_ef", "running_seuil", "running_vma", "running_fractionne", 
+  "running_sprint", "running_cote", "running_fartlek", "running_tempo", 
+  "running_recup", "running_ppg"
+];
 
 // Liste des catégories d'ergomètres (machines cardio avec métriques spécifiques)
 export const ERG_CATEGORIES = [
@@ -255,9 +275,14 @@ export function isSledCategory(category: string): boolean {
   return SLED_CATEGORIES.includes(category);
 }
 
+// Check if an exercise category is a running exercise
+export function isRunningCategory(category: string): boolean {
+  return RUNNING_CATEGORIES.includes(category);
+}
+
 // Check if an exercise has special metrics (not standard sets/reps)
 export function hasSpecialMetrics(category: string): boolean {
-  return isErgCategory(category) || isSledCategory(category);
+  return isErgCategory(category) || isSledCategory(category) || isRunningCategory(category);
 }
 
 export const EXERCISE_SUBCATEGORIES = [

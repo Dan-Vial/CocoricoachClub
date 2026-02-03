@@ -22,7 +22,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { TEST_CATEGORIES } from "@/lib/constants/testCategories";
-import { isErgCategory, isSledCategory } from "@/lib/constants/exerciseCategories";
+import { isErgCategory, isSledCategory, isRunningCategory } from "@/lib/constants/exerciseCategories";
 import { cn } from "@/lib/utils";
 import {
   TRAINING_STYLES,
@@ -55,6 +55,20 @@ interface ErgData {
   stroke_rate?: number;
 }
 
+interface RunningData {
+  distance_meters?: number;
+  duration_seconds?: number;
+  vma_percentage?: number;
+  pace_kmh?: number;
+  pace_ms?: number;
+  intervals?: number;
+  interval_distance_m?: number;
+  interval_duration_s?: number;
+  recovery_time_s?: number;
+  recovery_distance_m?: number;
+  elevation_gain_m?: number;
+}
+
 interface ProgramExercise {
   id: string;
   exercise_name: string;
@@ -75,6 +89,7 @@ interface ProgramExercise {
   is_rm_test?: boolean;
   rm_test_type?: string;
   erg_data?: ErgData;
+  running_data?: RunningData;
 }
 
 interface ProgramSession {
@@ -742,6 +757,243 @@ export function ProgramSessionCard({
                     className="h-8 text-sm"
                   />
                 </div>
+              </div>
+            ) : isRunningCategory(exercise.exercise_category || "") ? (
+              // Running-specific inputs
+              <div className="space-y-3">
+                <div className="grid grid-cols-4 gap-2">
+                  <div className="space-y-1">
+                    <label className="text-xs text-muted-foreground">% VMA</label>
+                    <Input
+                      type="number"
+                      min={0}
+                      max={130}
+                      value={exercise.running_data?.vma_percentage || ""}
+                      onChange={(e) =>
+                        updateExercise(index, "running_data", {
+                          ...exercise.running_data,
+                          vma_percentage: e.target.value ? parseInt(e.target.value) : undefined,
+                        })
+                      }
+                      placeholder="85"
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs text-muted-foreground">Allure (km/h)</label>
+                    <Input
+                      type="number"
+                      min={0}
+                      step={0.1}
+                      value={exercise.running_data?.pace_kmh || ""}
+                      onChange={(e) =>
+                        updateExercise(index, "running_data", {
+                          ...exercise.running_data,
+                          pace_kmh: e.target.value ? parseFloat(e.target.value) : undefined,
+                        })
+                      }
+                      placeholder="12.5"
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs text-muted-foreground">Allure (m/s)</label>
+                    <Input
+                      type="number"
+                      min={0}
+                      step={0.1}
+                      value={exercise.running_data?.pace_ms || ""}
+                      onChange={(e) =>
+                        updateExercise(index, "running_data", {
+                          ...exercise.running_data,
+                          pace_ms: e.target.value ? parseFloat(e.target.value) : undefined,
+                        })
+                      }
+                      placeholder="3.5"
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs text-muted-foreground">Durée (s)</label>
+                    <Input
+                      type="number"
+                      min={0}
+                      value={exercise.running_data?.duration_seconds || ""}
+                      onChange={(e) =>
+                        updateExercise(index, "running_data", {
+                          ...exercise.running_data,
+                          duration_seconds: e.target.value ? parseInt(e.target.value) : undefined,
+                        })
+                      }
+                      placeholder="1200"
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                </div>
+                
+                {/* Interval-specific fields for VMA/Fractionné/Sprint */}
+                {(exercise.exercise_category === "running_fractionne" || 
+                  exercise.exercise_category === "running_vma" ||
+                  exercise.exercise_category === "running_sprint") && (
+                  <div className="grid grid-cols-5 gap-2">
+                    <div className="space-y-1">
+                      <label className="text-xs text-muted-foreground">Répétitions</label>
+                      <Input
+                        type="number"
+                        min={1}
+                        value={exercise.running_data?.intervals || ""}
+                        onChange={(e) =>
+                          updateExercise(index, "running_data", {
+                            ...exercise.running_data,
+                            intervals: e.target.value ? parseInt(e.target.value) : undefined,
+                          })
+                        }
+                        placeholder="8"
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs text-muted-foreground">Dist./rep (m)</label>
+                      <Input
+                        type="number"
+                        min={0}
+                        value={exercise.running_data?.interval_distance_m || ""}
+                        onChange={(e) =>
+                          updateExercise(index, "running_data", {
+                            ...exercise.running_data,
+                            interval_distance_m: e.target.value ? parseInt(e.target.value) : undefined,
+                          })
+                        }
+                        placeholder="400"
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs text-muted-foreground">Durée/rep (s)</label>
+                      <Input
+                        type="number"
+                        min={0}
+                        value={exercise.running_data?.interval_duration_s || ""}
+                        onChange={(e) =>
+                          updateExercise(index, "running_data", {
+                            ...exercise.running_data,
+                            interval_duration_s: e.target.value ? parseInt(e.target.value) : undefined,
+                          })
+                        }
+                        placeholder="60"
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs text-muted-foreground">Récup (s)</label>
+                      <Input
+                        type="number"
+                        min={0}
+                        value={exercise.running_data?.recovery_time_s || ""}
+                        onChange={(e) =>
+                          updateExercise(index, "running_data", {
+                            ...exercise.running_data,
+                            recovery_time_s: e.target.value ? parseInt(e.target.value) : undefined,
+                          })
+                        }
+                        placeholder="60"
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs text-muted-foreground">Récup (m)</label>
+                      <Input
+                        type="number"
+                        min={0}
+                        value={exercise.running_data?.recovery_distance_m || ""}
+                        onChange={(e) =>
+                          updateExercise(index, "running_data", {
+                            ...exercise.running_data,
+                            recovery_distance_m: e.target.value ? parseInt(e.target.value) : undefined,
+                          })
+                        }
+                        placeholder="200"
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                  </div>
+                )}
+                
+                {/* Hill running specific: elevation gain */}
+                {exercise.exercise_category === "running_cote" && (
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <label className="text-xs text-muted-foreground">Distance (m)</label>
+                      <Input
+                        type="number"
+                        min={0}
+                        value={exercise.running_data?.distance_meters || ""}
+                        onChange={(e) =>
+                          updateExercise(index, "running_data", {
+                            ...exercise.running_data,
+                            distance_meters: e.target.value ? parseInt(e.target.value) : undefined,
+                          })
+                        }
+                        placeholder="100"
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs text-muted-foreground">Dénivelé (m)</label>
+                      <Input
+                        type="number"
+                        min={0}
+                        value={exercise.running_data?.elevation_gain_m || ""}
+                        onChange={(e) =>
+                          updateExercise(index, "running_data", {
+                            ...exercise.running_data,
+                            elevation_gain_m: e.target.value ? parseInt(e.target.value) : undefined,
+                          })
+                        }
+                        placeholder="30"
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                  </div>
+                )}
+                
+                {/* Continuous running specific: total distance */}
+                {(exercise.exercise_category === "running_ef" || 
+                  exercise.exercise_category === "running_seuil" ||
+                  exercise.exercise_category === "running_tempo" ||
+                  exercise.exercise_category === "running_recup" ||
+                  exercise.exercise_category === "running_fartlek") && (
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <label className="text-xs text-muted-foreground">Distance totale (m)</label>
+                      <Input
+                        type="number"
+                        min={0}
+                        value={exercise.running_data?.distance_meters || ""}
+                        onChange={(e) =>
+                          updateExercise(index, "running_data", {
+                            ...exercise.running_data,
+                            distance_meters: e.target.value ? parseInt(e.target.value) : undefined,
+                          })
+                        }
+                        placeholder="5000"
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs text-muted-foreground">Repos (s)</label>
+                      <Input
+                        type="number"
+                        min={0}
+                        value={exercise.rest_seconds}
+                        onChange={(e) =>
+                          updateExercise(index, "rest_seconds", parseInt(e.target.value) || 0)
+                        }
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="grid grid-cols-6 gap-2">

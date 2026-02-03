@@ -52,7 +52,7 @@ import {
   Repeat,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { getCategoryLabel, getCategoriesForSport, isCategoryForSport, isErgCategory, isSledCategory, hasSpecialMetrics } from "@/lib/constants/exerciseCategories";
+import { getCategoryLabel, getCategoriesForSport, isCategoryForSport, isErgCategory, isSledCategory, isRunningCategory, hasSpecialMetrics } from "@/lib/constants/exerciseCategories";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getTrainingTypesForSport, trainingTypeHasExercises } from "@/lib/constants/trainingTypes";
 import { QuickAddExerciseDialog } from "@/components/library/QuickAddExerciseDialog";
@@ -97,6 +97,21 @@ interface ErgData {
   stroke_rate?: number;
 }
 
+// Running-specific data structure
+interface RunningData {
+  distance_meters?: number;
+  duration_seconds?: number;
+  vma_percentage?: number; // % of VMA
+  pace_kmh?: number; // pace in km/h
+  pace_ms?: number; // pace in m/s
+  intervals?: number; // number of intervals
+  interval_distance_m?: number; // distance per interval in meters
+  interval_duration_s?: number; // duration per interval in seconds
+  recovery_time_s?: number; // recovery time between intervals
+  recovery_distance_m?: number; // recovery distance between intervals
+  elevation_gain_m?: number; // for hill runs
+}
+
 interface DropSet {
   reps: string;
   percentage: number;
@@ -136,6 +151,7 @@ interface Exercise {
   group_id: string | null;
   group_order?: number;
   erg_data?: ErgData;
+  running_data?: RunningData;
   drop_sets?: DropSet[];
   cluster_sets?: ClusterSet[];
   block_config?: BlockConfig;
@@ -160,6 +176,7 @@ const emptyExercise = (index: number, groupId?: string, groupOrder?: number, met
   group_id: groupId || null,
   group_order: groupOrder,
   erg_data: undefined,
+  running_data: undefined,
   drop_sets: undefined,
   cluster_sets: undefined,
   block_config: undefined,
@@ -1385,6 +1402,244 @@ export function SessionFormDialog({
                     })
                   }
                 />
+              </div>
+            )}
+          </div>
+        ) : isRunningCategory(exercise.exercise_category) ? (
+          // Running-specific inputs
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <div>
+                <Label className="text-xs text-muted-foreground">% VMA</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  max="130"
+                  className="h-8 text-xs"
+                  placeholder="85"
+                  value={exercise.running_data?.vma_percentage || ""}
+                  onChange={(e) =>
+                    updateExercise(index, "running_data", {
+                      ...exercise.running_data,
+                      vma_percentage: e.target.value ? parseInt(e.target.value) : undefined,
+                    })
+                  }
+                />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Allure (km/h)</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  className="h-8 text-xs"
+                  placeholder="12.5"
+                  value={exercise.running_data?.pace_kmh || ""}
+                  onChange={(e) =>
+                    updateExercise(index, "running_data", {
+                      ...exercise.running_data,
+                      pace_kmh: e.target.value ? parseFloat(e.target.value) : undefined,
+                    })
+                  }
+                />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Allure (m/s)</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  className="h-8 text-xs"
+                  placeholder="3.5"
+                  value={exercise.running_data?.pace_ms || ""}
+                  onChange={(e) =>
+                    updateExercise(index, "running_data", {
+                      ...exercise.running_data,
+                      pace_ms: e.target.value ? parseFloat(e.target.value) : undefined,
+                    })
+                  }
+                />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Durée (s)</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  className="h-8 text-xs"
+                  placeholder="1200"
+                  value={exercise.running_data?.duration_seconds || ""}
+                  onChange={(e) =>
+                    updateExercise(index, "running_data", {
+                      ...exercise.running_data,
+                      duration_seconds: e.target.value ? parseInt(e.target.value) : undefined,
+                    })
+                  }
+                />
+              </div>
+            </div>
+            
+            {/* Second row: interval-specific fields */}
+            {(exercise.exercise_category === "running_fractionne" || 
+              exercise.exercise_category === "running_vma" ||
+              exercise.exercise_category === "running_sprint") && (
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                <div>
+                  <Label className="text-xs text-muted-foreground">Répétitions</Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    className="h-8 text-xs"
+                    placeholder="8"
+                    value={exercise.running_data?.intervals || ""}
+                    onChange={(e) =>
+                      updateExercise(index, "running_data", {
+                        ...exercise.running_data,
+                        intervals: e.target.value ? parseInt(e.target.value) : undefined,
+                      })
+                    }
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Dist./rep (m)</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    className="h-8 text-xs"
+                    placeholder="400"
+                    value={exercise.running_data?.interval_distance_m || ""}
+                    onChange={(e) =>
+                      updateExercise(index, "running_data", {
+                        ...exercise.running_data,
+                        interval_distance_m: e.target.value ? parseInt(e.target.value) : undefined,
+                      })
+                    }
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Durée/rep (s)</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    className="h-8 text-xs"
+                    placeholder="60"
+                    value={exercise.running_data?.interval_duration_s || ""}
+                    onChange={(e) =>
+                      updateExercise(index, "running_data", {
+                        ...exercise.running_data,
+                        interval_duration_s: e.target.value ? parseInt(e.target.value) : undefined,
+                      })
+                    }
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Récup (s)</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    className="h-8 text-xs"
+                    placeholder="60"
+                    value={exercise.running_data?.recovery_time_s || ""}
+                    onChange={(e) =>
+                      updateExercise(index, "running_data", {
+                        ...exercise.running_data,
+                        recovery_time_s: e.target.value ? parseInt(e.target.value) : undefined,
+                      })
+                    }
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Récup (m)</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    className="h-8 text-xs"
+                    placeholder="200"
+                    value={exercise.running_data?.recovery_distance_m || ""}
+                    onChange={(e) =>
+                      updateExercise(index, "running_data", {
+                        ...exercise.running_data,
+                        recovery_distance_m: e.target.value ? parseInt(e.target.value) : undefined,
+                      })
+                    }
+                  />
+                </div>
+              </div>
+            )}
+            
+            {/* Hill running specific: elevation gain */}
+            {exercise.exercise_category === "running_cote" && (
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label className="text-xs text-muted-foreground">Distance (m)</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    className="h-8 text-xs"
+                    placeholder="100"
+                    value={exercise.running_data?.distance_meters || ""}
+                    onChange={(e) =>
+                      updateExercise(index, "running_data", {
+                        ...exercise.running_data,
+                        distance_meters: e.target.value ? parseInt(e.target.value) : undefined,
+                      })
+                    }
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Dénivelé (m)</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    className="h-8 text-xs"
+                    placeholder="30"
+                    value={exercise.running_data?.elevation_gain_m || ""}
+                    onChange={(e) =>
+                      updateExercise(index, "running_data", {
+                        ...exercise.running_data,
+                        elevation_gain_m: e.target.value ? parseInt(e.target.value) : undefined,
+                      })
+                    }
+                  />
+                </div>
+              </div>
+            )}
+            
+            {/* Continuous running specific: total distance */}
+            {(exercise.exercise_category === "running_ef" || 
+              exercise.exercise_category === "running_seuil" ||
+              exercise.exercise_category === "running_tempo" ||
+              exercise.exercise_category === "running_recup" ||
+              exercise.exercise_category === "running_fartlek") && (
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label className="text-xs text-muted-foreground">Distance totale (m)</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    className="h-8 text-xs"
+                    placeholder="5000"
+                    value={exercise.running_data?.distance_meters || ""}
+                    onChange={(e) =>
+                      updateExercise(index, "running_data", {
+                        ...exercise.running_data,
+                        distance_meters: e.target.value ? parseInt(e.target.value) : undefined,
+                      })
+                    }
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Repos après (s)</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    className="h-8 text-xs"
+                    placeholder="120"
+                    value={exercise.rest_seconds || ""}
+                    onChange={(e) =>
+                      updateExercise(index, "rest_seconds", e.target.value ? parseInt(e.target.value) : null)
+                    }
+                  />
+                </div>
               </div>
             )}
           </div>
