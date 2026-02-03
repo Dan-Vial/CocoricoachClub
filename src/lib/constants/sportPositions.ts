@@ -7,6 +7,85 @@ export interface Position {
   y: number; // Percentage from top
 }
 
+// Rugby position groups
+export type RugbyPositionGroup = "avants" | "trois_quarts" | "all";
+
+export interface RugbyPositionInfo {
+  id: string;
+  name: string;
+  group: RugbyPositionGroup;
+  number: number;
+}
+
+// Rugby XV positions with group classification
+export const RUGBY_XV_POSITION_GROUPS: RugbyPositionInfo[] = [
+  // Avants (Forwards) - Numbers 1-8
+  { id: "1", name: "Pilier gauche", group: "avants", number: 1 },
+  { id: "2", name: "Talonneur", group: "avants", number: 2 },
+  { id: "3", name: "Pilier droit", group: "avants", number: 3 },
+  { id: "4", name: "2ème ligne", group: "avants", number: 4 },
+  { id: "5", name: "2ème ligne", group: "avants", number: 5 },
+  { id: "6", name: "Flanker", group: "avants", number: 6 },
+  { id: "7", name: "Flanker", group: "avants", number: 7 },
+  { id: "8", name: "N°8", group: "avants", number: 8 },
+  // 3/4 (Backs) - Numbers 9-15
+  { id: "9", name: "Demi de mêlée", group: "trois_quarts", number: 9 },
+  { id: "10", name: "Demi d'ouverture", group: "trois_quarts", number: 10 },
+  { id: "11", name: "Ailier gauche", group: "trois_quarts", number: 11 },
+  { id: "12", name: "1er centre", group: "trois_quarts", number: 12 },
+  { id: "13", name: "2ème centre", group: "trois_quarts", number: 13 },
+  { id: "14", name: "Ailier droit", group: "trois_quarts", number: 14 },
+  { id: "15", name: "Arrière", group: "trois_quarts", number: 15 },
+];
+
+// Get position group from position name or number
+export function getRugbyPositionGroup(position: string | undefined): RugbyPositionGroup | null {
+  if (!position) return null;
+  
+  // Check by exact name match
+  const posInfo = RUGBY_XV_POSITION_GROUPS.find(p => 
+    p.name.toLowerCase() === position.toLowerCase() ||
+    p.id === position ||
+    position.includes(p.name)
+  );
+  
+  if (posInfo) return posInfo.group;
+  
+  // Check by number pattern (e.g., "N°8", "8", "Poste 8")
+  const numberMatch = position.match(/\d+/);
+  if (numberMatch) {
+    const num = parseInt(numberMatch[0]);
+    if (num >= 1 && num <= 8) return "avants";
+    if (num >= 9 && num <= 15) return "trois_quarts";
+  }
+  
+  // Check by keywords
+  const lowerPos = position.toLowerCase();
+  const forwardKeywords = ["pilier", "talonneur", "ligne", "flanker", "n°8", "huit", "troisième"];
+  const backKeywords = ["demi", "ouverture", "mêlée", "centre", "ailier", "arrière"];
+  
+  if (forwardKeywords.some(k => lowerPos.includes(k))) return "avants";
+  if (backKeywords.some(k => lowerPos.includes(k))) return "trois_quarts";
+  
+  return null;
+}
+
+// Get position group label
+export function getPositionGroupLabel(group: RugbyPositionGroup): string {
+  switch (group) {
+    case "avants": return "Avants";
+    case "trois_quarts": return "3/4";
+    case "all": return "Tous";
+  }
+}
+
+// Check if sport is rugby (any variant)
+export function isRugbySport(sportType: string | undefined): boolean {
+  if (!sportType) return false;
+  const baseSport = sportType.toLowerCase();
+  return ["xv", "7", "xiii", "rugby", "academie", "national_team"].includes(baseSport);
+}
+
 // Rugby XV positions (15 players)
 export const RUGBY_XV_POSITIONS: Position[] = [
   { id: "1", name: "Pilier gauche", x: 20, y: 85 },

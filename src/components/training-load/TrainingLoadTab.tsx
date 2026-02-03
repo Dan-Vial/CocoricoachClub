@@ -190,6 +190,7 @@ export function TrainingLoadTab({ categoryId }: TrainingLoadTabProps) {
             teamAverage={teamAverage}
             onPlayerClick={handlePlayerClick}
             isLoading={teamLoading}
+            sportType={sportType}
           />
         </TabsContent>
 
