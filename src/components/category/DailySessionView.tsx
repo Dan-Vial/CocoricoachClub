@@ -459,7 +459,7 @@ export function DailySessionView({ categoryId, categoryName = "Catégorie" }: Da
           <AlertTriangle className={cn("h-8 w-8", fieldMode ? "text-red-400" : "text-destructive")} />
           <div>
             <p className={cn("font-bold text-lg", fieldMode ? "text-red-300" : "text-destructive")}>
-              {criticalCount + highCount} joueur(s) à surveiller
+              {criticalCount + highCount} athlète(s) à surveiller
             </p>
             <p className={cn("text-sm", fieldMode ? "text-slate-400" : "text-muted-foreground")}>
               {criticalCount > 0 && `${criticalCount} critique${criticalCount > 1 ? "s" : ""}`}
