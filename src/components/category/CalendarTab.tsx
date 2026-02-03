@@ -22,8 +22,7 @@ import { exportCalendarToPdf, printElement } from "@/lib/pdfExport";
 import { getTrainingTypesForSport, TRAINING_TYPE_COLORS } from "@/lib/constants/trainingTypes";
 import { DisabledTabTrigger } from "@/components/ui/disabled-tab-trigger";
 import { useViewerSessions, useViewerMatches } from "@/hooks/use-viewer-data";
-import { MonthlyCalendarView } from "./calendar/MonthlyCalendarView";
-import { WeeklySessionsView } from "./calendar/WeeklySessionsView";
+import { ImprovedCalendarView } from "./calendar/ImprovedCalendarView";
 
 interface CalendarTabProps {
   categoryId: string;
@@ -254,7 +253,7 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
         </TabsList>
 
         <TabsContent value="global">
-          <MonthlyCalendarView
+          <ImprovedCalendarView
             sessions={sessions || []}
             matches={matches || []}
             sportType={sportType}
@@ -268,7 +267,6 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
             onExportPdf={handleExportPdf}
             isViewer={isViewer}
             onEditSession={(session) => {
-              // Fetch full session data for editing
               supabase
                 .from("training_sessions")
                 .select("*")
@@ -288,32 +286,16 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
                 type: session.training_type === "test" ? "test" : "training",
               });
             }}
-            onDeleteSession={(sessionId) => deleteSession.mutate(sessionId)}
-            onRescheduleSession={(sessionId, newDate) => {
-              rescheduleSession.mutate({ sessionId, newDate });
-            }}
-          />
-
-          {/* Weekly Sessions View - below monthly */}
-          <WeeklySessionsView
-            sessions={sessions || []}
-            matches={matches || []}
-            sportType={sportType}
-            currentWeek={currentWeek}
-            onWeekChange={setCurrentWeek}
-            onViewSession={(session) => {
-              setSelectedSession({
-                id: session.id,
-                date: session.session_date,
-                type: session.training_type === "test" ? "test" : "training",
-              });
-            }}
             onViewMatch={(match) => {
               setSelectedMatch({
                 id: match.id,
                 date: match.match_date,
                 opponent: match.opponent,
               });
+            }}
+            onDeleteSession={(sessionId) => deleteSession.mutate(sessionId)}
+            onRescheduleSession={(sessionId, newDate) => {
+              rescheduleSession.mutate({ sessionId, newDate });
             }}
           />
         </TabsContent>

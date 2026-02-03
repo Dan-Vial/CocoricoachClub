@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, LayoutDashboard, Users, Calendar, Zap, Heart, Trophy, MessageSquare, Loader2, Lock, Settings, FileCode } from "lucide-react";
+import { ArrowLeft, LayoutDashboard, Users, Calendar, Zap, Heart, Trophy, MessageSquare, Loader2, Lock, Settings, FileCode, MapPin, Video } from "lucide-react";
 import { OverviewTab } from "@/components/category/OverviewTab";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { CategoryCoverUpload } from "@/components/category/CategoryCoverUpload";
@@ -25,6 +25,13 @@ import { CompetitionTab } from "@/components/category/tabs/CompetitionTab";
 import { CommunicationTab } from "@/components/category/tabs/CommunicationTab";
 import { SettingsTab } from "@/components/category/tabs/SettingsTab";
 import { ProgrammationTab } from "@/components/category/tabs/ProgrammationTab";
+import { GpsDataTab } from "@/components/category/gps/GpsDataTab";
+import { VideoAnalysisTab } from "@/components/category/video/VideoAnalysisTab";
+
+// Helper to check if GPS is available for sport
+const isGpsSportType = (sportType: string | undefined) => {
+  return sportType === "football" || sportType === "XV" || sportType === "7" || sportType === "XIII" || sportType === "rugby";
+};
 
 function CategoryDetailsContent() {
   const { categoryId } = useParams();
@@ -220,6 +227,19 @@ function CategoryDetailsContent() {
                 <span className="hidden sm:inline">Compétition</span>
                 <span className="sm:hidden">Compét</span>
               </TabsTrigger>
+              {/* GPS - Only for Football and Rugby */}
+              {isGpsSportType(category?.rugby_type) && (
+                <TabsTrigger value="gps" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">
+                  <MapPin className="h-4 w-4 shrink-0" />
+                  <span>GPS</span>
+                </TabsTrigger>
+              )}
+              {/* Video Analysis - All sports */}
+              <TabsTrigger value="video" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">
+                <Video className="h-4 w-4 shrink-0" />
+                <span className="hidden sm:inline">Analyse Vidéo</span>
+                <span className="sm:hidden">Vidéo</span>
+              </TabsTrigger>
               {!isViewer && (
                 <TabsTrigger value="communication" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">
                   <MessageSquare className="h-4 w-4 shrink-0" />
@@ -268,6 +288,18 @@ function CategoryDetailsContent() {
               isNationalTeam={isNationalTeam}
               sportType={category?.rugby_type}
             />
+          </TabsContent>
+
+          {/* GPS Tab - Only for Football and Rugby */}
+          {isGpsSportType(category?.rugby_type) && (
+            <TabsContent value="gps" className="space-y-4">
+              <GpsDataTab categoryId={categoryId!} />
+            </TabsContent>
+          )}
+
+          {/* Video Analysis Tab - All sports */}
+          <TabsContent value="video" className="space-y-4">
+            <VideoAnalysisTab categoryId={categoryId!} sportType={category?.rugby_type} />
           </TabsContent>
 
           {!isViewer && (
