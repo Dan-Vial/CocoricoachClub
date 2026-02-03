@@ -2,7 +2,8 @@ import { useState, useRef, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { ColoredSubTabsList, ColoredSubTabsTrigger, ColoredContentCard, ColoredCardHeader, ColoredTitle } from "@/components/ui/colored-subtabs";
 import { Calendar as CalendarIcon, LayoutTemplate, Target } from "lucide-react";
 import { toast } from "sonner";
 import { AddSessionDialog } from "./AddSessionDialog";
@@ -228,29 +229,29 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
   return (
     <div className="space-y-6">
       <Tabs defaultValue="global" className="space-y-4">
-        <TabsList className="flex w-full overflow-x-auto no-scrollbar gap-1 h-auto flex-wrap md:flex-nowrap bg-muted">
-          <TabsTrigger value="global" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3">
-            <CalendarIcon className="h-4 w-4 shrink-0" />
+        <ColoredSubTabsList colorKey="planification">
+          <ColoredSubTabsTrigger value="global" colorKey="planification" icon={<CalendarIcon className="h-4 w-4" />}>
             <span className="hidden sm:inline">Calendrier Global</span>
             <span className="sm:hidden">Global</span>
-          </TabsTrigger>
-          <TabsTrigger value="weekly" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3">
-            <CalendarIcon className="h-4 w-4 shrink-0" />
+          </ColoredSubTabsTrigger>
+          <ColoredSubTabsTrigger value="weekly" colorKey="planification" icon={<CalendarIcon className="h-4 w-4" />}>
             <span className="hidden sm:inline">Planning Hebdo</span>
             <span className="sm:hidden">Hebdo</span>
-          </TabsTrigger>
+          </ColoredSubTabsTrigger>
           {/* Templates - Grisé en mode viewer */}
-          <DisabledTabTrigger value="templates" isDisabled={isViewer} className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3">
-            <LayoutTemplate className="h-4 w-4 shrink-0" />
-            Templates
-          </DisabledTabTrigger>
+          {!isViewer && (
+            <ColoredSubTabsTrigger value="templates" colorKey="planification" icon={<LayoutTemplate className="h-4 w-4" />}>
+              Templates
+            </ColoredSubTabsTrigger>
+          )}
           {/* Objectifs - Grisé en mode viewer */}
-          <DisabledTabTrigger value="objectives" isDisabled={isViewer} className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3">
-            <Target className="h-4 w-4 shrink-0" />
-            <span className="hidden sm:inline">Objectifs</span>
-            <span className="sm:hidden">Obj.</span>
-          </DisabledTabTrigger>
-        </TabsList>
+          {!isViewer && (
+            <ColoredSubTabsTrigger value="objectives" colorKey="planification" icon={<Target className="h-4 w-4" />}>
+              <span className="hidden sm:inline">Objectifs</span>
+              <span className="sm:hidden">Obj.</span>
+            </ColoredSubTabsTrigger>
+          )}
+        </ColoredSubTabsList>
 
         <TabsContent value="global">
           <ImprovedCalendarView

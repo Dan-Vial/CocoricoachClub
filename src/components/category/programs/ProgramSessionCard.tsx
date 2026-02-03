@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { X, GripVertical, Link2, Unlink, Plus, Minus, FlaskConical, Check, Info } from "lucide-react";
+import { X, GripVertical, Link2, Unlink, Plus, Minus, FlaskConical, Check, Info, ChevronUp, ChevronDown } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -222,6 +222,32 @@ export function ProgramSessionCard({
       ...session,
       exercises: newExercises.map((e, i) => ({ ...e, order_index: i })),
     });
+  };
+
+  // Move exercise or block up/down
+  const moveExerciseOrBlock = (groupIndex: number, direction: "up" | "down") => {
+    const newGroups = [...exerciseGroups];
+    const targetIndex = direction === "up" ? groupIndex - 1 : groupIndex + 1;
+    
+    if (targetIndex < 0 || targetIndex >= newGroups.length) return;
+    
+    // Swap the groups
+    [newGroups[groupIndex], newGroups[targetIndex]] = [newGroups[targetIndex], newGroups[groupIndex]];
+    
+    // Flatten back to exercises and update order_index
+    let orderIndex = 0;
+    const newExercises: ProgramExercise[] = [];
+    
+    newGroups.forEach((group) => {
+      group.exercises.forEach(({ exercise }) => {
+        newExercises.push({
+          ...exercise,
+          order_index: orderIndex++,
+        });
+      });
+    });
+    
+    onUpdate({ ...session, exercises: newExercises });
   };
 
   const getMaxCountForMethod = (method: string): number => {
@@ -1324,31 +1350,70 @@ export function ProgramSessionCard({
   };
 
   // Render a group of exercises with colored container
-  const renderExerciseGroup = (group: ExerciseGroup) => {
+  const renderExerciseGroup = (group: ExerciseGroup, groupIndex: number, totalGroups: number) => {
+    const canMoveUp = groupIndex > 0;
+    const canMoveDown = groupIndex < totalGroups - 1;
+
+    // Move buttons component
+    const MoveButtons = () => (
+      <div className="flex flex-col gap-0.5">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={(e) => {
+            e.stopPropagation();
+            moveExerciseOrBlock(groupIndex, "up");
+          }}
+          disabled={!canMoveUp}
+          className="h-6 w-6 hover:bg-muted"
+          title="Monter"
+        >
+          <ChevronUp className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={(e) => {
+            e.stopPropagation();
+            moveExerciseOrBlock(groupIndex, "down");
+          }}
+          disabled={!canMoveDown}
+          className="h-6 w-6 hover:bg-muted"
+          title="Descendre"
+        >
+          <ChevronDown className="h-4 w-4" />
+        </Button>
+      </div>
+    );
+
     if (!group.groupId) {
-      // Single ungrouped exercise
+      // Single ungrouped exercise with move buttons
       const { exercise, index } = group.exercises[0];
       return (
-        <div key={`single-${index}`}>
-          {renderExerciseCard(exercise, index, false)}
+        <div key={`single-${index}`} className="flex items-start gap-2">
+          <MoveButtons />
+          <div className="flex-1">
+            {renderExerciseCard(exercise, index, false)}
+          </div>
         </div>
       );
     }
 
-    // Grouped exercises with colored container
+    // Grouped exercises with colored container and move buttons
     const styleConfig = getTrainingStyleConfig(group.method);
     const maxExercises = getMaxExercisesForMethod(group.method);
     const lastExercise = group.exercises[group.exercises.length - 1];
 
     return (
-      <div
-        key={group.groupId}
-        className={cn(
-          "rounded-xl border-2 p-4 space-y-3",
-          styleConfig.borderColor,
-          styleConfig.bgColor
-        )}
-      >
+      <div key={group.groupId} className="flex items-start gap-2">
+        <MoveButtons />
+        <div
+          className={cn(
+            "flex-1 rounded-xl border-2 p-4 space-y-3",
+            styleConfig.borderColor,
+            styleConfig.bgColor
+          )}
+        >
         {/* Group header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -1413,6 +1478,7 @@ export function ProgramSessionCard({
             }
             className="h-8 text-sm w-24"
           />
+        </div>
         </div>
       </div>
     );
@@ -1503,7 +1569,7 @@ export function ProgramSessionCard({
             Glissez des exercices ici
           </p>
         ) : (
-          exerciseGroups.map((group) => renderExerciseGroup(group))
+          exerciseGroups.map((group, idx) => renderExerciseGroup(group, idx, exerciseGroups.length))
         )}
       </div>
     </div>

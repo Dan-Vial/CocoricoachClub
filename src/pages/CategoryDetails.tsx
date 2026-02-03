@@ -32,7 +32,7 @@ import { GpsDataTab } from "@/components/category/gps/GpsDataTab";
 import { VideoAnalysisTab } from "@/components/category/video/VideoAnalysisTab";
 import { AdminTab } from "@/components/category/tabs/AdminTab";
 
-// Colored Tab Trigger Component
+// Colored Tab Trigger Component - Large icons with labels below
 interface ColoredTabTriggerProps {
   value: string;
   colorKey: NavColorKey;
@@ -49,14 +49,15 @@ function ColoredTabTrigger({ value, colorKey, icon, label, shortLabel, disabled 
     return (
       <div
         className={cn(
-          "relative inline-flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm",
-          "text-muted-foreground/50 cursor-not-allowed bg-muted/30"
+          "relative flex flex-col items-center justify-center gap-1 px-3 py-3 rounded-xl font-medium text-xs",
+          "text-muted-foreground/50 cursor-not-allowed bg-muted/30",
+          "min-w-[70px] sm:min-w-[85px]"
         )}
         title="Accès restreint en mode lecture"
       >
-        <span className="shrink-0 h-4 w-4">{icon}</span>
-        <span className="hidden sm:inline whitespace-nowrap">{label}</span>
-        {shortLabel && <span className="sm:hidden whitespace-nowrap">{shortLabel}</span>}
+        <span className="shrink-0 h-6 w-6 sm:h-7 sm:w-7">{icon}</span>
+        <span className="whitespace-nowrap text-center leading-tight hidden sm:block">{label}</span>
+        <span className="whitespace-nowrap text-center leading-tight sm:hidden">{shortLabel || label}</span>
       </div>
     );
   }
@@ -65,28 +66,29 @@ function ColoredTabTrigger({ value, colorKey, icon, label, shortLabel, disabled 
     <TabsPrimitive.Trigger
       value={value}
       className={cn(
-        "group relative inline-flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm",
+        "group relative flex flex-col items-center justify-center gap-1 px-3 py-3 rounded-xl font-medium text-xs",
         "transition-all duration-200 ease-out",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+        "min-w-[70px] sm:min-w-[85px]",
         colors.text,
         colors.hover,
-        "data-[state=active]:text-white data-[state=active]:shadow-lg"
+        "data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:scale-105"
       )}
     >
       {/* Active background */}
       <span 
         className={cn(
-          "absolute inset-0 rounded-lg transition-all duration-200",
+          "absolute inset-0 rounded-xl transition-all duration-200",
           "opacity-0 scale-95",
           "group-data-[state=active]:opacity-100 group-data-[state=active]:scale-100"
         )}
         style={{ backgroundColor: colors.base }}
       />
-      {/* Content */}
-      <span className="relative z-10 flex items-center gap-2">
-        <span className="shrink-0 h-4 w-4">{icon}</span>
-        <span className="hidden sm:inline whitespace-nowrap">{label}</span>
-        {shortLabel && <span className="sm:hidden whitespace-nowrap">{shortLabel}</span>}
+      {/* Content - Icon on top, label below */}
+      <span className="relative z-10 flex flex-col items-center gap-1">
+        <span className="shrink-0 h-6 w-6 sm:h-7 sm:w-7">{icon}</span>
+        <span className="whitespace-nowrap text-center leading-tight hidden sm:block">{label}</span>
+        <span className="whitespace-nowrap text-center leading-tight sm:hidden">{shortLabel || label}</span>
       </span>
     </TabsPrimitive.Trigger>
   );
@@ -254,40 +256,40 @@ function CategoryDetailsContent() {
       <div className="container mx-auto max-w-7xl px-4 py-8">
         <Tabs defaultValue="overview" className="space-y-6">
           <div className="overflow-x-auto -mx-4 px-4 pb-2">
-            <ColoredNavTabsList className="inline-flex w-max min-w-full">
+            <ColoredNavTabsList className="inline-flex w-max min-w-full gap-1 p-3">
               <ColoredTabTrigger 
                 value="overview" 
                 colorKey="overview"
-                icon={<LayoutDashboard className="h-4 w-4" />}
+                icon={<LayoutDashboard className="h-6 w-6 sm:h-7 sm:w-7" />}
                 label="Vue Générale"
                 shortLabel="Général"
               />
               {!isViewer && (
-                <ColoredTabTrigger 
+                <ColoredTabTrigger
                   value="admin" 
                   colorKey="admin"
-                  icon={<Shield className="h-4 w-4" />}
+                  icon={<Shield className="h-6 w-6 sm:h-7 sm:w-7" />}
                   label="Admin"
                 />
               )}
               <ColoredTabTrigger 
                 value="effectif" 
                 colorKey="effectif"
-                icon={<Users className="h-4 w-4" />}
+                icon={<Users className="h-6 w-6 sm:h-7 sm:w-7" />}
                 label="Effectif"
                 shortLabel="Équipe"
               />
               <ColoredTabTrigger 
                 value="planification" 
                 colorKey="planification"
-                icon={<Calendar className="h-4 w-4" />}
+                icon={<Calendar className="h-6 w-6 sm:h-7 sm:w-7" />}
                 label="Planification"
                 shortLabel="Planning"
               />
               <ColoredTabTrigger 
                 value="programmation" 
                 colorKey="programmation"
-                icon={<FileCode className="h-4 w-4" />}
+                icon={<FileCode className="h-6 w-6 sm:h-7 sm:w-7" />}
                 label="Programmation"
                 shortLabel="Prog"
                 disabled={isViewer}
@@ -295,7 +297,7 @@ function CategoryDetailsContent() {
               <ColoredTabTrigger 
                 value="performance" 
                 colorKey="performance"
-                icon={<Zap className="h-4 w-4" />}
+                icon={<Zap className="h-6 w-6 sm:h-7 sm:w-7" />}
                 label="Entrainement"
                 shortLabel="Entraîn"
                 disabled={isViewer}
@@ -303,13 +305,13 @@ function CategoryDetailsContent() {
               <ColoredTabTrigger 
                 value="sante" 
                 colorKey="sante"
-                icon={<Heart className="h-4 w-4" />}
+                icon={<Heart className="h-6 w-6 sm:h-7 sm:w-7" />}
                 label="Santé"
               />
               <ColoredTabTrigger 
                 value="competition" 
                 colorKey="competition"
-                icon={<Trophy className="h-4 w-4" />}
+                icon={<Trophy className="h-6 w-6 sm:h-7 sm:w-7" />}
                 label="Compétition"
                 shortLabel="Compét"
               />
@@ -317,14 +319,14 @@ function CategoryDetailsContent() {
                 <ColoredTabTrigger 
                   value="gps" 
                   colorKey="gps"
-                  icon={<MapPin className="h-4 w-4" />}
+                  icon={<MapPin className="h-6 w-6 sm:h-7 sm:w-7" />}
                   label="GPS"
                 />
               )}
               <ColoredTabTrigger 
                 value="video" 
                 colorKey="video"
-                icon={<Video className="h-4 w-4" />}
+                icon={<Video className="h-6 w-6 sm:h-7 sm:w-7" />}
                 label="Analyse Vidéo"
                 shortLabel="Vidéo"
               />
@@ -332,7 +334,7 @@ function CategoryDetailsContent() {
                 <ColoredTabTrigger 
                   value="communication" 
                   colorKey="communication"
-                  icon={<MessageSquare className="h-4 w-4" />}
+                  icon={<MessageSquare className="h-6 w-6 sm:h-7 sm:w-7" />}
                   label="Communication"
                   shortLabel="Com"
                 />
@@ -341,7 +343,7 @@ function CategoryDetailsContent() {
                 <ColoredTabTrigger 
                   value="settings" 
                   colorKey="settings"
-                  icon={<Settings className="h-4 w-4" />}
+                  icon={<Settings className="h-6 w-6 sm:h-7 sm:w-7" />}
                   label="Paramètres"
                   shortLabel="Param"
                 />
