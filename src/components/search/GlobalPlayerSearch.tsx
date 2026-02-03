@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import {
   CommandDialog,
   CommandEmpty,
@@ -17,6 +17,7 @@ interface Player {
   id: string;
   name: string;
   category_id: string;
+  position?: string | null;
   categories: {
     name: string;
     club_id: string;
@@ -26,18 +27,27 @@ interface Player {
   } | null;
 }
 
-export function GlobalPlayerSearch() {
+interface GlobalPlayerSearchProps {
+  categoryId?: string;
+}
+
+export function GlobalPlayerSearch({ categoryId: propCategoryId }: GlobalPlayerSearchProps = {}) {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
+  
+  // Get categoryId from URL params if not provided as prop
+  const { categoryId: urlCategoryId } = useParams();
+  const activeCategoryId = propCategoryId || urlCategoryId;
 
   const { data: players, isLoading } = useQuery({
-    queryKey: ["all-players"],
+    queryKey: ["category-players", activeCategoryId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("players")
         .select(`
           id,
           name,
+          position,
           category_id,
           categories (
             name,
@@ -48,6 +58,13 @@ export function GlobalPlayerSearch() {
           )
         `)
         .order("name");
+
+      // Filter by category if we have one
+      if (activeCategoryId) {
+        query = query.eq("category_id", activeCategoryId);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       return data as Player[];
     },
@@ -85,12 +102,12 @@ export function GlobalPlayerSearch() {
       </Button>
 
       <CommandDialog open={open} onOpenChange={setOpen}>
-        <CommandInput placeholder="Rechercher un athlète par nom..." />
+        <CommandInput placeholder={activeCategoryId ? "Rechercher dans cette catégorie..." : "Rechercher un athlète..."} />
         <CommandList>
           <CommandEmpty>
             {isLoading ? "Chargement..." : "Aucun athlète trouvé."}
           </CommandEmpty>
-          <CommandGroup heading="Athlètes">
+          <CommandGroup heading={activeCategoryId ? "Athlètes de la catégorie" : "Athlètes"}>
             {players?.map((player) => {
               const categoryName = player.categories?.name ?? "Catégorie";
               const clubName = player.categories?.clubs?.name;
@@ -104,8 +121,9 @@ export function GlobalPlayerSearch() {
                   <div className="flex flex-col">
                     <span className="font-medium">{player.name}</span>
                     <span className="text-xs text-muted-foreground">
+                      {player.position && `${player.position} • `}
                       {categoryName}
-                      {clubName ? ` • ${clubName}` : ""}
+                      {clubName && !activeCategoryId ? ` • ${clubName}` : ""}
                     </span>
                   </div>
                 </CommandItem>

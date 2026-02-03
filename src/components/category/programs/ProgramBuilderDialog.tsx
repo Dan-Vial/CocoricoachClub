@@ -22,10 +22,12 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import { ProgramWeekSection } from "./ProgramWeekSection";
 import { ExerciseLibrarySidebar } from "./ExerciseLibrarySidebar";
-import { Plus, Save } from "lucide-react";
+import { Plus, Save, AlertTriangle } from "lucide-react";
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent } from "@dnd-kit/core";
 import { Badge } from "@/components/ui/badge";
 import { getTrainingTypesForSport } from "@/lib/constants/trainingTypes";
+import { RUGBY_INJURY_TYPES, DEFAULT_REHAB_PHASES } from "@/lib/constants/rugbyInjuries";
+import { Card, CardContent } from "@/components/ui/card";
 
 interface ProgramBuilderDialogProps {
   categoryId: string;
@@ -154,6 +156,8 @@ export function ProgramBuilderDialog({
   const [weeks, setWeeks] = useState<ProgramWeek[]>([]);
   const [saving, setSaving] = useState(false);
   const [activeExercise, setActiveExercise] = useState<any>(null);
+  const [selectedInjuryId, setSelectedInjuryId] = useState<string>("");
+  const [selectedInjuryType, setSelectedInjuryType] = useState<string>("");
 
   // Fetch category to get sport type
   const { data: category } = useQuery({
@@ -168,6 +172,29 @@ export function ProgramBuilderDialog({
       return data;
     },
     enabled: !!categoryId && open,
+  });
+
+  // Fetch active injuries for the category (for rehab programs)
+  const { data: activeInjuries } = useQuery({
+    queryKey: ["category-active-injuries", categoryId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("injuries")
+        .select(`
+          id,
+          injury_type,
+          severity,
+          status,
+          player_id,
+          players(name)
+        `)
+        .eq("category_id", categoryId)
+        .in("status", ["active", "recovering"])
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!categoryId && open && theme === "reathletisation",
   });
 
   // Build THEMES with dynamic terrain options based on sport
@@ -605,6 +632,111 @@ export function ProgramBuilderDialog({
                       </div>
                     )}
                   </div>
+
+                  {/* Injury selector for rehab programs */}
+                  {theme === "reathletisation" && (
+                    <Card className="border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30">
+                      <CardContent className="pt-4 space-y-4">
+                        <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
+                          <AlertTriangle className="h-5 w-5" />
+                          <span className="font-semibold">Programme de réathlétisation</span>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {/* Select from active injuries */}
+                          <div className="space-y-2">
+                            <Label>Blessure active (joueur)</Label>
+                            <Select 
+                              value={selectedInjuryId} 
+                              onValueChange={(v) => {
+                                setSelectedInjuryId(v);
+                                if (v) {
+                                  const injury = activeInjuries?.find(i => i.id === v);
+                                  if (injury) {
+                                    setSelectedInjuryType(injury.injury_type || "");
+                                    // Auto-set program name based on injury
+                                    if (!name) {
+                                      const playerName = (injury.players as any)?.name || "Joueur";
+                                      setName(`Réathlétisation ${injury.injury_type} - ${playerName}`);
+                                    }
+                                  }
+                                }
+                              }}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Sélectionner une blessure..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {activeInjuries && activeInjuries.length > 0 ? (
+                                  activeInjuries.map((injury) => (
+                                    <SelectItem key={injury.id} value={injury.id}>
+                                      <div className="flex flex-col">
+                                        <span className="font-medium">{(injury.players as any)?.name}</span>
+                                        <span className="text-xs text-muted-foreground">
+                                          {injury.injury_type} ({injury.severity})
+                                        </span>
+                                      </div>
+                                    </SelectItem>
+                                  ))
+                                ) : (
+                                  <SelectItem value="" disabled>
+                                    Aucune blessure active
+                                  </SelectItem>
+                                )}
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          {/* Or select from pre-registered injury types */}
+                          <div className="space-y-2">
+                            <Label>Ou type de blessure (pré-enregistré)</Label>
+                            <Select 
+                              value={selectedInjuryType} 
+                              onValueChange={(v) => {
+                                setSelectedInjuryType(v);
+                                setSelectedInjuryId(""); // Clear specific injury selection
+                                if (v && !name) {
+                                  setName(`Programme réathlétisation - ${v}`);
+                                }
+                              }}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Choisir un type..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {RUGBY_INJURY_TYPES.map((injury) => (
+                                  <SelectItem key={injury.name} value={injury.name}>
+                                    <div className="flex items-center gap-2">
+                                      <Badge variant="outline" className="text-xs">
+                                        {injury.category}
+                                      </Badge>
+                                      <span>{injury.name}</span>
+                                    </div>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+
+                        {/* Show injury details if selected */}
+                        {selectedInjuryType && (
+                          <div className="bg-white dark:bg-background rounded-lg p-3 border">
+                            <p className="text-sm font-medium mb-1">{selectedInjuryType}</p>
+                            {RUGBY_INJURY_TYPES.find(i => i.name === selectedInjuryType) && (
+                              <p className="text-xs text-muted-foreground">
+                                {RUGBY_INJURY_TYPES.find(i => i.name === selectedInjuryType)?.description}
+                                <br />
+                                <span className="font-medium">
+                                  Durée estimée: {RUGBY_INJURY_TYPES.find(i => i.name === selectedInjuryType)?.durationMin} - {RUGBY_INJURY_TYPES.find(i => i.name === selectedInjuryType)?.durationMax} jours
+                                </span>
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  )}
 
                   {/* Display selected tags */}
                   {(bodyZone || theme || subTheme) && (
