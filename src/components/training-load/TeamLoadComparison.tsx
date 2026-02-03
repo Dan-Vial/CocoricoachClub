@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   BarChart, 
   Bar, 
@@ -15,8 +16,10 @@ import {
   ReferenceLine,
   Cell,
 } from "recharts";
-import { Users, TrendingUp, Filter, UserCheck } from "lucide-react";
+import { Users, TrendingUp, Filter, UserCheck, Shield, Zap } from "lucide-react";
 import { LoadSummary, getRiskColor } from "@/lib/trainingLoadCalculations";
+import { getRugbyPositionGroup, getPositionGroupLabel, isRugbySport, RugbyPositionGroup } from "@/lib/constants/sportPositions";
+import { cn } from "@/lib/utils";
 
 interface PlayerWithSummary {
   id: string;
@@ -34,6 +37,7 @@ interface TeamLoadComparisonProps {
   } | null;
   onPlayerClick?: (playerId: string) => void;
   isLoading?: boolean;
+  sportType?: string;
 }
 
 export function TeamLoadComparison({
@@ -41,32 +45,74 @@ export function TeamLoadComparison({
   teamAverage,
   onPlayerClick,
   isLoading,
+  sportType,
 }: TeamLoadComparisonProps) {
   const [sortBy, setSortBy] = useState<"name" | "ratio" | "risk">("risk");
   const [filterPosition, setFilterPosition] = useState<string>("all");
+  const [filterGroup, setFilterGroup] = useState<RugbyPositionGroup | "all">("all");
+
+  const isRugby = isRugbySport(sportType);
 
   // Get unique positions
-  const positions = [...new Set(players.filter(p => p.position).map(p => p.position!))];
+  const positions = useMemo(() => 
+    [...new Set(players.filter(p => p.position).map(p => p.position!))],
+    [players]
+  );
+
+  // Enrich players with position group for rugby
+  const enrichedPlayers = useMemo(() => 
+    players.map(p => ({
+      ...p,
+      positionGroup: isRugby ? getRugbyPositionGroup(p.position) : null,
+    })),
+    [players, isRugby]
+  );
 
   // Filter and sort players
-  const filteredPlayers = players
-    .filter(p => p.summary !== null)
-    .filter(p => filterPosition === "all" || p.position === filterPosition)
-    .sort((a, b) => {
-      if (sortBy === "name") return a.name.localeCompare(b.name);
-      if (sortBy === "ratio") return (b.summary?.ewmaRatio || 0) - (a.summary?.ewmaRatio || 0);
-      // Risk: danger first, then warning, then optimal
-      const riskOrder = { danger: 0, warning: 1, optimal: 2 };
-      return (riskOrder[a.summary?.riskLevel || "optimal"] || 2) - (riskOrder[b.summary?.riskLevel || "optimal"] || 2);
-    });
+  const filteredPlayers = useMemo(() => 
+    enrichedPlayers
+      .filter(p => p.summary !== null)
+      .filter(p => filterPosition === "all" || p.position === filterPosition)
+      .filter(p => !isRugby || filterGroup === "all" || p.positionGroup === filterGroup)
+      .sort((a, b) => {
+        if (sortBy === "name") return a.name.localeCompare(b.name);
+        if (sortBy === "ratio") return (b.summary?.ewmaRatio || 0) - (a.summary?.ewmaRatio || 0);
+        const riskOrder = { danger: 0, warning: 1, optimal: 2 };
+        return (riskOrder[a.summary?.riskLevel || "optimal"] || 2) - (riskOrder[b.summary?.riskLevel || "optimal"] || 2);
+      }),
+    [enrichedPlayers, filterPosition, filterGroup, sortBy, isRugby]
+  );
+
+  // Calculate group averages for rugby
+  const groupAverages = useMemo(() => {
+    if (!isRugby) return null;
+    
+    const avantsPlayers = enrichedPlayers.filter(p => p.positionGroup === "avants" && p.summary);
+    const tqPlayers = enrichedPlayers.filter(p => p.positionGroup === "trois_quarts" && p.summary);
+    
+    return {
+      avants: avantsPlayers.length > 0 ? {
+        count: avantsPlayers.length,
+        avgRatio: avantsPlayers.reduce((sum, p) => sum + (p.summary?.ewmaRatio || 0), 0) / avantsPlayers.length,
+        avgAcute: avantsPlayers.reduce((sum, p) => sum + (p.summary?.ewmaAcute || 0), 0) / avantsPlayers.length,
+      } : null,
+      troisQuarts: tqPlayers.length > 0 ? {
+        count: tqPlayers.length,
+        avgRatio: tqPlayers.reduce((sum, p) => sum + (p.summary?.ewmaRatio || 0), 0) / tqPlayers.length,
+        avgAcute: tqPlayers.reduce((sum, p) => sum + (p.summary?.ewmaAcute || 0), 0) / tqPlayers.length,
+      } : null,
+    };
+  }, [enrichedPlayers, isRugby]);
 
   // Prepare chart data
   const chartData = filteredPlayers.map(p => ({
-    name: p.name.split(" ").pop() || p.name, // Last name only for chart
+    name: p.name.split(" ").pop() || p.name,
     fullName: p.name,
     ratio: p.summary?.ewmaRatio || 0,
     riskLevel: p.summary?.riskLevel || "optimal",
     id: p.id,
+    position: p.position,
+    group: p.positionGroup,
   }));
 
   if (isLoading) {
@@ -83,7 +129,7 @@ export function TeamLoadComparison({
   }
 
   return (
-    <Card className="bg-gradient-card shadow-md">
+    <Card className="bg-gradient-card shadow-lg border-0">
       <CardHeader className="pb-3">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <CardTitle className="flex items-center gap-2">
@@ -92,22 +138,50 @@ export function TeamLoadComparison({
           </CardTitle>
 
           <div className="flex items-center gap-2 flex-wrap">
+            {/* Rugby Group Filter */}
+            {isRugby && (
+              <Select value={filterGroup} onValueChange={(v) => setFilterGroup(v as RugbyPositionGroup | "all")}>
+                <SelectTrigger className="w-[120px] h-9">
+                  <Shield className="h-3 w-3 mr-1" />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tous</SelectItem>
+                  <SelectItem value="avants">
+                    <span className="flex items-center gap-1.5">
+                      <div className="h-2 w-2 rounded-full bg-amber-500" />
+                      Avants
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="trois_quarts">
+                    <span className="flex items-center gap-1.5">
+                      <div className="h-2 w-2 rounded-full bg-cyan-500" />
+                      3/4
+                    </span>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+
+            {/* Position Filter */}
             {positions.length > 0 && (
               <Select value={filterPosition} onValueChange={setFilterPosition}>
-                <SelectTrigger className="w-[140px]">
+                <SelectTrigger className="w-[140px] h-9">
                   <Filter className="h-3 w-3 mr-1" />
                   <SelectValue placeholder="Poste" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Tous</SelectItem>
+                  <SelectItem value="all">Tous postes</SelectItem>
                   {positions.map(pos => (
                     <SelectItem key={pos} value={pos}>{pos}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             )}
+
+            {/* Sort */}
             <Select value={sortBy} onValueChange={(v) => setSortBy(v as typeof sortBy)}>
-              <SelectTrigger className="w-[130px]">
+              <SelectTrigger className="w-[120px] h-9">
                 <SelectValue placeholder="Trier par" />
               </SelectTrigger>
               <SelectContent>
@@ -119,8 +193,41 @@ export function TeamLoadComparison({
           </div>
         </div>
 
-        {/* Team average info */}
-        {teamAverage && (
+        {/* Rugby Group Stats */}
+        {isRugby && groupAverages && (
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-4">
+            {teamAverage && (
+              <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
+                <p className="text-xs text-muted-foreground font-medium">Équipe</p>
+                <p className="text-xl font-bold text-primary">{teamAverage.ewmaRatio.toFixed(2)}</p>
+                <p className="text-xs text-muted-foreground">Ratio moyen</p>
+              </div>
+            )}
+            {groupAverages.avants && (
+              <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
+                <div className="flex items-center gap-1.5">
+                  <div className="h-2 w-2 rounded-full bg-amber-500" />
+                  <p className="text-xs text-muted-foreground font-medium">Avants ({groupAverages.avants.count})</p>
+                </div>
+                <p className="text-xl font-bold text-amber-600">{groupAverages.avants.avgRatio.toFixed(2)}</p>
+                <p className="text-xs text-muted-foreground">Ratio moyen</p>
+              </div>
+            )}
+            {groupAverages.troisQuarts && (
+              <div className="p-3 rounded-lg bg-cyan-500/10 border border-cyan-500/30">
+                <div className="flex items-center gap-1.5">
+                  <div className="h-2 w-2 rounded-full bg-cyan-500" />
+                  <p className="text-xs text-muted-foreground font-medium">3/4 ({groupAverages.troisQuarts.count})</p>
+                </div>
+                <p className="text-xl font-bold text-cyan-600">{groupAverages.troisQuarts.avgRatio.toFixed(2)}</p>
+                <p className="text-xs text-muted-foreground">Ratio moyen</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Standard team average (non-rugby) */}
+        {!isRugby && teamAverage && (
           <div className="flex items-center gap-4 mt-3 text-sm">
             <div className="flex items-center gap-1">
               <span className="text-muted-foreground">Moyenne équipe:</span>
@@ -141,7 +248,7 @@ export function TeamLoadComparison({
             <p>Aucune donnée de charge pour les athlètes</p>
           </div>
         ) : (
-          <ResponsiveContainer width="100%" height={Math.max(300, chartData.length * 35)}>
+          <ResponsiveContainer width="100%" height={Math.max(300, chartData.length * 40)}>
             <BarChart 
               data={chartData} 
               layout="vertical"
@@ -157,9 +264,23 @@ export function TeamLoadComparison({
               <YAxis 
                 type="category" 
                 dataKey="name" 
-                width={80}
+                width={90}
                 className="text-xs"
-                tick={{ fontSize: 11 }}
+                tick={({ x, y, payload }) => {
+                  const player = chartData.find(p => p.name === payload.value);
+                  const groupColor = player?.group === "avants" ? "hsl(var(--warning))" : 
+                                     player?.group === "trois_quarts" ? "hsl(var(--accent))" : undefined;
+                  return (
+                    <g>
+                      {isRugby && groupColor && (
+                        <circle cx={x - 70} cy={y} r={4} fill={groupColor} />
+                      )}
+                      <text x={x - 5} y={y} dy={4} textAnchor="end" fontSize={11} fill="currentColor">
+                        {payload.value}
+                      </text>
+                    </g>
+                  );
+                }}
               />
               <Tooltip
                 content={({ active, payload }) => {
@@ -168,8 +289,16 @@ export function TeamLoadComparison({
                   return (
                     <div className="rounded-lg border bg-background p-3 shadow-lg">
                       <p className="font-medium">{data.fullName}</p>
-                      <p className="text-sm">
-                        Ratio: <span className={getRiskColor(data.riskLevel)}>{data.ratio.toFixed(2)}</span>
+                      {data.position && (
+                        <p className="text-xs text-muted-foreground">{data.position}</p>
+                      )}
+                      {isRugby && data.group && (
+                        <Badge variant="outline" className="text-xs mt-1">
+                          {getPositionGroupLabel(data.group)}
+                        </Badge>
+                      )}
+                      <p className="text-sm mt-1">
+                        Ratio: <span className={cn("font-semibold", getRiskColor(data.riskLevel))}>{data.ratio.toFixed(2)}</span>
                       </p>
                     </div>
                   );
@@ -193,7 +322,7 @@ export function TeamLoadComparison({
 
               <Bar 
                 dataKey="ratio" 
-                radius={[0, 4, 4, 0]}
+                radius={[0, 6, 6, 0]}
                 onClick={(data) => onPlayerClick?.(data.id)}
                 style={{ cursor: "pointer" }}
               >
@@ -201,11 +330,11 @@ export function TeamLoadComparison({
                   <Cell
                     key={`cell-${index}`}
                     fill={
-                      entry.riskLevel === "optimal" ? "hsl(142, 76%, 36%)" :
-                      entry.riskLevel === "warning" ? "hsl(45, 93%, 47%)" :
+                      entry.riskLevel === "optimal" ? "hsl(160, 60%, 42%)" :
+                      entry.riskLevel === "warning" ? "hsl(32, 89%, 55%)" :
                       "hsl(0, 84%, 60%)"
                     }
-                    fillOpacity={0.8}
+                    fillOpacity={0.85}
                   />
                 ))}
               </Bar>
