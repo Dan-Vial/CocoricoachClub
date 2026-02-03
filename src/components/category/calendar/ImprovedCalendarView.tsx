@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 import { CalendarDayCell } from "./CalendarDayCell";
 import { SessionVignette } from "./SessionVignette";
 import { SessionFeedbackDialog } from "./SessionFeedbackDialog";
-import { AddEventDialog } from "./AddEventDialog";
+import { CreateEventDialog } from "./CreateEventDialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -414,31 +414,16 @@ export function ImprovedCalendarView({
               )}
             </DragOverlay>
           </DndContext>
-
-          {/* Legend */}
-          <div className="flex flex-wrap gap-3 justify-center text-sm pt-4 border-t">
-            <div className="flex items-center gap-2">
-              <div className="h-3 w-3 rounded-full bg-rose-500" />
-              <span className="text-muted-foreground text-xs">
-                {isIndividualSport(sportType || "") ? "Compétition" : "Match"}
-              </span>
-            </div>
-            {Object.entries(trainingTypeLabels).slice(0, 6).map(([key, label]) => (
-              <div key={key} className="flex items-center gap-2">
-                <div className={cn("h-3 w-3 rounded-full", TRAINING_TYPE_COLORS[key] || "bg-muted")} />
-                <span className="text-muted-foreground text-xs">{label}</span>
-              </div>
-            ))}
-          </div>
         </CardContent>
       </Card>
 
       {/* Add Event Dialog */}
       {addEventDate && (
-        <AddEventDialog
+        <CreateEventDialog
           open={!!addEventDate}
           onOpenChange={(open) => !open && setAddEventDate(null)}
           date={addEventDate}
+          categoryId={categoryId}
           onAddSession={() => {
             onAddSession();
             setAddEventDate(null);
@@ -447,7 +432,6 @@ export function ImprovedCalendarView({
             onAddMatch();
             setAddEventDate(null);
           }}
-          sportType={sportType}
         />
       )}
 

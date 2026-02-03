@@ -251,22 +251,6 @@ export function MonthlyCalendarView({
               )}
             </DragOverlay>
           </DndContext>
-
-          {/* Legend */}
-          <div className="flex flex-wrap gap-3 justify-center text-sm pt-2">
-            <div className="flex items-center gap-2">
-              <div className="h-3 w-3 rounded bg-rose-500" />
-              <span className="text-muted-foreground">
-                {isIndividualSport(sportType || "") ? "Compétition" : "Match"}
-              </span>
-            </div>
-            {Object.entries(trainingTypeLabels).slice(0, 8).map(([key, label]) => (
-              <div key={key} className="flex items-center gap-2">
-                <div className={cn("h-3 w-3 rounded", TRAINING_TYPE_COLORS[key] || "bg-muted")} />
-                <span className="text-muted-foreground">{label}</span>
-              </div>
-            ))}
-          </div>
         </CardContent>
       </Card>
 
