@@ -1,6 +1,5 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Activity, BarChart3, Dumbbell, History, Zap } from "lucide-react";
-import { AwcrTab } from "@/components/category/AwcrTab";
+import { BarChart3, Dumbbell, History, Zap } from "lucide-react";
 import { AnalyticsTab } from "@/components/analytics/AnalyticsTab";
 import { PhysicalPreparationTab } from "@/components/category/PhysicalPreparationTab";
 import { SessionHistoryTimeline } from "@/components/category/history/SessionHistoryTimeline";
@@ -64,11 +63,6 @@ export function PerformanceTab({ categoryId }: PerformanceTabProps) {
             <span className="hidden sm:inline">Prépa Physique</span>
             <span className="sm:hidden">Prépa</span>
           </TabsTrigger>
-          <TabsTrigger value="awcr" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">
-            <Activity className="h-4 w-4 shrink-0" />
-            <span className="hidden sm:inline">AWCR (Classique)</span>
-            <span className="sm:hidden">AWCR</span>
-          </TabsTrigger>
         </TabsList>
       </div>
 
@@ -87,11 +81,6 @@ export function PerformanceTab({ categoryId }: PerformanceTabProps) {
       <TabsContent value="physical-prep">
         <PhysicalPreparationTab categoryId={categoryId} />
       </TabsContent>
-
-      <TabsContent value="awcr">
-        <AwcrTab categoryId={categoryId} />
-      </TabsContent>
     </Tabs>
   );
 }
-

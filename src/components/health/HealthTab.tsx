@@ -70,12 +70,6 @@ export function HealthTab({ categoryId }: HealthTabProps) {
             </DisabledTabTrigger>
           )}
           
-          {/* Suivi Médical - Accessible en viewer */}
-          <TabsTrigger value="medical" className="flex items-center gap-2">
-            <FileText className="h-4 w-4" />
-            Suivi Médical
-          </TabsTrigger>
-          
           {/* Récupération - Grisé en mode viewer */}
           <DisabledTabTrigger value="recovery" isDisabled={isViewer} className="flex items-center gap-2">
             <Snowflake className="h-4 w-4" />
@@ -111,10 +105,6 @@ export function HealthTab({ categoryId }: HealthTabProps) {
             <ConcussionProtocolTab categoryId={categoryId} />
           </TabsContent>
         )}
-
-        <TabsContent value="medical">
-          <MedicalRecordsTab categoryId={categoryId} />
-        </TabsContent>
 
         {!isViewer && (
           <TabsContent value="recovery">

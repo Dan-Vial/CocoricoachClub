@@ -54,23 +54,26 @@ export function CoachDashboard({ categoryId }: CoachDashboardProps) {
     },
   });
 
-  // Fetch AWCR data
-  const { data: awcrData } = useQuery({
-    queryKey: ["awcr_summary", categoryId],
+  // Fetch EWMA data (replacing AWCR)
+  const { data: ewmaData } = useQuery({
+    queryKey: ["ewma_summary", categoryId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("awcr_tracking")
-        .select("player_id, awcr, players(name)")
+        .select("player_id, awcr, acute_load, chronic_load, players(name)")
         .eq("category_id", categoryId)
         .order("session_date", { ascending: false });
       if (error) throw error;
 
-      // Get latest AWCR per player
-      const latestByPlayer: Record<string, { awcr: number; name: string }> = {};
+      // Get latest EWMA per player (using existing data structure)
+      const latestByPlayer: Record<string, { ewmaRatio: number; acute: number; chronic: number; name: string }> = {};
       data?.forEach((entry: any) => {
-        if (!latestByPlayer[entry.player_id] && entry.awcr) {
+        if (!latestByPlayer[entry.player_id] && entry.acute_load && entry.chronic_load) {
+          const ratio = entry.chronic_load > 0 ? entry.acute_load / entry.chronic_load : 0;
           latestByPlayer[entry.player_id] = {
-            awcr: entry.awcr,
+            ewmaRatio: ratio,
+            acute: entry.acute_load,
+            chronic: entry.chronic_load,
             name: entry.players?.name || "Unknown",
           };
         }
@@ -129,11 +132,11 @@ export function CoachDashboard({ categoryId }: CoachDashboardProps) {
   const availablePlayers = totalPlayers - injuredPlayers;
   const availabilityRate = totalPlayers > 0 ? (availablePlayers / totalPlayers) * 100 : 0;
 
-  // AWCR analysis
-  const awcrValues = Object.values(awcrData || {});
-  const highAwcr = awcrValues.filter((p) => p.awcr > 1.3);
-  const lowAwcr = awcrValues.filter((p) => p.awcr < 0.8);
-  const optimalAwcr = awcrValues.filter((p) => p.awcr >= 0.8 && p.awcr <= 1.3);
+  // EWMA analysis (replacing AWCR)
+  const ewmaValues = Object.values(ewmaData || {});
+  const highEwma = ewmaValues.filter((p) => p.ewmaRatio > 1.3);
+  const lowEwma = ewmaValues.filter((p) => p.ewmaRatio < 0.8);
+  const optimalEwma = ewmaValues.filter((p) => p.ewmaRatio >= 0.8 && p.ewmaRatio <= 1.3);
 
   // Wellness analysis - get latest per player
   const latestWellness: Record<string, any> = {};
@@ -210,11 +213,11 @@ export function CoachDashboard({ categoryId }: CoachDashboardProps) {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
               <TrendingUp className="h-4 w-4" />
-              AWCR élevé
+              EWMA élevé
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-orange-600">{highAwcr.length}</div>
+            <div className="text-3xl font-bold text-orange-600">{highEwma.length}</div>
             <p className="text-xs text-muted-foreground mt-1">
               Risque de surcharge
             </p>
@@ -267,8 +270,8 @@ export function CoachDashboard({ categoryId }: CoachDashboardProps) {
                   </div>
                 ))}
 
-                {/* High AWCR players */}
-                {highAwcr.map((player, index) => (
+                {/* High EWMA players */}
+                {highEwma.map((player, index) => (
                   <div
                     key={index}
                     className="flex items-start gap-3 p-3 bg-orange-500/10 rounded-lg border border-orange-500/30"
@@ -277,14 +280,14 @@ export function CoachDashboard({ categoryId }: CoachDashboardProps) {
                     <div>
                       <p className="font-medium text-sm">{player.name}</p>
                       <p className="text-xs text-muted-foreground">
-                        AWCR: {player.awcr.toFixed(2)} - Risque de surcharge
+                        EWMA: {player.ewmaRatio.toFixed(2)} - Risque de surcharge
                       </p>
                     </div>
                   </div>
                 ))}
 
-                {/* Low AWCR players */}
-                {lowAwcr.map((player, index) => (
+                {/* Low EWMA players */}
+                {lowEwma.map((player, index) => (
                   <div
                     key={index}
                     className="flex items-start gap-3 p-3 bg-blue-500/10 rounded-lg border border-blue-500/30"
@@ -293,7 +296,7 @@ export function CoachDashboard({ categoryId }: CoachDashboardProps) {
                     <div>
                       <p className="font-medium text-sm">{player.name}</p>
                       <p className="text-xs text-muted-foreground">
-                        AWCR: {player.awcr.toFixed(2)} - Sous-entraîné
+                        EWMA: {player.ewmaRatio.toFixed(2)} - Sous-entraîné
                       </p>
                     </div>
                   </div>
@@ -315,7 +318,7 @@ export function CoachDashboard({ categoryId }: CoachDashboardProps) {
                   </div>
                 ))}
 
-                {(!expiredMedical?.length && !highAwcr.length && !lowAwcr.length && !lowWellnessPlayers.length) && (
+                {(!expiredMedical?.length && !highEwma.length && !lowEwma.length && !lowWellnessPlayers.length) && (
                   <div className="flex items-center gap-2 text-green-600 p-3">
                     <CheckCircle className="h-5 w-5" />
                     <span>Aucune alerte critique</span>
@@ -438,23 +441,23 @@ export function CoachDashboard({ categoryId }: CoachDashboardProps) {
         </Card>
       )}
 
-      {/* AWCR distribution */}
+      {/* EWMA distribution */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Distribution AWCR</CardTitle>
+          <CardTitle className="text-lg">Distribution EWMA</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-3 gap-4 text-center">
             <div className="p-4 bg-blue-500/10 rounded-lg">
-              <p className="text-2xl font-bold text-blue-600">{lowAwcr.length}</p>
+              <p className="text-2xl font-bold text-blue-600">{lowEwma.length}</p>
               <p className="text-sm text-muted-foreground">Sous-entraînés (&lt;0.8)</p>
             </div>
             <div className="p-4 bg-green-500/10 rounded-lg">
-              <p className="text-2xl font-bold text-green-600">{optimalAwcr.length}</p>
+              <p className="text-2xl font-bold text-green-600">{optimalEwma.length}</p>
               <p className="text-sm text-muted-foreground">Zone optimale (0.8-1.3)</p>
             </div>
             <div className="p-4 bg-orange-500/10 rounded-lg">
-              <p className="text-2xl font-bold text-orange-600">{highAwcr.length}</p>
+              <p className="text-2xl font-bold text-orange-600">{highEwma.length}</p>
               <p className="text-sm text-muted-foreground">Surcharge (&gt;1.3)</p>
             </div>
           </div>

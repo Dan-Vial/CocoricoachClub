@@ -1,7 +1,8 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ClipboardCheck, Users, FileSpreadsheet, History } from "lucide-react";
+import { ClipboardCheck, Users, FileSpreadsheet, History, FileText } from "lucide-react";
 import { AttendanceTab } from "@/components/category/attendance/AttendanceTab";
 import { CategoryCollaborationTab } from "@/components/category/CategoryCollaborationTab";
+import { MedicalRecordsTab } from "@/components/health/MedicalRecordsTab";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface AdminTabProps {
@@ -71,6 +72,11 @@ export function AdminTab({ categoryId }: AdminTabProps) {
             <span className="hidden sm:inline">Staff & Rôles</span>
             <span className="sm:hidden">Staff</span>
           </TabsTrigger>
+          <TabsTrigger value="medical" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">
+            <FileText className="h-4 w-4 shrink-0" />
+            <span className="hidden sm:inline">Suivi Médical</span>
+            <span className="sm:hidden">Médical</span>
+          </TabsTrigger>
           <TabsTrigger value="convocations" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">
             <FileSpreadsheet className="h-4 w-4 shrink-0" />
             <span className="hidden sm:inline">Convocations</span>
@@ -90,6 +96,10 @@ export function AdminTab({ categoryId }: AdminTabProps) {
 
       <TabsContent value="staff">
         <CategoryCollaborationTab categoryId={categoryId} />
+      </TabsContent>
+
+      <TabsContent value="medical">
+        <MedicalRecordsTab categoryId={categoryId} />
       </TabsContent>
 
       <TabsContent value="convocations">
