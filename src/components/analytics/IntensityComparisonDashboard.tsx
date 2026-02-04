@@ -19,10 +19,12 @@ import {
   Line,
   ReferenceLine
 } from "recharts";
-import { Target, Users, AlertTriangle, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { Target, Users, AlertTriangle, TrendingUp, TrendingDown, Minus, Calculator, Info } from "lucide-react";
 import { format, subDays } from "date-fns";
 import { fr } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { calculateWeightedRpe, checkTeamRpeAlert } from "@/lib/weightedRpeCalculations";
+import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface IntensityComparisonDashboardProps {
   categoryId: string;
@@ -63,6 +65,23 @@ export function IntensityComparisonDashboard({ categoryId }: IntensityComparison
     },
   });
 
+  // Fetch session blocks for weighted RPE calculation
+  const { data: sessionBlocks } = useQuery({
+    queryKey: ["session-blocks-intensity", categoryId, dateRange],
+    queryFn: async () => {
+      if (!sessions || sessions.length === 0) return [];
+      const sessionIds = sessions.map(s => s.id);
+      const { data, error } = await supabase
+        .from("training_session_blocks")
+        .select("*")
+        .in("training_session_id", sessionIds)
+        .order("block_order");
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!sessions && sessions.length > 0,
+  });
+
   // Fetch AWCR data (actual RPE)
   const { data: awcrData } = useQuery({
     queryKey: ["awcr-intensity", categoryId, dateRange],
@@ -93,7 +112,19 @@ export function IntensityComparisonDashboard({ categoryId }: IntensityComparison
     return players.filter(p => p.position === selectedPosition);
   }, [players, selectedPosition]);
 
-  // Calculate comparison data
+  // Group session blocks by session ID
+  const blocksBySession = useMemo(() => {
+    if (!sessionBlocks) return new Map<string, typeof sessionBlocks>();
+    const map = new Map<string, typeof sessionBlocks>();
+    sessionBlocks.forEach(block => {
+      const existing = map.get(block.training_session_id) || [];
+      existing.push(block);
+      map.set(block.training_session_id, existing);
+    });
+    return map;
+  }, [sessionBlocks]);
+
+  // Calculate comparison data with weighted RPE
   const comparisonData = useMemo(() => {
     if (!sessions || !awcrData || !players) return [];
 
@@ -105,15 +136,28 @@ export function IntensityComparisonDashboard({ categoryId }: IntensityComparison
     const sessionMap = new Map<string, {
       date: string;
       planned: number;
+      weightedPlanned: number;
+      hasBlocks: boolean;
       actual: number[];
       sessionType: string;
     }>();
 
     sessions.forEach(session => {
-      if (session.intensity) {
+      // Calculate weighted RPE from blocks if available
+      const blocks = blocksBySession.get(session.id) || [];
+      const weightedResult = calculateWeightedRpe(blocks as any);
+      
+      // Use weighted RPE if available, otherwise fall back to session intensity
+      const effectivePlanned = weightedResult.hasValidData 
+        ? weightedResult.weightedRpe 
+        : session.intensity || 0;
+
+      if (effectivePlanned > 0 || session.intensity) {
         sessionMap.set(session.id, {
           date: session.session_date,
-          planned: session.intensity,
+          planned: session.intensity || 0,
+          weightedPlanned: effectivePlanned,
+          hasBlocks: weightedResult.hasValidData,
           actual: [],
           sessionType: session.training_type,
         });
@@ -135,12 +179,14 @@ export function IntensityComparisonDashboard({ categoryId }: IntensityComparison
       .filter(([_, data]) => data.actual.length > 0)
       .map(([id, data]) => {
         const avgActual = data.actual.reduce((a, b) => a + b, 0) / data.actual.length;
-        const diff = avgActual - data.planned;
+        const diff = avgActual - data.weightedPlanned;
         return {
           id,
           date: format(new Date(data.date), "dd/MM", { locale: fr }),
           fullDate: data.date,
-          planned: data.planned,
+          planned: data.weightedPlanned, // Use weighted value for display
+          originalPlanned: data.planned,
+          hasBlocks: data.hasBlocks,
           actual: parseFloat(avgActual.toFixed(1)),
           diff: parseFloat(diff.toFixed(1)),
           sessionType: data.sessionType,
@@ -148,9 +194,9 @@ export function IntensityComparisonDashboard({ categoryId }: IntensityComparison
         };
       })
       .sort((a, b) => a.fullDate.localeCompare(b.fullDate));
-  }, [sessions, awcrData, players, selectedPlayer, filteredPlayers]);
+  }, [sessions, awcrData, players, selectedPlayer, filteredPlayers, blocksBySession]);
 
-  // Calculate per-player stats
+  // Calculate per-player stats with weighted RPE
   const playerStats = useMemo(() => {
     if (!sessions || !awcrData || !players) return [];
 
@@ -167,9 +213,18 @@ export function IntensityComparisonDashboard({ categoryId }: IntensityComparison
       playerAwcr.forEach(awcr => {
         if (awcr.training_session_id) {
           const session = sessions.find(s => s.id === awcr.training_session_id);
-          if (session?.intensity) {
-            totalDiff += awcr.rpe - session.intensity;
-            count++;
+          if (session) {
+            // Calculate weighted RPE for this session
+            const blocks = blocksBySession.get(session.id) || [];
+            const weightedResult = calculateWeightedRpe(blocks as any);
+            const effectivePlanned = weightedResult.hasValidData 
+              ? weightedResult.weightedRpe 
+              : session.intensity || 0;
+
+            if (effectivePlanned > 0) {
+              totalDiff += awcr.rpe - effectivePlanned;
+              count++;
+            }
           }
         }
       });
@@ -186,7 +241,17 @@ export function IntensityComparisonDashboard({ categoryId }: IntensityComparison
       };
     }).filter(p => p.sessionsCount > 0)
       .sort((a, b) => Math.abs(b.avgDiff) - Math.abs(a.avgDiff));
-  }, [sessions, awcrData, players, selectedPosition]);
+  }, [sessions, awcrData, players, selectedPosition, blocksBySession]);
+
+  // Check for team-wide RPE alert (>5 athletes with +2 gap)
+  const teamAlert = useMemo(() => {
+    const gaps = playerStats.map(p => ({
+      playerId: p.id,
+      playerName: p.name,
+      gap: p.avgDiff,
+    }));
+    return checkTeamRpeAlert(gaps, 5, 2);
+  }, [playerStats]);
 
   // Summary stats
   const summaryStats = useMemo(() => {
@@ -231,12 +296,53 @@ export function IntensityComparisonDashboard({ categoryId }: IntensityComparison
 
   return (
     <div className="space-y-6">
+      {/* Team Alert Banner */}
+      {teamAlert.hasAlert && (
+        <Card className="border-red-500/50 bg-red-500/5">
+          <CardContent className="flex items-start gap-3 p-4">
+            <AlertTriangle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
+            <div>
+              <p className="font-medium text-red-600 dark:text-red-400">
+                Alerte : Écart significatif détecté
+              </p>
+              <p className="text-sm text-muted-foreground mt-1">
+                {teamAlert.message}
+              </p>
+              <div className="flex flex-wrap gap-1 mt-2">
+                {teamAlert.affectedAthletes.slice(0, 5).map(a => (
+                  <Badge key={a.playerId} variant="destructive" className="text-xs">
+                    {a.playerName} (+{a.gap.toFixed(1)})
+                  </Badge>
+                ))}
+                {teamAlert.affectedAthletes.length > 5 && (
+                  <Badge variant="outline" className="text-xs">
+                    +{teamAlert.affectedAthletes.length - 5} autres
+                  </Badge>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Filters */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
             <Target className="h-4 w-4" />
             Intensité Prévue vs Subie
+            <TooltipProvider>
+              <UITooltip>
+                <TooltipTrigger>
+                  <Calculator className="h-4 w-4 text-muted-foreground" />
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  <p className="text-xs">
+                    L'intensité prévue est calculée comme une <strong>moyenne pondérée</strong> basée sur la durée et l'intensité de chaque bloc thématique de la séance.
+                  </p>
+                </TooltipContent>
+              </UITooltip>
+            </TooltipProvider>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -358,12 +464,17 @@ export function IntensityComparisonDashboard({ categoryId }: IntensityComparison
                       return (
                         <div className="bg-popover border rounded-lg p-3 shadow-lg">
                           <p className="font-medium">{data.fullDate}</p>
-                          <p className="text-sm">Prévu: <span className="font-bold text-blue-500">{data.planned}</span></p>
+                          <p className="text-sm">
+                            Prévu: <span className="font-bold text-blue-500">{data.planned.toFixed(1)}</span>
+                            {data.hasBlocks && (
+                              <span className="text-xs text-muted-foreground ml-1">(pondéré)</span>
+                            )}
+                          </p>
                           <p className="text-sm">Réel: <span className="font-bold text-green-500">{data.actual}</span></p>
                           <p className="text-sm">Écart: <span className={cn(
                             "font-bold",
                             data.diff > 0 ? "text-red-500" : data.diff < 0 ? "text-yellow-500" : "text-green-500"
-                          )}>{data.diff > 0 ? "+" : ""}{data.diff}</span></p>
+                          )}>{data.diff > 0 ? "+" : ""}{data.diff.toFixed(1)}</span></p>
                           <p className="text-xs text-muted-foreground mt-1">{data.playerCount} athlète(s)</p>
                         </div>
                       );

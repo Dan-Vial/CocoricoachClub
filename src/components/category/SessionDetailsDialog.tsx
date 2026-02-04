@@ -16,11 +16,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { Dumbbell, Users, Activity, Clock, Calendar, Printer } from "lucide-react";
+import { Dumbbell, Users, Activity, Clock, Calendar, Printer, Calculator, Info } from "lucide-react";
 import { getCategoryLabel } from "@/lib/constants/exerciseCategories";
 import { printElement } from "@/lib/pdfExport";
 import { getTrainingStyleConfig, isLinkableMethod, isCardioBlockMethod } from "@/lib/constants/trainingStyles";
 import { cn } from "@/lib/utils";
+import { calculateWeightedRpe, formatDuration } from "@/lib/weightedRpeCalculations";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { getTrainingTypeLabel } from "@/lib/constants/trainingTypes";
 
 interface SessionDetailsDialogProps {
   open: boolean;
@@ -459,7 +462,7 @@ export function SessionDetailsDialog({
             </div>
           )}
 
-          {/* Session Blocks - Thematic segments */}
+          {/* Session Blocks - Thematic segments with weighted RPE */}
           {sessionBlocks && sessionBlocks.length > 0 && (
             <div className="mb-4 space-y-2">
               <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
@@ -483,7 +486,7 @@ export function SessionDetailsDialog({
                           {block.start_time || "?"} - {block.end_time || "?"}
                         </Badge>
                         <span className="font-medium text-sm">
-                          {trainingTypeLabels[block.training_type] || block.training_type}
+                          {getTrainingTypeLabel(block.training_type)}
                         </span>
                         {block.intensity && (
                           <Badge variant="secondary" className="text-xs">
@@ -498,6 +501,55 @@ export function SessionDetailsDialog({
                   </div>
                 ))}
               </div>
+              
+              {/* Weighted RPE Summary */}
+              {(() => {
+                const weightedResult = calculateWeightedRpe(sessionBlocks as any);
+                if (weightedResult.hasValidData) {
+                  return (
+                    <div className="mt-3 p-3 rounded-lg bg-primary/5 border border-primary/20">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Calculator className="h-4 w-4 text-primary" />
+                        <span className="font-medium text-sm">RPE moyen pondéré</span>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger>
+                              <Info className="h-3 w-3 text-muted-foreground" />
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs">
+                              <p className="text-xs">
+                                Calculé selon la formule : Σ(durée × intensité) / Σ(durée)
+                              </p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-2xl font-bold text-primary">
+                          {weightedResult.weightedRpe.toFixed(1)}
+                        </span>
+                        <span className="text-sm text-muted-foreground">
+                          / 10
+                        </span>
+                        <Badge variant="outline" className="ml-auto">
+                          {formatDuration(weightedResult.totalDuration)} au total
+                        </Badge>
+                      </div>
+                      <div className="mt-2 text-xs text-muted-foreground space-y-1">
+                        {weightedResult.blockDetails.map((detail, i) => (
+                          <div key={i} className="flex justify-between">
+                            <span>{getTrainingTypeLabel(detail.training_type)}</span>
+                            <span>
+                              {formatDuration(detail.duration)} × RPE {detail.intensity} = {detail.contribution}%
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
             </div>
           )}
 
