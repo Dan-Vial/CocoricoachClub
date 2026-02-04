@@ -6,7 +6,6 @@ import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { ColoredSubTabsList, ColoredSubTabsTrigger, ColoredContentCard, ColoredCardHeader, ColoredTitle } from "@/components/ui/colored-subtabs";
 import { Calendar as CalendarIcon, LayoutTemplate, Target } from "lucide-react";
 import { toast } from "sonner";
-import { AddSessionDialog } from "./AddSessionDialog";
 import { SessionFormDialog } from "./sessions/SessionFormDialog";
 import { AddMatchCalendarDialog } from "./matches/AddMatchCalendarDialog";
 import { QuickTestEntryDialog } from "./QuickTestEntryDialog";
@@ -31,7 +30,9 @@ interface CalendarTabProps {
 
 export function CalendarTab({ categoryId }: CalendarTabProps) {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [addSessionDate, setAddSessionDate] = useState<string | undefined>();
   const [isAddMatchDialogOpen, setIsAddMatchDialogOpen] = useState(false);
+  const [addMatchDate, setAddMatchDate] = useState<Date | undefined>();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingSession, setEditingSession] = useState<any | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
@@ -262,8 +263,14 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
             categoryId={categoryId}
             calendarRef={calendarContentRef}
             onDayClick={handleDayClick}
-            onAddSession={() => setIsAddDialogOpen(true)}
-            onAddMatch={() => setIsAddMatchDialogOpen(true)}
+            onAddSession={(date) => {
+              setAddSessionDate(date ? format(date, "yyyy-MM-dd") : undefined);
+              setIsAddDialogOpen(true);
+            }}
+            onAddMatch={(date) => {
+              setAddMatchDate(date);
+              setIsAddMatchDialogOpen(true);
+            }}
             onPrint={handlePrint}
             onExportPdf={handleExportPdf}
             isViewer={isViewer}
@@ -327,19 +334,29 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
         )}
       </Tabs>
 
-      <AddSessionDialog
+      {/* New Session Dialog with optional default date */}
+      <SessionFormDialog
         open={isAddDialogOpen}
-        onOpenChange={setIsAddDialogOpen}
+        onOpenChange={(open) => {
+          setIsAddDialogOpen(open);
+          if (!open) setAddSessionDate(undefined);
+        }}
         categoryId={categoryId}
+        defaultDate={addSessionDate}
       />
 
       <AddMatchCalendarDialog
         open={isAddMatchDialogOpen}
-        onOpenChange={setIsAddMatchDialogOpen}
+        onOpenChange={(open) => {
+          setIsAddMatchDialogOpen(open);
+          if (!open) setAddMatchDate(undefined);
+        }}
         categoryId={categoryId}
         sportType={sportType}
+        defaultDate={addMatchDate}
       />
 
+      {/* Edit Session Dialog */}
       <SessionFormDialog
         open={isEditDialogOpen}
         onOpenChange={(open) => {

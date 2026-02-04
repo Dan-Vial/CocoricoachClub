@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { format } from "date-fns";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -30,6 +31,7 @@ interface AddMatchCalendarDialogProps {
   onOpenChange: (open: boolean) => void;
   categoryId: string;
   sportType?: string;
+  defaultDate?: Date;
 }
 
 const CUSTOM_COMPETITION_VALUE = "__custom__";
@@ -69,6 +71,7 @@ export function AddMatchCalendarDialog({
   onOpenChange,
   categoryId,
   sportType = "XV",
+  defaultDate,
 }: AddMatchCalendarDialogProps) {
   const competitions = getCompetitionsBySport(sportType);
   const isIndividual = isIndividualSport(sportType);
@@ -137,12 +140,19 @@ export function AddMatchCalendarDialog({
     },
   });
 
+  // Initialize date when dialog opens with defaultDate
+  useEffect(() => {
+    if (open && defaultDate) {
+      setMatchDate(format(defaultDate, "yyyy-MM-dd"));
+    }
+  }, [open, defaultDate]);
+
   const resetForm = () => {
     setOpponent("");
     setCompetition("");
     setCustomCompetition("");
     setCompetitionStage("");
-    setMatchDate("");
+    setMatchDate(defaultDate ? format(defaultDate, "yyyy-MM-dd") : "");
     setMatchTime("");
     setLocation("");
     setIsHome(true);

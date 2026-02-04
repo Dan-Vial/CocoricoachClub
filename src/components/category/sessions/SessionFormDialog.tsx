@@ -85,6 +85,7 @@ interface SessionFormDialogProps {
   onOpenChange: (open: boolean) => void;
   categoryId: string;
   editSession?: any | null;
+  defaultDate?: string; // Format: "yyyy-MM-dd"
 }
 
 // Erg-specific data structure for cardio machines
@@ -236,6 +237,7 @@ export function SessionFormDialog({
   onOpenChange,
   categoryId,
   editSession,
+  defaultDate,
 }: SessionFormDialogProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -397,9 +399,13 @@ export function SessionFormDialog({
         setSelectedPlayers([]);
       } else {
         resetForm();
+        // If a default date is provided, use it
+        if (defaultDate) {
+          setDate(defaultDate);
+        }
       }
     }
-  }, [open, editSession]);
+  }, [open, editSession, defaultDate]);
 
   // Load existing exercises when available
   useEffect(() => {

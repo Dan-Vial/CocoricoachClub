@@ -49,8 +49,8 @@ interface ImprovedCalendarViewProps {
   sportType: string | undefined;
   trainingTypeLabels: Record<string, string>;
   onDayClick: (date: Date) => void;
-  onAddSession: () => void;
-  onAddMatch: () => void;
+  onAddSession: (date?: Date) => void;
+  onAddMatch: (date?: Date) => void;
   onPrint: () => void;
   onExportPdf: () => void;
   isViewer: boolean;
@@ -209,7 +209,7 @@ export function ImprovedCalendarView({
                 <Download className="h-4 w-4" />
               </Button>
               {!isViewer && (
-                <Button onClick={onAddSession} className="gap-2 h-9">
+                <Button onClick={() => onAddSession()} className="gap-2 h-9">
                   <Plus className="h-4 w-4" />
                   <span className="hidden sm:inline">Ajouter</span>
                 </Button>
@@ -425,11 +425,11 @@ export function ImprovedCalendarView({
           date={addEventDate}
           categoryId={categoryId}
           onAddSession={() => {
-            onAddSession();
+            onAddSession(addEventDate);
             setAddEventDate(null);
           }}
           onAddMatch={() => {
-            onAddMatch();
+            onAddMatch(addEventDate);
             setAddEventDate(null);
           }}
         />

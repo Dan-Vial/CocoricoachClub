@@ -238,7 +238,7 @@ export function CreateEventDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0">
+      <DialogContent className="max-w-lg max-h-[85vh] flex flex-col p-0 overflow-hidden">
         <DialogHeader className="px-6 pt-6 pb-4 border-b shrink-0">
           <DialogTitle className="flex items-center gap-2 text-xl">
             {step === "details" && (
@@ -254,7 +254,7 @@ export function CreateEventDialog({
           </p>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto px-6 py-4">
+        <div className="flex-1 min-h-0 overflow-y-auto px-6 py-4">
           {step === "type" ? (
             <div className="grid grid-cols-2 gap-3">
               {EVENT_TYPES.map((event) => {
