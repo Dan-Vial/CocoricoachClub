@@ -218,7 +218,10 @@ export function CreateEventDialog({
       if (error) throw error;
     },
     onSuccess: () => {
+      // Invalidate all session-related queries for immediate refresh
       queryClient.invalidateQueries({ queryKey: ["training_sessions", categoryId] });
+      queryClient.invalidateQueries({ queryKey: ["sessions", categoryId] });
+      queryClient.invalidateQueries({ queryKey: ["today_sessions", categoryId] });
       toast.success("Événement créé avec succès");
       handleClose(false);
     },
