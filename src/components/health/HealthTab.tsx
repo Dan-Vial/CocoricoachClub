@@ -1,4 +1,4 @@
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { InjuriesTab } from "@/components/injuries/InjuriesTab";
 import { ConcussionProtocolTab } from "@/components/category/ConcussionProtocolTab";
 import { MedicalRecordsTab } from "./MedicalRecordsTab";
@@ -9,17 +9,16 @@ import { ActiveProtocolsDashboard } from "@/components/rehab/ActiveProtocolsDash
 import {
   Activity,
   Brain,
-  FileText,
   Snowflake,
   LayoutDashboard,
   Settings2,
   Dumbbell,
 } from "lucide-react";
 import { useViewerModeContext } from "@/contexts/ViewerModeContext";
-import { DisabledTabTrigger } from "@/components/ui/disabled-tab-trigger";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { isRugbyType } from "@/lib/constants/sportTypes";
+import { ColoredSubTabsList, ColoredSubTabsTrigger } from "@/components/ui/colored-subtabs";
 
 interface HealthTabProps {
   categoryId: string;
@@ -48,46 +47,72 @@ export function HealthTab({ categoryId }: HealthTabProps) {
   return (
     <div className="space-y-6">
       <Tabs defaultValue="dashboard" className="space-y-6">
-        <div className="flex justify-center">
-        <TabsList className="flex-wrap h-auto gap-2 justify-center">
-          {/* Dashboard Coach - Accessible en viewer */}
-          <TabsTrigger value="dashboard" className="flex items-center gap-2">
-            <LayoutDashboard className="h-4 w-4" />
-            Dashboard Coach
-          </TabsTrigger>
-          
-          {/* Blessures - Grisé en mode viewer */}
-          <DisabledTabTrigger value="injuries" isDisabled={isViewer} className="flex items-center gap-2">
-            <Activity className="h-4 w-4" />
-            Blessures
-          </DisabledTabTrigger>
-          
-          {/* Protocole Commotion - Uniquement pour Rugby */}
-          {isRugby && (
-            <DisabledTabTrigger value="concussion" isDisabled={isViewer} className="flex items-center gap-2">
-              <Brain className="h-4 w-4" />
-              Protocole Commotion
-            </DisabledTabTrigger>
-          )}
-          
-          {/* Récupération - Grisé en mode viewer */}
-          <DisabledTabTrigger value="recovery" isDisabled={isViewer} className="flex items-center gap-2">
-            <Snowflake className="h-4 w-4" />
-            Récupération
-          </DisabledTabTrigger>
-          
-          {/* Réhabilitation - Grisé en mode viewer */}
-          <DisabledTabTrigger value="rehab" isDisabled={isViewer} className="flex items-center gap-2">
-            <Dumbbell className="h-4 w-4" />
-            Réhabilitation
-          </DisabledTabTrigger>
-          
-          {/* Protocoles - Grisé en mode viewer */}
-          <DisabledTabTrigger value="protocols" isDisabled={isViewer} className="flex items-center gap-2">
-            <Settings2 className="h-4 w-4" />
-            Protocoles
-          </DisabledTabTrigger>
-        </TabsList>
+        <div className="flex justify-center overflow-x-auto -mx-4 px-4 pb-2">
+          <ColoredSubTabsList colorKey="sante" className="inline-flex w-max">
+            {/* Dashboard Coach - Accessible en viewer */}
+            <ColoredSubTabsTrigger 
+              value="dashboard" 
+              colorKey="sante"
+              icon={<LayoutDashboard className="h-4 w-4" />}
+            >
+              Dashboard Coach
+            </ColoredSubTabsTrigger>
+            
+            {/* Blessures - Masqué en mode viewer */}
+            {!isViewer && (
+              <ColoredSubTabsTrigger 
+                value="injuries" 
+                colorKey="sante"
+                icon={<Activity className="h-4 w-4" />}
+              >
+                Blessures
+              </ColoredSubTabsTrigger>
+            )}
+            
+            {/* Protocole Commotion - Uniquement pour Rugby */}
+            {!isViewer && isRugby && (
+              <ColoredSubTabsTrigger 
+                value="concussion" 
+                colorKey="sante"
+                icon={<Brain className="h-4 w-4" />}
+              >
+                Protocole Commotion
+              </ColoredSubTabsTrigger>
+            )}
+            
+            {/* Récupération - Masqué en mode viewer */}
+            {!isViewer && (
+              <ColoredSubTabsTrigger 
+                value="recovery" 
+                colorKey="sante"
+                icon={<Snowflake className="h-4 w-4" />}
+              >
+                Récupération
+              </ColoredSubTabsTrigger>
+            )}
+            
+            {/* Réhabilitation - Masqué en mode viewer */}
+            {!isViewer && (
+              <ColoredSubTabsTrigger 
+                value="rehab" 
+                colorKey="sante"
+                icon={<Dumbbell className="h-4 w-4" />}
+              >
+                Réhabilitation
+              </ColoredSubTabsTrigger>
+            )}
+            
+            {/* Protocoles - Masqué en mode viewer */}
+            {!isViewer && (
+              <ColoredSubTabsTrigger 
+                value="protocols" 
+                colorKey="sante"
+                icon={<Settings2 className="h-4 w-4" />}
+              >
+                Protocoles
+              </ColoredSubTabsTrigger>
+            )}
+          </ColoredSubTabsList>
         </div>
 
         <TabsContent value="dashboard">
