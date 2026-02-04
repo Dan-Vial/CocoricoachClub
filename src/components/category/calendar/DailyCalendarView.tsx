@@ -122,8 +122,8 @@ export function DailyCalendarView({
       <div className={cn(
         "relative overflow-hidden rounded-2xl",
         isToday 
-          ? "bg-gradient-to-br from-primary via-primary/90 to-primary/80" 
-          : "bg-gradient-to-br from-slate-800 via-slate-700 to-slate-600"
+          ? "bg-gradient-to-br from-nav-planification via-nav-planification/90 to-nav-planification/80" 
+          : "bg-gradient-to-br from-nav-planification/80 via-nav-planification/70 to-nav-planification/60"
       )}>
         {/* Decorative circles */}
         <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
