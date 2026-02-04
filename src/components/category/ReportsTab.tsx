@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { FileText, Download, User, Calendar, Trophy, Loader2, Users, FileSpreadsheet } from "lucide-react";
+import { FileText, Download, User, Calendar, Trophy, Loader2, Users, FileSpreadsheet, ClipboardCheck } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import jsPDF from "jspdf";
@@ -1396,6 +1396,183 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
     }
   };
 
+  // Attendance Report Functions
+  const generateAttendanceReport = async () => {
+    setGeneratingReport("attendance");
+    
+    try {
+      // Fetch attendance data
+      const [sessionsRes, attendanceRes] = await Promise.all([
+        supabase.from("training_sessions").select("*").eq("category_id", categoryId).order("session_date", { ascending: false }),
+        supabase.from("training_attendance").select("*").eq("category_id", categoryId),
+      ]);
+
+      const sessionsData = sessionsRes.data || [];
+      const attendanceData = attendanceRes.data || [];
+
+      // Calculate stats per player
+      const playerStats = players.map((player) => {
+        const playerAttendance = attendanceData.filter((a) => a.player_id === player.id);
+        const present = playerAttendance.filter((a) => a.status === "present").length;
+        const late = playerAttendance.filter((a) => a.status === "late").length;
+        const lateJustified = playerAttendance.filter((a) => a.status === "late" && a.late_justified).length;
+        const absent = playerAttendance.filter((a) => a.status === "absent").length;
+        const excused = playerAttendance.filter((a) => a.status === "excused").length;
+        const total = playerAttendance.length;
+        const rate = total > 0 ? Math.round(((present + late) / total) * 100) : 0;
+
+        return {
+          ...player,
+          present,
+          late,
+          lateJustified,
+          lateUnjustified: late - lateJustified,
+          absent,
+          excused,
+          total,
+          rate,
+        };
+      }).sort((a, b) => b.rate - a.rate);
+
+      const pdf = new jsPDF();
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const margin = 15;
+      const contentWidth = pageWidth - 2 * margin;
+
+      // Header
+      let yPos = drawPdfHeader(
+        pdf,
+        "RAPPORT DE PRÉSENCES",
+        `${category?.clubs?.name} - ${category?.name}`,
+        `Généré le ${format(new Date(), "d MMMM yyyy", { locale: fr })}`
+      );
+
+      // Calculate overall stats
+      const totalSessions = sessionsData.length;
+      const avgRate = playerStats.length
+        ? Math.round(playerStats.reduce((acc, p) => acc + p.rate, 0) / playerStats.length)
+        : 0;
+      const totalLate = playerStats.reduce((acc, p) => acc + p.late, 0);
+      const totalAbsent = playerStats.reduce((acc, p) => acc + p.absent, 0);
+
+      // KPI Cards
+      const cardWidth = (contentWidth - 15) / 4;
+      const cardHeight = 22;
+
+      drawKpiCard(pdf, margin, yPos, cardWidth, cardHeight, String(totalSessions), "SÉANCES", colors.primary);
+      drawKpiCard(pdf, margin + cardWidth + 5, yPos, cardWidth, cardHeight, `${avgRate}%`, "TAUX MOYEN", avgRate >= 80 ? colors.success : avgRate >= 60 ? colors.warning : colors.danger);
+      drawKpiCard(pdf, margin + (cardWidth + 5) * 2, yPos, cardWidth, cardHeight, String(totalLate), "RETARDS", totalLate > 10 ? colors.warning : colors.success);
+      drawKpiCard(pdf, margin + (cardWidth + 5) * 3, yPos, cardWidth, cardHeight, String(totalAbsent), "ABSENCES", totalAbsent > 10 ? colors.danger : colors.success);
+
+      yPos += cardHeight + 15;
+
+      // Player attendance table
+      pdf.setFontSize(12);
+      pdf.setFont("helvetica", "bold");
+      pdf.setTextColor(...colors.dark);
+      pdf.text("PRÉSENCES PAR JOUEUR", margin, yPos);
+      yPos += 8;
+
+      const attendHeaders = ["Joueur", "Présent", "Retard", "Excusé", "Absent", "Taux"];
+      const attendColWidths = [60, 25, 25, 25, 25, 25];
+      yPos = drawTableHeaderPdf(pdf, attendHeaders, attendColWidths, yPos, margin, contentWidth);
+
+      const checkPageBreak = (needed: number = 10) => {
+        if (yPos + needed > 280) {
+          pdf.addPage();
+          yPos = 20;
+        }
+      };
+
+      playerStats.forEach((player, index) => {
+        checkPageBreak(10);
+        const rateColor = player.rate >= 80 ? colors.success : player.rate >= 60 ? colors.warning : colors.danger;
+        yPos = drawTableRowPdf(
+          pdf,
+          [
+            player.name,
+            String(player.present),
+            String(player.late),
+            String(player.excused),
+            String(player.absent),
+            `${player.rate}%`,
+          ],
+          attendColWidths,
+          yPos,
+          index % 2 === 1,
+          margin,
+          contentWidth,
+          [null, colors.success, colors.warning, null, colors.danger, rateColor]
+        );
+      });
+
+      pdf.save(`presences_${category?.name?.replace(/\s+/g, '_')}_${format(new Date(), "yyyy-MM-dd")}.pdf`);
+      toast.success("Rapport de présences généré");
+    } catch (error) {
+      console.error(error);
+      toast.error("Erreur lors de la génération");
+    } finally {
+      setGeneratingReport(null);
+    }
+  };
+
+  const generateAttendanceCsv = async () => {
+    setGeneratingReport("attendance-csv");
+    try {
+      const { data: attendanceData } = await supabase
+        .from("training_attendance")
+        .select("*")
+        .eq("category_id", categoryId);
+
+      // Calculate stats per player
+      const playerStats = players.map((player) => {
+        const playerAttendance = (attendanceData || []).filter((a) => a.player_id === player.id);
+        const present = playerAttendance.filter((a) => a.status === "present").length;
+        const late = playerAttendance.filter((a) => a.status === "late").length;
+        const lateJustified = playerAttendance.filter((a) => a.status === "late" && a.late_justified).length;
+        const absent = playerAttendance.filter((a) => a.status === "absent").length;
+        const excused = playerAttendance.filter((a) => a.status === "excused").length;
+        const total = playerAttendance.length;
+        const rate = total > 0 ? Math.round(((present + late) / total) * 100) : 0;
+
+        return {
+          name: player.name,
+          position: player.position || "",
+          present,
+          late,
+          lateJustified,
+          lateUnjustified: late - lateJustified,
+          absent,
+          excused,
+          total,
+          rate,
+        };
+      }).sort((a, b) => b.rate - a.rate);
+
+      const headers = ["Joueur", "Position", "Présent", "Retard justifié", "Retard non justifié", "Excusé", "Absent", "Total", "Taux (%)"];
+      const rows = playerStats.map((p) => [
+        p.name,
+        p.position,
+        p.present,
+        p.lateJustified,
+        p.lateUnjustified,
+        p.excused,
+        p.absent,
+        p.total,
+        p.rate,
+      ]);
+
+      const csv = generateCsv(headers, rows);
+      downloadCsv(`presences_${category?.name?.replace(/\s+/g, '_')}_${format(new Date(), "yyyy-MM-dd")}.csv`, csv);
+      toast.success("Export CSV généré");
+    } catch (error) {
+      console.error(error);
+      toast.error("Erreur lors de l'export CSV");
+    } finally {
+      setGeneratingReport(null);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -1599,6 +1776,54 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
                 disabled={!selectedMatch || generatingReport === "match" || generatingReport === "match-csv"}
               >
                 {generatingReport === "match-csv" ? (
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                ) : (
+                  <FileSpreadsheet className="h-4 w-4 mr-1" />
+                )}
+                CSV
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Attendance Report */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ClipboardCheck className="h-5 w-5" />
+              Rapport de Présences
+            </CardTitle>
+            <CardDescription>
+              Taux de présence et retards
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              {players.length} joueurs suivis
+            </p>
+            <p className="text-sm">
+              Présences, retards justifiés/non-justifiés, absences...
+            </p>
+            <div className="flex gap-2">
+              <Button 
+                onClick={generateAttendanceReport} 
+                className="flex-1"
+                disabled={generatingReport === "attendance" || generatingReport === "attendance-csv"}
+              >
+                {generatingReport === "attendance" ? (
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                ) : (
+                  <FileText className="h-4 w-4 mr-1" />
+                )}
+                PDF
+              </Button>
+              <Button 
+                onClick={generateAttendanceCsv}
+                variant="outline"
+                className="flex-1"
+                disabled={generatingReport === "attendance" || generatingReport === "attendance-csv"}
+              >
+                {generatingReport === "attendance-csv" ? (
                   <Loader2 className="h-4 w-4 mr-1 animate-spin" />
                 ) : (
                   <FileSpreadsheet className="h-4 w-4 mr-1" />
