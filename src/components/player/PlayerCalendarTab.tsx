@@ -6,7 +6,7 @@ import { useState } from "react";
 import { DateRange } from "react-day-picker";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { X, Dumbbell, Activity, CheckCircle2 } from "lucide-react";
+import { X, Dumbbell, Activity, CheckCircle2, Swords, Video, Stethoscope, Users } from "lucide-react";
 import { isWithinInterval, parseISO } from "date-fns";
 
 interface PlayerCalendarTabProps {
@@ -14,10 +14,39 @@ interface PlayerCalendarTabProps {
   categoryId: string;
 }
 
+// Helper to get training type label
+const getTrainingTypeLabel = (type: string) => {
+  const labels: Record<string, string> = {
+    collective: "Entraînement collectif",
+    individuelle: "Entraînement individuel",
+    musculation: "Musculation",
+    cardio: "Cardio",
+    video: "Analyse vidéo",
+    repos: "Repos / RDV médical",
+    reunion: "Réunion d'équipe",
+    autre: "Autre",
+    recovery: "Récupération",
+    match_preparation: "Préparation match",
+    tactical: "Tactique",
+    technique: "Technique",
+  };
+  return labels[type] || type.replace(/_/g, " ");
+};
+
+// Helper to get training type icon
+const getTrainingTypeIcon = (type: string) => {
+  switch (type) {
+    case "video": return Video;
+    case "repos": return Stethoscope;
+    case "reunion": return Users;
+    default: return Activity;
+  }
+};
+
 export function PlayerCalendarTab({ playerId, categoryId }: PlayerCalendarTabProps) {
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
-  // Fetch training sessions
+  // Fetch training sessions - refetch on focus to catch new events
   const { data: sessions } = useQuery({
     queryKey: ["training_sessions", categoryId],
     queryFn: async () => {
@@ -30,6 +59,22 @@ export function PlayerCalendarTab({ playerId, categoryId }: PlayerCalendarTabPro
       if (error) throw error;
       return data;
     },
+    refetchOnWindowFocus: true,
+  });
+
+  // Fetch matches for this category
+  const { data: matches } = useQuery({
+    queryKey: ["matches", categoryId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("matches")
+        .select("*")
+        .eq("category_id", categoryId)
+        .order("match_date", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    refetchOnWindowFocus: true,
   });
 
   // Fetch rehab calendar events for this player
@@ -62,6 +107,15 @@ export function PlayerCalendarTab({ playerId, categoryId }: PlayerCalendarTabPro
     return sessionDate.toDateString() === dateRange.from.toDateString();
   });
 
+  const filteredMatches = matches?.filter((match) => {
+    if (!dateRange?.from) return true;
+    const matchDate = new Date(match.match_date);
+    if (dateRange.to) {
+      return isWithinInterval(matchDate, { start: dateRange.from, end: dateRange.to });
+    }
+    return matchDate.toDateString() === dateRange.from.toDateString();
+  });
+
   const filteredRehabEvents = rehabEvents?.filter((event) => {
     if (!dateRange?.from) return true;
     const eventDate = parseISO(event.event_date);
@@ -72,9 +126,10 @@ export function PlayerCalendarTab({ playerId, categoryId }: PlayerCalendarTabPro
   });
 
   const sessionDates = sessions?.map((session) => new Date(session.session_date)) || [];
+  const matchDates = matches?.map((match) => new Date(match.match_date)) || [];
   const rehabDates = rehabEvents?.map((event) => parseISO(event.event_date)) || [];
 
-  const getEventTypeLabel = (type: string) => {
+  const getRehabEventTypeLabel = (type: string) => {
     switch (type) {
       case 'phase_start': return 'Début de phase';
       case 'checkpoint': return 'Évaluation';
@@ -83,7 +138,7 @@ export function PlayerCalendarTab({ playerId, categoryId }: PlayerCalendarTabPro
     }
   };
 
-  const getEventTypeColor = (type: string, isCompleted: boolean) => {
+  const getRehabEventTypeColor = (type: string, isCompleted: boolean) => {
     if (isCompleted) return 'bg-green-500/20 text-green-700 dark:text-green-400 border-green-500';
     switch (type) {
       case 'phase_start': return 'bg-blue-500/20 text-blue-700 dark:text-blue-400 border-blue-500';
@@ -98,6 +153,11 @@ export function PlayerCalendarTab({ playerId, categoryId }: PlayerCalendarTabPro
       ...s, 
       _type: 'session' as const, 
       _date: new Date(s.session_date) 
+    })) || []),
+    ...(filteredMatches?.map(m => ({ 
+      ...m, 
+      _type: 'match' as const, 
+      _date: new Date(m.match_date) 
     })) || []),
     ...(filteredRehabEvents?.map(e => ({ 
       ...e, 
@@ -133,12 +193,18 @@ export function PlayerCalendarTab({ playerId, categoryId }: PlayerCalendarTabPro
               onSelect={setDateRange}
               modifiers={{
                 session: sessionDates,
+                match: matchDates,
                 rehab: rehabDates,
               }}
               modifiersStyles={{
                 session: {
                   fontWeight: "bold",
                   textDecoration: "underline",
+                },
+                match: {
+                  backgroundColor: "hsl(346, 77%, 50%, 0.2)",
+                  borderRadius: "4px",
+                  fontWeight: "bold",
                 },
                 rehab: {
                   backgroundColor: "hsl(var(--primary) / 0.2)",
@@ -153,11 +219,15 @@ export function PlayerCalendarTab({ playerId, categoryId }: PlayerCalendarTabPro
             {/* Legend */}
             <div className="flex flex-wrap gap-3 text-xs">
               <div className="flex items-center gap-1">
-                <div className="w-3 h-3 bg-muted border rounded" style={{ textDecoration: 'underline', fontWeight: 'bold' }}></div>
+                <Activity className="w-3 h-3 text-muted-foreground" />
                 <span>Entraînement</span>
               </div>
               <div className="flex items-center gap-1">
-                <div className="w-3 h-3 bg-primary/20 rounded"></div>
+                <Swords className="w-3 h-3 text-rose-500" />
+                <span>Match</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Dumbbell className="w-3 h-3 text-primary" />
                 <span>Réhabilitation</span>
               </div>
             </div>
@@ -175,6 +245,7 @@ export function PlayerCalendarTab({ playerId, categoryId }: PlayerCalendarTabPro
                 <div className="space-y-2 max-h-[400px] overflow-y-auto">
                   {allEvents.map((event) => {
                     if (event._type === 'session') {
+                      const Icon = getTrainingTypeIcon(event.training_type);
                       return (
                         <div
                           key={`session-${event.id}`}
@@ -182,9 +253,9 @@ export function PlayerCalendarTab({ playerId, categoryId }: PlayerCalendarTabPro
                         >
                           <div className="flex justify-between items-start">
                             <div className="flex items-start gap-2">
-                              <Activity className="h-4 w-4 mt-0.5 text-muted-foreground" />
+                              <Icon className="h-4 w-4 mt-0.5 text-muted-foreground" />
                               <div>
-                                <p className="font-medium capitalize">{event.training_type.replace(/_/g, " ")}</p>
+                                <p className="font-medium">{getTrainingTypeLabel(event.training_type)}</p>
                                 <p className="text-sm text-muted-foreground">
                                   {event._date.toLocaleDateString("fr-FR", {
                                     weekday: "long",
@@ -201,7 +272,7 @@ export function PlayerCalendarTab({ playerId, categoryId }: PlayerCalendarTabPro
                                 )}
                               </div>
                             </div>
-                            {event.intensity && (
+                            {event.intensity && event.intensity > 1 && (
                               <span className="text-xs px-2 py-1 bg-primary/10 text-primary rounded">
                                 Intensité: {event.intensity}/10
                               </span>
@@ -212,22 +283,59 @@ export function PlayerCalendarTab({ playerId, categoryId }: PlayerCalendarTabPro
                           )}
                         </div>
                       );
+                    } else if (event._type === 'match') {
+                      return (
+                        <div
+                          key={`match-${event.id}`}
+                          className="p-3 border-l-4 border-rose-500 rounded-lg bg-rose-50 dark:bg-rose-950/20 transition-colors"
+                        >
+                          <div className="flex justify-between items-start">
+                            <div className="flex items-start gap-2">
+                              <Swords className="h-4 w-4 mt-0.5 text-rose-600" />
+                              <div>
+                                <p className="font-medium">vs {event.opponent}</p>
+                                <p className="text-sm text-muted-foreground">
+                                  {event._date.toLocaleDateString("fr-FR", {
+                                    weekday: "long",
+                                    year: "numeric",
+                                    month: "long",
+                                    day: "numeric",
+                                  })}
+                                </p>
+                                {event.location && (
+                                  <p className="text-xs text-muted-foreground">{event.location}</p>
+                                )}
+                              </div>
+                            </div>
+                            <Badge variant="outline" className="text-xs border-rose-300 text-rose-600">
+                              {event.is_home ? 'Domicile' : 'Extérieur'}
+                            </Badge>
+                          </div>
+                        </div>
+                      );
                     } else {
                       // Rehab event
-                      const protocolName = (event as any).player_rehab_protocols?.injury_protocols?.name;
+                      const rehabEvent = event as typeof event & { 
+                        title: string; 
+                        event_type: string;
+                        is_completed?: boolean; 
+                        description?: string;
+                        player_rehab_protocols?: { injury_protocols?: { name: string } };
+                      };
+                      const protocolName = rehabEvent.player_rehab_protocols?.injury_protocols?.name;
                       return (
                         <div
                           key={`rehab-${event.id}`}
-                          className={`p-3 border-l-4 rounded-lg transition-colors ${getEventTypeColor(event.event_type, event.is_completed || false)}`}
+                          className={`p-3 border-l-4 rounded-lg transition-colors ${getRehabEventTypeColor(rehabEvent.event_type, rehabEvent.is_completed || false)}`}
                         >
                           <div className="flex justify-between items-start">
                             <div className="flex items-start gap-2">
                               <Dumbbell className="h-4 w-4 mt-0.5" />
                               <div>
                                 <div className="flex items-center gap-2">
-                                  <p className="font-medium">{event.title}</p>
-                                  {event.is_completed && (
-                                    <CheckCircle2 className="h-4 w-4 text-green-600" />
+                                  <p className="font-medium">{rehabEvent.title}</p>
+                                  {rehabEvent.is_completed && (
+                                    <CheckCircle2 className="h-4 w-4 text-emerald-600" />
                                   )}
                                 </div>
                                 <p className="text-sm text-muted-foreground">
@@ -246,11 +354,11 @@ export function PlayerCalendarTab({ playerId, categoryId }: PlayerCalendarTabPro
                               </div>
                             </div>
                             <Badge variant="outline" className="text-xs">
-                              {getEventTypeLabel(event.event_type)}
+                              {getRehabEventTypeLabel(rehabEvent.event_type)}
                             </Badge>
                           </div>
-                          {event.description && (
-                            <p className="text-sm mt-2 text-muted-foreground ml-6">{event.description}</p>
+                          {rehabEvent.description && (
+                            <p className="text-sm mt-2 text-muted-foreground ml-6">{rehabEvent.description}</p>
                           )}
                         </div>
                       );

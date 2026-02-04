@@ -3272,46 +3272,82 @@ export type Database = {
       }
       players: {
         Row: {
+          allergies: string | null
           avatar_url: string | null
           birth_date: string | null
           birth_year: number | null
           category_id: string
           club_origin: string | null
           created_at: string
+          dietary_requirements: string | null
           discipline: string | null
           email: string | null
+          emergency_notes: string | null
           id: string
+          medical_notes: string | null
           name: string
+          parent_contact_1_email: string | null
+          parent_contact_1_name: string | null
+          parent_contact_1_phone: string | null
+          parent_contact_1_relation: string | null
+          parent_contact_2_email: string | null
+          parent_contact_2_name: string | null
+          parent_contact_2_phone: string | null
+          parent_contact_2_relation: string | null
           phone: string | null
           position: string | null
           specialty: string | null
         }
         Insert: {
+          allergies?: string | null
           avatar_url?: string | null
           birth_date?: string | null
           birth_year?: number | null
           category_id: string
           club_origin?: string | null
           created_at?: string
+          dietary_requirements?: string | null
           discipline?: string | null
           email?: string | null
+          emergency_notes?: string | null
           id?: string
+          medical_notes?: string | null
           name: string
+          parent_contact_1_email?: string | null
+          parent_contact_1_name?: string | null
+          parent_contact_1_phone?: string | null
+          parent_contact_1_relation?: string | null
+          parent_contact_2_email?: string | null
+          parent_contact_2_name?: string | null
+          parent_contact_2_phone?: string | null
+          parent_contact_2_relation?: string | null
           phone?: string | null
           position?: string | null
           specialty?: string | null
         }
         Update: {
+          allergies?: string | null
           avatar_url?: string | null
           birth_date?: string | null
           birth_year?: number | null
           category_id?: string
           club_origin?: string | null
           created_at?: string
+          dietary_requirements?: string | null
           discipline?: string | null
           email?: string | null
+          emergency_notes?: string | null
           id?: string
+          medical_notes?: string | null
           name?: string
+          parent_contact_1_email?: string | null
+          parent_contact_1_name?: string | null
+          parent_contact_1_phone?: string | null
+          parent_contact_1_relation?: string | null
+          parent_contact_2_email?: string | null
+          parent_contact_2_name?: string | null
+          parent_contact_2_phone?: string | null
+          parent_contact_2_relation?: string | null
           phone?: string | null
           position?: string | null
           specialty?: string | null
