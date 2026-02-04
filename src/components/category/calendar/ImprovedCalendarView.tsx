@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ChevronLeft, ChevronRight, Plus, Download, Printer, Calendar as CalendarIcon, Filter, X } from "lucide-react";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, addMonths, subMonths, startOfWeek, endOfWeek, isSameDay, isSameMonth, addWeeks, subWeeks } from "date-fns";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, addMonths, subMonths, startOfWeek, endOfWeek, isSameDay, isSameMonth, addWeeks, subWeeks, addDays, subDays } from "date-fns";
 import { fr } from "date-fns/locale";
 import { TRAINING_TYPE_COLORS, getTrainingTypesForSport } from "@/lib/constants/trainingTypes";
 import { isIndividualSport } from "@/lib/constants/sportTypes";
@@ -91,7 +91,7 @@ export function ImprovedCalendarView({
   onDeleteSession,
   onRescheduleSession,
 }: ImprovedCalendarViewProps) {
-  const [viewMode, setViewMode] = useState<"month" | "week">("month");
+  const [viewMode, setViewMode] = useState<"month" | "week" | "day">("month");
   const [currentDate, setCurrentDate] = useState(new Date());
   const [activeSession, setActiveSession] = useState<Session | null>(null);
   const [feedbackSession, setFeedbackSession] = useState<Session | null>(null);
@@ -155,10 +155,13 @@ export function ImprovedCalendarView({
       const calendarStart = startOfWeek(monthStart, { weekStartsOn: 1 });
       const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
       return eachDayOfInterval({ start: calendarStart, end: calendarEnd });
-    } else {
+    } else if (viewMode === "week") {
       const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
       const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
       return eachDayOfInterval({ start: weekStart, end: weekEnd });
+    } else {
+      // Daily view - just the current day
+      return [currentDate];
     }
   }, [currentDate, viewMode]);
 
@@ -236,8 +239,10 @@ export function ImprovedCalendarView({
   const handleNavigate = (direction: "prev" | "next") => {
     if (viewMode === "month") {
       setCurrentDate(direction === "prev" ? subMonths(currentDate, 1) : addMonths(currentDate, 1));
-    } else {
+    } else if (viewMode === "week") {
       setCurrentDate(direction === "prev" ? subWeeks(currentDate, 1) : addWeeks(currentDate, 1));
+    } else {
+      setCurrentDate(direction === "prev" ? subDays(currentDate, 1) : addDays(currentDate, 1));
     }
   };
 
@@ -364,13 +369,14 @@ export function ImprovedCalendarView({
               </Popover>
 
               {/* View Mode Selector */}
-              <Select value={viewMode} onValueChange={(v) => setViewMode(v as "month" | "week")}>
+              <Select value={viewMode} onValueChange={(v) => setViewMode(v as "month" | "week" | "day")}>
                 <SelectTrigger className="w-[130px] h-9">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="month">Mensuel</SelectItem>
+                  <SelectItem value="day">Journalier</SelectItem>
                   <SelectItem value="week">Hebdomadaire</SelectItem>
+                  <SelectItem value="month">Mensuel</SelectItem>
                 </SelectContent>
               </Select>
               
@@ -404,7 +410,9 @@ export function ImprovedCalendarView({
               <h3 className="text-lg font-semibold capitalize">
                 {viewMode === "month" 
                   ? format(currentDate, "MMMM yyyy", { locale: fr })
-                  : `Semaine ${weekNumber}`
+                  : viewMode === "week"
+                    ? `Semaine ${weekNumber}`
+                    : format(currentDate, "EEEE d MMMM yyyy", { locale: fr })
                 }
               </h3>
               {viewMode === "week" && (
@@ -464,7 +472,7 @@ export function ImprovedCalendarView({
                   ))}
                 </div>
               </div>
-            ) : (
+            ) : viewMode === "week" ? (
               // Weekly View - Enhanced design
               <div className="grid grid-cols-7 gap-2">
                 {calendarDays.map((day, index) => {
@@ -509,7 +517,7 @@ export function ImprovedCalendarView({
                               e.stopPropagation();
                               onViewMatch?.(match);
                             }}
-                            className="p-2.5 rounded-lg bg-rose-500 text-white cursor-pointer hover:bg-rose-600 transition-colors shadow-sm"
+                            className="p-2.5 rounded-lg bg-destructive text-destructive-foreground cursor-pointer hover:bg-destructive/90 transition-colors shadow-sm"
                           >
                             <div className="flex items-center gap-2 text-xs font-medium">
                               <span className="opacity-80">{match.match_time ? formatTime(match.match_time) : ""}</span>
@@ -561,6 +569,171 @@ export function ImprovedCalendarView({
                           <p className="text-xs text-muted-foreground text-center py-4">
                             Aucun événement
                           </p>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              // Daily View - Detailed single day view
+              <div className="space-y-4">
+                {calendarDays.map((day) => {
+                  const daySessions = getSessionsForDay(day);
+                  const dayMatches = getMatchesForDay(day);
+                  const isToday = isSameDay(day, new Date());
+                  const hasEvents = daySessions.length > 0 || dayMatches.length > 0;
+
+                  // Sort events by time
+                  const allEvents = [
+                    ...daySessions.map(s => ({ 
+                      type: 'session' as const, 
+                      data: s, 
+                      time: s.session_start_time || '00:00' 
+                    })),
+                    ...dayMatches.map(m => ({ 
+                      type: 'match' as const, 
+                      data: m, 
+                      time: m.match_time || '00:00' 
+                    }))
+                  ].sort((a, b) => a.time.localeCompare(b.time));
+
+                  return (
+                    <div
+                      key={day.toISOString()}
+                      className={cn(
+                        "rounded-xl border-2 overflow-hidden",
+                        isToday ? "border-primary shadow-lg" : "border-border"
+                      )}
+                    >
+                      {/* Day header */}
+                      <div 
+                        className={cn(
+                          "p-4 cursor-pointer",
+                          isToday ? "bg-primary/10" : "bg-muted/50"
+                        )}
+                        onClick={() => handleDayClickWithAdd(day)}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className={cn(
+                              "text-sm font-medium uppercase tracking-wide",
+                              isToday ? "text-primary" : "text-muted-foreground"
+                            )}>
+                              {format(day, "EEEE", { locale: fr })}
+                            </p>
+                            <p className={cn(
+                              "text-3xl font-bold",
+                              isToday ? "text-primary" : "text-foreground"
+                            )}>
+                              {format(day, "d MMMM yyyy", { locale: fr })}
+                            </p>
+                          </div>
+                          {!isViewer && (
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDayClickWithAdd(day);
+                              }}
+                            >
+                              <Plus className="h-4 w-4 mr-1" />
+                              Ajouter
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Events list */}
+                      <div className="p-4 space-y-3">
+                        {hasEvents ? (
+                          allEvents.map((event, idx) => {
+                            if (event.type === 'match') {
+                              const match = event.data as Match;
+                              return (
+                                <div
+                                  key={`match-${match.id}`}
+                                  onClick={() => onViewMatch?.(match)}
+                                  className="flex items-start gap-4 p-4 rounded-lg bg-destructive/10 border border-destructive/20 cursor-pointer hover:bg-destructive/20 transition-colors"
+                                >
+                                  <div className="flex-shrink-0 w-16 text-center">
+                                    <p className="text-lg font-bold text-destructive">
+                                      {match.match_time ? formatTime(match.match_time) : "—"}
+                                    </p>
+                                  </div>
+                                  <div className="flex-1">
+                                    <p className="font-semibold text-foreground">
+                                      {isIndividualSport(sportType || "") ? "Compétition" : `vs ${match.opponent}`}
+                                    </p>
+                                    {match.location && (
+                                      <p className="text-sm text-muted-foreground mt-1">
+                                        📍 {match.location}
+                                      </p>
+                                    )}
+                                    <Badge variant="destructive" className="mt-2">
+                                      {match.is_home ? "Domicile" : "Extérieur"}
+                                    </Badge>
+                                  </div>
+                                </div>
+                              );
+                            } else {
+                              const session = event.data as Session;
+                              const bgColor = TRAINING_TYPE_COLORS[session.training_type] || "bg-primary";
+                              return (
+                                <div
+                                  key={`session-${session.id}`}
+                                  onClick={() => onViewSession?.(session)}
+                                  className={cn(
+                                    "flex items-start gap-4 p-4 rounded-lg cursor-pointer transition-colors",
+                                    bgColor.replace('bg-', 'bg-') + "/10",
+                                    "border hover:shadow-md"
+                                  )}
+                                  style={{ borderColor: `hsl(var(--${bgColor.replace('bg-', '')}))` }}
+                                >
+                                  <div className="flex-shrink-0 w-16 text-center">
+                                    <p className="text-lg font-bold text-foreground">
+                                      {session.session_start_time ? formatTime(session.session_start_time) : "—"}
+                                    </p>
+                                    {session.session_end_time && (
+                                      <p className="text-xs text-muted-foreground">
+                                        → {formatTime(session.session_end_time)}
+                                      </p>
+                                    )}
+                                  </div>
+                                  <div className="flex-1">
+                                    <p className="font-semibold text-foreground">
+                                      {trainingTypeLabels[session.training_type] || session.training_type}
+                                    </p>
+                                    {session.notes && (
+                                      <p className="text-sm text-muted-foreground mt-1">
+                                        {session.notes}
+                                      </p>
+                                    )}
+                                    {session.intensity && (
+                                      <Badge variant="outline" className="mt-2">
+                                        Intensité: {session.intensity}/10
+                                      </Badge>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            }
+                          })
+                        ) : (
+                          <div className="text-center py-8 text-muted-foreground">
+                            <CalendarIcon className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                            <p>Aucun événement prévu</p>
+                            {!isViewer && (
+                              <Button 
+                                variant="link" 
+                                onClick={() => handleDayClickWithAdd(day)}
+                                className="mt-2"
+                              >
+                                Ajouter un événement
+                              </Button>
+                            )}
+                          </div>
                         )}
                       </div>
                     </div>
