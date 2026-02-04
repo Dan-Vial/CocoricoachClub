@@ -1,4 +1,6 @@
 import { useDroppable } from "@dnd-kit/core";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { format, isSameMonth, isSameDay } from "date-fns";
 import { SessionVignette } from "./SessionVignette";
@@ -20,6 +22,12 @@ interface Match {
   opponent: string;
   location: string | null;
   is_home: boolean | null;
+}
+
+interface SessionBlock {
+  id: string;
+  training_type: string;
+  block_order: number;
 }
 
 interface CalendarDayCellProps {
@@ -58,6 +66,36 @@ export function CalendarDayCell({
   const isCurrentMonth = isSameMonth(day, currentMonth);
   const isToday = isSameDay(day, new Date());
 
+  // Fetch session blocks for sessions on this day
+  const sessionIds = sessions.map(s => s.id);
+  const { data: sessionBlocks } = useQuery({
+    queryKey: ["session-blocks-calendar", sessionIds],
+    queryFn: async () => {
+      if (sessionIds.length === 0) return {};
+      const { data, error } = await supabase
+        .from("training_session_blocks")
+        .select("id, training_session_id, training_type, block_order")
+        .in("training_session_id", sessionIds)
+        .order("block_order");
+      if (error) throw error;
+      
+      // Group blocks by training_session_id
+      const blocksMap: Record<string, SessionBlock[]> = {};
+      data?.forEach(block => {
+        if (!blocksMap[block.training_session_id]) {
+          blocksMap[block.training_session_id] = [];
+        }
+        blocksMap[block.training_session_id].push({
+          id: block.id,
+          training_type: block.training_type,
+          block_order: block.block_order,
+        });
+      });
+      return blocksMap;
+    },
+    enabled: sessionIds.length > 0,
+  });
+
   const formatTime = (time: string | null) => {
     if (!time) return "";
     return time.substring(0, 5);
@@ -69,7 +107,7 @@ export function CalendarDayCell({
       className={cn(
         "min-h-[120px] border-b border-r p-1.5 transition-colors relative cursor-pointer",
         !isCurrentMonth && "bg-muted/30 text-muted-foreground",
-        isToday && "bg-primary/5",
+        isToday && "bg-primary/5 ring-2 ring-primary/40 ring-inset",
         isOver && "bg-primary/10 ring-2 ring-primary/30 ring-inset"
       )}
       onClick={() => onDayClick(day)}
@@ -77,8 +115,8 @@ export function CalendarDayCell({
       {/* Day number - clickable */}
       <div
         className={cn(
-          "text-sm font-medium mb-1.5 cursor-pointer hover:text-primary transition-colors inline-block",
-          isToday && "text-primary font-bold"
+          "text-sm font-medium mb-1.5 cursor-pointer hover:text-primary transition-colors inline-flex items-center justify-center",
+          isToday && "text-white bg-primary rounded-full w-7 h-7 font-bold"
         )}
         onClick={(e) => {
           e.stopPropagation();
@@ -118,6 +156,7 @@ export function CalendarDayCell({
           <div key={session.id} onClick={(e) => e.stopPropagation()}>
             <SessionVignette
               session={session}
+              blocks={sessionBlocks?.[session.id]}
               onPreview={() => onPreviewSession(session)}
               onEdit={() => onEditSession(session)}
               onFeedback={() => onFeedbackSession(session)}

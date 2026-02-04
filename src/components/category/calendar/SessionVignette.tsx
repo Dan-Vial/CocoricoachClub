@@ -5,6 +5,12 @@ import { Eye, Pencil, MessageSquare, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getTrainingTypeColor, getTrainingTypeLabel } from "@/lib/constants/trainingTypes";
 
+interface SessionBlock {
+  id: string;
+  training_type: string;
+  block_order: number;
+}
+
 interface SessionVignetteProps {
   session: {
     id: string;
@@ -14,6 +20,7 @@ interface SessionVignetteProps {
     training_type: string;
     notes: string | null;
   };
+  blocks?: SessionBlock[];
   onPreview: () => void;
   onEdit: () => void;
   onFeedback: () => void;
@@ -24,6 +31,7 @@ interface SessionVignetteProps {
 
 export function SessionVignette({
   session,
+  blocks,
   onPreview,
   onEdit,
   onFeedback,
@@ -54,6 +62,7 @@ export function SessionVignette({
   const bgColor = getTrainingTypeColor(session.training_type);
   const label = getTrainingTypeLabel(session.training_type);
   const startTime = formatTime(session.session_start_time);
+  const hasBlocks = blocks && blocks.length > 0;
 
   const handleActionClick = (e: React.MouseEvent, action: () => void) => {
     e.stopPropagation();
@@ -79,11 +88,25 @@ export function SessionVignette({
       {/* Main Session Block */}
       <div
         className={cn(
-          "rounded-lg px-2 py-1.5 text-white text-[11px] font-medium transition-all relative",
-          bgColor,
+          "rounded-lg px-2 py-1.5 text-white text-[11px] font-medium transition-all relative overflow-hidden",
+          !hasBlocks && bgColor,
           isDragging && "shadow-lg ring-2 ring-primary/50"
         )}
+        style={hasBlocks ? { backgroundColor: "hsl(var(--muted))" } : undefined}
       >
+        {/* Multi-block color indicator */}
+        {hasBlocks && (
+          <div className="absolute left-0 top-0 bottom-0 flex">
+            {blocks.slice(0, 4).map((block, idx) => (
+              <div
+                key={block.id}
+                className={cn("h-full w-1", getTrainingTypeColor(block.training_type))}
+                title={getTrainingTypeLabel(block.training_type)}
+              />
+            ))}
+          </div>
+        )}
+        
         {/* Drag handle - only visible and active when NOT hovered */}
         {!isHovered && !isDragging && isDraggable && !isViewer && (
           <div
@@ -96,6 +119,7 @@ export function SessionVignette({
         {/* Session content - hidden when hovered to show actions */}
         <div className={cn(
           "flex items-center gap-1.5 transition-opacity pointer-events-none",
+          hasBlocks && "pl-5 text-foreground",
           isHovered && !isDragging && "opacity-0"
         )}>
           {startTime && (
@@ -104,7 +128,9 @@ export function SessionVignette({
               <span className="opacity-70">•</span>
             </>
           )}
-          <span className="truncate opacity-90">{label}</span>
+          <span className="truncate opacity-90">
+            {hasBlocks ? `${blocks.length} blocs` : label}
+          </span>
         </div>
 
         {/* Hover Actions Overlay - displayed ON the session */}
