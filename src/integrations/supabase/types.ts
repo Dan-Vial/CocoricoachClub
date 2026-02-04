@@ -5196,6 +5196,7 @@ export type Database = {
           id: string
           intensity: number | null
           notes: string | null
+          planned_intensity: number | null
           session_date: string
           session_end_time: string | null
           session_start_time: string | null
@@ -5207,6 +5208,7 @@ export type Database = {
           id?: string
           intensity?: number | null
           notes?: string | null
+          planned_intensity?: number | null
           session_date: string
           session_end_time?: string | null
           session_start_time?: string | null
@@ -5218,6 +5220,7 @@ export type Database = {
           id?: string
           intensity?: number | null
           notes?: string | null
+          planned_intensity?: number | null
           session_date?: string
           session_end_time?: string | null
           session_start_time?: string | null

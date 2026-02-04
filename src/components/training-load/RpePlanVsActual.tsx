@@ -67,7 +67,7 @@ export function RpePlanVsActual({ categoryId, onPlayerClick }: RpePlanVsActualPr
         .select("id, session_date, training_type, notes, planned_intensity")
         .eq("category_id", categoryId)
         .gte("session_date", startDate)
-        .order("session_date", { ascending: false });
+        .order("session_date", { ascending: false }) as { data: any[] | null, error: any };
 
       if (sessionsError) throw sessionsError;
 

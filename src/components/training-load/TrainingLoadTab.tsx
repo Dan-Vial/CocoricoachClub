@@ -5,11 +5,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, ChevronDown, Filter, Plus, Users } from "lucide-react";
+import { Calendar, ChevronDown, Filter, Plus, Users, TrendingUp, AlertTriangle } from "lucide-react";
 import { TrainingLoadChart } from "./TrainingLoadChart";
 import { TrainingLoadKPIs } from "./TrainingLoadKPIs";
 import { TrainingLoadAlerts } from "./TrainingLoadAlerts";
 import { TeamLoadComparison } from "./TeamLoadComparison";
+import { RpePlanVsActual } from "./RpePlanVsActual";
 import { useTrainingLoad, useTeamTrainingLoad } from "@/hooks/use-training-load";
 import { MetricType, METRICS_CONFIG } from "@/lib/trainingLoadCalculations";
 import { AddAwcrDialog } from "@/components/category/AddAwcrDialog";
@@ -169,6 +170,10 @@ export function TrainingLoadTab({ categoryId }: TrainingLoadTabProps) {
       <Tabs defaultValue="chart" className="space-y-4">
         <TabsList>
           <TabsTrigger value="chart">Graphique</TabsTrigger>
+          <TabsTrigger value="rpe" className="gap-1">
+            <TrendingUp className="h-3 w-3" />
+            RPE Prévu/Réel
+          </TabsTrigger>
           <TabsTrigger value="team">Comparaison</TabsTrigger>
           <TabsTrigger value="alerts">Alertes</TabsTrigger>
         </TabsList>
@@ -181,6 +186,13 @@ export function TrainingLoadTab({ categoryId }: TrainingLoadTabProps) {
             onMetricChange={setSelectedMetric}
             hasGpsData={hasGpsData}
             isLoading={isLoading}
+          />
+        </TabsContent>
+
+        <TabsContent value="rpe">
+          <RpePlanVsActual
+            categoryId={categoryId}
+            onPlayerClick={handlePlayerClick}
           />
         </TabsContent>
 

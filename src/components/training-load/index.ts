@@ -3,3 +3,5 @@ export { TrainingLoadChart } from "./TrainingLoadChart";
 export { TrainingLoadKPIs } from "./TrainingLoadKPIs";
 export { TrainingLoadAlerts } from "./TrainingLoadAlerts";
 export { TeamLoadComparison } from "./TeamLoadComparison";
+export { RpePlanVsActual } from "./RpePlanVsActual";
+export { MetricExplanation } from "./MetricExplanation";
