@@ -130,61 +130,91 @@ export function ExerciseLibrarySection() {
                   </div>
                 ) : (
                   <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {filterExercises(group.value).map((exercise) => (
-                      <Card key={exercise.id} className="overflow-hidden">
-                        {exercise.youtube_url && getYoutubeEmbedUrl(exercise.youtube_url) && (
-                          <div className="aspect-video">
-                            <iframe
-                              src={getYoutubeEmbedUrl(exercise.youtube_url)!}
-                              className="w-full h-full"
-                              allowFullScreen
-                              title={exercise.name}
-                            />
-                          </div>
-                        )}
-                        <CardHeader className="pb-2">
-                          <div className="flex items-start justify-between">
-                            <CardTitle className="text-base">{exercise.name}</CardTitle>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-destructive hover:text-destructive"
-                              onClick={() => handleDelete(exercise.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                          <div className="flex flex-wrap gap-1">
-                            <Badge variant="outline" className={getCategoryColor(exercise.category)}>
-                              {getCategoryLabel(exercise.category)}
-                            </Badge>
-                            {exercise.subcategory && (
-                              <Badge variant="secondary" className="text-xs">
-                                {getSubcategoryLabel(exercise.subcategory)}
+                    {filterExercises(group.value).map((exercise) => {
+                      const exerciseGroup = getCategoryGroup(exercise.category);
+                      const config = exerciseGroup ? CATEGORY_GROUP_CONFIGS[exerciseGroup] : null;
+                      const Icon = config?.icon || Library;
+                      
+                      return (
+                        <Card 
+                          key={exercise.id} 
+                          className={cn(
+                            "overflow-hidden border-l-4 transition-all hover:shadow-md",
+                            config?.borderColor || "border-l-muted"
+                          )}
+                        >
+                          {exercise.youtube_url && getYoutubeEmbedUrl(exercise.youtube_url) && (
+                            <div className="aspect-video">
+                              <iframe
+                                src={getYoutubeEmbedUrl(exercise.youtube_url)!}
+                                className="w-full h-full"
+                                allowFullScreen
+                                title={exercise.name}
+                              />
+                            </div>
+                          )}
+                          <CardHeader className={cn("pb-2", config?.bgColor)}>
+                            <div className="flex items-start justify-between">
+                              <div className="flex items-center gap-2">
+                                <Icon className={cn("h-4 w-4", config?.color)} />
+                                <CardTitle className="text-base">{exercise.name}</CardTitle>
+                              </div>
+                              {!exercise.is_system && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-destructive hover:text-destructive"
+                                  onClick={() => handleDelete(exercise.id)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </div>
+                            <div className="flex flex-wrap gap-1">
+                              <Badge 
+                                variant="outline" 
+                                className={cn(
+                                  "border",
+                                  config?.bgColor,
+                                  config?.color,
+                                  config?.borderColor
+                                )}
+                              >
+                                {getCategoryLabel(exercise.category)}
                               </Badge>
-                            )}
-                          </div>
-                        </CardHeader>
-                        {exercise.description && (
-                          <CardContent className="pt-0">
-                            <p className="text-sm text-muted-foreground">{exercise.description}</p>
-                          </CardContent>
-                        )}
-                        {exercise.youtube_url && (
-                          <CardContent className="pt-0">
-                            <a
-                              href={exercise.youtube_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-sm text-primary hover:underline inline-flex items-center gap-1"
-                            >
-                              <ExternalLink className="h-3 w-3" />
-                              Voir sur YouTube
-                            </a>
-                          </CardContent>
-                        )}
-                      </Card>
-                    ))}
+                              {exercise.subcategory && (
+                                <Badge variant="secondary" className="text-xs">
+                                  {getSubcategoryLabel(exercise.subcategory)}
+                                </Badge>
+                              )}
+                              {exercise.is_system && (
+                                <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/30">
+                                  Système
+                                </Badge>
+                              )}
+                            </div>
+                          </CardHeader>
+                          {exercise.description && (
+                            <CardContent className="pt-2">
+                              <p className="text-sm text-muted-foreground">{exercise.description}</p>
+                            </CardContent>
+                          )}
+                          {exercise.youtube_url && (
+                            <CardContent className="pt-0">
+                              <a
+                                href={exercise.youtube_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-sm text-primary hover:underline inline-flex items-center gap-1"
+                              >
+                                <ExternalLink className="h-3 w-3" />
+                                Voir sur YouTube
+                              </a>
+                            </CardContent>
+                          )}
+                        </Card>
+                      );
+                    })}
                   </div>
                 )}
               </TabsContent>
