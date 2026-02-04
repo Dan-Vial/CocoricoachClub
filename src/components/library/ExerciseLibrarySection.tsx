@@ -135,12 +135,39 @@ export function ExerciseLibrarySection() {
                       const config = exerciseGroup ? CATEGORY_GROUP_CONFIGS[exerciseGroup] : null;
                       const Icon = config?.icon || Library;
                       
+                      // Get style based on group
+                      const getGroupStyles = (group: string | null) => {
+                        switch (group) {
+                          case "musculation":
+                            return { border: "border-l-orange-500", bg: "bg-orange-50", text: "text-orange-700" };
+                          case "course":
+                            return { border: "border-l-blue-500", bg: "bg-blue-50", text: "text-blue-700" };
+                          case "ergo":
+                            return { border: "border-l-cyan-500", bg: "bg-cyan-50", text: "text-cyan-700" };
+                          case "poids_corps":
+                            return { border: "border-l-purple-500", bg: "bg-purple-50", text: "text-purple-700" };
+                          case "crossfit":
+                            return { border: "border-l-red-500", bg: "bg-red-50", text: "text-red-700" };
+                          case "sled":
+                            return { border: "border-l-amber-500", bg: "bg-amber-50", text: "text-amber-700" };
+                          case "plyometrie":
+                            return { border: "border-l-green-500", bg: "bg-green-50", text: "text-green-700" };
+                          case "mobilite":
+                            return { border: "border-l-teal-500", bg: "bg-teal-50", text: "text-teal-700" };
+                          case "core":
+                            return { border: "border-l-indigo-500", bg: "bg-indigo-50", text: "text-indigo-700" };
+                          default:
+                            return { border: "border-l-muted", bg: "bg-muted/30", text: "text-muted-foreground" };
+                        }
+                      };
+                      const styles = getGroupStyles(exerciseGroup);
+                      
                       return (
                         <Card 
                           key={exercise.id} 
                           className={cn(
                             "overflow-hidden border-l-4 transition-all hover:shadow-md",
-                            config?.borderColor || "border-l-muted"
+                            styles.border
                           )}
                         >
                           {exercise.youtube_url && getYoutubeEmbedUrl(exercise.youtube_url) && (
@@ -153,10 +180,10 @@ export function ExerciseLibrarySection() {
                               />
                             </div>
                           )}
-                          <CardHeader className={cn("pb-2", config?.bgColor)}>
+                          <CardHeader className={cn("pb-2", styles.bg)}>
                             <div className="flex items-start justify-between">
                               <div className="flex items-center gap-2">
-                                <Icon className={cn("h-4 w-4", config?.color)} />
+                                <Icon className={cn("h-4 w-4", styles.text)} />
                                 <CardTitle className="text-base">{exercise.name}</CardTitle>
                               </div>
                               {!exercise.is_system && (
@@ -173,12 +200,7 @@ export function ExerciseLibrarySection() {
                             <div className="flex flex-wrap gap-1">
                               <Badge 
                                 variant="outline" 
-                                className={cn(
-                                  "border",
-                                  config?.bgColor,
-                                  config?.color,
-                                  config?.borderColor
-                                )}
+                                className={cn("border", styles.bg, styles.text, styles.border)}
                               >
                                 {getCategoryLabel(exercise.category)}
                               </Badge>
