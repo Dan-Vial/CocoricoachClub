@@ -1,10 +1,10 @@
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Heart, Smile, Apple } from "lucide-react";
 import { HealthTab } from "@/components/health/HealthTab";
 import { WellnessTab } from "@/components/category/WellnessTab";
 import { NutritionTab } from "@/components/category/NutritionTab";
 import { useViewerModeContext } from "@/contexts/ViewerModeContext";
-import { DisabledTabTrigger } from "@/components/ui/disabled-tab-trigger";
+import { ColoredSubTabsList, ColoredSubTabsTrigger } from "@/components/ui/colored-subtabs";
 
 interface SanteTabProps {
   categoryId: string;
@@ -16,22 +16,33 @@ export function SanteTab({ categoryId }: SanteTabProps) {
   return (
     <Tabs defaultValue="health" className="space-y-4">
       <div className="flex justify-center overflow-x-auto -mx-4 px-4 pb-2">
-        <TabsList className="inline-flex w-max gap-1 h-auto bg-muted p-1">
-          <TabsTrigger value="health" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">
-            <Heart className="h-4 w-4 shrink-0" />
+        <ColoredSubTabsList colorKey="sante" className="inline-flex w-max">
+          <ColoredSubTabsTrigger 
+            value="health" 
+            colorKey="sante"
+            icon={<Heart className="h-4 w-4" />}
+          >
             Santé
-          </TabsTrigger>
-          {/* Wellness - Grisé en mode viewer */}
-          <DisabledTabTrigger value="wellness" isDisabled={isViewer} className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">
-            <Smile className="h-4 w-4 shrink-0" />
-            Wellness
-          </DisabledTabTrigger>
-          {/* Nutrition - Grisé en mode viewer */}
-          <DisabledTabTrigger value="nutrition" isDisabled={isViewer} className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">
-            <Apple className="h-4 w-4 shrink-0" />
-            Nutrition
-          </DisabledTabTrigger>
-        </TabsList>
+          </ColoredSubTabsTrigger>
+          {!isViewer && (
+            <ColoredSubTabsTrigger 
+              value="wellness" 
+              colorKey="sante"
+              icon={<Smile className="h-4 w-4" />}
+            >
+              Wellness
+            </ColoredSubTabsTrigger>
+          )}
+          {!isViewer && (
+            <ColoredSubTabsTrigger 
+              value="nutrition" 
+              colorKey="sante"
+              icon={<Apple className="h-4 w-4" />}
+            >
+              Nutrition
+            </ColoredSubTabsTrigger>
+          )}
+        </ColoredSubTabsList>
       </div>
 
       <TabsContent value="health">
