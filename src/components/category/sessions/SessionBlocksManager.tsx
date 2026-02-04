@@ -122,23 +122,32 @@ export function SessionBlocksManager({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <Label className="text-base font-medium flex items-center gap-2">
-          <Clock className="h-4 w-4" />
-          Blocs thématiques de la séance
-        </Label>
-        <Button type="button" variant="outline" size="sm" onClick={addBlock}>
+        <div>
+          <Label className="text-base font-medium flex items-center gap-2">
+            <Clock className="h-4 w-4" />
+            Structurer la séance en plusieurs thèmes
+          </Label>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Divisez votre séance en blocs horaires (ex: échauffement, technique, jeu)
+          </p>
+        </div>
+        <Button type="button" variant="default" size="sm" onClick={addBlock} className="shrink-0">
           <Plus className="h-4 w-4 mr-1" />
           Ajouter un bloc
         </Button>
       </div>
 
       {blocks.length === 0 ? (
-        <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center">
-          <p className="text-muted-foreground text-sm">
-            Aucun bloc thématique. Cliquez sur "Ajouter un bloc" pour structurer votre séance.
+        <div 
+          className="border-2 border-dashed border-primary/30 rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-colors"
+          onClick={addBlock}
+        >
+          <Clock className="h-8 w-8 mx-auto text-primary/50 mb-2" />
+          <p className="text-muted-foreground text-sm font-medium">
+            Cliquez ici pour structurer votre séance en plusieurs thèmes
           </p>
           <p className="text-muted-foreground text-xs mt-1">
-            Ex: 18h30-19h Séparé, 19h-19h30 Physique, 19h30-20h Collectif
+            Ex: 18h30-19h Séparé • 19h-19h30 Physique • 19h30-20h Collectif
           </p>
         </div>
       ) : (
