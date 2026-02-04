@@ -30,6 +30,7 @@ import {
   SPORT_OPTIONS,
   getTerrainCategoriesForSport,
   getCategoryGroup,
+  CATEGORY_GROUP_CONFIGS,
   type ExerciseCategory
 } from "@/lib/constants/exerciseCategories";
 
@@ -51,12 +52,18 @@ export function AddExerciseDialog() {
   // Group categories by type for display
   const groupedCategories = useMemo(() => {
     const musculation = EXERCISE_CATEGORIES.filter(c => c.group === "musculation");
+    const bodyweight = EXERCISE_CATEGORIES.filter(c => c.group === "bodyweight");
+    const crossfit = EXERCISE_CATEGORIES.filter(c => c.group === "crossfit_hyrox");
+    const course = EXERCISE_CATEGORIES.filter(c => c.group === "course");
+    const ergo = EXERCISE_CATEGORIES.filter(c => c.group === "ergo");
+    const sled = EXERCISE_CATEGORIES.filter(c => c.group === "sled");
+    const pilates = EXERCISE_CATEGORIES.filter(c => c.group === "pilates");
     const reathletisation = EXERCISE_CATEGORIES.filter(c => c.group === "reathletisation");
     const terrain = getTerrainCategoriesForSport(selectedSport);
     const stretching = EXERCISE_CATEGORIES.filter(c => c.group === "stretching_mobility");
     const other = EXERCISE_CATEGORIES.filter(c => c.group === null);
     
-    return { musculation, reathletisation, terrain, stretching, other };
+    return { musculation, bodyweight, crossfit, course, ergo, sled, pilates, reathletisation, terrain, stretching, other };
   }, [selectedSport]);
 
   const handleCategoryChange = (newCategory: string) => {
@@ -189,7 +196,7 @@ export function AddExerciseDialog() {
                 </SelectTrigger>
                 <SelectContent className="max-h-[300px]">
                   <SelectGroup>
-                    <SelectLabel className="text-xs font-semibold text-orange-500">Musculation</SelectLabel>
+                    <SelectLabel className={`text-xs font-semibold ${CATEGORY_GROUP_CONFIGS.musculation?.color}`}>Musculation</SelectLabel>
                     {groupedCategories.musculation.map((cat) => (
                       <SelectItem key={cat.value} value={cat.value}>
                         {cat.label}
@@ -197,7 +204,55 @@ export function AddExerciseDialog() {
                     ))}
                   </SelectGroup>
                   <SelectGroup>
-                    <SelectLabel className="text-xs font-semibold text-amber-500">Réathlétisation</SelectLabel>
+                    <SelectLabel className={`text-xs font-semibold ${CATEGORY_GROUP_CONFIGS.bodyweight?.color}`}>Poids de corps</SelectLabel>
+                    {groupedCategories.bodyweight.map((cat) => (
+                      <SelectItem key={cat.value} value={cat.value}>
+                        {cat.label}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                  <SelectGroup>
+                    <SelectLabel className={`text-xs font-semibold ${CATEGORY_GROUP_CONFIGS.crossfit_hyrox?.color}`}>CrossFit / Hyrox</SelectLabel>
+                    {groupedCategories.crossfit.map((cat) => (
+                      <SelectItem key={cat.value} value={cat.value}>
+                        {cat.label}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                  <SelectGroup>
+                    <SelectLabel className={`text-xs font-semibold ${CATEGORY_GROUP_CONFIGS.course?.color}`}>Course</SelectLabel>
+                    {groupedCategories.course.map((cat) => (
+                      <SelectItem key={cat.value} value={cat.value}>
+                        {cat.label}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                  <SelectGroup>
+                    <SelectLabel className={`text-xs font-semibold ${CATEGORY_GROUP_CONFIGS.ergo?.color}`}>Ergo / Cardio</SelectLabel>
+                    {groupedCategories.ergo.map((cat) => (
+                      <SelectItem key={cat.value} value={cat.value}>
+                        {cat.label}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                  <SelectGroup>
+                    <SelectLabel className={`text-xs font-semibold ${CATEGORY_GROUP_CONFIGS.sled?.color}`}>Traîneau</SelectLabel>
+                    {groupedCategories.sled.map((cat) => (
+                      <SelectItem key={cat.value} value={cat.value}>
+                        {cat.label}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                  <SelectGroup>
+                    <SelectLabel className={`text-xs font-semibold ${CATEGORY_GROUP_CONFIGS.pilates?.color}`}>Pilates / Yoga</SelectLabel>
+                    {groupedCategories.pilates.map((cat) => (
+                      <SelectItem key={cat.value} value={cat.value}>
+                        {cat.label}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                  <SelectGroup>
+                    <SelectLabel className={`text-xs font-semibold ${CATEGORY_GROUP_CONFIGS.reathletisation?.color}`}>Réathlétisation</SelectLabel>
                     {groupedCategories.reathletisation.map((cat) => (
                       <SelectItem key={cat.value} value={cat.value}>
                         {cat.label}
@@ -205,7 +260,7 @@ export function AddExerciseDialog() {
                     ))}
                   </SelectGroup>
                   <SelectGroup>
-                    <SelectLabel className="text-xs font-semibold text-green-500">Terrain {selectedSport !== "all" && `(${SPORT_OPTIONS.find(s => s.value === selectedSport)?.label})`}</SelectLabel>
+                    <SelectLabel className={`text-xs font-semibold ${CATEGORY_GROUP_CONFIGS.terrain?.color}`}>Terrain {selectedSport !== "all" && `(${SPORT_OPTIONS.find(s => s.value === selectedSport)?.label})`}</SelectLabel>
                     {groupedCategories.terrain.map((cat) => (
                       <SelectItem key={cat.value} value={cat.value}>
                         {cat.label}
@@ -213,7 +268,7 @@ export function AddExerciseDialog() {
                     ))}
                   </SelectGroup>
                   <SelectGroup>
-                    <SelectLabel className="text-xs font-semibold text-blue-500">Stretching / Mobilité</SelectLabel>
+                    <SelectLabel className={`text-xs font-semibold ${CATEGORY_GROUP_CONFIGS.stretching_mobility?.color}`}>Échauffement / Mobilité</SelectLabel>
                     {groupedCategories.stretching.map((cat) => (
                       <SelectItem key={cat.value} value={cat.value}>
                         {cat.label}
