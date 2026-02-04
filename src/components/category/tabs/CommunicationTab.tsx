@@ -13,8 +13,8 @@ interface CommunicationTabProps {
 export function CommunicationTab({ categoryId, isAcademy }: CommunicationTabProps) {
   return (
     <Tabs defaultValue="messaging" className="space-y-4">
-      <div className="overflow-x-auto -mx-4 px-4 pb-2">
-        <ColoredSubTabsList colorKey="communication" className="inline-flex w-max min-w-full">
+      <div className="overflow-x-auto -mx-4 px-4 pb-2 flex justify-center">
+        <ColoredSubTabsList colorKey="communication" className="inline-flex w-max">
           <ColoredSubTabsTrigger 
             value="messaging" 
             colorKey="communication"
