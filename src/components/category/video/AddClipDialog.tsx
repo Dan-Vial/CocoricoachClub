@@ -22,8 +22,9 @@ import {
 } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
-import { Film, Clock, Users, Link } from "lucide-react";
+import { Film, Clock, Users, Link, Plus, X } from "lucide-react";
 import { getActionTypesForSport, ACTION_CATEGORIES, getActionTypeLabel } from "@/lib/constants/videoActionTypes";
+import { Badge } from "@/components/ui/badge";
 
 interface AddClipDialogProps {
   open: boolean;
@@ -57,6 +58,23 @@ export function AddClipDialog({
   const [endSeconds, setEndSeconds] = useState("");
   const [notes, setNotes] = useState("");
   const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
+  const [showAddCustom, setShowAddCustom] = useState(false);
+  const [newCustomLabel, setNewCustomLabel] = useState("");
+  const [newCustomCategory, setNewCustomCategory] = useState<string>("other");
+
+  // Fetch custom action types for this category
+  const { data: customActionTypes } = useQuery({
+    queryKey: ["custom-video-action-types", categoryId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("custom_video_action_types")
+        .select("*")
+        .eq("category_id", categoryId)
+        .order("label");
+      if (error) throw error;
+      return data || [];
+    },
+  });
 
   // Fetch lineup players for this match (if match exists)
   const { data: lineupPlayers } = useQuery({
@@ -92,6 +110,71 @@ export function AddClipDialog({
 
   const players = (lineupPlayers?.length ? lineupPlayers : allPlayers) || [];
 
+  // Get combined action types (predefined + custom)
+  const predefinedActions = getActionTypesForSport(sportType);
+  const allActionTypes = [
+    ...predefinedActions,
+    ...(customActionTypes?.map(c => ({
+      value: `custom_${c.id}`,
+      label: c.label,
+      category: c.action_category as "offensive" | "defensive" | "physical" | "set_piece" | "transition" | "other",
+      isCustom: true,
+      customId: c.id,
+    })) || []),
+  ];
+
+  // Group actions by category for better UX
+  const groupedActions = ACTION_CATEGORIES.map(cat => ({
+    ...cat,
+    actions: allActionTypes.filter(a => a.category === cat.value),
+  })).filter(g => g.actions.length > 0);
+
+  const createCustomActionMutation = useMutation({
+    mutationFn: async () => {
+      const value = newCustomLabel
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9]+/g, "_")
+        .replace(/^_|_$/g, "");
+
+      const { error } = await supabase
+        .from("custom_video_action_types")
+        .insert({
+          category_id: categoryId,
+          value,
+          label: newCustomLabel,
+          action_category: newCustomCategory,
+          created_by: user?.id,
+        });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Action personnalisée ajoutée");
+      queryClient.invalidateQueries({ queryKey: ["custom-video-action-types", categoryId] });
+      setNewCustomLabel("");
+      setNewCustomCategory("other");
+      setShowAddCustom(false);
+    },
+    onError: (error) => {
+      toast.error("Erreur: " + error.message);
+    },
+  });
+
+  const deleteCustomActionMutation = useMutation({
+    mutationFn: async (customId: string) => {
+      const { error } = await supabase
+        .from("custom_video_action_types")
+        .delete()
+        .eq("id", customId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Action supprimée");
+      queryClient.invalidateQueries({ queryKey: ["custom-video-action-types", categoryId] });
+    },
+  });
+
   const createMutation = useMutation({
     mutationFn: async () => {
       const startTimeSeconds =
@@ -100,6 +183,15 @@ export function AddClipDialog({
         ? (parseInt(endMinutes) || 0) * 60 + (parseInt(endSeconds) || 0)
         : null;
 
+      // Resolve action type (remove custom_ prefix for storage)
+      const resolvedActionType = actionType.startsWith("custom_") 
+        ? actionType.replace("custom_", "")
+        : actionType;
+
+      // Get label for title
+      const selectedAction = allActionTypes.find(a => a.value === actionType);
+      const actionLabel = selectedAction?.label || resolvedActionType;
+
       // Create clip
       const { data: clipData, error: clipError } = await supabase
         .from("video_clips")
@@ -107,12 +199,12 @@ export function AddClipDialog({
           video_analysis_id: analysisId,
           category_id: categoryId,
           match_id: matchId || null,
-          title: title || getActionTypeLabel(actionType) || actionType,
+          title: title || actionLabel,
           clip_url: clipUrl,
           start_time_seconds: startTimeSeconds,
           end_time_seconds: endTimeSeconds,
           duration_seconds: endTimeSeconds ? endTimeSeconds - startTimeSeconds : null,
-          action_type: actionType,
+          action_type: resolvedActionType,
           action_category: actionCategory || null,
           notes: notes || null,
           created_by: user?.id,
@@ -159,6 +251,9 @@ export function AddClipDialog({
     setEndSeconds("");
     setNotes("");
     setSelectedPlayers([]);
+    setShowAddCustom(false);
+    setNewCustomLabel("");
+    setNewCustomCategory("other");
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -209,38 +304,114 @@ export function AddClipDialog({
             </p>
           </div>
 
-          {/* Action Type */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
+          {/* Action Type - Grouped by category */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
               <Label>Type d'action *</Label>
-              <Select value={actionType} onValueChange={setActionType}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner" />
-                </SelectTrigger>
-                <SelectContent>
-                  {getActionTypesForSport(sportType).map((action) => (
-                    <SelectItem key={action.value} value={action.value}>
-                      {action.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowAddCustom(!showAddCustom)}
+                className="h-7 text-xs"
+              >
+                <Plus className="h-3 w-3 mr-1" />
+                Personnalisé
+              </Button>
             </div>
-            <div className="space-y-2">
-              <Label>Catégorie</Label>
-              <Select value={actionCategory} onValueChange={setActionCategory}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Optionnel" />
-                </SelectTrigger>
-                <SelectContent>
-                  {ACTION_CATEGORIES.map((cat) => (
-                    <SelectItem key={cat.value} value={cat.value}>
-                      {cat.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+
+            {showAddCustom && (
+              <div className="p-3 border rounded-md bg-muted/50 space-y-2">
+                <Input
+                  value={newCustomLabel}
+                  onChange={(e) => setNewCustomLabel(e.target.value)}
+                  placeholder="Nom de l'action (ex: Corner rentrant)"
+                  className="h-8"
+                />
+                <div className="flex gap-2">
+                  <Select value={newCustomCategory} onValueChange={setNewCustomCategory}>
+                    <SelectTrigger className="h-8 flex-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ACTION_CATEGORIES.map((cat) => (
+                        <SelectItem key={cat.value} value={cat.value}>
+                          {cat.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() => createCustomActionMutation.mutate()}
+                    disabled={!newCustomLabel.trim() || createCustomActionMutation.isPending}
+                    className="h-8"
+                  >
+                    Ajouter
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Custom actions badges */}
+            {customActionTypes && customActionTypes.length > 0 && (
+              <div className="flex flex-wrap gap-1 mb-2">
+                <span className="text-xs text-muted-foreground mr-1">Perso:</span>
+                {customActionTypes.map((custom) => (
+                  <Badge key={custom.id} variant="secondary" className="text-xs gap-1">
+                    {custom.label}
+                    <button
+                      type="button"
+                      onClick={() => deleteCustomActionMutation.mutate(custom.id)}
+                      className="hover:text-destructive"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                ))}
+              </div>
+            )}
+
+            <Select value={actionType} onValueChange={setActionType}>
+              <SelectTrigger>
+                <SelectValue placeholder="Sélectionner" />
+              </SelectTrigger>
+              <SelectContent className="max-h-80">
+                {groupedActions.map((group) => (
+                  <div key={group.value}>
+                    <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground bg-muted/50">
+                      {group.label}
+                    </div>
+                    {group.actions.map((action) => (
+                      <SelectItem key={action.value} value={action.value}>
+                        {action.label}
+                        {"isCustom" in action && action.isCustom && (
+                          <span className="ml-2 text-xs text-muted-foreground">(perso)</span>
+                        )}
+                      </SelectItem>
+                    ))}
+                  </div>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Category filter */}
+          <div className="space-y-2">
+            <Label>Catégorie</Label>
+            <Select value={actionCategory} onValueChange={setActionCategory}>
+              <SelectTrigger>
+                <SelectValue placeholder="Optionnel" />
+              </SelectTrigger>
+              <SelectContent>
+                {ACTION_CATEGORIES.map((cat) => (
+                  <SelectItem key={cat.value} value={cat.value}>
+                    {cat.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Title */}

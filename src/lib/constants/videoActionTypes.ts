@@ -15,34 +15,99 @@ const COMMON_ACTIONS: ActionType[] = [
   { value: "other", label: "Autre", category: "other" },
 ];
 
-// Actions spécifiques Rugby
+// Actions spécifiques Rugby - ENRICHIES
 const RUGBY_ACTIONS: ActionType[] = [
+  // Offensive
   { value: "try", label: "Essai", category: "offensive" },
   { value: "pass", label: "Passe décisive", category: "offensive" },
   { value: "line_break", label: "Franchissement", category: "offensive" },
   { value: "offload", label: "Offload", category: "offensive" },
-  { value: "kick", label: "Jeu au pied", category: "offensive" },
+  { value: "kick_offensive", label: "Jeu au pied offensif", category: "offensive" },
+  { value: "grubber", label: "Petit-pont / Grubber", category: "offensive" },
+  { value: "chip_kick", label: "Coup de pied par-dessus", category: "offensive" },
+  { value: "drop_goal", label: "Drop", category: "offensive" },
+  { value: "penalty_kick", label: "Pénalité (tir)", category: "offensive" },
+  { value: "conversion", label: "Transformation", category: "offensive" },
+  { value: "attack_pattern", label: "Combinaison offensive", category: "offensive" },
+  
+  // Defensive
   { value: "tackle", label: "Plaquage", category: "defensive" },
-  { value: "turnover", label: "Turnover", category: "defensive" },
+  { value: "dominant_tackle", label: "Plaquage dominant", category: "defensive" },
+  { value: "tackle_missed", label: "Plaquage manqué", category: "defensive" },
+  { value: "turnover", label: "Turnover gagné", category: "defensive" },
+  { value: "turnover_lost", label: "Turnover perdu", category: "defensive" },
+  { value: "jackal", label: "Grattage", category: "defensive" },
+  { value: "defensive_line", label: "Ligne défensive", category: "defensive" },
+  { value: "blitz_defense", label: "Défense en blitz", category: "defensive" },
+  
+  // Set pieces
+  { value: "lineout_won", label: "Touche gagnée", category: "set_piece" },
+  { value: "lineout_lost", label: "Touche perdue", category: "set_piece" },
+  { value: "lineout_steal", label: "Touche volée", category: "set_piece" },
+  { value: "lineout_variation", label: "Touche - combinaison", category: "set_piece" },
+  { value: "scrum_won", label: "Mêlée gagnée", category: "set_piece" },
+  { value: "scrum_lost", label: "Mêlée perdue", category: "set_piece" },
+  { value: "scrum_penalty", label: "Mêlée - pénalité", category: "set_piece" },
+  { value: "scrum_pushover", label: "Mêlée - essai en poussée", category: "set_piece" },
+  { value: "restart_won", label: "Renvoi gagné", category: "set_piece" },
+  { value: "restart_lost", label: "Renvoi perdu", category: "set_piece" },
+  { value: "maul", label: "Maul", category: "set_piece" },
   { value: "ruck", label: "Ruck", category: "set_piece" },
-  { value: "lineout", label: "Touche", category: "set_piece" },
-  { value: "scrum", label: "Mêlée", category: "set_piece" },
+  
+  // Transition
+  { value: "counter_attack", label: "Contre-attaque", category: "transition" },
+  { value: "kick_chase", label: "Montée sur jeu au pied", category: "transition" },
+  { value: "exit_play", label: "Sortie de camp", category: "transition" },
 ];
 
-// Actions spécifiques Football
+// Actions spécifiques Football - ENRICHIES
 const FOOTBALL_ACTIONS: ActionType[] = [
+  // Offensive
   { value: "goal", label: "But", category: "offensive" },
-  { value: "shot", label: "Tir", category: "offensive" },
+  { value: "shot_on_target", label: "Tir cadré", category: "offensive" },
+  { value: "shot_off_target", label: "Tir non cadré", category: "offensive" },
   { value: "assist", label: "Passe décisive", category: "offensive" },
-  { value: "dribble", label: "Dribble", category: "offensive" },
+  { value: "key_pass", label: "Passe clé", category: "offensive" },
+  { value: "through_ball", label: "Passe en profondeur", category: "offensive" },
+  { value: "dribble_success", label: "Dribble réussi", category: "offensive" },
+  { value: "dribble_failed", label: "Dribble raté", category: "offensive" },
   { value: "cross", label: "Centre", category: "offensive" },
+  { value: "cross_success", label: "Centre réussi", category: "offensive" },
+  { value: "header", label: "Tête", category: "offensive" },
+  { value: "one_two", label: "Une-deux", category: "offensive" },
+  { value: "combination", label: "Combinaison", category: "offensive" },
+  
+  // Defensive
   { value: "tackle_football", label: "Tacle", category: "defensive" },
+  { value: "tackle_won", label: "Tacle gagné", category: "defensive" },
+  { value: "tackle_lost", label: "Tacle perdu", category: "defensive" },
   { value: "interception", label: "Interception", category: "defensive" },
   { value: "clearance", label: "Dégagement", category: "defensive" },
+  { value: "block", label: "Contre (tir)", category: "defensive" },
   { value: "save", label: "Arrêt", category: "defensive" },
+  { value: "save_spectacular", label: "Arrêt réflexe", category: "defensive" },
+  { value: "aerial_duel_won", label: "Duel aérien gagné", category: "defensive" },
+  { value: "aerial_duel_lost", label: "Duel aérien perdu", category: "defensive" },
+  { value: "pressing", label: "Pressing", category: "defensive" },
+  { value: "recovery", label: "Récupération", category: "defensive" },
+  
+  // Set pieces
   { value: "corner", label: "Corner", category: "set_piece" },
+  { value: "corner_goal", label: "But sur corner", category: "set_piece" },
   { value: "free_kick", label: "Coup franc", category: "set_piece" },
+  { value: "free_kick_goal", label: "But sur coup franc", category: "set_piece" },
   { value: "penalty", label: "Penalty", category: "set_piece" },
+  { value: "penalty_scored", label: "Penalty marqué", category: "set_piece" },
+  { value: "penalty_missed", label: "Penalty manqué", category: "set_piece" },
+  { value: "penalty_saved", label: "Penalty arrêté", category: "set_piece" },
+  { value: "throw_in", label: "Touche", category: "set_piece" },
+  { value: "goal_kick", label: "Coup de pied de but", category: "set_piece" },
+  
+  // Transition
+  { value: "counter_attack_football", label: "Contre-attaque", category: "transition" },
+  { value: "transition_attack", label: "Transition offensive", category: "transition" },
+  { value: "transition_defense", label: "Repli défensif", category: "transition" },
+  { value: "offside", label: "Hors-jeu", category: "transition" },
 ];
 
 // Actions spécifiques Aviron

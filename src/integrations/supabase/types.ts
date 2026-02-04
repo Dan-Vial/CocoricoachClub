@@ -1283,6 +1283,44 @@ export type Database = {
           },
         ]
       }
+      custom_video_action_types: {
+        Row: {
+          action_category: string
+          category_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          label: string
+          value: string
+        }
+        Insert: {
+          action_category?: string
+          category_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label: string
+          value: string
+        }
+        Update: {
+          action_category?: string
+          category_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label?: string
+          value?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_video_action_types_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       equipment_inventory: {
         Row: {
           available_quantity: number
