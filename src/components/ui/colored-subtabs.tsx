@@ -49,12 +49,11 @@ const ColoredSubTabsTrigger = React.forwardRef<
         "group relative inline-flex items-center gap-1.5 px-2 sm:px-3 py-2 rounded-md font-medium text-xs sm:text-sm",
         "transition-all duration-200 ease-out",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-        "data-[state=active]:text-white data-[state=active]:shadow-md",
+        "data-[state=active]:shadow-md",
         className
       )}
       style={{
         ["--subtab-color" as string]: colors.base,
-        color: colors.base,
       }}
       {...props}
     >
@@ -67,8 +66,8 @@ const ColoredSubTabsTrigger = React.forwardRef<
         )}
         style={{ backgroundColor: colors.base }}
       />
-      {/* Content */}
-      <span className="relative z-10 flex items-center gap-1.5">
+      {/* Content - uses CSS variable for color, white when active */}
+      <span className="relative z-10 flex items-center gap-1.5 transition-colors duration-200 text-[var(--subtab-color)] group-data-[state=active]:text-white">
         {icon && <span className="shrink-0 h-4 w-4">{icon}</span>}
         {children}
       </span>
