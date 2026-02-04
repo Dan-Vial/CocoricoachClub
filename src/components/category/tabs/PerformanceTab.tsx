@@ -1,18 +1,17 @@
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BarChart3, Dumbbell, History, Zap } from "lucide-react";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { BarChart3, Dumbbell, History, Zap, Lock } from "lucide-react";
 import { AnalyticsTab } from "@/components/analytics/AnalyticsTab";
 import { PhysicalPreparationTab } from "@/components/category/PhysicalPreparationTab";
 import { SessionHistoryTimeline } from "@/components/category/history/SessionHistoryTimeline";
 import { TrainingLoadTab } from "@/components/training-load/TrainingLoadTab";
 import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Lock } from "lucide-react";
+import { ColoredSubTabsList, ColoredSubTabsTrigger } from "@/components/ui/colored-subtabs";
 
 interface PerformanceTabProps {
   categoryId: string;
 }
 
-// Message affiché quand l'onglet Performance est complètement désactivé
 function PerformanceDisabledMessage() {
   return (
     <Card className="border-dashed border-muted-foreground/30">
@@ -35,35 +34,46 @@ function PerformanceDisabledMessage() {
 export function PerformanceTab({ categoryId }: PerformanceTabProps) {
   const { isViewer } = useViewerModeContext();
 
-  // En mode viewer, l'onglet Performance entier est désactivé
   if (isViewer) {
     return <PerformanceDisabledMessage />;
   }
 
   return (
     <Tabs defaultValue="training-load" className="space-y-4">
-      <div className="overflow-x-auto -mx-4 px-4 pb-2">
-        <TabsList className="inline-flex w-max min-w-full gap-1 h-auto bg-muted p-1">
-          <TabsTrigger value="training-load" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">
-            <Zap className="h-4 w-4 shrink-0" />
+      <div className="flex justify-center overflow-x-auto -mx-4 px-4 pb-2">
+        <ColoredSubTabsList colorKey="performance" className="inline-flex w-max">
+          <ColoredSubTabsTrigger 
+            value="training-load" 
+            colorKey="performance"
+            icon={<Zap className="h-4 w-4" />}
+          >
             <span className="hidden sm:inline">Charge d'entraînement</span>
             <span className="sm:hidden">Charge</span>
-          </TabsTrigger>
-          <TabsTrigger value="history" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">
-            <History className="h-4 w-4 shrink-0" />
+          </ColoredSubTabsTrigger>
+          <ColoredSubTabsTrigger 
+            value="history" 
+            colorKey="performance"
+            icon={<History className="h-4 w-4" />}
+          >
             <span className="hidden sm:inline">Historique</span>
             <span className="sm:hidden">Hist</span>
-          </TabsTrigger>
-          <TabsTrigger value="analytics" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">
-            <BarChart3 className="h-4 w-4 shrink-0" />
+          </ColoredSubTabsTrigger>
+          <ColoredSubTabsTrigger 
+            value="analytics" 
+            colorKey="performance"
+            icon={<BarChart3 className="h-4 w-4" />}
+          >
             Analyse
-          </TabsTrigger>
-          <TabsTrigger value="physical-prep" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">
-            <Dumbbell className="h-4 w-4 shrink-0" />
+          </ColoredSubTabsTrigger>
+          <ColoredSubTabsTrigger 
+            value="physical-prep" 
+            colorKey="performance"
+            icon={<Dumbbell className="h-4 w-4" />}
+          >
             <span className="hidden sm:inline">Prépa Physique</span>
             <span className="sm:hidden">Prépa</span>
-          </TabsTrigger>
-        </TabsList>
+          </ColoredSubTabsTrigger>
+        </ColoredSubTabsList>
       </div>
 
       <TabsContent value="training-load">

@@ -1,9 +1,10 @@
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Trophy, Swords, Flag, Award } from "lucide-react";
 import { MatchesTab } from "@/components/category/MatchesTab";
 import { TournamentsTab } from "@/components/category/TournamentsTab";
 import { NationalTeamTab } from "@/components/category/national-team/NationalTeamTab";
 import { isIndividualSport } from "@/lib/constants/sportTypes";
+import { ColoredSubTabsList, ColoredSubTabsTrigger } from "@/components/ui/colored-subtabs";
 
 interface CompetitionTabProps {
   categoryId: string;
@@ -13,35 +14,42 @@ interface CompetitionTabProps {
 }
 
 export function CompetitionTab({ categoryId, isRugby7, isNationalTeam, sportType }: CompetitionTabProps) {
-  // Check if this is an individual sport (judo, bowling, aviron)
   const isIndividual = isIndividualSport(sportType || "");
   
-  // Labels adaptés selon le sport
   const matchLabel = isIndividual ? "Compétitions" : "Matchs";
-  const matchIcon = isIndividual ? <Award className="h-4 w-4 shrink-0" /> : <Swords className="h-4 w-4 shrink-0" />;
+  const MatchIcon = isIndividual ? Award : Swords;
 
   return (
     <Tabs defaultValue="matches" className="space-y-4">
-      <div className="overflow-x-auto -mx-4 px-4 pb-2">
-        <TabsList className="inline-flex w-max min-w-full gap-1 h-auto bg-muted p-1">
-          <TabsTrigger value="matches" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">
-            {matchIcon}
+      <div className="flex justify-center overflow-x-auto -mx-4 px-4 pb-2">
+        <ColoredSubTabsList colorKey="competition" className="inline-flex w-max">
+          <ColoredSubTabsTrigger 
+            value="matches" 
+            colorKey="competition"
+            icon={<MatchIcon className="h-4 w-4" />}
+          >
             {matchLabel}
-          </TabsTrigger>
+          </ColoredSubTabsTrigger>
           {isRugby7 && (
-            <TabsTrigger value="tournaments" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">
-              <Trophy className="h-4 w-4 shrink-0" />
+            <ColoredSubTabsTrigger 
+              value="tournaments" 
+              colorKey="competition"
+              icon={<Trophy className="h-4 w-4" />}
+            >
               Tournois
-            </TabsTrigger>
+            </ColoredSubTabsTrigger>
           )}
           {isNationalTeam && (
-            <TabsTrigger value="national-team" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">
-              <Flag className="h-4 w-4 shrink-0" />
+            <ColoredSubTabsTrigger 
+              value="national-team" 
+              colorKey="competition"
+              icon={<Flag className="h-4 w-4" />}
+            >
               <span className="hidden sm:inline">Équipe Nationale</span>
               <span className="sm:hidden">National</span>
-            </TabsTrigger>
+            </ColoredSubTabsTrigger>
           )}
-        </TabsList>
+        </ColoredSubTabsList>
       </div>
 
       <TabsContent value="matches">

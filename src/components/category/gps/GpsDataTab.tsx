@@ -8,7 +8,9 @@ import { GpsImportDialog } from "./GpsImportDialog";
 import { GpsSessionsList } from "./GpsSessionsList";
 import { GpsAnalyticsDashboard } from "./GpsAnalyticsDashboard";
 import { WeeklyGpsRecommendations } from "./WeeklyGpsRecommendations";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { ColoredSubTabsList, ColoredSubTabsTrigger } from "@/components/ui/colored-subtabs";
+import { BarChart3 as AnalyticsIcon, Activity as SessionsIcon } from "lucide-react";
 import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 
 interface GpsDataTabProps {
@@ -147,10 +149,24 @@ export function GpsDataTab({ categoryId }: GpsDataTabProps) {
 
       {/* Main content tabs */}
       <Tabs defaultValue="sessions" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="sessions">Sessions</TabsTrigger>
-          <TabsTrigger value="analytics">Analyse</TabsTrigger>
-        </TabsList>
+        <div className="flex justify-center">
+          <ColoredSubTabsList colorKey="gps" className="inline-flex w-max">
+            <ColoredSubTabsTrigger 
+              value="sessions" 
+              colorKey="gps"
+              icon={<SessionsIcon className="h-4 w-4" />}
+            >
+              Sessions
+            </ColoredSubTabsTrigger>
+            <ColoredSubTabsTrigger 
+              value="analytics" 
+              colorKey="gps"
+              icon={<AnalyticsIcon className="h-4 w-4" />}
+            >
+              Analyse
+            </ColoredSubTabsTrigger>
+          </ColoredSubTabsList>
+        </div>
 
         <TabsContent value="sessions">
           <GpsSessionsList 

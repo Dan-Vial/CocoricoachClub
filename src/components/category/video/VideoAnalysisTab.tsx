@@ -4,7 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { ColoredSubTabsList, ColoredSubTabsTrigger } from "@/components/ui/colored-subtabs";
 import { Video, Plus, Film, Users, BarChart3 } from "lucide-react";
 import { AddVideoAnalysisDialog } from "./AddVideoAnalysisDialog";
 import { VideoAnalysisList } from "./VideoAnalysisList";
@@ -113,20 +114,31 @@ export function VideoAnalysisTab({ categoryId, sportType }: VideoAnalysisTabProp
 
       {/* Main Tabs */}
       <Tabs defaultValue="analyses" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="analyses" className="flex items-center gap-2">
-            <Video className="h-4 w-4" />
-            Analyses Matchs
-          </TabsTrigger>
-          <TabsTrigger value="clips" className="flex items-center gap-2">
-            <Film className="h-4 w-4" />
-            Tous les Clips
-          </TabsTrigger>
-          <TabsTrigger value="players" className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            Vue Joueurs
-          </TabsTrigger>
-        </TabsList>
+        <div className="flex justify-center">
+          <ColoredSubTabsList colorKey="video" className="inline-flex w-max">
+            <ColoredSubTabsTrigger 
+              value="analyses" 
+              colorKey="video"
+              icon={<Video className="h-4 w-4" />}
+            >
+              Analyses Matchs
+            </ColoredSubTabsTrigger>
+            <ColoredSubTabsTrigger 
+              value="clips" 
+              colorKey="video"
+              icon={<Film className="h-4 w-4" />}
+            >
+              Tous les Clips
+            </ColoredSubTabsTrigger>
+            <ColoredSubTabsTrigger 
+              value="players" 
+              colorKey="video"
+              icon={<Users className="h-4 w-4" />}
+            >
+              Vue Joueurs
+            </ColoredSubTabsTrigger>
+          </ColoredSubTabsList>
+        </div>
 
         <TabsContent value="analyses">
           {!selectedAnalysisId ? (
