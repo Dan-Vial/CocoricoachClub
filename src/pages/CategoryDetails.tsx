@@ -94,9 +94,16 @@ function ColoredTabTrigger({ value, colorKey, icon, label, shortLabel, disabled 
   );
 }
 
-// Helper to check if GPS is available for sport
+// Helper to check if GPS is available for sport (only Football and Rugby)
 const isGpsSportType = (sportType: string | undefined) => {
-  return sportType === "football" || sportType === "XV" || sportType === "7" || sportType === "XIII" || sportType === "rugby";
+  return sportType === "football" || sportType === "XV" || sportType === "7" || sportType === "XIII" || sportType === "rugby" ||
+         sportType?.startsWith("football_");
+};
+
+// Helper to check if Video Analysis is available for sport (exclude CrossFit/Hyrox/Musculation)
+const hasVideoAnalysis = (sportType: string | undefined) => {
+  if (!sportType) return true;
+  return !sportType.startsWith("crossfit");
 };
 
 function CategoryDetailsContent() {
@@ -323,13 +330,15 @@ function CategoryDetailsContent() {
                   label="GPS"
                 />
               )}
-              <ColoredTabTrigger 
-                value="video" 
-                colorKey="video"
-                icon={<Video className="h-6 w-6 sm:h-7 sm:w-7" />}
-                label="Analyse Vidéo"
-                shortLabel="Vidéo"
-              />
+              {hasVideoAnalysis(category?.rugby_type) && (
+                <ColoredTabTrigger 
+                  value="video" 
+                  colorKey="video"
+                  icon={<Video className="h-6 w-6 sm:h-7 sm:w-7" />}
+                  label="Analyse Vidéo"
+                  shortLabel="Vidéo"
+                />
+              )}
               {!isViewer && (
                 <ColoredTabTrigger 
                   value="communication" 
@@ -397,10 +406,12 @@ function CategoryDetailsContent() {
             </TabsContent>
           )}
 
-          {/* Video Analysis Tab - All sports */}
-          <TabsContent value="video" className="space-y-4">
-            <VideoAnalysisTab categoryId={categoryId!} sportType={category?.rugby_type} />
-          </TabsContent>
+          {/* Video Analysis Tab - Exclude CrossFit/Hyrox/Musculation */}
+          {hasVideoAnalysis(category?.rugby_type) && (
+            <TabsContent value="video" className="space-y-4">
+              <VideoAnalysisTab categoryId={categoryId!} sportType={category?.rugby_type} />
+            </TabsContent>
+          )}
 
           {!isViewer && (
             <TabsContent value="communication" className="space-y-4">

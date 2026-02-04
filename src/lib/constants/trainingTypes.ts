@@ -36,6 +36,13 @@ export const SPORT_TRAINING_CATEGORIES: TrainingTypeCategory[] = [
   { key: "judo", label: "Judo", forSports: ["judo"] },
   // Bowling
   { key: "bowling", label: "Bowling", forSports: ["bowling"] },
+  // CrossFit / Hyrox / Musculation categories
+  { key: "crossfit_wod", label: "WOD / CrossFit", forSports: ["crossfit"] },
+  { key: "crossfit_hyrox", label: "Hyrox / Fonctionnel", forSports: ["crossfit"] },
+  { key: "crossfit_strength", label: "Force / Musculation", forSports: ["crossfit"] },
+  { key: "crossfit_cardio", label: "Cardio / Endurance", forSports: ["crossfit"] },
+  { key: "crossfit_skills", label: "Compétences / Gymnastique", forSports: ["crossfit"] },
+  { key: "crossfit_classes", label: "Cours Spécialisés", forSports: ["crossfit"] },
   // Athletics categories
   { key: "athle_sprint", label: "Sprint / Vitesse", forSports: ["athletisme"] },
   { key: "athle_haies", label: "Haies", forSports: ["athletisme"] },
@@ -64,6 +71,7 @@ function getBaseSport(sportType: string): string {
   if (normalizedSport.startsWith('bowling')) return 'bowling';
   if (normalizedSport.startsWith('aviron')) return 'aviron';
   if (normalizedSport.startsWith('athletisme') || normalizedSport.startsWith('athlétisme')) return 'athletisme';
+  if (normalizedSport.startsWith('crossfit')) return 'crossfit';
   return normalizedSport;
 }
 
@@ -141,6 +149,58 @@ export const ALL_TRAINING_TYPES: TrainingTypeOption[] = [
   { value: "bowling_game", label: "Parties d'Entraînement", hasExercises: false, forSports: ["bowling"], category: "bowling" },
   { value: "bowling_approche", label: "Travail d'Approche", hasExercises: false, forSports: ["bowling"], category: "bowling" },
   { value: "bowling_release", label: "Travail de Lâcher", hasExercises: false, forSports: ["bowling"], category: "bowling" },
+  
+  // CrossFit / Hyrox / Musculation specific - with categories
+  // WOD / CrossFit
+  { value: "crossfit_wod", label: "WOD (Workout of the Day)", hasExercises: true, forSports: ["crossfit"], category: "crossfit_wod" },
+  { value: "crossfit_amrap", label: "AMRAP", hasExercises: true, forSports: ["crossfit"], category: "crossfit_wod" },
+  { value: "crossfit_emom", label: "EMOM", hasExercises: true, forSports: ["crossfit"], category: "crossfit_wod" },
+  { value: "crossfit_fortime", label: "For Time", hasExercises: true, forSports: ["crossfit"], category: "crossfit_wod" },
+  { value: "crossfit_chipper", label: "Chipper", hasExercises: true, forSports: ["crossfit"], category: "crossfit_wod" },
+  { value: "crossfit_benchmark", label: "Benchmark / Hero WOD", hasExercises: true, forSports: ["crossfit"], category: "crossfit_wod" },
+  { value: "crossfit_team", label: "Team WOD", hasExercises: true, forSports: ["crossfit"], category: "crossfit_wod" },
+  
+  // Hyrox / Fonctionnel
+  { value: "crossfit_hyrox_sim", label: "Simulation Hyrox", hasExercises: true, forSports: ["crossfit"], category: "crossfit_hyrox" },
+  { value: "crossfit_hyrox_run", label: "Running / Course", hasExercises: false, forSports: ["crossfit"], category: "crossfit_hyrox" },
+  { value: "crossfit_hyrox_stations", label: "Travail Stations", hasExercises: true, forSports: ["crossfit"], category: "crossfit_hyrox" },
+  { value: "crossfit_functional", label: "Fitness Fonctionnel", hasExercises: true, forSports: ["crossfit"], category: "crossfit_hyrox" },
+  { value: "crossfit_hybride", label: "Entraînement Hybride", hasExercises: true, forSports: ["crossfit"], category: "crossfit_hyrox" },
+  
+  // Force / Musculation
+  { value: "crossfit_strength", label: "Force / Strength", hasExercises: true, forSports: ["crossfit"], category: "crossfit_strength" },
+  { value: "crossfit_bodybuilding", label: "Bodybuilding / Hypertrophie", hasExercises: true, forSports: ["crossfit"], category: "crossfit_strength" },
+  { value: "crossfit_powerlifting", label: "Powerlifting", hasExercises: true, forSports: ["crossfit"], category: "crossfit_strength" },
+  { value: "crossfit_halterophilie", label: "Haltérophilie", hasExercises: true, forSports: ["crossfit"], category: "crossfit_strength" },
+  { value: "crossfit_accessoire", label: "Accessoires / Isolation", hasExercises: true, forSports: ["crossfit"], category: "crossfit_strength" },
+  
+  // Cardio / Endurance
+  { value: "crossfit_cardio", label: "Cardio", hasExercises: false, forSports: ["crossfit"], category: "crossfit_cardio" },
+  { value: "crossfit_row", label: "Rameur (RowErg)", hasExercises: false, forSports: ["crossfit"], category: "crossfit_cardio" },
+  { value: "crossfit_bike", label: "Vélo (BikeErg / Assault)", hasExercises: false, forSports: ["crossfit"], category: "crossfit_cardio" },
+  { value: "crossfit_ski", label: "SkiErg", hasExercises: false, forSports: ["crossfit"], category: "crossfit_cardio" },
+  { value: "crossfit_run", label: "Course à pied", hasExercises: false, forSports: ["crossfit"], category: "crossfit_cardio" },
+  { value: "crossfit_intervals", label: "Intervalles / HIIT", hasExercises: true, forSports: ["crossfit"], category: "crossfit_cardio" },
+  
+  // Compétences / Gymnastique
+  { value: "crossfit_gymnastics", label: "Gymnastique", hasExercises: true, forSports: ["crossfit"], category: "crossfit_skills" },
+  { value: "crossfit_pullups", label: "Tractions / Pull-ups", hasExercises: true, forSports: ["crossfit"], category: "crossfit_skills" },
+  { value: "crossfit_handstand", label: "Handstand / HSPU", hasExercises: true, forSports: ["crossfit"], category: "crossfit_skills" },
+  { value: "crossfit_muscleup", label: "Muscle-ups", hasExercises: true, forSports: ["crossfit"], category: "crossfit_skills" },
+  { value: "crossfit_doubleunders", label: "Double Unders", hasExercises: false, forSports: ["crossfit"], category: "crossfit_skills" },
+  { value: "crossfit_skills", label: "Skill Work / Technique", hasExercises: false, forSports: ["crossfit"], category: "crossfit_skills" },
+  { value: "crossfit_pilates", label: "Pilates", hasExercises: true, forSports: ["crossfit"], category: "crossfit_skills" },
+  { value: "crossfit_yoga", label: "Yoga / Mobilité", hasExercises: true, forSports: ["crossfit"], category: "crossfit_skills" },
+  
+  // Cours Spécialisés
+  { value: "crossfit_kids", label: "Kids (6-12 ans)", hasExercises: true, forSports: ["crossfit"], category: "crossfit_classes" },
+  { value: "crossfit_teens", label: "Teens (13-17 ans)", hasExercises: true, forSports: ["crossfit"], category: "crossfit_classes" },
+  { value: "crossfit_baby_gym", label: "Baby Gym (3-5 ans)", hasExercises: true, forSports: ["crossfit"], category: "crossfit_classes" },
+  { value: "crossfit_seniors", label: "Seniors / Masters", hasExercises: true, forSports: ["crossfit"], category: "crossfit_classes" },
+  { value: "crossfit_prenatal", label: "Prénatal / Postnatal", hasExercises: true, forSports: ["crossfit"], category: "crossfit_classes" },
+  { value: "crossfit_debutant", label: "Initiation / Débutant", hasExercises: true, forSports: ["crossfit"], category: "crossfit_classes" },
+  { value: "crossfit_competition", label: "Prépa Compétition", hasExercises: true, forSports: ["crossfit"], category: "crossfit_classes" },
+  { value: "crossfit_open_gym", label: "Open Gym", hasExercises: false, forSports: ["crossfit"], category: "crossfit_classes" },
   
   // Athlétisme specific - with categories
   // Sprint / Vitesse
@@ -362,6 +422,51 @@ export const TRAINING_TYPE_COLORS: Record<string, string> = {
   bowling_game: "bg-green-600",
   bowling_approche: "bg-cyan-500",
   bowling_release: "bg-blue-500",
+  // CrossFit / Hyrox / Musculation specific - WOD
+  crossfit_wod: "bg-orange-500",
+  crossfit_amrap: "bg-orange-600",
+  crossfit_emom: "bg-amber-500",
+  crossfit_fortime: "bg-red-500",
+  crossfit_chipper: "bg-rose-500",
+  crossfit_benchmark: "bg-rose-600",
+  crossfit_team: "bg-orange-400",
+  // CrossFit - Hyrox
+  crossfit_hyrox_sim: "bg-purple-600",
+  crossfit_hyrox_run: "bg-purple-500",
+  crossfit_hyrox_stations: "bg-violet-500",
+  crossfit_functional: "bg-indigo-500",
+  crossfit_hybride: "bg-fuchsia-500",
+  // CrossFit - Strength
+  crossfit_strength: "bg-slate-600",
+  crossfit_bodybuilding: "bg-slate-500",
+  crossfit_powerlifting: "bg-gray-600",
+  crossfit_halterophilie: "bg-zinc-600",
+  crossfit_accessoire: "bg-stone-500",
+  // CrossFit - Cardio
+  crossfit_cardio: "bg-sky-500",
+  crossfit_row: "bg-sky-600",
+  crossfit_bike: "bg-cyan-500",
+  crossfit_ski: "bg-teal-500",
+  crossfit_run: "bg-emerald-500",
+  crossfit_intervals: "bg-lime-500",
+  // CrossFit - Skills
+  crossfit_gymnastics: "bg-pink-500",
+  crossfit_pullups: "bg-pink-600",
+  crossfit_handstand: "bg-fuchsia-600",
+  crossfit_muscleup: "bg-purple-500",
+  crossfit_doubleunders: "bg-violet-600",
+  crossfit_skills: "bg-indigo-400",
+  crossfit_pilates: "bg-rose-400",
+  crossfit_yoga: "bg-green-400",
+  // CrossFit - Classes
+  crossfit_kids: "bg-yellow-400",
+  crossfit_teens: "bg-yellow-500",
+  crossfit_baby_gym: "bg-amber-400",
+  crossfit_seniors: "bg-blue-400",
+  crossfit_prenatal: "bg-pink-400",
+  crossfit_debutant: "bg-green-500",
+  crossfit_competition: "bg-red-600",
+  crossfit_open_gym: "bg-gray-400",
   // Athlétisme specific - Sprint
   athle_vitesse: "bg-red-500",
   athle_departs: "bg-red-600",

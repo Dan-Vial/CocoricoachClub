@@ -13,6 +13,7 @@ export type SportType =
   | "basketball"
   | "aviron"
   | "athletisme"
+  | "crossfit"
   | "football_club"
   | "football_academie"
   | "football_national"
@@ -34,6 +35,9 @@ export type SportType =
   | "aviron_club"
   | "aviron_academie"
   | "aviron_national"
+  | "crossfit_box"
+  | "crossfit_hyrox"
+  | "crossfit_musculation"
   // Athlétisme disciplines
   | "athletisme_sprints"
   | "athletisme_haies"
@@ -55,7 +59,7 @@ export interface SportTypeOption {
 }
 
 // Main sport categories for the first dropdown
-export type MainSportCategory = "rugby" | "football" | "handball" | "volleyball" | "basketball" | "judo" | "bowling" | "aviron" | "athletisme";
+export type MainSportCategory = "rugby" | "football" | "handball" | "volleyball" | "basketball" | "judo" | "bowling" | "aviron" | "athletisme" | "crossfit";
 
 export interface MainSportOption {
   value: MainSportCategory;
@@ -72,6 +76,7 @@ export const MAIN_SPORTS: MainSportOption[] = [
   { value: "bowling", label: "Bowling" },
   { value: "aviron", label: "Aviron" },
   { value: "athletisme", label: "Athlétisme" },
+  { value: "crossfit", label: "CrossFit / Hyrox / Musculation" },
 ];
 
 // Sub-types for rugby
@@ -228,13 +233,22 @@ export const AVIRON_ROLES: PlayerAttributeOption[] = [
   { value: "nage_8", label: "Nage 8 (Stroke)" },
 ];
 
+// Sub-types for CrossFit/Hyrox/Musculation
+export const CROSSFIT_SUBTYPES: SportSubTypeOption[] = [
+  { value: "crossfit_box", label: "CrossFit - Box / Salle" },
+  { value: "crossfit_hyrox", label: "Hyrox / Fitness Fonctionnel" },
+  { value: "crossfit_musculation", label: "Musculation / Bodybuilding" },
+];
+
 // Sub-types for other sports (Club, Académie, Équipe Nationale)
 export const getOtherSportSubtypes = (sport: MainSportCategory): SportSubTypeOption[] => {
   if (sport === "rugby") return RUGBY_SUBTYPES;
   // For athletics category creation, only show Club/Académie/National
   if (sport === "athletisme") return ATHLETISME_CATEGORY_SUBTYPES;
+  // For CrossFit/Hyrox/Musculation
+  if (sport === "crossfit") return CROSSFIT_SUBTYPES;
   
-  const sportLabels: Record<Exclude<MainSportCategory, "rugby" | "athletisme">, string> = {
+  const sportLabels: Record<Exclude<MainSportCategory, "rugby" | "athletisme" | "crossfit">, string> = {
     football: "Football",
     handball: "Handball",
     volleyball: "Volleyball",
@@ -295,6 +309,11 @@ export const SPORT_TYPES: SportTypeOption[] = [
   { value: "judo_national", label: "Judo - Équipe Nationale", category: "individual" },
   { value: "bowling_national", label: "Bowling - Équipe Nationale", category: "individual" },
   { value: "aviron_national", label: "Aviron - Équipe Nationale", category: "individual" },
+  // CrossFit / Hyrox / Musculation
+  { value: "crossfit_box", label: "CrossFit - Box / Salle", category: "individual" },
+  { value: "crossfit_hyrox", label: "Hyrox / Fitness Fonctionnel", category: "individual" },
+  { value: "crossfit_musculation", label: "Musculation / Bodybuilding", category: "individual" },
+  { value: "crossfit", label: "CrossFit / Hyrox / Musculation", category: "individual" },
   // Athlétisme disciplines
   { value: "athletisme_sprints", label: "Athlétisme - Sprints", category: "individual" },
   { value: "athletisme_haies", label: "Athlétisme - Haies", category: "individual" },
@@ -352,21 +371,28 @@ export const getMainSportFromType = (type: string): MainSportCategory => {
   if (type.startsWith("bowling")) return "bowling";
   if (type.startsWith("aviron")) return "aviron";
   if (type.startsWith("athletisme")) return "athletisme";
+  if (type.startsWith("crossfit")) return "crossfit";
   return "rugby"; // default
 };
 
 export const isIndividualSport = (type: string): boolean => {
   const individualSports = [
-    "judo", "bowling", "aviron", "athletisme",
+    "judo", "bowling", "aviron", "athletisme", "crossfit",
     "judo_club", "judo_academie", "judo_national",
     "bowling_club", "bowling_academie", "bowling_national",
     "aviron_club", "aviron_academie", "aviron_national",
+    "crossfit_box", "crossfit_hyrox", "crossfit_musculation",
     "athletisme_sprints", "athletisme_haies", "athletisme_demi_fond",
     "athletisme_fond", "athletisme_marche", "athletisme_sauts_longueur",
     "athletisme_sauts_hauteur", "athletisme_lancers", "athletisme_combines",
     "athletisme_club", "athletisme_academie", "athletisme_national"
   ];
   return individualSports.includes(type);
+};
+
+// Helper to check if a category is CrossFit/Hyrox/Musculation
+export const isCrossfitCategory = (rugbyType: string): boolean => {
+  return rugbyType?.startsWith("crossfit") || rugbyType === "crossfit";
 };
 
 export const isTeamSport = (type: string): boolean => {
