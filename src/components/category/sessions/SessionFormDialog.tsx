@@ -355,6 +355,37 @@ export function SessionFormDialog({
     enabled: open && !!editSession?.id,
   });
 
+  // Fetch existing session blocks if editing
+  const { data: existingBlocks } = useQuery({
+    queryKey: ["session-blocks-edit", editSession?.id],
+    queryFn: async () => {
+      if (!editSession?.id) return [];
+      const { data, error } = await supabase
+        .from("training_session_blocks")
+        .select("*")
+        .eq("training_session_id", editSession.id)
+        .order("order_index");
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: open && !!editSession?.id,
+  });
+
+  // Fetch existing player attendance if editing
+  const { data: existingAttendance } = useQuery({
+    queryKey: ["session-attendance-edit", editSession?.id],
+    queryFn: async () => {
+      if (!editSession?.id) return [];
+      const { data, error } = await supabase
+        .from("training_attendance")
+        .select("player_id")
+        .eq("training_session_id", editSession.id);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: open && !!editSession?.id,
+  });
+
   // Organize exercises into groups for rendering
   const exerciseGroups = useMemo(() => {
     const groups: ExerciseGroup[] = [];
@@ -437,6 +468,45 @@ export function SessionFormDialog({
       setExercises([]);
     }
   }, [existingExercises, editSession]);
+
+  // Load existing blocks when editing
+  useEffect(() => {
+    if (existingBlocks && existingBlocks.length > 0 && editSession) {
+      setSessionBlocks(
+        existingBlocks.map((block) => ({
+          id: block.id,
+          training_type: block.training_type,
+          intensity: block.intensity || undefined,
+          start_time: block.start_time || undefined,
+          end_time: block.end_time || undefined,
+          notes: block.notes || undefined,
+          block_order: block.block_order,
+        }))
+      );
+    } else if (!editSession) {
+      setSessionBlocks([]);
+    }
+  }, [existingBlocks, editSession]);
+
+  // Load existing player attendance when editing
+  useEffect(() => {
+    if (existingAttendance && existingAttendance.length > 0 && editSession && players) {
+      const attendedPlayerIds = existingAttendance.map(a => a.player_id);
+      const totalPlayers = players.length;
+      
+      // If all players attended, keep mode "all", otherwise switch to "specific"
+      if (attendedPlayerIds.length === totalPlayers) {
+        setPlayerSelectionMode("all");
+        setSelectedPlayers([]);
+      } else {
+        setPlayerSelectionMode("specific");
+        setSelectedPlayers(attendedPlayerIds);
+      }
+    } else if (!editSession) {
+      setPlayerSelectionMode("all");
+      setSelectedPlayers([]);
+    }
+  }, [existingAttendance, editSession, players]);
 
   const injuredPlayers = players?.filter((p) => p.isInjured) || [];
   const healthyPlayers = players?.filter((p) => !p.isInjured) || [];
