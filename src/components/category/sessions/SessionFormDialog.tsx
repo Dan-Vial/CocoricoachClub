@@ -79,6 +79,7 @@ import { SessionGpsImport, type GpsPlayerData } from "@/components/category/gps/
 import { isRugbyType } from "@/lib/constants/sportTypes";
 import { TrainingMethodBlock } from "./TrainingMethodBlocks";
 import { SessionTestBlock, type SessionTest } from "./SessionTestBlock";
+import { SessionBlocksManager, type SessionBlock } from "./SessionBlocksManager";
 
 interface SessionFormDialogProps {
   open: boolean;
@@ -258,6 +259,7 @@ export function SessionFormDialog({
   const [activeExercise, setActiveExercise] = useState<any>(null);
   const [gpsData, setGpsData] = useState<GpsPlayerData[]>([]);
   const [sessionTests, setSessionTests] = useState<SessionTest[]>([]);
+  const [sessionBlocks, setSessionBlocks] = useState<SessionBlock[]>([]);
   
   // Block configurations for groups
   const [blockConfigs, setBlockConfigs] = useState<Record<string, BlockConfig>>({});
@@ -448,13 +450,19 @@ export function SessionFormDialog({
   // Create or update session
   const saveSession = useMutation({
     mutationFn: async () => {
+      // Use first block type if blocks exist, otherwise use selected type
+      const mainType = sessionBlocks.length > 0 ? sessionBlocks[0].training_type : type;
+      const mainIntensity = sessionBlocks.length > 0 
+        ? sessionBlocks.reduce((max, b) => Math.max(max, b.intensity || 0), 0)
+        : (intensity ? parseInt(intensity) : null);
+
       const sessionData = {
         category_id: categoryId,
         session_date: date,
         session_start_time: startTime || null,
         session_end_time: endTime || null,
-        training_type: type as any,
-        intensity: intensity ? parseInt(intensity) : null,
+        training_type: mainType || "autre" as any,
+        intensity: mainIntensity,
         notes: notes || null,
       };
 
@@ -466,6 +474,12 @@ export function SessionFormDialog({
           .update(sessionData)
           .eq("id", editSession.id);
         if (error) throw error;
+
+        // Delete existing blocks and exercises when editing
+        await supabase
+          .from("training_session_blocks")
+          .delete()
+          .eq("training_session_id", editSession.id);
 
         await supabase
           .from("gym_session_exercises")
@@ -495,6 +509,29 @@ export function SessionFormDialog({
           }));
 
           await supabase.from("training_attendance").insert(attendanceRecords);
+        }
+      }
+
+      // If session blocks exist, create them
+      if (sessionBlocks.length > 0) {
+        const blockRecords = sessionBlocks
+          .filter(block => block.training_type)
+          .map((block, idx) => ({
+            training_session_id: sessionId,
+            block_order: idx,
+            start_time: block.start_time || null,
+            end_time: block.end_time || null,
+            training_type: block.training_type,
+            intensity: block.intensity,
+            notes: block.notes || null,
+          }));
+
+        if (blockRecords.length > 0) {
+          const { error: blocksError } = await supabase
+            .from("training_session_blocks")
+            .insert(blockRecords);
+          
+          if (blocksError) throw blocksError;
         }
       }
 
@@ -607,13 +644,16 @@ export function SessionFormDialog({
       queryClient.invalidateQueries({ queryKey: ["gps-sessions", categoryId] });
       queryClient.invalidateQueries({ queryKey: ["generic_tests", categoryId] });
       queryClient.invalidateQueries({ queryKey: ["generic_tests_discovery", categoryId] });
+      queryClient.invalidateQueries({ queryKey: ["session-blocks"] });
       
       const exerciseCount = exercises.filter((e) => e.exercise_name.trim()).length;
       const gpsCount = gpsData.filter(d => d.matchedPlayer).length;
       const testCount = sessionTests.filter(t => t.test_type && Object.values(t.player_results).some(v => v)).length;
+      const blockCount = sessionBlocks.filter(b => b.training_type).length;
       
       let successMessage = editSession ? "Séance modifiée" : "Séance créée";
-      if (exerciseCount > 0) successMessage += ` avec ${exerciseCount} exercice(s)`;
+      if (blockCount > 0) successMessage += ` avec ${blockCount} bloc(s)`;
+      if (exerciseCount > 0) successMessage += ` et ${exerciseCount} exercice(s)`;
       if (testCount > 0) successMessage += ` et ${testCount} test(s)`;
       if (gpsCount > 0) successMessage += ` + ${gpsCount} données GPS`;
       
@@ -640,6 +680,7 @@ export function SessionFormDialog({
     setBlockConfigs({});
     setGpsData([]);
     setSessionTests([]);
+    setSessionBlocks([]);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -655,8 +696,14 @@ export function SessionFormDialog({
       return;
     }
 
-    if (date && type) {
+    // Validate: either blocks with valid types OR a single type
+    const hasValidBlocks = sessionBlocks.length > 0 && sessionBlocks.some(b => b.training_type);
+    const hasValidType = type && type.trim().length > 0;
+
+    if (date && (hasValidBlocks || hasValidType)) {
       saveSession.mutate();
+    } else if (!hasValidType && !hasValidBlocks) {
+      toast.error("Veuillez sélectionner un type d'entraînement ou ajouter des blocs thématiques");
     }
   };
 
@@ -2073,17 +2120,30 @@ export function SessionFormDialog({
                       </div>
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="type">Type d'entraînement *</Label>
-                      <CustomTrainingTypeSelect
-                        value={type}
-                        onValueChange={setType}
-                        sportType={sportType}
-                        categoryId={categoryId}
-                        required={true}
-                        placeholder="Sélectionner un type"
-                      />
-                    </div>
+                    {/* Session Blocks Manager - for multi-theme sessions */}
+                    <SessionBlocksManager
+                      blocks={sessionBlocks}
+                      onBlocksChange={setSessionBlocks}
+                      sportType={sportType}
+                      categoryId={categoryId}
+                      sessionStartTime={startTime}
+                      sessionEndTime={endTime}
+                    />
+
+                    {/* Single type fallback - only shown if no blocks */}
+                    {sessionBlocks.length === 0 && (
+                      <div className="space-y-2">
+                        <Label htmlFor="type">Type d'entraînement *</Label>
+                        <CustomTrainingTypeSelect
+                          value={type}
+                          onValueChange={setType}
+                          sportType={sportType}
+                          categoryId={categoryId}
+                          required={true}
+                          placeholder="Sélectionner un type"
+                        />
+                      </div>
+                    )}
 
                     <div className="space-y-2">
                       <Label htmlFor="intensity">Intensité (1-10)</Label>
