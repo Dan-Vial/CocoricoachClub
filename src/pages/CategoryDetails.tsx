@@ -276,7 +276,8 @@ function CategoryDetailsContent() {
                   value="admin" 
                   colorKey="admin"
                   icon={<Shield className="h-6 w-6 sm:h-7 sm:w-7" />}
-                  label="Admin"
+                  label="Administratif"
+                  shortLabel="Admin"
                 />
               )}
               <ColoredTabTrigger 
