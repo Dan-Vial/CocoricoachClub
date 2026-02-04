@@ -1,18 +1,24 @@
 import { useState, useMemo, useRef } from "react";
 import { DndContext, DragEndEvent, DragOverlay, pointerWithin } from "@dnd-kit/core";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChevronLeft, ChevronRight, Plus, Download, Printer, Calendar as CalendarIcon } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ChevronLeft, ChevronRight, Plus, Download, Printer, Calendar as CalendarIcon, Filter, X } from "lucide-react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, addMonths, subMonths, startOfWeek, endOfWeek, isSameDay, isSameMonth, addWeeks, subWeeks } from "date-fns";
 import { fr } from "date-fns/locale";
-import { TRAINING_TYPE_COLORS } from "@/lib/constants/trainingTypes";
+import { TRAINING_TYPE_COLORS, getTrainingTypesForSport } from "@/lib/constants/trainingTypes";
 import { isIndividualSport } from "@/lib/constants/sportTypes";
 import { cn } from "@/lib/utils";
 import { CalendarDayCell } from "./CalendarDayCell";
 import { SessionVignette } from "./SessionVignette";
 import { SessionFeedbackDialog } from "./SessionFeedbackDialog";
 import { CreateEventDialog } from "./CreateEventDialog";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -91,6 +97,49 @@ export function ImprovedCalendarView({
   const [feedbackSession, setFeedbackSession] = useState<Session | null>(null);
   const [deleteSessionId, setDeleteSessionId] = useState<string | null>(null);
   const [addEventDate, setAddEventDate] = useState<Date | null>(null);
+  
+  // Filter states
+  const [selectedEventTypes, setSelectedEventTypes] = useState<string[]>([]);
+  const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
+
+  // Fetch players for filter
+  const { data: players } = useQuery({
+    queryKey: ["players-calendar-filter", categoryId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("players")
+        .select("id, name")
+        .eq("category_id", categoryId)
+        .order("name");
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  // Fetch session participants to filter by player
+  const { data: sessionParticipants } = useQuery({
+    queryKey: ["session-participants", categoryId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("awcr_tracking")
+        .select("training_session_id, player_id")
+        .eq("category_id", categoryId)
+        .not("training_session_id", "is", null);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: selectedPlayerIds.length > 0,
+  });
+
+  // Get training types for event type filter
+  const trainingTypes = useMemo(() => getTrainingTypesForSport(sportType), [sportType]);
+
+  // Event types for filter (includes match)
+  const eventTypeOptions = useMemo(() => {
+    const types = trainingTypes.map(t => ({ value: t.value, label: t.label }));
+    types.push({ value: "match", label: isIndividualSport(sportType || "") ? "Compétition" : "Match" });
+    return types;
+  }, [trainingTypes, sportType]);
 
   // Calculate week number
   const weekNumber = useMemo(() => {
@@ -113,17 +162,76 @@ export function ImprovedCalendarView({
     }
   }, [currentDate, viewMode]);
 
+  // Filter sessions based on selected filters
+  const filteredSessions = useMemo(() => {
+    let result = sessions;
+    
+    // Filter by event type
+    if (selectedEventTypes.length > 0 && !selectedEventTypes.includes("match")) {
+      result = result.filter(s => selectedEventTypes.includes(s.training_type));
+    } else if (selectedEventTypes.length > 0 && !selectedEventTypes.some(t => t !== "match")) {
+      // Only match selected, hide all sessions
+      result = [];
+    }
+    
+    // Filter by player
+    if (selectedPlayerIds.length > 0 && sessionParticipants) {
+      const sessionsWithSelectedPlayers = new Set(
+        sessionParticipants
+          .filter(sp => selectedPlayerIds.includes(sp.player_id))
+          .map(sp => sp.training_session_id)
+      );
+      result = result.filter(s => sessionsWithSelectedPlayers.has(s.id));
+    }
+    
+    return result;
+  }, [sessions, selectedEventTypes, selectedPlayerIds, sessionParticipants]);
+
+  // Filter matches based on selected filters
+  const filteredMatches = useMemo(() => {
+    if (selectedEventTypes.length > 0 && !selectedEventTypes.includes("match")) {
+      return [];
+    }
+    return matches;
+  }, [matches, selectedEventTypes]);
+
   const getSessionsForDay = (day: Date) => {
-    return sessions.filter((session) => 
+    return filteredSessions.filter((session) => 
       isSameDay(new Date(session.session_date), day)
     );
   };
 
   const getMatchesForDay = (day: Date) => {
-    return matches.filter((match) => 
+    return filteredMatches.filter((match) => 
       isSameDay(new Date(match.match_date), day)
     );
   };
+
+  // Toggle event type filter
+  const toggleEventType = (type: string) => {
+    setSelectedEventTypes(prev => 
+      prev.includes(type) 
+        ? prev.filter(t => t !== type)
+        : [...prev, type]
+    );
+  };
+
+  // Toggle player filter
+  const togglePlayer = (playerId: string) => {
+    setSelectedPlayerIds(prev => 
+      prev.includes(playerId)
+        ? prev.filter(id => id !== playerId)
+        : [...prev, playerId]
+    );
+  };
+
+  // Clear all filters
+  const clearFilters = () => {
+    setSelectedEventTypes([]);
+    setSelectedPlayerIds([]);
+  };
+
+  const hasActiveFilters = selectedEventTypes.length > 0 || selectedPlayerIds.length > 0;
 
   const handleNavigate = (direction: "prev" | "next") => {
     if (viewMode === "month") {
@@ -191,6 +299,70 @@ export function ImprovedCalendarView({
                 : "Calendrier des entraînements et matchs"}
             </CardTitle>
             <div className="flex items-center gap-2 flex-wrap">
+              {/* Filters */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className={cn("h-9 gap-2", hasActiveFilters && "border-primary text-primary")}>
+                    <Filter className="h-4 w-4" />
+                    <span className="hidden sm:inline">Filtres</span>
+                    {hasActiveFilters && (
+                      <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
+                        {selectedEventTypes.length + selectedPlayerIds.length}
+                      </Badge>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80" align="end">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-medium">Filtres</h4>
+                      {hasActiveFilters && (
+                        <Button variant="ghost" size="sm" onClick={clearFilters} className="h-7 px-2 text-xs">
+                          <X className="h-3 w-3 mr-1" />
+                          Effacer
+                        </Button>
+                      )}
+                    </div>
+                    
+                    {/* Event Type Filter */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-muted-foreground">Type d'événement</label>
+                      <ScrollArea className="h-32">
+                        <div className="space-y-2">
+                          {eventTypeOptions.map(type => (
+                            <label key={type.value} className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 p-1 rounded">
+                              <Checkbox 
+                                checked={selectedEventTypes.includes(type.value)}
+                                onCheckedChange={() => toggleEventType(type.value)}
+                              />
+                              <span className="text-sm">{type.label}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </ScrollArea>
+                    </div>
+                    
+                    {/* Player Filter */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-muted-foreground">Joueur</label>
+                      <ScrollArea className="h-40">
+                        <div className="space-y-2">
+                          {players?.map(player => (
+                            <label key={player.id} className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 p-1 rounded">
+                              <Checkbox 
+                                checked={selectedPlayerIds.includes(player.id)}
+                                onCheckedChange={() => togglePlayer(player.id)}
+                              />
+                              <span className="text-sm">{player.name}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </ScrollArea>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+
               {/* View Mode Selector */}
               <Select value={viewMode} onValueChange={(v) => setViewMode(v as "month" | "week")}>
                 <SelectTrigger className="w-[130px] h-9">

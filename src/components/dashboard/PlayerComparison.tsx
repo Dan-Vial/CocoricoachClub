@@ -22,15 +22,15 @@ const getSportMetrics = (sportType: string) => {
   
   if (sport.includes("judo")) {
     return {
-      metrics: ["awcr", "load", "pullups", "sjft"],
+      metrics: ["ewmaRatio", "load", "pullups", "sjft"],
       labels: {
-        awcr: "AWCR Moyen",
+        ewmaRatio: "Ratio EWMA",
         load: "Charge Moy.",
         pullups: "Max Tractions",
         sjft: "Score SJFT",
       },
       units: {
-        awcr: "",
+        ewmaRatio: "",
         load: "",
         pullups: " reps",
         sjft: "",
@@ -40,15 +40,15 @@ const getSportMetrics = (sportType: string) => {
   
   if (sport.includes("handball")) {
     return {
-      metrics: ["awcr", "load", "sprint30", "cmj"],
+      metrics: ["ewmaRatio", "load", "sprint30", "cmj"],
       labels: {
-        awcr: "AWCR Moyen",
+        ewmaRatio: "Ratio EWMA",
         load: "Charge Moy.",
         sprint30: "Sprint 30m",
         cmj: "CMJ",
       },
       units: {
-        awcr: "",
+        ewmaRatio: "",
         load: "",
         sprint30: "s",
         cmj: " cm",
@@ -58,15 +58,15 @@ const getSportMetrics = (sportType: string) => {
   
   if (sport.includes("football")) {
     return {
-      metrics: ["awcr", "load", "sprint30", "ift"],
+      metrics: ["ewmaRatio", "load", "sprint30", "ift"],
       labels: {
-        awcr: "AWCR Moyen",
+        ewmaRatio: "Ratio EWMA",
         load: "Charge Moy.",
         sprint30: "Sprint 30m",
         ift: "30-15 IFT",
       },
       units: {
-        awcr: "",
+        ewmaRatio: "",
         load: "",
         sprint30: "s",
         ift: " km/h",
@@ -76,15 +76,15 @@ const getSportMetrics = (sportType: string) => {
   
   if (sport.includes("aviron")) {
     return {
-      metrics: ["awcr", "load", "ergo2000", "peakPower"],
+      metrics: ["ewmaRatio", "load", "ergo2000", "peakPower"],
       labels: {
-        awcr: "AWCR Moyen",
+        ewmaRatio: "Ratio EWMA",
         load: "Charge Moy.",
         ergo2000: "Ergo 2000m",
         peakPower: "Puissance Max",
       },
       units: {
-        awcr: "",
+        ewmaRatio: "",
         load: "",
         ergo2000: "",
         peakPower: " W",
@@ -94,15 +94,15 @@ const getSportMetrics = (sportType: string) => {
   
   if (sport.includes("volleyball")) {
     return {
-      metrics: ["awcr", "load", "cmj", "dropJump"],
+      metrics: ["ewmaRatio", "load", "cmj", "dropJump"],
       labels: {
-        awcr: "AWCR Moyen",
+        ewmaRatio: "Ratio EWMA",
         load: "Charge Moy.",
         cmj: "CMJ",
         dropJump: "Drop Jump",
       },
       units: {
-        awcr: "",
+        ewmaRatio: "",
         load: "",
         cmj: " cm",
         dropJump: " cm",
@@ -112,15 +112,15 @@ const getSportMetrics = (sportType: string) => {
   
   if (sport.includes("bowling")) {
     return {
-      metrics: ["awcr", "load", "avgScore", "strikeRate"],
+      metrics: ["ewmaRatio", "load", "avgScore", "strikeRate"],
       labels: {
-        awcr: "AWCR Moyen",
+        ewmaRatio: "Ratio EWMA",
         load: "Charge Moy.",
         avgScore: "Score Moyen",
         strikeRate: "% Strikes",
       },
       units: {
-        awcr: "",
+        ewmaRatio: "",
         load: "",
         avgScore: "",
         strikeRate: "%",
@@ -130,15 +130,15 @@ const getSportMetrics = (sportType: string) => {
   
   if (sport.includes("basketball")) {
     return {
-      metrics: ["awcr", "load", "sprint20", "cmj"],
+      metrics: ["ewmaRatio", "load", "sprint20", "cmj"],
       labels: {
-        awcr: "AWCR Moyen",
+        ewmaRatio: "Ratio EWMA",
         load: "Charge Moy.",
         sprint20: "Sprint 20m",
         cmj: "CMJ/DJ",
       },
       units: {
-        awcr: "",
+        ewmaRatio: "",
         load: "",
         sprint20: "s",
         cmj: " cm",
@@ -148,15 +148,15 @@ const getSportMetrics = (sportType: string) => {
   
   // Default (Rugby and others)
   return {
-    metrics: ["awcr", "load", "sprint40m", "vma"],
+    metrics: ["ewmaRatio", "load", "sprint40m", "vma"],
     labels: {
-      awcr: "AWCR Moyen",
+      ewmaRatio: "Ratio EWMA",
       load: "Charge Moy.",
       sprint40m: "Meilleur 40m",
       vma: "VMA Moy.",
     },
     units: {
-      awcr: "",
+      ewmaRatio: "",
       load: "",
       sprint40m: "s",
       vma: " km/h",
@@ -202,7 +202,7 @@ export function PlayerComparison({ categoryIds }: PlayerComparisonProps) {
       // Fetch AWCR data (universal)
       const { data: awcrData } = await supabase
         .from("awcr_tracking")
-        .select("player_id, awcr, training_load")
+        .select("player_id, awcr, training_load, session_date, acute_load, chronic_load")
         .in("player_id", playerIds)
         .not("awcr", "is", null)
         .order("session_date", { ascending: false })
@@ -238,11 +238,31 @@ export function PlayerComparison({ categoryIds }: PlayerComparisonProps) {
         const playerJump = jumpData?.filter((j) => j.player_id === player.id) || [];
         const playerGeneric = genericData?.filter((g) => g.player_id === player.id) || [];
 
-        // Calculate AWCR
-        const avgAwcr =
-          playerAwcr.length > 0
-            ? playerAwcr.reduce((sum, a) => sum + Number(a.awcr), 0) / playerAwcr.length
-            : null;
+        // Calculate EWMA Ratio (Acute/Chronic) from awcr_tracking data
+        // Sort by date to get recent data for EWMA calculation
+        const sortedAwcr = [...playerAwcr].sort((a, b) => 
+          new Date(b.session_date).getTime() - new Date(a.session_date).getTime()
+        );
+        
+        // Use existing acute_load and chronic_load if available, otherwise calculate from recent data
+        const latestWithLoads = sortedAwcr.find(a => a.acute_load && a.chronic_load);
+        let ewmaRatio: number | null = null;
+        
+        if (latestWithLoads && latestWithLoads.chronic_load && latestWithLoads.chronic_load > 0) {
+          ewmaRatio = Number((latestWithLoads.acute_load! / latestWithLoads.chronic_load).toFixed(2));
+        } else if (sortedAwcr.length >= 7) {
+          // Calculate from training loads using EWMA approximation
+          const recentLoads = sortedAwcr.slice(0, 28).map(a => a.training_load || 0);
+          const acuteLoads = recentLoads.slice(0, 7);
+          const chronicLoads = recentLoads.slice(0, 28);
+          
+          const acuteAvg = acuteLoads.reduce((a, b) => a + b, 0) / acuteLoads.length;
+          const chronicAvg = chronicLoads.reduce((a, b) => a + b, 0) / chronicLoads.length;
+          
+          if (chronicAvg > 0) {
+            ewmaRatio = Number((acuteAvg / chronicAvg).toFixed(2));
+          }
+        }
         
         // Calculate Load
         const avgLoad =
@@ -301,7 +321,7 @@ export function PlayerComparison({ categoryIds }: PlayerComparisonProps) {
 
         return {
           name: player.name,
-          awcr: avgAwcr ? Number(avgAwcr.toFixed(2)) : null,
+          ewmaRatio,
           load: avgLoad ? Math.round(avgLoad) : null,
           sprint40m: sprint40 ? Number(sprint40.toFixed(2)) : null,
           sprint30: sprint30 ? Number(sprint30.toFixed(2)) : null,
@@ -314,8 +334,8 @@ export function PlayerComparison({ categoryIds }: PlayerComparisonProps) {
           ift: ift ? Number(ift.toFixed(1)) : null,
           ergo2000: ergo2000 ? formatTime(ergo2000) : null,
           peakPower: peakPower ? Number(peakPower) : null,
-          avgScore: null, // Would need to fetch from competition data
-          strikeRate: null, // Would need to fetch from competition data
+          avgScore: null,
+          strikeRate: null,
         };
       });
     },
@@ -335,18 +355,24 @@ export function PlayerComparison({ categoryIds }: PlayerComparisonProps) {
     );
   }
 
-  const getAwcrBadge = (awcr: number | null) => {
-    if (!awcr) return null;
-    if (awcr < 0.8)
+  const getEwmaBadge = (ratio: number | null) => {
+    if (!ratio) return null;
+    if (ratio < 0.8)
       return (
         <Badge variant="secondary" className="bg-status-info/20 text-status-info">
-          Faible
+          Sous-charge
         </Badge>
       );
-    if (awcr > 1.3)
+    if (ratio > 1.5)
       return (
         <Badge variant="destructive" className="bg-status-error/20 text-status-error">
-          Élevé
+          Surcharge
+        </Badge>
+      );
+    if (ratio > 1.3)
+      return (
+        <Badge className="bg-status-warning/20 text-status-warning">
+          Vigilance
         </Badge>
       );
     return (
@@ -386,10 +412,10 @@ export function PlayerComparison({ categoryIds }: PlayerComparisonProps) {
                   <TableCell className="font-medium">{player.name}</TableCell>
                   {sportConfig.metrics.map((metric) => (
                     <TableCell key={metric}>
-                      {metric === "awcr" ? (
+                      {metric === "ewmaRatio" ? (
                         <div className="flex items-center gap-2">
-                          {player.awcr || "—"}
-                          {player.awcr && getAwcrBadge(player.awcr)}
+                          {player.ewmaRatio || "—"}
+                          {player.ewmaRatio && getEwmaBadge(player.ewmaRatio)}
                         </div>
                       ) : (
                         formatValue(
