@@ -3,8 +3,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Button } from "@/components/ui/button";
 import { 
   LineChart, 
   Line, 
@@ -21,9 +19,7 @@ import {
 } from "recharts";
 import { format, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
-import { Activity, TrendingUp, AlertTriangle, Satellite, ChevronDown, ChevronUp } from "lucide-react";
-import { MetricTooltip, METRIC_TOOLTIPS } from "@/components/ui/metric-tooltip";
-import { MetricExplanation } from "./MetricExplanation";
+import { Activity, Satellite } from "lucide-react";
 import { 
   MetricType, 
   EWMAResult, 
@@ -103,7 +99,6 @@ export function TrainingLoadChart({
   height = 350,
 }: TrainingLoadChartProps) {
   const [viewMode, setViewMode] = useState<"ratio" | "loads">("ratio");
-  const [showExplanation, setShowExplanation] = useState(false);
   const metricConfig = METRICS_CONFIG[selectedMetric];
 
   // Format data for chart
@@ -182,18 +177,21 @@ export function TrainingLoadChart({
       </CardHeader>
 
       <CardContent className="pt-0 space-y-4">
-        {/* Metric Explanation - Collapsible */}
-        <Collapsible open={showExplanation} onOpenChange={setShowExplanation}>
-          <CollapsibleTrigger asChild>
-            <Button variant="ghost" size="sm" className="w-full justify-between text-xs text-muted-foreground hover:text-foreground">
-              <span>💡 Comprendre cette métrique : {metricConfig.shortLabel}</span>
-              {showExplanation ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-            </Button>
-          </CollapsibleTrigger>
-          <CollapsibleContent className="pt-2">
-            <MetricExplanation metric={selectedMetric} />
-          </CollapsibleContent>
-        </Collapsible>
+        {/* Simple metric explanation tooltip - always visible */}
+        <div 
+          className="rounded-md px-3 py-2 text-sm"
+          style={{ 
+            backgroundColor: metricConfig.isGps 
+              ? "hsl(var(--cyan-500) / 0.1)" 
+              : "hsl(var(--primary) / 0.1)",
+            color: metricConfig.isGps 
+              ? "hsl(183, 65%, 35%)" 
+              : "hsl(var(--primary))"
+          }}
+        >
+          {metricConfig.description || `${metricConfig.label} - Suivi de la charge d'entraînement basé sur ${metricConfig.isGps ? 'les données GPS' : 'la perception de l\'effort (RPE)'}.`}
+        </div>
+
         {/* View mode toggle */}
         <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as "ratio" | "loads")} className="mb-4">
           <TabsList className="grid w-full max-w-xs grid-cols-2">
