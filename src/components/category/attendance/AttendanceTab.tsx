@@ -303,190 +303,261 @@ export function AttendanceTab({ categoryId }: AttendanceTabProps) {
         </Card>
       </div>
 
-      <Tabs defaultValue="sessions" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="sessions" className="gap-2">
-            <Calendar className="h-4 w-4" />
-            Par séance
-          </TabsTrigger>
-          <TabsTrigger value="players" className="gap-2">
-            <Users className="h-4 w-4" />
-            Par joueur
-          </TabsTrigger>
-        </TabsList>
+      {/* Categorized Sessions */}
+      {(() => {
+        const today = format(new Date(), "yyyy-MM-dd");
+        const todaySessions = filteredSessions?.filter(s => s.session_date === today) || [];
+        const pastSessions = filteredSessions?.filter(s => s.session_date < today).sort((a, b) => 
+          new Date(b.session_date).getTime() - new Date(a.session_date).getTime()
+        ) || [];
+        const upcomingSessions = filteredSessions?.filter(s => s.session_date > today).sort((a, b) => 
+          new Date(a.session_date).getTime() - new Date(b.session_date).getTime()
+        ) || [];
 
-        <TabsContent value="sessions">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <ClipboardCheck className="h-5 w-5" />
-                Séances ({totalFilteredSessions})
-              </CardTitle>
-              <CardDescription>
-                Cliquez sur une séance pour faire l'appel
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {!filteredSessions || filteredSessions.length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">
-                  Aucune séance sur cette période
-                </p>
-              ) : (
-                <div className="space-y-2">
-                  {filteredSessions.map((session) => {
-                    const attendanceCount = getSessionAttendanceCount(session.id, session.session_date);
-                    const hasAttendance = attendanceCount > 0;
-                    const isToday = session.session_date === format(new Date(), "yyyy-MM-dd");
-                    const isPast = new Date(session.session_date) < new Date();
+        const renderSessionItem = (session: any) => {
+          const attendanceCount = getSessionAttendanceCount(session.id, session.session_date);
+          const hasAttendance = attendanceCount > 0;
+          const isToday = session.session_date === today;
+          const isPast = session.session_date < today;
 
-                    return (
-                      <div
-                        key={session.id}
-                        className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors hover:bg-muted/50 ${
-                          isToday ? "border-primary bg-primary/5" : ""
-                        }`}
-                        onClick={() => !isViewer && handleOpenAttendance(session)}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="text-center min-w-[60px]">
-                            <p className="text-sm font-medium">
-                              {format(new Date(session.session_date), "dd MMM", { locale: fr })}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {format(new Date(session.session_date), "EEE", { locale: fr })}
-                            </p>
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <p className="font-medium">{getSessionLabel(session)}</p>
-                              {isToday && <Badge variant="default" className="text-xs">Aujourd'hui</Badge>}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {hasAttendance ? (
-                            <Badge className="bg-green-100 text-green-700">
-                              {attendanceCount} présences
-                            </Badge>
-                          ) : isPast ? (
-                            <Badge variant="outline" className="text-muted-foreground">
-                              Non renseigné
-                            </Badge>
-                          ) : (
-                            <Badge variant="outline">À venir</Badge>
-                          )}
-                          {!isViewer && <ChevronRight className="h-4 w-4 text-muted-foreground" />}
-                        </div>
-                      </div>
-                    );
-                  })}
+          return (
+            <div
+              key={session.id}
+              className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors hover:bg-muted/50 ${
+                isToday ? "border-primary bg-primary/5" : ""
+              }`}
+              onClick={() => !isViewer && handleOpenAttendance(session)}
+            >
+              <div className="flex items-center gap-3">
+                <div className="text-center min-w-[60px]">
+                  <p className="text-sm font-medium">
+                    {format(new Date(session.session_date), "dd MMM", { locale: fr })}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {format(new Date(session.session_date), "EEE", { locale: fr })}
+                  </p>
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="players">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Statistiques par joueur
-              </CardTitle>
-              <CardDescription>
-                Du {format(parseISO(startDate), "dd/MM/yyyy")} au {format(parseISO(endDate), "dd/MM/yyyy")}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {!playerStats || playerStats.length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">
-                  Aucun joueur dans cette catégorie
-                </p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Joueur</TableHead>
-                        <TableHead className="text-center">Présent</TableHead>
-                        <TableHead className="text-center">
-                          <div className="flex items-center justify-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            Retards
-                          </div>
-                        </TableHead>
-                        <TableHead className="text-center">Excusé</TableHead>
-                        <TableHead className="text-center">Absent</TableHead>
-                        <TableHead className="text-center">Taux</TableHead>
-                        <TableHead className="w-32"></TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {playerStats.map((player) => (
-                        <TableRow key={player.id}>
-                          <TableCell>
-                            <div>
-                              <p className="font-medium">{player.name}</p>
-                              {player.position && (
-                                <p className="text-xs text-muted-foreground">{player.position}</p>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <span className="text-green-600 font-medium">{player.present}</span>
-                          </TableCell>
-                          <TableCell className="text-center">
-                            {player.late > 0 ? (
-                              <Popover>
-                                <PopoverTrigger asChild>
-                                  <Button variant="ghost" size="sm" className="h-auto p-1">
-                                    <span className="text-orange-600 font-medium">{player.late}</span>
-                                  </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-2">
-                                  <div className="space-y-1 text-sm">
-                                    <div className="flex items-center gap-2 text-green-600">
-                                      <CheckCircle className="h-3 w-3" />
-                                      Justifiés: {player.lateJustified}
-                                    </div>
-                                    <div className="flex items-center gap-2 text-red-600">
-                                      <AlertCircle className="h-3 w-3" />
-                                      Non justifiés: {player.lateUnjustified}
-                                    </div>
-                                  </div>
-                                </PopoverContent>
-                              </Popover>
-                            ) : (
-                              <span className="text-muted-foreground">0</span>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-center text-amber-600 font-medium">
-                            {player.excused}
-                          </TableCell>
-                          <TableCell className="text-center text-red-600 font-medium">
-                            {player.absent}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            {player.total > 0 ? getRateBadge(player.rate) : "-"}
-                          </TableCell>
-                          <TableCell>
-                            {player.total > 0 && (
-                              <Progress 
-                                value={player.rate} 
-                                className="h-2"
-                              />
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                <div>
+                  <p className="font-medium">{getSessionLabel(session)}</p>
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+              </div>
+              <div className="flex items-center gap-2">
+                {hasAttendance ? (
+                  <Badge className="bg-green-100 text-green-700">
+                    {attendanceCount} présences
+                  </Badge>
+                ) : isPast ? (
+                  <Badge variant="outline" className="text-muted-foreground">
+                    Non renseigné
+                  </Badge>
+                ) : (
+                  <Badge variant="outline">À venir</Badge>
+                )}
+                {!isViewer && <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+              </div>
+            </div>
+          );
+        };
+
+        return (
+          <Tabs defaultValue="today" className="space-y-4">
+            <TabsList>
+              <TabsTrigger value="today" className="gap-2">
+                <ClipboardCheck className="h-4 w-4" />
+                Aujourd'hui ({todaySessions.length})
+              </TabsTrigger>
+              <TabsTrigger value="upcoming" className="gap-2">
+                <Calendar className="h-4 w-4" />
+                À venir ({upcomingSessions.length})
+              </TabsTrigger>
+              <TabsTrigger value="past" className="gap-2">
+                <Clock className="h-4 w-4" />
+                Passées ({pastSessions.length})
+              </TabsTrigger>
+              <TabsTrigger value="players" className="gap-2">
+                <Users className="h-4 w-4" />
+                Par joueur
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="today">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <ClipboardCheck className="h-5 w-5" />
+                    Séances du jour
+                  </CardTitle>
+                  <CardDescription>
+                    Cliquez sur une séance pour faire l'appel
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {todaySessions.length === 0 ? (
+                    <p className="text-center text-muted-foreground py-8">
+                      Aucune séance aujourd'hui
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {todaySessions.map(renderSessionItem)}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="upcoming">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Calendar className="h-5 w-5" />
+                    Séances à venir ({upcomingSessions.length})
+                  </CardTitle>
+                  <CardDescription>
+                    Planifiez vos prochaines séances
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {upcomingSessions.length === 0 ? (
+                    <p className="text-center text-muted-foreground py-8">
+                      Aucune séance à venir sur cette période
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {upcomingSessions.map(renderSessionItem)}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="past">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Clock className="h-5 w-5" />
+                    Séances passées ({pastSessions.length})
+                  </CardTitle>
+                  <CardDescription>
+                    Historique des présences
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {pastSessions.length === 0 ? (
+                    <p className="text-center text-muted-foreground py-8">
+                      Aucune séance passée sur cette période
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {pastSessions.map(renderSessionItem)}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="players">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Users className="h-5 w-5" />
+                    Statistiques par joueur
+                  </CardTitle>
+                  <CardDescription>
+                    Du {format(parseISO(startDate), "dd/MM/yyyy")} au {format(parseISO(endDate), "dd/MM/yyyy")}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {!playerStats || playerStats.length === 0 ? (
+                    <p className="text-center text-muted-foreground py-8">
+                      Aucun joueur dans cette catégorie
+                    </p>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Joueur</TableHead>
+                            <TableHead className="text-center">Présent</TableHead>
+                            <TableHead className="text-center">
+                              <div className="flex items-center justify-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                Retards
+                              </div>
+                            </TableHead>
+                            <TableHead className="text-center">Excusé</TableHead>
+                            <TableHead className="text-center">Absent</TableHead>
+                            <TableHead className="text-center">Taux</TableHead>
+                            <TableHead className="w-32"></TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {playerStats.map((player) => (
+                            <TableRow key={player.id}>
+                              <TableCell>
+                                <div>
+                                  <p className="font-medium">{player.name}</p>
+                                  {player.position && (
+                                    <p className="text-xs text-muted-foreground">{player.position}</p>
+                                  )}
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-center">
+                                <span className="text-green-600 font-medium">{player.present}</span>
+                              </TableCell>
+                              <TableCell className="text-center">
+                                {player.late > 0 ? (
+                                  <Popover>
+                                    <PopoverTrigger asChild>
+                                      <Button variant="ghost" size="sm" className="h-auto p-1">
+                                        <span className="text-orange-600 font-medium">{player.late}</span>
+                                      </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-2">
+                                      <div className="space-y-1 text-sm">
+                                        <div className="flex items-center gap-2 text-green-600">
+                                          <CheckCircle className="h-3 w-3" />
+                                          Justifiés: {player.lateJustified}
+                                        </div>
+                                        <div className="flex items-center gap-2 text-red-600">
+                                          <AlertCircle className="h-3 w-3" />
+                                          Non justifiés: {player.lateUnjustified}
+                                        </div>
+                                      </div>
+                                    </PopoverContent>
+                                  </Popover>
+                                ) : (
+                                  <span className="text-muted-foreground">0</span>
+                                )}
+                              </TableCell>
+                              <TableCell className="text-center text-amber-600 font-medium">
+                                {player.excused}
+                              </TableCell>
+                              <TableCell className="text-center text-red-600 font-medium">
+                                {player.absent}
+                              </TableCell>
+                              <TableCell className="text-center">
+                                {player.total > 0 ? getRateBadge(player.rate) : "-"}
+                              </TableCell>
+                              <TableCell>
+                                {player.total > 0 && (
+                                  <Progress 
+                                    value={player.rate} 
+                                    className="h-2"
+                                  />
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        );
+      })()}
 
       <SessionAttendanceDialog
         open={dialogOpen}
