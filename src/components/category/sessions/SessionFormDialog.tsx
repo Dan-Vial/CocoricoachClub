@@ -2443,7 +2443,10 @@ export function SessionFormDialog({
             >
               Annuler
             </Button>
-            <Button type="submit" disabled={!date || !type || saveSession.isPending}>
+            <Button 
+              type="submit" 
+              disabled={!date || (!type && sessionBlocks.length === 0) || saveSession.isPending}
+            >
               {saveSession.isPending ? "Enregistrement..." : editSession ? "Modifier" : "Créer"}
             </Button>
           </DialogFooter>

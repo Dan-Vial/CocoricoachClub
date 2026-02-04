@@ -542,21 +542,28 @@ export function DailySessionView({ categoryId, categoryName = "Catégorie" }: Da
                                 <p className={cn("font-semibold", fieldMode && "text-white")}>
                                   {getSessionTypeLabel(session.training_type)}
                                 </p>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
+                                <span
+                                  role="button"
+                                  tabIndex={0}
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     handleEditSession(session);
                                   }}
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter" || e.key === " ") {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      handleEditSession(session);
+                                    }
+                                  }}
                                   className={cn(
-                                    "h-6 w-6 p-0 opacity-60 hover:opacity-100",
-                                    fieldMode && "text-slate-300 hover:text-white hover:bg-slate-700"
+                                    "inline-flex items-center justify-center h-6 w-6 rounded-md cursor-pointer opacity-60 hover:opacity-100 transition-opacity",
+                                    fieldMode ? "text-slate-300 hover:text-white hover:bg-slate-700" : "hover:bg-muted"
                                   )}
                                   title="Modifier la séance"
                                 >
                                   <Pencil className="h-3.5 w-3.5" />
-                                </Button>
+                                </span>
                               </div>
                               {session.session_start_time && (
                                 <p className={cn(
