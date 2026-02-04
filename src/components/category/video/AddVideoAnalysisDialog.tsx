@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -19,10 +20,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { Video, Link, Calendar } from "lucide-react";
+import { Video, Link, Calendar, Users } from "lucide-react";
 
 interface AddVideoAnalysisDialogProps {
   open: boolean;
@@ -36,6 +38,7 @@ const VIDEO_SOURCES = [
   { value: "hudl", label: "Hudl" },
   { value: "youtube", label: "YouTube" },
   { value: "vimeo", label: "Vimeo" },
+  { value: "local", label: "Fichier local" },
   { value: "other", label: "Autre" },
 ];
 
@@ -53,6 +56,7 @@ export function AddVideoAnalysisDialog({
   const [videoSource, setVideoSource] = useState("veo");
   const [matchId, setMatchId] = useState("");
   const [matchStartTime, setMatchStartTime] = useState("");
+  const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
 
   // Fetch matches for this category
   const { data: matches } = useQuery({
@@ -68,19 +72,54 @@ export function AddVideoAnalysisDialog({
     },
   });
 
+  // Fetch all players for this category
+  const { data: players } = useQuery({
+    queryKey: ["category-players-video-analysis", categoryId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("players")
+        .select("id, name, position")
+        .eq("category_id", categoryId)
+        .order("name");
+      if (error) throw error;
+      return data as { id: string; name: string; position: string | null }[];
+    },
+  });
+
   const createMutation = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.from("video_analyses").insert({
-        category_id: categoryId,
-        match_id: matchId,
-        title,
-        description: description || null,
-        video_url: videoUrl || null,
-        video_source: videoSource,
-        match_start_timestamp: matchStartTime ? new Date(matchStartTime).toISOString() : null,
-        created_by: user?.id,
-      });
-      if (error) throw error;
+      // Create video analysis
+      const { data: analysisData, error: analysisError } = await supabase
+        .from("video_analyses")
+        .insert({
+          category_id: categoryId,
+          match_id: matchId || null,
+          title,
+          description: description || null,
+          video_url: videoUrl || null,
+          video_source: videoSource,
+          match_start_timestamp: matchStartTime ? new Date(matchStartTime).toISOString() : null,
+          created_by: user?.id,
+        })
+        .select()
+        .single();
+
+      if (analysisError) throw analysisError;
+
+      // If players are selected, store the player associations in the description as JSON metadata
+      if (selectedPlayers.length > 0 && analysisData) {
+        const { error: updateError } = await supabase
+          .from("video_analyses")
+          .update({
+            description: JSON.stringify({
+              text: description || "",
+              tagged_players: selectedPlayers,
+            }),
+          })
+          .eq("id", analysisData.id);
+
+        if (updateError) throw updateError;
+      }
     },
     onSuccess: () => {
       toast.success("Analyse vidéo créée avec succès");
@@ -100,14 +139,11 @@ export function AddVideoAnalysisDialog({
     setVideoSource("veo");
     setMatchId("");
     setMatchStartTime("");
+    setSelectedPlayers([]);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!matchId) {
-      toast.error("Veuillez sélectionner un match");
-      return;
-    }
     if (!title.trim()) {
       toast.error("Veuillez saisir un titre");
       return;
@@ -115,11 +151,17 @@ export function AddVideoAnalysisDialog({
     createMutation.mutate();
   };
 
-  const selectedMatch = matches?.find((m) => m.id === matchId);
+  const togglePlayer = (playerId: string) => {
+    setSelectedPlayers((prev) =>
+      prev.includes(playerId)
+        ? prev.filter((id) => id !== playerId)
+        : [...prev, playerId]
+    );
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Video className="h-5 w-5" />
@@ -127,112 +169,148 @@ export function AddVideoAnalysisDialog({
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Match Selection */}
-          <div className="space-y-2">
-            <Label>Match associé *</Label>
-            <Select value={matchId} onValueChange={setMatchId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Sélectionner un match" />
-              </SelectTrigger>
-              <SelectContent>
-                {matches?.map((match) => (
-                  <SelectItem key={match.id} value={match.id}>
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
-                      <span>
-                        {match.is_home ? "vs" : "@"} {match.opponent} -{" "}
-                        {format(new Date(match.match_date), "dd/MM/yyyy", { locale: fr })}
-                      </span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Title */}
-          <div className="space-y-2">
-            <Label>Titre *</Label>
-            <Input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder={
-                selectedMatch
-                  ? `Analyse ${selectedMatch.is_home ? "vs" : "@"} ${selectedMatch.opponent}`
-                  : "Titre de l'analyse"
-              }
-            />
-          </div>
-
-          {/* Video Source */}
-          <div className="grid grid-cols-2 gap-4">
+        <ScrollArea className="flex-1 pr-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Title */}
             <div className="space-y-2">
-              <Label>Source vidéo</Label>
-              <Select value={videoSource} onValueChange={setVideoSource}>
+              <Label>Titre *</Label>
+              <Input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Titre de l'analyse vidéo"
+              />
+            </div>
+
+            {/* Match Selection (Optional) */}
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <Calendar className="h-4 w-4" />
+                Match associé (optionnel)
+              </Label>
+              <Select value={matchId} onValueChange={setMatchId}>
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="Aucun match - Vidéo libre" />
                 </SelectTrigger>
                 <SelectContent>
-                  {VIDEO_SOURCES.map((source) => (
-                    <SelectItem key={source.value} value={source.value}>
-                      {source.label}
+                  <SelectItem value="none">Aucun match - Vidéo libre</SelectItem>
+                  {matches?.map((match) => (
+                    <SelectItem key={match.id} value={match.id}>
+                      <div className="flex items-center gap-2">
+                        <span>
+                          {match.is_home ? "vs" : "@"} {match.opponent} -{" "}
+                          {format(new Date(match.match_date), "dd/MM/yyyy", { locale: fr })}
+                        </span>
+                      </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              <p className="text-xs text-muted-foreground">
+                Vous pouvez créer une analyse sans match (entraînement, compilation...)
+              </p>
             </div>
 
+            {/* Video Source */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Source vidéo</Label>
+                <Select value={videoSource} onValueChange={setVideoSource}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {VIDEO_SOURCES.map((source) => (
+                      <SelectItem key={source.value} value={source.value}>
+                        {source.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Début de la vidéo</Label>
+                <Input
+                  type="datetime-local"
+                  value={matchStartTime}
+                  onChange={(e) => setMatchStartTime(e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* Video URL */}
             <div className="space-y-2">
-              <Label>Début du match</Label>
+              <Label className="flex items-center gap-2">
+                <Link className="h-4 w-4" />
+                URL de la vidéo (optionnel)
+              </Label>
               <Input
-                type="datetime-local"
-                value={matchStartTime}
-                onChange={(e) => setMatchStartTime(e.target.value)}
+                value={videoUrl}
+                onChange={(e) => setVideoUrl(e.target.value)}
+                placeholder="https://app.veo.co/..."
               />
             </div>
-          </div>
 
-          {/* Video URL */}
-          <div className="space-y-2">
-            <Label className="flex items-center gap-2">
-              <Link className="h-4 w-4" />
-              URL de la vidéo complète (optionnel)
-            </Label>
-            <Input
-              value={videoUrl}
-              onChange={(e) => setVideoUrl(e.target.value)}
-              placeholder="https://app.veo.co/..."
-            />
-            <p className="text-xs text-muted-foreground">
-              Lien vers la vidéo complète du match (VEO, Hudl, YouTube...)
-            </p>
-          </div>
+            {/* Player Selection */}
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                Joueurs concernés (optionnel)
+              </Label>
+              <ScrollArea className="h-32 border rounded-md p-2">
+                <div className="space-y-2">
+                  {players?.map((player) => (
+                    <div key={player.id} className="flex items-center gap-2">
+                      <Checkbox
+                        id={`player-${player.id}`}
+                        checked={selectedPlayers.includes(player.id)}
+                        onCheckedChange={() => togglePlayer(player.id)}
+                      />
+                      <label
+                        htmlFor={`player-${player.id}`}
+                        className="text-sm cursor-pointer flex items-center gap-2"
+                      >
+                        {player.name}
+                        {player.position && (
+                          <span className="text-xs text-muted-foreground">
+                            ({player.position})
+                          </span>
+                        )}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+              <p className="text-xs text-muted-foreground">
+                Sélectionnez les joueurs pour filtrer leurs clips associés
+              </p>
+            </div>
 
-          {/* Description */}
-          <div className="space-y-2">
-            <Label>Description (optionnel)</Label>
-            <Textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Notes sur ce match..."
-              rows={2}
-            />
-          </div>
+            {/* Description */}
+            <div className="space-y-2">
+              <Label>Description (optionnel)</Label>
+              <Textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Notes sur cette vidéo..."
+                rows={2}
+              />
+            </div>
 
-          <div className="flex justify-end gap-2 pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-            >
-              Annuler
-            </Button>
-            <Button type="submit" disabled={createMutation.isPending}>
-              {createMutation.isPending ? "Création..." : "Créer l'analyse"}
-            </Button>
-          </div>
-        </form>
+            <div className="flex justify-end gap-2 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+              >
+                Annuler
+              </Button>
+              <Button type="submit" disabled={createMutation.isPending}>
+                {createMutation.isPending ? "Création..." : "Créer l'analyse"}
+              </Button>
+            </div>
+          </form>
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   );

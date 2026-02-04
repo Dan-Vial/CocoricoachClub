@@ -30,7 +30,7 @@ interface AddClipDialogProps {
   onOpenChange: (open: boolean) => void;
   analysisId: string;
   categoryId: string;
-  matchId: string;
+  matchId?: string | null;
   sportType?: string;
   onSuccess: () => void;
 }
@@ -58,10 +58,11 @@ export function AddClipDialog({
   const [notes, setNotes] = useState("");
   const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
 
-  // Fetch lineup players for this match
+  // Fetch lineup players for this match (if match exists)
   const { data: lineupPlayers } = useQuery({
     queryKey: ["match-lineup-players", matchId],
     queryFn: async () => {
+      if (!matchId) return [];
       const { data, error } = await supabase
         .from("match_lineups")
         .select(`
@@ -105,7 +106,7 @@ export function AddClipDialog({
         .insert({
           video_analysis_id: analysisId,
           category_id: categoryId,
-          match_id: matchId,
+          match_id: matchId || null,
           title: title || getActionTypeLabel(actionType) || actionType,
           clip_url: clipUrl,
           start_time_seconds: startTimeSeconds,
