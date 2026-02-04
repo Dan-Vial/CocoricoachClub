@@ -260,6 +260,7 @@ export function SessionFormDialog({
   const [gpsData, setGpsData] = useState<GpsPlayerData[]>([]);
   const [sessionTests, setSessionTests] = useState<SessionTest[]>([]);
   const [sessionBlocks, setSessionBlocks] = useState<SessionBlock[]>([]);
+  const [activeTab, setActiveTab] = useState("details");
   
   // Block configurations for groups
   const [blockConfigs, setBlockConfigs] = useState<Record<string, BlockConfig>>({});
@@ -390,6 +391,7 @@ export function SessionFormDialog({
   // Initialize form when editing or opening
   useEffect(() => {
     if (open) {
+      setActiveTab("details"); // Always start on details tab
       if (editSession) {
         setDate(editSession.session_date || "");
         setStartTime(editSession.session_start_time || "");
@@ -681,6 +683,7 @@ export function SessionFormDialog({
     setGpsData([]);
     setSessionTests([]);
     setSessionBlocks([]);
+    setActiveTab("details");
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -2062,7 +2065,7 @@ export function SessionFormDialog({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
-          <Tabs defaultValue="details" className="flex-1 flex flex-col overflow-hidden">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
             <TabsList className="grid w-full grid-cols-4 shrink-0">
               <TabsTrigger value="details">Détails</TabsTrigger>
               <TabsTrigger value="exercises">
@@ -2184,59 +2187,98 @@ export function SessionFormDialog({
               </TabsContent>
 
               <TabsContent value="exercises" className="h-full m-0">
-                <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-                  <div className="flex h-[50vh]">
-                    {/* Left side - Exercise list with drop zone */}
-                    <div className="flex-1 pr-4">
-                      <DroppableExerciseZone>
-                        <ScrollArea className="h-full">
-                          <div className="space-y-4">
-                            <div className="flex items-center justify-between">
-                              <Label className="flex items-center gap-2 text-base font-medium">
-                                <Dumbbell className="h-4 w-4" />
-                                Exercices de la séance
-                              </Label>
-                              <Button type="button" variant="outline" size="sm" onClick={addExercise}>
-                                <Plus className="h-4 w-4 mr-1" />
-                                Exercice simple
-                              </Button>
+                {activeTab === "exercises" ? (
+                  <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+                    <div className="flex h-[50vh]">
+                      {/* Left side - Exercise list with drop zone */}
+                      <div className="flex-1 pr-4">
+                        <DroppableExerciseZone>
+                          <ScrollArea className="h-full">
+                            <div className="space-y-4">
+                              <div className="flex items-center justify-between">
+                                <Label className="flex items-center gap-2 text-base font-medium">
+                                  <Dumbbell className="h-4 w-4" />
+                                  Exercices de la séance
+                                </Label>
+                                <Button type="button" variant="outline" size="sm" onClick={addExercise}>
+                                  <Plus className="h-4 w-4 mr-1" />
+                                  Exercice simple
+                                </Button>
+                              </div>
+
+                              {/* Block creation buttons */}
+                              {renderBlockCreationButtons()}
+
+                              {exercises.length === 0 ? (
+                                <div className="text-center py-8 border-2 border-dashed rounded-lg bg-muted/30">
+                                  <Dumbbell className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                                  <p className="text-sm text-muted-foreground mb-2">Aucun exercice ajouté</p>
+                                  <p className="text-xs text-muted-foreground mb-4">
+                                    Glissez-déposez des exercices depuis la bibliothèque ou ajoutez-en manuellement
+                                  </p>
+                                </div>
+                              ) : (
+                                <div className="space-y-3">
+                                  {exerciseGroups.map((group) => renderExerciseGroup(group))}
+                                </div>
+                              )}
                             </div>
+                          </ScrollArea>
+                        </DroppableExerciseZone>
+                      </div>
 
-                            {/* Block creation buttons */}
-                            {renderBlockCreationButtons()}
-
-                            {exercises.length === 0 ? (
-                              <div className="text-center py-8 border-2 border-dashed rounded-lg bg-muted/30">
-                                <Dumbbell className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                                <p className="text-sm text-muted-foreground mb-2">Aucun exercice ajouté</p>
-                                <p className="text-xs text-muted-foreground mb-4">
-                                  Glissez-déposez des exercices depuis la bibliothèque ou ajoutez-en manuellement
-                                </p>
-                              </div>
-                            ) : (
-                              <div className="space-y-3">
-                                {exerciseGroups.map((group) => renderExerciseGroup(group))}
-                              </div>
-                            )}
-                          </div>
-                        </ScrollArea>
-                      </DroppableExerciseZone>
+                      {/* Right side - Exercise Library Sidebar */}
+                      <ExerciseLibrarySidebar sportType={sportType} />
                     </div>
 
-                    {/* Right side - Exercise Library Sidebar */}
-                    <ExerciseLibrarySidebar sportType={sportType} />
-                  </div>
+                    {/* Drag overlay */}
+                    <DragOverlay>
+                      {activeExercise ? (
+                        <div className="p-3 rounded-lg border bg-card shadow-lg">
+                          <p className="font-medium text-sm">{activeExercise.name}</p>
+                          <p className="text-xs text-muted-foreground">{getCategoryLabel(activeExercise.category)}</p>
+                        </div>
+                      ) : null}
+                    </DragOverlay>
+                  </DndContext>
+                ) : (
+                  <div className="flex h-[50vh]">
+                    <div className="flex-1 pr-4">
+                      <ScrollArea className="h-full">
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <Label className="flex items-center gap-2 text-base font-medium">
+                              <Dumbbell className="h-4 w-4" />
+                              Exercices de la séance
+                            </Label>
+                            <Button type="button" variant="outline" size="sm" onClick={addExercise}>
+                              <Plus className="h-4 w-4 mr-1" />
+                              Exercice simple
+                            </Button>
+                          </div>
 
-                  {/* Drag overlay */}
-                  <DragOverlay>
-                    {activeExercise ? (
-                      <div className="p-3 rounded-lg border bg-card shadow-lg">
-                        <p className="font-medium text-sm">{activeExercise.name}</p>
-                        <p className="text-xs text-muted-foreground">{getCategoryLabel(activeExercise.category)}</p>
-                      </div>
-                    ) : null}
-                  </DragOverlay>
-                </DndContext>
+                          {/* Block creation buttons */}
+                          {renderBlockCreationButtons()}
+
+                          {exercises.length === 0 ? (
+                            <div className="text-center py-8 border-2 border-dashed rounded-lg bg-muted/30">
+                              <Dumbbell className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                              <p className="text-sm text-muted-foreground mb-2">Aucun exercice ajouté</p>
+                              <p className="text-xs text-muted-foreground mb-4">
+                                Cliquez sur l'onglet Exercices pour utiliser le glisser-déposer
+                              </p>
+                            </div>
+                          ) : (
+                            <div className="space-y-3">
+                              {exerciseGroups.map((group) => renderExerciseGroup(group))}
+                            </div>
+                          )}
+                        </div>
+                      </ScrollArea>
+                    </div>
+                    <div className="w-80 border-l bg-muted/30" />
+                  </div>
+                )}
               </TabsContent>
 
               <TabsContent value="tests" className="h-full m-0">
