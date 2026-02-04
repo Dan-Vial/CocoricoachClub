@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { ColoredSubTabsList, ColoredSubTabsTrigger, ColoredContentCard, ColoredCardHeader, ColoredTitle } from "@/components/ui/colored-subtabs";
-import { Calendar as CalendarIcon, LayoutTemplate, Target } from "lucide-react";
+import { Calendar as CalendarIcon, Target } from "lucide-react";
 import { toast } from "sonner";
 import { SessionFormDialog } from "./sessions/SessionFormDialog";
 import { AddMatchCalendarDialog } from "./matches/AddMatchCalendarDialog";
@@ -14,8 +14,6 @@ import { MatchRpeDialog } from "./MatchRpeDialog";
 import { DailySessionsDialog } from "./DailySessionsDialog";
 import { format, isSameDay, startOfWeek, addDays } from "date-fns";
 import { useNavigate } from "react-router-dom";
-import { WeeklyPlanningCalendar } from "@/components/planning/WeeklyPlanningCalendar";
-import { SessionTemplatesSection } from "@/components/planning/SessionTemplatesSection";
 import { SeasonObjectivesSection } from "@/components/planning/SeasonObjectivesSection";
 import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 import { exportCalendarToPdf, printElement } from "@/lib/pdfExport";
@@ -236,16 +234,6 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
             <span className="hidden sm:inline">Calendrier Global</span>
             <span className="sm:hidden">Global</span>
           </ColoredSubTabsTrigger>
-          <ColoredSubTabsTrigger value="weekly" colorKey="planification" icon={<CalendarIcon className="h-4 w-4" />}>
-            <span className="hidden sm:inline">Planning Hebdo</span>
-            <span className="sm:hidden">Hebdo</span>
-          </ColoredSubTabsTrigger>
-          {/* Templates - Grisé en mode viewer */}
-          {!isViewer && (
-            <ColoredSubTabsTrigger value="templates" colorKey="planification" icon={<LayoutTemplate className="h-4 w-4" />}>
-              Templates
-            </ColoredSubTabsTrigger>
-          )}
           {/* Objectifs - Grisé en mode viewer */}
           {!isViewer && (
             <ColoredSubTabsTrigger value="objectives" colorKey="planification" icon={<Target className="h-4 w-4" />}>
@@ -309,25 +297,6 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
             }}
           />
         </TabsContent>
-
-        <TabsContent value="weekly">
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            <div className="lg:col-span-3">
-              <WeeklyPlanningCalendar categoryId={categoryId} />
-            </div>
-            <div className="lg:col-span-1">
-              <SessionTemplatesSection categoryId={categoryId} />
-            </div>
-          </div>
-        </TabsContent>
-
-        {!isViewer && (
-          <TabsContent value="templates">
-            <div className="max-w-2xl">
-              <SessionTemplatesSection categoryId={categoryId} />
-            </div>
-          </TabsContent>
-        )}
 
         {!isViewer && (
           <TabsContent value="objectives">

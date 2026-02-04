@@ -141,17 +141,14 @@ export function AttendanceTab({ categoryId }: AttendanceTabProps) {
     }, 100);
   };
 
-  const getSessionTypeLabel = (type: string) => {
-    const labels: Record<string, string> = {
-      collectif: "Collectif",
-      musculation: "Musculation",
-      physique: "Prépa physique",
-      reathlétisation: "Réathlétisation",
-      repos: "Repos",
-      technique_individuelle: "Technique",
-      test: "Test",
-    };
-    return labels[type] || type;
+  const getSessionLabel = (session: any) => {
+    // Simplified display: just show "Séance" with time
+    if (session.session_start_time && session.session_end_time) {
+      return `Séance ${session.session_start_time.slice(0, 5)} - ${session.session_end_time.slice(0, 5)}`;
+    } else if (session.session_start_time) {
+      return `Séance ${session.session_start_time.slice(0, 5)}`;
+    }
+    return "Séance";
   };
 
   const getRateColor = (rate: number) => {
@@ -361,15 +358,9 @@ export function AttendanceTab({ categoryId }: AttendanceTabProps) {
                           </div>
                           <div>
                             <div className="flex items-center gap-2">
-                              <p className="font-medium">{getSessionTypeLabel(session.training_type)}</p>
+                              <p className="font-medium">{getSessionLabel(session)}</p>
                               {isToday && <Badge variant="default" className="text-xs">Aujourd'hui</Badge>}
                             </div>
-                            {session.session_start_time && (
-                              <p className="text-sm text-muted-foreground">
-                                {session.session_start_time.slice(0, 5)}
-                                {session.session_end_time && ` - ${session.session_end_time.slice(0, 5)}`}
-                              </p>
-                            )}
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
