@@ -234,7 +234,7 @@ export const METRICS_CONFIG: Record<MetricType, {
   ewma_srpe: {
     label: "EWMA sRPE (Charge interne)",
     shortLabel: "sRPE",
-    description: "Charge interne basée sur RPE × Durée",
+    description: "Moyenne pondérée de la charge subjective (RPE × Durée). Accorde plus de poids aux séances récentes. Ratio optimal entre 0.85 et 1.30.",
     dataKey: "sRPE",
     isGps: false,
     unit: "UA",
@@ -242,7 +242,7 @@ export const METRICS_CONFIG: Record<MetricType, {
   ewma_hsr: {
     label: "EWMA HSR (High Speed Running)",
     shortLabel: "HSR",
-    description: "Distance parcourue à haute intensité",
+    description: "Distance parcourue à haute vitesse (>19.8 km/h) mesurée par GPS. Indicateur clé de la charge neuromusculaire et du risque de blessure.",
     dataKey: "hsr",
     isGps: true,
     unit: "m",
@@ -250,7 +250,7 @@ export const METRICS_CONFIG: Record<MetricType, {
   ewma_acc_dec: {
     label: "EWMA Acc/Déc (Charge mécanique)",
     shortLabel: "Acc/Déc",
-    description: "Somme accélérations et décélérations",
+    description: "Somme des accélérations et décélérations haute intensité (>3 m/s²). Représente la charge mécanique sur les articulations.",
     dataKey: "accelerations",
     isGps: true,
     unit: "",
@@ -258,7 +258,7 @@ export const METRICS_CONFIG: Record<MetricType, {
   ewma_player_load: {
     label: "EWMA Player Load GPS",
     shortLabel: "Player Load",
-    description: "Charge externe GPS (Catapult/STATSports)",
+    description: "Charge externe totale combinant accélérations 3D (Catapult/STATSports). Plus sensible que la distance seule aux mouvements non-locomoteurs.",
     dataKey: "playerLoad",
     isGps: true,
     unit: "UA",
@@ -266,7 +266,7 @@ export const METRICS_CONFIG: Record<MetricType, {
   awcr_srpe: {
     label: "AWCR sRPE (Traditionnel)",
     shortLabel: "AWCR sRPE",
-    description: "Ratio charge aiguë/chronique classique",
+    description: "Ratio traditionnel entre la charge des 7 derniers jours et celle des 28 derniers jours. Méthode de Gabbett, mêmes zones de risque que l'EWMA.",
     dataKey: "sRPE",
     isGps: false,
     unit: "UA",
@@ -274,7 +274,7 @@ export const METRICS_CONFIG: Record<MetricType, {
   awcr_hsr: {
     label: "AWCR HSR",
     shortLabel: "AWCR HSR",
-    description: "AWCR basé sur distance haute intensité",
+    description: "Ratio aiguë/chronique basé sur la distance à haute vitesse GPS. Permet de monitorer les efforts de sprint dans le temps.",
     dataKey: "hsr",
     isGps: true,
     unit: "m",
@@ -282,7 +282,7 @@ export const METRICS_CONFIG: Record<MetricType, {
   awcr_acc_dec: {
     label: "AWCR Acc/Déc",
     shortLabel: "AWCR Acc/Déc",
-    description: "AWCR basé sur accélérations/décélérations",
+    description: "Ratio aiguë/chronique basé sur les accélérations GPS. Important pour la planification de retour de blessure.",
     dataKey: "accelerations",
     isGps: true,
     unit: "",
@@ -290,7 +290,7 @@ export const METRICS_CONFIG: Record<MetricType, {
   awcr_player_load: {
     label: "AWCR Player Load",
     shortLabel: "AWCR PL",
-    description: "AWCR basé sur Player Load GPS",
+    description: "Ratio aiguë/chronique basé sur le Player Load GPS. Vue globale de la charge externe avec méthode traditionnelle.",
     dataKey: "playerLoad",
     isGps: true,
     unit: "UA",
