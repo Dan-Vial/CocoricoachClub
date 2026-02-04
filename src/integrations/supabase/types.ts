@@ -3501,6 +3501,7 @@ export type Database = {
       }
       program_exercises: {
         Row: {
+          bodyweight_data: Json | null
           cluster_sets: Json | null
           created_at: string
           drop_sets: Json | null
@@ -3526,6 +3527,7 @@ export type Database = {
           tempo: string | null
         }
         Insert: {
+          bodyweight_data?: Json | null
           cluster_sets?: Json | null
           created_at?: string
           drop_sets?: Json | null
@@ -3551,6 +3553,7 @@ export type Database = {
           tempo?: string | null
         }
         Update: {
+          bodyweight_data?: Json | null
           cluster_sets?: Json | null
           created_at?: string
           drop_sets?: Json | null
