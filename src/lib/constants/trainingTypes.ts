@@ -257,6 +257,9 @@ export const ALL_TRAINING_TYPES: TrainingTypeOption[] = [
   { value: "test", label: "Test", hasExercises: false, forTeamSports: true, forIndividualSports: true, category: "common" },
   { value: "echauffement", label: "Échauffement", hasExercises: false, forTeamSports: true, forIndividualSports: true, category: "common" },
   { value: "recuperation", label: "Récupération Active", hasExercises: false, forTeamSports: true, forIndividualSports: true, category: "common" },
+  { value: "medical", label: "RDV Médical", hasExercises: false, forTeamSports: true, forIndividualSports: true, category: "common" },
+  { value: "video_analyse", label: "Analyse Vidéo", hasExercises: false, forTeamSports: true, forIndividualSports: true, category: "common" },
+  { value: "reunion", label: "Réunion", hasExercises: false, forTeamSports: true, forIndividualSports: true, category: "common" },
 ];
 
 // Get training types filtered by sport type
@@ -359,6 +362,7 @@ export const TRAINING_TYPE_COLORS: Record<string, string> = {
   recuperation: "bg-sky-400",
   reunion: "bg-indigo-500",
   medical: "bg-sky-500",
+  video_analyse: "bg-purple-500",
   match: "bg-rose-500",
   // Rugby specific
   touches: "bg-green-500",
