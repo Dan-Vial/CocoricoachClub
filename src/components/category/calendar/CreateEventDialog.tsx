@@ -209,10 +209,10 @@ export function CreateEventDialog({
           session_date: format(date, "yyyy-MM-dd"),
           session_start_time: startTime,
           session_end_time: endTime,
-          training_type: selectedType === "medical" ? "repos" : 
-                         selectedType === "video" ? "video" :
+          training_type: selectedType === "medical" ? "medical" : 
+                         selectedType === "video" ? "video_analyse" :
                          selectedType === "team_meeting" ? "reunion" : "autre",
-          notes: `${title}${location ? ` - ${location}` : ""}${notes ? `\n${notes}` : ""}${selectedPlayers.length > 0 ? `\nParticipants: ${selectedPlayers.length} joueur(s)` : ""}`,
+          notes: `${title}${location ? ` - ${location}` : ""}${notes ? `\n${notes}` : ""}${selectedPlayers.length > 0 ? `\nParticipants: ${selectedPlayers.length} athlète(s)` : ""}`,
           intensity: 1,
         });
       if (error) throw error;
