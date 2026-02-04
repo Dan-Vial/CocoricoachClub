@@ -6,35 +6,27 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AddExerciseDialog } from "./AddExerciseDialog";
-import { ExternalLink, Trash2, Dumbbell, Move, Target, Library } from "lucide-react";
+import { ExternalLink, Trash2, Library } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { 
   CATEGORY_GROUPS, 
   getCategoryLabel, 
   getCategoriesByGroup,
   getSubcategoryLabel,
-  getCategoryGroup
+  getCategoryGroup,
+  CATEGORY_GROUP_CONFIGS
 } from "@/lib/constants/exerciseCategories";
-
-const TAB_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
-  all: Library,
-  musculation: Dumbbell,
-  stretching_mobility: Move,
-  terrain: Target,
-};
+import { cn } from "@/lib/utils";
 
 const getCategoryColor = (value: string) => {
   const group = getCategoryGroup(value);
-  switch (group) {
-    case "stretching_mobility":
-      return "bg-blue-500/10 text-blue-500 border-blue-500/20";
-    case "musculation":
-      return "bg-orange-500/10 text-orange-500 border-orange-500/20";
-    case "terrain":
-      return "bg-green-500/10 text-green-500 border-green-500/20";
-    default:
-      return "bg-muted text-muted-foreground";
+  const config = group ? CATEGORY_GROUP_CONFIGS[group] : null;
+  
+  if (config) {
+    return cn(config.bgColor, config.color, config.borderColor);
   }
+  
+  return "bg-muted text-muted-foreground";
 };
 
 export function ExerciseLibrarySection() {
@@ -105,12 +97,21 @@ export function ExerciseLibrarySection() {
       <Card>
         <CardContent className="pt-6">
           <Tabs defaultValue="all">
-            <TabsList className="grid w-full grid-cols-4 mb-4">
+            <TabsList className="flex flex-wrap h-auto gap-1 mb-4 bg-muted/50 p-2">
               {CATEGORY_GROUPS.map((group) => {
-                const Icon = TAB_ICONS[group.value] || Library;
+                const config = CATEGORY_GROUP_CONFIGS[group.value];
+                const Icon = config?.icon || Library;
                 return (
-                  <TabsTrigger key={group.value} value={group.value} className="flex items-center gap-1">
-                    <Icon className="h-4 w-4" />
+                  <TabsTrigger 
+                    key={group.value} 
+                    value={group.value} 
+                    className={cn(
+                      "flex items-center gap-1.5 px-3 py-1.5 text-xs sm:text-sm",
+                      "data-[state=active]:shadow-sm",
+                      config && `data-[state=active]:${config.bgColor} data-[state=active]:${config.color}`
+                    )}
+                  >
+                    <Icon className={cn("h-4 w-4", config?.color)} />
                     <span className="hidden sm:inline">{group.label}</span>
                   </TabsTrigger>
                 );

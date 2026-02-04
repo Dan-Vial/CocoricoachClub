@@ -1,9 +1,135 @@
+import { 
+  Dumbbell, 
+  Footprints, 
+  Bike, 
+  TrendingUp, 
+  Heart, 
+  Target, 
+  StretchHorizontal, 
+  Activity, 
+  Flame, 
+  PersonStanding,
+  type LucideIcon 
+} from "lucide-react";
+
 // Main categories for exercise library and session management
 export interface ExerciseCategory {
   value: string;
   label: string;
   group: string | null;
   sport?: string; // Optional sport filter for terrain exercises
+}
+
+// Configuration des couleurs et icônes par groupe
+export interface CategoryGroupConfig {
+  value: string;
+  label: string;
+  color: string;
+  bgColor: string;
+  borderColor: string;
+  icon: LucideIcon;
+}
+
+export const CATEGORY_GROUP_CONFIGS: Record<string, CategoryGroupConfig> = {
+  musculation: {
+    value: "musculation",
+    label: "Musculation",
+    color: "text-orange-500",
+    bgColor: "bg-orange-500/10",
+    borderColor: "border-orange-500/30",
+    icon: Dumbbell,
+  },
+  course: {
+    value: "course",
+    label: "Course",
+    color: "text-blue-500",
+    bgColor: "bg-blue-500/10",
+    borderColor: "border-blue-500/30",
+    icon: Footprints,
+  },
+  ergo: {
+    value: "ergo",
+    label: "Ergo / Cardio",
+    color: "text-cyan-500",
+    bgColor: "bg-cyan-500/10",
+    borderColor: "border-cyan-500/30",
+    icon: Bike,
+  },
+  sled: {
+    value: "sled",
+    label: "Traîneau",
+    color: "text-amber-600",
+    bgColor: "bg-amber-600/10",
+    borderColor: "border-amber-600/30",
+    icon: TrendingUp,
+  },
+  crossfit_hyrox: {
+    value: "crossfit_hyrox",
+    label: "CrossFit / Hyrox",
+    color: "text-red-500",
+    bgColor: "bg-red-500/10",
+    borderColor: "border-red-500/30",
+    icon: Flame,
+  },
+  bodyweight: {
+    value: "bodyweight",
+    label: "Poids de corps",
+    color: "text-violet-500",
+    bgColor: "bg-violet-500/10",
+    borderColor: "border-violet-500/30",
+    icon: PersonStanding,
+  },
+  pilates: {
+    value: "pilates",
+    label: "Pilates / Yoga",
+    color: "text-pink-500",
+    bgColor: "bg-pink-500/10",
+    borderColor: "border-pink-500/30",
+    icon: Activity,
+  },
+  reathletisation: {
+    value: "reathletisation",
+    label: "Réathlétisation",
+    color: "text-emerald-500",
+    bgColor: "bg-emerald-500/10",
+    borderColor: "border-emerald-500/30",
+    icon: Heart,
+  },
+  terrain: {
+    value: "terrain",
+    label: "Terrain",
+    color: "text-green-500",
+    bgColor: "bg-green-500/10",
+    borderColor: "border-green-500/30",
+    icon: Target,
+  },
+  stretching_mobility: {
+    value: "stretching_mobility",
+    label: "Échauffement / Mobilité",
+    color: "text-teal-500",
+    bgColor: "bg-teal-500/10",
+    borderColor: "border-teal-500/30",
+    icon: StretchHorizontal,
+  },
+};
+
+// Helper pour obtenir la config d'un groupe
+export function getCategoryGroupConfig(group: string | null): CategoryGroupConfig | null {
+  if (!group) return null;
+  return CATEGORY_GROUP_CONFIGS[group] || null;
+}
+
+// Helper pour obtenir la couleur d'une catégorie
+export function getCategoryColor(categoryValue: string): { color: string; bgColor: string; borderColor: string } {
+  const category = EXERCISE_CATEGORIES.find(c => c.value === categoryValue);
+  const group = category?.group;
+  const config = group ? CATEGORY_GROUP_CONFIGS[group] : null;
+  
+  return {
+    color: config?.color || "text-muted-foreground",
+    bgColor: config?.bgColor || "bg-muted",
+    borderColor: config?.borderColor || "border-muted",
+  };
 }
 
 export const EXERCISE_CATEGORIES: ExerciseCategory[] = [
@@ -31,6 +157,33 @@ export const EXERCISE_CATEGORIES: ExerciseCategory[] = [
   { value: "isometrics", label: "Isométrie", group: "musculation" },
   { value: "explosive", label: "Explosivité", group: "musculation" },
   
+  // Poids de corps (avec option poids additionnel)
+  { value: "bodyweight_upper", label: "Poids de corps - Haut", group: "bodyweight" },
+  { value: "bodyweight_lower", label: "Poids de corps - Bas", group: "bodyweight" },
+  { value: "bodyweight_core", label: "Poids de corps - Core", group: "bodyweight" },
+  { value: "bodyweight_full", label: "Poids de corps - Full body", group: "bodyweight" },
+  { value: "calisthenics", label: "Calisthenics", group: "bodyweight" },
+  { value: "gymnastics", label: "Gymnastique", group: "bodyweight" },
+  
+  // CrossFit / Hyrox
+  { value: "crossfit_wod", label: "WOD", group: "crossfit_hyrox" },
+  { value: "crossfit_amrap", label: "AMRAP", group: "crossfit_hyrox" },
+  { value: "crossfit_emom", label: "EMOM", group: "crossfit_hyrox" },
+  { value: "crossfit_fortime", label: "For Time", group: "crossfit_hyrox" },
+  { value: "crossfit_chipper", label: "Chipper", group: "crossfit_hyrox" },
+  { value: "hyrox_simulation", label: "Hyrox Simulation", group: "crossfit_hyrox" },
+  { value: "hyrox_running", label: "Hyrox - Course", group: "crossfit_hyrox" },
+  { value: "hyrox_stations", label: "Hyrox - Stations", group: "crossfit_hyrox" },
+  { value: "functional_fitness", label: "Functional Fitness", group: "crossfit_hyrox" },
+  
+  // Pilates / Yoga
+  { value: "pilates_mat", label: "Pilates Mat", group: "pilates" },
+  { value: "pilates_reformer", label: "Pilates Reformer", group: "pilates" },
+  { value: "yoga_flow", label: "Yoga Flow", group: "pilates" },
+  { value: "yoga_power", label: "Power Yoga", group: "pilates" },
+  { value: "yoga_stretch", label: "Yoga Étirement", group: "pilates" },
+  { value: "pilates_core", label: "Pilates Core", group: "pilates" },
+  
   // Réathlétisation
   { value: "reathletisation_lower", label: "Réathé - Membres inférieurs", group: "reathletisation" },
   { value: "reathletisation_upper", label: "Réathé - Membres supérieurs", group: "reathletisation" },
@@ -44,15 +197,21 @@ export const EXERCISE_CATEGORIES: ExerciseCategory[] = [
   { value: "prophylaxis", label: "Prophylaxie / Prévention", group: "reathletisation" },
   { value: "eccentric", label: "Travail excentrique", group: "reathletisation" },
   
-  // Ergo (Ergomètres)
+  // Ergo (Ergomètres) / Cardio machines
   { value: "ergo_rowerg", label: "RowErg (Rameur)", group: "ergo" },
   { value: "ergo_skierg", label: "SkiErg", group: "ergo" },
   { value: "ergo_bikeerg", label: "BikeErg", group: "ergo" },
   { value: "ergo_assault", label: "Assault Bike / Echo Bike", group: "ergo" },
+  { value: "ergo_treadmill", label: "Tapis de course", group: "ergo" },
+  { value: "ergo_elliptical", label: "Elliptique", group: "ergo" },
+  { value: "ergo_stairmaster", label: "Stairmaster", group: "ergo" },
+  { value: "ergo_versaclimber", label: "VersaClimber", group: "ergo" },
   
   // Sled / Traîneau
   { value: "sled_push", label: "Sled Push", group: "sled" },
   { value: "sled_pull", label: "Sled Pull", group: "sled" },
+  { value: "sled_drag", label: "Sled Drag", group: "sled" },
+  { value: "prowler", label: "Prowler", group: "sled" },
   
   // Course à pied
   { value: "running_ef", label: "Endurance Fondamentale (EF)", group: "course" },
@@ -65,6 +224,7 @@ export const EXERCISE_CATEGORIES: ExerciseCategory[] = [
   { value: "running_tempo", label: "Tempo Run", group: "course" },
   { value: "running_recup", label: "Récupération active", group: "course" },
   { value: "running_ppg", label: "PPG / Éducatifs", group: "course" },
+  { value: "running_trail", label: "Trail", group: "course" },
   
   // Terrain - Général
   { value: "cardio", label: "Cardio", group: "terrain" },
@@ -151,100 +311,35 @@ export const EXERCISE_CATEGORIES: ExerciseCategory[] = [
   { value: "athletisme_release_drills", label: "Athlétisme - Travail lâcher", group: "terrain", sport: "athletisme" },
   { value: "athletisme_implement_work", label: "Athlétisme - Travail avec engin", group: "terrain", sport: "athletisme" },
   
-  // Stretching & Mobilité
-  { value: "warmup", label: "Échauffement", group: "stretching_mobility" },
+  // Stretching & Mobilité / Échauffement
+  { value: "warmup", label: "Échauffement général", group: "stretching_mobility" },
+  { value: "warmup_dynamic", label: "Échauffement dynamique", group: "stretching_mobility" },
+  { value: "warmup_specific", label: "Échauffement spécifique", group: "stretching_mobility" },
+  { value: "activation", label: "Activation musculaire", group: "stretching_mobility" },
   { value: "mobility", label: "Mobilité", group: "stretching_mobility" },
   { value: "stretching", label: "Stretching statique", group: "stretching_mobility" },
   { value: "dynamic_stretching", label: "Stretching dynamique", group: "stretching_mobility" },
   { value: "foam_rolling", label: "Foam rolling / Auto-massage", group: "stretching_mobility" },
   { value: "recovery", label: "Récupération", group: "stretching_mobility" },
   { value: "breathing", label: "Respiration", group: "stretching_mobility" },
+  { value: "cooldown", label: "Retour au calme", group: "stretching_mobility" },
   
   { value: "other", label: "Autre", group: null },
 ];
-
-// Liste des sports disponibles pour les exercices terrain
-export const SPORT_OPTIONS = [
-  { value: "all", label: "Tous les sports" },
-  { value: "rugby", label: "Rugby" },
-  { value: "football", label: "Football" },
-  { value: "handball", label: "Handball" },
-  { value: "basketball", label: "Basketball" },
-  { value: "volleyball", label: "Volleyball" },
-  { value: "judo", label: "Judo" },
-  { value: "aviron", label: "Aviron" },
-  { value: "bowling", label: "Bowling" },
-  { value: "athletisme", label: "Athlétisme" },
-];
-
-// Normalize sport type to base sport
-export function normalizeToBaseSport(sportType?: string): string | null {
-  if (!sportType || sportType === "all") return null;
-  
-  const normalizedSport = sportType.toLowerCase();
-  if (normalizedSport.startsWith('rugby') || ['xv', '7', 'xiii', 'academie', 'national_team'].includes(normalizedSport)) return 'rugby';
-  if (normalizedSport.startsWith('football')) return 'football';
-  if (normalizedSport.startsWith('handball')) return 'handball';
-  if (normalizedSport.startsWith('volleyball')) return 'volleyball';
-  if (normalizedSport.startsWith('basketball')) return 'basketball';
-  if (normalizedSport.startsWith('judo')) return 'judo';
-  if (normalizedSport.startsWith('aviron')) return 'aviron';
-  if (normalizedSport.startsWith('bowling')) return 'bowling';
-  if (normalizedSport.startsWith('athletisme')) return 'athletisme';
-  
-  return normalizedSport;
-}
-
-// Get terrain categories for a specific sport
-export function getTerrainCategoriesForSport(sportType?: string): ExerciseCategory[] {
-  const terrainCategories = EXERCISE_CATEGORIES.filter(c => c.group === "terrain");
-  
-  const baseSport = normalizeToBaseSport(sportType);
-  if (!baseSport) return terrainCategories;
-  
-  // Return general terrain categories plus sport-specific ones
-  return terrainCategories.filter(c => !c.sport || c.sport === baseSport);
-}
-
-// Get all categories filtered for a specific sport (terrain filtered, others kept)
-export function getCategoriesForSport(sportType?: string): ExerciseCategory[] {
-  const baseSport = normalizeToBaseSport(sportType);
-  
-  if (!baseSport) return EXERCISE_CATEGORIES;
-  
-  return EXERCISE_CATEGORIES.filter(c => {
-    // Keep non-terrain categories
-    if (c.group !== "terrain") return true;
-    // For terrain, keep general ones (no sport) and sport-specific ones
-    return !c.sport || c.sport === baseSport;
-  });
-}
-
-// Check if an exercise category belongs to a sport
-export function isCategoryForSport(categoryValue: string, sportType?: string): boolean {
-  const baseSport = normalizeToBaseSport(sportType);
-  if (!baseSport) return true;
-  
-  const category = EXERCISE_CATEGORIES.find(c => c.value === categoryValue);
-  if (!category) return true;
-  
-  // Non-terrain categories are always valid
-  if (category.group !== "terrain") return true;
-  
-  // For terrain, check if it's general or matches the sport
-  return !category.sport || category.sport === baseSport;
-}
 
 // Groupes de catégories pour filtrage rapide
 export const CATEGORY_GROUPS = [
   { value: "all", label: "Tous" },
   { value: "musculation", label: "Musculation" },
+  { value: "bodyweight", label: "Poids de corps" },
+  { value: "crossfit_hyrox", label: "CrossFit / Hyrox" },
   { value: "course", label: "Course" },
-  { value: "ergo", label: "Ergo" },
+  { value: "ergo", label: "Ergo / Cardio" },
   { value: "sled", label: "Traîneau" },
+  { value: "pilates", label: "Pilates / Yoga" },
   { value: "reathletisation", label: "Réathlétisation" },
   { value: "terrain", label: "Terrain" },
-  { value: "stretching_mobility", label: "Stretching / Mobilité" },
+  { value: "stretching_mobility", label: "Échauffement / Mobilité" },
 ] as const;
 
 // Liste des catégories de course à pied (métriques spécialisées)
@@ -350,4 +445,76 @@ export function getCategoriesByGroup(group: string) {
 export function getCategoryGroup(categoryValue: string): string | null {
   const category = EXERCISE_CATEGORIES.find(c => c.value === categoryValue);
   return category?.group || null;
+}
+
+// Liste des sports disponibles pour les exercices terrain
+export const SPORT_OPTIONS = [
+  { value: "all", label: "Tous les sports" },
+  { value: "rugby", label: "Rugby" },
+  { value: "football", label: "Football" },
+  { value: "handball", label: "Handball" },
+  { value: "basketball", label: "Basketball" },
+  { value: "volleyball", label: "Volleyball" },
+  { value: "judo", label: "Judo" },
+  { value: "aviron", label: "Aviron" },
+  { value: "bowling", label: "Bowling" },
+  { value: "athletisme", label: "Athlétisme" },
+];
+
+// Normalize sport type to base sport
+export function normalizeToBaseSport(sportType?: string): string | null {
+  if (!sportType || sportType === "all") return null;
+  
+  const normalizedSport = sportType.toLowerCase();
+  if (normalizedSport.startsWith('rugby') || ['xv', '7', 'xiii', 'academie', 'national_team'].includes(normalizedSport)) return 'rugby';
+  if (normalizedSport.startsWith('football')) return 'football';
+  if (normalizedSport.startsWith('handball')) return 'handball';
+  if (normalizedSport.startsWith('volleyball')) return 'volleyball';
+  if (normalizedSport.startsWith('basketball')) return 'basketball';
+  if (normalizedSport.startsWith('judo')) return 'judo';
+  if (normalizedSport.startsWith('aviron')) return 'aviron';
+  if (normalizedSport.startsWith('bowling')) return 'bowling';
+  if (normalizedSport.startsWith('athletisme')) return 'athletisme';
+  
+  return normalizedSport;
+}
+
+// Get terrain categories for a specific sport
+export function getTerrainCategoriesForSport(sportType?: string): ExerciseCategory[] {
+  const terrainCategories = EXERCISE_CATEGORIES.filter(c => c.group === "terrain");
+  
+  const baseSport = normalizeToBaseSport(sportType);
+  if (!baseSport) return terrainCategories;
+  
+  // Return general terrain categories plus sport-specific ones
+  return terrainCategories.filter(c => !c.sport || c.sport === baseSport);
+}
+
+// Get all categories filtered for a specific sport (terrain filtered, others kept)
+export function getCategoriesForSport(sportType?: string): ExerciseCategory[] {
+  const baseSport = normalizeToBaseSport(sportType);
+  
+  if (!baseSport) return EXERCISE_CATEGORIES;
+  
+  return EXERCISE_CATEGORIES.filter(c => {
+    // Keep non-terrain categories
+    if (c.group !== "terrain") return true;
+    // For terrain, keep general ones (no sport) and sport-specific ones
+    return !c.sport || c.sport === baseSport;
+  });
+}
+
+// Check if an exercise category belongs to a sport
+export function isCategoryForSport(categoryValue: string, sportType?: string): boolean {
+  const baseSport = normalizeToBaseSport(sportType);
+  if (!baseSport) return true;
+  
+  const category = EXERCISE_CATEGORIES.find(c => c.value === categoryValue);
+  if (!category) return true;
+  
+  // Non-terrain categories are always valid
+  if (category.group !== "terrain") return true;
+  
+  // For terrain, check if it's general or matches the sport
+  return !category.sport || category.sport === baseSport;
 }
