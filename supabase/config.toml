@@ -17,3 +17,12 @@ verify_jwt = false
 
 [functions.check-awcr-alerts]
 verify_jwt = false
+
+[functions.send-athlete-invitation]
+verify_jwt = false
+
+[functions.notify-athletes]
+verify_jwt = false
+
+[functions.send-invitation-email]
+verify_jwt = false

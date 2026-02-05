@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/select";
 import { Plus, Trash2, Filter, Eye } from "lucide-react";
 import { toast } from "sonner";
-import { AddPlayerDialog } from "./AddPlayerDialog";
+import { AddPlayerDialogWithInvite } from "./AddPlayerDialogWithInvite";
 import { useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -365,7 +365,7 @@ export function PlayersTab({ categoryId }: PlayersTabProps) {
         )}
       </CardContent>
 
-      <AddPlayerDialog
+      <AddPlayerDialogWithInvite
         open={isAddDialogOpen}
         onOpenChange={setIsAddDialogOpen}
         categoryId={categoryId}

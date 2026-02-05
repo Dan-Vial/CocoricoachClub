@@ -320,6 +320,80 @@ export type Database = {
           },
         ]
       }
+      athlete_invitations: {
+        Row: {
+          accepted_at: string | null
+          category_id: string
+          club_id: string
+          created_at: string
+          email: string
+          expires_at: string | null
+          id: string
+          invited_by: string | null
+          phone: string | null
+          player_id: string
+          status: string
+          token: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          category_id: string
+          club_id: string
+          created_at?: string
+          email: string
+          expires_at?: string | null
+          id?: string
+          invited_by?: string | null
+          phone?: string | null
+          player_id: string
+          status?: string
+          token?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          category_id?: string
+          club_id?: string
+          created_at?: string
+          email?: string
+          expires_at?: string | null
+          id?: string
+          invited_by?: string | null
+          phone?: string | null
+          player_id?: string
+          status?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "athlete_invitations_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "athlete_invitations_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "admin_all_clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "athlete_invitations_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "athlete_invitations_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_logs: {
         Row: {
           action: string
@@ -4372,6 +4446,7 @@ export type Database = {
           discipline: string | null
           email: string | null
           emergency_notes: string | null
+          first_name: string | null
           id: string
           medical_notes: string | null
           name: string
@@ -4385,7 +4460,9 @@ export type Database = {
           parent_contact_2_relation: string | null
           phone: string | null
           position: string | null
+          pwa_install_dismissed: boolean | null
           specialty: string | null
+          user_id: string | null
         }
         Insert: {
           allergies?: string | null
@@ -4399,6 +4476,7 @@ export type Database = {
           discipline?: string | null
           email?: string | null
           emergency_notes?: string | null
+          first_name?: string | null
           id?: string
           medical_notes?: string | null
           name: string
@@ -4412,7 +4490,9 @@ export type Database = {
           parent_contact_2_relation?: string | null
           phone?: string | null
           position?: string | null
+          pwa_install_dismissed?: boolean | null
           specialty?: string | null
+          user_id?: string | null
         }
         Update: {
           allergies?: string | null
@@ -4426,6 +4506,7 @@ export type Database = {
           discipline?: string | null
           email?: string | null
           emergency_notes?: string | null
+          first_name?: string | null
           id?: string
           medical_notes?: string | null
           name?: string
@@ -4439,7 +4520,9 @@ export type Database = {
           parent_contact_2_relation?: string | null
           phone?: string | null
           position?: string | null
+          pwa_install_dismissed?: boolean | null
           specialty?: string | null
+          user_id?: string | null
         }
         Relationships: [
           {

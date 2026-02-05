@@ -22,11 +22,12 @@ import AcceptInvitation from "./pages/AcceptInvitation";
 import PublicView from "./pages/PublicView";
 import PublicCategoryView from "./pages/PublicCategoryView";
 import AthletePortal from "./pages/AthletePortal";
+import AcceptAthleteInvitation from "./pages/AcceptAthleteInvitation";
 import Install from "./pages/Install";
 import Admin from "./pages/Admin";
- import SuperAdmin from "./pages/SuperAdmin";
+import SuperAdmin from "./pages/SuperAdmin";
 import Settings from "./pages/Settings";
- import AdminClub from "./pages/AdminClub";
+import AdminClub from "./pages/AdminClub";
 import AcceptAmbassadorInvitation from "./pages/AcceptAmbassadorInvitation";
 import NotFound from "./pages/NotFound";
 
@@ -103,6 +104,7 @@ const App = () => (
                   <Route path="/public-view" element={<PublicView />} />
                   <Route path="/public/categories/:categoryId" element={<PublicCategoryView />} />
                   <Route path="/athlete-portal" element={<AthletePortal />} />
+                  <Route path="/accept-athlete-invitation" element={<AcceptAthleteInvitation />} />
                   <Route path="/install" element={<Install />} />
                   <Route path="/admin" element={<Admin />} />
                    <Route path="/super-admin" element={<SuperAdmin />} />

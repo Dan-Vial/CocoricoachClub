@@ -1,16 +1,21 @@
 import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, User, XCircle, Activity, Trophy } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Loader2, User, XCircle, Activity, Trophy, LogOut } from "lucide-react";
 import { AthleteRpeEntry } from "@/components/athlete-portal/AthleteRpeEntry";
 import { AthleteMatchStats } from "@/components/athlete-portal/AthleteMatchStats";
+import { AthletePWAInstallPopup } from "@/components/athlete/AthletePWAInstallPopup";
 import { athletePortalHeaders, buildAthletePortalFunctionUrl } from "@/lib/athletePortalClient";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 interface AthleteInfo {
   player_id: string;
   player_name: string;
+  player_first_name?: string;
   category_id: string;
   category_name: string;
   club_name: string;
@@ -19,45 +24,97 @@ interface AthleteInfo {
 
 export default function AthletePortal() {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const { user, signOut } = useAuth();
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [errorMessage, setErrorMessage] = useState("");
   const [athleteInfo, setAthleteInfo] = useState<AthleteInfo | null>(null);
   const token = searchParams.get("token");
 
   useEffect(() => {
-    if (!token) {
+    // If user is logged in and is an athlete, fetch their data directly
+    if (user && user.user_metadata?.is_athlete) {
+      fetchLoggedInAthleteData();
+    } else if (token) {
+      // Legacy token-based access
+      validateToken();
+    } else if (user) {
+      // User is logged in but not an athlete
+      navigate("/");
+    } else {
       setStatus("error");
       setErrorMessage("Lien d'accès invalide");
-      return;
     }
+  }, [token, user]);
 
-    const url = buildAthletePortalFunctionUrl("validate", token);
-    fetch(url, { headers: athletePortalHeaders() })
-      .then(async (res) => {
-        const data = await res.json().catch(() => ({}));
-        return { ok: res.ok, data };
-      })
-      .then(({ data }) => {
-        if (data?.success) {
-          setAthleteInfo({
-            player_id: data.player_id,
-            player_name: data.player_name,
-            category_id: data.category_id,
-            category_name: data.category_name,
-            club_name: data.club_name,
-            sport_type: data.sport_type,
-          });
-          setStatus("success");
-        } else {
-          setStatus("error");
-          setErrorMessage(data?.error || "Ce lien n'est plus valide ou a expiré");
-        }
-      })
-      .catch(() => {
+  const fetchLoggedInAthleteData = async () => {
+    try {
+      // Fetch the player linked to this user
+      const { data: player, error: playerError } = await supabase
+        .from("players")
+        .select(`
+          id,
+          name,
+          first_name,
+          category_id,
+          categories!inner(name, rugby_type, clubs!inner(name))
+        `)
+        .eq("user_id", user!.id)
+        .single();
+
+      if (playerError || !player) {
         setStatus("error");
-        setErrorMessage("Erreur de connexion au serveur");
+        setErrorMessage("Aucun profil athlète lié à ce compte");
+        return;
+      }
+
+      setAthleteInfo({
+        player_id: player.id,
+        player_name: player.name,
+        player_first_name: player.first_name || undefined,
+        category_id: player.category_id,
+        category_name: (player.categories as any).name,
+        club_name: (player.categories as any).clubs.name,
+        sport_type: (player.categories as any).rugby_type,
       });
-  }, [token]);
+      setStatus("success");
+    } catch (err) {
+      console.error("Error fetching athlete data:", err);
+      setStatus("error");
+      setErrorMessage("Erreur lors du chargement des données");
+    }
+  };
+
+  const validateToken = async () => {
+    const url = buildAthletePortalFunctionUrl("validate", token!);
+    try {
+      const res = await fetch(url, { headers: athletePortalHeaders() });
+      const data = await res.json().catch(() => ({}));
+
+      if (data?.success) {
+        setAthleteInfo({
+          player_id: data.player_id,
+          player_name: data.player_name,
+          category_id: data.category_id,
+          category_name: data.category_name,
+          club_name: data.club_name,
+          sport_type: data.sport_type,
+        });
+        setStatus("success");
+      } else {
+        setStatus("error");
+        setErrorMessage(data?.error || "Ce lien n'est plus valide ou a expiré");
+      }
+    } catch {
+      setStatus("error");
+      setErrorMessage("Erreur de connexion au serveur");
+    }
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/auth");
+  };
 
   if (status === "loading") {
     return (
@@ -66,7 +123,7 @@ export default function AthletePortal() {
           <CardContent className="flex flex-col items-center py-8 space-y-4">
             <Loader2 className="h-12 w-12 animate-spin text-primary" />
             <p className="text-center text-muted-foreground">
-              Validation de votre accès...
+              Chargement de ton espace athlète...
             </p>
           </CardContent>
         </Card>
@@ -84,31 +141,51 @@ export default function AthletePortal() {
               {errorMessage}
             </p>
             <p className="text-sm text-muted-foreground text-center">
-              Demandez un nouveau lien d'accès à votre coach.
+              Contacte ton coach pour obtenir de l'aide.
             </p>
+            {user && (
+              <Button variant="outline" onClick={handleSignOut}>
+                <LogOut className="mr-2 h-4 w-4" />
+                Se déconnecter
+              </Button>
+            )}
           </CardContent>
         </Card>
       </div>
     );
   }
 
+  const displayName = athleteInfo?.player_first_name
+    ? `${athleteInfo.player_first_name} ${athleteInfo.player_name}`
+    : athleteInfo?.player_name;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 p-4">
+      {/* PWA Install Popup for athletes */}
+      <AthletePWAInstallPopup playerId={athleteInfo?.player_id} />
+
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
         <Card className="bg-gradient-card">
           <CardHeader>
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-                <User className="h-8 w-8 text-primary" />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                  <User className="h-8 w-8 text-primary" />
+                </div>
+                <div>
+                  <CardTitle className="text-2xl">{displayName}</CardTitle>
+                  <CardDescription className="flex flex-wrap items-center gap-2 mt-1">
+                    <Badge variant="secondary">{athleteInfo?.category_name}</Badge>
+                    <span className="text-muted-foreground">{athleteInfo?.club_name}</span>
+                  </CardDescription>
+                </div>
               </div>
-              <div>
-                <CardTitle className="text-2xl">{athleteInfo?.player_name}</CardTitle>
-                <CardDescription className="flex flex-wrap items-center gap-2 mt-1">
-                  <Badge variant="secondary">{athleteInfo?.category_name}</Badge>
-                  <span className="text-muted-foreground">{athleteInfo?.club_name}</span>
-                </CardDescription>
-              </div>
+              {user && (
+                <Button variant="ghost" size="sm" onClick={handleSignOut}>
+                  <LogOut className="h-4 w-4" />
+                </Button>
+              )}
             </div>
           </CardHeader>
         </Card>
@@ -117,9 +194,9 @@ export default function AthletePortal() {
         <Card className="bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800">
           <CardContent className="py-4">
             <p className="text-sm text-blue-800 dark:text-blue-200">
-              <strong>Portail Athlète</strong> - Utilisez ce portail pour saisir vos données personnelles : 
-              RPE après les entraînements et statistiques après les matchs. Ces données seront automatiquement 
-              synchronisées avec votre coach.
+              <strong>Ton espace athlète</strong> – Saisis tes données personnelles :
+              RPE après les entraînements et statistiques après les matchs. Ces données seront automatiquement
+              synchronisées avec ton coach.
             </p>
           </CardContent>
         </Card>
@@ -138,11 +215,20 @@ export default function AthletePortal() {
           </TabsList>
 
           <TabsContent value="rpe" className="mt-6">
-            <AthleteRpeEntry token={token!} playerId={athleteInfo!.player_id} categoryId={athleteInfo!.category_id} />
+            <AthleteRpeEntry
+              token={token || undefined}
+              playerId={athleteInfo!.player_id}
+              categoryId={athleteInfo!.category_id}
+            />
           </TabsContent>
 
           <TabsContent value="matches" className="mt-6">
-            <AthleteMatchStats token={token!} playerId={athleteInfo!.player_id} categoryId={athleteInfo!.category_id} sportType={athleteInfo?.sport_type} />
+            <AthleteMatchStats
+              token={token || undefined}
+              playerId={athleteInfo!.player_id}
+              categoryId={athleteInfo!.category_id}
+              sportType={athleteInfo?.sport_type}
+            />
           </TabsContent>
         </Tabs>
       </div>
