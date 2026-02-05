@@ -6818,7 +6818,7 @@ export type Database = {
           description: string | null
           duration_seconds: number | null
           id: string
-          match_id: string
+          match_id: string | null
           match_start_timestamp: string | null
           thumbnail_url: string | null
           title: string
@@ -6833,7 +6833,7 @@ export type Database = {
           description?: string | null
           duration_seconds?: number | null
           id?: string
-          match_id: string
+          match_id?: string | null
           match_start_timestamp?: string | null
           thumbnail_url?: string | null
           title: string
@@ -6848,7 +6848,7 @@ export type Database = {
           description?: string | null
           duration_seconds?: number | null
           id?: string
-          match_id?: string
+          match_id?: string | null
           match_start_timestamp?: string | null
           thumbnail_url?: string | null
           title?: string
