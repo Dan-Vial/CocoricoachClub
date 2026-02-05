@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -36,22 +36,86 @@ export function InviteCategoryMemberDialog({ open, onOpenChange, categoryId }: I
     },
   });
 
+  // Fetch category and club info for the email
+  const { data: categoryInfo } = useQuery({
+    queryKey: ["category-for-invitation", categoryId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("categories")
+        .select("name, club_id, clubs(name)")
+        .eq("id", categoryId)
+        .single();
+      if (error) throw error;
+      return data as { name: string; club_id: string; clubs: { name: string } | null };
+    },
+    enabled: open,
+  });
+
+  // Fetch current user profile for inviter name
+  const { data: profile } = useQuery({
+    queryKey: ["current-user-profile"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+      const { data } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("id", user.id)
+        .single();
+      return data;
+    },
+    enabled: open,
+  });
+
   const mutation = useMutation({
     mutationFn: async (data: InvitationForm) => {
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) throw new Error("Non authentifié");
 
-      const { error } = await supabase.from("category_invitations").insert({
-        category_id: categoryId,
-        email: data.email,
-        role: data.role,
-        invited_by: user.user.id,
-      });
+      // Create invitation
+      const { data: invitation, error } = await supabase
+        .from("category_invitations")
+        .insert({
+          category_id: categoryId,
+          email: data.email,
+          role: data.role,
+          invited_by: user.user.id,
+        })
+        .select("token")
+        .single();
+      
       if (error) throw error;
+
+      // Send invitation email via OneSignal
+      const invitationLink = `${window.location.origin}/accept-invitation?token=${invitation.token}&type=category`;
+      
+      try {
+        const { error: emailError } = await supabase.functions.invoke("send-invitation-email", {
+          body: {
+            email: data.email,
+            invitationType: "category_member",
+            inviterName: profile?.full_name || user.user.email,
+            clubName: categoryInfo?.clubs?.name || "Votre club",
+            categoryName: categoryInfo?.name || "la catégorie",
+            role: data.role,
+            invitationLink,
+          },
+        });
+
+        if (emailError) {
+          console.error("Email sending failed:", emailError);
+          toast.warning("Invitation créée mais email non envoyé. Partagez le lien manuellement.");
+        }
+      } catch (e) {
+        console.error("Email sending error:", e);
+        toast.warning("Invitation créée mais email non envoyé. Partagez le lien manuellement.");
+      }
+
+      return invitation;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["category-invitations", categoryId] });
-      toast.success("Invitation envoyée avec succès");
+      toast.success("Invitation envoyée avec succès ! Un email a été envoyé.");
       form.reset();
       onOpenChange(false);
     },

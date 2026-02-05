@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -36,22 +36,86 @@ export function InviteMemberDialog({ open, onOpenChange, clubId }: InviteMemberD
     },
   });
 
+  // Fetch club name for the email
+  const { data: club } = useQuery({
+    queryKey: ["club-for-invitation", clubId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("clubs")
+        .select("name")
+        .eq("id", clubId)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: open,
+  });
+
+  // Fetch current user profile for inviter name
+  const { data: profile } = useQuery({
+    queryKey: ["current-user-profile"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+      const { data } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("id", user.id)
+        .single();
+      return data;
+    },
+    enabled: open,
+  });
+
   const mutation = useMutation({
     mutationFn: async (data: InvitationForm) => {
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) throw new Error("Non authentifié");
 
-      const { error } = await (supabase as any).from("club_invitations").insert({
-        club_id: clubId,
-        email: data.email,
-        role: data.role,
-        invited_by: user.user.id,
-      });
+      // Create invitation
+      const { data: invitation, error } = await (supabase as any)
+        .from("club_invitations")
+        .insert({
+          club_id: clubId,
+          email: data.email,
+          role: data.role,
+          invited_by: user.user.id,
+        })
+        .select("token")
+        .single();
+      
       if (error) throw error;
+
+      // Send invitation email via OneSignal
+      const invitationLink = `${window.location.origin}/accept-invitation?token=${invitation.token}`;
+      
+      try {
+        const { error: emailError } = await supabase.functions.invoke("send-invitation-email", {
+          body: {
+            email: data.email,
+            invitationType: "collaborator",
+            inviterName: profile?.full_name || user.user.email,
+            clubName: club?.name || "Votre club",
+            role: data.role,
+            invitationLink,
+          },
+        });
+
+        if (emailError) {
+          console.error("Email sending failed:", emailError);
+          // Don't fail the invitation, just warn
+          toast.warning("Invitation créée mais email non envoyé. Partagez le lien manuellement.");
+        }
+      } catch (e) {
+        console.error("Email sending error:", e);
+        toast.warning("Invitation créée mais email non envoyé. Partagez le lien manuellement.");
+      }
+
+      return invitation;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["club-invitations", clubId] });
-      toast.success("Invitation envoyée avec succès");
+      toast.success("Invitation envoyée avec succès ! Un email a été envoyé.");
       form.reset();
       onOpenChange(false);
     },

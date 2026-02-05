@@ -11,9 +11,10 @@
  import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
  import { Textarea } from "@/components/ui/textarea";
  import { toast } from "@/components/ui/sonner";
- import { Plus, Edit, Pause, Play, Trash2, Building2 } from "lucide-react";
+ import { Plus, Edit, Pause, Play, Trash2, Building2, Mail } from "lucide-react";
  import { format } from "date-fns";
  import { fr } from "date-fns/locale";
+ import { InviteClientDialog } from "./InviteClientDialog";
  
  interface Client {
    id: string;
@@ -31,10 +32,11 @@
    created_at: string;
  }
  
- export function SuperAdminClients() {
-   const queryClient = useQueryClient();
-   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-   const [editingClient, setEditingClient] = useState<Client | null>(null);
+export function SuperAdminClients() {
+  const queryClient = useQueryClient();
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
+  const [editingClient, setEditingClient] = useState<Client | null>(null);
    const [formData, setFormData] = useState({
      name: "",
      email: "",
@@ -328,13 +330,18 @@
                Gérez les organisations clientes et leurs limites
              </CardDescription>
            </div>
-           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-             <DialogTrigger asChild>
-               <Button>
-                 <Plus className="h-4 w-4 mr-2" />
-                 Nouveau client
-               </Button>
-             </DialogTrigger>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setIsInviteDialogOpen(true)}>
+                <Mail className="h-4 w-4 mr-2" />
+                Inviter un client
+              </Button>
+              <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Créer manuellement
+                  </Button>
+                </DialogTrigger>
              <DialogContent className="max-w-2xl">
                <DialogHeader>
                  <DialogTitle>Créer un client</DialogTitle>
@@ -354,8 +361,9 @@
                    Créer
                  </Button>
                </DialogFooter>
-             </DialogContent>
-           </Dialog>
+              </DialogContent>
+            </Dialog>
+          </div>
          </div>
        </CardHeader>
        <CardContent>
@@ -459,9 +467,15 @@
                  Sauvegarder
                </Button>
              </DialogFooter>
-           </DialogContent>
-         </Dialog>
-       </CardContent>
-     </Card>
-   );
- }
+            </DialogContent>
+          </Dialog>
+
+          {/* Invite Client Dialog */}
+          <InviteClientDialog
+            open={isInviteDialogOpen}
+            onOpenChange={setIsInviteDialogOpen}
+          />
+        </CardContent>
+      </Card>
+    );
+  }
