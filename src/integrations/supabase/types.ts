@@ -861,6 +861,7 @@ export type Database = {
           max_athletes: number
           max_categories_per_club: number
           max_clubs: number
+          max_staff_per_category: number | null
           max_staff_users: number
           name: string
           notes: string | null
@@ -879,6 +880,7 @@ export type Database = {
           max_athletes?: number
           max_categories_per_club?: number
           max_clubs?: number
+          max_staff_per_category?: number | null
           max_staff_users?: number
           name: string
           notes?: string | null
@@ -897,6 +899,7 @@ export type Database = {
           max_athletes?: number
           max_categories_per_club?: number
           max_clubs?: number
+          max_staff_per_category?: number | null
           max_staff_users?: number
           name?: string
           notes?: string | null
@@ -6000,46 +6003,55 @@ export type Database = {
           created_at: string
           description: string | null
           features: Json | null
+          gps_data_enabled: boolean | null
           id: string
           is_active: boolean
           max_athletes: number
           max_categories_per_club: number
           max_clubs: number
+          max_staff_per_category: number | null
           max_staff_users: number
           name: string
           price_monthly: number | null
           price_yearly: number | null
           trial_days: number | null
+          video_enabled: boolean | null
         }
         Insert: {
           created_at?: string
           description?: string | null
           features?: Json | null
+          gps_data_enabled?: boolean | null
           id?: string
           is_active?: boolean
           max_athletes?: number
           max_categories_per_club?: number
           max_clubs?: number
+          max_staff_per_category?: number | null
           max_staff_users?: number
           name: string
           price_monthly?: number | null
           price_yearly?: number | null
           trial_days?: number | null
+          video_enabled?: boolean | null
         }
         Update: {
           created_at?: string
           description?: string | null
           features?: Json | null
+          gps_data_enabled?: boolean | null
           id?: string
           is_active?: boolean
           max_athletes?: number
           max_categories_per_club?: number
           max_clubs?: number
+          max_staff_per_category?: number | null
           max_staff_users?: number
           name?: string
           price_monthly?: number | null
           price_yearly?: number | null
           trial_days?: number | null
+          video_enabled?: boolean | null
         }
         Relationships: []
       }
