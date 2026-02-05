@@ -161,156 +161,158 @@ export function AddVideoAnalysisDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col">
-        <DialogHeader>
+      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col overflow-hidden">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <Video className="h-5 w-5" />
             Nouvelle Analyse Vidéo
           </DialogTitle>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 pr-4">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Title */}
-            <div className="space-y-2">
-              <Label>Titre *</Label>
-              <Input
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Titre de l'analyse vidéo"
-              />
-            </div>
-
-            {/* Match Selection (Optional) */}
-            <div className="space-y-2">
-              <Label className="flex items-center gap-2">
-                <Calendar className="h-4 w-4" />
-                Match associé (optionnel)
-              </Label>
-              <Select value={matchId} onValueChange={setMatchId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Aucun match - Vidéo libre" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Aucun match - Vidéo libre</SelectItem>
-                  {matches?.map((match) => (
-                    <SelectItem key={match.id} value={match.id}>
-                      <div className="flex items-center gap-2">
-                        <span>
-                          {match.is_home ? "vs" : "@"} {match.opponent} -{" "}
-                          {format(new Date(match.match_date), "dd/MM/yyyy", { locale: fr })}
-                        </span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">
-                Vous pouvez créer une analyse sans match (entraînement, compilation...)
-              </p>
-            </div>
-
-            {/* Video Source */}
-            <div className="grid grid-cols-2 gap-4">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+          <ScrollArea className="flex-1 pr-4">
+            <div className="space-y-4 pb-4">
+              {/* Title */}
               <div className="space-y-2">
-                <Label>Source vidéo</Label>
-                <Select value={videoSource} onValueChange={setVideoSource}>
+                <Label>Titre *</Label>
+                <Input
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="Titre de l'analyse vidéo"
+                />
+              </div>
+
+              {/* Match Selection (Optional) */}
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4" />
+                  Match associé (optionnel)
+                </Label>
+                <Select value={matchId} onValueChange={setMatchId}>
                   <SelectTrigger>
-                    <SelectValue />
+                    <SelectValue placeholder="Aucun match - Vidéo libre" />
                   </SelectTrigger>
                   <SelectContent>
-                    {VIDEO_SOURCES.map((source) => (
-                      <SelectItem key={source.value} value={source.value}>
-                        {source.label}
+                    <SelectItem value="none">Aucun match - Vidéo libre</SelectItem>
+                    {matches?.map((match) => (
+                      <SelectItem key={match.id} value={match.id}>
+                        <div className="flex items-center gap-2">
+                          <span>
+                            {match.is_home ? "vs" : "@"} {match.opponent} -{" "}
+                            {format(new Date(match.match_date), "dd/MM/yyyy", { locale: fr })}
+                          </span>
+                        </div>
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
+                <p className="text-xs text-muted-foreground">
+                  Vous pouvez créer une analyse sans match (entraînement, compilation...)
+                </p>
               </div>
 
+              {/* Video Source */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Source vidéo</Label>
+                  <Select value={videoSource} onValueChange={setVideoSource}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {VIDEO_SOURCES.map((source) => (
+                        <SelectItem key={source.value} value={source.value}>
+                          {source.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Début de la vidéo</Label>
+                  <Input
+                    type="datetime-local"
+                    value={matchStartTime}
+                    onChange={(e) => setMatchStartTime(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Video URL */}
               <div className="space-y-2">
-                <Label>Début de la vidéo</Label>
+                <Label className="flex items-center gap-2">
+                  <Link className="h-4 w-4" />
+                  URL de la vidéo (optionnel)
+                </Label>
                 <Input
-                  type="datetime-local"
-                  value={matchStartTime}
-                  onChange={(e) => setMatchStartTime(e.target.value)}
+                  value={videoUrl}
+                  onChange={(e) => setVideoUrl(e.target.value)}
+                  placeholder="https://app.veo.co/..."
+                />
+              </div>
+
+              {/* Player Selection */}
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  Joueurs concernés (optionnel)
+                </Label>
+                <div className="h-32 border rounded-md p-2 overflow-y-auto">
+                  <div className="space-y-2">
+                    {players?.map((player) => (
+                      <div key={player.id} className="flex items-center gap-2">
+                        <Checkbox
+                          id={`player-${player.id}`}
+                          checked={selectedPlayers.includes(player.id)}
+                          onCheckedChange={() => togglePlayer(player.id)}
+                        />
+                        <label
+                          htmlFor={`player-${player.id}`}
+                          className="text-sm cursor-pointer flex items-center gap-2"
+                        >
+                          {player.name}
+                          {player.position && (
+                            <span className="text-xs text-muted-foreground">
+                              ({player.position})
+                            </span>
+                          )}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Sélectionnez les joueurs pour filtrer leurs clips associés
+                </p>
+              </div>
+
+              {/* Description */}
+              <div className="space-y-2">
+                <Label>Description (optionnel)</Label>
+                <Textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Notes sur cette vidéo..."
+                  rows={2}
                 />
               </div>
             </div>
+          </ScrollArea>
 
-            {/* Video URL */}
-            <div className="space-y-2">
-              <Label className="flex items-center gap-2">
-                <Link className="h-4 w-4" />
-                URL de la vidéo (optionnel)
-              </Label>
-              <Input
-                value={videoUrl}
-                onChange={(e) => setVideoUrl(e.target.value)}
-                placeholder="https://app.veo.co/..."
-              />
-            </div>
-
-            {/* Player Selection */}
-            <div className="space-y-2">
-              <Label className="flex items-center gap-2">
-                <Users className="h-4 w-4" />
-                Joueurs concernés (optionnel)
-              </Label>
-              <ScrollArea className="h-32 border rounded-md p-2">
-                <div className="space-y-2">
-                  {players?.map((player) => (
-                    <div key={player.id} className="flex items-center gap-2">
-                      <Checkbox
-                        id={`player-${player.id}`}
-                        checked={selectedPlayers.includes(player.id)}
-                        onCheckedChange={() => togglePlayer(player.id)}
-                      />
-                      <label
-                        htmlFor={`player-${player.id}`}
-                        className="text-sm cursor-pointer flex items-center gap-2"
-                      >
-                        {player.name}
-                        {player.position && (
-                          <span className="text-xs text-muted-foreground">
-                            ({player.position})
-                          </span>
-                        )}
-                      </label>
-                    </div>
-                  ))}
-                </div>
-              </ScrollArea>
-              <p className="text-xs text-muted-foreground">
-                Sélectionnez les joueurs pour filtrer leurs clips associés
-              </p>
-            </div>
-
-            {/* Description */}
-            <div className="space-y-2">
-              <Label>Description (optionnel)</Label>
-              <Textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Notes sur cette vidéo..."
-                rows={2}
-              />
-            </div>
-
-            <div className="flex justify-end gap-2 pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-              >
-                Annuler
-              </Button>
-              <Button type="submit" disabled={createMutation.isPending}>
-                {createMutation.isPending ? "Création..." : "Créer l'analyse"}
-              </Button>
-            </div>
-          </form>
-        </ScrollArea>
+          <div className="flex justify-end gap-2 pt-4 border-t flex-shrink-0">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
+              Annuler
+            </Button>
+            <Button type="submit" disabled={createMutation.isPending}>
+              {createMutation.isPending ? "Création..." : "Créer l'analyse"}
+            </Button>
+          </div>
+        </form>
       </DialogContent>
     </Dialog>
   );
