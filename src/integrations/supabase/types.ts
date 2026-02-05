@@ -634,31 +634,40 @@ export type Database = {
       }
       categories: {
         Row: {
+          academy_enabled: boolean | null
           club_id: string
           cover_image_url: string | null
           created_at: string
           gender: string
+          gps_enabled: boolean | null
           id: string
           name: string
           rugby_type: string
+          video_enabled: boolean | null
         }
         Insert: {
+          academy_enabled?: boolean | null
           club_id: string
           cover_image_url?: string | null
           created_at?: string
           gender?: string
+          gps_enabled?: boolean | null
           id?: string
           name: string
           rugby_type?: string
+          video_enabled?: boolean | null
         }
         Update: {
+          academy_enabled?: boolean | null
           club_id?: string
           cover_image_url?: string | null
           created_at?: string
           gender?: string
+          gps_enabled?: boolean | null
           id?: string
           name?: string
           rugby_type?: string
+          video_enabled?: boolean | null
         }
         Relationships: [
           {

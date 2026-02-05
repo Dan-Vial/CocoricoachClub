@@ -12,10 +12,11 @@
  import { Textarea } from "@/components/ui/textarea";
  import { Checkbox } from "@/components/ui/checkbox";
  import { toast } from "@/components/ui/sonner";
- import { Plus, Edit, Pause, Play, Trash2, Building2, Mail, Video, MapPin } from "lucide-react";
- import { format } from "date-fns";
- import { fr } from "date-fns/locale";
- import { InviteClientDialog } from "./InviteClientDialog";
+import { Plus, Edit, Pause, Play, Trash2, Building2, Mail, Video, MapPin, FolderOpen } from "lucide-react";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
+import { InviteClientDialog } from "./InviteClientDialog";
+import { ClientCategoryOptionsDialog } from "./ClientCategoryOptionsDialog";
  
  interface Client {
    id: string;
@@ -40,6 +41,7 @@ export function SuperAdminClients() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const [categoryOptionsClient, setCategoryOptionsClient] = useState<Client | null>(null);
    const [formData, setFormData] = useState({
      name: "",
      email: "",
@@ -502,45 +504,53 @@ export function SuperAdminClients() {
                    <TableCell>
                      {format(new Date(client.created_at), "dd MMM yyyy", { locale: fr })}
                    </TableCell>
-                   <TableCell className="text-right">
-                     <div className="flex justify-end gap-1">
-                       <Button
-                         variant="ghost"
-                         size="icon"
-                         onClick={() => openEditDialog(client)}
-                       >
-                         <Edit className="h-4 w-4" />
-                       </Button>
-                       {client.status === "suspended" ? (
-                         <Button
-                           variant="ghost"
-                           size="icon"
-                           onClick={() => toggleStatus.mutate({ id: client.id, status: "active" })}
-                         >
-                           <Play className="h-4 w-4 text-green-600" />
-                         </Button>
-                       ) : (
-                         <Button
-                           variant="ghost"
-                           size="icon"
-                           onClick={() => toggleStatus.mutate({ id: client.id, status: "suspended" })}
-                         >
-                           <Pause className="h-4 w-4 text-amber-600" />
-                         </Button>
-                       )}
-                       <Button
-                         variant="ghost"
-                         size="icon"
-                         onClick={() => {
-                           if (confirm("Supprimer ce client ?")) {
-                             deleteClient.mutate(client.id);
-                           }
-                         }}
-                       >
-                         <Trash2 className="h-4 w-4 text-destructive" />
-                       </Button>
-                     </div>
-                   </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title="Options des catégories"
+                          onClick={() => setCategoryOptionsClient(client)}
+                        >
+                          <FolderOpen className="h-4 w-4 text-primary" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => openEditDialog(client)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        {client.status === "suspended" ? (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => toggleStatus.mutate({ id: client.id, status: "active" })}
+                          >
+                            <Play className="h-4 w-4 text-green-600" />
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => toggleStatus.mutate({ id: client.id, status: "suspended" })}
+                          >
+                            <Pause className="h-4 w-4 text-amber-600" />
+                          </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            if (confirm("Supprimer ce client ?")) {
+                              deleteClient.mutate(client.id);
+                            }
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </TableCell>
                  </TableRow>
                ))}
              </TableBody>
@@ -568,11 +578,21 @@ export function SuperAdminClients() {
             </DialogContent>
           </Dialog>
 
-          {/* Invite Client Dialog */}
-          <InviteClientDialog
-            open={isInviteDialogOpen}
-            onOpenChange={setIsInviteDialogOpen}
-          />
+           {/* Invite Client Dialog */}
+           <InviteClientDialog
+             open={isInviteDialogOpen}
+             onOpenChange={setIsInviteDialogOpen}
+           />
+
+           {/* Category Options Dialog */}
+           {categoryOptionsClient && (
+             <ClientCategoryOptionsDialog
+               open={!!categoryOptionsClient}
+               onOpenChange={(open) => !open && setCategoryOptionsClient(null)}
+               clientId={categoryOptionsClient.id}
+               clientName={categoryOptionsClient.name}
+             />
+           )}
         </CardContent>
       </Card>
     );
