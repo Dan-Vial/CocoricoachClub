@@ -920,6 +920,7 @@ export type Database = {
       }
       club_members: {
         Row: {
+          assigned_categories: string[] | null
           club_id: string
           created_at: string
           id: string
@@ -928,6 +929,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          assigned_categories?: string[] | null
           club_id: string
           created_at?: string
           id?: string
@@ -936,6 +938,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          assigned_categories?: string[] | null
           club_id?: string
           created_at?: string
           id?: string
