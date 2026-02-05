@@ -1,0 +1,635 @@
+ import { useState } from "react";
+ import { useQuery } from "@tanstack/react-query";
+ import { useNavigate } from "react-router-dom";
+ import { supabase } from "@/integrations/supabase/client";
+ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+ import { Button } from "@/components/ui/button";
+ import { Badge } from "@/components/ui/badge";
+ import { Progress } from "@/components/ui/progress";
+ import { 
+   Users, 
+   AlertTriangle, 
+   Calendar, 
+   Activity,
+   CheckCircle,
+   XCircle,
+   Clock,
+   TrendingUp,
+   Brain,
+   FileWarning,
+   Pencil,
+   Bell,
+   User,
+   ChevronRight
+ } from "lucide-react";
+ import { format, addDays, subDays } from "date-fns";
+ import { fr } from "date-fns/locale";
+ import { cn } from "@/lib/utils";
+ import { 
+   calculateWeightedWellnessScore, 
+   getWellnessRiskLevel,
+   type WellnessEntry 
+ } from "@/lib/wellnessCalculations";
+ import { EditSessionDialog } from "./EditSessionDialog";
+ 
+ interface DecisionCenterProps {
+   categoryId: string;
+   categoryName?: string;
+ }
+ 
+ interface GroupStatus {
+   total: number;
+   available: number;
+   atRisk: number;
+   injured: number;
+   uncertain: number;
+ }
+ 
+ interface PriorityAlert {
+   id: string;
+   type: "overload" | "fatigue" | "injury_return" | "admin";
+   severity: "critical" | "high" | "medium";
+   playerId: string;
+   playerName: string;
+   message: string;
+   action?: string;
+ }
+ 
+ interface SessionInfo {
+   id: string;
+   name: string;
+   type: string;
+   time: string;
+   targetLoad: number;
+   playersToAdapt: { id: string; name: string; reason: string }[];
+ }
+ 
+ export function DecisionCenter({ categoryId, categoryName }: DecisionCenterProps) {
+   const navigate = useNavigate();
+   const today = format(new Date(), "yyyy-MM-dd");
+   const tomorrow = format(addDays(new Date(), 1), "yyyy-MM-dd");
+   const [editSessionOpen, setEditSessionOpen] = useState(false);
+   const [editingSession, setEditingSession] = useState<any>(null);
+ 
+   // Fetch players
+   const { data: players = [] } = useQuery({
+     queryKey: ["players", categoryId],
+     queryFn: async () => {
+       const { data, error } = await supabase
+         .from("players")
+         .select("id, name, position")
+         .eq("category_id", categoryId);
+       if (error) throw error;
+       return data;
+     },
+   });
+ 
+   // Fetch active injuries
+   const { data: injuries = [] } = useQuery({
+     queryKey: ["active_injuries", categoryId],
+     queryFn: async () => {
+       const { data, error } = await supabase
+         .from("injuries")
+         .select("player_id, status, estimated_return_date")
+         .eq("category_id", categoryId)
+         .in("status", ["active", "recovering"]);
+       if (error) throw error;
+       return data;
+     },
+   });
+ 
+   // Fetch AWCR data
+   const { data: awcrData = [] } = useQuery({
+     queryKey: ["awcr_decision", categoryId],
+     queryFn: async () => {
+       const weekAgo = subDays(new Date(), 7).toISOString().split("T")[0];
+       const { data, error } = await supabase
+         .from("awcr_tracking")
+         .select("player_id, awcr, session_date")
+         .eq("category_id", categoryId)
+         .gte("session_date", weekAgo)
+         .order("session_date", { ascending: false });
+       if (error) throw error;
+       return data;
+     },
+   });
+ 
+   // Fetch wellness data
+   const { data: wellnessData = [] } = useQuery({
+     queryKey: ["wellness_decision", categoryId],
+     queryFn: async () => {
+       const weekAgo = subDays(new Date(), 7).toISOString().split("T")[0];
+       const { data, error } = await supabase
+         .from("wellness_tracking")
+         .select("*")
+         .eq("category_id", categoryId)
+         .gte("tracking_date", weekAgo)
+         .order("tracking_date", { ascending: false });
+       if (error) throw error;
+       return data;
+     },
+   });
+ 
+   // Fetch today's sessions
+   const { data: todaySessions = [] } = useQuery({
+     queryKey: ["today_sessions_decision", categoryId, today],
+     queryFn: async () => {
+       const { data, error } = await supabase
+         .from("training_sessions")
+         .select("*")
+         .eq("category_id", categoryId)
+         .eq("session_date", today)
+         .order("session_start_time");
+       if (error) throw error;
+       return data;
+     },
+   });
+ 
+   // Fetch tomorrow's sessions
+   const { data: tomorrowSessions = [] } = useQuery({
+     queryKey: ["tomorrow_sessions_decision", categoryId, tomorrow],
+     queryFn: async () => {
+       const { data, error } = await supabase
+         .from("training_sessions")
+         .select("*")
+         .eq("category_id", categoryId)
+         .eq("session_date", tomorrow)
+         .order("session_start_time");
+       if (error) throw error;
+       return data;
+     },
+   });
+ 
+   // Fetch expired documents
+   const { data: expiredDocs = [] } = useQuery({
+     queryKey: ["expired_docs", categoryId],
+     queryFn: async () => {
+       const { data, error } = await supabase
+         .from("admin_documents")
+         .select("*, players(name)")
+         .eq("category_id", categoryId)
+         .lte("expiry_date", today)
+         .eq("status", "pending");
+       if (error) throw error;
+       return data || [];
+     },
+   });
+ 
+   // Calculate group status
+   const calculateGroupStatus = (): GroupStatus => {
+     const total = players.length;
+     const injuredPlayerIds = new Set(injuries.filter(i => i.status === "active").map(i => i.player_id));
+     const uncertainPlayerIds = new Set(injuries.filter(i => i.status === "recovering").map(i => i.player_id));
+     
+     // At risk from AWCR or wellness
+     const atRiskPlayerIds = new Set<string>();
+     
+     players.forEach(player => {
+       const playerAwcr = awcrData.find(a => a.player_id === player.id);
+       const playerWellness = wellnessData.find(w => w.player_id === player.id);
+       
+       if (playerAwcr?.awcr && (playerAwcr.awcr > 1.5 || playerAwcr.awcr < 0.8)) {
+         atRiskPlayerIds.add(player.id);
+       }
+       
+       if (playerWellness) {
+         const score = calculateWeightedWellnessScore(playerWellness as WellnessEntry);
+         const risk = getWellnessRiskLevel(score, playerWellness.has_specific_pain);
+         if (risk === "critical" || risk === "high") {
+           atRiskPlayerIds.add(player.id);
+         }
+       }
+     });
+ 
+     const injured = injuredPlayerIds.size;
+     const uncertain = uncertainPlayerIds.size;
+     const atRisk = [...atRiskPlayerIds].filter(id => !injuredPlayerIds.has(id) && !uncertainPlayerIds.has(id)).length;
+     const available = total - injured - uncertain;
+ 
+     return { total, available, atRisk, injured, uncertain };
+   };
+ 
+   // Calculate priority alerts
+   const calculatePriorityAlerts = (): PriorityAlert[] => {
+     const alerts: PriorityAlert[] = [];
+ 
+     players.forEach(player => {
+       // Overload alerts (AWCR > 1.5)
+       const playerAwcr = awcrData.find(a => a.player_id === player.id);
+       if (playerAwcr?.awcr && playerAwcr.awcr > 1.5) {
+         alerts.push({
+           id: `overload-${player.id}`,
+           type: "overload",
+           severity: playerAwcr.awcr > 1.8 ? "critical" : "high",
+           playerId: player.id,
+           playerName: player.name,
+           message: `Ratio EWMA à ${playerAwcr.awcr.toFixed(2)} - Réduire la charge`,
+           action: "Adapter charge",
+         });
+       }
+ 
+       // Mental fatigue (wellness < 2.5)
+       const playerWellness = wellnessData.find(w => w.player_id === player.id);
+       if (playerWellness) {
+         const score = calculateWeightedWellnessScore(playerWellness as WellnessEntry);
+         if (score < 2.5) {
+           alerts.push({
+             id: `fatigue-${player.id}`,
+             type: "fatigue",
+             severity: score < 2 ? "critical" : "high",
+             playerId: player.id,
+             playerName: player.name,
+             message: `Fatigue détectée (${score.toFixed(1)}/5)`,
+             action: "Voir fiche",
+           });
+         }
+       }
+ 
+       // Injury return alerts
+       const playerInjury = injuries.find(i => i.player_id === player.id && i.status === "recovering");
+       if (playerInjury?.estimated_return_date) {
+         const returnDate = new Date(playerInjury.estimated_return_date);
+         const daysUntil = Math.ceil((returnDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+         if (daysUntil <= 3 && daysUntil >= 0) {
+           alerts.push({
+             id: `return-${player.id}`,
+             type: "injury_return",
+             severity: "medium",
+             playerId: player.id,
+             playerName: player.name,
+             message: `Retour prévu ${daysUntil === 0 ? "aujourd'hui" : `dans ${daysUntil}j`}`,
+             action: "Valider reprise",
+           });
+         }
+       }
+     });
+ 
+     // Admin alerts (expired documents)
+     expiredDocs.forEach(doc => {
+       alerts.push({
+         id: `admin-${doc.id}`,
+         type: "admin",
+         severity: "medium",
+         playerId: doc.player_id || "",
+         playerName: doc.players?.name || "Équipe",
+         message: `${doc.title} - Document expiré`,
+         action: "Régulariser",
+       });
+     });
+ 
+     // Sort by severity
+     return alerts.sort((a, b) => {
+       const order = { critical: 0, high: 1, medium: 2 };
+       return order[a.severity] - order[b.severity];
+     }).slice(0, 6); // Show max 6 alerts
+   };
+ 
+   // Calculate players to adapt for a session
+   const getPlayersToAdapt = (): { id: string; name: string; reason: string }[] => {
+     const toAdapt: { id: string; name: string; reason: string }[] = [];
+     
+     players.forEach(player => {
+       const playerAwcr = awcrData.find(a => a.player_id === player.id);
+       const playerWellness = wellnessData.find(w => w.player_id === player.id);
+       
+       if (playerAwcr?.awcr && playerAwcr.awcr > 1.3) {
+         toAdapt.push({
+           id: player.id,
+           name: player.name,
+           reason: `EWMA ${playerAwcr.awcr.toFixed(2)}`,
+         });
+       } else if (playerWellness) {
+         const score = calculateWeightedWellnessScore(playerWellness as WellnessEntry);
+         if (score < 3) {
+           toAdapt.push({
+             id: player.id,
+             name: player.name,
+             reason: `Wellness ${score.toFixed(1)}/5`,
+           });
+         }
+       }
+     });
+     
+     return toAdapt.slice(0, 4);
+   };
+ 
+   const groupStatus = calculateGroupStatus();
+   const priorityAlerts = calculatePriorityAlerts();
+   const playersToAdapt = getPlayersToAdapt();
+   const availabilityPercent = groupStatus.total > 0 ? Math.round((groupStatus.available / groupStatus.total) * 100) : 100;
+ 
+   const getAlertIcon = (type: PriorityAlert["type"]) => {
+     switch (type) {
+       case "overload": return <TrendingUp className="h-4 w-4" />;
+       case "fatigue": return <Brain className="h-4 w-4" />;
+       case "injury_return": return <Activity className="h-4 w-4" />;
+       case "admin": return <FileWarning className="h-4 w-4" />;
+     }
+   };
+ 
+   const getSeverityColor = (severity: PriorityAlert["severity"]) => {
+     switch (severity) {
+       case "critical": return "text-red-600 bg-red-100 dark:bg-red-900/30";
+       case "high": return "text-orange-600 bg-orange-100 dark:bg-orange-900/30";
+       case "medium": return "text-yellow-600 bg-yellow-100 dark:bg-yellow-900/30";
+     }
+   };
+ 
+   const handleEditSession = (session: any) => {
+     setEditingSession(session);
+     setEditSessionOpen(true);
+   };
+ 
+   return (
+     <div className="space-y-4">
+       {/* Header */}
+       <div className="flex items-center justify-between">
+         <div>
+           <h2 className="text-2xl font-bold">Centre de décision</h2>
+           <p className="text-muted-foreground text-sm">
+             {format(new Date(), "EEEE d MMMM yyyy", { locale: fr })}
+           </p>
+         </div>
+       </div>
+ 
+       {/* 1️⃣ ÉTAT DU GROUPE - Top priority */}
+       <Card className="border-2 border-primary/20 bg-gradient-to-r from-primary/5 to-transparent">
+         <CardHeader className="pb-2">
+           <CardTitle className="text-base flex items-center gap-2">
+             <Users className="h-5 w-5 text-primary" />
+             État du groupe
+           </CardTitle>
+         </CardHeader>
+         <CardContent>
+           <div className="flex items-center gap-6 flex-wrap">
+             {/* Availability percentage */}
+             <div className="flex-1 min-w-[200px]">
+               <div className="flex items-center justify-between mb-1">
+                 <span className="text-sm font-medium">Disponibilité</span>
+                 <span className={cn(
+                   "text-2xl font-bold",
+                   availabilityPercent >= 80 ? "text-green-600" : 
+                   availabilityPercent >= 60 ? "text-yellow-600" : "text-red-600"
+                 )}>
+                   {availabilityPercent}%
+                 </span>
+               </div>
+               <Progress 
+                 value={availabilityPercent} 
+                 className={cn(
+                   "h-3",
+                   availabilityPercent >= 80 ? "[&>div]:bg-green-500" : 
+                   availabilityPercent >= 60 ? "[&>div]:bg-yellow-500" : "[&>div]:bg-red-500"
+                 )}
+               />
+               <p className="text-xs text-muted-foreground mt-1">
+                 {groupStatus.available} / {groupStatus.total} athlètes
+               </p>
+             </div>
+ 
+             {/* Status badges */}
+             <div className="flex gap-3 flex-wrap">
+               {groupStatus.atRisk > 0 && (
+                 <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-orange-100 dark:bg-orange-900/30">
+                   <AlertTriangle className="h-4 w-4 text-orange-600" />
+                   <span className="font-semibold text-orange-700 dark:text-orange-400">
+                     {groupStatus.atRisk} à risque
+                   </span>
+                 </div>
+               )}
+               {groupStatus.injured > 0 && (
+                 <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-100 dark:bg-red-900/30">
+                   <XCircle className="h-4 w-4 text-red-600" />
+                   <span className="font-semibold text-red-700 dark:text-red-400">
+                     {groupStatus.injured} blessé{groupStatus.injured > 1 ? "s" : ""}
+                   </span>
+                 </div>
+               )}
+               {groupStatus.uncertain > 0 && (
+                 <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-yellow-100 dark:bg-yellow-900/30">
+                   <Clock className="h-4 w-4 text-yellow-600" />
+                   <span className="font-semibold text-yellow-700 dark:text-yellow-400">
+                     {groupStatus.uncertain} incertain{groupStatus.uncertain > 1 ? "s" : ""}
+                   </span>
+                 </div>
+               )}
+               {groupStatus.atRisk === 0 && groupStatus.injured === 0 && groupStatus.uncertain === 0 && (
+                 <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-green-100 dark:bg-green-900/30">
+                   <CheckCircle className="h-4 w-4 text-green-600" />
+                   <span className="font-semibold text-green-700 dark:text-green-400">
+                     Groupe au complet
+                   </span>
+                 </div>
+               )}
+             </div>
+           </div>
+         </CardContent>
+       </Card>
+ 
+       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+         {/* 2️⃣ AUJOURD'HUI / DEMAIN */}
+         <Card>
+           <CardHeader className="pb-2">
+             <CardTitle className="text-base flex items-center gap-2">
+               <Calendar className="h-5 w-5 text-primary" />
+               Séances prévues
+             </CardTitle>
+           </CardHeader>
+           <CardContent className="space-y-3">
+             {/* Today */}
+             <div>
+               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
+                 Aujourd'hui
+               </p>
+               {todaySessions.length === 0 ? (
+                 <p className="text-sm text-muted-foreground italic">Pas de séance prévue</p>
+               ) : (
+                 <div className="space-y-2">
+                   {todaySessions.slice(0, 2).map(session => (
+                     <div 
+                       key={session.id} 
+                       className="flex items-center justify-between p-2 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
+                     >
+                       <div className="flex items-center gap-2">
+                         <Activity className="h-4 w-4 text-primary" />
+                         <div>
+                           <p className="font-medium text-sm">{session.training_type}</p>
+                           <p className="text-xs text-muted-foreground">
+                             {session.session_start_time?.slice(0, 5)} • Charge cible: {session.planned_intensity || 5}/10
+                           </p>
+                         </div>
+                       </div>
+                       <Button 
+                         variant="ghost" 
+                         size="sm" 
+                         className="h-7 px-2"
+                         onClick={() => handleEditSession(session)}
+                       >
+                         <Pencil className="h-3 w-3" />
+                       </Button>
+                     </div>
+                   ))}
+                 </div>
+               )}
+             </div>
+ 
+             {/* Tomorrow */}
+             <div>
+               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
+                 Demain
+               </p>
+               {tomorrowSessions.length === 0 ? (
+                 <p className="text-sm text-muted-foreground italic">Pas de séance prévue</p>
+               ) : (
+                 <div className="space-y-2">
+                   {tomorrowSessions.slice(0, 2).map(session => (
+                     <div 
+                       key={session.id} 
+                       className="flex items-center justify-between p-2 rounded-lg bg-muted/50"
+                     >
+                       <div className="flex items-center gap-2">
+                         <Activity className="h-4 w-4 text-muted-foreground" />
+                         <div>
+                           <p className="font-medium text-sm">{session.training_type}</p>
+                           <p className="text-xs text-muted-foreground">
+                             {session.session_start_time?.slice(0, 5)} • Charge cible: {session.planned_intensity || 5}/10
+                           </p>
+                         </div>
+                       </div>
+                     </div>
+                   ))}
+                 </div>
+               )}
+             </div>
+ 
+             {/* Players to adapt */}
+             {playersToAdapt.length > 0 && (
+               <div className="pt-2 border-t">
+                 <p className="text-xs font-medium text-orange-600 dark:text-orange-400 mb-2">
+                   ⚠️ À adapter ({playersToAdapt.length})
+                 </p>
+                 <div className="flex flex-wrap gap-1">
+                   {playersToAdapt.map(p => (
+                     <Badge 
+                       key={p.id} 
+                       variant="outline" 
+                       className="text-xs cursor-pointer hover:bg-muted"
+                       onClick={() => navigate(`/players/${p.id}`)}
+                     >
+                       {p.name.split(" ")[0]} • {p.reason}
+                     </Badge>
+                   ))}
+                 </div>
+               </div>
+             )}
+           </CardContent>
+         </Card>
+ 
+         {/* 3️⃣ ALERTES PRIORITAIRES */}
+         <Card>
+           <CardHeader className="pb-2">
+             <CardTitle className="text-base flex items-center gap-2">
+               <AlertTriangle className="h-5 w-5 text-destructive" />
+               Alertes prioritaires
+               {priorityAlerts.length > 0 && (
+                 <Badge variant="destructive" className="ml-auto">
+                   {priorityAlerts.length}
+                 </Badge>
+               )}
+             </CardTitle>
+           </CardHeader>
+           <CardContent>
+             {priorityAlerts.length === 0 ? (
+               <div className="text-center py-6">
+                 <CheckCircle className="h-10 w-10 text-green-500 mx-auto mb-2" />
+                 <p className="text-sm font-medium">Aucune alerte</p>
+                 <p className="text-xs text-muted-foreground">Tous les voyants sont au vert</p>
+               </div>
+             ) : (
+               <div className="space-y-2">
+                 {priorityAlerts.map(alert => (
+                   <div 
+                     key={alert.id}
+                     className={cn(
+                       "flex items-center justify-between p-2 rounded-lg transition-colors cursor-pointer hover:opacity-80",
+                       getSeverityColor(alert.severity)
+                     )}
+                     onClick={() => alert.playerId && navigate(`/players/${alert.playerId}`)}
+                   >
+                     <div className="flex items-center gap-2 flex-1 min-w-0">
+                       {getAlertIcon(alert.type)}
+                       <div className="min-w-0">
+                         <p className="font-medium text-sm truncate">{alert.playerName}</p>
+                         <p className="text-xs opacity-80 truncate">{alert.message}</p>
+                       </div>
+                     </div>
+                     {alert.action && (
+                       <Button variant="ghost" size="sm" className="h-6 px-2 text-xs shrink-0">
+                         {alert.action}
+                       </Button>
+                     )}
+                   </div>
+                 ))}
+               </div>
+             )}
+           </CardContent>
+         </Card>
+       </div>
+ 
+       {/* 4️⃣ RACCOURCIS ACTION */}
+       <Card>
+         <CardHeader className="pb-2">
+           <CardTitle className="text-base">Actions rapides</CardTitle>
+         </CardHeader>
+         <CardContent>
+           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+             <Button 
+               variant="outline" 
+               className="h-auto py-3 flex flex-col items-center gap-1"
+               onClick={() => todaySessions[0] && handleEditSession(todaySessions[0])}
+               disabled={todaySessions.length === 0}
+             >
+               <Pencil className="h-5 w-5 text-primary" />
+               <span className="text-xs">Modifier séance</span>
+             </Button>
+             <Button 
+               variant="outline" 
+               className="h-auto py-3 flex flex-col items-center gap-1"
+               onClick={() => playersToAdapt[0] && navigate(`/players/${playersToAdapt[0].id}`)}
+               disabled={playersToAdapt.length === 0}
+             >
+               <Activity className="h-5 w-5 text-orange-500" />
+               <span className="text-xs">Adapter charge</span>
+             </Button>
+             <Button 
+               variant="outline" 
+               className="h-auto py-3 flex flex-col items-center gap-1"
+               onClick={() => navigate(`/category/${categoryId}?tab=communication`)}
+             >
+               <Bell className="h-5 w-5 text-blue-500" />
+               <span className="text-xs">Notification</span>
+             </Button>
+             <Button 
+               variant="outline" 
+               className="h-auto py-3 flex flex-col items-center gap-1"
+               onClick={() => navigate(`/category/${categoryId}?tab=effectif`)}
+             >
+               <User className="h-5 w-5 text-green-500" />
+               <span className="text-xs">Fiche athlète</span>
+             </Button>
+           </div>
+         </CardContent>
+       </Card>
+ 
+       {/* Edit Session Dialog */}
+       {editingSession && (
+         <EditSessionDialog
+           open={editSessionOpen}
+           onOpenChange={setEditSessionOpen}
+           session={editingSession}
+           categoryId={categoryId}
+         />
+       )}
+     </div>
+   );
+ }
