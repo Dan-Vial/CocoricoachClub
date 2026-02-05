@@ -218,7 +218,17 @@ export function VideoClipViewer({
     if (url.includes("vimeo.com")) {
       return `${url}#t=${Math.floor(startTime)}s`;
     }
-    // For other sources, return as-is
+    // VEO - uses ?t= parameter in seconds
+    if (url.includes("veo.co")) {
+      const separator = url.includes("?") ? "&" : "?";
+      return `${url}${separator}t=${Math.floor(startTime)}`;
+    }
+    // Hudl - uses ?time= parameter
+    if (url.includes("hudl.com")) {
+      const separator = url.includes("?") ? "&" : "?";
+      return `${url}${separator}time=${Math.floor(startTime)}`;
+    }
+    // For other sources, return as-is (user can manually seek)
     return url;
   };
 

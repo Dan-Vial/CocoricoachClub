@@ -16,6 +16,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+
+// Storage key for remembering video URL per analysis
+const getStorageKey = (analysisId: string) => `video_url_${analysisId}`;
 import { toast } from "sonner";
 import {
   Play,
@@ -152,9 +155,37 @@ export function VideoPlayerWithClipping({
       const startParam = startTime ? `#t=${Math.floor(startTime)}s` : "";
       return `https://player.vimeo.com/video/${videoId}?api=1${startParam}`;
     }
-    // Return original for other sources
+    // Return original for other sources (VEO, Hudl, etc.)
     return url;
   };
+
+  // Build URL with timestamp for external playback
+  const getUrlWithTimestamp = (url: string, startTime: number) => {
+    // YouTube
+    if (url.includes("youtube.com") || url.includes("youtu.be")) {
+      return `${url}${url.includes("?") ? "&" : "?"}t=${Math.floor(startTime)}`;
+    }
+    // Vimeo
+    if (url.includes("vimeo.com")) {
+      return `${url}#t=${Math.floor(startTime)}s`;
+    }
+    // VEO - uses ?t= parameter
+    if (url.includes("veo.co")) {
+      return `${url}${url.includes("?") ? "&" : "?"}t=${Math.floor(startTime)}`;
+    }
+    // Hudl - uses ?time= parameter
+    if (url.includes("hudl.com")) {
+      return `${url}${url.includes("?") ? "&" : "?"}time=${Math.floor(startTime)}`;
+    }
+    return url;
+  };
+
+  // Save video URL to localStorage when it changes
+  useEffect(() => {
+    if (videoUrl && analysisId) {
+      localStorage.setItem(getStorageKey(analysisId), videoUrl);
+    }
+  }, [videoUrl, analysisId]);
 
   // Preview clip from start time
   const previewClip = () => {
@@ -169,13 +200,8 @@ export function VideoPlayerWithClipping({
       iframeRef.current.src = newUrl;
       toast.success(`Prévisualisation à partir de ${formatTime(clipStartTime)}`);
     } else {
-      // For external sources, open with timestamp if supported
-      let externalUrl = videoUrl;
-      if (videoUrl.includes("youtube.com") || videoUrl.includes("youtu.be")) {
-        externalUrl = `${videoUrl}${videoUrl.includes("?") ? "&" : "?"}t=${Math.floor(clipStartTime)}`;
-      } else if (videoUrl.includes("vimeo.com")) {
-        externalUrl = `${videoUrl}#t=${Math.floor(clipStartTime)}s`;
-      }
+      // For external sources (VEO, Hudl, etc.), open with timestamp
+      const externalUrl = getUrlWithTimestamp(videoUrl, clipStartTime);
       window.open(externalUrl, "_blank");
       toast.info(`Vidéo ouverte à ${formatTime(clipStartTime)}`);
     }
