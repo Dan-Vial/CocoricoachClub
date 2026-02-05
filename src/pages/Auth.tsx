@@ -102,7 +102,7 @@ export default function Auth() {
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle className="text-2xl text-center">Performance Planner</CardTitle>
+          <CardTitle className="text-2xl text-center">CocoriCoach Club</CardTitle>
           <CardDescription className="text-center">
             Connectez-vous pour gérer vos clubs et athlètes
           </CardDescription>
