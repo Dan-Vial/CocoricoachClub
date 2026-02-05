@@ -22,12 +22,13 @@
      nutrition: true,
    });
  
-   const [defaults, setDefaults] = useState({
-     max_clubs: 1,
-     max_categories: 3,
-     max_staff: 5,
-     max_athletes: 50,
-   });
+  const [defaults, setDefaults] = useState({
+    max_clubs: 1,
+    max_categories: 3,
+    max_staff: 5,
+    max_staff_per_category: 5,
+    max_athletes: 60,
+  });
  
    const [trialDays, setTrialDays] = useState(14);
  
@@ -168,44 +169,53 @@
            </CardDescription>
          </CardHeader>
          <CardContent>
-           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-             <div className="space-y-2">
-               <Label>Clubs max</Label>
-               <Input
-                 type="number"
-                 min={1}
-                 value={defaults.max_clubs}
-                 onChange={(e) => setDefaults({ ...defaults, max_clubs: parseInt(e.target.value) || 1 })}
-               />
-             </div>
-             <div className="space-y-2">
-               <Label>Catégories/club</Label>
-               <Input
-                 type="number"
-                 min={1}
-                 value={defaults.max_categories}
-                 onChange={(e) => setDefaults({ ...defaults, max_categories: parseInt(e.target.value) || 1 })}
-               />
-             </div>
-             <div className="space-y-2">
-               <Label>Staff max</Label>
-               <Input
-                 type="number"
-                 min={1}
-                 value={defaults.max_staff}
-                 onChange={(e) => setDefaults({ ...defaults, max_staff: parseInt(e.target.value) || 1 })}
-               />
-             </div>
-             <div className="space-y-2">
-               <Label>Athlètes max</Label>
-               <Input
-                 type="number"
-                 min={1}
-                 value={defaults.max_athletes}
-                 onChange={(e) => setDefaults({ ...defaults, max_athletes: parseInt(e.target.value) || 1 })}
-               />
-             </div>
-           </div>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              <div className="space-y-2">
+                <Label>Clubs max</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  value={defaults.max_clubs}
+                  onChange={(e) => setDefaults({ ...defaults, max_clubs: parseInt(e.target.value) || 1 })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Catégories/club</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  value={defaults.max_categories}
+                  onChange={(e) => setDefaults({ ...defaults, max_categories: parseInt(e.target.value) || 1 })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Staff max (club)</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  value={defaults.max_staff}
+                  onChange={(e) => setDefaults({ ...defaults, max_staff: parseInt(e.target.value) || 1 })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Staff/catégorie</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  value={defaults.max_staff_per_category}
+                  onChange={(e) => setDefaults({ ...defaults, max_staff_per_category: parseInt(e.target.value) || 1 })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Athlètes/catégorie</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  value={defaults.max_athletes}
+                  onChange={(e) => setDefaults({ ...defaults, max_athletes: parseInt(e.target.value) || 1 })}
+                />
+              </div>
+            </div>
          </CardContent>
        </Card>
  

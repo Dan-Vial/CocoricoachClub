@@ -11,7 +11,8 @@
  import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
  import { Textarea } from "@/components/ui/textarea";
  import { toast } from "@/components/ui/sonner";
- import { CreditCard, Plus, Edit, Trash2 } from "lucide-react";
+import { CreditCard, Plus, Edit, Trash2, Video, MapPin } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
  import { format } from "date-fns";
  import { fr } from "date-fns/locale";
  
@@ -19,17 +20,21 @@
    const queryClient = useQueryClient();
    const [isAddPlanOpen, setIsAddPlanOpen] = useState(false);
    const [isAddSubOpen, setIsAddSubOpen] = useState(false);
-   const [planForm, setPlanForm] = useState({
-     name: "",
-     description: "",
-     price_monthly: "",
-     price_yearly: "",
-     max_clubs: 1,
-     max_categories_per_club: 3,
-     max_staff_users: 5,
-     max_athletes: 50,
-     trial_days: 14,
-   });
+  const [planForm, setPlanForm] = useState({
+    name: "",
+    description: "",
+    price_monthly: "",
+    price_yearly: "",
+    max_clubs: 1,
+    max_categories_per_club: 3,
+    max_staff_users: 5,
+    max_staff_per_category: 5,
+    max_athletes: 60,
+    trial_days: 14,
+    video_enabled: false,
+    gps_data_enabled: false,
+  });
+  const [editingPlan, setEditingPlan] = useState<any>(null);
    const [subForm, setSubForm] = useState({
      client_id: "",
      plan_id: "",
@@ -79,28 +84,95 @@
      },
    });
  
-   // Create plan
-   const createPlan = useMutation({
-     mutationFn: async () => {
-       const { error } = await supabase.from("subscription_plans").insert({
-         name: planForm.name,
-         description: planForm.description || null,
-         price_monthly: parseFloat(planForm.price_monthly) || null,
-         price_yearly: parseFloat(planForm.price_yearly) || null,
-         max_clubs: planForm.max_clubs,
-         max_categories_per_club: planForm.max_categories_per_club,
-         max_staff_users: planForm.max_staff_users,
-         max_athletes: planForm.max_athletes,
-         trial_days: planForm.trial_days,
-       });
-       if (error) throw error;
-     },
-     onSuccess: () => {
-       toast.success("Plan créé");
-       queryClient.invalidateQueries({ queryKey: ["subscription-plans"] });
-       setIsAddPlanOpen(false);
-     },
-   });
+  // Create plan
+  const createPlan = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("subscription_plans").insert({
+        name: planForm.name,
+        description: planForm.description || null,
+        price_monthly: parseFloat(planForm.price_monthly) || null,
+        price_yearly: parseFloat(planForm.price_yearly) || null,
+        max_clubs: planForm.max_clubs,
+        max_categories_per_club: planForm.max_categories_per_club,
+        max_staff_users: planForm.max_staff_users,
+        max_staff_per_category: planForm.max_staff_per_category,
+        max_athletes: planForm.max_athletes,
+        trial_days: planForm.trial_days,
+        video_enabled: planForm.video_enabled,
+        gps_data_enabled: planForm.gps_data_enabled,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Plan créé");
+      queryClient.invalidateQueries({ queryKey: ["subscription-plans"] });
+      setIsAddPlanOpen(false);
+      resetPlanForm();
+    },
+  });
+
+  // Update plan
+  const updatePlan = useMutation({
+    mutationFn: async () => {
+      if (!editingPlan) return;
+      const { error } = await supabase.from("subscription_plans").update({
+        name: planForm.name,
+        description: planForm.description || null,
+        price_monthly: parseFloat(planForm.price_monthly) || null,
+        price_yearly: parseFloat(planForm.price_yearly) || null,
+        max_clubs: planForm.max_clubs,
+        max_categories_per_club: planForm.max_categories_per_club,
+        max_staff_users: planForm.max_staff_users,
+        max_staff_per_category: planForm.max_staff_per_category,
+        max_athletes: planForm.max_athletes,
+        trial_days: planForm.trial_days,
+        video_enabled: planForm.video_enabled,
+        gps_data_enabled: planForm.gps_data_enabled,
+      }).eq("id", editingPlan.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Plan mis à jour");
+      queryClient.invalidateQueries({ queryKey: ["subscription-plans"] });
+      setEditingPlan(null);
+      resetPlanForm();
+    },
+  });
+
+  const resetPlanForm = () => {
+    setPlanForm({
+      name: "",
+      description: "",
+      price_monthly: "",
+      price_yearly: "",
+      max_clubs: 1,
+      max_categories_per_club: 3,
+      max_staff_users: 5,
+      max_staff_per_category: 5,
+      max_athletes: 60,
+      trial_days: 14,
+      video_enabled: false,
+      gps_data_enabled: false,
+    });
+  };
+
+  const openEditPlan = (plan: any) => {
+    setPlanForm({
+      name: plan.name || "",
+      description: plan.description || "",
+      price_monthly: plan.price_monthly?.toString() || "",
+      price_yearly: plan.price_yearly?.toString() || "",
+      max_clubs: plan.max_clubs || 1,
+      max_categories_per_club: plan.max_categories_per_club || 3,
+      max_staff_users: plan.max_staff_users || 5,
+      max_staff_per_category: plan.max_staff_per_category || 5,
+      max_athletes: plan.max_athletes || 60,
+      trial_days: plan.trial_days || 14,
+      video_enabled: plan.video_enabled || false,
+      gps_data_enabled: plan.gps_data_enabled || false,
+    });
+    setEditingPlan(plan);
+  };
  
    // Create subscription
    const createSubscription = useMutation({
@@ -170,97 +242,269 @@
                    Nouveau plan
                  </Button>
                </DialogTrigger>
-               <DialogContent>
-                 <DialogHeader>
-                   <DialogTitle>Créer un plan</DialogTitle>
-                 </DialogHeader>
-                 <div className="space-y-4">
-                   <div className="space-y-2">
-                     <Label>Nom du plan *</Label>
-                     <Input
-                       value={planForm.name}
-                       onChange={(e) => setPlanForm({ ...planForm, name: e.target.value })}
-                     />
-                   </div>
-                   <div className="grid grid-cols-2 gap-4">
-                     <div className="space-y-2">
-                       <Label>Prix mensuel (€)</Label>
-                       <Input
-                         type="number"
-                         value={planForm.price_monthly}
-                         onChange={(e) => setPlanForm({ ...planForm, price_monthly: e.target.value })}
-                       />
-                     </div>
-                     <div className="space-y-2">
-                       <Label>Prix annuel (€)</Label>
-                       <Input
-                         type="number"
-                         value={planForm.price_yearly}
-                         onChange={(e) => setPlanForm({ ...planForm, price_yearly: e.target.value })}
-                       />
-                     </div>
-                   </div>
-                   <div className="grid grid-cols-2 gap-4">
-                     <div className="space-y-2">
-                       <Label>Clubs max</Label>
-                       <Input
-                         type="number"
-                         value={planForm.max_clubs}
-                         onChange={(e) => setPlanForm({ ...planForm, max_clubs: parseInt(e.target.value) || 1 })}
-                       />
-                     </div>
-                     <div className="space-y-2">
-                       <Label>Athlètes max</Label>
-                       <Input
-                         type="number"
-                         value={planForm.max_athletes}
-                         onChange={(e) => setPlanForm({ ...planForm, max_athletes: parseInt(e.target.value) || 1 })}
-                       />
-                     </div>
-                   </div>
-                 </div>
-                 <DialogFooter>
-                   <Button variant="outline" onClick={() => setIsAddPlanOpen(false)}>
-                     Annuler
-                   </Button>
-                   <Button onClick={() => createPlan.mutate()} disabled={!planForm.name}>
-                     Créer
-                   </Button>
-                 </DialogFooter>
-               </DialogContent>
+                <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Créer un plan</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Nom du plan *</Label>
+                      <Input
+                        value={planForm.name}
+                        onChange={(e) => setPlanForm({ ...planForm, name: e.target.value })}
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Prix mensuel (€)</Label>
+                        <Input
+                          type="number"
+                          value={planForm.price_monthly}
+                          onChange={(e) => setPlanForm({ ...planForm, price_monthly: e.target.value })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Prix annuel (€)</Label>
+                        <Input
+                          type="number"
+                          value={planForm.price_yearly}
+                          onChange={(e) => setPlanForm({ ...planForm, price_yearly: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Clubs max</Label>
+                        <Input
+                          type="number"
+                          value={planForm.max_clubs}
+                          onChange={(e) => setPlanForm({ ...planForm, max_clubs: parseInt(e.target.value) || 1 })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Athlètes/catégorie</Label>
+                        <Input
+                          type="number"
+                          value={planForm.max_athletes}
+                          onChange={(e) => setPlanForm({ ...planForm, max_athletes: parseInt(e.target.value) || 1 })}
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Staff/catégorie</Label>
+                        <Input
+                          type="number"
+                          value={planForm.max_staff_per_category}
+                          onChange={(e) => setPlanForm({ ...planForm, max_staff_per_category: parseInt(e.target.value) || 1 })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Jours d'essai</Label>
+                        <Input
+                          type="number"
+                          value={planForm.trial_days}
+                          onChange={(e) => setPlanForm({ ...planForm, trial_days: parseInt(e.target.value) || 0 })}
+                        />
+                      </div>
+                    </div>
+                    {/* Options modules */}
+                    <div className="space-y-3 pt-2 border-t">
+                      <Label className="font-medium">Modules inclus</Label>
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="video_enabled"
+                          checked={planForm.video_enabled}
+                          onCheckedChange={(checked) => setPlanForm({ ...planForm, video_enabled: !!checked })}
+                        />
+                        <Label htmlFor="video_enabled" className="cursor-pointer flex items-center gap-2">
+                          <Video className="h-4 w-4" />
+                          Analyse Vidéo
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="gps_enabled"
+                          checked={planForm.gps_data_enabled}
+                          onCheckedChange={(checked) => setPlanForm({ ...planForm, gps_data_enabled: !!checked })}
+                        />
+                        <Label htmlFor="gps_enabled" className="cursor-pointer flex items-center gap-2">
+                          <MapPin className="h-4 w-4" />
+                          Data GPS
+                        </Label>
+                      </div>
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setIsAddPlanOpen(false)}>
+                      Annuler
+                    </Button>
+                    <Button onClick={() => createPlan.mutate()} disabled={!planForm.name}>
+                      Créer
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
              </Dialog>
            </div>
          </CardHeader>
          <CardContent>
-           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-             {plans.map((plan: any) => (
-               <Card key={plan.id} className="relative">
-                 <Button
-                   variant="ghost"
-                   size="icon"
-                   className="absolute top-2 right-2"
-                   onClick={() => {
-                     if (confirm("Supprimer ce plan ?")) deletePlan.mutate(plan.id);
-                   }}
-                 >
-                   <Trash2 className="h-4 w-4 text-destructive" />
-                 </Button>
-                 <CardHeader>
-                   <CardTitle className="text-lg">{plan.name}</CardTitle>
-                 </CardHeader>
-                 <CardContent>
-                   <div className="text-2xl font-bold">
-                     {plan.price_monthly ? `${plan.price_monthly}€/mois` : "Gratuit"}
-                   </div>
-                   <div className="text-sm text-muted-foreground mt-2">
-                     <p>{plan.max_clubs} clubs</p>
-                     <p>{plan.max_athletes} athlètes</p>
-                     <p>{plan.trial_days} jours d'essai</p>
-                   </div>
-                 </CardContent>
-               </Card>
-             ))}
-           </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {plans.map((plan: any) => (
+                <Card key={plan.id} className="relative">
+                  <div className="absolute top-2 right-2 flex gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => openEditPlan(plan)}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        if (confirm("Supprimer ce plan ?")) deletePlan.mutate(plan.id);
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
+                  <CardHeader>
+                    <CardTitle className="text-lg">{plan.name}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">
+                      {plan.price_monthly ? `${plan.price_monthly}€/mois` : "Gratuit"}
+                    </div>
+                    <div className="text-sm text-muted-foreground mt-2">
+                      <p>{plan.max_clubs} clubs</p>
+                      <p>{plan.max_athletes} athlètes/cat.</p>
+                      <p>{plan.trial_days} jours d'essai</p>
+                    </div>
+                    <div className="flex gap-2 mt-3">
+                      {plan.video_enabled && (
+                        <Badge variant="secondary" className="flex items-center gap-1">
+                          <Video className="h-3 w-3" />
+                          Vidéo
+                        </Badge>
+                      )}
+                      {plan.gps_data_enabled && (
+                        <Badge variant="secondary" className="flex items-center gap-1">
+                          <MapPin className="h-3 w-3" />
+                          GPS
+                        </Badge>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            {/* Edit Plan Dialog */}
+            <Dialog open={!!editingPlan} onOpenChange={(open) => !open && setEditingPlan(null)}>
+              <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Modifier le plan</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Nom du plan *</Label>
+                    <Input
+                      value={planForm.name}
+                      onChange={(e) => setPlanForm({ ...planForm, name: e.target.value })}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Prix mensuel (€)</Label>
+                      <Input
+                        type="number"
+                        value={planForm.price_monthly}
+                        onChange={(e) => setPlanForm({ ...planForm, price_monthly: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Prix annuel (€)</Label>
+                      <Input
+                        type="number"
+                        value={planForm.price_yearly}
+                        onChange={(e) => setPlanForm({ ...planForm, price_yearly: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Clubs max</Label>
+                      <Input
+                        type="number"
+                        value={planForm.max_clubs}
+                        onChange={(e) => setPlanForm({ ...planForm, max_clubs: parseInt(e.target.value) || 1 })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Athlètes/catégorie</Label>
+                      <Input
+                        type="number"
+                        value={planForm.max_athletes}
+                        onChange={(e) => setPlanForm({ ...planForm, max_athletes: parseInt(e.target.value) || 1 })}
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Staff/catégorie</Label>
+                      <Input
+                        type="number"
+                        value={planForm.max_staff_per_category}
+                        onChange={(e) => setPlanForm({ ...planForm, max_staff_per_category: parseInt(e.target.value) || 1 })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Jours d'essai</Label>
+                      <Input
+                        type="number"
+                        value={planForm.trial_days}
+                        onChange={(e) => setPlanForm({ ...planForm, trial_days: parseInt(e.target.value) || 0 })}
+                      />
+                    </div>
+                  </div>
+                  {/* Options modules */}
+                  <div className="space-y-3 pt-2 border-t">
+                    <Label className="font-medium">Modules inclus</Label>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="edit_video_enabled"
+                        checked={planForm.video_enabled}
+                        onCheckedChange={(checked) => setPlanForm({ ...planForm, video_enabled: !!checked })}
+                      />
+                      <Label htmlFor="edit_video_enabled" className="cursor-pointer flex items-center gap-2">
+                        <Video className="h-4 w-4" />
+                        Analyse Vidéo
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="edit_gps_enabled"
+                        checked={planForm.gps_data_enabled}
+                        onCheckedChange={(checked) => setPlanForm({ ...planForm, gps_data_enabled: !!checked })}
+                      />
+                      <Label htmlFor="edit_gps_enabled" className="cursor-pointer flex items-center gap-2">
+                        <MapPin className="h-4 w-4" />
+                        Data GPS
+                      </Label>
+                    </div>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setEditingPlan(null)}>
+                    Annuler
+                  </Button>
+                  <Button onClick={() => updatePlan.mutate()} disabled={!planForm.name}>
+                    Enregistrer
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
          </CardContent>
        </Card>
  
