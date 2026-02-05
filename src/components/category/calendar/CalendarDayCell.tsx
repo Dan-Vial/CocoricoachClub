@@ -1,9 +1,12 @@
+import { useState } from "react";
 import { useDroppable } from "@dnd-kit/core";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { format, isSameMonth, isSameDay } from "date-fns";
+import { Bell } from "lucide-react";
 import { SessionVignette } from "./SessionVignette";
+import { MatchVignette } from "./MatchVignette";
 import { isIndividualSport } from "@/lib/constants/sportTypes";
 
 interface Session {
@@ -43,6 +46,7 @@ interface CalendarDayCellProps {
   onFeedbackSession: (session: Session) => void;
   onDeleteSession: (sessionId: string) => void;
   onNotifySession?: (session: Session) => void;
+  onNotifyMatch?: (match: Match) => void;
 }
 
 export function CalendarDayCell({
@@ -58,6 +62,7 @@ export function CalendarDayCell({
   onFeedbackSession,
   onDeleteSession,
   onNotifySession,
+  onNotifyMatch,
 }: CalendarDayCellProps) {
   const dateStr = format(day, "yyyy-MM-dd");
   const { setNodeRef, isOver } = useDroppable({
@@ -132,25 +137,14 @@ export function CalendarDayCell({
       <div className="space-y-1 overflow-visible">
         {/* Matches first */}
         {matches.slice(0, 2).map((match) => (
-          <div
+          <MatchVignette
             key={match.id}
-            className="bg-rose-500 text-white text-[11px] px-2 py-1 rounded-lg truncate font-medium cursor-pointer hover:bg-rose-600 transition-colors"
-            title={`${match.match_time ? formatTime(match.match_time) + " - " : ""}${match.opponent}`}
-            onClick={(e) => {
-              e.stopPropagation();
-              onDayClick(day);
-            }}
-          >
-            {match.match_time && (
-              <>
-                <span className="font-bold mr-1">{formatTime(match.match_time)}</span>
-                <span className="opacity-70">•</span>
-              </>
-            )}
-            <span className="ml-1 opacity-90">
-              {isIndividualSport(sportType || "") ? "Compét." : match.opponent}
-            </span>
-          </div>
+            match={match}
+            sportType={sportType}
+            isViewer={isViewer}
+            onClick={() => onDayClick(day)}
+            onNotify={onNotifyMatch ? () => onNotifyMatch(match) : undefined}
+          />
         ))}
 
         {/* Sessions with vignettes */}

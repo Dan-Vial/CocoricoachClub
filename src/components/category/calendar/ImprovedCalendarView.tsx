@@ -16,11 +16,12 @@ import { cn } from "@/lib/utils";
 import { CalendarDayCell } from "./CalendarDayCell";
 import { SessionVignette } from "./SessionVignette";
 import { SessionFeedbackDialog } from "./SessionFeedbackDialog";
+import { SessionNotifyDialog } from "./SessionNotifyDialog";
+import { MatchNotifyDialog } from "./MatchNotifyDialog";
 import { CreateEventDialog } from "./CreateEventDialog";
 import { DailyCalendarView } from "./DailyCalendarView";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { NotifyAthletesDialog } from "@/components/notifications/NotifyAthletesDialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -100,6 +101,7 @@ export function ImprovedCalendarView({
   const [deleteSessionId, setDeleteSessionId] = useState<string | null>(null);
   const [addEventDate, setAddEventDate] = useState<Date | null>(null);
   const [notifySession, setNotifySession] = useState<Session | null>(null);
+  const [notifyMatch, setNotifyMatch] = useState<Match | null>(null);
   
   // Filter states
   const [selectedEventTypes, setSelectedEventTypes] = useState<string[]>([]);
@@ -472,6 +474,7 @@ export function ImprovedCalendarView({
                       onFeedbackSession={(session) => setFeedbackSession(session)}
                       onDeleteSession={(sessionId) => setDeleteSessionId(sessionId)}
                       onNotifySession={(session) => setNotifySession(session)}
+                      onNotifyMatch={(match) => setNotifyMatch(match)}
                     />
                   ))}
                 </div>
@@ -670,18 +673,24 @@ export function ImprovedCalendarView({
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Notify Athletes Dialog */}
+      {/* Session Notify Dialog */}
       {notifySession && (
-        <NotifyAthletesDialog
+        <SessionNotifyDialog
           open={!!notifySession}
           onOpenChange={(open) => !open && setNotifySession(null)}
-          athletes={players || []}
-          eventType="session"
-          defaultSubject={`Séance: ${getTrainingTypeLabel(notifySession.training_type)}`}
-          eventDetails={{
-            date: format(new Date(notifySession.session_date), "EEEE d MMMM yyyy", { locale: fr }),
-            time: notifySession.session_start_time ? notifySession.session_start_time.substring(0, 5) : undefined,
-          }}
+          session={notifySession}
+          categoryId={categoryId}
+        />
+      )}
+
+      {/* Match Notify Dialog */}
+      {notifyMatch && (
+        <MatchNotifyDialog
+          open={!!notifyMatch}
+          onOpenChange={(open) => !open && setNotifyMatch(null)}
+          match={notifyMatch}
+          categoryId={categoryId}
+          sportType={sportType}
         />
       )}
     </>
