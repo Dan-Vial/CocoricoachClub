@@ -10,7 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ChevronLeft, ChevronRight, Plus, Download, Printer, Calendar as CalendarIcon, Filter, X } from "lucide-react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, addMonths, subMonths, startOfWeek, endOfWeek, isSameDay, isSameMonth, addWeeks, subWeeks, addDays, subDays } from "date-fns";
 import { fr } from "date-fns/locale";
-import { TRAINING_TYPE_COLORS, getTrainingTypesForSport } from "@/lib/constants/trainingTypes";
+import { TRAINING_TYPE_COLORS, getTrainingTypesForSport, getTrainingTypeLabel } from "@/lib/constants/trainingTypes";
 import { isIndividualSport } from "@/lib/constants/sportTypes";
 import { cn } from "@/lib/utils";
 import { CalendarDayCell } from "./CalendarDayCell";
@@ -20,6 +20,7 @@ import { CreateEventDialog } from "./CreateEventDialog";
 import { DailyCalendarView } from "./DailyCalendarView";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { NotifyAthletesDialog } from "@/components/notifications/NotifyAthletesDialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -98,18 +99,19 @@ export function ImprovedCalendarView({
   const [feedbackSession, setFeedbackSession] = useState<Session | null>(null);
   const [deleteSessionId, setDeleteSessionId] = useState<string | null>(null);
   const [addEventDate, setAddEventDate] = useState<Date | null>(null);
+  const [notifySession, setNotifySession] = useState<Session | null>(null);
   
   // Filter states
   const [selectedEventTypes, setSelectedEventTypes] = useState<string[]>([]);
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
 
-  // Fetch players for filter
+  // Fetch players for filter and notifications
   const { data: players } = useQuery({
     queryKey: ["players-calendar-filter", categoryId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("players")
-        .select("id, name")
+        .select("id, name, email, phone")
         .eq("category_id", categoryId)
         .order("name");
       if (error) throw error;
@@ -469,6 +471,7 @@ export function ImprovedCalendarView({
                       onEditSession={(session) => onEditSession?.(session)}
                       onFeedbackSession={(session) => setFeedbackSession(session)}
                       onDeleteSession={(sessionId) => setDeleteSessionId(sessionId)}
+                      onNotifySession={(session) => setNotifySession(session)}
                     />
                   ))}
                 </div>
@@ -666,6 +669,21 @@ export function ImprovedCalendarView({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Notify Athletes Dialog */}
+      {notifySession && (
+        <NotifyAthletesDialog
+          open={!!notifySession}
+          onOpenChange={(open) => !open && setNotifySession(null)}
+          athletes={players || []}
+          eventType="session"
+          defaultSubject={`Séance: ${getTrainingTypeLabel(notifySession.training_type)}`}
+          eventDetails={{
+            date: format(new Date(notifySession.session_date), "EEEE d MMMM yyyy", { locale: fr }),
+            time: notifySession.session_start_time ? notifySession.session_start_time.substring(0, 5) : undefined,
+          }}
+        />
+      )}
     </>
   );
 }

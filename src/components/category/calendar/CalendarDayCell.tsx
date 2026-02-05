@@ -42,6 +42,7 @@ interface CalendarDayCellProps {
   onEditSession: (session: Session) => void;
   onFeedbackSession: (session: Session) => void;
   onDeleteSession: (sessionId: string) => void;
+  onNotifySession?: (session: Session) => void;
 }
 
 export function CalendarDayCell({
@@ -56,6 +57,7 @@ export function CalendarDayCell({
   onEditSession,
   onFeedbackSession,
   onDeleteSession,
+  onNotifySession,
 }: CalendarDayCellProps) {
   const dateStr = format(day, "yyyy-MM-dd");
   const { setNodeRef, isOver } = useDroppable({
@@ -161,6 +163,7 @@ export function CalendarDayCell({
               onEdit={() => onEditSession(session)}
               onFeedback={() => onFeedbackSession(session)}
               onDelete={() => onDeleteSession(session.id)}
+              onNotify={onNotifySession ? () => onNotifySession(session) : undefined}
               isViewer={isViewer}
               isDraggable={!isViewer}
             />

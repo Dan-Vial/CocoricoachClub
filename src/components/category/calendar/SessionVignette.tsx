@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
-import { Eye, Pencil, MessageSquare, Trash2 } from "lucide-react";
+import { Eye, Pencil, MessageSquare, Trash2, Bell } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getTrainingTypeColor, getTrainingTypeLabel } from "@/lib/constants/trainingTypes";
 
@@ -25,6 +25,7 @@ interface SessionVignetteProps {
   onEdit: () => void;
   onFeedback: () => void;
   onDelete: () => void;
+  onNotify?: () => void;
   isViewer: boolean;
   isDraggable?: boolean;
 }
@@ -36,6 +37,7 @@ export function SessionVignette({
   onEdit,
   onFeedback,
   onDelete,
+  onNotify,
   isViewer,
   isDraggable = true,
 }: SessionVignetteProps) {
@@ -164,6 +166,17 @@ export function SessionVignette({
                 title="Retour / Commentaire"
               >
                 <MessageSquare className="h-4 w-4 text-muted-foreground group-hover/btn:text-foreground" />
+              </button>
+            )}
+            
+            {/* Notify */}
+            {!isViewer && onNotify && (
+              <button
+                onClick={(e) => handleActionClick(e, onNotify)}
+                className="p-1.5 rounded-md hover:bg-primary/10 transition-colors group/btn"
+                title="Notifier les athlètes"
+              >
+                <Bell className="h-4 w-4 text-muted-foreground group-hover/btn:text-primary" />
               </button>
             )}
             
