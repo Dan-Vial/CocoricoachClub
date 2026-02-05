@@ -19,6 +19,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import React from "react";
 import { useClientOptions } from "@/hooks/use-client-options";
+import { getSportLabel } from "@/lib/constants/sportTypes";
 
 // New mega-tabs
 import { EffectifTab } from "@/components/category/tabs/EffectifTab";
@@ -239,16 +240,7 @@ function CategoryDetailsContent() {
                     <span className="text-primary-foreground/60">•</span>
                     {isViewer ? (
                       <span className="text-primary-foreground/90 text-xs sm:text-sm">
-                        {category.rugby_type === "XV" ? "Rugby XV" : 
-                         category.rugby_type === "7" ? "Rugby 7" : 
-                         category.rugby_type === "academie" ? "Académie" : 
-                         category.rugby_type === "national_team" ? "Équipe Nationale" :
-                         category.rugby_type === "football" ? "Football" :
-                         category.rugby_type === "handball" ? "Handball" :
-                         category.rugby_type === "judo" ? "Judo" :
-                         category.rugby_type === "volleyball" ? "Volleyball" :
-                         category.rugby_type === "bowling" ? "Bowling" :
-                         category.rugby_type}
+                        {getSportLabel(category.rugby_type)}
                       </span>
                     ) : (
                       <EditableRugbyType 
