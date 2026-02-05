@@ -269,8 +269,8 @@ function CategoryDetailsContent() {
                 value="overview" 
                 colorKey="overview"
                 icon={<LayoutDashboard className="h-6 w-6 sm:h-7 sm:w-7" />}
-                label="Vue Générale"
-                shortLabel="Général"
+               label="Centre de décision"
+               shortLabel="Décision"
               />
               {!isViewer && (
                 <ColoredTabTrigger

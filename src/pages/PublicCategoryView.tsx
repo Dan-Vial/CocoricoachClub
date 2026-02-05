@@ -232,7 +232,7 @@ export default function PublicCategoryView() {
             size="sm"
             onClick={() => setActiveTab("overview")}
           >
-            Vue générale
+             Centre de décision
           </Button>
           <Button
             variant={activeTab === "players" ? "default" : "ghost"}
