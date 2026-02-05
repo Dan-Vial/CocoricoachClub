@@ -215,6 +215,33 @@ export type Database = {
         }
         Relationships: []
       }
+      app_settings: {
+        Row: {
+          description: string | null
+          id: string
+          setting_key: string
+          setting_value: Json
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          description?: string | null
+          id?: string
+          setting_key: string
+          setting_value: Json
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          description?: string | null
+          id?: string
+          setting_key?: string
+          setting_value?: Json
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       approved_users: {
         Row: {
           approved_at: string
@@ -693,6 +720,114 @@ export type Database = {
           },
         ]
       }
+      client_subscriptions: {
+        Row: {
+          amount: number | null
+          client_id: string
+          created_at: string
+          end_date: string | null
+          id: string
+          notes: string | null
+          payment_method: string | null
+          plan_id: string | null
+          start_date: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number | null
+          client_id: string
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          notes?: string | null
+          payment_method?: string | null
+          plan_id?: string | null
+          start_date?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number | null
+          client_id?: string
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          notes?: string | null
+          payment_method?: string | null
+          plan_id?: string | null
+          start_date?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_subscriptions_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clients: {
+        Row: {
+          address: string | null
+          created_at: string
+          email: string | null
+          id: string
+          max_athletes: number
+          max_categories_per_club: number
+          max_clubs: number
+          max_staff_users: number
+          name: string
+          notes: string | null
+          phone: string | null
+          status: string
+          trial_ends_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          max_athletes?: number
+          max_categories_per_club?: number
+          max_clubs?: number
+          max_staff_users?: number
+          name: string
+          notes?: string | null
+          phone?: string | null
+          status?: string
+          trial_ends_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          max_athletes?: number
+          max_categories_per_club?: number
+          max_clubs?: number
+          max_staff_users?: number
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          status?: string
+          trial_ends_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       clip_player_associations: {
         Row: {
           clip_id: string
@@ -827,30 +962,44 @@ export type Database = {
       }
       clubs: {
         Row: {
+          client_id: string | null
           created_at: string
           id: string
+          is_active: boolean
           logo_url: string | null
           name: string
           sport: string
           user_id: string
         }
         Insert: {
+          client_id?: string | null
           created_at?: string
           id?: string
+          is_active?: boolean
           logo_url?: string | null
           name: string
           sport?: string
           user_id: string
         }
         Update: {
+          client_id?: string | null
           created_at?: string
           id?: string
+          is_active?: boolean
           logo_url?: string | null
           name?: string
           sport?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "clubs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       competition_round_stats: {
         Row: {
@@ -1710,6 +1859,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      global_notifications: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          is_email: boolean | null
+          is_push: boolean | null
+          message: string
+          notification_type: string
+          sent_at: string | null
+          target_ids: string[] | null
+          target_roles: string[] | null
+          target_type: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_email?: boolean | null
+          is_push?: boolean | null
+          message: string
+          notification_type?: string
+          sent_at?: string | null
+          target_ids?: string[] | null
+          target_roles?: string[] | null
+          target_type?: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_email?: boolean | null
+          is_push?: boolean | null
+          message?: string
+          notification_type?: string
+          sent_at?: string | null
+          target_ids?: string[] | null
+          target_roles?: string[] | null
+          target_type?: string
+          title?: string
+        }
+        Relationships: []
       }
       gps_sessions: {
         Row: {
@@ -3179,6 +3373,60 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_history: {
+        Row: {
+          amount: number
+          client_id: string
+          created_at: string
+          id: string
+          invoice_number: string | null
+          notes: string | null
+          payment_date: string
+          payment_method: string | null
+          status: string
+          subscription_id: string | null
+        }
+        Insert: {
+          amount: number
+          client_id: string
+          created_at?: string
+          id?: string
+          invoice_number?: string | null
+          notes?: string | null
+          payment_date?: string
+          payment_method?: string | null
+          status?: string
+          subscription_id?: string | null
+        }
+        Update: {
+          amount?: number
+          client_id?: string
+          created_at?: string
+          id?: string
+          invoice_number?: string | null
+          notes?: string | null
+          payment_date?: string
+          payment_method?: string | null
+          status?: string
+          subscription_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_history_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_history_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "client_subscriptions"
             referencedColumns: ["id"]
           },
         ]
@@ -5655,6 +5903,54 @@ export type Database = {
           },
         ]
       }
+      subscription_plans: {
+        Row: {
+          created_at: string
+          description: string | null
+          features: Json | null
+          id: string
+          is_active: boolean
+          max_athletes: number
+          max_categories_per_club: number
+          max_clubs: number
+          max_staff_users: number
+          name: string
+          price_monthly: number | null
+          price_yearly: number | null
+          trial_days: number | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          features?: Json | null
+          id?: string
+          is_active?: boolean
+          max_athletes?: number
+          max_categories_per_club?: number
+          max_clubs?: number
+          max_staff_users?: number
+          name: string
+          price_monthly?: number | null
+          price_yearly?: number | null
+          trial_days?: number | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          features?: Json | null
+          id?: string
+          is_active?: boolean
+          max_athletes?: number
+          max_categories_per_club?: number
+          max_clubs?: number
+          max_staff_users?: number
+          name?: string
+          price_monthly?: number | null
+          price_yearly?: number | null
+          trial_days?: number | null
+        }
+        Relationships: []
+      }
       super_admin_users: {
         Row: {
           created_at: string
@@ -6309,6 +6605,86 @@ export type Database = {
           },
         ]
       }
+      tutorial_videos: {
+        Row: {
+          category: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean
+          sort_order: number | null
+          thumbnail_url: string | null
+          title: string
+          updated_at: string
+          video_url: string
+          visibility: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          sort_order?: number | null
+          thumbnail_url?: string | null
+          title: string
+          updated_at?: string
+          video_url: string
+          visibility?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          sort_order?: number | null
+          thumbnail_url?: string | null
+          title?: string
+          updated_at?: string
+          video_url?: string
+          visibility?: string
+        }
+        Relationships: []
+      }
+      user_notification_status: {
+        Row: {
+          created_at: string
+          dismissed_at: string | null
+          id: string
+          notification_id: string
+          read_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          dismissed_at?: string | null
+          id?: string
+          notification_id: string
+          read_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          dismissed_at?: string | null
+          id?: string
+          notification_id?: string
+          read_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_notification_status_notification_id_fkey"
+            columns: ["notification_id"]
+            isOneToOne: false
+            referencedRelation: "global_notifications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -6663,6 +7039,21 @@ export type Database = {
           id?: string | null
           is_approved?: never
           is_super_admin?: never
+        }
+        Relationships: []
+      }
+      admin_dashboard_stats: {
+        Row: {
+          active_clients: number | null
+          active_clubs: number | null
+          revenue_this_month: number | null
+          suspended_clients: number | null
+          total_athletes: number | null
+          total_categories: number | null
+          total_clients: number | null
+          total_clubs: number | null
+          total_users: number | null
+          trial_clients: number | null
         }
         Relationships: []
       }
