@@ -6884,7 +6884,7 @@ export type Database = {
           duration_seconds: number | null
           end_time_seconds: number | null
           id: string
-          match_id: string
+          match_id: string | null
           notes: string | null
           start_time_seconds: number
           thumbnail_url: string | null
@@ -6902,7 +6902,7 @@ export type Database = {
           duration_seconds?: number | null
           end_time_seconds?: number | null
           id?: string
-          match_id: string
+          match_id?: string | null
           notes?: string | null
           start_time_seconds?: number
           thumbnail_url?: string | null
@@ -6920,7 +6920,7 @@ export type Database = {
           duration_seconds?: number | null
           end_time_seconds?: number | null
           id?: string
-          match_id?: string
+          match_id?: string | null
           notes?: string | null
           start_time_seconds?: number
           thumbnail_url?: string | null
