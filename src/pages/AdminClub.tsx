@@ -35,6 +35,8 @@
  import { InviteMemberDialog } from "@/components/collaboration/InviteMemberDialog";
  import { TutorialVideosSection } from "@/components/category/settings/TutorialVideosSection";
  import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { ClubMembersManagement } from "@/components/club/ClubMembersManagement";
+import { ClubInvitationsSection } from "@/components/club/ClubInvitationsSection";
  
  export default function AdminClub() {
    const { clubId } = useParams();
@@ -512,48 +514,28 @@
            </TabsContent>
  
            {/* 👥 4. GESTION DES UTILISATEURS */}
-           <TabsContent value="users" className="space-y-4">
+            <TabsContent value="users" className="space-y-6">
              <div className="flex items-center justify-between">
                <h2 className="text-xl font-bold">Utilisateurs du club</h2>
                {isAdmin && (
                  <Button onClick={() => setIsInviteOpen(true)} className="gap-1">
                    <UserPlus className="h-4 w-4" />
-                   Inviter
+                    Inviter un membre
                  </Button>
                )}
              </div>
  
-             <Card>
-               <CardContent className="p-0">
-                 <ScrollArea className="h-[400px]">
-                   <div className="divide-y">
-                     {clubMembers.map((member) => (
-                       <div key={member.id} className="flex items-center justify-between p-4">
-                         <div className="flex items-center gap-3">
-                           <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
-                             <Users className="h-5 w-5 text-muted-foreground" />
-                           </div>
-                           <div>
-                             <p className="font-medium">{member.user_id}</p>
-                             <Badge variant="outline" className="text-xs">
-                               {member.role}
-                             </Badge>
-                           </div>
-                         </div>
-                         <p className="text-xs text-muted-foreground">
-                           Ajouté le {format(new Date(member.created_at), "dd/MM/yyyy")}
-                         </p>
-                       </div>
-                     ))}
-                     {clubMembers.length === 0 && (
-                       <div className="p-8 text-center text-muted-foreground">
-                         Aucun membre invité
-                       </div>
-                     )}
-                   </div>
-                 </ScrollArea>
-               </CardContent>
-             </Card>
+              {/* Section des membres actuels */}
+              <ClubMembersManagement 
+                clubId={clubId!} 
+                categories={categories}
+                canManage={isAdmin} 
+              />
+
+              {/* Section des invitations en attente */}
+              {isAdmin && (
+                <ClubInvitationsSection clubId={clubId!} />
+              )}
            </TabsContent>
  
            {/* 💳 5. ABONNEMENT & FACTURATION */}
