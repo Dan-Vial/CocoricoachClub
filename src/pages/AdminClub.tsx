@@ -34,6 +34,7 @@
  import { AddCategoryDialog } from "@/components/categories/AddCategoryDialog";
  import { InviteMemberDialog } from "@/components/collaboration/InviteMemberDialog";
  import { TutorialVideosSection } from "@/components/category/settings/TutorialVideosSection";
+ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
  
  export default function AdminClub() {
    const { clubId } = useParams();
@@ -207,6 +208,23 @@
          .eq("client_id", club.client_id)
          .eq("status", "active")
          .maybeSingle();
+       if (error) throw error;
+       return data;
+     },
+     enabled: !!club?.client_id,
+   });
+ 
+   // Fetch payment history for client
+   const { data: paymentHistory = [] } = useQuery({
+     queryKey: ["club-payments", club?.client_id],
+     queryFn: async () => {
+       if (!club?.client_id) return [];
+       const { data, error } = await supabase
+         .from("payment_history")
+         .select("*")
+         .eq("client_id", club.client_id)
+         .order("payment_date", { ascending: false })
+         .limit(10);
        if (error) throw error;
        return data;
      },
@@ -543,6 +561,24 @@
              <TabsContent value="subscription" className="space-y-4">
                <h2 className="text-xl font-bold">Abonnement & Facturation</h2>
  
+               {!club?.client_id && (
+                 <Card className="bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800">
+                   <CardContent className="py-4">
+                     <div className="flex items-center gap-3">
+                       <AlertTriangle className="h-5 w-5 text-amber-600" />
+                       <div>
+                         <p className="font-medium text-amber-800 dark:text-amber-200">
+                           Club non lié à un compte client
+                         </p>
+                         <p className="text-sm text-amber-700 dark:text-amber-300">
+                           Contactez l'administrateur pour configurer votre abonnement.
+                         </p>
+                       </div>
+                     </div>
+                   </CardContent>
+                 </Card>
+               )}
+ 
                <div className="grid gap-4 md:grid-cols-2">
                  <Card>
                    <CardHeader>
@@ -552,6 +588,12 @@
                      </CardTitle>
                    </CardHeader>
                    <CardContent className="space-y-4">
+                     {!club?.client_id ? (
+                       <p className="text-muted-foreground text-center py-4">
+                         Aucun abonnement configuré
+                       </p>
+                     ) : (
+                       <>
                      <div className="flex items-center justify-between">
                        <span className="text-muted-foreground">Plan</span>
                        <span className="font-medium">
@@ -564,11 +606,19 @@
                          {subscription?.status === "active" ? "Actif" : "Inactif"}
                        </Badge>
                      </div>
+                     {subscription?.amount && (
+                       <div className="flex items-center justify-between">
+                         <span className="text-muted-foreground">Montant</span>
+                         <span className="font-medium">{subscription.amount} €</span>
+                       </div>
+                     )}
                      {subscription?.end_date && (
                        <div className="flex items-center justify-between">
                          <span className="text-muted-foreground">Expire le</span>
                          <span>{format(new Date(subscription.end_date), "dd/MM/yyyy")}</span>
                        </div>
+                     )}
+                       </>
                      )}
                    </CardContent>
                  </Card>
@@ -599,6 +649,49 @@
                    </CardContent>
                  </Card>
                </div>
+ 
+               {/* Historique des paiements */}
+               {club?.client_id && paymentHistory.length > 0 && (
+                 <Card>
+                   <CardHeader>
+                     <CardTitle>Historique des paiements</CardTitle>
+                   </CardHeader>
+                   <CardContent>
+                     <Table>
+                       <TableHeader>
+                         <TableRow>
+                           <TableHead>Date</TableHead>
+                           <TableHead>Montant</TableHead>
+                           <TableHead>Méthode</TableHead>
+                           <TableHead>N° Facture</TableHead>
+                           <TableHead>Statut</TableHead>
+                         </TableRow>
+                       </TableHeader>
+                       <TableBody>
+                         {paymentHistory.map((payment: any) => (
+                           <TableRow key={payment.id}>
+                             <TableCell>
+                               {format(new Date(payment.payment_date), "dd/MM/yyyy")}
+                             </TableCell>
+                             <TableCell className="font-medium">{payment.amount} €</TableCell>
+                             <TableCell>{payment.payment_method || "-"}</TableCell>
+                             <TableCell>{payment.invoice_number || "-"}</TableCell>
+                             <TableCell>
+                               <Badge 
+                                 variant={payment.status === "completed" ? "default" : "secondary"}
+                                 className={payment.status === "completed" ? "bg-green-600" : ""}
+                               >
+                                 {payment.status === "completed" ? "Payé" : 
+                                  payment.status === "pending" ? "En attente" : payment.status}
+                               </Badge>
+                             </TableCell>
+                           </TableRow>
+                         ))}
+                       </TableBody>
+                     </Table>
+                   </CardContent>
+                 </Card>
+               )}
              </TabsContent>
            )}
  
