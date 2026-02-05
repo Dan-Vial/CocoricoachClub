@@ -24,6 +24,7 @@ import PublicCategoryView from "./pages/PublicCategoryView";
 import AthletePortal from "./pages/AthletePortal";
 import Install from "./pages/Install";
 import Admin from "./pages/Admin";
+ import SuperAdmin from "./pages/SuperAdmin";
 import Settings from "./pages/Settings";
 import AcceptAmbassadorInvitation from "./pages/AcceptAmbassadorInvitation";
 import NotFound from "./pages/NotFound";
@@ -99,6 +100,7 @@ const App = () => (
                   <Route path="/athlete-portal" element={<AthletePortal />} />
                   <Route path="/install" element={<Install />} />
                   <Route path="/admin" element={<Admin />} />
+                   <Route path="/super-admin" element={<SuperAdmin />} />
                   <Route path="/ambassador-invitation" element={<AcceptAmbassadorInvitation />} />
                   <Route path="/settings" element={<Settings />} />
                   <Route path="/clubs/:clubId" element={<ClubDetailsWithAuth />} />

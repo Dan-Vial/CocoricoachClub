@@ -10,7 +10,6 @@ import { AddClubDialog } from "@/components/clubs/AddClubDialog";
 import { ClubCard } from "@/components/clubs/ClubCard";
 import { useAuth } from "@/contexts/AuthContext";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
-import { GlobalPlayerSearch } from "@/components/search/GlobalPlayerSearch";
 import { InjuryReturnAlerts } from "@/components/injuries/InjuryReturnAlerts";
 import { ExerciseLibrarySection } from "@/components/library/ExerciseLibrarySection";
 
@@ -191,15 +190,14 @@ export default function Clubs() {
               </p>
             </div>
             <div className="flex items-center gap-2">
-              <GlobalPlayerSearch />
               <NotificationBell />
               {isSuperAdmin && (
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => navigate("/admin")}
+                   onClick={() => navigate("/super-admin")}
                   className="text-primary-foreground hover:bg-primary-foreground/10"
-                  title="Administration"
+                   title="Super Admin"
                 >
                   <Shield className="h-5 w-5" />
                 </Button>
