@@ -309,13 +309,18 @@ export function VideoPlayerWithClipping({
             </div>
           ) : (
             <div className="aspect-video bg-muted rounded-lg flex items-center justify-center">
-              <div className="text-center space-y-2">
+              <div className="text-center space-y-4 p-6">
                 <Film className="h-12 w-12 mx-auto text-muted-foreground" />
-                <p className="text-muted-foreground">
-                  Lecteur externe requis pour cette source
-                </p>
-                <Button variant="outline" onClick={() => window.open(videoUrl, "_blank")}>
-                  Ouvrir la vidéo
+                <div className="space-y-2">
+                  <p className="font-medium">Source vidéo externe</p>
+                  <p className="text-sm text-muted-foreground max-w-md">
+                    Ouvrez la vidéo dans un nouvel onglet, notez les timestamps des moments clés, 
+                    puis saisissez-les manuellement ci-dessous pour créer vos clips.
+                  </p>
+                </div>
+                <Button onClick={() => window.open(videoUrl, "_blank")}>
+                  <Play className="h-4 w-4 mr-2" />
+                  Ouvrir la vidéo dans un nouvel onglet
                 </Button>
               </div>
             </div>
