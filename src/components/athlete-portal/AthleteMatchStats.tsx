@@ -13,7 +13,7 @@ import { BowlingScoreSheet } from "./BowlingScoreSheet";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface AthleteMatchStatsProps {
-  token: string;
+  token?: string;
   playerId: string;
   categoryId: string;
   sportType?: string;

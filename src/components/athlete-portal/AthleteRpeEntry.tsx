@@ -13,7 +13,7 @@ import { getTrainingTypeLabel } from "@/lib/constants/trainingTypes";
 import { athletePortalHeaders, buildAthletePortalFunctionUrl } from "@/lib/athletePortalClient";
 
 interface AthleteRpeEntryProps {
-  token: string;
+  token?: string;
   playerId: string;
   categoryId: string;
 }

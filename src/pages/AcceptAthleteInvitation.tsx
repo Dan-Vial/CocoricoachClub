@@ -48,18 +48,7 @@ export default function AcceptAthleteInvitation() {
       // Fetch invitation with related data
       const { data, error: fetchError } = await supabase
         .from("athlete_invitations")
-        .select(`
-          id,
-          email,
-          player_id,
-          category_id,
-          club_id,
-          status,
-          expires_at,
-          players!inner(name, first_name),
-          categories!inner(name),
-          clubs!inner(name)
-        `)
+        .select("*")
         .eq("token", token)
         .single();
 
@@ -80,6 +69,18 @@ export default function AcceptAthleteInvitation() {
         return;
       }
 
+      // Fetch player, category, and club details separately
+      const [playerRes, categoryRes, clubRes] = await Promise.all([
+        supabase.from("players").select("name, first_name").eq("id", data.player_id).single(),
+        supabase.from("categories").select("name").eq("id", data.category_id).single(),
+        supabase.from("clubs").select("name").eq("id", data.club_id).single(),
+      ]);
+
+      if (playerRes.error || categoryRes.error || clubRes.error) {
+        setError("Erreur lors du chargement des données");
+        return;
+      }
+
       setInvitation({
         id: data.id,
         email: data.email,
@@ -87,10 +88,10 @@ export default function AcceptAthleteInvitation() {
         category_id: data.category_id,
         club_id: data.club_id,
         status: data.status,
-        player_name: (data.players as any).name,
-        player_first_name: (data.players as any).first_name,
-        club_name: (data.clubs as any).name,
-        category_name: (data.categories as any).name,
+        player_name: playerRes.data.name,
+        player_first_name: playerRes.data.first_name,
+        club_name: clubRes.data.name,
+        category_name: categoryRes.data.name,
       });
     } catch (err) {
       console.error("Error validating invitation:", err);
