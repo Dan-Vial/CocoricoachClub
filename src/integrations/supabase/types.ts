@@ -856,6 +856,7 @@ export type Database = {
           address: string | null
           created_at: string
           email: string | null
+          gps_data_enabled: boolean | null
           id: string
           max_athletes: number
           max_categories_per_club: number
@@ -867,11 +868,13 @@ export type Database = {
           status: string
           trial_ends_at: string | null
           updated_at: string
+          video_enabled: boolean | null
         }
         Insert: {
           address?: string | null
           created_at?: string
           email?: string | null
+          gps_data_enabled?: boolean | null
           id?: string
           max_athletes?: number
           max_categories_per_club?: number
@@ -883,11 +886,13 @@ export type Database = {
           status?: string
           trial_ends_at?: string | null
           updated_at?: string
+          video_enabled?: boolean | null
         }
         Update: {
           address?: string | null
           created_at?: string
           email?: string | null
+          gps_data_enabled?: boolean | null
           id?: string
           max_athletes?: number
           max_categories_per_club?: number
@@ -899,6 +904,7 @@ export type Database = {
           status?: string
           trial_ends_at?: string | null
           updated_at?: string
+          video_enabled?: boolean | null
         }
         Relationships: []
       }

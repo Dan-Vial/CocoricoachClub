@@ -18,6 +18,7 @@ import { PublicDataProvider, usePublicDataContext } from "@/contexts/PublicDataC
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import React from "react";
+import { useClientOptions } from "@/hooks/use-client-options";
 
 // New mega-tabs
 import { EffectifTab } from "@/components/category/tabs/EffectifTab";
@@ -147,6 +148,14 @@ function CategoryDetailsContent() {
   const isRugby7 = category?.rugby_type === "7";
   const isAcademy = category?.rugby_type === "academie";
   const isNationalTeam = category?.rugby_type === "national_team";
+  
+  // Fetch client options for GPS and Video visibility
+  const clubId = category?.clubs?.id;
+  const { videoEnabled, gpsEnabled } = useClientOptions(clubId);
+  
+  // Check if GPS/Video should be visible (sport type + client options)
+  const showGpsTab = isGpsSportType(category?.rugby_type) && gpsEnabled;
+  const showVideoTab = hasVideoAnalysis(category?.rugby_type) && videoEnabled;
 
   // In public mode, use the context values as fallback
   const displayCategoryName = category?.name || publicCategoryName || "Catégorie";
@@ -333,7 +342,7 @@ function CategoryDetailsContent() {
                 label="Compétition"
                 shortLabel="Compét"
               />
-              {isGpsSportType(category?.rugby_type) && (
+              {showGpsTab && (
                 <ColoredTabTrigger 
                   value="gps" 
                   colorKey="gps"
@@ -341,7 +350,7 @@ function CategoryDetailsContent() {
                   label="GPS"
                 />
               )}
-              {hasVideoAnalysis(category?.rugby_type) && (
+              {showVideoTab && (
                 <ColoredTabTrigger 
                   value="video" 
                   colorKey="video"
@@ -416,15 +425,15 @@ function CategoryDetailsContent() {
             />
           </TabsContent>
 
-          {/* GPS Tab - Only for Football and Rugby */}
-          {isGpsSportType(category?.rugby_type) && (
+          {/* GPS Tab - Only for Football and Rugby + Client option enabled */}
+          {showGpsTab && (
             <TabsContent value="gps" className="space-y-4">
               <GpsDataTab categoryId={categoryId!} />
             </TabsContent>
           )}
 
-          {/* Video Analysis Tab - Exclude CrossFit/Hyrox/Musculation */}
-          {hasVideoAnalysis(category?.rugby_type) && (
+          {/* Video Analysis Tab - Sport supported + Client option enabled */}
+          {showVideoTab && (
             <TabsContent value="video" className="space-y-4">
               <VideoAnalysisTab categoryId={categoryId!} sportType={category?.rugby_type} />
             </TabsContent>

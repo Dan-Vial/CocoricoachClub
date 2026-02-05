@@ -10,8 +10,9 @@
  import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
  import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
  import { Textarea } from "@/components/ui/textarea";
+ import { Checkbox } from "@/components/ui/checkbox";
  import { toast } from "@/components/ui/sonner";
- import { Plus, Edit, Pause, Play, Trash2, Building2, Mail } from "lucide-react";
+ import { Plus, Edit, Pause, Play, Trash2, Building2, Mail, Video, MapPin } from "lucide-react";
  import { format } from "date-fns";
  import { fr } from "date-fns/locale";
  import { InviteClientDialog } from "./InviteClientDialog";
@@ -30,6 +31,8 @@
    max_athletes: number;
    notes: string | null;
    created_at: string;
+   video_enabled: boolean;
+   gps_data_enabled: boolean;
  }
  
 export function SuperAdminClients() {
@@ -48,6 +51,8 @@ export function SuperAdminClients() {
      max_staff_users: 5,
      max_athletes: 50,
      notes: "",
+     video_enabled: false,
+     gps_data_enabled: false,
    });
  
    // Fetch clients
@@ -84,6 +89,8 @@ export function SuperAdminClients() {
            max_staff_users: data.max_staff_users,
            max_athletes: data.max_athletes,
            notes: data.notes || null,
+           video_enabled: data.video_enabled,
+           gps_data_enabled: data.gps_data_enabled,
          });
        if (error) throw error;
      },
@@ -114,6 +121,8 @@ export function SuperAdminClients() {
            max_staff_users: data.max_staff_users,
            max_athletes: data.max_athletes,
            notes: data.notes || null,
+           video_enabled: data.video_enabled,
+           gps_data_enabled: data.gps_data_enabled,
          })
          .eq("id", id);
        if (error) throw error;
@@ -143,7 +152,21 @@ export function SuperAdminClients() {
        queryClient.invalidateQueries({ queryKey: ["super-admin-clients"] });
      },
    });
- 
+
+   // Toggle option mutation
+   const toggleOption = useMutation({
+     mutationFn: async ({ id, option, value }: { id: string; option: 'video_enabled' | 'gps_data_enabled'; value: boolean }) => {
+       const { error } = await supabase
+         .from("clients")
+         .update({ [option]: value })
+         .eq("id", id);
+       if (error) throw error;
+     },
+     onSuccess: () => {
+       queryClient.invalidateQueries({ queryKey: ["super-admin-clients"] });
+     },
+   });
+
    // Delete client mutation
    const deleteClient = useMutation({
      mutationFn: async (id: string) => {
@@ -171,6 +194,8 @@ export function SuperAdminClients() {
        max_staff_users: 5,
        max_athletes: 50,
        notes: "",
+       video_enabled: false,
+       gps_data_enabled: false,
      });
    };
  
@@ -187,6 +212,8 @@ export function SuperAdminClients() {
        max_staff_users: client.max_staff_users,
        max_athletes: client.max_athletes,
        notes: client.notes || "",
+       video_enabled: client.video_enabled || false,
+       gps_data_enabled: client.gps_data_enabled || false,
      });
    };
  
@@ -305,7 +332,43 @@ export function SuperAdminClients() {
            />
          </div>
        </div>
- 
+
+       {/* Options section */}
+       <div className="space-y-3 p-4 rounded-lg border bg-muted/30">
+         <Label className="text-base font-semibold">Options (Football & Rugby uniquement)</Label>
+         <div className="flex flex-col gap-3">
+           <div className="flex items-center space-x-3">
+             <Checkbox
+               id="video_enabled"
+               checked={formData.video_enabled}
+               onCheckedChange={(checked) => setFormData({ ...formData, video_enabled: checked === true })}
+             />
+             <div className="flex items-center gap-2">
+               <Video className="h-4 w-4 text-muted-foreground" />
+               <label htmlFor="video_enabled" className="text-sm font-medium cursor-pointer">
+                 Analyse Vidéo
+               </label>
+             </div>
+           </div>
+           <div className="flex items-center space-x-3">
+             <Checkbox
+               id="gps_data_enabled"
+               checked={formData.gps_data_enabled}
+               onCheckedChange={(checked) => setFormData({ ...formData, gps_data_enabled: checked === true })}
+             />
+             <div className="flex items-center gap-2">
+               <MapPin className="h-4 w-4 text-muted-foreground" />
+               <label htmlFor="gps_data_enabled" className="text-sm font-medium cursor-pointer">
+                 Data GPS
+               </label>
+             </div>
+           </div>
+         </div>
+         <p className="text-xs text-muted-foreground">
+           Ces options n'apparaîtront que pour les catégories Football et Rugby
+         </p>
+       </div>
+
        <div className="space-y-2">
          <Label>Notes</Label>
          <Textarea
@@ -378,6 +441,7 @@ export function SuperAdminClients() {
                  <TableHead>Client</TableHead>
                  <TableHead>Contact</TableHead>
                  <TableHead>Statut</TableHead>
+                 <TableHead>Options</TableHead>
                  <TableHead>Limites</TableHead>
                  <TableHead>Créé le</TableHead>
                  <TableHead className="text-right">Actions</TableHead>
@@ -394,6 +458,40 @@ export function SuperAdminClients() {
                      </div>
                    </TableCell>
                    <TableCell>{getStatusBadge(client.status)}</TableCell>
+                   <TableCell>
+                     <div className="flex flex-col gap-1.5">
+                       <div className="flex items-center gap-2">
+                         <Checkbox
+                           checked={client.video_enabled}
+                           onCheckedChange={(checked) => 
+                             toggleOption.mutate({ 
+                               id: client.id, 
+                               option: 'video_enabled', 
+                               value: checked === true 
+                             })
+                           }
+                         />
+                         <span className="text-xs flex items-center gap-1">
+                           <Video className="h-3 w-3" /> Vidéo
+                         </span>
+                       </div>
+                       <div className="flex items-center gap-2">
+                         <Checkbox
+                           checked={client.gps_data_enabled}
+                           onCheckedChange={(checked) => 
+                             toggleOption.mutate({ 
+                               id: client.id, 
+                               option: 'gps_data_enabled', 
+                               value: checked === true 
+                             })
+                           }
+                         />
+                         <span className="text-xs flex items-center gap-1">
+                           <MapPin className="h-3 w-3" /> GPS
+                         </span>
+                       </div>
+                     </div>
+                   </TableCell>
                    <TableCell>
                      <div className="text-xs space-y-1">
                        <p>{client.max_clubs} clubs</p>
