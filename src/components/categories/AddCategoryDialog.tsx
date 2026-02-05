@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState, useEffect, useMemo } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog,
@@ -24,7 +24,6 @@ import { categorySchema } from "@/lib/validations";
 import { 
   SportType, 
   MainSportCategory, 
-  MAIN_SPORTS, 
   RUGBY_SUBTYPES, 
   getOtherSportSubtypes 
 } from "@/lib/constants/sportTypes";
@@ -41,26 +40,39 @@ export function AddCategoryDialog({
   clubId,
 }: AddCategoryDialogProps) {
   const [categoryName, setCategoryName] = useState("");
-  const [mainSport, setMainSport] = useState<MainSportCategory>("rugby");
-  const [sportSubType, setSportSubType] = useState<SportType>("XV");
   const [gender, setGender] = useState<"masculine" | "feminine">("masculine");
+  const [sportSubType, setSportSubType] = useState<SportType>("XV");
   const [validationError, setValidationError] = useState("");
   const queryClient = useQueryClient();
 
-  // Get available subtypes based on selected main sport
-  const availableSubtypes = mainSport === "rugby" 
-    ? RUGBY_SUBTYPES 
-    : getOtherSportSubtypes(mainSport);
+  // Fetch club to get the sport
+  const { data: club } = useQuery({
+    queryKey: ["club", clubId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("clubs")
+        .select("id, name, sport")
+        .eq("id", clubId)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: open && !!clubId,
+  });
 
-  // Reset subtype when main sport changes
+  // Get available subtypes based on club's sport
+  const availableSubtypes = useMemo(() => {
+    if (!club?.sport) return RUGBY_SUBTYPES;
+    const sport = club.sport as MainSportCategory;
+    return sport === "rugby" ? RUGBY_SUBTYPES : getOtherSportSubtypes(sport);
+  }, [club?.sport]);
+
+  // Reset subtype when dialog opens or club changes
   useEffect(() => {
-    const subtypes = mainSport === "rugby" 
-      ? RUGBY_SUBTYPES 
-      : getOtherSportSubtypes(mainSport);
-    if (subtypes.length > 0) {
-      setSportSubType(subtypes[0].value);
+    if (availableSubtypes.length > 0) {
+      setSportSubType(availableSubtypes[0].value);
     }
-  }, [mainSport]);
+  }, [availableSubtypes]);
 
   const addCategory = useMutation({
     mutationFn: async (data: { name: string; rugby_type: SportType; gender: "masculine" | "feminine" }) => {
@@ -78,9 +90,10 @@ export function AddCategoryDialog({
       queryClient.invalidateQueries({ queryKey: ["categories", clubId] });
       toast.success("Catégorie ajoutée avec succès");
       setCategoryName("");
-      setMainSport("rugby");
-      setSportSubType("XV");
       setGender("masculine");
+      if (availableSubtypes.length > 0) {
+        setSportSubType(availableSubtypes[0].value);
+      }
       onOpenChange(false);
     },
     onError: () => {
@@ -102,11 +115,32 @@ export function AddCategoryDialog({
     addCategory.mutate({ name: result.data.name, rugby_type: sportSubType, gender: gender });
   };
 
+  // Get sport label for display
+  const getSportLabel = (sport: string) => {
+    const sportLabels: Record<string, string> = {
+      rugby: "Rugby",
+      football: "Football",
+      basketball: "Basketball",
+      handball: "Handball",
+      volleyball: "Volleyball",
+      athletics: "Athlétisme",
+      judo: "Judo",
+      rowing: "Aviron",
+      bowling: "Bowling",
+    };
+    return sportLabels[sport] || sport;
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Ajouter une nouvelle catégorie</DialogTitle>
+          {club?.sport && (
+            <p className="text-sm text-muted-foreground">
+              Sport : {getSportLabel(club.sport)}
+            </p>
+          )}
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="space-y-4 py-4">
@@ -141,44 +175,23 @@ export function AddCategoryDialog({
               </RadioGroup>
             </div>
             
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label>Sport</Label>
-                <Select 
-                  value={mainSport} 
-                  onValueChange={(value: MainSportCategory) => setMainSport(value)}
-                >
-                  <SelectTrigger className="w-full bg-background">
-                    <SelectValue placeholder="Sélectionner un sport" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-background border z-50">
-                    {MAIN_SPORTS.map((sport) => (
-                      <SelectItem key={sport.value} value={sport.value}>
-                        {sport.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Type</Label>
-                <Select 
-                  value={sportSubType} 
-                  onValueChange={(value: SportType) => setSportSubType(value)}
-                >
-                  <SelectTrigger className="w-full bg-background">
-                    <SelectValue placeholder="Sélectionner un type" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-background border z-50">
-                    {availableSubtypes.map((subtype) => (
-                      <SelectItem key={subtype.value} value={subtype.value}>
-                        {subtype.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="space-y-2">
+              <Label>Type</Label>
+              <Select 
+                value={sportSubType} 
+                onValueChange={(value: SportType) => setSportSubType(value)}
+              >
+                <SelectTrigger className="w-full bg-background">
+                  <SelectValue placeholder="Sélectionner un type" />
+                </SelectTrigger>
+                <SelectContent className="bg-background border z-50">
+                  {availableSubtypes.map((subtype) => (
+                    <SelectItem key={subtype.value} value={subtype.value}>
+                      {subtype.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <DialogFooter>

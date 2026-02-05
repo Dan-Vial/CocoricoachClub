@@ -11,10 +11,18 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { clubSchema } from "@/lib/validations";
 import { z } from "zod";
+import { MAIN_SPORTS, MainSportCategory } from "@/lib/constants/sportTypes";
 
 interface AddClubDialogProps {
   open: boolean;
@@ -23,26 +31,28 @@ interface AddClubDialogProps {
 
 export function AddClubDialog({ open, onOpenChange }: AddClubDialogProps) {
   const [clubName, setClubName] = useState("");
+  const [sport, setSport] = useState<MainSportCategory>("rugby");
   const queryClient = useQueryClient();
   const { user } = useAuth();
 
   const addClub = useMutation({
-    mutationFn: async (name: string) => {
+    mutationFn: async (data: { name: string; sport: MainSportCategory }) => {
       if (!user) {
         throw new Error("Utilisateur non authentifié");
       }
       
-      const validatedData = clubSchema.parse({ name });
+      const validatedData = clubSchema.parse({ name: data.name });
       
       const { error } = await supabase
         .from("clubs")
-        .insert({ name: validatedData.name, user_id: user.id });
+        .insert({ name: validatedData.name, user_id: user.id, sport: data.sport });
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["clubs"] });
+      queryClient.invalidateQueries({ queryKey: ["my-clubs"] });
       toast.success("Club ajouté avec succès");
       setClubName("");
+      setSport("rugby");
       onOpenChange(false);
     },
     onError: (error) => {
@@ -57,7 +67,7 @@ export function AddClubDialog({ open, onOpenChange }: AddClubDialogProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (clubName.trim()) {
-      addClub.mutate(clubName.trim());
+      addClub.mutate({ name: clubName.trim(), sport });
     }
   };
 
@@ -79,6 +89,21 @@ export function AddClubDialog({ open, onOpenChange }: AddClubDialogProps) {
                 maxLength={100}
                 required
               />
+            </div>
+            <div className="space-y-2">
+              <Label>Sport</Label>
+              <Select value={sport} onValueChange={(value: MainSportCategory) => setSport(value)}>
+                <SelectTrigger className="w-full bg-background">
+                  <SelectValue placeholder="Sélectionner un sport" />
+                </SelectTrigger>
+                <SelectContent className="bg-background border z-50">
+                  {MAIN_SPORTS.map((s) => (
+                    <SelectItem key={s.value} value={s.value}>
+                      {s.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <DialogFooter>
