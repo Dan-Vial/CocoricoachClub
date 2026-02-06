@@ -14,6 +14,12 @@ import {
 } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   ArrowLeft,
   Film,
   ExternalLink,
@@ -23,6 +29,8 @@ import {
   Trash2,
   Search,
   Filter,
+  Copy,
+  AlertCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { ClipStatsPanel } from "./ClipStatsPanel";
@@ -207,7 +215,12 @@ export function VideoClipViewer({
     return `${mins}'${secs.toString().padStart(2, "0")}`;
   };
 
-  // Build URL with timestamp for playback
+  // Check if platform supports timestamp in URL
+  const isExternalPlatform = (url: string) => {
+    return url.includes("veo.co") || url.includes("hudl.com");
+  };
+
+  // Build URL with timestamp for playback (only works for YouTube/Vimeo)
   const getClipUrlWithTimestamp = (url: string, startTime: number) => {
     // YouTube
     if (url.includes("youtube.com") || url.includes("youtu.be")) {
@@ -218,18 +231,18 @@ export function VideoClipViewer({
     if (url.includes("vimeo.com")) {
       return `${url}#t=${Math.floor(startTime)}s`;
     }
-    // VEO - uses ?t= parameter in seconds
-    if (url.includes("veo.co")) {
-      const separator = url.includes("?") ? "&" : "?";
-      return `${url}${separator}t=${Math.floor(startTime)}`;
-    }
-    // Hudl - uses ?time= parameter
-    if (url.includes("hudl.com")) {
-      const separator = url.includes("?") ? "&" : "?";
-      return `${url}${separator}time=${Math.floor(startTime)}`;
-    }
-    // For other sources, return as-is (user can manually seek)
+    // For VEO, Hudl, and other external sources - timestamps don't work
+    // Return URL as-is, user will need to seek manually
     return url;
+  };
+
+  // Copy timestamp to clipboard
+  const copyTimestamp = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    const formattedTime = `${mins}:${secs.toString().padStart(2, "0")}`;
+    navigator.clipboard.writeText(formattedTime);
+    toast.success(`Timestamp copié: ${formattedTime}`);
   };
 
   if (isLoading) {
@@ -350,6 +363,12 @@ export function VideoClipViewer({
                                   {clip.end_time_seconds &&
                                     ` - ${formatTime(clip.end_time_seconds)}`}
                                 </span>
+                                {isExternalPlatform(clip.clip_url) && (
+                                  <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
+                                    <AlertCircle className="h-3 w-3" />
+                                    Seek manuel
+                                  </span>
+                                )}
                                 {matchData && (
                                   <span>
                                     {matchData.is_home ? "vs" : "@"} {matchData.opponent}
@@ -372,32 +391,71 @@ export function VideoClipViewer({
                               )}
                             </div>
 
-                            <div className="flex gap-1">
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                className="h-8 w-8"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  window.open(getClipUrlWithTimestamp(clip.clip_url, clip.start_time_seconds), "_blank");
-                                }}
-                              >
-                                <ExternalLink className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                className="h-8 w-8 text-destructive"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  if (confirm("Supprimer ce clip ?")) {
-                                    deleteMutation.mutate(clip.id);
-                                  }
-                                }}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
+                            <TooltipProvider>
+                              <div className="flex gap-1">
+                                {isExternalPlatform(clip.clip_url) && (
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        size="icon"
+                                        variant="ghost"
+                                        className="h-8 w-8"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          copyTimestamp(clip.start_time_seconds);
+                                        }}
+                                      >
+                                        <Copy className="h-4 w-4" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Copier le timestamp</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                )}
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      size="icon"
+                                      variant="ghost"
+                                      className="h-8 w-8"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        const url = getClipUrlWithTimestamp(clip.clip_url, clip.start_time_seconds);
+                                        window.open(url, "_blank");
+                                        if (isExternalPlatform(clip.clip_url)) {
+                                          toast.info(`Allez à ${formatTime(clip.start_time_seconds)} manuellement`, {
+                                            description: "VEO/Hudl ne supportent pas les timestamps automatiques",
+                                            duration: 5000,
+                                          });
+                                        }
+                                      }}
+                                    >
+                                      <ExternalLink className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    {isExternalPlatform(clip.clip_url) 
+                                      ? <p>Ouvrir (seek manuel requis)</p>
+                                      : <p>Ouvrir au timestamp</p>
+                                    }
+                                  </TooltipContent>
+                                </Tooltip>
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-8 w-8 text-destructive"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (confirm("Supprimer ce clip ?")) {
+                                      deleteMutation.mutate(clip.id);
+                                    }
+                                  }}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TooltipProvider>
                           </div>
                         </div>
                       );
