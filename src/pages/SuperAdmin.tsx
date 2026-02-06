@@ -1,24 +1,25 @@
- import { useEffect, useState } from "react";
- import { useNavigate } from "react-router-dom";
- import { useAuth } from "@/contexts/AuthContext";
- import { supabase } from "@/integrations/supabase/client";
- import { useQuery } from "@tanstack/react-query";
- import { Button } from "@/components/ui/button";
- import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
- import { toast } from "@/components/ui/sonner";
- import { Shield, ArrowLeft, LayoutDashboard, Users, Building2, CreditCard, Video, Bell, Settings, FileText } from "lucide-react";
- 
- // Import tab components
- import { SuperAdminDashboard } from "@/components/super-admin/SuperAdminDashboard";
- import { SuperAdminClients } from "@/components/super-admin/SuperAdminClients";
- import { SuperAdminClubs } from "@/components/super-admin/SuperAdminClubs";
- import { SuperAdminUsers } from "@/components/super-admin/SuperAdminUsers";
- import { SuperAdminSubscriptions } from "@/components/super-admin/SuperAdminSubscriptions";
- import { SuperAdminPayments } from "@/components/super-admin/SuperAdminPayments";
- import { SuperAdminVideos } from "@/components/super-admin/SuperAdminVideos";
- import { SuperAdminNotifications } from "@/components/super-admin/SuperAdminNotifications";
- import { SuperAdminSettings } from "@/components/super-admin/SuperAdminSettings";
- import { AuditLogsTab } from "@/components/admin/AuditLogsTab";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { toast } from "@/components/ui/sonner";
+import { Shield, ArrowLeft, LayoutDashboard, Users, Building2, CreditCard, Video, Bell, Settings, FileText, Lock } from "lucide-react";
+
+// Import tab components
+import { SuperAdminDashboard } from "@/components/super-admin/SuperAdminDashboard";
+import { SuperAdminClients } from "@/components/super-admin/SuperAdminClients";
+import { SuperAdminClubs } from "@/components/super-admin/SuperAdminClubs";
+import { SuperAdminUsers } from "@/components/super-admin/SuperAdminUsers";
+import { SuperAdminSubscriptions } from "@/components/super-admin/SuperAdminSubscriptions";
+import { SuperAdminPayments } from "@/components/super-admin/SuperAdminPayments";
+import { SuperAdminVideos } from "@/components/super-admin/SuperAdminVideos";
+import { SuperAdminNotifications } from "@/components/super-admin/SuperAdminNotifications";
+import { SuperAdminSettings } from "@/components/super-admin/SuperAdminSettings";
+import { AuditLogsTab } from "@/components/admin/AuditLogsTab";
+import { RoleMenuPermissions } from "@/components/super-admin/RoleMenuPermissions";
  
  export default function SuperAdmin() {
    const { user, loading: authLoading } = useAuth();
@@ -123,11 +124,15 @@
                <Settings className="h-4 w-4" />
                Paramètres
              </TabsTrigger>
-             <TabsTrigger value="audit" className="flex items-center gap-2">
-               <FileText className="h-4 w-4" />
-               Audit
-             </TabsTrigger>
-           </TabsList>
+              <TabsTrigger value="permissions" className="flex items-center gap-2">
+                <Lock className="h-4 w-4" />
+                Permissions
+              </TabsTrigger>
+              <TabsTrigger value="audit" className="flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                Audit
+              </TabsTrigger>
+            </TabsList>
  
            <TabsContent value="dashboard">
              <SuperAdminDashboard />
@@ -165,10 +170,14 @@
              <SuperAdminSettings />
            </TabsContent>
  
-           <TabsContent value="audit">
-             <AuditLogsTab />
-           </TabsContent>
-         </Tabs>
+            <TabsContent value="permissions">
+              <RoleMenuPermissions />
+            </TabsContent>
+
+            <TabsContent value="audit">
+              <AuditLogsTab />
+            </TabsContent>
+          </Tabs>
        </div>
      </div>
    );

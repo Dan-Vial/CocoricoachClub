@@ -5522,6 +5522,45 @@ export type Database = {
           },
         ]
       }
+      role_menu_permissions: {
+        Row: {
+          created_at: string
+          id: string
+          menu_key: string
+          menu_label: string
+          player_visible: boolean
+          staff_admin_visible: boolean
+          staff_coach_visible: boolean
+          staff_doctor_visible: boolean
+          staff_prepa_visible: boolean
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          menu_key: string
+          menu_label: string
+          player_visible?: boolean
+          staff_admin_visible?: boolean
+          staff_coach_visible?: boolean
+          staff_doctor_visible?: boolean
+          staff_prepa_visible?: boolean
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          menu_key?: string
+          menu_label?: string
+          player_visible?: boolean
+          staff_admin_visible?: boolean
+          staff_coach_visible?: boolean
+          staff_doctor_visible?: boolean
+          staff_prepa_visible?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       rtp_phase_completions: {
         Row: {
           checklist_completed: Json | null
