@@ -386,7 +386,7 @@ export function SportMatchStatsDialog({
               </Select>
             </div>
 
-            <ScrollArea className="flex-1 h-[calc(50vh-100px)]">
+            <ScrollArea className="flex-1 h-[300px] max-h-[50vh]">
               {statCategories.map(cat => {
                 if (cat.key !== selectedStatCategory) return null;
                 

@@ -27,7 +27,8 @@ import {
   Pencil,
   Bell,
   User,
-  ChevronRight
+  ChevronRight,
+  Heart
 } from "lucide-react";
 import { format, addDays, subDays } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -323,10 +324,25 @@ import { NotifyAthletesDialog } from "@/components/notifications/NotifyAthletesD
      return toAdapt.slice(0, 4);
    };
  
-   const groupStatus = calculateGroupStatus();
-   const priorityAlerts = calculatePriorityAlerts();
-   const playersToAdapt = getPlayersToAdapt();
-   const availabilityPercent = groupStatus.total > 0 ? Math.round((groupStatus.available / groupStatus.total) * 100) : 100;
+    const groupStatus = calculateGroupStatus();
+    const priorityAlerts = calculatePriorityAlerts();
+    const playersToAdapt = getPlayersToAdapt();
+    const availabilityPercent = groupStatus.total > 0 ? Math.round((groupStatus.available / groupStatus.total) * 100) : 100;
+
+    // Calculate today's wellness status
+    const getTodayWellnessStatus = () => {
+      const todayWellness = wellnessData.filter(w => w.tracking_date === today);
+      const filledPlayerIds = new Set(todayWellness.map(w => w.player_id));
+      const filledCount = filledPlayerIds.size;
+      const filledPercent = players.length > 0 ? Math.round((filledCount / players.length) * 100) : 0;
+      
+      const filledPlayers = players.filter(p => filledPlayerIds.has(p.id)).map(p => p.name);
+      const missingPlayers = players.filter(p => !filledPlayerIds.has(p.id)).map(p => p.name);
+      
+      return { filledCount, filledPercent, filledPlayers, missingPlayers };
+    };
+    
+    const wellnessStatus = getTodayWellnessStatus();
  
    const getAlertIcon = (type: PriorityAlert["type"]) => {
      switch (type) {
@@ -434,9 +450,83 @@ import { NotifyAthletesDialog } from "@/components/notifications/NotifyAthletesD
              </div>
            </div>
          </CardContent>
-       </Card>
- 
-       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        </Card>
+
+        {/* 1.5️⃣ WELLNESS DU JOUR */}
+        <Card className="border-2 border-green-500/20 bg-gradient-to-r from-green-500/5 to-transparent">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Heart className="h-5 w-5 text-green-600" />
+              Wellness du jour
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-6 flex-wrap">
+              <div className="flex-1 min-w-[200px]">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-sm font-medium">Taux de remplissage</span>
+                  <span className={cn(
+                    "text-2xl font-bold",
+                    wellnessStatus.filledPercent >= 80 ? "text-green-600" : 
+                    wellnessStatus.filledPercent >= 50 ? "text-yellow-600" : "text-red-600"
+                  )}>
+                    {wellnessStatus.filledPercent}%
+                  </span>
+                </div>
+                <Progress 
+                  value={wellnessStatus.filledPercent} 
+                  className={cn(
+                    "h-3",
+                    wellnessStatus.filledPercent >= 80 ? "[&>div]:bg-green-500" : 
+                    wellnessStatus.filledPercent >= 50 ? "[&>div]:bg-yellow-500" : "[&>div]:bg-red-500"
+                  )}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  {wellnessStatus.filledCount} / {players.length} ont rempli leur wellness
+                </p>
+              </div>
+              
+              <div className="flex flex-col gap-2">
+                {wellnessStatus.filledPercent === 100 ? (
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-green-100 dark:bg-green-900/30">
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                    <span className="font-semibold text-green-700 dark:text-green-400 text-sm">
+                      Tous complétés
+                    </span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-orange-100 dark:bg-orange-900/30">
+                    <Clock className="h-4 w-4 text-orange-600" />
+                    <span className="font-semibold text-orange-700 dark:text-orange-400 text-sm">
+                      {wellnessStatus.missingPlayers.length} en attente
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            {/* Missing players list */}
+            {wellnessStatus.missingPlayers.length > 0 && wellnessStatus.missingPlayers.length <= 6 && (
+              <div className="mt-3 pt-3 border-t">
+                <p className="text-xs text-muted-foreground mb-2">En attente :</p>
+                <div className="flex flex-wrap gap-1">
+                  {wellnessStatus.missingPlayers.slice(0, 6).map((name, idx) => (
+                    <Badge key={idx} variant="outline" className="text-xs">
+                      {name.split(" ")[0]}
+                    </Badge>
+                  ))}
+                  {wellnessStatus.missingPlayers.length > 6 && (
+                    <Badge variant="outline" className="text-xs">
+                      +{wellnessStatus.missingPlayers.length - 6}
+                    </Badge>
+                  )}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+  
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
          {/* 2️⃣ AUJOURD'HUI / DEMAIN */}
          <Card>
            <CardHeader className="pb-2">

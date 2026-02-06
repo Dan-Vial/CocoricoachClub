@@ -241,7 +241,7 @@ export function InjuryRiskAssessment({ categoryId }: InjuryRiskAssessmentProps) 
           Évaluation du Risque de Blessure
         </CardTitle>
         <CardDescription>
-          Analyse combinée AWCR + Wellness pondéré avec détection de tendances
+          Analyse combinée EWMA + Wellness pondéré avec détection de tendances
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">

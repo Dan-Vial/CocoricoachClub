@@ -152,6 +152,11 @@ export function MatchSheetsSection({ categoryId }: MatchSheetsSectionProps) {
 
   const saveMatchSheet = useMutation({
     mutationFn: async () => {
+      // Validation: match is required
+      if (!matchId) {
+        throw new Error("Veuillez sélectionner un match");
+      }
+
       const sheetData = {
         category_id: categoryId,
         name,
@@ -160,7 +165,7 @@ export function MatchSheetsSection({ categoryId }: MatchSheetsSectionProps) {
         location: location || null,
         match_time: matchTime || null,
         notes: notes || null,
-        match_id: matchId || null,
+        match_id: matchId,
         status: editingSheet?.status || "draft",
       };
 
@@ -174,7 +179,7 @@ export function MatchSheetsSection({ categoryId }: MatchSheetsSectionProps) {
         if (error) throw error;
         sheetId = editingSheet.id;
 
-        // Delete existing players
+        // Delete existing players from match sheet
         await supabase
           .from("match_sheet_players")
           .delete()
@@ -189,7 +194,7 @@ export function MatchSheetsSection({ categoryId }: MatchSheetsSectionProps) {
         sheetId = data.id;
       }
 
-      // Insert selected players
+      // Insert selected players to match_sheet_players
       const playersToInsert = Object.entries(selectedPlayers)
         .filter(([_, data]) => data.selected)
         .map(([playerId, data], index) => ({
@@ -208,15 +213,43 @@ export function MatchSheetsSection({ categoryId }: MatchSheetsSectionProps) {
           .insert(playersToInsert);
         if (playersError) throw playersError;
       }
+
+      // SYNC: Also update match_lineups for the linked match
+      if (matchId) {
+        // Delete existing lineup for this match
+        await supabase
+          .from("match_lineups")
+          .delete()
+          .eq("match_id", matchId);
+
+        // Insert lineup from the match sheet players
+        const lineupToInsert = Object.entries(selectedPlayers)
+          .filter(([_, data]) => data.selected)
+          .map(([playerId, data]) => ({
+            match_id: matchId,
+            player_id: playerId,
+            position: data.position || null,
+            is_starter: data.isStarter,
+          }));
+
+        if (lineupToInsert.length > 0) {
+          const { error: lineupError } = await supabase
+            .from("match_lineups")
+            .insert(lineupToInsert);
+          if (lineupError) throw lineupError;
+        }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["match_sheets"] });
+      queryClient.invalidateQueries({ queryKey: ["match_lineup", matchId] });
+      queryClient.invalidateQueries({ queryKey: ["matches"] });
       toast.success(editingSheet ? "Feuille de match mise à jour" : "Feuille de match créée");
       setIsDialogOpen(false);
       resetForm();
     },
-    onError: () => {
-      toast.error("Erreur lors de l'enregistrement");
+    onError: (error: any) => {
+      toast.error(error.message || "Erreur lors de l'enregistrement");
     },
   });
 
@@ -444,24 +477,50 @@ export function MatchSheetsSection({ categoryId }: MatchSheetsSectionProps) {
               </div>
             </div>
 
-            {matches && matches.length > 0 && (
-              <div className="space-y-2">
-                <Label>Lier à un match existant</Label>
-                <Select value={matchId} onValueChange={setMatchId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner un match (optionnel)" />
+            {/* Match obligatoire */}
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1">
+                Lier à un match existant <span className="text-destructive">*</span>
+              </Label>
+              {matches && matches.length > 0 ? (
+                <Select value={matchId} onValueChange={(value) => {
+                  setMatchId(value);
+                  // Auto-fill from match data
+                  const selectedMatch = matches.find(m => m.id === value);
+                  if (selectedMatch) {
+                    if (!opponent) setOpponent(selectedMatch.opponent || "");
+                    if (!sheetDate || sheetDate === new Date().toISOString().split("T")[0]) {
+                      setSheetDate(selectedMatch.match_date);
+                    }
+                    if (!matchTime && selectedMatch.match_time) {
+                      setMatchTime(selectedMatch.match_time);
+                    }
+                    if (!location && selectedMatch.location) {
+                      setLocation(selectedMatch.location);
+                    }
+                    if (!name) {
+                      setName(`Feuille - ${selectedMatch.opponent} (${format(new Date(selectedMatch.match_date), "dd/MM")})`);
+                    }
+                  }
+                }}>
+                  <SelectTrigger className={!matchId ? "border-destructive" : ""}>
+                    <SelectValue placeholder="Sélectionner un match" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Aucun</SelectItem>
                     {matches.map((match) => (
                       <SelectItem key={match.id} value={match.id}>
                         {format(new Date(match.match_date), "dd/MM")} - {match.opponent}
+                        {match.location && ` (${match.location})`}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
-            )}
+              ) : (
+                <p className="text-sm text-muted-foreground italic p-3 border rounded-lg bg-muted/50">
+                  Aucun match programmé. Créez d'abord un match dans le calendrier global.
+                </p>
+              )}
+            </div>
 
             <div className="space-y-2">
               <Label>Notes</Label>

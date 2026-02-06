@@ -59,6 +59,72 @@ export function ConversationList({ categoryId, selectedId, onSelect }: Conversat
     },
   });
 
+  // Auto-create default conversations if missing
+  const { data: defaultGroupsCreated } = useQuery({
+    queryKey: ["default-conversations-check", categoryId],
+    queryFn: async () => {
+      if (!user) return true;
+      
+      // Check if STAFF and STAFF+Joueurs groups exist
+      const staffGroupName = "Staff";
+      const allGroupName = "Staff + Joueurs";
+      
+      const hasStaffGroup = conversations?.some(c => c.name === staffGroupName);
+      const hasAllGroup = conversations?.some(c => c.name === allGroupName);
+      
+      // Create missing groups
+      if (!hasStaffGroup) {
+        const { data: conv } = await supabase
+          .from("conversations")
+          .insert({
+            category_id: categoryId,
+            name: staffGroupName,
+            conversation_type: "group",
+            created_by: user.id,
+          })
+          .select()
+          .single();
+          
+        if (conv) {
+          await supabase.from("conversation_participants").insert({
+            conversation_id: conv.id,
+            user_id: user.id,
+            is_admin: true,
+          });
+        }
+      }
+      
+      if (!hasAllGroup) {
+        const { data: conv } = await supabase
+          .from("conversations")
+          .insert({
+            category_id: categoryId,
+            name: allGroupName,
+            conversation_type: "group",
+            created_by: user.id,
+          })
+          .select()
+          .single();
+          
+        if (conv) {
+          await supabase.from("conversation_participants").insert({
+            conversation_id: conv.id,
+            user_id: user.id,
+            is_admin: true,
+          });
+        }
+      }
+      
+      // Invalidate to refetch conversations list
+      if (!hasStaffGroup || !hasAllGroup) {
+        queryClient.invalidateQueries({ queryKey: ["conversations", categoryId] });
+      }
+      
+      return true;
+    },
+    enabled: !!user && !!conversations,
+  });
+
   const createConversation = useMutation({
     mutationFn: async () => {
       if (!user) return;
@@ -147,6 +213,7 @@ export function ConversationList({ categoryId, selectedId, onSelect }: Conversat
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="group">Groupe</SelectItem>
+                      <SelectItem value="direct">Message privé</SelectItem>
                       <SelectItem value="channel">Canal (annonces)</SelectItem>
                     </SelectContent>
                   </Select>

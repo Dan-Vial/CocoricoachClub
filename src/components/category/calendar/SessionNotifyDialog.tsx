@@ -52,6 +52,12 @@ const NOTIFICATION_TYPES = [
     icon: XCircle,
     defaultMessage: "La séance d'entraînement a été annulée. Nous vous tiendrons informés de la reprogrammation."
   },
+  { 
+    value: "appointment_cancelled", 
+    label: "RDV annulé",
+    icon: XCircle,
+    defaultMessage: "Le rendez-vous a été annulé. Nous vous tiendrons informés de la reprogrammation."
+  },
 ];
 
 export function SessionNotifyDialog({
