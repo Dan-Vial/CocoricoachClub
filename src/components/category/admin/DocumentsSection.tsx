@@ -256,17 +256,17 @@ export function DocumentsSection({ categoryId }: DocumentsSectionProps) {
               <DialogTitle>Nouveau Document</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
-              <div>
+            <div>
                 <Label>Joueur (optionnel)</Label>
                 <Select 
-                  value={formData.player_id} 
-                  onValueChange={(v) => setFormData({ ...formData, player_id: v })}
+                  value={formData.player_id || "none"} 
+                  onValueChange={(v) => setFormData({ ...formData, player_id: v === "none" ? "" : v })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Sélectionner un joueur..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Aucun (document équipe)</SelectItem>
+                    <SelectItem value="none">Aucun (document équipe)</SelectItem>
                     {players?.map((player) => (
                       <SelectItem key={player.id} value={player.id}>{player.name}</SelectItem>
                     ))}
