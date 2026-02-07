@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, Copy, Check } from "lucide-react";
+import { Trash2, Info } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -24,15 +24,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { InviteCategoryMemberDialog } from "./InviteCategoryMemberDialog";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface CategoryCollaborationTabProps {
   categoryId: string;
 }
 
+// Rôles disponibles alignés avec Super Admin / Admin Club
+const AVAILABLE_ROLES = [
+  { value: "admin", label: "Admin", description: "Accès complet à la gestion", variant: "default" as const },
+  { value: "coach", label: "Coach", description: "Gestion des entraînements et matchs", variant: "secondary" as const },
+  { value: "prepa", label: "Préparateur Physique", description: "Suivi physique et charge", variant: "secondary" as const },
+  { value: "doctor", label: "Médecin", description: "Accès médical complet", variant: "secondary" as const },
+  { value: "physio", label: "Kinésithérapeute", description: "Blessures et récupération", variant: "secondary" as const },
+  { value: "mental_coach", label: "Préparateur Mental", description: "Wellness et suivi psychologique", variant: "secondary" as const },
+  { value: "viewer", label: "Viewer", description: "Consultation uniquement", variant: "outline" as const },
+];
+
 export function CategoryCollaborationTab({ categoryId }: CategoryCollaborationTabProps) {
-  const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
-  const [copiedToken, setCopiedToken] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
   const { data: category, isLoading: categoryLoading } = useQuery({
@@ -74,38 +83,38 @@ export function CategoryCollaborationTab({ categoryId }: CategoryCollaborationTa
     },
   });
 
-  const { data: categoryInvitations, isLoading: categoryInvitationsLoading } = useQuery({
-    queryKey: ["category-invitations", categoryId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("category_invitations")
-        .select("*")
-        .eq("category_id", categoryId)
-        .eq("status", "pending")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  // Fetch club-level invitations that would give access to this category
-  const { data: clubInvitations, isLoading: clubInvitationsLoading } = useQuery({
-    queryKey: ["club-invitations-for-category", categoryId],
+  // Fetch club members with access to this category
+  const { data: clubMembers, isLoading: clubMembersLoading } = useQuery({
+    queryKey: ["club-members-for-category", categoryId],
     queryFn: async () => {
       if (!category) return [];
       const { data, error } = await supabase
-        .from("club_invitations")
+        .from("club_members")
         .select("*")
         .eq("club_id", (category as any).club_id)
-        .eq("status", "pending")
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data;
+      
+      // Fetch profiles for each member
+      const membersWithProfiles = await Promise.all(
+        data.map(async (member: any) => {
+          const { data: profileData } = await supabase
+            .rpc("get_safe_profile", { profile_id: member.user_id });
+          return {
+            ...member,
+            profile: profileData?.[0] || null,
+          };
+        })
+      );
+      
+      // Filter members who have access to this category (full club access or assigned)
+      return membersWithProfiles.filter((m: any) => {
+        if (!m.assigned_categories || m.assigned_categories.length === 0) return true; // Full club access
+        return m.assigned_categories.includes(categoryId);
+      });
     },
     enabled: !!category,
   });
-
-  const invitationsLoading = categoryInvitationsLoading || clubInvitationsLoading;
 
   const { data: canManage } = useQuery({
     queryKey: ["can-manage-category", categoryId],
@@ -146,28 +155,11 @@ export function CategoryCollaborationTab({ categoryId }: CategoryCollaborationTa
     },
   });
 
-  const cancelInvitationMutation = useMutation({
-    mutationFn: async (invitationId: string) => {
-      const { error } = await supabase
-        .from("category_invitations")
-        .delete()
-        .eq("id", invitationId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["category-invitations", categoryId] });
-      toast.success("Invitation annulée");
-    },
-    onError: () => {
-      toast.error("Erreur lors de l'annulation");
-    },
-  });
-
   const updateRoleMutation = useMutation({
-    mutationFn: async ({ memberId, newRole }: { memberId: string; newRole: "admin" | "coach" | "viewer" }) => {
+    mutationFn: async ({ memberId, newRole }: { memberId: string; newRole: string }) => {
       const { error } = await supabase
         .from("category_members")
-        .update({ role: newRole })
+        .update({ role: newRole as any })
         .eq("id", memberId);
       if (error) throw error;
     },
@@ -180,54 +172,17 @@ export function CategoryCollaborationTab({ categoryId }: CategoryCollaborationTa
     },
   });
 
-  const copyInvitationLink = async (invitation: any) => {
-    try {
-      // Viewer: generate a public (no-auth) read-only link
-      if (invitation.role === "viewer") {
-        const { data: userData } = await supabase.auth.getUser();
-        const userId = userData.user?.id;
-        if (!userId) throw new Error("Non authentifié");
-
-        const { data, error } = await supabase
-          .from("public_access_tokens")
-          .insert({
-            club_id: null,
-            category_id: categoryId,
-            created_by: userId,
-            label: invitation.email ? `Invitation viewer: ${invitation.email}` : null,
-            access_type: "viewer",
-          })
-          .select("token")
-          .single();
-
-        if (error) throw error;
-
-        const link = `${window.location.origin}/public-view?token=${data.token}`;
-        await navigator.clipboard.writeText(link);
-        setCopiedToken(invitation.token);
-        toast.success("Lien viewer (sans compte) copié !");
-        setTimeout(() => setCopiedToken(null), 2000);
-        return;
-      }
-
-      // Other roles: classic invitation flow (requires login)
-      const link = `${window.location.origin}/accept-invitation?token=${invitation.token}&type=category`;
-      await navigator.clipboard.writeText(link);
-      setCopiedToken(invitation.token);
-      toast.success("Lien copié !");
-      setTimeout(() => setCopiedToken(null), 2000);
-    } catch (e) {
-      toast.error("Erreur lors de la copie du lien");
-    }
+  const getRoleConfig = (role: string) => {
+    return AVAILABLE_ROLES.find(r => r.value === role) || { 
+      value: role, 
+      label: role, 
+      description: "", 
+      variant: "outline" as const 
+    };
   };
 
   const getRoleBadge = (role: string) => {
-    const variants: Record<string, { label: string; variant: "default" | "secondary" | "outline" }> = {
-      admin: { label: "Admin", variant: "default" },
-      coach: { label: "Coach", variant: "secondary" },
-      viewer: { label: "Viewer", variant: "outline" },
-    };
-    const config = variants[role] || variants.viewer;
+    const config = getRoleConfig(role);
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
@@ -237,32 +192,73 @@ export function CategoryCollaborationTab({ categoryId }: CategoryCollaborationTa
 
   return (
     <div className="space-y-6">
+      {/* Info Section */}
+      <Alert>
+        <Info className="h-4 w-4" />
+        <AlertDescription>
+          Pour inviter de nouveaux membres, utilisez le menu <strong>Admin Club → Utilisateurs</strong>. 
+          Les rôles affichés ici reflètent les permissions définies au niveau du club.
+        </AlertDescription>
+      </Alert>
+
+      {/* Club Members with access Section */}
       <Card className="bg-gradient-card shadow-md">
         <CardHeader>
-          <div className="flex justify-between items-center">
-            <CardTitle>Collaboration - {category?.name}</CardTitle>
-            {canManage && (
-              <Button onClick={() => setIsInviteDialogOpen(true)} size="sm">
-                <Plus className="h-4 w-4 mr-2" />
-                Inviter
-              </Button>
-            )}
-          </div>
+          <CardTitle className="text-lg">Staff du Club (accès à cette catégorie)</CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground mb-4">
-            Invitez des collaborateurs à accéder <strong>uniquement à cette catégorie</strong>. 
-            Ils ne verront pas les autres catégories du club.
+            Ces membres ont accès via leur appartenance au club (Admin Club → Utilisateurs)
           </p>
+          {clubMembersLoading ? (
+            <Skeleton className="h-24 w-full" />
+          ) : clubMembers && clubMembers.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Membre</TableHead>
+                  <TableHead>Rôle Club</TableHead>
+                  <TableHead>Accès</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {clubMembers.map((member: any) => (
+                  <TableRow key={member.id}>
+                    <TableCell>
+                      <div>
+                        <p className="font-medium">{member.profile?.full_name || "Utilisateur"}</p>
+                        <p className="text-sm text-muted-foreground">{member.profile?.email}</p>
+                      </div>
+                    </TableCell>
+                    <TableCell>{getRoleBadge(member.role)}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="bg-secondary text-secondary-foreground border-border">
+                        {!member.assigned_categories || member.assigned_categories.length === 0 
+                          ? "Toutes catégories" 
+                          : "Catégorie assignée"}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <p className="text-center text-muted-foreground py-6">
+              Aucun membre du club avec accès à cette catégorie
+            </p>
+          )}
         </CardContent>
       </Card>
 
-      {/* Members Section */}
+      {/* Category-specific Members Section */}
       <Card className="bg-gradient-card shadow-md">
         <CardHeader>
-          <CardTitle className="text-lg">Membres de la catégorie</CardTitle>
+          <CardTitle className="text-lg">Membres spécifiques à la catégorie</CardTitle>
         </CardHeader>
         <CardContent>
+          <p className="text-sm text-muted-foreground mb-4">
+            Ces membres ont un accès uniquement à cette catégorie (invités directement)
+          </p>
           {membersLoading ? (
             <Skeleton className="h-24 w-full" />
           ) : members && members.length > 0 ? (
@@ -288,21 +284,20 @@ export function CategoryCollaborationTab({ categoryId }: CategoryCollaborationTa
                       {canManage ? (
                         <Select
                           value={member.role}
-                          onValueChange={(value: "admin" | "coach" | "viewer") => updateRoleMutation.mutate({ memberId: member.id, newRole: value })}
+                          onValueChange={(value: string) => updateRoleMutation.mutate({ memberId: member.id, newRole: value })}
                         >
-                          <SelectTrigger className="w-32">
+                          <SelectTrigger className="w-44">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="viewer">
-                              <Badge variant="outline" className="text-xs">Viewer</Badge>
-                            </SelectItem>
-                            <SelectItem value="coach">
-                              <Badge variant="secondary" className="text-xs">Coach</Badge>
-                            </SelectItem>
-                            <SelectItem value="admin">
-                              <Badge variant="default" className="text-xs">Admin</Badge>
-                            </SelectItem>
+                            {AVAILABLE_ROLES.map((role) => (
+                              <SelectItem key={role.value} value={role.value}>
+                                <div className="flex flex-col">
+                                  <span className="font-medium">{role.label}</span>
+                                  <span className="text-xs text-muted-foreground">{role.description}</span>
+                                </div>
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       ) : (
@@ -334,120 +329,6 @@ export function CategoryCollaborationTab({ categoryId }: CategoryCollaborationTa
           )}
         </CardContent>
       </Card>
-
-      {/* Category Invitations Section */}
-      <Card className="bg-gradient-card shadow-md">
-        <CardHeader>
-          <CardTitle className="text-lg">Invitations catégorie en attente</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {categoryInvitationsLoading ? (
-            <Skeleton className="h-24 w-full" />
-          ) : categoryInvitations && categoryInvitations.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Rôle</TableHead>
-                  <TableHead>Expire le</TableHead>
-                  <TableHead className="w-24"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {categoryInvitations.map((invitation: any) => (
-                  <TableRow key={invitation.id}>
-                    <TableCell>{invitation.email}</TableCell>
-                    <TableCell>{getRoleBadge(invitation.role)}</TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {format(new Date(invitation.expires_at), "dd MMM yyyy", { locale: fr })}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => copyInvitationLink(invitation)}
-                        >
-                          {copiedToken === invitation.token ? (
-                            <Check className="h-4 w-4 text-green-500" />
-                          ) : (
-                            <Copy className="h-4 w-4" />
-                          )}
-                        </Button>
-                        {canManage && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => cancelInvitationMutation.mutate(invitation.id)}
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          ) : (
-            <p className="text-center text-muted-foreground py-6">
-              Aucune invitation catégorie en attente
-            </p>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Club Invitations Section */}
-      <Card className="bg-gradient-card shadow-md">
-        <CardHeader>
-          <CardTitle className="text-lg">Invitations club en attente</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground mb-4">
-            Ces invitations au niveau du club donneront accès à <strong>toutes les catégories</strong> du club.
-          </p>
-          {clubInvitationsLoading ? (
-            <Skeleton className="h-24 w-full" />
-          ) : clubInvitations && clubInvitations.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Rôle</TableHead>
-                  <TableHead>Expire le</TableHead>
-                  <TableHead>Type</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {clubInvitations.map((invitation: any) => (
-                  <TableRow key={invitation.id}>
-                    <TableCell>{invitation.email}</TableCell>
-                    <TableCell>{getRoleBadge(invitation.role)}</TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {format(new Date(invitation.expires_at), "dd MMM yyyy", { locale: fr })}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                        Club
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          ) : (
-            <p className="text-center text-muted-foreground py-6">
-              Aucune invitation club en attente
-            </p>
-          )}
-        </CardContent>
-      </Card>
-
-      <InviteCategoryMemberDialog
-        open={isInviteDialogOpen}
-        onOpenChange={setIsInviteDialogOpen}
-        categoryId={categoryId}
-      />
     </div>
   );
 }
