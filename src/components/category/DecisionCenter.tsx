@@ -545,7 +545,7 @@ import { AddWellnessDialog } from "./AddWellnessDialog";
                 <div className="flex flex-wrap gap-1">
                   {wellnessStatus.missingPlayers.slice(0, 6).map((name, idx) => (
                     <Badge key={idx} variant="outline" className="text-xs">
-                      {name.split(" ")[0]}
+                      {name}
                     </Badge>
                   ))}
                   {wellnessStatus.missingPlayers.length > 6 && (
