@@ -159,17 +159,7 @@ export function CustomTrainingTypeSelect({
             </SelectLabel>
             {customTypes.map((ct) => (
               <SelectItem key={ct.id} value={ct.name} className="pl-6 group">
-                <span className="flex items-center justify-between w-full gap-2">
-                  {ct.name}
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive hover:bg-destructive/10"
-                    onClick={(e) => handleDeleteClick(e, ct.id, ct.name)}
-                  >
-                    <Trash2 className="h-3 w-3" />
-                  </Button>
-                </span>
+                {ct.name}
               </SelectItem>
             ))}
           </SelectGroup>
