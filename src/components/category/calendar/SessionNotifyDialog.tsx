@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
-import { Mail, Phone, Send, Loader2, Users, CalendarPlus, Clock, XCircle } from "lucide-react";
+import { Mail, Phone, Send, Loader2, Users, CalendarPlus, Clock, XCircle, Bell } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -70,6 +70,7 @@ export function SessionNotifyDialog({
   const [message, setMessage] = useState("");
   const [sendEmail, setSendEmail] = useState(true);
   const [sendSms, setSendSms] = useState(false);
+  const [sendPush, setSendPush] = useState(true);
 
   // Fetch players associated with this session (from awcr_tracking)
   const { data: sessionPlayers, isLoading: loadingPlayers } = useQuery({
@@ -117,9 +118,10 @@ export function SessionNotifyDialog({
 
   const sendNotification = useMutation({
     mutationFn: async () => {
-      const channels: ("email" | "sms")[] = [];
+      const channels: ("email" | "sms" | "push")[] = [];
       if (sendEmail) channels.push("email");
       if (sendSms) channels.push("sms");
+      if (sendPush) channels.push("push");
 
       if (channels.length === 0) {
         throw new Error("Veuillez sélectionner au moins un canal de notification");
@@ -160,6 +162,7 @@ export function SessionNotifyDialog({
       const parts = [];
       if (data.emailsSent > 0) parts.push(`${data.emailsSent} email(s)`);
       if (data.smsSent > 0) parts.push(`${data.smsSent} SMS`);
+      if (data.pushSent > 0) parts.push(`${data.pushSent} push`);
       
       toast.success(`Notifications envoyées : ${parts.join(", ")}`);
       onOpenChange(false);
@@ -265,6 +268,21 @@ export function SessionNotifyDialog({
                   </Badge>
                 </label>
               </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="sendPush"
+                  checked={sendPush}
+                  onCheckedChange={(checked) => setSendPush(checked as boolean)}
+                />
+                <label
+                  htmlFor="sendPush"
+                  className="flex items-center gap-2 text-sm font-medium cursor-pointer"
+                >
+                  <Bell className="h-4 w-4" />
+                  Push
+                </label>
+              </div>
             </div>
           </div>
 
@@ -300,7 +318,7 @@ export function SessionNotifyDialog({
             </Button>
             <Button
               type="submit"
-              disabled={sendNotification.isPending || (!sendEmail && !sendSms) || loadingPlayers}
+              disabled={sendNotification.isPending || (!sendEmail && !sendSms && !sendPush) || loadingPlayers}
             >
               {sendNotification.isPending ? (
                 <>

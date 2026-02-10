@@ -14,7 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { Mail, Phone, Send, Loader2, Users, Trophy } from "lucide-react";
+import { Mail, Phone, Send, Loader2, Users, Trophy, Bell } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -44,6 +44,7 @@ export function MatchNotifyDialog({
   const [message, setMessage] = useState("");
   const [sendEmail, setSendEmail] = useState(true);
   const [sendSms, setSendSms] = useState(false);
+  const [sendPush, setSendPush] = useState(true);
 
   const isIndividual = isIndividualSport(sportType || "");
 
@@ -118,9 +119,10 @@ export function MatchNotifyDialog({
 
   const sendNotification = useMutation({
     mutationFn: async () => {
-      const channels: ("email" | "sms")[] = [];
+      const channels: ("email" | "sms" | "push")[] = [];
       if (sendEmail) channels.push("email");
       if (sendSms) channels.push("sms");
+      if (sendPush) channels.push("push");
 
       if (channels.length === 0) {
         throw new Error("Veuillez sélectionner au moins un canal de notification");
@@ -162,6 +164,7 @@ export function MatchNotifyDialog({
       const parts = [];
       if (data.emailsSent > 0) parts.push(`${data.emailsSent} email(s)`);
       if (data.smsSent > 0) parts.push(`${data.smsSent} SMS`);
+      if (data.pushSent > 0) parts.push(`${data.pushSent} push`);
       
       toast.success(`Convocations envoyées : ${parts.join(", ")}`);
       onOpenChange(false);
@@ -242,6 +245,21 @@ export function MatchNotifyDialog({
                   </Badge>
                 </label>
               </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="sendPush"
+                  checked={sendPush}
+                  onCheckedChange={(checked) => setSendPush(checked as boolean)}
+                />
+                <label
+                  htmlFor="sendPush"
+                  className="flex items-center gap-2 text-sm font-medium cursor-pointer"
+                >
+                  <Bell className="h-4 w-4" />
+                  Push
+                </label>
+              </div>
             </div>
           </div>
 
@@ -278,7 +296,7 @@ export function MatchNotifyDialog({
             </Button>
             <Button
               type="submit"
-              disabled={sendNotification.isPending || (!sendEmail && !sendSms) || loadingPlayers}
+              disabled={sendNotification.isPending || (!sendEmail && !sendSms && !sendPush) || loadingPlayers}
             >
               {sendNotification.isPending ? (
                 <>

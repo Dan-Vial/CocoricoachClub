@@ -14,7 +14,7 @@ interface NotifyAthletesRequest {
   }>;
   subject: string;
   message: string;
-  channels: ("email" | "sms")[];
+  channels: ("email" | "sms" | "push")[];
   eventType: "session" | "match" | "event" | "custom";
   eventDetails?: {
     date?: string;
@@ -49,6 +49,7 @@ const handler = async (req: Request): Promise<Response> => {
     const results = {
       emailsSent: 0,
       smsSent: 0,
+      pushSent: 0,
       errors: [] as string[],
     };
 
@@ -180,7 +181,49 @@ const handler = async (req: Request): Promise<Response> => {
           results.errors.push(`SMS ${athlete.phone}: ${errorMessage}`);
         }
       }
-    }
+      }
+
+      // Send push notification if channel selected
+      if (channels.includes("push") && athlete.email) {
+        try {
+          // Build push content
+          let pushMessage = message;
+          if (eventDetails?.date) pushMessage += `\n📅 ${eventDetails.date}`;
+          if (eventDetails?.time) pushMessage += ` à ${eventDetails.time}`;
+          if (eventDetails?.location) pushMessage += `\n📍 ${eventDetails.location}`;
+
+          const pushResponse = await fetch("https://api.onesignal.com/notifications", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Key ${ONESIGNAL_REST_API_KEY}`,
+            },
+            body: JSON.stringify({
+              app_id: ONESIGNAL_APP_ID,
+              include_aliases: {
+                external_id: [athlete.email],
+              },
+              target_channel: "push",
+              headings: { en: subject, fr: subject },
+              contents: { en: pushMessage, fr: pushMessage },
+              name: `Push to ${athlete.name}`,
+            }),
+          });
+
+          if (pushResponse.ok) {
+            results.pushSent++;
+            console.log(`Push sent for ${athlete.email}`);
+          } else {
+            const errorData = await pushResponse.json();
+            console.error(`Failed to send push for ${athlete.email}:`, errorData);
+            results.errors.push(`Push ${athlete.email}: ${JSON.stringify(errorData)}`);
+          }
+        } catch (e: unknown) {
+          const errorMessage = e instanceof Error ? e.message : String(e);
+          console.error(`Error sending push for ${athlete.email}:`, e);
+          results.errors.push(`Push ${athlete.email}: ${errorMessage}`);
+        }
+      }
 
     console.log("Notification results:", results);
 
