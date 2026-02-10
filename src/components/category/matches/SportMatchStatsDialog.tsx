@@ -334,12 +334,7 @@ export function SportMatchStatsDialog({
                     value={player.playerId}
                   >
                     {player.playerName}
-                    {playerHasStats(player) && (
-                      <Badge variant="secondary" className="text-xs px-1.5 py-0 ml-2">
-                        <Check className="h-3 w-3 mr-1" />
-                        Stats
-                      </Badge>
-                    )}
+                    {playerHasStats(player) ? " ✓" : ""}
                   </SelectItem>
                 ))}
             </SelectContent>
@@ -384,7 +379,7 @@ export function SportMatchStatsDialog({
               </Select>
             </div>
 
-            <ScrollArea className="flex-1 min-h-[350px] max-h-[55vh] pr-4">
+            <ScrollArea className="flex-1 min-h-[250px] max-h-[45vh] pr-4" style={{ overflow: 'auto' }}>
               {statCategories.map(cat => {
                 if (cat.key !== selectedStatCategory) return null;
                 
