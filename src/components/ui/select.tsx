@@ -104,39 +104,10 @@ const SelectItem = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.Item>,
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.Item>
 >(({ className, children, textValue, ...props }, ref) => {
-  const isPrimitiveChild = typeof children === "string" || typeof children === "number";
-
-  // Extract first meaningful text from complex JSX for typeahead and trigger display
-  const extractFirstText = (node: React.ReactNode): string | undefined => {
-    if (node === null || node === undefined || typeof node === "boolean") return undefined;
-    if (typeof node === "string") return node.trim() || undefined;
-    if (typeof node === "number") return String(node);
-    if (Array.isArray(node)) {
-      for (const child of node) {
-        const text = extractFirstText(child);
-        if (text) return text;
-      }
-      return undefined;
-    }
-    if (React.isValidElement(node)) {
-      // Skip Badge and other decorative components - only look at main content
-      const type = node.type;
-      const typeName = typeof type === 'function' ? type.name : typeof type === 'string' ? type : '';
-      if (typeName === 'Badge' || (node.props as Record<string, unknown>)?.variant === 'secondary') {
-        return undefined;
-      }
-      return extractFirstText(node.props.children);
-    }
-    return undefined;
-  };
-
-  const computedTextValue =
-    textValue ?? (isPrimitiveChild ? String(children) : extractFirstText(children));
-
   return (
     <SelectPrimitive.Item
       ref={ref}
-      textValue={computedTextValue}
+      textValue={textValue}
       className={cn(
         "relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 focus:bg-accent focus:text-accent-foreground",
         className,
@@ -148,29 +119,9 @@ const SelectItem = React.forwardRef<
           <Check className="h-4 w-4" />
         </SelectPrimitive.ItemIndicator>
       </span>
-
-      {/*
-        Radix Select uses ItemText to render the selected value in the trigger.
-        For primitive children (string/number), we let ItemText handle everything normally.
-        For complex JSX children, we use ItemText ONLY for trigger display (hidden in dropdown)
-        and render the rich children visibly in the dropdown list.
-      */}
-      {isPrimitiveChild ? (
-        <SelectPrimitive.ItemText>
-          {children}
-        </SelectPrimitive.ItemText>
-      ) : (
-        <>
-          {/* Hidden text for trigger display only */}
-          <SelectPrimitive.ItemText className="sr-only">
-            {computedTextValue ?? "Option"}
-          </SelectPrimitive.ItemText>
-          {/* Visible rich content in dropdown */}
-          <span className="flex-1">
-            {children}
-          </span>
-        </>
-      )}
+      <SelectPrimitive.ItemText>
+        {children}
+      </SelectPrimitive.ItemText>
     </SelectPrimitive.Item>
   );
 });
