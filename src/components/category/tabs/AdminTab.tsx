@@ -1,5 +1,5 @@
 import { Tabs, TabsContent } from "@/components/ui/tabs";
-import { ClipboardCheck, Users, FileSpreadsheet, Mail, FileText, UserSearch, FolderOpen, Truck } from "lucide-react";
+import { ClipboardCheck, Users, FileSpreadsheet, Mail, FileText, UserSearch, FolderOpen, Truck, BarChart3 } from "lucide-react";
 import { AttendanceTab } from "@/components/category/attendance/AttendanceTab";
 import { CategoryCollaborationTab } from "@/components/category/CategoryCollaborationTab";
 import { MedicalRecordsTab } from "@/components/health/MedicalRecordsTab";
@@ -8,6 +8,7 @@ import { ConvocationsSection } from "@/components/category/admin/ConvocationsSec
 import { RecruitmentSection } from "@/components/category/admin/RecruitmentSection";
 import { DocumentsSection } from "@/components/category/admin/DocumentsSection";
 import { LogisticsSection } from "@/components/category/admin/LogisticsSection";
+import { ReportsTab } from "@/components/category/ReportsTab";
 import { ColoredSubTabsList, ColoredSubTabsTrigger } from "@/components/ui/colored-subtabs";
 
 interface AdminTabProps {
@@ -76,6 +77,14 @@ export function AdminTab({ categoryId }: AdminTabProps) {
             <span className="sm:hidden">Certif</span>
           </ColoredSubTabsTrigger>
           <ColoredSubTabsTrigger 
+            value="reports" 
+            colorKey="admin"
+            icon={<BarChart3 className="h-4 w-4" />}
+          >
+            <span className="hidden sm:inline">Rapports</span>
+            <span className="sm:hidden">Rapp</span>
+          </ColoredSubTabsTrigger>
+          <ColoredSubTabsTrigger 
             value="staff" 
             colorKey="admin"
             icon={<Users className="h-4 w-4" />}
@@ -112,6 +121,10 @@ export function AdminTab({ categoryId }: AdminTabProps) {
 
       <TabsContent value="medical">
         <MedicalRecordsTab categoryId={categoryId} />
+      </TabsContent>
+
+      <TabsContent value="reports">
+        <ReportsTab categoryId={categoryId} />
       </TabsContent>
 
       <TabsContent value="staff">
