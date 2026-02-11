@@ -1,7 +1,6 @@
 import { Tabs, TabsContent } from "@/components/ui/tabs";
-import { MessageSquare, FileText, GraduationCap } from "lucide-react";
+import { MessageSquare, GraduationCap } from "lucide-react";
 import { MessagingTab } from "@/components/messaging/MessagingTab";
-import { ReportsTab } from "@/components/category/ReportsTab";
 import { AcademyTab } from "@/components/category/AcademyTab";
 import { ColoredSubTabsList, ColoredSubTabsTrigger } from "@/components/ui/colored-subtabs";
 
@@ -23,13 +22,6 @@ export function CommunicationTab({ categoryId, isAcademy }: CommunicationTabProp
             <span className="hidden sm:inline">Messagerie</span>
             <span className="sm:hidden">Msg</span>
           </ColoredSubTabsTrigger>
-          <ColoredSubTabsTrigger 
-            value="reports" 
-            colorKey="communication"
-            icon={<FileText className="h-4 w-4" />}
-          >
-            Rapports
-          </ColoredSubTabsTrigger>
           {isAcademy && (
             <ColoredSubTabsTrigger 
               value="academy" 
@@ -44,10 +36,6 @@ export function CommunicationTab({ categoryId, isAcademy }: CommunicationTabProp
 
       <TabsContent value="messaging">
         <MessagingTab categoryId={categoryId} />
-      </TabsContent>
-
-      <TabsContent value="reports">
-        <ReportsTab categoryId={categoryId} />
       </TabsContent>
 
       {isAcademy && (
