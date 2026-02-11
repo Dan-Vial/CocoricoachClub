@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/components/ui/sonner";
-import { Shield, Users, UserCog, Dumbbell, Stethoscope, User } from "lucide-react";
+import { Shield, Users, UserCog, Dumbbell, Stethoscope, User, Crown } from "lucide-react";
 
 interface RoleMenuPermission {
   id: string;
@@ -18,11 +18,12 @@ interface RoleMenuPermission {
 }
 
 const roleColumns = [
-  { key: "player_visible", label: "Joueur", icon: User },
-  { key: "staff_admin_visible", label: "Admin", icon: Shield },
-  { key: "staff_coach_visible", label: "Coach", icon: UserCog },
-  { key: "staff_prepa_visible", label: "Prépa", icon: Dumbbell },
-  { key: "staff_doctor_visible", label: "Médecin", icon: Stethoscope },
+  { key: "super_admin", label: "Super Admin", icon: Crown, alwaysChecked: true },
+  { key: "player_visible", label: "Joueur", icon: User, alwaysChecked: false },
+  { key: "staff_admin_visible", label: "Admin", icon: Shield, alwaysChecked: false },
+  { key: "staff_coach_visible", label: "Coach", icon: UserCog, alwaysChecked: false },
+  { key: "staff_prepa_visible", label: "Prépa", icon: Dumbbell, alwaysChecked: false },
+  { key: "staff_doctor_visible", label: "Médecin", icon: Stethoscope, alwaysChecked: false },
 ] as const;
 
 export function RoleMenuPermissions() {
@@ -116,13 +117,21 @@ export function RoleMenuPermissions() {
                     {roleColumns.map((role) => (
                       <TableCell key={role.key} className="text-center">
                         <div className="flex justify-center">
-                          <Checkbox
-                            checked={permission[role.key]}
-                            onCheckedChange={() =>
-                              handleToggle(permission, role.key)
-                            }
-                            className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
-                          />
+                          {role.alwaysChecked ? (
+                            <Checkbox
+                              checked={true}
+                              disabled
+                              className="data-[state=checked]:bg-primary data-[state=checked]:border-primary opacity-70"
+                            />
+                          ) : (
+                            <Checkbox
+                              checked={permission[role.key as keyof RoleMenuPermission] as boolean}
+                              onCheckedChange={() =>
+                                handleToggle(permission, role.key as keyof RoleMenuPermission)
+                              }
+                              className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                            />
+                          )}
                         </div>
                       </TableCell>
                     ))}
