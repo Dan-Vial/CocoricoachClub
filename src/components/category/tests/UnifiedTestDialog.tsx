@@ -73,6 +73,22 @@ export function UnifiedTestDialog({
 
   const addTests = useMutation({
     mutationFn: async () => {
+      // First create a training session of type "test" so it appears in the calendar
+      const { data: sessionData, error: sessionError } = await supabase
+        .from("training_sessions")
+        .insert({
+          category_id: categoryId,
+          session_date: date,
+          training_type: "test",
+          notes: `Test: ${currentCategory?.label} - ${currentTest?.label}`,
+        })
+        .select("id")
+        .single();
+
+      if (sessionError) throw sessionError;
+
+      const sessionId = sessionData.id;
+
       const inserts = effectivePlayers
         .filter(player => playerResults[player.id])
         .map(player => ({
@@ -83,7 +99,7 @@ export function UnifiedTestDialog({
           test_type: selectedTest,
           result_value: parseFloat(playerResults[player.id]),
           result_unit: currentTest?.unit || "",
-          notes: notes || null,
+          notes: `Session ID: ${sessionId}` + (notes ? `\n${notes}` : ""),
         }));
 
       if (inserts.length === 0) {
@@ -95,6 +111,9 @@ export function UnifiedTestDialog({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["generic_tests", categoryId] });
+      queryClient.invalidateQueries({ queryKey: ["training_sessions", categoryId] });
+      queryClient.invalidateQueries({ queryKey: ["today_sessions", categoryId] });
+      queryClient.invalidateQueries({ queryKey: ["today_session_tests"] });
       toast.success("Tests ajoutés avec succès");
       resetForm();
       onOpenChange(false);

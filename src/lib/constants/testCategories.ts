@@ -131,6 +131,9 @@ export const TEST_CATEGORIES: TestCategory[] = [
       { value: "drop_jump_50", label: "Drop Jump 50cm", unit: "cm" },
       { value: "sergent_test", label: "Sergent Test", unit: "cm" },
       { value: "abalakov", label: "Abalakov", unit: "cm" },
+      { value: "force_platform_right", label: "Plateforme de force - Pied Droit", unit: "N" },
+      { value: "force_platform_left", label: "Plateforme de force - Pied Gauche", unit: "N" },
+      { value: "force_platform_both", label: "Plateforme de force - 2 Pieds", unit: "N" },
     ],
   },
   {
