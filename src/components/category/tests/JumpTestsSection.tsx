@@ -18,9 +18,17 @@ interface JumpTestsSectionProps {
 const TEST_TYPE_LABELS: Record<string, string> = {
   vertical_jump: "Saut Vertical (CMJ)",
   horizontal_jump: "Saut Horizontal",
-  force_platform_left: "Plateforme de Force (Pied Gauche)",
-  force_platform_right: "Plateforme de Force (Pied Droit)",
-  force_platform_both: "Plateforme de Force (2 Pieds)",
+  force_platform_right: "Plateforme de force - Pied Droit",
+  force_platform_left: "Plateforme de force - Pied Gauche",
+  force_platform_both: "Plateforme de force - 2 Pieds",
+};
+
+const TEST_TYPE_UNITS: Record<string, string> = {
+  vertical_jump: "cm",
+  horizontal_jump: "cm",
+  force_platform_right: "N",
+  force_platform_left: "N",
+  force_platform_both: "N",
 };
 
 export function JumpTestsSection({ categoryId }: JumpTestsSectionProps) {
@@ -90,7 +98,7 @@ export function JumpTestsSection({ categoryId }: JumpTestsSectionProps) {
                 <TableHead>Joueur</TableHead>
                 <TableHead>Date</TableHead>
                 <TableHead>Type</TableHead>
-                <TableHead>Résultat (cm)</TableHead>
+                <TableHead>Résultat</TableHead>
                 <TableHead>Notes</TableHead>
                 <TableHead></TableHead>
               </TableRow>
@@ -101,7 +109,7 @@ export function JumpTestsSection({ categoryId }: JumpTestsSectionProps) {
                   <TableCell className="font-medium">{test.players?.name}</TableCell>
                   <TableCell>{format(new Date(test.test_date), "dd/MM/yyyy", { locale: fr })}</TableCell>
                   <TableCell>{TEST_TYPE_LABELS[test.test_type] || test.test_type}</TableCell>
-                  <TableCell className="font-semibold">{test.result_cm} cm</TableCell>
+                  <TableCell className="font-semibold">{test.result_cm} {TEST_TYPE_UNITS[test.test_type] || "cm"}</TableCell>
                   <TableCell className="max-w-[150px] truncate">{test.notes || "-"}</TableCell>
                   <TableCell>
                     {!isViewer && (

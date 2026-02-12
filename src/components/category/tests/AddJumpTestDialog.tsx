@@ -19,12 +19,16 @@ interface AddJumpTestDialogProps {
 }
 
 const TEST_TYPES = [
-  { value: "vertical_jump", label: "Saut Vertical (CMJ)" },
-  { value: "horizontal_jump", label: "Saut Horizontal" },
-  { value: "force_platform_left", label: "Plateforme de Force (Pied Gauche)" },
-  { value: "force_platform_right", label: "Plateforme de Force (Pied Droit)" },
-  { value: "force_platform_both", label: "Plateforme de Force (2 Pieds)" },
+  { value: "vertical_jump", label: "Saut Vertical (CMJ)", unit: "cm" },
+  { value: "horizontal_jump", label: "Saut Horizontal", unit: "cm" },
+  { value: "force_platform_right", label: "Plateforme de force - Pied Droit", unit: "N" },
+  { value: "force_platform_left", label: "Plateforme de force - Pied Gauche", unit: "N" },
+  { value: "force_platform_both", label: "Plateforme de force - 2 Pieds", unit: "N" },
 ];
+
+const getUnitForTestType = (type: string) => {
+  return TEST_TYPES.find(t => t.value === type)?.unit || "cm";
+};
 
 export function AddJumpTestDialog({ open, onOpenChange, categoryId, players }: AddJumpTestDialogProps) {
   const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
@@ -139,7 +143,7 @@ export function AddJumpTestDialog({ open, onOpenChange, categoryId, players }: A
               {/* Results per player */}
               {effectivePlayers.length > 0 && (
                 <div className="space-y-2">
-                  <Label>Résultats (cm) - {filledResultsCount}/{effectivePlayers.length} saisis</Label>
+                  <Label>Résultats ({getUnitForTestType(testType)}) - {filledResultsCount}/{effectivePlayers.length} saisis</Label>
                   <div className="grid grid-cols-2 gap-2 p-3 border rounded-md bg-muted/30">
                     {effectivePlayers.map((player) => (
                       <div key={player.id} className="flex items-center gap-2">
@@ -150,7 +154,7 @@ export function AddJumpTestDialog({ open, onOpenChange, categoryId, players }: A
                           min="0"
                           value={playerResults[player.id] || ""}
                           onChange={(e) => updatePlayerResult(player.id, e.target.value)}
-                          placeholder="cm"
+                          placeholder={getUnitForTestType(testType)}
                           className="w-20 h-8 text-sm"
                         />
                       </div>
