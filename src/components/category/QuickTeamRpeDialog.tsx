@@ -135,7 +135,6 @@ export function QuickTeamRpeDialog({
             session_date: sessionDate,
             rpe: rpe,
             duration_minutes: duration,
-            training_load: trainingLoad,
             acute_load: acuteLoad,
             chronic_load: chronicLoad,
             awcr: awcr,

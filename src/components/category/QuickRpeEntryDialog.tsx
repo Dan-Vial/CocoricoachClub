@@ -69,7 +69,6 @@ export function QuickRpeEntryDialog({
           session_date: sessionDate,
           rpe: parseInt(rpeValues[p.id].rpe),
           duration_minutes: parseInt(rpeValues[p.id].duration),
-          training_load: parseInt(rpeValues[p.id].rpe) * parseInt(rpeValues[p.id].duration),
         }));
 
       if (!entries || entries.length === 0) {

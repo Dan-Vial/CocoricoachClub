@@ -224,7 +224,6 @@ export function SessionFeedbackDialog({
           session_date: session.session_date,
           rpe,
           duration_minutes: duration,
-          training_load: trainingLoad,
           acute_load: acuteLoad,
           chronic_load: chronicLoad,
           awcr: awcr,

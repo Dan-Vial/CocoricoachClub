@@ -154,7 +154,6 @@ export function OfflineRpeEntry({
               session_date: sessionDate,
               rpe: rpe,
               duration_minutes: duration,
-              training_load: trainingLoad,
               acute_load: acuteAvg,
               chronic_load: chronicAvg,
               awcr: awcr,
@@ -181,7 +180,6 @@ export function OfflineRpeEntry({
             session_date: sessionDate,
             rpe: rpe,
             duration_minutes: duration,
-            training_load: trainingLoad,
             // AWCR will be calculated during sync
             acute_load: null,
             chronic_load: null,
