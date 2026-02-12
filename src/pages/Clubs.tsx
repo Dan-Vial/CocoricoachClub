@@ -276,44 +276,6 @@ export default function Clubs() {
           </div>
         )}
 
-        {/* Show categories where user has direct access */}
-        {directCategories && directCategories.length > 0 && (
-          <>
-            <div className="flex justify-between items-center mb-8 mt-12">
-              <h2 className="text-2xl font-bold text-foreground">Catégories partagées avec moi</h2>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {directCategories.map((item: any) => (
-                <Card
-                  key={item.category_id}
-                  className="bg-gradient-card shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer group animate-fade-in"
-                  onClick={() => navigate(`/clubs/${item.categories.club_id}/categories/${item.category_id}`)}
-                >
-                  <CardHeader>
-                    <CardTitle className="flex justify-between items-start">
-                      <span className="text-foreground group-hover:text-primary transition-colors">
-                        {item.categories.name}
-                      </span>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground">
-                      Club: {item.categories.clubs?.name}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {item.categories.rugby_type === "7" ? "Rugby à 7" : item.categories.rugby_type === "academie" ? "Académie" : item.categories.rugby_type === "national_team" ? "Équipe Nationale" : "Rugby à XV"}
-                    </p>
-                  </CardContent>
-                </Card>
-              ))}
-          </div>
-        </>
-        )}
-
-        {/* Exercise Library Section */}
-        <div className="mt-12">
-          <ExerciseLibrarySection />
-        </div>
       </div>
 
       <AddClubDialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen} />
