@@ -386,6 +386,21 @@ export function SessionFormDialog({
     enabled: open && !!editSession?.id,
   });
 
+  // Fetch existing tests linked to this session if editing
+  const { data: existingSessionTests } = useQuery({
+    queryKey: ["session-tests-edit", editSession?.id],
+    queryFn: async () => {
+      if (!editSession?.id) return [];
+      const { data, error } = await supabase
+        .from("generic_tests")
+        .select("*")
+        .like("notes", `%Session ID: ${editSession.id}%`);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: open && !!editSession?.id,
+  });
+
   // Organize exercises into groups for rendering
   const exerciseGroups = useMemo(() => {
     const groups: ExerciseGroup[] = [];
@@ -508,6 +523,33 @@ export function SessionFormDialog({
     }
   }, [existingAttendance, editSession, players]);
 
+  // Load existing tests when editing
+  useEffect(() => {
+    if (existingSessionTests && existingSessionTests.length > 0 && editSession) {
+      // Group tests by test_category + test_type
+      const testGroups = new Map<string, SessionTest>();
+      existingSessionTests.forEach(t => {
+        const key = `${t.test_category}__${t.test_type}`;
+        if (!testGroups.has(key)) {
+          testGroups.set(key, {
+            id: crypto.randomUUID(),
+            test_category: t.test_category,
+            test_type: t.test_type,
+            result_unit: t.result_unit || "",
+            player_results: {},
+          });
+        }
+        const group = testGroups.get(key)!;
+        if (t.player_id && t.result_value != null) {
+          group.player_results[t.player_id] = t.result_value.toString();
+        }
+      });
+      setSessionTests(Array.from(testGroups.values()));
+    } else if (!editSession) {
+      setSessionTests([]);
+    }
+  }, [existingSessionTests, editSession]);
+
   const injuredPlayers = players?.filter((p) => p.isInjured) || [];
   const healthyPlayers = players?.filter((p) => !p.isInjured) || [];
 
@@ -557,6 +599,12 @@ export function SessionFormDialog({
           .from("gym_session_exercises")
           .delete()
           .eq("training_session_id", editSession.id);
+
+        // Delete existing tests linked to this session
+        await supabase
+          .from("generic_tests")
+          .delete()
+          .like("notes", `%Session ID: ${editSession.id}%`);
       } else {
         const { data, error } = await supabase
           .from("training_sessions")
