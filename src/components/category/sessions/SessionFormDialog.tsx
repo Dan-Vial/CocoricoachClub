@@ -444,7 +444,9 @@ export function SessionFormDialog({
         setEndTime(editSession.session_end_time || "");
         setType(editSession.training_type || "");
         setIntensity(editSession.intensity?.toString() || "");
-        setNotes(editSession.notes || "");
+        // Strip <!--TESTS:...--> from visible notes
+        const rawNotes = editSession.notes || "";
+        setNotes(rawNotes.replace(/\n?<!--TESTS:.*?-->/g, "").trim());
         setPlayerSelectionMode("all");
         setSelectedPlayers([]);
       } else {
@@ -523,10 +525,15 @@ export function SessionFormDialog({
     }
   }, [existingAttendance, editSession, players]);
 
-  // Load existing tests when editing
+  // Load existing tests when editing - from generic_tests OR from session notes config
   useEffect(() => {
-    if (existingSessionTests && existingSessionTests.length > 0 && editSession) {
-      // Group tests by test_category + test_type
+    if (!editSession) {
+      setSessionTests([]);
+      return;
+    }
+    
+    // If we have saved results in generic_tests, load them
+    if (existingSessionTests && existingSessionTests.length > 0) {
       const testGroups = new Map<string, SessionTest>();
       existingSessionTests.forEach(t => {
         const key = `${t.test_category}__${t.test_type}`;
@@ -545,9 +552,29 @@ export function SessionFormDialog({
         }
       });
       setSessionTests(Array.from(testGroups.values()));
-    } else if (!editSession) {
-      setSessionTests([]);
+      return;
     }
+    
+    // Fallback: parse test config from session notes (<!--TESTS:[...]-->)
+    const rawNotes = editSession.notes || "";
+    const match = rawNotes.match(/<!--TESTS:(.*?)-->/);
+    if (match) {
+      try {
+        const config = JSON.parse(match[1]) as { test_category: string; test_type: string; result_unit: string }[];
+        if (config.length > 0) {
+          setSessionTests(config.map(t => ({
+            id: crypto.randomUUID(),
+            test_category: t.test_category,
+            test_type: t.test_type,
+            result_unit: t.result_unit || "",
+            player_results: {},
+          })));
+          return;
+        }
+      } catch {}
+    }
+    
+    setSessionTests([]);
   }, [existingSessionTests, editSession]);
 
   const injuredPlayers = players?.filter((p) => p.isInjured) || [];

@@ -101,7 +101,23 @@ export function QuickTestEntryDialog({
     enabled: open,
   });
 
-  // Pre-load tests from session if available (query by Session ID in notes)
+  // Fetch session notes to parse test config
+  const { data: sessionData } = useQuery({
+    queryKey: ["session-notes-for-tests", sessionId],
+    queryFn: async () => {
+      if (!sessionId) return null;
+      const { data, error } = await supabase
+        .from("training_sessions")
+        .select("notes")
+        .eq("id", sessionId)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: open && !!sessionId,
+  });
+
+  // Pre-load tests from session: first try generic_tests results, then parse notes config
   const { data: sessionTestsData } = useQuery({
     queryKey: ["session-tests-preload", sessionId],
     queryFn: async () => {
@@ -112,7 +128,6 @@ export function QuickTestEntryDialog({
         .ilike("notes", `%Session ID: ${sessionId}%`)
         .limit(20);
       if (error) throw error;
-      // Get unique test types
       const uniqueTests = new Map<string, { test_category: string; test_type: string; result_unit: string | null }>();
       data?.forEach(t => {
         const key = `${t.test_category}_${t.test_type}`;
@@ -125,9 +140,12 @@ export function QuickTestEntryDialog({
     enabled: open && !!sessionId,
   });
 
-  // Pre-populate tests from session data
+  // Pre-populate tests from session data or parsed notes config
   useEffect(() => {
-    if (sessionTestsData && sessionTestsData.length > 0 && testEntries.length === 0) {
+    if (testEntries.length > 0) return;
+    
+    // First try from saved generic_tests results
+    if (sessionTestsData && sessionTestsData.length > 0) {
       const entries: TestEntry[] = sessionTestsData.map(t => ({
         id: crypto.randomUUID(),
         test_category: t.test_category,
@@ -136,11 +154,31 @@ export function QuickTestEntryDialog({
         player_results: {},
       }));
       setTestEntries(entries);
-      if (entries.length > 0) {
-        setExpandedTestId(entries[0].id);
+      if (entries.length > 0) setExpandedTestId(entries[0].id);
+      return;
+    }
+    
+    // Fallback: parse <!--TESTS:[...]--> from session notes
+    if (sessionData?.notes) {
+      const match = sessionData.notes.match(/<!--TESTS:(.*?)-->/);
+      if (match) {
+        try {
+          const config = JSON.parse(match[1]) as { test_category: string; test_type: string; result_unit: string }[];
+          if (config.length > 0) {
+            const entries: TestEntry[] = config.map(t => ({
+              id: crypto.randomUUID(),
+              test_category: t.test_category,
+              test_type: t.test_type,
+              result_unit: t.result_unit || "",
+              player_results: {},
+            }));
+            setTestEntries(entries);
+            if (entries.length > 0) setExpandedTestId(entries[0].id);
+          }
+        } catch {}
       }
     }
-  }, [sessionTestsData]);
+  }, [sessionTestsData, sessionData]);
 
   // Reset on close
   useEffect(() => {
