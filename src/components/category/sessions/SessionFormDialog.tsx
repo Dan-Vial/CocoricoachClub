@@ -2694,9 +2694,13 @@ export function SessionFormDialog({
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                           {players?.map((player) => (
-                            <div
+                             <div
                               key={player.id}
-                              onClick={() => togglePlayer(player.id)}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                togglePlayer(player.id);
+                              }}
                               className={cn(
                                 "flex items-center gap-2 p-2 rounded-md border cursor-pointer transition-colors",
                                 selectedPlayers.includes(player.id)
