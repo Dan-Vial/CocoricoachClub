@@ -2035,6 +2035,75 @@ export function SessionFormDialog({
               />
             </div>
           </div>
+        ) : exercise.set_type === "vbt" ? (
+          // VBT: Sets, Reps, Weight (kg), Velocity min, Velocity max, Rest
+          <div className="grid grid-cols-2 sm:grid-cols-6 gap-2">
+            <div>
+              <Label className="text-xs text-muted-foreground">Séries</Label>
+              <Input
+                type="number"
+                min="1"
+                className="h-8 text-xs"
+                value={exercise.sets}
+                onChange={(e) => updateExercise(index, "sets", parseInt(e.target.value) || 1)}
+              />
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Reps</Label>
+              <Input
+                className="h-8 text-xs"
+                value={exercise.reps || ""}
+                onChange={(e) => updateExercise(index, "reps", e.target.value)}
+                placeholder="5"
+              />
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Poids (kg)</Label>
+              <Input
+                type="number"
+                step="0.5"
+                className="h-8 text-xs"
+                placeholder="kg"
+                value={exercise.weight_kg || ""}
+                onChange={(e) => updateExercise(index, "weight_kg", e.target.value ? parseFloat(e.target.value) : null)}
+              />
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">V. min (m/s)</Label>
+              <Input
+                type="number"
+                min="0"
+                step="0.01"
+                className="h-8 text-xs"
+                placeholder="0.8"
+                value={exercise.target_velocity || ""}
+                onChange={(e) => updateExercise(index, "target_velocity", e.target.value ? parseFloat(e.target.value) : null)}
+              />
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">V. max (m/s)</Label>
+              <Input
+                type="number"
+                min="0"
+                step="0.01"
+                className="h-8 text-xs"
+                placeholder="1.0"
+                value={exercise.target_rpe || ""}
+                onChange={(e) => updateExercise(index, "target_rpe", e.target.value ? parseFloat(e.target.value) : null)}
+              />
+            </div>
+            {!isGrouped && (
+              <div>
+                <Label className="text-xs text-muted-foreground">Repos (sec)</Label>
+                <Input
+                  type="number"
+                  className="h-8 text-xs"
+                  value={exercise.rest_seconds || ""}
+                  onChange={(e) => updateExercise(index, "rest_seconds", e.target.value ? parseInt(e.target.value) : null)}
+                />
+              </div>
+            )}
+          </div>
         ) : (
           // Standard Sets, Reps, Weight, Rest
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
