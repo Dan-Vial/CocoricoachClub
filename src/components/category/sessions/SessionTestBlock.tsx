@@ -40,6 +40,7 @@ interface SessionTestBlockProps {
   players: { id: string; name: string; position?: string | null; avatar_url?: string | null }[];
   selectedPlayers: string[];
   playerSelectionMode: "all" | "specific";
+  hideResults?: boolean;
 }
 
 export function SessionTestBlock({
@@ -49,6 +50,7 @@ export function SessionTestBlock({
   players,
   selectedPlayers,
   playerSelectionMode,
+  hideResults = false,
 }: SessionTestBlockProps) {
   const [expandedTestId, setExpandedTestId] = useState<string | null>(null);
   
@@ -277,7 +279,7 @@ export function SessionTestBlock({
                   </div>
 
                   {/* Player results */}
-                  {test.test_type && effectivePlayers.length > 0 && (
+                  {!hideResults && test.test_type && effectivePlayers.length > 0 && (
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <Label className="text-xs flex items-center gap-2">
@@ -322,7 +324,14 @@ export function SessionTestBlock({
                     </div>
                   )}
 
-                  {test.test_type && effectivePlayers.length === 0 && (
+                  {hideResults && test.test_type && (
+                    <div className="text-center py-3 text-sm text-muted-foreground border rounded-lg bg-emerald-50/50 dark:bg-emerald-900/10">
+                      <ClipboardCheck className="h-6 w-6 mx-auto mb-1 text-emerald-600" />
+                      Les résultats seront saisis après la séance via "Retour/Commentaire"
+                    </div>
+                  )}
+
+                  {!hideResults && test.test_type && effectivePlayers.length === 0 && (
                     <div className="text-center py-4 text-sm text-muted-foreground border rounded-lg bg-muted/30">
                       <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
                       Aucun athlète sélectionné. Les résultats seront enregistrés pour tous les athlètes.

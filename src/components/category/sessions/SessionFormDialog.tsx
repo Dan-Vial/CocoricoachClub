@@ -570,6 +570,17 @@ export function SessionFormDialog({
         ? sessionBlocks.reduce((max, b) => Math.max(max, b.intensity || 0), 0)
         : (intensity ? parseInt(intensity) : null);
 
+      // Build notes with embedded test config for test sessions
+      let finalNotes = notes || "";
+      if (sessionTests.length > 0) {
+        const testConfig = sessionTests
+          .filter(t => t.test_type)
+          .map(t => ({ test_category: t.test_category, test_type: t.test_type, result_unit: t.result_unit }));
+        if (testConfig.length > 0) {
+          finalNotes = (finalNotes ? finalNotes + "\n" : "") + `<!--TESTS:${JSON.stringify(testConfig)}-->`;
+        }
+      }
+
       const sessionData = {
         category_id: categoryId,
         session_date: date,
@@ -577,7 +588,7 @@ export function SessionFormDialog({
         session_end_time: endTime || null,
         training_type: mainType || "autre" as any,
         intensity: mainIntensity,
-        notes: notes || null,
+        notes: finalNotes || null,
       };
 
       let sessionId = editSession?.id;
@@ -714,43 +725,8 @@ export function SessionFormDialog({
         }
       }
 
-      // Save session tests to generic_tests table
-      if (sessionTests.length > 0) {
-        const playersToUse =
-          playerSelectionMode === "specific" && selectedPlayers.length > 0
-            ? selectedPlayers
-            : players?.map((p) => p.id) || [];
-
-        const testRecords: any[] = [];
-        
-        sessionTests.forEach(test => {
-          if (!test.test_type) return; // Skip unconfigured tests
-          
-          // For each player with a result, create a test record
-          Object.entries(test.player_results).forEach(([playerId, resultValue]) => {
-            if (!resultValue || resultValue.trim() === "") return;
-            
-            // Only include if player is in the selection
-            if (!playersToUse.includes(playerId)) return;
-            
-            testRecords.push({
-              player_id: playerId,
-              category_id: categoryId,
-              test_date: date,
-              test_category: test.test_category,
-              test_type: test.test_type,
-              result_value: parseFloat(resultValue),
-              result_unit: test.result_unit || null,
-              notes: `Séance du ${date}${sessionId ? ` (Session ID: ${sessionId})` : ""}`,
-            });
-          });
-        });
-        
-        if (testRecords.length > 0) {
-          const { error } = await supabase.from("generic_tests").insert(testRecords);
-          if (error) throw error;
-        }
-      }
+      // Test config is stored in session notes - no need to save results during creation
+      // Results will be entered later via the feedback dialog
 
       return sessionId;
     },
@@ -2416,6 +2392,7 @@ export function SessionFormDialog({
                     })) || []}
                     selectedPlayers={selectedPlayers}
                     playerSelectionMode={playerSelectionMode}
+                    hideResults={true}
                   />
                 </ScrollArea>
               </TabsContent>

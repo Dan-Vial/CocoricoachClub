@@ -68,13 +68,13 @@ export function SessionFeedbackDialog({
   const sportType = category?.rugby_type || "";
   const testCategories = getTestCategoriesForSport(sportType);
 
-  // Fetch session details to get default duration
+  // Fetch session details to get default duration and notes (for test config)
   const { data: session } = useQuery({
     queryKey: ["session-for-rpe", sessionId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("training_sessions")
-        .select("session_start_time, session_end_time, session_date")
+        .select("session_start_time, session_end_time, session_date, notes")
         .eq("id", sessionId)
         .single();
       if (error) throw error;
@@ -154,32 +154,62 @@ export function SessionFeedbackDialog({
     }
   }, [players, defaultDuration, open]);
 
-  // Pre-load tests configured for this session
-  const { data: preloadedTests } = useQuery({
-    queryKey: ["session-preloaded-tests", sessionId],
+  // Parse test config from session notes
+  const parsedTestConfig = useMemo(() => {
+    if (!session?.notes) return [];
+    const match = session.notes.match(/<!--TESTS:(.*?)-->/);
+    if (!match) return [];
+    try {
+      return JSON.parse(match[1]) as { test_category: string; test_type: string; result_unit: string }[];
+    } catch {
+      return [];
+    }
+  }, [session?.notes]);
+
+  // Also check for existing test results in generic_tests (for already saved results)
+  const { data: existingTestResults } = useQuery({
+    queryKey: ["session-existing-test-results", sessionId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("generic_tests")
-        .select("test_category, test_type, result_unit")
-        .ilike("notes", `%Session ID: ${sessionId}%`)
-        .limit(20);
+        .select("*")
+        .ilike("notes", `%Session ID: ${sessionId}%`);
       if (error) throw error;
-      const uniqueTests = new Map<string, { test_category: string; test_type: string; result_unit: string | null }>();
-      data?.forEach(t => {
-        const key = `${t.test_category}_${t.test_type}`;
-        if (!uniqueTests.has(key)) {
-          uniqueTests.set(key, t);
-        }
-      });
-      return Array.from(uniqueTests.values());
+      return data || [];
     },
     enabled: open && !!sessionId,
   });
 
-  // Pre-populate tests from session data when dialog opens
+  // Pre-populate tests from session config or existing results when dialog opens
   useEffect(() => {
-    if (preloadedTests && preloadedTests.length > 0 && sessionTests.length === 0 && open) {
-      const entries: SessionTest[] = preloadedTests.map(t => ({
+    if (sessionTests.length > 0 || !open) return;
+    
+    // First try to load from existing results
+    if (existingTestResults && existingTestResults.length > 0) {
+      const testGroups = new Map<string, SessionTest>();
+      existingTestResults.forEach(t => {
+        const key = `${t.test_category}_${t.test_type}`;
+        if (!testGroups.has(key)) {
+          testGroups.set(key, {
+            id: crypto.randomUUID(),
+            test_category: t.test_category,
+            test_type: t.test_type,
+            result_unit: t.result_unit || "",
+            player_results: {},
+          });
+        }
+        const group = testGroups.get(key)!;
+        if (t.player_id && t.result_value != null) {
+          group.player_results[t.player_id] = t.result_value.toString();
+        }
+      });
+      setSessionTests(Array.from(testGroups.values()));
+      return;
+    }
+    
+    // Otherwise use config from session notes
+    if (parsedTestConfig.length > 0) {
+      const entries: SessionTest[] = parsedTestConfig.map(t => ({
         id: crypto.randomUUID(),
         test_category: t.test_category,
         test_type: t.test_type,
@@ -188,7 +218,7 @@ export function SessionFeedbackDialog({
       }));
       setSessionTests(entries);
     }
-  }, [preloadedTests, open]);
+  }, [parsedTestConfig, existingTestResults, open]);
 
   // Reset values when dialog closes
   useEffect(() => {
