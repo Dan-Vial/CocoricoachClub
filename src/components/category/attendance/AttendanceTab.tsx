@@ -119,12 +119,19 @@ export function AttendanceTab({ categoryId }: AttendanceTabProps) {
     };
   }).sort((a, b) => b.rate - a.rate);
 
-  // Check if a session has attendance recorded
-  const getSessionAttendanceCount = (sessionId: string, sessionDate: string) => {
-    return attendance?.filter(
+  // Get detailed attendance counts for a session
+  const getSessionAttendanceSummary = (sessionId: string, sessionDate: string) => {
+    const sessionAtt = attendance?.filter(
       (a) => a.training_session_id === sessionId || 
             (a.attendance_date === sessionDate && !a.training_session_id)
-    ).length || 0;
+    ) || [];
+    return {
+      total: sessionAtt.length,
+      present: sessionAtt.filter(a => a.status === "present").length,
+      absent: sessionAtt.filter(a => a.status === "absent").length,
+      excused: sessionAtt.filter(a => a.status === "excused").length,
+      late: sessionAtt.filter(a => a.status === "late").length,
+    };
   };
 
   const handleOpenAttendance = (session: any) => {
@@ -158,13 +165,11 @@ export function AttendanceTab({ categoryId }: AttendanceTabProps) {
   // Calculate overall stats
   const totalFilteredSessions = filteredSessions?.length || 0;
   const sessionsWithAttendance = filteredSessions?.filter(
-    (s) => getSessionAttendanceCount(s.id, s.session_date) > 0
+    (s) => getSessionAttendanceSummary(s.id, s.session_date).total > 0
   ).length || 0;
   const averageRate = playerStats?.length 
     ? Math.round(playerStats.reduce((acc, p) => acc + p.rate, 0) / playerStats.length)
     : 0;
-
-  // Total late stats
   const totalLate = playerStats?.reduce((acc, p) => acc + p.late, 0) || 0;
   const totalLateJustified = playerStats?.reduce((acc, p) => acc + p.lateJustified, 0) || 0;
   const totalLateUnjustified = totalLate - totalLateJustified;
@@ -307,8 +312,8 @@ export function AttendanceTab({ categoryId }: AttendanceTabProps) {
         ) || [];
 
         const renderSessionItem = (session: any) => {
-          const attendanceCount = getSessionAttendanceCount(session.id, session.session_date);
-          const hasAttendance = attendanceCount > 0;
+          const summary = getSessionAttendanceSummary(session.id, session.session_date);
+          const hasAttendance = summary.total > 0;
           const isToday = session.session_date === today;
           const isPast = session.session_date < today;
 
@@ -333,11 +338,28 @@ export function AttendanceTab({ categoryId }: AttendanceTabProps) {
                   <p className="font-medium">{getSessionLabel(session)}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 flex-wrap justify-end">
                 {hasAttendance ? (
-                  <Badge className="bg-green-100 text-green-700">
-                    {attendanceCount} présences
-                  </Badge>
+                  <>
+                    <Badge className="bg-green-100 text-green-700 text-xs">
+                      {summary.present} P
+                    </Badge>
+                    {summary.late > 0 && (
+                      <Badge className="bg-orange-100 text-orange-700 text-xs">
+                        {summary.late} R
+                      </Badge>
+                    )}
+                    {summary.absent > 0 && (
+                      <Badge className="bg-red-100 text-red-700 text-xs">
+                        {summary.absent} A
+                      </Badge>
+                    )}
+                    {summary.excused > 0 && (
+                      <Badge className="bg-amber-100 text-amber-700 text-xs">
+                        {summary.excused} E
+                      </Badge>
+                    )}
+                  </>
                 ) : isPast ? (
                   <Badge variant="outline" className="text-muted-foreground">
                     Non renseigné
@@ -504,8 +526,11 @@ export function AttendanceTab({ categoryId }: AttendanceTabProps) {
                                         <span className="text-orange-600 font-medium">{player.late}</span>
                                       </Button>
                                     </PopoverTrigger>
-                                    <PopoverContent className="w-auto p-2">
-                                      <div className="space-y-1 text-sm">
+                                    <PopoverContent className="w-72 p-3">
+                                      <h4 className="font-medium mb-2 flex items-center gap-1">
+                                        <Clock className="h-3 w-3" /> Retards ({player.late})
+                                      </h4>
+                                      <div className="space-y-1 text-sm mb-2">
                                         <div className="flex items-center gap-2 text-green-600">
                                           <CheckCircle className="h-3 w-3" />
                                           Justifiés: {player.lateJustified}
@@ -515,17 +540,80 @@ export function AttendanceTab({ categoryId }: AttendanceTabProps) {
                                           Non justifiés: {player.lateUnjustified}
                                         </div>
                                       </div>
+                                      <div className="border-t pt-2 space-y-1 max-h-32 overflow-y-auto">
+                                        {filteredAttendance
+                                          ?.filter(a => a.player_id === player.id && a.status === "late")
+                                          .map(a => (
+                                            <div key={a.id} className="text-xs flex justify-between">
+                                              <span>{format(parseISO(a.attendance_date), "dd/MM/yyyy")}</span>
+                                              <span className="text-muted-foreground">
+                                                {a.late_minutes ? `${a.late_minutes}min` : ""} 
+                                                {a.late_justified ? " ✓" : " ✗"}
+                                                {a.late_reason ? ` - ${a.late_reason}` : ""}
+                                              </span>
+                                            </div>
+                                          ))
+                                        }
+                                      </div>
                                     </PopoverContent>
                                   </Popover>
                                 ) : (
                                   <span className="text-muted-foreground">0</span>
                                 )}
                               </TableCell>
-                              <TableCell className="text-center text-amber-600 font-medium">
-                                {player.excused}
+                              <TableCell className="text-center">
+                                {player.excused > 0 ? (
+                                  <Popover>
+                                    <PopoverTrigger asChild>
+                                      <Button variant="ghost" size="sm" className="h-auto p-1">
+                                        <span className="text-amber-600 font-medium">{player.excused}</span>
+                                      </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-72 p-3">
+                                      <h4 className="font-medium mb-2">Excusés ({player.excused})</h4>
+                                      <div className="space-y-1 max-h-32 overflow-y-auto">
+                                        {filteredAttendance
+                                          ?.filter(a => a.player_id === player.id && a.status === "excused")
+                                          .map(a => (
+                                            <div key={a.id} className="text-xs flex justify-between">
+                                              <span>{format(parseISO(a.attendance_date), "dd/MM/yyyy")}</span>
+                                              <span className="text-muted-foreground">{a.absence_reason || "—"}</span>
+                                            </div>
+                                          ))
+                                        }
+                                      </div>
+                                    </PopoverContent>
+                                  </Popover>
+                                ) : (
+                                  <span className="text-muted-foreground">0</span>
+                                )}
                               </TableCell>
-                              <TableCell className="text-center text-red-600 font-medium">
-                                {player.absent}
+                              <TableCell className="text-center">
+                                {player.absent > 0 ? (
+                                  <Popover>
+                                    <PopoverTrigger asChild>
+                                      <Button variant="ghost" size="sm" className="h-auto p-1">
+                                        <span className="text-red-600 font-medium">{player.absent}</span>
+                                      </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-72 p-3">
+                                      <h4 className="font-medium mb-2">Absences ({player.absent})</h4>
+                                      <div className="space-y-1 max-h-32 overflow-y-auto">
+                                        {filteredAttendance
+                                          ?.filter(a => a.player_id === player.id && a.status === "absent")
+                                          .map(a => (
+                                            <div key={a.id} className="text-xs flex justify-between">
+                                              <span>{format(parseISO(a.attendance_date), "dd/MM/yyyy")}</span>
+                                              <span className="text-muted-foreground">{a.absence_reason || "—"}</span>
+                                            </div>
+                                          ))
+                                        }
+                                      </div>
+                                    </PopoverContent>
+                                  </Popover>
+                                ) : (
+                                  <span className="text-muted-foreground">0</span>
+                                )}
                               </TableCell>
                               <TableCell className="text-center">
                                 {player.total > 0 ? getRateBadge(player.rate) : "-"}
