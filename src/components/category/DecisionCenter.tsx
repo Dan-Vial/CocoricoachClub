@@ -84,6 +84,7 @@ import { AddWellnessDialog } from "./AddWellnessDialog";
   const [notifyDialogOpen, setNotifyDialogOpen] = useState(false);
   const [athleteSelectOpen, setAthleteSelectOpen] = useState(false);
   const [wellnessDialogOpen, setWellnessDialogOpen] = useState(false);
+  const [attendanceDetailOpen, setAttendanceDetailOpen] = useState(false);
  
    // Fetch players
    const { data: players = [] } = useQuery({
@@ -575,7 +576,6 @@ import { AddWellnessDialog } from "./AddWellnessDialog";
         </Card>
 
         {/* 1.6️⃣ PRÉSENCES DU JOUR */}
-        {todaySessions.length > 0 && (
           <Card className="border-2 border-blue-500/20 bg-gradient-to-r from-blue-500/5 to-transparent">
             <CardHeader className="pb-2">
               <CardTitle className="text-base flex items-center gap-2">
@@ -673,13 +673,25 @@ import { AddWellnessDialog } from "./AddWellnessDialog";
                             </div>
                           </div>
                         ))}
-                    </div>
-                  )}
+                </div>
+               )}
+
+                  {/* Button to view full attendance details */}
+                  <div className="border-t pt-3">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full text-blue-600 border-blue-200 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                      onClick={() => setAttendanceDetailOpen(true)}
+                    >
+                      <ClipboardCheck className="h-4 w-4 mr-2" />
+                      Voir le détail des présences
+                    </Button>
+                  </div>
                 </div>
               )}
             </CardContent>
           </Card>
-        )}
   
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
          {/* 2️⃣ AUJOURD'HUI / DEMAIN */}
@@ -940,6 +952,103 @@ import { AddWellnessDialog } from "./AddWellnessDialog";
           onOpenChange={setWellnessDialogOpen}
           categoryId={categoryId}
         />
+
+        {/* Attendance Detail Dialog */}
+        <Dialog open={attendanceDetailOpen} onOpenChange={setAttendanceDetailOpen}>
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <ClipboardCheck className="h-5 w-5 text-blue-600" />
+                Détail des présences — {format(new Date(), "dd MMMM yyyy", { locale: fr })}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              {todayAttendance.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-8">
+                  Aucune présence enregistrée pour aujourd'hui
+                </p>
+              ) : (
+                <>
+                  {/* Summary */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {[
+                      { label: "Présents", count: todayAttendance.filter(a => a.status === "present").length, color: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" },
+                      { label: "Retards", count: todayAttendance.filter(a => a.status === "late").length, color: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400" },
+                      { label: "Absents", count: todayAttendance.filter(a => a.status === "absent").length, color: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" },
+                      { label: "Excusés", count: todayAttendance.filter(a => a.status === "excused").length, color: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" },
+                    ].map(s => (
+                      <div key={s.label} className={cn("rounded-lg p-3 text-center", s.color)}>
+                        <p className="text-2xl font-bold">{s.count}</p>
+                        <p className="text-xs font-medium">{s.label}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Non-present details */}
+                  {todayAttendance.filter(a => a.status !== "present").length > 0 && (
+                    <div className="space-y-2">
+                      <h4 className="font-medium text-sm">Détails des absences / retards / excusés</h4>
+                      {todayAttendance
+                        .filter(a => a.status !== "present")
+                        .map(entry => (
+                          <div key={entry.id} className="flex items-start justify-between p-3 rounded-lg border bg-muted/30">
+                            <div className="flex items-center gap-2 min-w-0">
+                              {entry.status === "absent" && <XCircle className="h-4 w-4 text-red-500 shrink-0" />}
+                              {entry.status === "late" && <Clock className="h-4 w-4 text-orange-500 shrink-0" />}
+                              {entry.status === "excused" && <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />}
+                              <div>
+                                <span className="font-medium text-sm">{entry.players?.name}</span>
+                                {entry.absence_reason && (
+                                  <p className="text-xs text-muted-foreground mt-0.5">{entry.absence_reason}</p>
+                                )}
+                              </div>
+                            </div>
+                            <Badge className={cn("text-xs text-white shrink-0",
+                              entry.status === "absent" ? "bg-red-500" :
+                              entry.status === "late" ? "bg-orange-500" : "bg-amber-500"
+                            )}>
+                              {entry.status === "absent" ? "Absent" : entry.status === "late" ? "Retard" : "Excusé"}
+                            </Badge>
+                          </div>
+                        ))}
+                    </div>
+                  )}
+
+                  {/* Present list */}
+                  {todayAttendance.filter(a => a.status === "present").length > 0 && (
+                    <div className="space-y-2">
+                      <h4 className="font-medium text-sm">Présents ({todayAttendance.filter(a => a.status === "present").length})</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {todayAttendance.filter(a => a.status === "present").map(entry => (
+                          <Badge key={entry.id} variant="outline" className="text-xs bg-green-50 dark:bg-green-900/20">
+                            <CheckCircle className="h-3 w-3 mr-1 text-green-600" />
+                            {entry.players?.name}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Not marked */}
+                  {players.length - todayAttendance.length > 0 && (
+                    <div className="space-y-2">
+                      <h4 className="font-medium text-sm text-muted-foreground">Non pointés ({players.length - todayAttendance.length})</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {players
+                          .filter(p => !todayAttendance.find(a => a.player_id === p.id))
+                          .map(p => (
+                            <Badge key={p.id} variant="outline" className="text-xs text-muted-foreground">
+                              {p.name}
+                            </Badge>
+                          ))}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     );
   }
