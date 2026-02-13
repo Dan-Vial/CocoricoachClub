@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, User, LogOut, Activity, Heart, BarChart3, Target, Video, BookOpen, Shield, ArrowLeft, Search, ChevronRight } from "lucide-react";
+import { Loader2, User, LogOut, Activity, Heart, BarChart3, Target, Video, BookOpen, Shield, ArrowLeft, Search, ChevronRight, MessageSquare } from "lucide-react";
 import { NAV_COLORS } from "@/components/ui/colored-nav-tabs";
 import { AthletePWAInstallPopup } from "@/components/athlete/AthletePWAInstallPopup";
 import { AthleteSpaceDashboard } from "@/components/athlete-space/AthleteSpaceDashboard";
@@ -18,6 +18,7 @@ import { AthleteSpaceProgression } from "@/components/athlete-space/AthleteSpace
 import { AthleteSpaceObjectives } from "@/components/athlete-space/AthleteSpaceObjectives";
 import { AthleteSpaceHealth } from "@/components/athlete-space/AthleteSpaceHealth";
 import { AthleteSpaceEducation } from "@/components/athlete-space/AthleteSpaceEducation";
+import { MessagingTab } from "@/components/messaging/MessagingTab";
 
 interface AthleteInfo {
   player_id: string;
@@ -383,10 +384,22 @@ export default function AthleteSpace() {
                  opacity: 0.6
                }}
              >
-               <BookOpen className="h-3.5 w-3.5" />
-               Conseils
-             </TabsTrigger>
-           </TabsList>
+              <BookOpen className="h-3.5 w-3.5" />
+                Conseils
+              </TabsTrigger>
+              <TabsTrigger 
+                value="messaging"
+                className="gap-1.5 px-3 py-2 rounded-lg transition-all duration-200"
+                style={{
+                  color: NAV_COLORS.communication.base,
+                  borderBottom: `2px solid ${NAV_COLORS.communication.base}`,
+                  opacity: 0.6
+                }}
+              >
+                <MessageSquare className="h-3.5 w-3.5" />
+                Messagerie
+              </TabsTrigger>
+            </TabsList>
 
           <TabsContent value="dashboard">
             <AthleteSpaceDashboard
@@ -435,6 +448,10 @@ export default function AthleteSpace() {
 
           <TabsContent value="education">
             <AthleteSpaceEducation sportType={athleteInfo.sport_type} />
+          </TabsContent>
+
+          <TabsContent value="messaging">
+            <MessagingTab categoryId={athleteInfo.category_id} />
           </TabsContent>
         </Tabs>
       </main>
