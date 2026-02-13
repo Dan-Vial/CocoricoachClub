@@ -9,12 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
-import { Slider } from "@/components/ui/slider";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { 
-  Users, Check, X, Clock, AlertCircle, CheckCircle2, 
-  ChevronDown, Activity, Moon, Brain, Dumbbell
+  Users, Check, X, Clock, AlertCircle, CheckCircle2
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -44,30 +40,11 @@ const ATTENDANCE_STATUS = [
   { value: "late", label: "Retard", icon: Clock, color: "text-orange-600", bgColor: "bg-orange-100" },
 ];
 
-const WELLNESS_LABELS = {
-  sleep_quality: ["", "Excellent", "Bon", "Moyen", "Mauvais", "Très mauvais"],
-  sleep_duration: ["", ">8h", "7-8h", "6-7h", "5-6h", "<5h"],
-  general_fatigue: ["", "Très en forme", "En forme", "Normal", "Fatigué", "Épuisé"],
-  stress_level: ["", "Très détendu", "Détendu", "Normal", "Stressé", "Très stressé"],
-  soreness: ["", "Aucune", "Légère", "Modérée", "Forte", "Limitante"],
-};
-
 interface PlayerAttendanceData {
   status: string;
   reason: string;
   lateMinutes: number;
   lateJustified: boolean;
-  wellnessEnabled: boolean;
-  wellness: {
-    sleepQuality: number;
-    sleepDuration: number;
-    generalFatigue: number;
-    stressLevel: number;
-    sorenessUpper: number;
-    sorenessLower: number;
-    hasSpecificPain: boolean;
-    painLocation: string;
-  };
 }
 
 export function SessionAttendanceDialog({ 
@@ -79,8 +56,6 @@ export function SessionAttendanceDialog({
 }: SessionAttendanceDialogProps) {
   const queryClient = useQueryClient();
   const [attendance, setAttendance] = useState<Record<string, PlayerAttendanceData>>({});
-  const [expandedPlayer, setExpandedPlayer] = useState<string | null>(null);
-  const [collectWellness, setCollectWellness] = useState(true);
 
   // Fetch players
   const { data: players } = useQuery({
@@ -113,51 +88,23 @@ export function SessionAttendanceDialog({
     enabled: !!session,
   });
 
-  // Fetch existing wellness for this date
-  const { data: existingWellness } = useQuery({
-    queryKey: ["session-wellness", session?.session_date, categoryId],
-    queryFn: async () => {
-      if (!session) return [];
-      const { data, error } = await supabase
-        .from("wellness_tracking")
-        .select("*")
-        .eq("category_id", categoryId)
-        .eq("tracking_date", session.session_date);
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!session,
-  });
-
   // Initialize attendance state
   useEffect(() => {
     if (players && session) {
       const initial: Record<string, PlayerAttendanceData> = {};
       players.forEach((p) => {
         const existingAtt = existingAttendance?.find((a) => a.player_id === p.id);
-        const existingWell = existingWellness?.find((w) => w.player_id === p.id);
         
         initial[p.id] = {
           status: existingAtt?.status || "present",
           reason: existingAtt?.absence_reason || existingAtt?.late_reason || "",
           lateMinutes: existingAtt?.late_minutes || 0,
           lateJustified: existingAtt?.late_justified || false,
-          wellnessEnabled: !!existingWell,
-          wellness: {
-            sleepQuality: existingWell?.sleep_quality || 3,
-            sleepDuration: existingWell?.sleep_duration || 3,
-            generalFatigue: existingWell?.general_fatigue || 3,
-            stressLevel: existingWell?.stress_level || 3,
-            sorenessUpper: existingWell?.soreness_upper_body || 1,
-            sorenessLower: existingWell?.soreness_lower_body || 1,
-            hasSpecificPain: existingWell?.has_specific_pain || false,
-            painLocation: existingWell?.pain_location || "",
-          },
         };
       });
       setAttendance(initial);
     }
-  }, [players, session, existingAttendance, existingWellness]);
+  }, [players, session, existingAttendance]);
 
   const saveAttendance = useMutation({
     mutationFn: async () => {
@@ -178,7 +125,7 @@ export function SessionAttendanceDialog({
         attendance_date: session.session_date,
         training_session_id: session.id,
         status: data.status,
-        absence_reason: data.status !== "present" ? data.reason : null,
+        absence_reason: data.status !== "present" && data.status !== "late" ? data.reason : null,
         late_minutes: data.status === "late" ? data.lateMinutes : null,
         late_justified: data.status === "late" ? data.lateJustified : null,
         late_reason: data.status === "late" ? data.reason : null,
@@ -186,52 +133,27 @@ export function SessionAttendanceDialog({
 
       const { error: attError } = await supabase.from("training_attendance").insert(attendanceEntries);
       if (attError) throw attError;
-
-      // Handle wellness data if collecting
-      if (collectWellness) {
-        const wellnessEntries = Object.entries(attendance)
-          .filter(([_, data]) => data.status === "present" && data.wellnessEnabled)
-          .map(([playerId, data]) => ({
-            player_id: playerId,
-            category_id: categoryId,
-            tracking_date: session.session_date,
-            sleep_quality: data.wellness.sleepQuality,
-            sleep_duration: data.wellness.sleepDuration,
-            general_fatigue: data.wellness.generalFatigue,
-            stress_level: data.wellness.stressLevel,
-            soreness_upper_body: data.wellness.sorenessUpper,
-            soreness_lower_body: data.wellness.sorenessLower,
-            has_specific_pain: data.wellness.hasSpecificPain,
-            pain_location: data.wellness.hasSpecificPain ? data.wellness.painLocation : null,
-          }));
-
-        if (wellnessEntries.length > 0) {
-          // Upsert wellness (update if exists, insert if not)
-          for (const entry of wellnessEntries) {
-            const { error: wellError } = await supabase
-              .from("wellness_tracking")
-              .upsert(entry, { onConflict: "player_id,tracking_date" });
-            if (wellError) console.error("Wellness error:", wellError);
-          }
-        }
-      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["training_attendance"] });
       queryClient.invalidateQueries({ queryKey: ["session-attendance"] });
       queryClient.invalidateQueries({ queryKey: ["training_attendance_stats"] });
-      queryClient.invalidateQueries({ queryKey: ["wellness_tracking"] });
-      queryClient.invalidateQueries({ queryKey: ["session-wellness"] });
-      toast.success("Présences et wellness enregistrés");
+      
+      const counts = getStatusCounts();
+      const parts: string[] = [];
+      if (counts.present > 0) parts.push(`${counts.present} présent${counts.present > 1 ? 's' : ''}`);
+      if (counts.late > 0) parts.push(`${counts.late} retard${counts.late > 1 ? 's' : ''}`);
+      if (counts.absent > 0) parts.push(`${counts.absent} absent${counts.absent > 1 ? 's' : ''}`);
+      if (counts.excused > 0) parts.push(`${counts.excused} excusé${counts.excused > 1 ? 's' : ''}`);
+      
+      toast.success(`Présences enregistrées : ${parts.join(', ')}`);
 
-      // Get list of present player IDs and trigger callback
       const presentPlayerIds = Object.entries(attendance)
         .filter(([_, data]) => data.status === "present")
         .map(([playerId]) => playerId);
       
       onOpenChange(false);
       
-      // Call callback after closing this dialog
       if (onAttendanceSaved && presentPlayerIds.length > 0) {
         onAttendanceSaved(presentPlayerIds);
       }
@@ -253,57 +175,21 @@ export function SessionAttendanceDialog({
     setAttendance(updated);
   };
 
-  const enableAllWellness = () => {
-    const updated: Record<string, PlayerAttendanceData> = {};
-    Object.entries(attendance).forEach(([playerId, data]) => {
-      updated[playerId] = { 
-        ...data, 
-        wellnessEnabled: data.status === "present" 
-      };
-    });
-    setAttendance(updated);
-  };
-
-  const handleCollectWellnessChange = (checked: boolean) => {
-    setCollectWellness(checked);
-
-    if (!checked) {
-      setExpandedPlayer(null);
-      return;
-    }
-
-    // If user wants wellness, default-enable it for all present players
-    enableAllWellness();
-
-    // And auto-open the first present player so the QCM is immediately visible
-    const firstPresentPlayerId = players?.find((p) => {
-      const status = attendance[p.id]?.status || "present";
-      return status === "present";
-    })?.id;
-
-    setExpandedPlayer(firstPresentPlayerId || null);
-  };
-
   const getStatusInfo = (status: string) => {
     return ATTENDANCE_STATUS.find((s) => s.value === status) || ATTENDANCE_STATUS[0];
   };
 
-  const updatePlayerWellness = (playerId: string, field: keyof PlayerAttendanceData["wellness"], value: any) => {
-    setAttendance({
-      ...attendance,
-      [playerId]: {
-        ...attendance[playerId],
-        wellness: {
-          ...attendance[playerId].wellness,
-          [field]: value,
-        },
-      },
-    });
+  const getStatusCounts = () => {
+    const values = Object.values(attendance);
+    return {
+      present: values.filter((a) => a.status === "present").length,
+      absent: values.filter((a) => a.status === "absent").length,
+      excused: values.filter((a) => a.status === "excused").length,
+      late: values.filter((a) => a.status === "late").length,
+    };
   };
 
-  const presentCount = Object.values(attendance).filter((a) => a.status === "present").length;
-  const absentCount = Object.values(attendance).filter((a) => a.status === "absent").length;
-  const wellnessCount = Object.values(attendance).filter((a) => a.status === "present" && a.wellnessEnabled).length;
+  const counts = getStatusCounts();
 
   if (!session) return null;
 
@@ -330,42 +216,34 @@ export function SessionAttendanceDialog({
         <div className="flex gap-2 flex-wrap flex-shrink-0">
           <Badge className="bg-green-100 text-green-700 hover:bg-green-100">
             <Check className="h-3 w-3 mr-1" />
-            {presentCount} présents
+            {counts.present} présent{counts.present > 1 ? 's' : ''}
           </Badge>
-          <Badge className="bg-red-100 text-red-700 hover:bg-red-100">
-            <X className="h-3 w-3 mr-1" />
-            {absentCount} absents
-          </Badge>
-          {collectWellness && (
-            <Badge className="bg-purple-100 text-purple-700 hover:bg-purple-100">
-              <Activity className="h-3 w-3 mr-1" />
-              {wellnessCount} wellness
+          {counts.late > 0 && (
+            <Badge className="bg-orange-100 text-orange-700 hover:bg-orange-100">
+              <Clock className="h-3 w-3 mr-1" />
+              {counts.late} retard{counts.late > 1 ? 's' : ''}
+            </Badge>
+          )}
+          {counts.absent > 0 && (
+            <Badge className="bg-red-100 text-red-700 hover:bg-red-100">
+              <X className="h-3 w-3 mr-1" />
+              {counts.absent} absent{counts.absent > 1 ? 's' : ''}
+            </Badge>
+          )}
+          {counts.excused > 0 && (
+            <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100">
+              <AlertCircle className="h-3 w-3 mr-1" />
+              {counts.excused} excusé{counts.excused > 1 ? 's' : ''}
             </Badge>
           )}
         </div>
 
-        {/* Options */}
-        <div className="flex flex-wrap items-center justify-between gap-2 p-3 bg-muted rounded-lg flex-shrink-0">
-          <div className="flex items-center gap-2">
-            <Switch 
-              id="collect-wellness" 
-              checked={collectWellness} 
-              onCheckedChange={handleCollectWellnessChange}
-            />
-            <Label htmlFor="collect-wellness" className="text-sm font-medium">
-              Collecter le Wellness
-            </Label>
-          </div>
+        {/* Quick actions */}
+        <div className="flex flex-wrap items-center gap-2 p-3 bg-muted rounded-lg flex-shrink-0">
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={() => setAllStatus("present")}>
               Tous présents
             </Button>
-            {collectWellness && (
-              <Button variant="outline" size="sm" onClick={enableAllWellness}>
-                <Activity className="h-3 w-3 mr-1" />
-                Wellness pour tous
-              </Button>
-            )}
           </div>
         </div>
 
@@ -378,29 +256,12 @@ export function SessionAttendanceDialog({
                 reason: "", 
                 lateMinutes: 0,
                 lateJustified: false,
-                wellnessEnabled: false,
-                wellness: {
-                  sleepQuality: 3,
-                  sleepDuration: 3,
-                  generalFatigue: 3,
-                  stressLevel: 3,
-                  sorenessUpper: 1,
-                  sorenessLower: 1,
-                  hasSpecificPain: false,
-                  painLocation: "",
-                }
               };
               const statusInfo = getStatusInfo(playerData.status);
               const StatusIcon = statusInfo.icon;
-              const isPresent = playerData.status === "present";
-              const isExpanded = expandedPlayer === player.id;
 
               return (
-                <Collapsible
-                  key={player.id}
-                  open={isExpanded && collectWellness && isPresent}
-                  onOpenChange={(open) => setExpandedPlayer(open ? player.id : null)}
-                >
+                <div key={player.id}>
                   <div
                     className={cn(
                       "p-3 rounded-lg border transition-colors",
@@ -417,12 +278,6 @@ export function SessionAttendanceDialog({
                         {player.position && (
                           <Badge variant="outline" className="text-xs hidden sm:inline-flex">
                             {player.position}
-                          </Badge>
-                        )}
-                        {collectWellness && isPresent && playerData.wellnessEnabled && (
-                          <Badge className="bg-purple-100 text-purple-700 text-xs">
-                            <Activity className="h-3 w-3 mr-1" />
-                            Wellness
                           </Badge>
                         )}
                       </div>
@@ -450,16 +305,6 @@ export function SessionAttendanceDialog({
                             ))}
                           </SelectContent>
                         </Select>
-                        {collectWellness && isPresent && (
-                          <CollapsibleTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <ChevronDown className={cn(
-                                "h-4 w-4 transition-transform",
-                                isExpanded && "rotate-180"
-                              )} />
-                            </Button>
-                          </CollapsibleTrigger>
-                        )}
                       </div>
                     </div>
 
@@ -527,167 +372,7 @@ export function SessionAttendanceDialog({
                       </div>
                     )}
                   </div>
-
-                  {/* Wellness Section */}
-                  <CollapsibleContent>
-                    <div className="mt-2 p-4 border rounded-lg bg-purple-50/50 border-purple-200 space-y-4">
-                      <div className="flex items-center justify-between">
-                        <Label className="text-sm font-medium flex items-center gap-2">
-                          <Activity className="h-4 w-4 text-purple-600" />
-                          Données Wellness
-                        </Label>
-                        <Switch
-                          checked={playerData.wellnessEnabled}
-                          onCheckedChange={(checked) =>
-                            setAttendance({
-                              ...attendance,
-                              [player.id]: { ...playerData, wellnessEnabled: checked },
-                            })
-                          }
-                        />
-                      </div>
-
-                      {playerData.wellnessEnabled && (
-                        <div className="grid gap-4">
-                          {/* Sleep */}
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                              <div className="flex items-center justify-between">
-                                <Label className="text-xs flex items-center gap-1">
-                                  <Moon className="h-3 w-3" /> Qualité sommeil
-                                </Label>
-                                <span className="text-xs text-muted-foreground">
-                                  {WELLNESS_LABELS.sleep_quality[playerData.wellness.sleepQuality]}
-                                </span>
-                              </div>
-                              <Slider
-                                value={[playerData.wellness.sleepQuality]}
-                                onValueChange={([v]) => updatePlayerWellness(player.id, "sleepQuality", v)}
-                                min={1}
-                                max={5}
-                                step={1}
-                                className="w-full"
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <div className="flex items-center justify-between">
-                                <Label className="text-xs">Durée sommeil</Label>
-                                <span className="text-xs text-muted-foreground">
-                                  {WELLNESS_LABELS.sleep_duration[playerData.wellness.sleepDuration]}
-                                </span>
-                              </div>
-                              <Slider
-                                value={[playerData.wellness.sleepDuration]}
-                                onValueChange={([v]) => updatePlayerWellness(player.id, "sleepDuration", v)}
-                                min={1}
-                                max={5}
-                                step={1}
-                              />
-                            </div>
-                          </div>
-
-                          {/* Fatigue & Stress */}
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                              <div className="flex items-center justify-between">
-                                <Label className="text-xs flex items-center gap-1">
-                                  <Dumbbell className="h-3 w-3" /> Fatigue
-                                </Label>
-                                <span className="text-xs text-muted-foreground">
-                                  {WELLNESS_LABELS.general_fatigue[playerData.wellness.generalFatigue]}
-                                </span>
-                              </div>
-                              <Slider
-                                value={[playerData.wellness.generalFatigue]}
-                                onValueChange={([v]) => updatePlayerWellness(player.id, "generalFatigue", v)}
-                                min={1}
-                                max={5}
-                                step={1}
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <div className="flex items-center justify-between">
-                                <Label className="text-xs flex items-center gap-1">
-                                  <Brain className="h-3 w-3" /> Stress
-                                </Label>
-                                <span className="text-xs text-muted-foreground">
-                                  {WELLNESS_LABELS.stress_level[playerData.wellness.stressLevel]}
-                                </span>
-                              </div>
-                              <Slider
-                                value={[playerData.wellness.stressLevel]}
-                                onValueChange={([v]) => updatePlayerWellness(player.id, "stressLevel", v)}
-                                min={1}
-                                max={5}
-                                step={1}
-                              />
-                            </div>
-                          </div>
-
-                          {/* Soreness */}
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                              <div className="flex items-center justify-between">
-                                <Label className="text-xs">Courbatures haut</Label>
-                                <span className="text-xs text-muted-foreground">
-                                  {WELLNESS_LABELS.soreness[playerData.wellness.sorenessUpper]}
-                                </span>
-                              </div>
-                              <Slider
-                                value={[playerData.wellness.sorenessUpper]}
-                                onValueChange={([v]) => updatePlayerWellness(player.id, "sorenessUpper", v)}
-                                min={1}
-                                max={5}
-                                step={1}
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <div className="flex items-center justify-between">
-                                <Label className="text-xs">Courbatures bas</Label>
-                                <span className="text-xs text-muted-foreground">
-                                  {WELLNESS_LABELS.soreness[playerData.wellness.sorenessLower]}
-                                </span>
-                              </div>
-                              <Slider
-                                value={[playerData.wellness.sorenessLower]}
-                                onValueChange={([v]) => updatePlayerWellness(player.id, "sorenessLower", v)}
-                                min={1}
-                                max={5}
-                                step={1}
-                              />
-                            </div>
-                          </div>
-
-                          {/* Specific Pain */}
-                          <div className="space-y-2">
-                            <div className="flex items-center gap-2">
-                              <Switch
-                                id={`pain-${player.id}`}
-                                checked={playerData.wellness.hasSpecificPain}
-                                onCheckedChange={(checked) => 
-                                  updatePlayerWellness(player.id, "hasSpecificPain", checked)
-                                }
-                              />
-                              <Label htmlFor={`pain-${player.id}`} className="text-xs">
-                                Douleur spécifique
-                              </Label>
-                            </div>
-                            {playerData.wellness.hasSpecificPain && (
-                              <Input
-                                placeholder="Localisation de la douleur..."
-                                value={playerData.wellness.painLocation}
-                                onChange={(e) => 
-                                  updatePlayerWellness(player.id, "painLocation", e.target.value)
-                                }
-                                className="text-sm"
-                              />
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </CollapsibleContent>
-                </Collapsible>
+                </div>
               );
             })}
           </div>
