@@ -23,14 +23,25 @@ export function SuperAdminClubs() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clubs")
-        .select(`
-          *,
-          clients(id, name),
-          profiles:user_id(full_name, email)
-        `)
+        .select(`*, clients(id, name)`)
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data;
+
+      // Fetch profiles separately since there's no direct FK from clubs to profiles
+      const ownerIds = [...new Set((data || []).map((c: any) => c.user_id))];
+      let profilesMap = new Map<string, any>();
+      if (ownerIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, full_name, email")
+          .in("id", ownerIds);
+        (profiles || []).forEach((p: any) => profilesMap.set(p.id, p));
+      }
+
+      return (data || []).map((club: any) => ({
+        ...club,
+        profiles: profilesMap.get(club.user_id) || null,
+      }));
     },
   });
 
