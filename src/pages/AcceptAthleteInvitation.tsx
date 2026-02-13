@@ -175,8 +175,8 @@ export default function AcceptAthleteInvitation() {
         // If auto-login fails, redirect to auth page
         navigate("/auth");
       } else {
-        // Redirect to athlete portal
-        navigate("/athlete-portal");
+        // Redirect to athlete space
+        navigate("/athlete-space");
       }
     } catch (err: any) {
       console.error("Error creating account:", err);
