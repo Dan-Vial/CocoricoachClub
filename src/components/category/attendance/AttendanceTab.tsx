@@ -31,7 +31,11 @@ export function AttendanceTab({ categoryId }: AttendanceTabProps) {
     const date = subMonths(new Date(), 1);
     return format(date, "yyyy-MM-dd");
   });
-  const [endDate, setEndDate] = useState(() => format(new Date(), "yyyy-MM-dd"));
+  const [endDate, setEndDate] = useState(() => {
+    const date = new Date();
+    date.setMonth(date.getMonth() + 1);
+    return format(date, "yyyy-MM-dd");
+  });
 
   // Fetch recent sessions
   const { data: sessions } = useQuery({
