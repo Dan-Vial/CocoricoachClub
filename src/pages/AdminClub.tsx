@@ -1,7 +1,8 @@
  import { useState } from "react";
  import { useParams, useNavigate } from "react-router-dom";
- import { useQuery } from "@tanstack/react-query";
+ import { useQuery, useQueryClient } from "@tanstack/react-query";
  import { supabase } from "@/integrations/supabase/client";
+ import { toast } from "sonner";
  import { useAuth } from "@/contexts/AuthContext";
  import { Button } from "@/components/ui/button";
  import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -35,16 +36,23 @@
  import { InviteMemberDialog } from "@/components/collaboration/InviteMemberDialog";
  import { TutorialVideosSection } from "@/components/category/settings/TutorialVideosSection";
  import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+ import { Input } from "@/components/ui/input";
+ import { Label } from "@/components/ui/label";
+ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ClubMembersManagement } from "@/components/club/ClubMembersManagement";
 import { ClubInvitationsSection } from "@/components/club/ClubInvitationsSection";
  
  export default function AdminClub() {
    const { clubId } = useParams();
-   const navigate = useNavigate();
-   const { user } = useAuth();
-   const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false);
-   const [isInviteOpen, setIsInviteOpen] = useState(false);
-   const [activeTab, setActiveTab] = useState("overview");
+    const navigate = useNavigate();
+    const { user } = useAuth();
+    const queryClient = useQueryClient();
+    const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false);
+    const [isInviteOpen, setIsInviteOpen] = useState(false);
+    const [activeTab, setActiveTab] = useState("overview");
+    const [isEditingSettings, setIsEditingSettings] = useState(false);
+    const [editClubName, setEditClubName] = useState("");
+    const [editClubSport, setEditClubSport] = useState("");
  
    // Fetch club data
    const { data: club, isLoading: clubLoading } = useQuery({
@@ -684,36 +692,111 @@ import { ClubInvitationsSection } from "@/components/club/ClubInvitationsSection
            </TabsContent>
  
            {/* ⚙️ 8. PARAMÈTRES DU CLUB */}
-           {isAdmin && (
-             <TabsContent value="settings" className="space-y-4">
-               <h2 className="text-xl font-bold">Paramètres du club</h2>
-               
-               <Card>
-                 <CardHeader>
-                   <CardTitle>Informations générales</CardTitle>
-                 </CardHeader>
-                 <CardContent className="space-y-4">
-                   <div className="flex items-center justify-between">
-                     <span className="text-muted-foreground">Nom du club</span>
-                     <span className="font-medium">{club?.name}</span>
-                   </div>
-                   <div className="flex items-center justify-between">
-                     <span className="text-muted-foreground">Sport</span>
-                     <span className="font-medium">{club?.sport || "Rugby"}</span>
-                   </div>
-                   <div className="flex items-center justify-between">
-                     <span className="text-muted-foreground">Créé le</span>
-                     <span>{club?.created_at && format(new Date(club.created_at), "dd/MM/yyyy")}</span>
-                   </div>
-                   <Separator />
-                   <Button variant="outline" className="w-full gap-2">
-                     <Settings className="h-4 w-4" />
-                     Modifier les paramètres
-                   </Button>
-                 </CardContent>
-               </Card>
-             </TabsContent>
-           )}
+            {isAdmin && (
+              <TabsContent value="settings" className="space-y-4">
+                <h2 className="text-xl font-bold">Paramètres du club</h2>
+                
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Informations générales</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {isEditingSettings ? (
+                      <>
+                        <div className="space-y-2">
+                          <Label>Nom du club</Label>
+                          <Input
+                            value={editClubName}
+                            onChange={(e) => setEditClubName(e.target.value)}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Sport</Label>
+                          <Select value={editClubSport} onValueChange={setEditClubSport}>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Rugby">Rugby</SelectItem>
+                              <SelectItem value="Football">Football</SelectItem>
+                              <SelectItem value="Handball">Handball</SelectItem>
+                              <SelectItem value="Basketball">Basketball</SelectItem>
+                              <SelectItem value="Volleyball">Volleyball</SelectItem>
+                              <SelectItem value="Natation">Natation</SelectItem>
+                              <SelectItem value="Athlétisme">Athlétisme</SelectItem>
+                              <SelectItem value="Tennis">Tennis</SelectItem>
+                              <SelectItem value="Bowling">Bowling</SelectItem>
+                              <SelectItem value="Autre">Autre</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-muted-foreground">Créé le</span>
+                          <span>{club?.created_at && format(new Date(club.created_at), "dd/MM/yyyy")}</span>
+                        </div>
+                        <Separator />
+                        <div className="flex gap-2">
+                          <Button 
+                            variant="outline" 
+                            className="flex-1"
+                            onClick={() => setIsEditingSettings(false)}
+                          >
+                            Annuler
+                          </Button>
+                          <Button 
+                            className="flex-1 gap-2"
+                            onClick={async () => {
+                              const { error } = await supabase
+                                .from("clubs")
+                                .update({ name: editClubName, sport: editClubSport })
+                                .eq("id", clubId);
+                              if (error) {
+                                toast.error("Erreur lors de la mise à jour");
+                              } else {
+                                toast.success("Paramètres mis à jour");
+                                queryClient.invalidateQueries({ queryKey: ["club", clubId] });
+                                setIsEditingSettings(false);
+                              }
+                            }}
+                          >
+                            <CheckCircle className="h-4 w-4" />
+                            Enregistrer
+                          </Button>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="flex items-center justify-between">
+                          <span className="text-muted-foreground">Nom du club</span>
+                          <span className="font-medium">{club?.name}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-muted-foreground">Sport</span>
+                          <span className="font-medium">{club?.sport || "Rugby"}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-muted-foreground">Créé le</span>
+                          <span>{club?.created_at && format(new Date(club.created_at), "dd/MM/yyyy")}</span>
+                        </div>
+                        <Separator />
+                        <Button 
+                          variant="outline" 
+                          className="w-full gap-2"
+                          onClick={() => {
+                            setEditClubName(club?.name || "");
+                            setEditClubSport(club?.sport || "Rugby");
+                            setIsEditingSettings(true);
+                          }}
+                        >
+                          <Settings className="h-4 w-4" />
+                          Modifier les paramètres
+                        </Button>
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            )}
          </Tabs>
        </div>
  

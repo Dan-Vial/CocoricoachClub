@@ -74,7 +74,7 @@ export function ClubMembersManagement({ clubId, categories, canManage }: ClubMem
     },
   });
 
-  // Fetch club members with profiles
+  // Fetch club members with profiles and category counts
   const { data: members = [], isLoading } = useQuery({
     queryKey: ["club-members-full", clubId],
     queryFn: async () => {
@@ -92,10 +92,18 @@ export function ClubMembersManagement({ clubId, categories, canManage }: ClubMem
           .select("id, email, full_name")
           .in("id", userIds);
 
-        return data.map((member: any) => ({
-          ...member,
-          profile: profiles?.find((p) => p.id === member.user_id),
-        }));
+        // Count how many categories each member has access to
+        return data.map((member: any) => {
+          const assignedCount = member.assigned_categories?.length || 0;
+          const totalCategories = categories.length;
+          const accessibleCategories = assignedCount === 0 ? totalCategories : assignedCount;
+          
+          return {
+            ...member,
+            profile: profiles?.find((p) => p.id === member.user_id),
+            accessible_category_count: accessibleCategories,
+          };
+        });
       }
 
       return data;
@@ -202,12 +210,37 @@ export function ClubMembersManagement({ clubId, categories, canManage }: ClubMem
     <>
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5" />
-            Membres du Club
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Membres du Club
+            </CardTitle>
+            <Badge variant="secondary" className="text-sm">
+              {members.length + 1} membre{members.length > 0 ? "s" : ""}
+            </Badge>
+          </div>
         </CardHeader>
         <CardContent>
+          {/* Résumé staff par catégorie */}
+          {categories.length > 0 && (
+            <div className="mb-4 p-3 bg-muted/50 rounded-lg">
+              <p className="text-sm font-medium mb-2">Staff par catégorie :</p>
+              <div className="flex flex-wrap gap-2">
+                {categories.map((cat) => {
+                  const staffInCat = members.filter((m: any) => {
+                    if (!m.assigned_categories || m.assigned_categories.length === 0) return true;
+                    return m.assigned_categories.includes(cat.id);
+                  }).length + 1; // +1 for owner
+                  return (
+                    <Badge key={cat.id} variant="outline" className="text-xs">
+                      {cat.name}: {staffInCat}
+                    </Badge>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           <Table>
             <TableHeader>
               <TableRow>
