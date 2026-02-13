@@ -57,18 +57,35 @@ export function SuperAdminClients() {
      gps_data_enabled: false,
    });
  
-   // Fetch clients
-   const { data: clients = [], isLoading } = useQuery({
-     queryKey: ["super-admin-clients"],
-     queryFn: async () => {
-       const { data, error } = await supabase
-         .from("clients")
-         .select("*")
-         .order("created_at", { ascending: false });
-       if (error) throw error;
-       return data as Client[];
-     },
-   });
+    // Fetch clients with their subscriptions
+    const { data: clients = [], isLoading } = useQuery({
+      queryKey: ["super-admin-clients"],
+      queryFn: async () => {
+        const { data, error } = await supabase
+          .from("clients")
+          .select("*")
+          .order("created_at", { ascending: false });
+        if (error) throw error;
+
+        // Fetch active subscriptions for all clients
+        const { data: subscriptions } = await supabase
+          .from("client_subscriptions")
+          .select("*, subscription_plans(name, price_monthly)")
+          .eq("status", "active");
+
+        const subMap = new Map<string, any>();
+        subscriptions?.forEach((sub) => {
+          if (!subMap.has(sub.client_id) || new Date(sub.end_date || 0) > new Date(subMap.get(sub.client_id).end_date || 0)) {
+            subMap.set(sub.client_id, sub);
+          }
+        });
+
+        return (data as Client[]).map(c => ({
+          ...c,
+          activeSubscription: subMap.get(c.id) || null,
+        }));
+      },
+    });
  
    // Create client mutation
    const createClient = useMutation({
@@ -443,9 +460,10 @@ export function SuperAdminClients() {
                  <TableHead>Client</TableHead>
                  <TableHead>Contact</TableHead>
                  <TableHead>Statut</TableHead>
-                 <TableHead>Options</TableHead>
-                 <TableHead>Limites</TableHead>
-                 <TableHead>Créé le</TableHead>
+                  <TableHead>Options</TableHead>
+                  <TableHead>Abonnement</TableHead>
+                  <TableHead>Limites</TableHead>
+                  <TableHead>Créé le</TableHead>
                  <TableHead className="text-right">Actions</TableHead>
                </TableRow>
              </TableHeader>
@@ -493,8 +511,29 @@ export function SuperAdminClients() {
                          </span>
                        </div>
                      </div>
-                   </TableCell>
-                   <TableCell>
+                    </TableCell>
+                    <TableCell>
+                      {(() => {
+                        const sub = (client as any).activeSubscription;
+                        if (!sub) return <span className="text-xs text-muted-foreground italic">Aucun</span>;
+                        const planName = sub.subscription_plans?.name || "Plan";
+                        const monthly = sub.subscription_plans?.price_monthly || sub.amount;
+                        const endDate = sub.end_date ? new Date(sub.end_date) : null;
+                        const monthsLeft = endDate ? Math.max(0, Math.ceil((endDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24 * 30))) : null;
+                        return (
+                          <div className="text-xs space-y-1">
+                            <p className="font-medium">{planName}</p>
+                            {monthly && <p>{monthly}€/mois</p>}
+                            {monthsLeft !== null && (
+                              <Badge variant="outline" className={monthsLeft <= 2 ? "bg-amber-50 text-amber-700 border-amber-200" : ""}>
+                                {monthsLeft} mois restant{monthsLeft > 1 ? "s" : ""}
+                              </Badge>
+                            )}
+                          </div>
+                        );
+                      })()}
+                    </TableCell>
+                    <TableCell>
                      <div className="text-xs space-y-1">
                        <p>{client.max_clubs} clubs</p>
                        <p>{client.max_categories_per_club} cat./club</p>

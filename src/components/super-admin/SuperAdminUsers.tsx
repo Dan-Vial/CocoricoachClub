@@ -36,7 +36,6 @@ export function SuperAdminUsers() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  // Fetch all users
   const { data: users = [], isLoading } = useQuery({
     queryKey: ["super-admin-users"],
     queryFn: async () => {
@@ -61,7 +60,6 @@ export function SuperAdminUsers() {
     },
   });
 
-  // Approve user
   const approveUser = useMutation({
     mutationFn: async (userId: string) => {
       const { error } = await supabase
@@ -75,7 +73,6 @@ export function SuperAdminUsers() {
     },
   });
 
-  // Revoke approval
   const revokeApproval = useMutation({
     mutationFn: async (userId: string) => {
       const { error } = await supabase
@@ -90,7 +87,6 @@ export function SuperAdminUsers() {
     },
   });
 
-  // Toggle free user
   const toggleFreeUser = useMutation({
     mutationFn: async ({ userId, isFreeUser }: { userId: string; isFreeUser: boolean }) => {
       const { data: existing } = await supabase
@@ -124,27 +120,25 @@ export function SuperAdminUsers() {
     },
   });
 
-  // Delete user - removes all related data
+  // Delete user via edge function (actually removes the user from auth)
   const deleteUser = useMutation({
     mutationFn: async (userId: string) => {
-      // Remove from approved_users
-      await supabase.from("approved_users").delete().eq("user_id", userId);
-      // Remove from super_admin_users
-      await supabase.from("super_admin_users").delete().eq("user_id", userId);
-      // Remove from club_members
-      await supabase.from("club_members").delete().eq("user_id", userId);
-      // Remove from category_members
-      await supabase.from("category_members").delete().eq("user_id", userId);
-      // Remove profile
-      const { error } = await supabase.from("profiles").delete().eq("id", userId);
-      if (error) throw error;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Non authentifié");
+
+      const response = await supabase.functions.invoke("delete-user", {
+        body: { userId },
+      });
+
+      if (response.error) throw new Error(response.error.message);
+      if (response.data?.error) throw new Error(response.data.error);
     },
     onSuccess: () => {
-      toast.success("Utilisateur supprimé");
+      toast.success("Utilisateur supprimé définitivement");
       queryClient.invalidateQueries({ queryKey: ["super-admin-users"] });
     },
-    onError: () => {
-      toast.error("Erreur lors de la suppression");
+    onError: (error: any) => {
+      toast.error(error.message || "Erreur lors de la suppression");
     },
   });
 
@@ -265,9 +259,9 @@ export function SuperAdminUsers() {
                           </AlertDialogTrigger>
                           <AlertDialogContent>
                             <AlertDialogHeader>
-                              <AlertDialogTitle>Supprimer cet utilisateur ?</AlertDialogTitle>
+                              <AlertDialogTitle>Supprimer définitivement cet utilisateur ?</AlertDialogTitle>
                               <AlertDialogDescription>
-                                Cette action supprimera le profil de {u.full_name || u.email} et tous ses accès. Cette action est irréversible.
+                                Cette action supprimera <strong>{u.full_name || u.email}</strong> de la plateforme (compte, profil, accès). Cette action est irréversible.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
@@ -276,7 +270,7 @@ export function SuperAdminUsers() {
                                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                 onClick={() => deleteUser.mutate(u.id)}
                               >
-                                Supprimer
+                                Supprimer définitivement
                               </AlertDialogAction>
                             </AlertDialogFooter>
                           </AlertDialogContent>
