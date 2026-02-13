@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -41,6 +41,8 @@ import {
 } from "@/lib/wellnessCalculations";
 import { SessionFormDialog } from "./sessions/SessionFormDialog";
 import { NotifyAthletesDialog } from "@/components/notifications/NotifyAthletesDialog";
+import { parseTestsFromNotes } from "@/lib/utils/sessionNotes";
+import { getTestCategoriesForSport } from "@/lib/constants/testCategories";
 import { AddWellnessDialog } from "./AddWellnessDialog";
  
  interface DecisionCenterProps {
@@ -86,18 +88,43 @@ import { AddWellnessDialog } from "./AddWellnessDialog";
   const [wellnessDialogOpen, setWellnessDialogOpen] = useState(false);
   const [attendanceDetailOpen, setAttendanceDetailOpen] = useState(false);
  
-   // Fetch players
-   const { data: players = [] } = useQuery({
-     queryKey: ["players", categoryId],
-     queryFn: async () => {
-       const { data, error } = await supabase
-         .from("players")
-         .select("id, name, position")
-         .eq("category_id", categoryId);
-       if (error) throw error;
-       return data;
-     },
-   });
+    // Fetch players
+    const { data: players = [] } = useQuery({
+      queryKey: ["players", categoryId],
+      queryFn: async () => {
+        const { data, error } = await supabase
+          .from("players")
+          .select("id, name, position")
+          .eq("category_id", categoryId);
+        if (error) throw error;
+        return data;
+      },
+    });
+
+    // Fetch category sport type for test labels
+    const { data: categoryData } = useQuery({
+      queryKey: ["category-sport-type", categoryId],
+      queryFn: async () => {
+        const { data, error } = await supabase
+          .from("categories")
+          .select("rugby_type")
+          .eq("id", categoryId)
+          .single();
+        if (error) throw error;
+        return data;
+      },
+    });
+
+    const testCategories = useMemo(() => getTestCategoriesForSport(categoryData?.rugby_type || ""), [categoryData?.rugby_type]);
+
+    const getTestNamesFromSession = (session: any): string[] => {
+      const tests = parseTestsFromNotes(session.notes);
+      return tests.map(t => {
+        const cat = testCategories.find(c => c.value === t.test_category);
+        const test = cat?.tests.find(tt => tt.value === t.test_type);
+        return test?.label || t.test_type;
+      }).filter(Boolean);
+    };
  
    // Fetch active injuries
    const { data: injuries = [] } = useQuery({
@@ -722,30 +749,38 @@ import { AddWellnessDialog } from "./AddWellnessDialog";
                  <p className="text-sm text-muted-foreground italic">Pas de séance prévue</p>
                ) : (
                  <div className="space-y-2">
-                   {todaySessions.slice(0, 2).map(session => (
-                     <div 
-                       key={session.id} 
-                       className="flex items-center justify-between p-2 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
-                     >
-                       <div className="flex items-center gap-2">
-                         <Activity className="h-4 w-4 text-primary" />
-                         <div>
-                           <p className="font-medium text-sm">{session.training_type}</p>
-                           <p className="text-xs text-muted-foreground">
-                             {session.session_start_time?.slice(0, 5)} • Charge cible: {session.planned_intensity || 5}/10
-                           </p>
-                         </div>
-                       </div>
-                       <Button 
-                         variant="ghost" 
-                         size="sm" 
-                         className="h-7 px-2"
-                         onClick={() => handleEditSession(session)}
-                       >
-                         <Pencil className="h-3 w-3" />
-                       </Button>
-                     </div>
-                   ))}
+                    {todaySessions.slice(0, 2).map(session => {
+                      const testNames = getTestNamesFromSession(session);
+                      return (
+                        <div 
+                          key={session.id} 
+                          className="flex items-center justify-between p-2 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
+                        >
+                          <div className="flex items-center gap-2">
+                            <Activity className="h-4 w-4 text-primary" />
+                            <div>
+                              <p className="font-medium text-sm">{session.training_type}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {session.session_start_time?.slice(0, 5)} • Charge cible: {session.planned_intensity || 5}/10
+                              </p>
+                              {testNames.length > 0 && (
+                                <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
+                                  🧪 Test : {testNames.join(", ")}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-7 px-2"
+                            onClick={() => handleEditSession(session)}
+                          >
+                            <Pencil className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      );
+                    })}
                  </div>
                )}
              </div>
@@ -759,22 +794,30 @@ import { AddWellnessDialog } from "./AddWellnessDialog";
                  <p className="text-sm text-muted-foreground italic">Pas de séance prévue</p>
                ) : (
                  <div className="space-y-2">
-                   {tomorrowSessions.slice(0, 2).map(session => (
-                     <div 
-                       key={session.id} 
-                       className="flex items-center justify-between p-2 rounded-lg bg-muted/50"
-                     >
-                       <div className="flex items-center gap-2">
-                         <Activity className="h-4 w-4 text-muted-foreground" />
-                         <div>
-                           <p className="font-medium text-sm">{session.training_type}</p>
-                           <p className="text-xs text-muted-foreground">
-                             {session.session_start_time?.slice(0, 5)} • Charge cible: {session.planned_intensity || 5}/10
-                           </p>
-                         </div>
-                       </div>
-                     </div>
-                   ))}
+                    {tomorrowSessions.slice(0, 2).map(session => {
+                      const testNames = getTestNamesFromSession(session);
+                      return (
+                        <div 
+                          key={session.id} 
+                          className="flex items-center justify-between p-2 rounded-lg bg-muted/50"
+                        >
+                          <div className="flex items-center gap-2">
+                            <Activity className="h-4 w-4 text-muted-foreground" />
+                            <div>
+                              <p className="font-medium text-sm">{session.training_type}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {session.session_start_time?.slice(0, 5)} • Charge cible: {session.planned_intensity || 5}/10
+                              </p>
+                              {testNames.length > 0 && (
+                                <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
+                                  🧪 Test : {testNames.join(", ")}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
                  </div>
                )}
              </div>

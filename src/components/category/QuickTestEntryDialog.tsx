@@ -72,7 +72,8 @@ export function QuickTestEntryDialog({
   const sportType = category?.rugby_type || "";
   const testCategories = useMemo(() => getTestCategoriesForSport(sportType), [sportType]);
 
-  const { data: players } = useQuery({
+  // Fetch all category players as fallback
+  const { data: allPlayers } = useQuery({
     queryKey: ["players", categoryId],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -85,6 +86,31 @@ export function QuickTestEntryDialog({
     },
     enabled: open,
   });
+
+  // Fetch session-assigned players if sessionId exists
+  const { data: sessionAttendance } = useQuery({
+    queryKey: ["session-attendance-players", sessionId],
+    queryFn: async () => {
+      if (!sessionId) return null;
+      const { data, error } = await supabase
+        .from("training_attendance")
+        .select("player_id")
+        .eq("training_session_id", sessionId);
+      if (error) throw error;
+      return data;
+    },
+    enabled: open && !!sessionId,
+  });
+
+  // Use only session-assigned players if available, otherwise all
+  const players = useMemo(() => {
+    if (!allPlayers) return undefined;
+    if (sessionId && sessionAttendance && sessionAttendance.length > 0) {
+      const assignedIds = new Set(sessionAttendance.map(a => a.player_id));
+      return allPlayers.filter(p => assignedIds.has(p.id));
+    }
+    return allPlayers;
+  }, [allPlayers, sessionAttendance, sessionId]);
 
   // Fetch existing test results for this date
   const { data: existingResults } = useQuery({
