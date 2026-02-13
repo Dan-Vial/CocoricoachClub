@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Loader2, User, LogOut, Activity, Heart, BarChart3, Target, Video, BookOpen, Shield } from "lucide-react";
+import { Loader2, User, LogOut, Activity, Heart, BarChart3, Target, Video, BookOpen, Shield, ArrowLeft } from "lucide-react";
 import { AthletePWAInstallPopup } from "@/components/athlete/AthletePWAInstallPopup";
 import { AthleteSpaceDashboard } from "@/components/athlete-space/AthleteSpaceDashboard";
 import { AthleteSpaceRpe } from "@/components/athlete-space/AthleteSpaceRpe";
@@ -31,8 +31,12 @@ interface AthleteInfo {
 export default function AthleteSpace() {
   const { user, signOut, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [athleteInfo, setAthleteInfo] = useState<AthleteInfo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSuperAdminView, setIsSuperAdminView] = useState(false);
+
+  const queryPlayerId = searchParams.get("playerId");
 
   useEffect(() => {
     if (authLoading) return;
@@ -41,10 +45,45 @@ export default function AthleteSpace() {
       return;
     }
     fetchAthleteData();
-  }, [user, authLoading]);
+  }, [user, authLoading, queryPlayerId]);
 
   const fetchAthleteData = async () => {
     try {
+      // If super admin viewing a specific player
+      if (queryPlayerId) {
+        const { data: isSA } = await supabase.rpc("is_super_admin", { _user_id: user!.id });
+        if (isSA) {
+          setIsSuperAdminView(true);
+          const { data: player, error } = await supabase
+            .from("players")
+            .select(`
+              id, name, first_name, category_id, position, avatar_url,
+              categories!inner(name, rugby_type, clubs!inner(name))
+            `)
+            .eq("id", queryPlayerId)
+            .single();
+
+          if (error || !player) {
+            navigate("/");
+            return;
+          }
+
+          setAthleteInfo({
+            player_id: player.id,
+            player_name: player.name,
+            player_first_name: player.first_name || undefined,
+            category_id: player.category_id,
+            category_name: (player.categories as any).name,
+            club_name: (player.categories as any).clubs.name,
+            sport_type: (player.categories as any).rugby_type,
+            position: player.position || undefined,
+            avatar_url: player.avatar_url || undefined,
+          });
+          return;
+        }
+      }
+
+      // Normal athlete flow
       const { data: player, error } = await supabase
         .from("players")
         .select(`
@@ -55,7 +94,6 @@ export default function AthleteSpace() {
         .single();
 
       if (error || !player) {
-        // User is not an athlete, redirect
         navigate("/");
         return;
       }
@@ -102,12 +140,17 @@ export default function AthleteSpace() {
 
   return (
     <div className="min-h-screen bg-background">
-      <AthletePWAInstallPopup playerId={athleteInfo.player_id} />
+      {!isSuperAdminView && <AthletePWAInstallPopup playerId={athleteInfo.player_id} />}
 
       {/* Header */}
       <header className="sticky top-0 z-50 border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
+            {isSuperAdminView && (
+              <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+            )}
             <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
               {athleteInfo.avatar_url ? (
                 <img src={athleteInfo.avatar_url} alt={displayName} className="w-full h-full object-cover" />
@@ -118,14 +161,23 @@ export default function AthleteSpace() {
             <div>
               <h1 className="text-base font-semibold leading-tight">{displayName}</h1>
               <div className="flex items-center gap-1.5">
+                {isSuperAdminView && (
+                  <Badge variant="outline" className="text-[10px] h-5 border-primary text-primary">Vue Admin</Badge>
+                )}
                 <Badge variant="secondary" className="text-[10px] h-5">{athleteInfo.category_name}</Badge>
                 <span className="text-xs text-muted-foreground">{athleteInfo.club_name}</span>
               </div>
             </div>
           </div>
-          <Button variant="ghost" size="icon" onClick={() => signOut()}>
-            <LogOut className="h-4 w-4" />
-          </Button>
+          {!isSuperAdminView ? (
+            <Button variant="ghost" size="icon" onClick={() => signOut()}>
+              <LogOut className="h-4 w-4" />
+            </Button>
+          ) : (
+            <Button variant="outline" size="sm" onClick={() => navigate(`/players/${athleteInfo.player_id}`)}>
+              Fiche joueur
+            </Button>
+          )}
         </div>
       </header>
 

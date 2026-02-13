@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, ArrowRightLeft, Edit2, Check, X } from "lucide-react";
+import { ArrowLeft, ArrowRightLeft, Edit2, Check, X, User } from "lucide-react";
 import { PlayerTestsTab } from "@/components/player/PlayerTestsTab";
 import { PlayerCalendarTab } from "@/components/player/PlayerCalendarTab";
 import { PlayerAwcrTab } from "@/components/player/PlayerAwcrTab";
@@ -216,6 +216,15 @@ function PlayerDetailsContent() {
             Retour à la catégorie
           </Button>
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate(`/athlete-space?playerId=${player.id}`)}
+              className="gap-2"
+            >
+              <User className="h-4 w-4" />
+              <span className="hidden sm:inline">Espace Athlète</span>
+            </Button>
             <GlobalPlayerSearch />
             <NotificationBell variant="default" />
           </div>
