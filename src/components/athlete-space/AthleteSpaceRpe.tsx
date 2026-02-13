@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
 import { getTrainingTypeLabel } from "@/lib/constants/trainingTypes";
+import { getTestLabel } from "@/lib/constants/testCategories";
 
 interface Props {
   playerId: string;
@@ -65,7 +66,7 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
     if (!match) return [];
     try {
       const tests = JSON.parse(match[1]);
-      return tests.map((t: any) => t.test_type || t.test_category).filter(Boolean);
+      return tests.map((t: any) => getTestLabel(t.test_type || t.test_category)).filter(Boolean);
     } catch {
       return [];
     }
