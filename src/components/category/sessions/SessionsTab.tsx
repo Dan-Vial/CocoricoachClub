@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { getDisplayNotes } from "@/lib/utils/sessionNotes";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -98,7 +99,7 @@ export function SessionsTab({ categoryId }: SessionsTabProps) {
           📅 ${sessionDate}
           ${session.session_start_time ? ` • 🕐 ${session.session_start_time.slice(0, 5)}${session.session_end_time ? ` - ${session.session_end_time.slice(0, 5)}` : ""}` : ""}
         </div>
-        ${session.notes ? `<p class="notes">Notes: ${session.notes}</p>` : ""}
+        ${session.notes && !session.notes.match(/^<!--TESTS:/) ? `<p class="notes">Notes: ${session.notes.replace(/\n?<!--TESTS:.*?-->/g, "").trim()}</p>` : ""}
         ${uniqueExercises.length > 0 ? `
           <table>
             <thead>
@@ -274,8 +275,8 @@ export function SessionsTab({ categoryId }: SessionsTabProps) {
                         </span>
                       )}
                     </div>
-                    {session.notes && (
-                      <p className="text-sm text-muted-foreground line-clamp-2">{session.notes}</p>
+                    {session.notes && getDisplayNotes(session.notes) && (
+                      <p className="text-sm text-muted-foreground line-clamp-2">{getDisplayNotes(session.notes)}</p>
                     )}
                   </div>
                   <div className="flex items-center gap-1">
