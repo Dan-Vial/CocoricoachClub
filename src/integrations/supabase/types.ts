@@ -3526,6 +3526,62 @@ export type Database = {
           },
         ]
       }
+      pdf_settings: {
+        Row: {
+          accent_color: string | null
+          category_id: string
+          club_name_override: string | null
+          created_at: string
+          footer_text: string | null
+          header_color: string | null
+          id: string
+          logo_url: string | null
+          show_category_name: boolean | null
+          show_club_name: boolean | null
+          show_date: boolean | null
+          show_logo: boolean | null
+          updated_at: string
+        }
+        Insert: {
+          accent_color?: string | null
+          category_id: string
+          club_name_override?: string | null
+          created_at?: string
+          footer_text?: string | null
+          header_color?: string | null
+          id?: string
+          logo_url?: string | null
+          show_category_name?: boolean | null
+          show_club_name?: boolean | null
+          show_date?: boolean | null
+          show_logo?: boolean | null
+          updated_at?: string
+        }
+        Update: {
+          accent_color?: string | null
+          category_id?: string
+          club_name_override?: string | null
+          created_at?: string
+          footer_text?: string | null
+          header_color?: string | null
+          id?: string
+          logo_url?: string | null
+          show_category_name?: boolean | null
+          show_club_name?: boolean | null
+          show_date?: boolean | null
+          show_logo?: boolean | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pdf_settings_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: true
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       player_academic_profiles: {
         Row: {
           category_id: string

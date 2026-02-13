@@ -2,6 +2,7 @@ import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { supabase } from "@/integrations/supabase/client";
 
 // Color palette for PDF exports
 const colors = {
@@ -16,6 +17,58 @@ const colors = {
   muted: [100, 116, 139] as [number, number, number],
 };
 
+export interface PdfCustomSettings {
+  logo_url?: string | null;
+  club_name_override?: string | null;
+  header_color?: string | null;
+  accent_color?: string | null;
+  show_logo?: boolean;
+  show_club_name?: boolean;
+  show_category_name?: boolean;
+  show_date?: boolean;
+  footer_text?: string | null;
+}
+
+// Fetch PDF settings for a category
+export const fetchPdfSettings = async (categoryId: string): Promise<PdfCustomSettings | null> => {
+  try {
+    const { data } = await supabase
+      .from("pdf_settings")
+      .select("*")
+      .eq("category_id", categoryId)
+      .maybeSingle();
+    return data;
+  } catch {
+    return null;
+  }
+};
+
+// Parse hex color to RGB
+const hexToRgb = (hex: string): [number, number, number] => {
+  const h = hex.replace("#", "");
+  return [
+    parseInt(h.substring(0, 2), 16),
+    parseInt(h.substring(2, 4), 16),
+    parseInt(h.substring(4, 6), 16),
+  ];
+};
+
+// Load image as base64 for jsPDF
+const loadImageAsBase64 = async (url: string): Promise<string | null> => {
+  try {
+    const response = await fetch(url);
+    const blob = await response.blob();
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return null;
+  }
+};
+
 interface PdfExportOptions {
   title: string;
   subtitle?: string;
@@ -23,33 +76,72 @@ interface PdfExportOptions {
   filename?: string;
 }
 
-// Draw PDF header with title
+// Draw PDF header with title (enhanced with custom settings)
 export const drawPdfHeader = (
   pdf: jsPDF, 
   title: string, 
   subtitle: string, 
-  date: string
+  date: string,
+  customSettings?: PdfCustomSettings | null,
+  logoBase64?: string | null
 ): number => {
   const pageWidth = pdf.internal.pageSize.getWidth();
   const margin = 15;
+  const headerColor = customSettings?.header_color ? hexToRgb(customSettings.header_color) : colors.primary;
   
-  pdf.setFillColor(...colors.primary);
+  pdf.setFillColor(...headerColor);
   pdf.rect(0, 0, pageWidth, 35, 'F');
+  
+  let xOffset = margin;
+  
+  // Draw logo if available
+  if (customSettings?.show_logo !== false && logoBase64) {
+    try {
+      pdf.addImage(logoBase64, "PNG", margin, 4, 27, 27);
+      xOffset = margin + 32;
+    } catch {
+      // Logo failed, continue without it
+    }
+  }
   
   pdf.setTextColor(...colors.white);
   pdf.setFontSize(18);
   pdf.setFont("helvetica", "bold");
-  pdf.text(title, margin, 15);
+  pdf.text(title, xOffset, 15);
   
   pdf.setFontSize(11);
   pdf.setFont("helvetica", "normal");
-  pdf.text(subtitle, margin, 24);
+  if (customSettings?.show_club_name !== false || customSettings?.show_category_name !== false) {
+    pdf.text(subtitle, xOffset, 24);
+  }
   
-  pdf.setFontSize(9);
-  pdf.text(date, margin, 31);
+  if (customSettings?.show_date !== false) {
+    pdf.setFontSize(9);
+    pdf.text(date, xOffset, 31);
+  }
   
   pdf.setTextColor(...colors.dark);
+  
+  // Footer text on each page
+  if (customSettings?.footer_text) {
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    pdf.setFontSize(7);
+    pdf.setTextColor(...colors.muted);
+    pdf.text(customSettings.footer_text, pageWidth / 2, pageHeight - 5, { align: "center" });
+    pdf.setTextColor(...colors.dark);
+  }
+  
   return 45;
+};
+
+// Helper to prepare PDF with custom settings
+export const preparePdfWithSettings = async (categoryId: string) => {
+  const settings = await fetchPdfSettings(categoryId);
+  let logoBase64: string | null = null;
+  if (settings?.logo_url && settings.show_logo !== false) {
+    logoBase64 = await loadImageAsBase64(settings.logo_url);
+  }
+  return { settings, logoBase64 };
 };
 
 // Draw section title
