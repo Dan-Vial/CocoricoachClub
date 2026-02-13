@@ -63,6 +63,24 @@ export function AddWellnessDialog({ open, onOpenChange, categoryId }: AddWellnes
     },
   });
 
+  // Fetch existing wellness entries for the selected date
+  const { data: existingWellness } = useQuery({
+    queryKey: ["wellness_existing", categoryId, date],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("wellness_tracking")
+        .select("player_id")
+        .eq("category_id", categoryId)
+        .eq("tracking_date", date);
+      if (error) throw error;
+      return data;
+    },
+    enabled: open,
+  });
+
+  const filledPlayerIds = new Set(existingWellness?.map(w => w.player_id) || []);
+  const availablePlayers = players?.filter(p => !filledPlayerIds.has(p.id));
+
   // Reset form values when player changes (except playerId and date)
   useEffect(() => {
     if (playerId) {
@@ -99,15 +117,13 @@ export function AddWellnessDialog({ open, onOpenChange, categoryId }: AddWellnes
       return playerName;
     },
     onSuccess: (playerName) => {
-      // Invalidate both queries to update WellnessTab and DecisionCenter
       queryClient.invalidateQueries({ queryKey: ["wellness_tracking", categoryId] });
       queryClient.invalidateQueries({ queryKey: ["wellness_decision", categoryId] });
+      queryClient.invalidateQueries({ queryKey: ["wellness_existing", categoryId, date] });
       toast.success(`Wellness enregistré pour ${playerName}`);
-      // Reset form but keep dialog open and keep the same date
       const currentDate = date;
       resetForm();
       setDate(currentDate);
-      // Dialog stays open for next athlete
     },
     onError: (error: any) => {
       if (error.code === "23505") {
@@ -189,11 +205,16 @@ export function AddWellnessDialog({ open, onOpenChange, categoryId }: AddWellnes
                   <SelectValue placeholder="Sélectionner..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {players?.map((player) => (
+                {availablePlayers?.map((player) => (
                     <SelectItem key={player.id} value={player.id}>
                       {player.name}
                     </SelectItem>
                   ))}
+                  {availablePlayers?.length === 0 && (
+                    <div className="px-2 py-4 text-sm text-muted-foreground text-center">
+                      Tous les athlètes ont déjà rempli leur wellness
+                    </div>
+                  )}
                 </SelectContent>
               </Select>
             </div>
