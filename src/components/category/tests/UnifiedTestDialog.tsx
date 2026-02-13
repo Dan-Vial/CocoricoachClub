@@ -46,7 +46,31 @@ export function UnifiedTestDialog({
   const [selectedTest, setSelectedTest] = useState("");
   const [playerResults, setPlayerResults] = useState<Record<string, string>>({});
   const [notes, setNotes] = useState("");
+  const [customTestName, setCustomTestName] = useState("");
+  const [customTestUnit, setCustomTestUnit] = useState("");
   const queryClient = useQueryClient();
+
+  const AVAILABLE_UNITS = [
+    { value: "kg", label: "Kilogrammes (kg)" },
+    { value: "N", label: "Newton (N)" },
+    { value: "cm", label: "Centimètres (cm)" },
+    { value: "m", label: "Mètres (m)" },
+    { value: "m/s", label: "Mètres/seconde (m/s)" },
+    { value: "km/h", label: "Kilomètres/heure (km/h)" },
+    { value: "W", label: "Watts (W)" },
+    { value: "W/kg", label: "Watts/kg (W/kg)" },
+    { value: "cal", label: "Calories (cal)" },
+    { value: "s", label: "Secondes (s)" },
+    { value: "min.s", label: "Minutes.secondes (min.s)" },
+    { value: "reps", label: "Répétitions (reps)" },
+    { value: "%", label: "Pourcentage (%)" },
+    { value: "palier", label: "Palier" },
+    { value: "ml/kg/min", label: "VO2max (ml/kg/min)" },
+    { value: "mmol/L", label: "Lactate (mmol/L)" },
+    { value: "bpm", label: "Battements/min (bpm)" },
+    { value: "score", label: "Score" },
+    { value: "°", label: "Degrés (°)" },
+  ];
 
   const { data: players } = useQuery({
     queryKey: ["players", categoryId],
@@ -65,22 +89,28 @@ export function UnifiedTestDialog({
     ? (players || []) 
     : (players || []).filter(p => selectedPlayers.includes(p.id));
 
-  // Get filtered test categories based on sport type
   const filteredTestCategories = getTestCategoriesForSport(sportType || "");
   
+  const isCustom = selectedCategory === "custom";
   const currentCategory = filteredTestCategories.find(c => c.value === selectedCategory);
-  const currentTest = currentCategory?.tests.find(t => t.value === selectedTest);
+  const currentTest = isCustom 
+    ? (customTestName && customTestUnit ? { value: `custom_${customTestName.toLowerCase().replace(/\s+/g, '_')}`, label: customTestName, unit: customTestUnit, isTime: ["s", "min.s"].includes(customTestUnit) } as TestOption : null)
+    : currentCategory?.tests.find(t => t.value === selectedTest);
 
   const addTests = useMutation({
     mutationFn: async () => {
-      // First create a training session of type "test" so it appears in the calendar
+      const testLabel = isCustom ? customTestName : currentTest?.label || "";
+      const categoryLabel = isCustom ? "Personnalisé" : currentCategory?.label || "";
+      const testCategory = isCustom ? "custom" : selectedCategory;
+      const testType = isCustom ? `custom_${customTestName.toLowerCase().replace(/\s+/g, '_')}` : selectedTest;
+
       const { data: sessionData, error: sessionError } = await supabase
         .from("training_sessions")
         .insert({
           category_id: categoryId,
           session_date: date,
           training_type: "test",
-          notes: `Test: ${currentCategory?.label} - ${currentTest?.label}`,
+          notes: `Test: ${categoryLabel} - ${testLabel}`,
         })
         .select("id")
         .single();
@@ -95,10 +125,10 @@ export function UnifiedTestDialog({
           player_id: player.id,
           category_id: categoryId,
           test_date: date,
-          test_category: selectedCategory,
-          test_type: selectedTest,
+          test_category: testCategory,
+          test_type: testType,
           result_value: parseFloat(playerResults[player.id]),
-          result_unit: currentTest?.unit || "",
+          result_unit: currentTest?.unit || customTestUnit || "",
           notes: `Session ID: ${sessionId}` + (notes ? `\n${notes}` : ""),
         }));
 
@@ -130,6 +160,8 @@ export function UnifiedTestDialog({
     setSelectedTest("");
     setPlayerResults({});
     setNotes("");
+    setCustomTestName("");
+    setCustomTestUnit("");
   };
 
   const updatePlayerResult = (playerId: string, value: string) => {
@@ -140,6 +172,8 @@ export function UnifiedTestDialog({
     setSelectedCategory(value);
     setSelectedTest("");
     setPlayerResults({});
+    setCustomTestName("");
+    setCustomTestUnit("");
   };
 
   const filledResultsCount = effectivePlayers.filter(p => playerResults[p.id]).length;
@@ -169,7 +203,10 @@ export function UnifiedTestDialog({
                   <SelectTrigger>
                     <SelectValue placeholder="Sélectionner une catégorie" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="z-[9999] max-h-[300px]">
+                    <SelectItem value="custom" className="font-semibold text-primary">
+                      ✨ Test personnalisé
+                    </SelectItem>
                     {filteredTestCategories.map((category) => (
                       <SelectItem key={category.value} value={category.value}>
                         {category.label}
@@ -189,14 +226,44 @@ export function UnifiedTestDialog({
               </div>
             </div>
 
-            {selectedCategory && (
+            {/* Custom test fields */}
+            {isCustom && (
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Nom du test *</Label>
+                  <Input
+                    value={customTestName}
+                    onChange={(e) => setCustomTestName(e.target.value)}
+                    placeholder="Ex: Test de Cooper modifié"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Unité de mesure *</Label>
+                  <Select value={customTestUnit} onValueChange={setCustomTestUnit}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choisir l'unité" />
+                    </SelectTrigger>
+                    <SelectContent className="z-[9999] max-h-[300px]">
+                      {AVAILABLE_UNITS.map((unit) => (
+                        <SelectItem key={unit.value} value={unit.value}>
+                          {unit.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
+
+            {/* Standard test selection */}
+            {selectedCategory && !isCustom && (
               <div className="space-y-2">
                 <Label>Type de test *</Label>
                 <Select value={selectedTest} onValueChange={setSelectedTest}>
                   <SelectTrigger>
                     <SelectValue placeholder="Sélectionner un test" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="z-[9999] max-h-[300px]">
                     <SelectGroup>
                       <SelectLabel>{currentCategory?.label}</SelectLabel>
                       {currentCategory?.tests.map((test) => (
@@ -210,7 +277,7 @@ export function UnifiedTestDialog({
               </div>
             )}
 
-            {effectivePlayers.length > 0 && selectedTest && currentTest && (
+            {effectivePlayers.length > 0 && ((isCustom && customTestName && customTestUnit) || selectedTest) && currentTest && (
               <div className="space-y-2">
                 <Label>
                   Résultats {currentTest.unit && `(${currentTest.unit})`} - {filledResultsCount}/{effectivePlayers.length} saisis
@@ -251,7 +318,7 @@ export function UnifiedTestDialog({
           </Button>
           <Button
             onClick={() => addTests.mutate()}
-            disabled={!selectedTest || !date || filledResultsCount === 0 || addTests.isPending}
+            disabled={(!selectedTest && !(isCustom && customTestName && customTestUnit)) || !date || filledResultsCount === 0 || addTests.isPending}
           >
             {addTests.isPending ? "Ajout..." : `Ajouter ${filledResultsCount} test${filledResultsCount > 1 ? "s" : ""}`}
           </Button>
