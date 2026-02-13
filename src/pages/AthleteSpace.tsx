@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Loader2, User, LogOut, Activity, Heart, BarChart3, Target, Video, BookOpen, Shield, ArrowLeft } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Loader2, User, LogOut, Activity, Heart, BarChart3, Target, Video, BookOpen, Shield, ArrowLeft, Search, ChevronRight } from "lucide-react";
 import { AthletePWAInstallPopup } from "@/components/athlete/AthletePWAInstallPopup";
 import { AthleteSpaceDashboard } from "@/components/athlete-space/AthleteSpaceDashboard";
 import { AthleteSpaceRpe } from "@/components/athlete-space/AthleteSpaceRpe";
@@ -31,12 +33,39 @@ interface AthleteInfo {
 export default function AthleteSpace() {
   const { user, signOut, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [athleteInfo, setAthleteInfo] = useState<AthleteInfo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSuperAdminView, setIsSuperAdminView] = useState(false);
+  const [showPlayerSelector, setShowPlayerSelector] = useState(false);
+  const [playerSearch, setPlayerSearch] = useState("");
 
   const queryPlayerId = searchParams.get("playerId");
+
+  // Check super admin status
+  const { data: isSuperAdmin } = useQuery({
+    queryKey: ["is-super-admin", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return false;
+      const { data } = await supabase.rpc("is_super_admin", { _user_id: user.id });
+      return data === true;
+    },
+    enabled: !!user?.id,
+  });
+
+  // Fetch all players for super admin selector
+  const { data: allPlayers = [] } = useQuery({
+    queryKey: ["all-players-for-selector"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("players")
+        .select("id, name, first_name, category_id, categories(name, clubs(name))")
+        .order("name");
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: showPlayerSelector && !!isSuperAdmin,
+  });
 
   useEffect(() => {
     if (authLoading) return;
@@ -94,6 +123,13 @@ export default function AthleteSpace() {
         .single();
 
       if (error || !player) {
+        // If super admin, show player selector instead of redirecting
+        const { data: isSA } = await supabase.rpc("is_super_admin", { _user_id: user!.id });
+        if (isSA) {
+          setShowPlayerSelector(true);
+          setIsLoading(false);
+          return;
+        }
         navigate("/");
         return;
       }
@@ -117,10 +153,88 @@ export default function AthleteSpace() {
     }
   };
 
+  const selectPlayer = (playerId: string) => {
+    setSearchParams({ playerId });
+    setShowPlayerSelector(false);
+  };
+
+  // Filter players by search
+  const filteredPlayers = allPlayers.filter(p => {
+    const fullName = `${p.first_name || ""} ${p.name}`.toLowerCase();
+    const catName = ((p.categories as any)?.name || "").toLowerCase();
+    const clubName = ((p.categories as any)?.clubs?.name || "").toLowerCase();
+    const q = playerSearch.toLowerCase();
+    return fullName.includes(q) || catName.includes(q) || clubName.includes(q);
+  });
+
   if (authLoading || isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // Super admin player selector
+  if (showPlayerSelector) {
+    return (
+      <div className="min-h-screen bg-background">
+        <header className="sticky top-0 z-50 border-b bg-card/95 backdrop-blur">
+          <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+              <div>
+                <h1 className="text-base font-semibold">Espace Athlète</h1>
+                <Badge variant="outline" className="text-[10px] h-5 border-primary text-primary">Vue Admin</Badge>
+              </div>
+            </div>
+          </div>
+        </header>
+        <main className="max-w-3xl mx-auto px-4 py-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <User className="h-5 w-5" />
+                Sélectionner un athlète
+              </CardTitle>
+              <CardDescription>Choisissez un athlète pour consulter son espace personnel</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Rechercher par nom, catégorie ou club..."
+                  value={playerSearch}
+                  onChange={(e) => setPlayerSearch(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+              <div className="space-y-1 max-h-[60vh] overflow-y-auto">
+                {filteredPlayers.map(p => (
+                  <Button
+                    key={p.id}
+                    variant="ghost"
+                    className="w-full justify-between h-auto py-3"
+                    onClick={() => selectPlayer(p.id)}
+                  >
+                    <div className="flex flex-col items-start gap-0.5">
+                      <span className="font-medium">{p.first_name ? `${p.first_name} ${p.name}` : p.name}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {(p.categories as any)?.name} • {(p.categories as any)?.clubs?.name}
+                      </span>
+                    </div>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                  </Button>
+                ))}
+                {filteredPlayers.length === 0 && (
+                  <p className="text-sm text-muted-foreground text-center py-8">Aucun athlète trouvé</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </main>
       </div>
     );
   }
