@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "@/components/ui/sonner";
-import { Building2, Pause, Play, ChevronDown, ChevronRight, FolderOpen, Gift, User } from "lucide-react";
+import { Building2, Pause, Play, ChevronDown, ChevronRight, FolderOpen, Gift, User, DollarSign } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 
@@ -61,6 +61,18 @@ export function SuperAdminClubs() {
     },
   });
 
+  // Fetch approved_users to know free/paid status per owner
+  const { data: approvedUsers = [] } = useQuery({
+    queryKey: ["super-admin-approved-users"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("approved_users")
+        .select("user_id, is_free_user");
+      if (error) throw error;
+      return data;
+    },
+  });
+
   // Toggle club active status
   const toggleActive = useMutation({
     mutationFn: async ({ id, isActive }: { id: string; isActive: boolean }) => {
@@ -93,6 +105,21 @@ export function SuperAdminClubs() {
     },
   });
 
+  // Toggle free/paid status for a club owner
+  const toggleFreeStatus = useMutation({
+    mutationFn: async ({ userId, isFree }: { userId: string; isFree: boolean }) => {
+      const { error } = await supabase
+        .from("approved_users")
+        .update({ is_free_user: isFree })
+        .eq("user_id", userId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Statut mis à jour");
+      queryClient.invalidateQueries({ queryKey: ["super-admin-approved-users"] });
+    },
+  });
+
   const toggleExpand = (clubId: string) => {
     const newExpanded = new Set(expandedClubs);
     if (newExpanded.has(clubId)) {
@@ -101,6 +128,11 @@ export function SuperAdminClubs() {
       newExpanded.add(clubId);
     }
     setExpandedClubs(newExpanded);
+  };
+
+  const getOwnerFreeStatus = (userId: string): boolean | null => {
+    const au = approvedUsers.find((a: any) => a.user_id === userId);
+    return au ? (au.is_free_user ?? true) : null;
   };
 
   return (
@@ -125,6 +157,7 @@ export function SuperAdminClubs() {
               const clubCategories = categories.filter((c: any) => c.club_id === club.id);
               const isExpanded = expandedClubs.has(club.id);
               const hasClient = !!club.clients?.name;
+              const ownerIsFree = getOwnerFreeStatus(club.user_id);
 
               return (
                 <div key={club.id} className="border rounded-lg overflow-hidden">
@@ -153,14 +186,40 @@ export function SuperAdminClubs() {
                         <span>{club.profiles?.full_name || club.profiles?.email || "Inconnu"}</span>
                       </div>
                       
-                      {/* Client or Free badge */}
+                      {/* Client badge or Free/Paid toggle */}
                       {hasClient ? (
                         <Badge variant="outline">{club.clients.name}</Badge>
                       ) : (
-                        <Badge className="bg-purple-600">
-                          <Gift className="h-3 w-3 mr-1" />
-                          Gratuit
-                        </Badge>
+                        <>
+                          {ownerIsFree === true ? (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 gap-1 text-purple-600 hover:text-green-600"
+                              onClick={() => toggleFreeStatus.mutate({ userId: club.user_id, isFree: false })}
+                              title="Cliquer pour passer en Payant"
+                            >
+                              <Gift className="h-3.5 w-3.5" />
+                              <span className="text-xs font-medium">Gratuit</span>
+                            </Button>
+                          ) : ownerIsFree === false ? (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 gap-1 text-green-600 hover:text-purple-600"
+                              onClick={() => toggleFreeStatus.mutate({ userId: club.user_id, isFree: true })}
+                              title="Cliquer pour passer en Gratuit"
+                            >
+                              <DollarSign className="h-3.5 w-3.5" />
+                              <span className="text-xs font-medium">Payant</span>
+                            </Button>
+                          ) : (
+                            <Badge className="bg-purple-600">
+                              <Gift className="h-3 w-3 mr-1" />
+                              Gratuit
+                            </Badge>
+                          )}
+                        </>
                       )}
 
                       {!hasClient && (
@@ -200,6 +259,7 @@ export function SuperAdminClubs() {
                         <p>Propriétaire: {club.profiles?.full_name || club.profiles?.email || "Inconnu"}</p>
                         <p>Email: {club.profiles?.email || "-"}</p>
                         <p>Créé le: {format(new Date(club.created_at), "dd MMM yyyy", { locale: fr })}</p>
+                        <p>Statut propriétaire: {ownerIsFree === true ? "🎁 Gratuit" : ownerIsFree === false ? "💰 Payant" : "Non défini"}</p>
                       </div>
                       
                       {clubCategories.length === 0 ? (
