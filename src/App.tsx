@@ -29,6 +29,7 @@ import SuperAdmin from "./pages/SuperAdmin";
 import Settings from "./pages/Settings";
 import AdminClub from "./pages/AdminClub";
 import AcceptAmbassadorInvitation from "./pages/AcceptAmbassadorInvitation";
+import AthleteSpace from "./pages/AthleteSpace";
 import NotFound from "./pages/NotFound";
 
 // Auth wrapper component that allows public access
@@ -104,6 +105,7 @@ const App = () => (
                   <Route path="/public-view" element={<PublicView />} />
                   <Route path="/public/categories/:categoryId" element={<PublicCategoryView />} />
                   <Route path="/athlete-portal" element={<AthletePortal />} />
+                  <Route path="/athlete-space" element={<AthleteSpace />} />
                   <Route path="/accept-athlete-invitation" element={<AcceptAthleteInvitation />} />
                   <Route path="/install" element={<Install />} />
                   <Route path="/admin" element={<Admin />} />
