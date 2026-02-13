@@ -1245,28 +1245,6 @@ export function ProgramSessionCard({
                       />
                     </div>
 
-                    {/* VBT Velocity field */}
-                    {vbtMode && (
-                      <div className="space-y-1">
-                        <label className="text-xs text-muted-foreground">Vitesse (m/s)</label>
-                        <Input
-                          type="number"
-                          min={0}
-                          step="0.01"
-                          value={exercise.target_velocity || ""}
-                          onChange={(e) =>
-                            updateExercise(
-                              index,
-                              "target_velocity",
-                              e.target.value ? parseFloat(e.target.value) : null
-                            )
-                          }
-                          placeholder="0.75"
-                          className="h-8 text-sm"
-                        />
-                      </div>
-                    )}
-
                     {!isGrouped && (
                       <div className="space-y-1">
                         <label className="text-xs text-muted-foreground">Repos (s)</label>
@@ -1281,6 +1259,49 @@ export function ProgramSessionCard({
                         />
                       </div>
                     )}
+
+                    {/* VBT toggle - available on all methods */}
+                    <div className="col-span-full flex items-center gap-2 mt-1">
+                      <button
+                        type="button"
+                        className={`text-[10px] px-2 py-0.5 rounded-full border transition-colors ${
+                          exercise.target_velocity != null
+                            ? "bg-emerald-100 border-emerald-400 text-emerald-700"
+                            : "bg-muted border-border text-muted-foreground hover:border-emerald-300"
+                        }`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (exercise.target_velocity != null) {
+                            updateExercise(index, "target_velocity", null);
+                          } else {
+                            updateExercise(index, "target_velocity", 0.75);
+                          }
+                        }}
+                      >
+                        ⚡ VBT
+                      </button>
+                      {exercise.target_velocity != null && (
+                        <div className="flex items-center gap-1">
+                          <label className="text-[10px] text-muted-foreground whitespace-nowrap">Vitesse (m/s)</label>
+                          <Input
+                            type="number"
+                            min={0}
+                            step="0.01"
+                            value={exercise.target_velocity || ""}
+                            onChange={(e) =>
+                              updateExercise(
+                                index,
+                                "target_velocity",
+                                e.target.value ? parseFloat(e.target.value) : null
+                              )
+                            }
+                            placeholder="0.75"
+                            className="h-7 text-xs w-20"
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        </div>
+                      )}
+                    </div>
                   </>
                 )}
               </div>

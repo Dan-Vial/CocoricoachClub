@@ -2106,77 +2106,128 @@ export function SessionFormDialog({
           </div>
         ) : (
           // Standard Sets, Reps, Weight, Rest
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            <div>
-              <Label className="text-xs text-muted-foreground">Séries</Label>
-              <Input
-                type="number"
-                min="1"
-                className="h-8 text-xs"
-                value={exercise.sets}
-                onChange={(e) =>
-                  updateExercise(index, "sets", parseInt(e.target.value) || 1)
-                }
-              />
-            </div>
-            <div>
-              <Label className="text-xs text-muted-foreground">Reps</Label>
-              <Input
-                className="h-8 text-xs"
-                value={exercise.reps || ""}
-                onChange={(e) => updateExercise(index, "reps", e.target.value)}
-                placeholder="10"
-              />
-            </div>
-            <div>
-              <Label className="text-xs text-muted-foreground flex items-center gap-1">
-                Poids
-                <button
-                  type="button"
-                  className="text-[10px] px-1 py-0.5 rounded bg-muted hover:bg-muted/80"
-                  onClick={() => updateExercise(index, "weight_mode", exercise.weight_mode === "kg" ? "percent_rm" : "kg")}
-                >
-                  {exercise.weight_mode === "kg" ? "kg" : "% RM"}
-                </button>
-              </Label>
-              {exercise.weight_mode === "kg" ? (
-                <Input
-                  type="number"
-                  step="0.5"
-                  className="h-8 text-xs"
-                  placeholder="kg"
-                  value={exercise.weight_kg || ""}
-                  onChange={(e) =>
-                    updateExercise(index, "weight_kg", e.target.value ? parseFloat(e.target.value) : null)
-                  }
-                />
-              ) : (
+          <div className="space-y-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <div>
+                <Label className="text-xs text-muted-foreground">Séries</Label>
                 <Input
                   type="number"
                   min="1"
-                  max="100"
                   className="h-8 text-xs"
-                  placeholder="% RM"
-                  value={exercise.weight_percent_rm || ""}
+                  value={exercise.sets}
                   onChange={(e) =>
-                    updateExercise(index, "weight_percent_rm", e.target.value ? parseInt(e.target.value) : null)
-                  }
-                />
-              )}
-            </div>
-            {!isGrouped && (
-              <div>
-                <Label className="text-xs text-muted-foreground">Repos (sec)</Label>
-                <Input
-                  type="number"
-                  className="h-8 text-xs"
-                  value={exercise.rest_seconds || ""}
-                  onChange={(e) =>
-                    updateExercise(index, "rest_seconds", e.target.value ? parseInt(e.target.value) : null)
+                    updateExercise(index, "sets", parseInt(e.target.value) || 1)
                   }
                 />
               </div>
-            )}
+              <div>
+                <Label className="text-xs text-muted-foreground">Reps</Label>
+                <Input
+                  className="h-8 text-xs"
+                  value={exercise.reps || ""}
+                  onChange={(e) => updateExercise(index, "reps", e.target.value)}
+                  placeholder="10"
+                />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                  Poids
+                  <button
+                    type="button"
+                    className="text-[10px] px-1 py-0.5 rounded bg-muted hover:bg-muted/80"
+                    onClick={() => updateExercise(index, "weight_mode", exercise.weight_mode === "kg" ? "percent_rm" : "kg")}
+                  >
+                    {exercise.weight_mode === "kg" ? "kg" : "% RM"}
+                  </button>
+                </Label>
+                {exercise.weight_mode === "kg" ? (
+                  <Input
+                    type="number"
+                    step="0.5"
+                    className="h-8 text-xs"
+                    placeholder="kg"
+                    value={exercise.weight_kg || ""}
+                    onChange={(e) =>
+                      updateExercise(index, "weight_kg", e.target.value ? parseFloat(e.target.value) : null)
+                    }
+                  />
+                ) : (
+                  <Input
+                    type="number"
+                    min="1"
+                    max="100"
+                    className="h-8 text-xs"
+                    placeholder="% RM"
+                    value={exercise.weight_percent_rm || ""}
+                    onChange={(e) =>
+                      updateExercise(index, "weight_percent_rm", e.target.value ? parseInt(e.target.value) : null)
+                    }
+                  />
+                )}
+              </div>
+              {!isGrouped && (
+                <div>
+                  <Label className="text-xs text-muted-foreground">Repos (sec)</Label>
+                  <Input
+                    type="number"
+                    className="h-8 text-xs"
+                    value={exercise.rest_seconds || ""}
+                    onChange={(e) =>
+                      updateExercise(index, "rest_seconds", e.target.value ? parseInt(e.target.value) : null)
+                    }
+                  />
+                </div>
+              )}
+            </div>
+            {/* VBT toggle */}
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                className={`text-[10px] px-2 py-0.5 rounded-full border transition-colors ${
+                  exercise.target_velocity != null || exercise.target_rpe != null
+                    ? "bg-emerald-100 border-emerald-400 text-emerald-700"
+                    : "bg-muted border-border text-muted-foreground hover:border-emerald-300"
+                }`}
+                onClick={() => {
+                  if (exercise.target_velocity != null || exercise.target_rpe != null) {
+                    updateMultipleFields(index, { target_velocity: undefined, target_rpe: undefined });
+                  } else {
+                    updateMultipleFields(index, { target_velocity: 0.8, target_rpe: 1.0 });
+                  }
+                }}
+              >
+                ⚡ VBT
+              </button>
+              {(exercise.target_velocity != null || exercise.target_rpe != null) && (
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1">
+                    <Label className="text-[10px] text-muted-foreground whitespace-nowrap">V. min</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      className="h-7 text-xs w-20"
+                      placeholder="0.8"
+                      value={exercise.target_velocity || ""}
+                      onChange={(e) => updateExercise(index, "target_velocity", e.target.value ? parseFloat(e.target.value) : null)}
+                    />
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Label className="text-[10px] text-muted-foreground whitespace-nowrap">V. max</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      className="h-7 text-xs w-20"
+                      placeholder="1.0"
+                      value={exercise.target_rpe || ""}
+                      onChange={(e) => updateExercise(index, "target_rpe", e.target.value ? parseFloat(e.target.value) : null)}
+                    />
+                  </div>
+                  <span className="text-[10px] text-muted-foreground">m/s</span>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
