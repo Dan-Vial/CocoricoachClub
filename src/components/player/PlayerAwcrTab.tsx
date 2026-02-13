@@ -20,6 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { calculateEWMASeries, transformToDailyLoadData } from "@/lib/trainingLoadCalculations";
 
 interface PlayerAwcrTabProps {
   playerId: string;
@@ -67,6 +68,11 @@ export function PlayerAwcrTab({ playerId, categoryId }: PlayerAwcrTabProps) {
     chargeChroniique: entry.chronic_load,
     charge: entry.training_load,
   }));
+
+  // Calculate EWMA data for table
+  const ewmaResults = awcrData && awcrData.length > 0 
+    ? calculateEWMASeries(transformToDailyLoadData(awcrData, []), "sRPE")
+    : [];
 
   return (
     <div className="space-y-6">
@@ -162,7 +168,10 @@ export function PlayerAwcrTab({ playerId, categoryId }: PlayerAwcrTabProps) {
 
       <Card className="bg-gradient-card shadow-md">
         <CardHeader>
-          <CardTitle>Historique AWCR</CardTitle>
+          <CardTitle>Historique EWMA</CardTitle>
+          <p className="text-sm text-muted-foreground mt-2">
+            Ratio EWMA = Charge Aiguë (7j) / Charge Chronique (28j) | Zone optimale: 0.85 - 1.30
+          </p>
         </CardHeader>
         <CardContent>
           {awcrData && awcrData.length > 0 ? (
@@ -173,43 +182,44 @@ export function PlayerAwcrTab({ playerId, categoryId }: PlayerAwcrTabProps) {
                     <TableHead>Date</TableHead>
                     <TableHead>RPE</TableHead>
                     <TableHead>Durée (min)</TableHead>
-                    <TableHead>Charge</TableHead>
-                    <TableHead>Charge Aiguë</TableHead>
-                    <TableHead>Charge Chronique</TableHead>
-                    <TableHead>AWCR</TableHead>
+                    <TableHead>sRPE</TableHead>
+                    <TableHead>EWMA Aiguë (7j)</TableHead>
+                    <TableHead>EWMA Chronique (28j)</TableHead>
+                    <TableHead>Ratio EWMA</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {awcrData.map((entry) => (
-                    <TableRow key={entry.id}>
-                      <TableCell>
-                        {new Date(entry.session_date).toLocaleDateString("fr-FR")}
-                      </TableCell>
-                      <TableCell>{entry.rpe}/10</TableCell>
-                      <TableCell>{entry.duration_minutes}</TableCell>
-                      <TableCell className="font-semibold">{entry.training_load}</TableCell>
-                      <TableCell>{entry.acute_load?.toFixed(1) || "-"}</TableCell>
-                      <TableCell>{entry.chronic_load?.toFixed(1) || "-"}</TableCell>
-                      <TableCell>
-                        {entry.awcr && (
+                  {ewmaResults.map((result) => {
+                    const sourceData = awcrData.find(d => d.session_date === result.date);
+                    return (
+                      <TableRow key={result.date}>
+                        <TableCell>
+                          {new Date(result.date).toLocaleDateString("fr-FR")}
+                        </TableCell>
+                        <TableCell>{sourceData?.rpe}/10</TableCell>
+                        <TableCell>{sourceData?.duration_minutes}</TableCell>
+                        <TableCell className="font-semibold">{sourceData?.training_load}</TableCell>
+                        <TableCell>{result.acute.toFixed(1)}</TableCell>
+                        <TableCell>{result.chronic.toFixed(1)}</TableCell>
+                        <TableCell>
                           <span
                             className={`font-semibold ${
-                              entry.awcr < 0.8 || entry.awcr > 1.3
+                              result.ratio < 0.85 || result.ratio > 1.3
                                 ? "text-destructive"
                                 : "text-primary"
                             }`}
                           >
-                            {entry.awcr.toFixed(2)}
+                            {result.ratio.toFixed(2)}
                           </span>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
           ) : (
-            <p className="text-muted-foreground text-center py-4">Aucune donnée AWCR</p>
+            <p className="text-muted-foreground text-center py-4">Aucune donnée EWMA disponible</p>
           )}
         </CardContent>
       </Card>
