@@ -4,12 +4,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { FileText, Download, User, Calendar, Trophy, Loader2, Users, FileSpreadsheet, ClipboardCheck } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import jsPDF from "jspdf";
 import { generateCsv, downloadCsv } from "@/lib/csv";
+import { preparePdfWithSettings, drawPdfHeader as drawPdfHeaderCustom, drawSectionTitle, drawTableHeader as drawTableHeaderLib, drawTableRow as drawTableRowLib, checkPageBreak as checkPageBreakLib, type PdfCustomSettings } from "@/lib/pdfExport";
+import { getStatsForSport, type StatField } from "@/lib/constants/sportStats";
 
 interface ReportsTabProps {
   categoryId: string;
@@ -20,12 +24,20 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
   const [selectedMatch, setSelectedMatch] = useState<string>("");
   const [generatingReport, setGeneratingReport] = useState<string | null>(null);
 
+  // Date range states
+  const [playerDateFrom, setPlayerDateFrom] = useState("");
+  const [playerDateTo, setPlayerDateTo] = useState("");
+  const [overviewDateFrom, setOverviewDateFrom] = useState("");
+  const [overviewDateTo, setOverviewDateTo] = useState("");
+  const [attendanceDateFrom, setAttendanceDateFrom] = useState("");
+  const [attendanceDateTo, setAttendanceDateTo] = useState("");
+
   const { data: category } = useQuery({
     queryKey: ["category", categoryId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("categories")
-        .select("*, clubs(name)")
+        .select("*, clubs(name, sport)")
         .eq("id", categoryId)
         .single();
       if (error) throw error;
@@ -59,8 +71,8 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
     },
   });
 
-  // Shared PDF helper functions
-  const colors = {
+  // Shared PDF helper functions (local, using custom settings colors)
+  const defaultColors = {
     primary: [41, 128, 185] as [number, number, number],
     success: [39, 174, 96] as [number, number, number],
     warning: [241, 196, 15] as [number, number, number],
@@ -71,33 +83,10 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
     white: [255, 255, 255] as [number, number, number],
   };
 
-  const drawPdfHeader = (pdf: jsPDF, title: string, subtitle: string, date: string) => {
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const margin = 15;
-    
-    pdf.setFillColor(...colors.primary);
-    pdf.rect(0, 0, pageWidth, 40, 'F');
-    
-    pdf.setTextColor(...colors.white);
-    pdf.setFontSize(20);
-    pdf.setFont("helvetica", "bold");
-    pdf.text(title, margin, 18);
-    
-    pdf.setFontSize(12);
-    pdf.setFont("helvetica", "normal");
-    pdf.text(subtitle, margin, 28);
-    
-    pdf.setFontSize(9);
-    pdf.text(date, margin, 36);
-    
-    pdf.setTextColor(...colors.dark);
-    return 50;
-  };
-
   const drawKpiCard = (pdf: jsPDF, x: number, y: number, w: number, h: number, value: string, label: string, color: [number, number, number]) => {
     pdf.setFillColor(...color);
     pdf.roundedRect(x, y, w, h, 3, 3, 'F');
-    pdf.setTextColor(...colors.white);
+    pdf.setTextColor(...defaultColors.white);
     pdf.setFontSize(16);
     pdf.setFont("helvetica", "bold");
     const valueWidth = pdf.getTextWidth(value);
@@ -109,15 +98,15 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
   };
 
   const drawTableHeaderPdf = (pdf: jsPDF, headers: string[], colWidths: number[], y: number, margin: number, contentWidth: number) => {
-    pdf.setFillColor(...colors.dark);
+    pdf.setFillColor(...defaultColors.dark);
     pdf.rect(margin, y, contentWidth, 8, 'F');
-    pdf.setTextColor(...colors.white);
+    pdf.setTextColor(...defaultColors.white);
     pdf.setFontSize(9);
     pdf.setFont("helvetica", "bold");
     
     let xPos = margin + 2;
     headers.forEach((header, i) => {
-      pdf.text(header, xPos, y + 5.5);
+      pdf.text(header.substring(0, Math.floor(colWidths[i] / 3)), xPos, y + 5.5);
       xPos += colWidths[i];
     });
     pdf.setFont("helvetica", "normal");
@@ -126,7 +115,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
 
   const drawTableRowPdf = (pdf: jsPDF, values: string[], colWidths: number[], y: number, isAlternate: boolean, margin: number, contentWidth: number, rowColors?: ([number, number, number] | null)[]) => {
     if (isAlternate) {
-      pdf.setFillColor(...colors.light);
+      pdf.setFillColor(...defaultColors.light);
       pdf.rect(margin, y, contentWidth, 7, 'F');
     }
     
@@ -137,16 +126,25 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
         pdf.setTextColor(...rowColors[i]!);
         pdf.setFont("helvetica", "bold");
       } else {
-        pdf.setTextColor(...colors.dark);
+        pdf.setTextColor(...defaultColors.dark);
         pdf.setFont("helvetica", "normal");
       }
-      pdf.text(value.substring(0, 25), xPos, y + 5);
+      pdf.text((value || "-").substring(0, 25), xPos, y + 5);
       xPos += colWidths[i];
     });
     pdf.setFont("helvetica", "normal");
     return y + 7;
   };
 
+  const localCheckPageBreak = (pdf: jsPDF, yPos: number, needed: number = 25): number => {
+    if (yPos + needed > pdf.internal.pageSize.getHeight() - 15) {
+      pdf.addPage();
+      return 20;
+    }
+    return yPos;
+  };
+
+  // ========================== PLAYER REPORT ==========================
   const generatePlayerReport = async () => {
     if (!selectedPlayer) {
       toast.error("Veuillez sélectionner un joueur");
@@ -159,16 +157,53 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
       const player = players.find(p => p.id === selectedPlayer);
       if (!player) throw new Error("Joueur non trouvé");
 
-      // Fetch player data
-      const [measurementsRes, injuriesRes, wellnessRes, speedTestsRes, jumpTestsRes, awcrRes, bodyCompRes, matchLineupsRes] = await Promise.all([
+      // Prepare custom PDF settings
+      const { settings: pdfSettings, logoBase64 } = await preparePdfWithSettings(categoryId);
+
+      // Build date filters
+      const dateFilters = (query: any) => {
+        let q = query;
+        if (playerDateFrom) q = q.gte("tracking_date", playerDateFrom).or(`test_date.gte.${playerDateFrom},session_date.gte.${playerDateFrom},injury_date.gte.${playerDateFrom}`);
+        return q;
+      };
+
+      // Fetch player data with date filtering
+      const [measurementsRes, injuriesRes, wellnessRes, speedTestsRes, jumpTestsRes, awcrRes, bodyCompRes, matchLineupsRes, genericTestsRes, matchStatsRes] = await Promise.all([
         supabase.from("player_measurements").select("*").eq("player_id", selectedPlayer).order("measurement_date", { ascending: false }).limit(1),
-        supabase.from("injuries").select("*").eq("player_id", selectedPlayer),
-        supabase.from("wellness_tracking").select("*").eq("player_id", selectedPlayer).order("tracking_date", { ascending: false }).limit(5),
-        supabase.from("speed_tests").select("*").eq("player_id", selectedPlayer).order("test_date", { ascending: false }),
-        supabase.from("jump_tests").select("*").eq("player_id", selectedPlayer).order("test_date", { ascending: false }),
+        (() => {
+          let q = supabase.from("injuries").select("*").eq("player_id", selectedPlayer);
+          if (playerDateFrom) q = q.gte("injury_date", playerDateFrom);
+          if (playerDateTo) q = q.lte("injury_date", playerDateTo);
+          return q.order("injury_date", { ascending: false });
+        })(),
+        (() => {
+          let q = supabase.from("wellness_tracking").select("*").eq("player_id", selectedPlayer);
+          if (playerDateFrom) q = q.gte("tracking_date", playerDateFrom);
+          if (playerDateTo) q = q.lte("tracking_date", playerDateTo);
+          return q.order("tracking_date", { ascending: false });
+        })(),
+        (() => {
+          let q = supabase.from("speed_tests").select("*").eq("player_id", selectedPlayer);
+          if (playerDateFrom) q = q.gte("test_date", playerDateFrom);
+          if (playerDateTo) q = q.lte("test_date", playerDateTo);
+          return q.order("test_date", { ascending: false });
+        })(),
+        (() => {
+          let q = supabase.from("jump_tests").select("*").eq("player_id", selectedPlayer);
+          if (playerDateFrom) q = q.gte("test_date", playerDateFrom);
+          if (playerDateTo) q = q.lte("test_date", playerDateTo);
+          return q.order("test_date", { ascending: false });
+        })(),
         supabase.from("awcr_tracking").select("*").eq("player_id", selectedPlayer).order("session_date", { ascending: false }).limit(1),
         supabase.from("body_composition").select("*").eq("player_id", selectedPlayer).order("measurement_date", { ascending: false }).limit(1),
         supabase.from("match_lineups").select("*, matches(match_date, opponent)").eq("player_id", selectedPlayer),
+        (() => {
+          let q = supabase.from("generic_tests").select("*").eq("player_id", selectedPlayer);
+          if (playerDateFrom) q = q.gte("test_date", playerDateFrom);
+          if (playerDateTo) q = q.lte("test_date", playerDateTo);
+          return q.order("test_date", { ascending: false });
+        })(),
+        supabase.from("player_match_stats").select("*, players(name), matches(match_date, opponent)").eq("player_id", selectedPlayer),
       ]);
 
       const pdf = new jsPDF();
@@ -176,12 +211,18 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
       const margin = 15;
       const contentWidth = pageWidth - 2 * margin;
 
-      // Header
-      let yPos = drawPdfHeader(
+      const dateRange = playerDateFrom || playerDateTo 
+        ? `Période: ${playerDateFrom ? format(new Date(playerDateFrom), "dd/MM/yyyy") : "début"} - ${playerDateTo ? format(new Date(playerDateTo), "dd/MM/yyyy") : "aujourd'hui"}`
+        : "";
+
+      // Header with custom settings
+      let yPos = drawPdfHeaderCustom(
         pdf,
         `FICHE JOUEUR`,
         `${player.name} - ${player.position || 'Position non définie'}`,
-        `${category?.clubs?.name} - ${category?.name} | ${format(new Date(), "d MMMM yyyy", { locale: fr })}`
+        `${category?.clubs?.name} - ${category?.name} | ${format(new Date(), "d MMMM yyyy", { locale: fr })}${dateRange ? ` | ${dateRange}` : ""}`,
+        pdfSettings,
+        logoBase64
       );
 
       // KPI Cards
@@ -194,17 +235,17 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
       const cardWidth = (contentWidth - 15) / 4;
       const cardHeight = 22;
 
-      drawKpiCard(pdf, margin, yPos, cardWidth, cardHeight, String(matchCount), "MATCHS", colors.primary);
-      drawKpiCard(pdf, margin + cardWidth + 5, yPos, cardWidth, cardHeight, String(totalMinutes), "MINUTES", colors.primary);
-      drawKpiCard(pdf, margin + (cardWidth + 5) * 2, yPos, cardWidth, cardHeight, String(activeInjuries), "BLESSURES", activeInjuries > 0 ? colors.danger : colors.success);
-      drawKpiCard(pdf, margin + (cardWidth + 5) * 3, yPos, cardWidth, cardHeight, latestAwcr ? latestAwcr.toFixed(2) : '-', "AWCR", latestAwcr ? (latestAwcr > 1.5 ? colors.danger : latestAwcr < 0.8 ? colors.warning : colors.success) : colors.muted);
+      drawKpiCard(pdf, margin, yPos, cardWidth, cardHeight, String(matchCount), "MATCHS", defaultColors.primary);
+      drawKpiCard(pdf, margin + cardWidth + 5, yPos, cardWidth, cardHeight, String(totalMinutes), "MINUTES", defaultColors.primary);
+      drawKpiCard(pdf, margin + (cardWidth + 5) * 2, yPos, cardWidth, cardHeight, String(activeInjuries), "BLESSURES", activeInjuries > 0 ? defaultColors.danger : defaultColors.success);
+      drawKpiCard(pdf, margin + (cardWidth + 5) * 3, yPos, cardWidth, cardHeight, latestAwcr ? latestAwcr.toFixed(2) : '-', "EWMA", latestAwcr ? (latestAwcr > 1.5 ? defaultColors.danger : latestAwcr < 0.8 ? defaultColors.warning : defaultColors.success) : defaultColors.muted);
 
       yPos += cardHeight + 15;
 
       // Biometrics Section
       pdf.setFontSize(12);
       pdf.setFont("helvetica", "bold");
-      pdf.setTextColor(...colors.dark);
+      pdf.setTextColor(...defaultColors.dark);
       pdf.text("BIOMÉTRIE", margin, yPos);
       yPos += 8;
 
@@ -212,12 +253,12 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
       const bodyComp = bodyCompRes.data?.[0];
 
       if (measurement || bodyComp) {
-        pdf.setFillColor(...colors.light);
+        pdf.setFillColor(...defaultColors.light);
         pdf.roundedRect(margin, yPos, contentWidth, 20, 2, 2, 'F');
         
         pdf.setFontSize(9);
         pdf.setFont("helvetica", "normal");
-        pdf.setTextColor(...colors.dark);
+        pdf.setTextColor(...defaultColors.dark);
         
         let bioText = [];
         if (measurement?.height_cm) bioText.push(`Taille: ${measurement.height_cm} cm`);
@@ -229,7 +270,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
         yPos += 25;
       } else {
         pdf.setFontSize(9);
-        pdf.setTextColor(...colors.muted);
+        pdf.setTextColor(...defaultColors.muted);
         pdf.text("Aucune mesure enregistrée", margin, yPos);
         yPos += 10;
       }
@@ -237,38 +278,40 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
       // Injuries Section
       pdf.setFontSize(12);
       pdf.setFont("helvetica", "bold");
-      pdf.setTextColor(...colors.dark);
+      pdf.setTextColor(...defaultColors.dark);
       pdf.text("HISTORIQUE BLESSURES", margin, yPos);
       yPos += 8;
 
       if (allInjuries.length > 0) {
-        const injuryHeaders = ["Type", "Sévérité", "Statut", "Date"];
-        const injuryColWidths = [60, 40, 40, 40];
+        const injuryHeaders = ["Type", "Sévérité", "Statut", "Date", "Retour"];
+        const injuryColWidths = [50, 30, 30, 30, 40];
         yPos = drawTableHeaderPdf(pdf, injuryHeaders, injuryColWidths, yPos, margin, contentWidth);
 
-        allInjuries.slice(0, 5).forEach((injury, index) => {
+        allInjuries.forEach((injury, index) => {
+          yPos = localCheckPageBreak(pdf, yPos, 10);
           const statusLabel = injury.status === 'active' ? 'Active' : injury.status === 'recovering' ? 'Récup.' : 'Guérie';
-          const statusColor = injury.status === 'active' ? colors.danger : injury.status === 'recovering' ? colors.warning : colors.success;
+          const statusColor = injury.status === 'active' ? defaultColors.danger : injury.status === 'recovering' ? defaultColors.warning : defaultColors.success;
           yPos = drawTableRowPdf(pdf, [
             injury.injury_type,
             injury.severity,
             statusLabel,
-            format(new Date(injury.injury_date), "dd/MM/yy")
-          ], injuryColWidths, yPos, index % 2 === 1, margin, contentWidth, [null, null, statusColor, null]);
+            format(new Date(injury.injury_date), "dd/MM/yy"),
+            injury.estimated_return_date ? format(new Date(injury.estimated_return_date), "dd/MM/yy") : '-'
+          ], injuryColWidths, yPos, index % 2 === 1, margin, contentWidth, [null, null, statusColor, null, null]);
         });
         yPos += 5;
       } else {
         pdf.setFontSize(9);
-        pdf.setTextColor(...colors.success);
+        pdf.setTextColor(...defaultColors.success);
         pdf.text("Aucune blessure enregistrée", margin, yPos);
         yPos += 10;
       }
 
       // Speed Tests Section
-      yPos += 5;
+      yPos = localCheckPageBreak(pdf, yPos, 30);
       pdf.setFontSize(12);
       pdf.setFont("helvetica", "bold");
-      pdf.setTextColor(...colors.dark);
+      pdf.setTextColor(...defaultColors.dark);
       pdf.text("TESTS DE VITESSE", margin, yPos);
       yPos += 8;
 
@@ -278,7 +321,8 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
         const speedColWidths = [60, 60, 60];
         yPos = drawTableHeaderPdf(pdf, speedHeaders, speedColWidths, yPos, margin, contentWidth);
 
-        speedTests.slice(0, 5).forEach((test, index) => {
+        speedTests.forEach((test, index) => {
+          yPos = localCheckPageBreak(pdf, yPos, 10);
           let result = '-';
           if (test.test_type === '40m' && test.time_40m_seconds) {
             result = `${test.time_40m_seconds}s (${test.speed_kmh?.toFixed(1) || '-'} km/h)`;
@@ -294,16 +338,16 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
         yPos += 5;
       } else {
         pdf.setFontSize(9);
-        pdf.setTextColor(...colors.muted);
+        pdf.setTextColor(...defaultColors.muted);
         pdf.text("Aucun test enregistré", margin, yPos);
         yPos += 10;
       }
 
       // Jump Tests Section
-      yPos += 5;
+      yPos = localCheckPageBreak(pdf, yPos, 30);
       pdf.setFontSize(12);
       pdf.setFont("helvetica", "bold");
-      pdf.setTextColor(...colors.dark);
+      pdf.setTextColor(...defaultColors.dark);
       pdf.text("TESTS DE SAUT", margin, yPos);
       yPos += 8;
 
@@ -313,17 +357,128 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
         const jumpColWidths = [60, 60, 60];
         yPos = drawTableHeaderPdf(pdf, jumpHeaders, jumpColWidths, yPos, margin, contentWidth);
 
-        jumpTests.slice(0, 5).forEach((test, index) => {
+        jumpTests.forEach((test, index) => {
+          yPos = localCheckPageBreak(pdf, yPos, 10);
           yPos = drawTableRowPdf(pdf, [
             test.test_type,
             `${test.result_cm} cm`,
             format(new Date(test.test_date), "dd/MM/yy")
           ], jumpColWidths, yPos, index % 2 === 1, margin, contentWidth);
         });
+        yPos += 5;
       } else {
         pdf.setFontSize(9);
-        pdf.setTextColor(...colors.muted);
+        pdf.setTextColor(...defaultColors.muted);
         pdf.text("Aucun test enregistré", margin, yPos);
+        yPos += 10;
+      }
+
+      // Generic Tests Section
+      const genericTests = genericTestsRes.data || [];
+      if (genericTests.length > 0) {
+        yPos = localCheckPageBreak(pdf, yPos, 30);
+        pdf.setFontSize(12);
+        pdf.setFont("helvetica", "bold");
+        pdf.setTextColor(...defaultColors.dark);
+        pdf.text("AUTRES TESTS", margin, yPos);
+        yPos += 8;
+
+        const genHeaders = ["Test", "Catégorie", "Résultat", "Date"];
+        const genColWidths = [50, 40, 45, 45];
+        yPos = drawTableHeaderPdf(pdf, genHeaders, genColWidths, yPos, margin, contentWidth);
+
+        genericTests.forEach((test, index) => {
+          yPos = localCheckPageBreak(pdf, yPos, 10);
+          yPos = drawTableRowPdf(pdf, [
+            test.test_type,
+            test.test_category,
+            `${test.result_value}${test.result_unit ? ` ${test.result_unit}` : ''}`,
+            format(new Date(test.test_date), "dd/MM/yy")
+          ], genColWidths, yPos, index % 2 === 1, margin, contentWidth);
+        });
+        yPos += 5;
+      }
+
+      // Match Stats Section
+      const matchStats = matchStatsRes.data || [];
+      if (matchStats.length > 0) {
+        yPos = localCheckPageBreak(pdf, yPos, 30);
+        pdf.setFontSize(12);
+        pdf.setFont("helvetica", "bold");
+        pdf.setTextColor(...defaultColors.dark);
+        pdf.text("STATISTIQUES PAR MATCH", margin, yPos);
+        yPos += 8;
+
+        // Get the configured stat preferences
+        const { data: statPrefs } = await supabase
+          .from("category_stat_preferences")
+          .select("enabled_stats")
+          .eq("category_id", categoryId)
+          .maybeSingle();
+
+        const sportType = category?.clubs?.sport || "rugby";
+        const allStatsDef = getStatsForSport(sportType);
+        const enabledKeys = (statPrefs?.enabled_stats as string[]) || allStatsDef.map(s => s.key);
+        
+        // Map stat keys to DB columns  
+        const statKeyToDbCol: Record<string, string> = {
+          tries: "tries", tackles: "tackles", carries: "carries", breakthroughs: "breakthroughs",
+          offloads: "offloads", conversions: "conversions", penaltiesScored: "penalties_scored",
+          dropGoals: "drop_goals", metersGained: "meters_gained", tacklesMissed: "tackles_missed",
+          turnoversWon: "turnovers_won", totalContacts: "total_contacts", defensiveRecoveries: "defensive_recoveries",
+          yellowCards: "yellow_cards", redCards: "red_cards",
+        };
+
+        // Filter to stats that have DB columns and are enabled
+        const displayStats = allStatsDef.filter(s => enabledKeys.includes(s.key) && (statKeyToDbCol[s.key] || s.key in statKeyToDbCol));
+        const limitedStats = displayStats.slice(0, 5); // max 5 columns
+
+        const matchStatHeaders = ["Match", "Date", ...limitedStats.map(s => s.shortLabel)];
+        const matchStatColWidths = [45, 25, ...limitedStats.map(() => Math.floor((contentWidth - 70) / limitedStats.length))];
+        yPos = drawTableHeaderPdf(pdf, matchStatHeaders, matchStatColWidths, yPos, margin, contentWidth);
+
+        matchStats.forEach((stat: any, index) => {
+          yPos = localCheckPageBreak(pdf, yPos, 10);
+          const sportData = (stat.sport_data && typeof stat.sport_data === 'object') ? stat.sport_data as Record<string, any> : {};
+          const values = [
+            stat.matches?.opponent || '-',
+            stat.matches?.match_date ? format(new Date(stat.matches.match_date), "dd/MM") : '-',
+            ...limitedStats.map(s => {
+              const dbCol = statKeyToDbCol[s.key];
+              const val = dbCol ? stat[dbCol] : sportData[s.key];
+              return val != null ? String(val) : '-';
+            })
+          ];
+          yPos = drawTableRowPdf(pdf, values, matchStatColWidths, yPos, index % 2 === 1, margin, contentWidth);
+        });
+        yPos += 5;
+      }
+
+      // Wellness Summary (last 10)
+      const wellnessData = wellnessRes.data || [];
+      if (wellnessData.length > 0) {
+        yPos = localCheckPageBreak(pdf, yPos, 30);
+        pdf.setFontSize(12);
+        pdf.setFont("helvetica", "bold");
+        pdf.setTextColor(...defaultColors.dark);
+        pdf.text("WELLNESS (dernières entrées)", margin, yPos);
+        yPos += 8;
+
+        const wHeaders = ["Date", "Sommeil", "Fatigue", "Stress", "Haut", "Bas"];
+        const wColWidths = [35, 28, 28, 28, 28, 28];
+        yPos = drawTableHeaderPdf(pdf, wHeaders, wColWidths, yPos, margin, contentWidth);
+
+        wellnessData.slice(0, 10).forEach((w, index) => {
+          yPos = localCheckPageBreak(pdf, yPos, 10);
+          yPos = drawTableRowPdf(pdf, [
+            format(new Date(w.tracking_date), "dd/MM/yy"),
+            `${w.sleep_quality || '-'}/5`,
+            `${w.general_fatigue || '-'}/5`,
+            `${w.stress_level || '-'}/5`,
+            `${w.soreness_upper_body || '-'}/5`,
+            `${w.soreness_lower_body || '-'}/5`,
+          ], wColWidths, yPos, index % 2 === 1, margin, contentWidth);
+        });
       }
 
       pdf.save(`fiche_${player.name.replace(/\s+/g, '_')}_${format(new Date(), "yyyy-MM-dd")}.pdf`);
@@ -336,16 +491,18 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
     }
   };
 
+  // ========================== SEASON REPORT ==========================
   const generateSeasonReport = async () => {
     setGeneratingReport("season");
     
     try {
-      // Fetch season data
+      const { settings: pdfSettings, logoBase64 } = await preparePdfWithSettings(categoryId);
+
       const [matchesRes, injuriesRes, goalsRes, awcrRes] = await Promise.all([
         supabase.from("matches").select("*").eq("category_id", categoryId).order("match_date"),
         supabase.from("injuries").select("*, players(name)").eq("category_id", categoryId),
         supabase.from("season_goals").select("*").eq("category_id", categoryId).eq("season_year", new Date().getFullYear()),
-        supabase.from("awcr_tracking").select("*").eq("category_id", categoryId).order("session_date", { ascending: false }),
+        supabase.from("awcr_tracking").select("*, players(name)").eq("category_id", categoryId).order("session_date", { ascending: false }),
       ]);
 
       const matchesData = matchesRes.data || [];
@@ -366,51 +523,52 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
       const margin = 15;
       const contentWidth = pageWidth - 2 * margin;
 
-      // Header
-      let yPos = drawPdfHeader(
+      let yPos = drawPdfHeaderCustom(
         pdf,
         `BILAN DE SAISON ${new Date().getFullYear()}/${new Date().getFullYear() + 1}`,
         `${category?.clubs?.name} - ${category?.name}`,
-        `Généré le ${format(new Date(), "d MMMM yyyy", { locale: fr })}`
+        `Généré le ${format(new Date(), "d MMMM yyyy", { locale: fr })}`,
+        pdfSettings,
+        logoBase64
       );
 
       // KPI Cards
       const cardWidth = (contentWidth - 15) / 4;
       const cardHeight = 22;
 
-      drawKpiCard(pdf, margin, yPos, cardWidth, cardHeight, String(players.length), "JOUEURS", colors.primary);
-      drawKpiCard(pdf, margin + cardWidth + 5, yPos, cardWidth, cardHeight, String(matchesData.length), "MATCHS", colors.primary);
-      drawKpiCard(pdf, margin + (cardWidth + 5) * 2, yPos, cardWidth, cardHeight, String(wins), "VICTOIRES", colors.success);
-      drawKpiCard(pdf, margin + (cardWidth + 5) * 3, yPos, cardWidth, cardHeight, String(activeInjuries), "BLESSÉS", activeInjuries > 0 ? colors.danger : colors.success);
+      drawKpiCard(pdf, margin, yPos, cardWidth, cardHeight, String(players.length), "JOUEURS", defaultColors.primary);
+      drawKpiCard(pdf, margin + cardWidth + 5, yPos, cardWidth, cardHeight, String(matchesData.length), "MATCHS", defaultColors.primary);
+      drawKpiCard(pdf, margin + (cardWidth + 5) * 2, yPos, cardWidth, cardHeight, String(wins), "VICTOIRES", defaultColors.success);
+      drawKpiCard(pdf, margin + (cardWidth + 5) * 3, yPos, cardWidth, cardHeight, String(activeInjuries), "BLESSÉS", activeInjuries > 0 ? defaultColors.danger : defaultColors.success);
 
       yPos += cardHeight + 15;
 
       // Match Record Summary
       pdf.setFontSize(12);
       pdf.setFont("helvetica", "bold");
-      pdf.setTextColor(...colors.dark);
+      pdf.setTextColor(...defaultColors.dark);
       pdf.text("BILAN SPORTIF", margin, yPos);
       yPos += 10;
 
       const recordBoxWidth = (contentWidth - 10) / 3;
       
-      pdf.setFillColor(...colors.success);
+      pdf.setFillColor(...defaultColors.success);
       pdf.roundedRect(margin, yPos, recordBoxWidth, 18, 2, 2, 'F');
-      pdf.setTextColor(...colors.white);
+      pdf.setTextColor(...defaultColors.white);
       pdf.setFontSize(14);
       pdf.setFont("helvetica", "bold");
       pdf.text(String(wins), margin + recordBoxWidth / 2 - 5, yPos + 10);
       pdf.setFontSize(8);
       pdf.text("VICTOIRES", margin + recordBoxWidth / 2 - 15, yPos + 15);
 
-      pdf.setFillColor(...colors.muted);
+      pdf.setFillColor(...defaultColors.muted);
       pdf.roundedRect(margin + recordBoxWidth + 5, yPos, recordBoxWidth, 18, 2, 2, 'F');
       pdf.setFontSize(14);
       pdf.text(String(draws), margin + recordBoxWidth + 5 + recordBoxWidth / 2 - 5, yPos + 10);
       pdf.setFontSize(8);
       pdf.text("NULS", margin + recordBoxWidth + 5 + recordBoxWidth / 2 - 8, yPos + 15);
 
-      pdf.setFillColor(...colors.danger);
+      pdf.setFillColor(...defaultColors.danger);
       pdf.roundedRect(margin + (recordBoxWidth + 5) * 2, yPos, recordBoxWidth, 18, 2, 2, 'F');
       pdf.setFontSize(14);
       pdf.text(String(losses), margin + (recordBoxWidth + 5) * 2 + recordBoxWidth / 2 - 5, yPos + 10);
@@ -422,7 +580,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
       // Goals Section
       pdf.setFontSize(12);
       pdf.setFont("helvetica", "bold");
-      pdf.setTextColor(...colors.dark);
+      pdf.setTextColor(...defaultColors.dark);
       pdf.text("OBJECTIFS DE SAISON", margin, yPos);
       yPos += 8;
 
@@ -434,7 +592,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
 
         goals.forEach((goal, index) => {
           const statusLabel = goal.status === 'completed' ? 'Atteint' : goal.status === 'in_progress' ? 'En cours' : 'En attente';
-          const statusColor = goal.status === 'completed' ? colors.success : goal.status === 'in_progress' ? colors.warning : colors.muted;
+          const statusColor = goal.status === 'completed' ? defaultColors.success : goal.status === 'in_progress' ? defaultColors.warning : defaultColors.muted;
           yPos = drawTableRowPdf(pdf, [
             goal.title,
             `${goal.progress_percentage || 0}%`,
@@ -444,7 +602,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
         yPos += 5;
       } else {
         pdf.setFontSize(9);
-        pdf.setTextColor(...colors.muted);
+        pdf.setTextColor(...defaultColors.muted);
         pdf.text("Aucun objectif défini", margin, yPos);
         yPos += 10;
       }
@@ -453,7 +611,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
       yPos += 5;
       pdf.setFontSize(12);
       pdf.setFont("helvetica", "bold");
-      pdf.setTextColor(...colors.dark);
+      pdf.setTextColor(...defaultColors.dark);
       pdf.text("RÉSULTATS DES MATCHS", margin, yPos);
       yPos += 8;
 
@@ -463,6 +621,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
         yPos = drawTableHeaderPdf(pdf, matchHeaders, matchColWidths, yPos, margin, contentWidth);
 
         matchesData.slice(0, 12).forEach((match, index) => {
+          yPos = localCheckPageBreak(pdf, yPos, 10);
           const score = `${match.score_home ?? '-'} - ${match.score_away ?? '-'}`;
           let result = '-';
           let resultColor: [number, number, number] | null = null;
@@ -471,7 +630,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
             const isWin = (match.is_home && match.score_home > match.score_away) || (!match.is_home && match.score_away > match.score_home);
             const isLoss = (match.is_home && match.score_home < match.score_away) || (!match.is_home && match.score_away < match.score_home);
             result = isWin ? 'Victoire' : isLoss ? 'Défaite' : 'Nul';
-            resultColor = isWin ? colors.success : isLoss ? colors.danger : colors.muted;
+            resultColor = isWin ? defaultColors.success : isLoss ? defaultColors.danger : defaultColors.muted;
           }
           
           yPos = drawTableRowPdf(pdf, [
@@ -483,34 +642,31 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
         });
       } else {
         pdf.setFontSize(9);
-        pdf.setTextColor(...colors.muted);
+        pdf.setTextColor(...defaultColors.muted);
         pdf.text("Aucun match joué", margin, yPos);
       }
 
       // Injury Summary
       yPos += 15;
-      if (yPos > 250) {
-        pdf.addPage();
-        yPos = 20;
-      }
+      yPos = localCheckPageBreak(pdf, yPos, 40);
       
       pdf.setFontSize(12);
       pdf.setFont("helvetica", "bold");
-      pdf.setTextColor(...colors.dark);
+      pdf.setTextColor(...defaultColors.dark);
       pdf.text("BILAN MÉDICAL", margin, yPos);
       yPos += 10;
 
       const injuryStats = [
-        { label: "Blessures totales", value: allInjuries.length, color: colors.primary },
-        { label: "Actuellement blessés", value: activeInjuries, color: activeInjuries > 0 ? colors.danger : colors.success },
-        { label: "En réathlétisation", value: allInjuries.filter(i => i.status === 'recovering').length, color: colors.warning },
+        { label: "Blessures totales", value: allInjuries.length, color: defaultColors.primary },
+        { label: "Actuellement blessés", value: activeInjuries, color: activeInjuries > 0 ? defaultColors.danger : defaultColors.success },
+        { label: "En réathlétisation", value: allInjuries.filter(i => i.status === 'recovering').length, color: defaultColors.warning },
       ];
 
       const statBoxWidth = (contentWidth - 10) / 3;
       injuryStats.forEach((stat, i) => {
         pdf.setFillColor(...stat.color);
         pdf.roundedRect(margin + (statBoxWidth + 5) * i, yPos, statBoxWidth, 18, 2, 2, 'F');
-        pdf.setTextColor(...colors.white);
+        pdf.setTextColor(...defaultColors.white);
         pdf.setFontSize(14);
         pdf.setFont("helvetica", "bold");
         pdf.text(String(stat.value), margin + (statBoxWidth + 5) * i + statBoxWidth / 2 - 5, yPos + 10);
@@ -530,6 +686,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
     }
   };
 
+  // ========================== MATCH REPORT ==========================
   const generateMatchReport = async () => {
     if (!selectedMatch) {
       toast.error("Veuillez sélectionner un match");
@@ -542,10 +699,14 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
       const match = matches.find(m => m.id === selectedMatch);
       if (!match) throw new Error("Match non trouvé");
 
-      // Fetch match data
-      const [lineupsRes, statsRes] = await Promise.all([
+      const { settings: pdfSettings, logoBase64 } = await preparePdfWithSettings(categoryId);
+
+      // Fetch match data + stat preferences
+      const [lineupsRes, statsRes, statPrefsRes, customStatsRes] = await Promise.all([
         supabase.from("match_lineups").select("*, players(name, position)").eq("match_id", selectedMatch),
         supabase.from("player_match_stats").select("*, players(name)").eq("match_id", selectedMatch),
+        supabase.from("category_stat_preferences").select("enabled_stats").eq("category_id", categoryId).maybeSingle(),
+        supabase.from("custom_stats").select("*").eq("category_id", categoryId),
       ]);
 
       const pdf = new jsPDF();
@@ -555,20 +716,21 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
 
       // Determine result
       let resultText = "Match";
-      let resultColor = colors.primary;
+      let resultColor = defaultColors.primary;
       if (match.score_home !== null && match.score_away !== null) {
         const isWin = (match.is_home && match.score_home > match.score_away) || (!match.is_home && match.score_away > match.score_home);
         const isLoss = (match.is_home && match.score_home < match.score_away) || (!match.is_home && match.score_away < match.score_home);
         resultText = isWin ? "VICTOIRE" : isLoss ? "DÉFAITE" : "MATCH NUL";
-        resultColor = isWin ? colors.success : isLoss ? colors.danger : colors.muted;
+        resultColor = isWin ? defaultColors.success : isLoss ? defaultColors.danger : defaultColors.muted;
       }
 
-      // Header
-      let yPos = drawPdfHeader(
+      let yPos = drawPdfHeaderCustom(
         pdf,
         `RAPPORT DE MATCH`,
         `vs ${match.opponent} - ${match.location || 'Lieu non défini'}`,
-        `${format(new Date(match.match_date), "EEEE d MMMM yyyy", { locale: fr })}`
+        `${format(new Date(match.match_date), "EEEE d MMMM yyyy", { locale: fr })}`,
+        pdfSettings,
+        logoBase64
       );
 
       // Score Card
@@ -576,7 +738,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
       pdf.setFillColor(...resultColor);
       pdf.roundedRect(margin, yPos, scoreBoxWidth, 35, 3, 3, 'F');
       
-      pdf.setTextColor(...colors.white);
+      pdf.setTextColor(...defaultColors.white);
       pdf.setFontSize(10);
       pdf.setFont("helvetica", "normal");
       pdf.text(resultText, margin + scoreBoxWidth / 2 - pdf.getTextWidth(resultText) / 2, yPos + 8);
@@ -591,7 +753,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
       // Match Stats
       pdf.setFontSize(12);
       pdf.setFont("helvetica", "bold");
-      pdf.setTextColor(...colors.dark);
+      pdf.setTextColor(...defaultColors.dark);
       pdf.text("STATISTIQUES DU MATCH", margin, yPos);
       yPos += 10;
 
@@ -601,14 +763,14 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
         { label: "Séq. moyenne", value: match.average_play_sequence ? `${match.average_play_sequence} sec` : '-' },
       ];
 
-      pdf.setFillColor(...colors.light);
+      pdf.setFillColor(...defaultColors.light);
       pdf.roundedRect(margin, yPos, contentWidth, 15, 2, 2, 'F');
       pdf.setFontSize(9);
-      pdf.setTextColor(...colors.dark);
+      pdf.setTextColor(...defaultColors.dark);
       pdf.setFont("helvetica", "normal");
       
       let xOffset = margin + 5;
-      matchStatsData.forEach((stat, i) => {
+      matchStatsData.forEach((stat) => {
         pdf.text(`${stat.label}: ${stat.value}`, xOffset, yPos + 10);
         xOffset += 60;
       });
@@ -618,7 +780,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
       // Lineup
       pdf.setFontSize(12);
       pdf.setFont("helvetica", "bold");
-      pdf.setTextColor(...colors.dark);
+      pdf.setTextColor(...defaultColors.dark);
       pdf.text("COMPOSITION", margin, yPos);
       yPos += 8;
 
@@ -628,7 +790,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
       if (starters.length > 0) {
         pdf.setFontSize(10);
         pdf.setFont("helvetica", "bold");
-        pdf.setTextColor(...colors.success);
+        pdf.setTextColor(...defaultColors.success);
         pdf.text("Titulaires", margin, yPos);
         yPos += 6;
 
@@ -637,6 +799,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
         yPos = drawTableHeaderPdf(pdf, lineupHeaders, lineupColWidths, yPos, margin, contentWidth);
 
         starters.forEach((p, index) => {
+          yPos = localCheckPageBreak(pdf, yPos, 10);
           yPos = drawTableRowPdf(pdf, [
             p.players?.name || 'Inconnu',
             p.position || p.players?.position || '-',
@@ -649,7 +812,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
       if (subs.length > 0) {
         pdf.setFontSize(10);
         pdf.setFont("helvetica", "bold");
-        pdf.setTextColor(...colors.warning);
+        pdf.setTextColor(...defaultColors.warning);
         pdf.text("Remplaçants", margin, yPos);
         yPos += 6;
 
@@ -658,6 +821,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
         yPos = drawTableHeaderPdf(pdf, subHeaders, subColWidths, yPos, margin, contentWidth);
 
         subs.forEach((p, index) => {
+          yPos = localCheckPageBreak(pdf, yPos, 10);
           yPos = drawTableRowPdf(pdf, [
             p.players?.name || 'Inconnu',
             p.position || p.players?.position || '-',
@@ -666,39 +830,73 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
         });
       }
 
-      // Player Stats if available
+      // Player Stats with DYNAMIC columns from stat preferences
       const playerStats = statsRes.data || [];
       if (playerStats.length > 0) {
         yPos += 10;
-        if (yPos > 230) {
-          pdf.addPage();
-          yPos = 20;
-        }
+        yPos = localCheckPageBreak(pdf, yPos, 30);
 
         pdf.setFontSize(12);
         pdf.setFont("helvetica", "bold");
-        pdf.setTextColor(...colors.dark);
+        pdf.setTextColor(...defaultColors.dark);
         pdf.text("STATISTIQUES JOUEURS", margin, yPos);
         yPos += 8;
 
-        const statHeaders = ["Joueur", "Essais", "Plaq.", "Portés", "Franchis."];
-        const statColWidths = [55, 25, 30, 35, 35];
+        // Get the stats to display based on preferences
+        const sportType = category?.clubs?.sport || "rugby";
+        const allStatsDef = getStatsForSport(sportType);
+        const customStatFields = (customStatsRes.data || []).map(cs => ({
+          key: cs.key, label: cs.label, shortLabel: cs.short_label,
+          category: cs.category_type as StatField["category"],
+          type: "number" as const,
+        }));
+        const allAvailable = [...allStatsDef, ...customStatFields];
+        const enabledKeys = (statPrefsRes.data?.enabled_stats as string[]) || allAvailable.map(s => s.key);
+
+        const statKeyToDbCol: Record<string, string> = {
+          tries: "tries", tackles: "tackles", carries: "carries", breakthroughs: "breakthroughs",
+          offloads: "offloads", conversions: "conversions", penaltiesScored: "penalties_scored",
+          dropGoals: "drop_goals", metersGained: "meters_gained", tacklesMissed: "tackles_missed",
+          turnoversWon: "turnovers_won", totalContacts: "total_contacts", defensiveRecoveries: "defensive_recoveries",
+          yellowCards: "yellow_cards", redCards: "red_cards",
+        };
+
+        const displayStats = allAvailable.filter(s => enabledKeys.includes(s.key));
+        // Show up to 6 stat columns in PDF
+        const limitedStats = displayStats.slice(0, 6);
+
+        const statHeaders = ["Joueur", ...limitedStats.map(s => s.shortLabel)];
+        const nameColWidth = 50;
+        const statColWidth = Math.floor((contentWidth - nameColWidth) / limitedStats.length);
+        const statColWidths = [nameColWidth, ...limitedStats.map(() => statColWidth)];
         yPos = drawTableHeaderPdf(pdf, statHeaders, statColWidths, yPos, margin, contentWidth);
 
-        playerStats.forEach((stat, index) => {
-          yPos = drawTableRowPdf(pdf, [
+        playerStats.forEach((stat: any, index) => {
+          yPos = localCheckPageBreak(pdf, yPos, 10);
+          const sportData = (stat.sport_data && typeof stat.sport_data === 'object') ? stat.sport_data as Record<string, any> : {};
+          
+          const values = [
             stat.players?.name || 'Inconnu',
-            String(stat.tries || 0),
-            String(stat.tackles || 0),
-            String(stat.carries || 0),
-            String(stat.breakthroughs || 0)
-          ], statColWidths, yPos, index % 2 === 1, margin, contentWidth, [
+            ...limitedStats.map(s => {
+              const dbCol = statKeyToDbCol[s.key];
+              const val = dbCol ? stat[dbCol] : sportData[s.key];
+              return val != null ? String(val) : '-';
+            })
+          ];
+
+          const rowColors: ([number, number, number] | null)[] = [
             null,
-            stat.tries && stat.tries > 0 ? colors.success : null,
-            null,
-            null,
-            stat.breakthroughs && stat.breakthroughs > 0 ? colors.success : null
-          ]);
+            ...limitedStats.map(s => {
+              const dbCol = statKeyToDbCol[s.key];
+              const val = dbCol ? stat[dbCol] : sportData[s.key];
+              if (s.key === 'tries' && val && val > 0) return defaultColors.success;
+              if (s.key === 'yellowCards' && val && val > 0) return defaultColors.warning;
+              if (s.key === 'redCards' && val && val > 0) return defaultColors.danger;
+              return null;
+            })
+          ];
+
+          yPos = drawTableRowPdf(pdf, values, statColWidths, yPos, index % 2 === 1, margin, contentWidth, rowColors);
         });
       }
 
@@ -712,11 +910,13 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
     }
   };
 
+  // ========================== SQUAD OVERVIEW REPORT ==========================
   const generateSquadReport = async () => {
     setGeneratingReport("squad");
     
     try {
-      // First get matches for this category
+      const { settings: pdfSettings, logoBase64 } = await preparePdfWithSettings(categoryId);
+
       const { data: categoryMatches } = await supabase
         .from("matches")
         .select("id")
@@ -724,20 +924,29 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
       
       const matchIds = categoryMatches?.map(m => m.id) || [];
 
-      // Fetch all squad data
+      // Build date-filtered queries
       const [
-        injuriesRes,
-        wellnessRes,
-        awcrRes,
-        speedTestsRes,
-        jumpTestsRes,
-        matchLineupsRes,
-        measurementsRes,
-        bodyCompRes,
+        injuriesRes, wellnessRes, awcrRes, speedTestsRes, jumpTestsRes,
+        matchLineupsRes, measurementsRes, bodyCompRes,
       ] = await Promise.all([
-        supabase.from("injuries").select("*, players(name)").eq("category_id", categoryId),
-        supabase.from("wellness_tracking").select("*, players(name)").eq("category_id", categoryId).order("tracking_date", { ascending: false }),
-        supabase.from("awcr_tracking").select("*, players(name)").eq("category_id", categoryId).order("session_date", { ascending: false }),
+        (() => {
+          let q = supabase.from("injuries").select("*, players(name)").eq("category_id", categoryId);
+          if (overviewDateFrom) q = q.gte("injury_date", overviewDateFrom);
+          if (overviewDateTo) q = q.lte("injury_date", overviewDateTo);
+          return q;
+        })(),
+        (() => {
+          let q = supabase.from("wellness_tracking").select("*, players(name)").eq("category_id", categoryId).order("tracking_date", { ascending: false });
+          if (overviewDateFrom) q = q.gte("tracking_date", overviewDateFrom);
+          if (overviewDateTo) q = q.lte("tracking_date", overviewDateTo);
+          return q;
+        })(),
+        (() => {
+          let q = supabase.from("awcr_tracking").select("*, players(name)").eq("category_id", categoryId).order("session_date", { ascending: false });
+          if (overviewDateFrom) q = q.gte("session_date", overviewDateFrom);
+          if (overviewDateTo) q = q.lte("session_date", overviewDateTo);
+          return q;
+        })(),
         supabase.from("speed_tests").select("*, players(name)").eq("category_id", categoryId),
         supabase.from("jump_tests").select("*, players(name)").eq("category_id", categoryId),
         matchIds.length > 0 
@@ -753,19 +962,8 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
       const margin = 15;
       const contentWidth = pageWidth - 2 * margin;
 
-      // Helper colors (RGB)
-      const colors = {
-        primary: [41, 128, 185] as [number, number, number], // Blue
-        success: [39, 174, 96] as [number, number, number],  // Green
-        warning: [241, 196, 15] as [number, number, number], // Yellow
-        danger: [231, 76, 60] as [number, number, number],   // Red
-        muted: [149, 165, 166] as [number, number, number],  // Gray
-        dark: [52, 73, 94] as [number, number, number],      // Dark
-        light: [236, 240, 241] as [number, number, number],  // Light gray
-        white: [255, 255, 255] as [number, number, number],
-      };
+      const colors = defaultColors;
 
-      // Helper functions
       const checkPageBreak = (needed: number = 25) => {
         if (yPos + needed > 280) {
           pdf.addPage();
@@ -773,10 +971,10 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
         }
       };
 
-      const drawColoredBox = (x: number, y: number, w: number, h: number, color: [number, number, number], text: string, textColor: [number, number, number] = colors.white) => {
+      const drawColoredBox = (x: number, y: number, w: number, h: number, color: [number, number, number], text: string) => {
         pdf.setFillColor(...color);
         pdf.roundedRect(x, y, w, h, 2, 2, 'F');
-        pdf.setTextColor(...textColor);
+        pdf.setTextColor(...colors.white);
         pdf.setFontSize(10);
         const textWidth = pdf.getTextWidth(text);
         pdf.text(text, x + (w - textWidth) / 2, y + h / 2 + 3);
@@ -791,7 +989,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
         
         let xPos = margin + 2;
         headers.forEach((header, i) => {
-          pdf.text(header, xPos, y + 5.5);
+          pdf.text(header.substring(0, Math.floor(colWidths[i] / 3)), xPos, y + 5.5);
           xPos += colWidths[i];
         });
         pdf.setFont("helvetica", "normal");
@@ -814,80 +1012,60 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
             pdf.setTextColor(...colors.dark);
             pdf.setFont("helvetica", "normal");
           }
-          pdf.text(value.substring(0, 20), xPos, y + 5);
+          pdf.text((value || "-").substring(0, 20), xPos, y + 5);
           xPos += colWidths[i];
         });
         pdf.setFont("helvetica", "normal");
         return y + 7;
       };
 
-      const getStatusColor = (value: number, thresholds: { good: number; warning: number }, inverse: boolean = false): [number, number, number] => {
-        if (inverse) {
-          if (value <= thresholds.good) return colors.success;
-          if (value <= thresholds.warning) return colors.warning;
-          return colors.danger;
-        }
-        if (value >= thresholds.good) return colors.success;
-        if (value >= thresholds.warning) return colors.warning;
-        return colors.danger;
-      };
-
       // ========== PAGE 1: HEADER + EXECUTIVE SUMMARY ==========
+      const dateRange = overviewDateFrom || overviewDateTo 
+        ? `\nPériode: ${overviewDateFrom ? format(new Date(overviewDateFrom), "dd/MM/yyyy") : "début"} - ${overviewDateTo ? format(new Date(overviewDateTo), "dd/MM/yyyy") : "aujourd'hui"}`
+        : "";
       
-      // Header with colored background
-      pdf.setFillColor(...colors.primary);
-      pdf.rect(0, 0, pageWidth, 45, 'F');
-      
-      pdf.setTextColor(...colors.white);
-      pdf.setFontSize(22);
-      pdf.setFont("helvetica", "bold");
-      pdf.text("VUE D'ENSEMBLE DE L'EFFECTIF", margin, 20);
-      
-      pdf.setFontSize(14);
-      pdf.setFont("helvetica", "normal");
-      pdf.text(`${category?.clubs?.name} - ${category?.name}`, margin, 30);
-      
-      pdf.setFontSize(10);
-      pdf.text(`Généré le ${format(new Date(), "d MMMM yyyy", { locale: fr })}`, margin, 38);
-      
-      yPos = 55;
+      yPos = drawPdfHeaderCustom(
+        pdf,
+        "VUE D'ENSEMBLE DE L'EFFECTIF",
+        `${category?.clubs?.name} - ${category?.name}`,
+        `Généré le ${format(new Date(), "d MMMM yyyy", { locale: fr })}${dateRange ? ` | ${dateRange.trim()}` : ""}`,
+        pdfSettings,
+        logoBase64
+      );
+
       pdf.setTextColor(...colors.dark);
 
-      // Calculate key metrics for executive summary
+      // Calculate key metrics
       const allInjuries = injuriesRes.data || [];
       const activeInjuries = allInjuries.filter(i => i.status === 'active');
       const recoveringInjuries = allInjuries.filter(i => i.status === 'recovering');
 
-      const latestAwcrByPlayer: Record<string, typeof awcrRes.data[0]> = {};
-      (awcrRes.data || []).forEach(a => {
+      const latestAwcrByPlayer: Record<string, any> = {};
+      (awcrRes.data || []).forEach((a: any) => {
         if (!latestAwcrByPlayer[a.player_id]) {
           latestAwcrByPlayer[a.player_id] = a;
         }
       });
       const awcrEntries = Object.values(latestAwcrByPlayer);
-      const highAwcr = awcrEntries.filter(a => (a.awcr || 0) > 1.5).length;
-      const optimalAwcr = awcrEntries.filter(a => (a.awcr || 0) >= 0.8 && (a.awcr || 0) <= 1.5).length;
+      // Use EWMA ratio thresholds: optimal 0.85-1.30, high >1.5
+      const highEwma = awcrEntries.filter((a: any) => (a.awcr || 0) > 1.5).length;
+      const optimalEwma = awcrEntries.filter((a: any) => (a.awcr || 0) >= 0.85 && (a.awcr || 0) <= 1.3).length;
 
-      const latestWellnessByPlayer: Record<string, typeof wellnessRes.data[0]> = {};
-      (wellnessRes.data || []).forEach(w => {
+      const latestWellnessByPlayer: Record<string, any> = {};
+      (wellnessRes.data || []).forEach((w: any) => {
         if (!latestWellnessByPlayer[w.player_id]) {
           latestWellnessByPlayer[w.player_id] = w;
         }
       });
       const wellnessEntries = Object.values(latestWellnessByPlayer);
-      const playersWithPain = wellnessEntries.filter(w => w.has_specific_pain).length;
+      const playersWithPain = wellnessEntries.filter((w: any) => w.has_specific_pain).length;
 
-      // EXECUTIVE SUMMARY - KPI Cards
-      pdf.setFontSize(14);
-      pdf.setFont("helvetica", "bold");
-      pdf.text("RÉSUMÉ EXÉCUTIF", margin, yPos);
-      yPos += 10;
-
+      // Executive Summary Cards
       const cardWidth = (contentWidth - 15) / 4;
       const cardHeight = 25;
       const cardY = yPos;
 
-      // Card 1: Total Players
+      // Card 1: Players
       pdf.setFillColor(...colors.primary);
       pdf.roundedRect(margin, cardY, cardWidth, cardHeight, 3, 3, 'F');
       pdf.setTextColor(...colors.white);
@@ -896,9 +1074,9 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
       pdf.text(String(players.length), margin + cardWidth / 2 - 5, cardY + 12);
       pdf.setFontSize(8);
       pdf.setFont("helvetica", "normal");
-      pdf.text("JOUEURS", margin + cardWidth / 2 - 10, cardY + 20);
+      pdf.text("JOUEURS", margin + cardWidth / 2 - 12, cardY + 20);
 
-      // Card 2: Active Injuries (red if any)
+      // Card 2: Active Injuries
       const injuryColor = activeInjuries.length > 0 ? colors.danger : colors.success;
       pdf.setFillColor(...injuryColor);
       pdf.roundedRect(margin + cardWidth + 5, cardY, cardWidth, cardHeight, 3, 3, 'F');
@@ -910,17 +1088,17 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
       pdf.setFont("helvetica", "normal");
       pdf.text("BLESSÉS", margin + cardWidth + 5 + cardWidth / 2 - 10, cardY + 20);
 
-      // Card 3: High AWCR (warning if any)
-      const awcrColor = highAwcr > 0 ? colors.warning : colors.success;
-      pdf.setFillColor(...awcrColor);
+      // Card 3: High EWMA (was AWCR)
+      const ewmaColor = highEwma > 0 ? colors.warning : colors.success;
+      pdf.setFillColor(...ewmaColor);
       pdf.roundedRect(margin + (cardWidth + 5) * 2, cardY, cardWidth, cardHeight, 3, 3, 'F');
       pdf.setTextColor(...colors.white);
       pdf.setFontSize(18);
       pdf.setFont("helvetica", "bold");
-      pdf.text(String(highAwcr), margin + (cardWidth + 5) * 2 + cardWidth / 2 - 5, cardY + 12);
+      pdf.text(String(highEwma), margin + (cardWidth + 5) * 2 + cardWidth / 2 - 5, cardY + 12);
       pdf.setFontSize(8);
       pdf.setFont("helvetica", "normal");
-      pdf.text("AWCR ÉLEVÉ", margin + (cardWidth + 5) * 2 + cardWidth / 2 - 13, cardY + 20);
+      pdf.text("EWMA ÉLEVÉ", margin + (cardWidth + 5) * 2 + cardWidth / 2 - 14, cardY + 20);
 
       // Card 4: Players with pain
       const painColor = playersWithPain > 0 ? colors.warning : colors.success;
@@ -936,46 +1114,35 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
 
       yPos = cardY + cardHeight + 15;
 
-      // Status indicators legend
+      // Legend
       pdf.setFontSize(8);
       pdf.setTextColor(...colors.muted);
       pdf.text("Légende: ", margin, yPos);
-      
       drawColoredBox(margin + 20, yPos - 4, 8, 6, colors.success, "");
       pdf.setTextColor(...colors.dark);
       pdf.text("Bon", margin + 30, yPos);
-      
       drawColoredBox(margin + 45, yPos - 4, 8, 6, colors.warning, "");
-      pdf.setTextColor(...colors.dark);
       pdf.text("Attention", margin + 55, yPos);
-      
       drawColoredBox(margin + 80, yPos - 4, 8, 6, colors.danger, "");
-      pdf.setTextColor(...colors.dark);
       pdf.text("Critique", margin + 90, yPos);
-      
       yPos += 15;
 
-      // ========== SECTION: INJURIES OVERVIEW ==========
+      // ========== INJURIES OVERVIEW ==========
       pdf.setFontSize(12);
       pdf.setFont("helvetica", "bold");
       pdf.setTextColor(...colors.dark);
       pdf.text("BILAN MÉDICAL", margin, yPos);
       yPos += 8;
 
-      // Injury status boxes
       const statusBoxWidth = (contentWidth - 10) / 3;
-      
       drawColoredBox(margin, yPos, statusBoxWidth, 15, colors.danger, `${activeInjuries.length} Actives`);
       drawColoredBox(margin + statusBoxWidth + 5, yPos, statusBoxWidth, 15, colors.warning, `${recoveringInjuries.length} Réathlétisation`);
       drawColoredBox(margin + (statusBoxWidth + 5) * 2, yPos, statusBoxWidth, 15, colors.success, `${allInjuries.filter(i => i.status === 'healed').length} Guéries`);
-      
       yPos += 22;
 
-      // Injury types table
+      // Injury types
       const injuryTypes: Record<string, number> = {};
-      allInjuries.forEach(i => {
-        injuryTypes[i.injury_type] = (injuryTypes[i.injury_type] || 0) + 1;
-      });
+      allInjuries.forEach(i => { injuryTypes[i.injury_type] = (injuryTypes[i.injury_type] || 0) + 1; });
       
       if (Object.keys(injuryTypes).length > 0) {
         pdf.setFontSize(10);
@@ -1015,7 +1182,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
       // Build player comparison data
       const lineups = matchLineupsRes.data || [];
       const matchesByPlayer: Record<string, { matches: number; minutes: number }> = {};
-      lineups.forEach(l => {
+      lineups.forEach((l: any) => {
         if (!matchesByPlayer[l.player_id]) {
           matchesByPlayer[l.player_id] = { matches: 0, minutes: 0 };
         }
@@ -1023,31 +1190,24 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
         matchesByPlayer[l.player_id].minutes += l.minutes_played || 0;
       });
 
-      const sprintTests = (speedTestsRes.data || []).filter(t => t.test_type === '40m' && t.time_40m_seconds);
+      const sprintTests = (speedTestsRes.data || []).filter((t: any) => t.test_type === '40m' && t.time_40m_seconds);
       const bestSprintByPlayer: Record<string, number> = {};
-      sprintTests.forEach(t => {
+      sprintTests.forEach((t: any) => {
         if (!bestSprintByPlayer[t.player_id] || t.time_40m_seconds! < bestSprintByPlayer[t.player_id]) {
           bestSprintByPlayer[t.player_id] = t.time_40m_seconds!;
         }
       });
 
-      const cmjTests = (jumpTestsRes.data || []).filter(t => t.test_type === 'CMJ');
+      const cmjTests = (jumpTestsRes.data || []).filter((t: any) => t.test_type === 'CMJ');
       const bestCmjByPlayer: Record<string, number> = {};
-      cmjTests.forEach(t => {
+      cmjTests.forEach((t: any) => {
         if (!bestCmjByPlayer[t.player_id] || t.result_cm > bestCmjByPlayer[t.player_id]) {
           bestCmjByPlayer[t.player_id] = t.result_cm;
         }
       });
 
-      const latestMeasurementsByPlayer: Record<string, typeof measurementsRes.data[0]> = {};
-      (measurementsRes.data || []).forEach(m => {
-        if (!latestMeasurementsByPlayer[m.player_id]) {
-          latestMeasurementsByPlayer[m.player_id] = m;
-        }
-      });
-
-      // Comparative table
-      const compHeaders = ["Joueur", "Pos.", "Bless.", "AWCR", "40m", "CMJ", "Matchs", "Min."];
+      // Comparative table - EWMA instead of AWCR
+      const compHeaders = ["Joueur", "Pos.", "Bless.", "EWMA", "40m", "CMJ", "Matchs", "Min."];
       const compColWidths = [45, 25, 20, 25, 22, 22, 22, 22];
       yPos = drawTableHeader(compHeaders, compColWidths, yPos);
 
@@ -1071,16 +1231,13 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
           playerMatches ? String(playerMatches.minutes) : '0',
         ];
 
-        // Color coding for specific columns
         const rowColors: ([number, number, number] | null)[] = [
-          null, // name
-          null, // position
-          playerInjuries > 0 ? colors.danger : null, // injuries
-          playerAwcr ? (playerAwcr > 1.5 ? colors.danger : playerAwcr < 0.8 ? colors.warning : colors.success) : null, // AWCR
-          playerSprint ? (playerSprint < 5.2 ? colors.success : playerSprint > 5.8 ? colors.danger : null) : null, // 40m
-          playerCmj ? (playerCmj > 40 ? colors.success : playerCmj < 30 ? colors.danger : null) : null, // CMJ
-          null,
-          null,
+          null, null,
+          playerInjuries > 0 ? colors.danger : null,
+          playerAwcr ? (playerAwcr > 1.5 ? colors.danger : playerAwcr < 0.85 ? colors.warning : colors.success) : null,
+          playerSprint ? (playerSprint < 5.2 ? colors.success : playerSprint > 5.8 ? colors.danger : null) : null,
+          playerCmj ? (playerCmj > 40 ? colors.success : playerCmj < 30 ? colors.danger : null) : null,
+          null, null,
         ];
 
         yPos = drawTableRow(values, compColWidths, yPos, index % 2 === 1, rowColors);
@@ -1088,28 +1245,26 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
 
       yPos += 15;
 
-      // ========== SECTION: PHYSICAL STATS SUMMARY ==========
+      // Physical Stats Summary
       checkPageBreak(60);
-      
       pdf.setFontSize(12);
       pdf.setFont("helvetica", "bold");
       pdf.setTextColor(...colors.dark);
       pdf.text("STATISTIQUES PHYSIQUES", margin, yPos);
       yPos += 10;
 
-      // Speed stats
       const sprintTimes = Object.values(bestSprintByPlayer);
       const cmjHeights = Object.values(bestCmjByPlayer);
       
       if (sprintTimes.length > 0 || cmjHeights.length > 0) {
-        const statBoxWidth = (contentWidth - 5) / 2;
+        const statBoxW = (contentWidth - 5) / 2;
         
         if (sprintTimes.length > 0) {
           const avgSprint = sprintTimes.reduce((a, b) => a + b, 0) / sprintTimes.length;
           const bestSprint = Math.min(...sprintTimes);
           
           pdf.setFillColor(...colors.light);
-          pdf.roundedRect(margin, yPos, statBoxWidth, 25, 2, 2, 'F');
+          pdf.roundedRect(margin, yPos, statBoxW, 25, 2, 2, 'F');
           pdf.setTextColor(...colors.dark);
           pdf.setFontSize(10);
           pdf.setFont("helvetica", "bold");
@@ -1117,7 +1272,6 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
           pdf.setFont("helvetica", "normal");
           pdf.setFontSize(9);
           pdf.text(`Moyenne: ${avgSprint.toFixed(2)}s | Meilleur: ${bestSprint.toFixed(2)}s`, margin + 5, yPos + 18);
-          pdf.text(`${sprintTimes.length} joueurs testés`, margin + statBoxWidth - 35, yPos + 18);
         }
         
         if (cmjHeights.length > 0) {
@@ -1125,83 +1279,48 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
           const maxCmj = Math.max(...cmjHeights);
           
           pdf.setFillColor(...colors.light);
-          pdf.roundedRect(margin + statBoxWidth + 5, yPos, statBoxWidth, 25, 2, 2, 'F');
+          pdf.roundedRect(margin + (contentWidth - 5) / 2 + 5, yPos, (contentWidth - 5) / 2, 25, 2, 2, 'F');
           pdf.setTextColor(...colors.dark);
           pdf.setFontSize(10);
           pdf.setFont("helvetica", "bold");
-          pdf.text("DÉTENTE CMJ", margin + statBoxWidth + 10, yPos + 8);
+          pdf.text("DÉTENTE CMJ", margin + (contentWidth - 5) / 2 + 10, yPos + 8);
           pdf.setFont("helvetica", "normal");
           pdf.setFontSize(9);
-          pdf.text(`Moyenne: ${avgCmj.toFixed(1)}cm | Max: ${maxCmj.toFixed(1)}cm`, margin + statBoxWidth + 10, yPos + 18);
-          pdf.text(`${cmjHeights.length} joueurs testés`, margin + statBoxWidth * 2 - 30, yPos + 18);
+          pdf.text(`Moyenne: ${avgCmj.toFixed(1)}cm | Max: ${maxCmj.toFixed(1)}cm`, margin + (contentWidth - 5) / 2 + 10, yPos + 18);
         }
         yPos += 30;
       }
 
-      // AWCR Distribution
+      // EWMA Distribution (was AWCR)
       checkPageBreak(40);
       if (awcrEntries.length > 0) {
         pdf.setFontSize(10);
         pdf.setFont("helvetica", "bold");
         pdf.setTextColor(...colors.dark);
-        pdf.text("Distribution AWCR:", margin, yPos);
+        pdf.text("Distribution Ratio EWMA:", margin, yPos);
         yPos += 8;
 
-        const lowAwcr = awcrEntries.filter(a => (a.awcr || 0) < 0.8).length;
+        const lowEwma = awcrEntries.filter((a: any) => (a.awcr || 0) < 0.85).length;
         const barWidth = contentWidth / 3 - 5;
         
-        // Low zone bar
         pdf.setFillColor(...colors.warning);
         pdf.roundedRect(margin, yPos, barWidth, 12, 2, 2, 'F');
         pdf.setTextColor(...colors.white);
         pdf.setFontSize(9);
-        pdf.text(`< 0.8: ${lowAwcr} joueurs`, margin + 5, yPos + 8);
+        pdf.text(`< 0.85: ${lowEwma} joueurs`, margin + 5, yPos + 8);
         
-        // Optimal zone bar
         pdf.setFillColor(...colors.success);
         pdf.roundedRect(margin + barWidth + 5, yPos, barWidth, 12, 2, 2, 'F');
-        pdf.text(`0.8-1.5: ${optimalAwcr} joueurs`, margin + barWidth + 10, yPos + 8);
+        pdf.text(`0.85-1.3: ${optimalEwma} joueurs`, margin + barWidth + 10, yPos + 8);
         
-        // High zone bar
         pdf.setFillColor(...colors.danger);
         pdf.roundedRect(margin + (barWidth + 5) * 2, yPos, barWidth, 12, 2, 2, 'F');
-        pdf.text(`> 1.5: ${highAwcr} joueurs`, margin + (barWidth + 5) * 2 + 5, yPos + 8);
+        pdf.text(`> 1.5: ${highEwma} joueurs`, margin + (barWidth + 5) * 2 + 5, yPos + 8);
         
         yPos += 20;
       }
 
-      // Biometrics summary
-      checkPageBreak(30);
-      const measurements = Object.values(latestMeasurementsByPlayer);
-      if (measurements.length > 0) {
-        pdf.setFontSize(10);
-        pdf.setFont("helvetica", "bold");
-        pdf.setTextColor(...colors.dark);
-        pdf.text("Données biométriques moyennes:", margin, yPos);
-        yPos += 8;
-
-        const heights = measurements.filter(m => m.height_cm).map(m => Number(m.height_cm));
-        const weights = measurements.filter(m => m.weight_kg).map(m => Number(m.weight_kg));
-        
-        pdf.setFillColor(...colors.light);
-        pdf.roundedRect(margin, yPos, contentWidth, 15, 2, 2, 'F');
-        pdf.setFontSize(9);
-        pdf.setFont("helvetica", "normal");
-        pdf.setTextColor(...colors.dark);
-        
-        let bioText = "";
-        if (heights.length > 0) {
-          bioText += `Taille: ${(heights.reduce((a, b) => a + b, 0) / heights.length).toFixed(1)} cm`;
-        }
-        if (weights.length > 0) {
-          if (bioText) bioText += "  |  ";
-          bioText += `Poids: ${(weights.reduce((a, b) => a + b, 0) / weights.length).toFixed(1)} kg`;
-        }
-        pdf.text(bioText, margin + 5, yPos + 10);
-        yPos += 20;
-      }
-
-      // ========== SECTION: PLAYING TIME ==========
+      // Playing Time
       checkPageBreak(60);
       pdf.setFontSize(12);
       pdf.setFont("helvetica", "bold");
@@ -1225,10 +1344,6 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
           const avgMinPerMatch = p.matches > 0 ? (p.minutes / p.matches).toFixed(0) : '0';
           yPos = drawTableRow([p.name, String(p.matches), String(p.minutes), avgMinPerMatch], timeColWidths, yPos, index % 2 === 1);
         });
-      } else {
-        pdf.setFontSize(9);
-        pdf.setFont("helvetica", "normal");
-        pdf.text("Aucune donnée de temps de jeu disponible", margin, yPos);
       }
 
       pdf.save(`effectif_${category?.name?.replace(/\s+/g, '_')}_${format(new Date(), "yyyy-MM-dd")}.pdf`);
@@ -1241,7 +1356,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
     }
   };
 
-  // CSV Export functions
+  // ========================== CSV EXPORTS ==========================
   const generateSquadCsv = async () => {
     setGeneratingReport("squad-csv");
     try {
@@ -1254,12 +1369,10 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
         supabase.from("match_lineups").select("*, matches(match_date)"),
       ]);
 
-      // Filter match lineups by category's matches
       const categoryMatchIds = matches.map(m => m.id);
       const filteredLineups = (matchLineupsRes.data || []).filter(l => categoryMatchIds.includes(l.match_id));
 
-      // Build player summary CSV
-      const headers = ["Nom", "Position", "Blessures actives", "Fatigue", "Dernier AWCR", "Matchs joués", "Minutes jouées"];
+      const headers = ["Nom", "Position", "Blessures actives", "Fatigue", "Ratio EWMA", "Matchs joués", "Minutes jouées"];
       const rows = players.map(player => {
         const playerInjuries = (injuriesRes.data || []).filter(i => i.player_id === player.id && i.status !== 'healed').length;
         const playerWellness = (wellnessRes.data || []).find(w => w.player_id === player.id);
@@ -1307,7 +1420,6 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
         supabase.from("awcr_tracking").select("*").eq("player_id", selectedPlayer).order("session_date", { ascending: false }),
       ]);
 
-      // Build comprehensive player CSV (wellness history)
       const wellnessHeaders = ["Date", "Fatigue", "Sommeil (h)", "Qualité sommeil", "Stress", "Douleurs haut", "Douleurs bas"];
       const wellnessRows = (wellnessRes.data || []).map(w => [
         format(new Date(w.tracking_date), "dd/MM/yyyy"),
@@ -1396,23 +1508,38 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
     }
   };
 
-  // Attendance Report Functions
+  // ========================== ATTENDANCE REPORT ==========================
   const generateAttendanceReport = async () => {
     setGeneratingReport("attendance");
     
     try {
-      // Fetch attendance data
+      const { settings: pdfSettings, logoBase64 } = await preparePdfWithSettings(categoryId);
+
+      // Fetch attendance data with date filtering
       const [sessionsRes, attendanceRes] = await Promise.all([
-        supabase.from("training_sessions").select("*").eq("category_id", categoryId).order("session_date", { ascending: false }),
-        supabase.from("training_attendance").select("*").eq("category_id", categoryId),
+        (() => {
+          let q = supabase.from("training_sessions").select("*").eq("category_id", categoryId).order("session_date", { ascending: false });
+          if (attendanceDateFrom) q = q.gte("session_date", attendanceDateFrom);
+          if (attendanceDateTo) q = q.lte("session_date", attendanceDateTo);
+          return q;
+        })(),
+        (() => {
+          let q = supabase.from("training_attendance").select("*, training_sessions!inner(session_date)").eq("category_id", categoryId);
+          if (attendanceDateFrom) q = q.gte("training_sessions.session_date", attendanceDateFrom);
+          if (attendanceDateTo) q = q.lte("training_sessions.session_date", attendanceDateTo);
+          return q;
+        })(),
       ]);
 
       const sessionsData = sessionsRes.data || [];
       const attendanceData = attendanceRes.data || [];
+      const sessionIds = new Set(sessionsData.map(s => s.id));
 
-      // Calculate stats per player
+      // Filter attendance to only sessions in the date range
+      const filteredAttendance = attendanceData.filter(a => sessionIds.has(a.training_session_id));
+
       const playerStats = players.map((player) => {
-        const playerAttendance = attendanceData.filter((a) => a.player_id === player.id);
+        const playerAttendance = filteredAttendance.filter((a) => a.player_id === player.id);
         const present = playerAttendance.filter((a) => a.status === "present").length;
         const late = playerAttendance.filter((a) => a.status === "late").length;
         const lateJustified = playerAttendance.filter((a) => a.status === "late" && a.late_justified).length;
@@ -1423,14 +1550,9 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
 
         return {
           ...player,
-          present,
-          late,
-          lateJustified,
+          present, late, lateJustified,
           lateUnjustified: late - lateJustified,
-          absent,
-          excused,
-          total,
-          rate,
+          absent, excused, total, rate,
         };
       }).sort((a, b) => b.rate - a.rate);
 
@@ -1439,15 +1561,20 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
       const margin = 15;
       const contentWidth = pageWidth - 2 * margin;
 
-      // Header
-      let yPos = drawPdfHeader(
+      const dateRange = attendanceDateFrom || attendanceDateTo 
+        ? ` | Période: ${attendanceDateFrom ? format(new Date(attendanceDateFrom), "dd/MM/yyyy") : "début"} - ${attendanceDateTo ? format(new Date(attendanceDateTo), "dd/MM/yyyy") : "aujourd'hui"}`
+        : "";
+
+      let yPos = drawPdfHeaderCustom(
         pdf,
         "RAPPORT DE PRÉSENCES",
         `${category?.clubs?.name} - ${category?.name}`,
-        `Généré le ${format(new Date(), "d MMMM yyyy", { locale: fr })}`
+        `Généré le ${format(new Date(), "d MMMM yyyy", { locale: fr })}${dateRange}`,
+        pdfSettings,
+        logoBase64
       );
 
-      // Calculate overall stats
+      // KPI Cards
       const totalSessions = sessionsData.length;
       const avgRate = playerStats.length
         ? Math.round(playerStats.reduce((acc, p) => acc + p.rate, 0) / playerStats.length)
@@ -1455,21 +1582,20 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
       const totalLate = playerStats.reduce((acc, p) => acc + p.late, 0);
       const totalAbsent = playerStats.reduce((acc, p) => acc + p.absent, 0);
 
-      // KPI Cards
       const cardWidth = (contentWidth - 15) / 4;
       const cardHeight = 22;
 
-      drawKpiCard(pdf, margin, yPos, cardWidth, cardHeight, String(totalSessions), "SÉANCES", colors.primary);
-      drawKpiCard(pdf, margin + cardWidth + 5, yPos, cardWidth, cardHeight, `${avgRate}%`, "TAUX MOYEN", avgRate >= 80 ? colors.success : avgRate >= 60 ? colors.warning : colors.danger);
-      drawKpiCard(pdf, margin + (cardWidth + 5) * 2, yPos, cardWidth, cardHeight, String(totalLate), "RETARDS", totalLate > 10 ? colors.warning : colors.success);
-      drawKpiCard(pdf, margin + (cardWidth + 5) * 3, yPos, cardWidth, cardHeight, String(totalAbsent), "ABSENCES", totalAbsent > 10 ? colors.danger : colors.success);
+      drawKpiCard(pdf, margin, yPos, cardWidth, cardHeight, String(totalSessions), "SÉANCES", defaultColors.primary);
+      drawKpiCard(pdf, margin + cardWidth + 5, yPos, cardWidth, cardHeight, `${avgRate}%`, "TAUX MOYEN", avgRate >= 80 ? defaultColors.success : avgRate >= 60 ? defaultColors.warning : defaultColors.danger);
+      drawKpiCard(pdf, margin + (cardWidth + 5) * 2, yPos, cardWidth, cardHeight, String(totalLate), "RETARDS", totalLate > 10 ? defaultColors.warning : defaultColors.success);
+      drawKpiCard(pdf, margin + (cardWidth + 5) * 3, yPos, cardWidth, cardHeight, String(totalAbsent), "ABSENCES", totalAbsent > 10 ? defaultColors.danger : defaultColors.success);
 
       yPos += cardHeight + 15;
 
       // Player attendance table
       pdf.setFontSize(12);
       pdf.setFont("helvetica", "bold");
-      pdf.setTextColor(...colors.dark);
+      pdf.setTextColor(...defaultColors.dark);
       pdf.text("PRÉSENCES PAR JOUEUR", margin, yPos);
       yPos += 8;
 
@@ -1477,16 +1603,9 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
       const attendColWidths = [60, 25, 25, 25, 25, 25];
       yPos = drawTableHeaderPdf(pdf, attendHeaders, attendColWidths, yPos, margin, contentWidth);
 
-      const checkPageBreak = (needed: number = 10) => {
-        if (yPos + needed > 280) {
-          pdf.addPage();
-          yPos = 20;
-        }
-      };
-
       playerStats.forEach((player, index) => {
-        checkPageBreak(10);
-        const rateColor = player.rate >= 80 ? colors.success : player.rate >= 60 ? colors.warning : colors.danger;
+        yPos = localCheckPageBreak(pdf, yPos, 10);
+        const rateColor = player.rate >= 80 ? defaultColors.success : player.rate >= 60 ? defaultColors.warning : defaultColors.danger;
         yPos = drawTableRowPdf(
           pdf,
           [
@@ -1502,7 +1621,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
           index % 2 === 1,
           margin,
           contentWidth,
-          [null, colors.success, colors.warning, null, colors.danger, rateColor]
+          [null, defaultColors.success, defaultColors.warning, null, defaultColors.danger, rateColor]
         );
       });
 
@@ -1524,7 +1643,6 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
         .select("*")
         .eq("category_id", categoryId);
 
-      // Calculate stats per player
       const playerStats = players.map((player) => {
         const playerAttendance = (attendanceData || []).filter((a) => a.player_id === player.id);
         const present = playerAttendance.filter((a) => a.status === "present").length;
@@ -1538,28 +1656,16 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
         return {
           name: player.name,
           position: player.position || "",
-          present,
-          late,
-          lateJustified,
+          present, late, lateJustified,
           lateUnjustified: late - lateJustified,
-          absent,
-          excused,
-          total,
-          rate,
+          absent, excused, total, rate,
         };
       }).sort((a, b) => b.rate - a.rate);
 
       const headers = ["Joueur", "Position", "Présent", "Retard justifié", "Retard non justifié", "Excusé", "Absent", "Total", "Taux (%)"];
       const rows = playerStats.map((p) => [
-        p.name,
-        p.position,
-        p.present,
-        p.lateJustified,
-        p.lateUnjustified,
-        p.excused,
-        p.absent,
-        p.total,
-        p.rate,
+        p.name, p.position, p.present, p.lateJustified, p.lateUnjustified,
+        p.excused, p.absent, p.total, p.rate,
       ]);
 
       const csv = generateCsv(headers, rows);
@@ -1573,9 +1679,22 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
     }
   };
 
+  // Date range component
+  const DateRangeInputs = ({ from, to, onFromChange, onToChange }: { from: string; to: string; onFromChange: (v: string) => void; onToChange: (v: string) => void }) => (
+    <div className="grid grid-cols-2 gap-2">
+      <div>
+        <Label className="text-xs text-muted-foreground">Du</Label>
+        <Input type="date" value={from} onChange={e => onFromChange(e.target.value)} className="h-8 text-xs" />
+      </div>
+      <div>
+        <Label className="text-xs text-muted-foreground">Au</Label>
+        <Input type="date" value={to} onChange={e => onToChange(e.target.value)} className="h-8 text-xs" />
+      </div>
+    </div>
+  );
+
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div>
         <h2 className="text-2xl font-bold">Rapports</h2>
         <p className="text-muted-foreground">Générez et exportez des rapports en PDF ou CSV (Excel)</p>
@@ -1590,16 +1709,11 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
               Vue d'Ensemble Effectif
             </CardTitle>
             <CardDescription>
-              Synthèse globale de l'équipe
+              Synthèse globale avec Ratio EWMA
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="text-sm space-y-1">
-              <p className="font-medium">{players.length} joueurs</p>
-              <p className="text-muted-foreground text-xs">
-                Blessures, wellness, tests physiques, temps de jeu...
-              </p>
-            </div>
+            <DateRangeInputs from={overviewDateFrom} to={overviewDateTo} onFromChange={setOverviewDateFrom} onToChange={setOverviewDateTo} />
             <div className="flex gap-2">
               <Button 
                 onClick={generateSquadReport} 
@@ -1638,7 +1752,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
               Fiche Joueur
             </CardTitle>
             <CardDescription>
-              Profil complet avec stats, tests et blessures
+              Stats, tests, blessures et wellness
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -1654,6 +1768,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
                 ))}
               </SelectContent>
             </Select>
+            <DateRangeInputs from={playerDateFrom} to={playerDateTo} onFromChange={setPlayerDateFrom} onToChange={setPlayerDateTo} />
             <div className="flex gap-2">
               <Button 
                 onClick={generatePlayerReport} 
@@ -1740,7 +1855,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
               Rapport de Match
             </CardTitle>
             <CardDescription>
-              Stats et composition d'un match
+              Stats dynamiques selon vos préférences
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -1798,12 +1913,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              {players.length} joueurs suivis
-            </p>
-            <p className="text-sm">
-              Présences, retards justifiés/non-justifiés, absences...
-            </p>
+            <DateRangeInputs from={attendanceDateFrom} to={attendanceDateTo} onFromChange={setAttendanceDateFrom} onToChange={setAttendanceDateTo} />
             <div className="flex gap-2">
               <Button 
                 onClick={generateAttendanceReport} 
