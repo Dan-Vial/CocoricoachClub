@@ -1,4 +1,5 @@
 import { useState, useMemo, useRef } from "react";
+import { getDisplayNotes } from "@/lib/utils/sessionNotes";
 import { DndContext, DragEndEvent, DragOverlay, pointerWithin } from "@dnd-kit/core";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -569,8 +570,8 @@ export function ImprovedCalendarView({
                               <p className="font-semibold text-sm mt-0.5 truncate">
                                 {trainingTypeLabels[session.training_type] || session.training_type}
                               </p>
-                              {session.notes && (
-                                <p className="text-[10px] opacity-80 mt-0.5 line-clamp-1">{session.notes}</p>
+                              {session.notes && getDisplayNotes(session.notes) && (
+                                <p className="text-[10px] opacity-80 mt-0.5 line-clamp-1">{getDisplayNotes(session.notes)}</p>
                               )}
                             </div>
                           );

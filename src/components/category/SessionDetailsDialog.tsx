@@ -1,4 +1,5 @@
 import { useState, useRef, useMemo } from "react";
+import { getDisplayNotes } from "@/lib/utils/sessionNotes";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -555,9 +556,9 @@ export function SessionDetailsDialog({
             </div>
           )}
 
-          {session?.notes && (
+          {session?.notes && getDisplayNotes(session.notes) && (
             <p className="text-sm text-muted-foreground mb-4 p-3 bg-muted/30 rounded-lg">
-              {session.notes}
+              {getDisplayNotes(session.notes)}
             </p>
           )}
 

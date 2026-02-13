@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { getDisplayNotes } from "@/lib/utils/sessionNotes";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -275,9 +276,9 @@ export function DailySessionsDialog({
                         {session.session_start_time.slice(0, 5)} - {session.session_end_time.slice(0, 5)}
                       </p>
                     )}
-                    {session.notes && (
+                    {session.notes && getDisplayNotes(session.notes) && (
                       <p className="text-xs text-muted-foreground truncate mt-1">
-                        {session.notes}
+                        {getDisplayNotes(session.notes)}
                       </p>
                     )}
                   </div>

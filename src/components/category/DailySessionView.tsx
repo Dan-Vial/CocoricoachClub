@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { getDisplayNotes } from "@/lib/utils/sessionNotes";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -659,12 +660,12 @@ export function DailySessionView({ categoryId, categoryName = "Catégorie" }: Da
                               </Button>
                             </div>
 
-                            {session.notes && (
+                            {session.notes && getDisplayNotes(session.notes) && (
                               <p className={cn(
                                 "text-sm mb-3 italic",
                                 fieldMode ? "text-slate-400" : "text-muted-foreground"
                               )}>
-                                {session.notes}
+                                {getDisplayNotes(session.notes)}
                               </p>
                             )}
                             
