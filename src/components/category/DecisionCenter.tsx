@@ -653,7 +653,12 @@ import { AddWellnessDialog } from "./AddWellnessDialog";
                               {entry.status === "absent" && <XCircle className="h-4 w-4 text-red-500 shrink-0" />}
                               {entry.status === "late" && <Clock className="h-4 w-4 text-orange-500 shrink-0" />}
                               {entry.status === "excused" && <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />}
-                              <span className="font-medium truncate">{entry.players?.name}</span>
+                              <div className="min-w-0">
+                                <span className="font-medium truncate block">{entry.players?.name}</span>
+                                {entry.status === "late" && entry.late_minutes && (
+                                  <span className="text-xs text-orange-600 dark:text-orange-400">+{entry.late_minutes} min</span>
+                                )}
+                              </div>
                             </div>
                             <div className="flex items-center gap-2 shrink-0">
                               <Badge
@@ -663,9 +668,14 @@ import { AddWellnessDialog } from "./AddWellnessDialog";
                                   entry.status === "late" ? "bg-orange-500" : "bg-amber-500"
                                 )}
                               >
-                                {entry.status === "absent" ? "Absent" : entry.status === "late" ? "Retard" : "Excusé"}
+                                {entry.status === "absent" ? "Absent" : entry.status === "late" ? `Retard${entry.late_minutes ? ` ${entry.late_minutes}min` : ""}` : "Excusé"}
                               </Badge>
-                              {entry.absence_reason && (
+                              {entry.status === "late" && entry.late_reason && (
+                                <span className="text-xs text-muted-foreground max-w-[150px] truncate" title={entry.late_reason}>
+                                  {entry.late_reason}
+                                </span>
+                              )}
+                              {entry.status !== "late" && entry.absence_reason && (
                                 <span className="text-xs text-muted-foreground max-w-[150px] truncate" title={entry.absence_reason}>
                                   {entry.absence_reason}
                                 </span>
@@ -992,13 +1002,23 @@ import { AddWellnessDialog } from "./AddWellnessDialog";
                         .filter(a => a.status !== "present")
                         .map(entry => (
                           <div key={entry.id} className="flex items-start justify-between p-3 rounded-lg border bg-muted/30">
-                            <div className="flex items-center gap-2 min-w-0">
-                              {entry.status === "absent" && <XCircle className="h-4 w-4 text-red-500 shrink-0" />}
-                              {entry.status === "late" && <Clock className="h-4 w-4 text-orange-500 shrink-0" />}
-                              {entry.status === "excused" && <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />}
+                            <div className="flex items-start gap-2 min-w-0">
+                              {entry.status === "absent" && <XCircle className="h-4 w-4 text-red-500 shrink-0 mt-0.5" />}
+                              {entry.status === "late" && <Clock className="h-4 w-4 text-orange-500 shrink-0 mt-0.5" />}
+                              {entry.status === "excused" && <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />}
                               <div>
                                 <span className="font-medium text-sm">{entry.players?.name}</span>
-                                {entry.absence_reason && (
+                                {entry.status === "late" && (
+                                  <div className="flex flex-col gap-0.5 mt-0.5">
+                                    {entry.late_minutes && (
+                                      <span className="text-xs font-medium text-orange-600 dark:text-orange-400">+{entry.late_minutes} min de retard</span>
+                                    )}
+                                    {entry.late_reason && (
+                                      <p className="text-xs text-muted-foreground">{entry.late_reason}</p>
+                                    )}
+                                  </div>
+                                )}
+                                {entry.status !== "late" && entry.absence_reason && (
                                   <p className="text-xs text-muted-foreground mt-0.5">{entry.absence_reason}</p>
                                 )}
                               </div>
@@ -1007,7 +1027,7 @@ import { AddWellnessDialog } from "./AddWellnessDialog";
                               entry.status === "absent" ? "bg-red-500" :
                               entry.status === "late" ? "bg-orange-500" : "bg-amber-500"
                             )}>
-                              {entry.status === "absent" ? "Absent" : entry.status === "late" ? "Retard" : "Excusé"}
+                              {entry.status === "absent" ? "Absent" : entry.status === "late" ? `Retard${entry.late_minutes ? ` ${entry.late_minutes}min` : ""}` : "Excusé"}
                             </Badge>
                           </div>
                         ))}
