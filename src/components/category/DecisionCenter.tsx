@@ -13,23 +13,24 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { 
-  Users, 
-  AlertTriangle, 
-  Calendar, 
-  Activity,
-  CheckCircle,
-  XCircle,
-  Clock,
-  TrendingUp,
-  Brain,
-  FileWarning,
-  Pencil,
-  Bell,
-  User,
-  ChevronRight,
-  Heart
-} from "lucide-react";
+  import { 
+    Users, 
+    AlertTriangle, 
+    Calendar, 
+    Activity,
+    CheckCircle,
+    XCircle,
+    Clock,
+    TrendingUp,
+    Brain,
+    FileWarning,
+    Pencil,
+    Bell,
+    User,
+    ChevronRight,
+    Heart,
+    ClipboardCheck
+  } from "lucide-react";
 import { format, addDays, subDays } from "date-fns";
 import { fr } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -196,20 +197,34 @@ import { AddWellnessDialog } from "./AddWellnessDialog";
      },
    });
  
-   // Fetch expired documents
-   const { data: expiredDocs = [] } = useQuery({
-     queryKey: ["expired_docs", categoryId],
-     queryFn: async () => {
-       const { data, error } = await supabase
-         .from("admin_documents")
-         .select("*, players(name)")
-         .eq("category_id", categoryId)
-         .lte("expiry_date", today)
-         .eq("status", "pending");
-       if (error) throw error;
-       return data || [];
-     },
-   });
+    // Fetch today's attendance
+    const { data: todayAttendance = [] } = useQuery({
+      queryKey: ["today_attendance_decision", categoryId, today],
+      queryFn: async () => {
+        const { data, error } = await supabase
+          .from("training_attendance")
+          .select("*, players(name)")
+          .eq("category_id", categoryId)
+          .eq("attendance_date", today);
+        if (error) throw error;
+        return data;
+      },
+    });
+
+    // Fetch expired documents
+    const { data: expiredDocs = [] } = useQuery({
+      queryKey: ["expired_docs", categoryId],
+      queryFn: async () => {
+        const { data, error } = await supabase
+          .from("admin_documents")
+          .select("*, players(name)")
+          .eq("category_id", categoryId)
+          .lte("expiry_date", today)
+          .eq("status", "pending");
+        if (error) throw error;
+        return data || [];
+      },
+    });
  
    // Calculate group status
    const calculateGroupStatus = (): GroupStatus => {
@@ -558,6 +573,113 @@ import { AddWellnessDialog } from "./AddWellnessDialog";
             )}
           </CardContent>
         </Card>
+
+        {/* 1.6️⃣ PRÉSENCES DU JOUR */}
+        {todaySessions.length > 0 && (
+          <Card className="border-2 border-blue-500/20 bg-gradient-to-r from-blue-500/5 to-transparent">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <ClipboardCheck className="h-5 w-5 text-blue-600" />
+                Présences du jour
+                {todayAttendance.length > 0 && (
+                  <Badge variant="secondary" className="ml-auto text-xs">
+                    {todayAttendance.length} / {players.length}
+                  </Badge>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {todayAttendance.length === 0 ? (
+                <p className="text-sm text-muted-foreground italic text-center py-4">
+                  Aucune présence enregistrée pour aujourd'hui
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {/* Summary badges */}
+                  <div className="flex flex-wrap gap-2">
+                    {(() => {
+                      const present = todayAttendance.filter(a => a.status === "present").length;
+                      const late = todayAttendance.filter(a => a.status === "late").length;
+                      const absent = todayAttendance.filter(a => a.status === "absent").length;
+                      const excused = todayAttendance.filter(a => a.status === "excused").length;
+                      const notMarked = players.length - todayAttendance.length;
+                      return (
+                        <>
+                          {present > 0 && (
+                            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-green-100 dark:bg-green-900/30">
+                              <CheckCircle className="h-3.5 w-3.5 text-green-600" />
+                              <span className="text-xs font-semibold text-green-700 dark:text-green-400">{present} présent{present > 1 ? "s" : ""}</span>
+                            </div>
+                          )}
+                          {late > 0 && (
+                            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-orange-100 dark:bg-orange-900/30">
+                              <Clock className="h-3.5 w-3.5 text-orange-600" />
+                              <span className="text-xs font-semibold text-orange-700 dark:text-orange-400">{late} en retard</span>
+                            </div>
+                          )}
+                          {absent > 0 && (
+                            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-red-100 dark:bg-red-900/30">
+                              <XCircle className="h-3.5 w-3.5 text-red-600" />
+                              <span className="text-xs font-semibold text-red-700 dark:text-red-400">{absent} absent{absent > 1 ? "s" : ""}</span>
+                            </div>
+                          )}
+                          {excused > 0 && (
+                            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-amber-100 dark:bg-amber-900/30">
+                              <AlertTriangle className="h-3.5 w-3.5 text-amber-600" />
+                              <span className="text-xs font-semibold text-amber-700 dark:text-amber-400">{excused} excusé{excused > 1 ? "s" : ""}</span>
+                            </div>
+                          )}
+                          {notMarked > 0 && (
+                            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-muted">
+                              <span className="text-xs font-semibold text-muted-foreground">{notMarked} non pointé{notMarked > 1 ? "s" : ""}</span>
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
+                  </div>
+
+                  {/* Detail list for absent/late/excused with reasons */}
+                  {todayAttendance.filter(a => a.status !== "present").length > 0 && (
+                    <div className="border-t pt-3 space-y-1.5">
+                      {todayAttendance
+                        .filter(a => a.status !== "present")
+                        .map(entry => (
+                          <div
+                            key={entry.id}
+                            className="flex items-center justify-between p-2 rounded-lg bg-muted/50 text-sm"
+                          >
+                            <div className="flex items-center gap-2 min-w-0">
+                              {entry.status === "absent" && <XCircle className="h-4 w-4 text-red-500 shrink-0" />}
+                              {entry.status === "late" && <Clock className="h-4 w-4 text-orange-500 shrink-0" />}
+                              {entry.status === "excused" && <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />}
+                              <span className="font-medium truncate">{entry.players?.name}</span>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <Badge
+                                className={cn(
+                                  "text-xs text-white",
+                                  entry.status === "absent" ? "bg-red-500" :
+                                  entry.status === "late" ? "bg-orange-500" : "bg-amber-500"
+                                )}
+                              >
+                                {entry.status === "absent" ? "Absent" : entry.status === "late" ? "Retard" : "Excusé"}
+                              </Badge>
+                              {entry.absence_reason && (
+                                <span className="text-xs text-muted-foreground max-w-[150px] truncate" title={entry.absence_reason}>
+                                  {entry.absence_reason}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
   
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
          {/* 2️⃣ AUJOURD'HUI / DEMAIN */}
