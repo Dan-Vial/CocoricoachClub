@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Loader2, User, LogOut, Activity, Heart, BarChart3, Target, Video, BookOpen, Shield, ArrowLeft, Search, ChevronRight } from "lucide-react";
+import { NAV_COLORS } from "@/components/ui/colored-nav-tabs";
 import { AthletePWAInstallPopup } from "@/components/athlete/AthletePWAInstallPopup";
 import { AthleteSpaceDashboard } from "@/components/athlete-space/AthleteSpaceDashboard";
 import { AthleteSpaceRpe } from "@/components/athlete-space/AthleteSpaceRpe";
@@ -297,38 +298,95 @@ export default function AthleteSpace() {
 
       {/* Content */}
       <main className="max-w-5xl mx-auto px-4 py-6">
-        <Tabs defaultValue="dashboard" className="w-full">
-          <TabsList className="w-full flex overflow-x-auto gap-1 h-auto flex-wrap justify-start bg-transparent p-0 mb-6">
-            <TabsTrigger value="dashboard" className="gap-1.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              <BarChart3 className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Tableau de bord</span>
-              <span className="sm:hidden">Accueil</span>
-            </TabsTrigger>
-            <TabsTrigger value="rpe" className="gap-1.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              <Activity className="h-3.5 w-3.5" />
-              RPE
-            </TabsTrigger>
-            <TabsTrigger value="wellness" className="gap-1.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              <Heart className="h-3.5 w-3.5" />
-              Wellness
-            </TabsTrigger>
-            <TabsTrigger value="progression" className="gap-1.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              <BarChart3 className="h-3.5 w-3.5" />
-              Progression
-            </TabsTrigger>
-            <TabsTrigger value="objectives" className="gap-1.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              <Target className="h-3.5 w-3.5" />
-              Objectifs
-            </TabsTrigger>
-            <TabsTrigger value="health" className="gap-1.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              <Shield className="h-3.5 w-3.5" />
-              Santé
-            </TabsTrigger>
-            <TabsTrigger value="education" className="gap-1.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              <BookOpen className="h-3.5 w-3.5" />
-              Conseils
-            </TabsTrigger>
-          </TabsList>
+       <Tabs defaultValue="dashboard" className="w-full">
+           <TabsList className="w-full flex overflow-x-auto gap-1.5 h-auto flex-wrap justify-start bg-transparent p-0 mb-6">
+             <TabsTrigger 
+               value="dashboard" 
+               className="gap-1.5 px-3 py-2 rounded-lg transition-all duration-200"
+               style={{
+                 color: NAV_COLORS.sante.base,
+                 borderBottom: `2px solid ${NAV_COLORS.sante.base}`,
+                 opacity: 0.6
+               }}
+               data-active-color={NAV_COLORS.sante.base}
+             >
+               <BarChart3 className="h-3.5 w-3.5" />
+               <span className="hidden sm:inline">Tableau de bord</span>
+               <span className="sm:hidden">Accueil</span>
+             </TabsTrigger>
+             <TabsTrigger 
+               value="rpe"
+               className="gap-1.5 px-3 py-2 rounded-lg transition-all duration-200"
+               style={{
+                 color: NAV_COLORS.performance.base,
+                 borderBottom: `2px solid ${NAV_COLORS.performance.base}`,
+                 opacity: 0.6
+               }}
+             >
+               <Activity className="h-3.5 w-3.5" />
+               RPE
+             </TabsTrigger>
+             <TabsTrigger 
+               value="wellness"
+               className="gap-1.5 px-3 py-2 rounded-lg transition-all duration-200"
+               style={{
+                 color: NAV_COLORS.sante.base,
+                 borderBottom: `2px solid ${NAV_COLORS.sante.base}`,
+                 opacity: 0.6
+               }}
+             >
+               <Heart className="h-3.5 w-3.5" />
+               Wellness
+             </TabsTrigger>
+             <TabsTrigger 
+               value="progression"
+               className="gap-1.5 px-3 py-2 rounded-lg transition-all duration-200"
+               style={{
+                 color: NAV_COLORS.programmation.base,
+                 borderBottom: `2px solid ${NAV_COLORS.programmation.base}`,
+                 opacity: 0.6
+               }}
+             >
+               <BarChart3 className="h-3.5 w-3.5" />
+               Progression
+             </TabsTrigger>
+             <TabsTrigger 
+               value="objectives"
+               className="gap-1.5 px-3 py-2 rounded-lg transition-all duration-200"
+               style={{
+                 color: NAV_COLORS.planification.base,
+                 borderBottom: `2px solid ${NAV_COLORS.planification.base}`,
+                 opacity: 0.6
+               }}
+             >
+               <Target className="h-3.5 w-3.5" />
+               Objectifs
+             </TabsTrigger>
+             <TabsTrigger 
+               value="health"
+               className="gap-1.5 px-3 py-2 rounded-lg transition-all duration-200"
+               style={{
+                 color: NAV_COLORS.sante.base,
+                 borderBottom: `2px solid ${NAV_COLORS.sante.base}`,
+                 opacity: 0.6
+               }}
+             >
+               <Shield className="h-3.5 w-3.5" />
+               Santé
+             </TabsTrigger>
+             <TabsTrigger 
+               value="education"
+               className="gap-1.5 px-3 py-2 rounded-lg transition-all duration-200"
+               style={{
+                 color: NAV_COLORS.effectif.base,
+                 borderBottom: `2px solid ${NAV_COLORS.effectif.base}`,
+                 opacity: 0.6
+               }}
+             >
+               <BookOpen className="h-3.5 w-3.5" />
+               Conseils
+             </TabsTrigger>
+           </TabsList>
 
           <TabsContent value="dashboard">
             <AthleteSpaceDashboard

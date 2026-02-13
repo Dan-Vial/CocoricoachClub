@@ -7,6 +7,7 @@ import { Activity, TrendingUp, AlertTriangle, CheckCircle2 } from "lucide-react"
 import { calculateEWMASeries, transformToDailyLoadData } from "@/lib/trainingLoadCalculations";
 import { format, subDays } from "date-fns";
 import { fr } from "date-fns/locale";
+import { NAV_COLORS } from "@/components/ui/colored-nav-tabs";
 
 interface Props {
   playerId: string;
@@ -144,7 +145,7 @@ export function AthleteSpaceDashboard({ playerId, categoryId, playerName, sportT
 
   return (
     <div className="space-y-6">
-      <Card className="bg-gradient-card shadow-md">
+      <Card className="shadow-md border-2" style={{ borderColor: `${NAV_COLORS.performance.base}40`, backgroundColor: `${NAV_COLORS.performance.base}08` }}>
         <CardContent className="pt-6">
           <div className="flex items-center justify-between">
             <div>
@@ -173,30 +174,30 @@ export function AthleteSpaceDashboard({ playerId, categoryId, playerName, sportT
       </Card>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <Card className="bg-gradient-card">
+        <Card className="shadow-sm border-2" style={{ borderColor: `${NAV_COLORS.sante.base}40`, backgroundColor: `${NAV_COLORS.sante.base}08` }}>
           <CardContent className="pt-4 pb-3 px-4">
-            <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Charge 7j</p>
-            <p className="text-xl font-bold">{latestEwma ? Math.round(latestEwma.acute) : "—"}</p>
+            <p className="text-[11px] text-muted-foreground uppercase tracking-wide font-medium">Charge 7j</p>
+            <p className="text-xl font-bold" style={{ color: NAV_COLORS.sante.base }}>{latestEwma ? Math.round(latestEwma.acute) : "—"}</p>
           </CardContent>
         </Card>
-        <Card className="bg-gradient-card">
+        <Card className="shadow-sm border-2" style={{ borderColor: `${NAV_COLORS.programmation.base}40`, backgroundColor: `${NAV_COLORS.programmation.base}08` }}>
           <CardContent className="pt-4 pb-3 px-4">
-            <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Charge 28j</p>
-            <p className="text-xl font-bold">{latestEwma ? Math.round(latestEwma.chronic) : "—"}</p>
+            <p className="text-[11px] text-muted-foreground uppercase tracking-wide font-medium">Charge 28j</p>
+            <p className="text-xl font-bold" style={{ color: NAV_COLORS.programmation.base }}>{latestEwma ? Math.round(latestEwma.chronic) : "—"}</p>
           </CardContent>
         </Card>
-        <Card className="bg-gradient-card">
+        <Card className="shadow-sm border-2" style={{ borderColor: `${NAV_COLORS.video.base}40`, backgroundColor: `${NAV_COLORS.video.base}08` }}>
           <CardContent className="pt-4 pb-3 px-4">
-            <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Blessures</p>
-            <p className={`text-xl font-bold ${injuries && injuries.length > 0 ? "text-destructive" : "text-status-optimal"}`}>
+            <p className="text-[11px] text-muted-foreground uppercase tracking-wide font-medium">Blessures</p>
+            <p className={`text-xl font-bold`} style={{ color: injuries && injuries.length > 0 ? NAV_COLORS.video.base : NAV_COLORS.sante.base }}>
               {injuries?.length || 0}
             </p>
           </CardContent>
         </Card>
-        <Card className="bg-gradient-card">
+        <Card className="shadow-sm border-2" style={{ borderColor: `${NAV_COLORS.planification.base}40`, backgroundColor: `${NAV_COLORS.planification.base}08` }}>
           <CardContent className="pt-4 pb-3 px-4">
-            <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Prochain test</p>
-            <p className="text-sm font-semibold">
+            <p className="text-[11px] text-muted-foreground uppercase tracking-wide font-medium">Prochain test</p>
+            <p className="text-sm font-semibold" style={{ color: NAV_COLORS.planification.base }}>
               {nextTest?.start_date ? format(new Date(nextTest.start_date), "dd MMM", { locale: fr }) : "—"}
             </p>
           </CardContent>
@@ -204,9 +205,9 @@ export function AthleteSpaceDashboard({ playerId, categoryId, playerName, sportT
       </div>
 
       {chartData.length > 0 && (
-        <Card className="bg-gradient-card shadow-md">
+        <Card className="shadow-md border-2" style={{ borderColor: `${NAV_COLORS.effectif.base}40`, backgroundColor: `${NAV_COLORS.effectif.base}08` }}>
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">Évolution de ta charge</CardTitle>
+            <CardTitle className="text-base" style={{ color: NAV_COLORS.effectif.base }}>Évolution de ta charge</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={200}>
@@ -215,18 +216,18 @@ export function AthleteSpaceDashboard({ playerId, categoryId, playerName, sportT
                 <XAxis dataKey="date" className="text-[10px]" />
                 <YAxis className="text-[10px]" />
                 <Tooltip contentStyle={{ backgroundColor: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "12px" }} />
-                <Line type="monotone" dataKey="acute" stroke="hsl(var(--accent))" name="Aiguë (7j)" strokeWidth={2} dot={false} />
-                <Line type="monotone" dataKey="chronic" stroke="hsl(var(--primary))" name="Chronique (28j)" strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="acute" stroke={NAV_COLORS.performance.base} name="Aiguë (7j)" strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="chronic" stroke={NAV_COLORS.sante.base} name="Chronique (28j)" strokeWidth={2} dot={false} />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
       )}
 
-      <Card className="bg-gradient-card shadow-md">
+      <Card className="shadow-md border-2" style={{ borderColor: `${NAV_COLORS.gps.base}40`, backgroundColor: `${NAV_COLORS.gps.base}08` }}>
         <CardHeader className="pb-2">
-          <CardTitle className="text-base flex items-center gap-2">
-            <TrendingUp className="h-4 w-4 text-accent" />
+          <CardTitle className="text-base flex items-center gap-2" style={{ color: NAV_COLORS.gps.base }}>
+            <TrendingUp className="h-4 w-4" />
             Feedback personnalisé
           </CardTitle>
         </CardHeader>
