@@ -344,6 +344,7 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
           onOpenChange={(open) => !open && setSelectedSession(null)}
           categoryId={categoryId}
           sessionDate={selectedSession.date}
+          sessionId={selectedSession.id}
         />
       )}
 

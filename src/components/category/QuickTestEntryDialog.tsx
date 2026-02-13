@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -21,485 +21,439 @@ import {
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { Plus, Trash2, Clock, Dumbbell, Timer } from "lucide-react";
+import { Plus, Trash2, ClipboardCheck, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { cn } from "@/lib/utils";
+import { getTestCategoriesForSport, TestCategory } from "@/lib/constants/testCategories";
 
 interface QuickTestEntryDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   categoryId: string;
   sessionDate: string;
+  sessionId?: string;
 }
 
 interface TestEntry {
   id: string;
-  type: "sprint_40m" | "1600m_run" | "musculation";
-  label: string;
-  strengthTestName?: string;
+  test_category: string;
+  test_type: string;
+  result_unit: string;
+  player_results: Record<string, string>;
 }
-
-const AVAILABLE_TESTS = [
-  { value: "sprint_40m", label: "Sprint 40m", icon: "⚡" },
-  { value: "1600m_run", label: "1600m Run (VMA)", icon: "🏃" },
-  { value: "musculation", label: "Musculation", icon: "💪" },
-] as const;
 
 export function QuickTestEntryDialog({
   open,
   onOpenChange,
   categoryId,
   sessionDate,
+  sessionId,
 }: QuickTestEntryDialogProps) {
   const queryClient = useQueryClient();
-  const [testResults, setTestResults] = useState<Record<string, any>>({});
-  const [selectedTests, setSelectedTests] = useState<TestEntry[]>([]);
-  const [addingTestType, setAddingTestType] = useState<string>("");
+  const [testEntries, setTestEntries] = useState<TestEntry[]>([]);
+  const [expandedTestId, setExpandedTestId] = useState<string | null>(null);
+
+  // Fetch category sport type
+  const { data: category } = useQuery({
+    queryKey: ["category-for-test-entry", categoryId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("categories")
+        .select("rugby_type")
+        .eq("id", categoryId)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: open,
+  });
+
+  const sportType = category?.rugby_type || "";
+  const testCategories = useMemo(() => getTestCategoriesForSport(sportType), [sportType]);
 
   const { data: players } = useQuery({
     queryKey: ["players", categoryId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("players")
-        .select("*")
+        .select("id, name, avatar_url")
         .eq("category_id", categoryId)
         .order("name");
       if (error) throw error;
       return data;
     },
-  });
-
-  const { data: existingTests } = useQuery({
-    queryKey: ["existing_tests", categoryId, sessionDate],
-    queryFn: async () => {
-      const [speedTests, strengthTests] = await Promise.all([
-        supabase
-          .from("speed_tests")
-          .select("*")
-          .eq("category_id", categoryId)
-          .eq("test_date", sessionDate),
-        supabase
-          .from("strength_tests")
-          .select("*")
-          .eq("category_id", categoryId)
-          .eq("test_date", sessionDate),
-      ]);
-      return {
-        speedTests: speedTests.data || [],
-        strengthTests: strengthTests.data || [],
-      };
-    },
     enabled: open,
   });
 
-  // Fetch existing strength test names for dropdown
-  const { data: existingStrengthTestNames } = useQuery({
-    queryKey: ["strength_test_names", categoryId],
+  // Fetch existing test results for this date
+  const { data: existingResults } = useQuery({
+    queryKey: ["existing_generic_tests", categoryId, sessionDate],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("strength_tests")
-        .select("test_name")
+        .from("generic_tests")
+        .select("*")
         .eq("category_id", categoryId)
-        .order("test_name");
+        .eq("test_date", sessionDate);
       if (error) throw error;
-      const uniqueNames = [...new Set(data?.map(t => t.test_name).filter(Boolean))];
-      return uniqueNames;
+      return data || [];
     },
     enabled: open,
   });
 
-  const addTestSection = (typeValue: string) => {
-    const testDef = AVAILABLE_TESTS.find(t => t.value === typeValue);
-    if (!testDef) return;
+  // Pre-load tests from session if available (query by Session ID in notes)
+  const { data: sessionTestsData } = useQuery({
+    queryKey: ["session-tests-preload", sessionId],
+    queryFn: async () => {
+      if (!sessionId) return [];
+      const { data, error } = await supabase
+        .from("generic_tests")
+        .select("test_category, test_type, result_unit")
+        .ilike("notes", `%Session ID: ${sessionId}%`)
+        .limit(20);
+      if (error) throw error;
+      // Get unique test types
+      const uniqueTests = new Map<string, { test_category: string; test_type: string; result_unit: string | null }>();
+      data?.forEach(t => {
+        const key = `${t.test_category}_${t.test_type}`;
+        if (!uniqueTests.has(key)) {
+          uniqueTests.set(key, t);
+        }
+      });
+      return Array.from(uniqueTests.values());
+    },
+    enabled: open && !!sessionId,
+  });
 
-    const newEntry: TestEntry = {
+  // Pre-populate tests from session data
+  useEffect(() => {
+    if (sessionTestsData && sessionTestsData.length > 0 && testEntries.length === 0) {
+      const entries: TestEntry[] = sessionTestsData.map(t => ({
+        id: crypto.randomUUID(),
+        test_category: t.test_category,
+        test_type: t.test_type,
+        result_unit: t.result_unit || "",
+        player_results: {},
+      }));
+      setTestEntries(entries);
+      if (entries.length > 0) {
+        setExpandedTestId(entries[0].id);
+      }
+    }
+  }, [sessionTestsData]);
+
+  // Reset on close
+  useEffect(() => {
+    if (!open) {
+      setTestEntries([]);
+      setExpandedTestId(null);
+    }
+  }, [open]);
+
+  const addTest = () => {
+    const newTest: TestEntry = {
       id: crypto.randomUUID(),
-      type: testDef.value,
-      label: testDef.label,
+      test_category: "",
+      test_type: "",
+      result_unit: "",
+      player_results: {},
     };
-    setSelectedTests(prev => [...prev, newEntry]);
-    setAddingTestType("");
+    setTestEntries(prev => [...prev, newTest]);
+    setExpandedTestId(newTest.id);
   };
 
-  const removeTestSection = (id: string) => {
-    setSelectedTests(prev => prev.filter(t => t.id !== id));
+  const removeTest = (id: string) => {
+    setTestEntries(prev => prev.filter(t => t.id !== id));
+    if (expandedTestId === id) setExpandedTestId(null);
   };
 
-  const updateStrengthTestName = (id: string, name: string) => {
-    setSelectedTests(prev => prev.map(t => t.id === id ? { ...t, strengthTestName: name } : t));
+  const handleCategoryChange = (testId: string, categoryValue: string) => {
+    setTestEntries(prev => prev.map(t => t.id === testId ? {
+      ...t,
+      test_category: categoryValue,
+      test_type: "",
+      result_unit: "",
+      player_results: {},
+    } : t));
   };
 
-  const saveSpeedTests = useMutation({
-    mutationFn: async (data: { testType: "40m_sprint" | "1600m_run" }) => {
-      const entries = players
-        ?.filter((p) => testResults[`speed_${data.testType}_${p.id}`])
-        .map((p) => {
-          const result = testResults[`speed_${data.testType}_${p.id}`];
-          if (data.testType === "40m_sprint") {
-            return {
-              player_id: p.id,
-              category_id: categoryId,
-              test_date: sessionDate,
-              test_type: "40m_sprint",
-              time_40m_seconds: parseFloat(result.time),
-              speed_ms: result.time ? 40 / parseFloat(result.time) : null,
-              speed_kmh: result.time ? (40 / parseFloat(result.time)) * 3.6 : null,
-            };
-          } else {
-            return {
-              player_id: p.id,
-              category_id: categoryId,
-              test_date: sessionDate,
-              test_type: "1600m_run",
-              time_1600m_minutes: parseInt(result.minutes),
-              time_1600m_seconds: parseInt(result.seconds),
-              vma_kmh: result.minutes && result.seconds
-                ? (1600 / 60 / (parseInt(result.minutes) + parseInt(result.seconds) / 60)) * 3.6
-                : null,
-            };
-          }
-        });
+  const handleTestTypeChange = (testId: string, testTypeValue: string) => {
+    const test = testEntries.find(t => t.id === testId);
+    if (!test) return;
+    const cat = testCategories.find(c => c.value === test.test_category);
+    const testOption = cat?.tests.find(t => t.value === testTypeValue);
+    setTestEntries(prev => prev.map(t => t.id === testId ? {
+      ...t,
+      test_type: testTypeValue,
+      result_unit: testOption?.unit || "",
+      player_results: {},
+    } : t));
+  };
 
-      if (!entries || entries.length === 0) {
-        throw new Error("Aucun résultat à enregistrer");
-      }
-
-      const { error } = await supabase.from("speed_tests").insert(entries);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["speed_tests"] });
-      queryClient.invalidateQueries({ queryKey: ["existing_tests", categoryId, sessionDate] });
-      toast.success("Résultats de vitesse enregistrés");
-    },
-    onError: (error: any) => {
-      toast.error(error.message || "Erreur lors de l'enregistrement");
-    },
-  });
-
-  const saveStrengthTests = useMutation({
-    mutationFn: async (data: { testName: string }) => {
-      const entries = players
-        ?.filter((p) => testResults[`strength_${data.testName}_${p.id}`])
-        .map((p) => ({
-          player_id: p.id,
-          category_id: categoryId,
-          test_date: sessionDate,
-          test_name: data.testName,
-          weight_kg: parseFloat(testResults[`strength_${data.testName}_${p.id}`]),
-        }));
-
-      if (!entries || entries.length === 0) {
-        throw new Error("Aucun résultat à enregistrer");
-      }
-
-      const { error } = await supabase.from("strength_tests").insert(entries);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["strength_tests"] });
-      queryClient.invalidateQueries({ queryKey: ["strength_test_names", categoryId] });
-      queryClient.invalidateQueries({ queryKey: ["existing_tests", categoryId, sessionDate] });
-      toast.success("Résultats de musculation enregistrés");
-    },
-    onError: (error: any) => {
-      toast.error(error.message || "Erreur lors de l'enregistrement");
-    },
-  });
-
-  const handleSpeedResultChange = (
-    playerId: string,
-    testType: string,
-    field: string,
-    value: string
-  ) => {
-    setTestResults((prev) => ({
-      ...prev,
-      [`speed_${testType}_${playerId}`]: {
-        ...prev[`speed_${testType}_${playerId}`],
-        [field]: value,
-      },
+  const updatePlayerResult = (testId: string, playerId: string, value: string) => {
+    setTestEntries(prev => prev.map(t => {
+      if (t.id !== testId) return t;
+      return { ...t, player_results: { ...t.player_results, [playerId]: value } };
     }));
   };
 
-  const renderSprintSection = (entry: TestEntry) => (
-    <div className="space-y-3">
-      <ScrollArea className="max-h-[30vh]">
-        <div className="space-y-2 pr-2">
-          {players?.map((player) => {
-            const existing = existingTests?.speedTests.find(
-              (t) => t.player_id === player.id && t.test_type === "40m_sprint"
-            );
-            return (
-              <div key={player.id} className="flex items-center gap-3 p-2.5 bg-muted/50 rounded-lg">
-                <Label className="w-36 font-medium text-sm truncate">{player.name}</Label>
-                {existing ? (
-                  <span className="text-sm text-muted-foreground">
-                    ✓ {existing.time_40m_seconds}s
-                  </span>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <Input
-                      type="number"
-                      step="0.01"
-                      placeholder="Temps (s)"
-                      className="w-28 h-8 text-sm"
-                      value={testResults[`speed_40m_sprint_${player.id}`]?.time || ""}
-                      onChange={(e) =>
-                        handleSpeedResultChange(player.id, "40m_sprint", "time", e.target.value)
-                      }
-                    />
-                    <Timer className="h-4 w-4 text-muted-foreground" />
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </ScrollArea>
-      <Button
-        onClick={() => saveSpeedTests.mutate({ testType: "40m_sprint" })}
-        disabled={saveSpeedTests.isPending}
-        size="sm"
-      >
-        Enregistrer Sprint 40m
-      </Button>
-    </div>
+  const getTestLabel = (test: TestEntry): string => {
+    const cat = testCategories.find(c => c.value === test.test_category);
+    const testOption = cat?.tests.find(t => t.value === test.test_type);
+    if (!cat || !testOption) return "Test non configuré";
+    return `${cat.label} - ${testOption.label}`;
+  };
+
+  const getFilledCount = (test: TestEntry): number => {
+    return Object.values(test.player_results).filter(v => v && v.trim() !== "").length;
+  };
+
+  // Check if a player already has a result for this test
+  const getExistingResult = (testType: string, playerId: string) => {
+    return existingResults?.find(r => r.test_type === testType && r.player_id === playerId);
+  };
+
+  const saveTests = useMutation({
+    mutationFn: async () => {
+      const testRecords: any[] = [];
+
+      testEntries.forEach(test => {
+        if (!test.test_type) return;
+        Object.entries(test.player_results).forEach(([playerId, value]) => {
+          if (!value || value.trim() === "") return;
+          // Skip if already exists
+          if (getExistingResult(test.test_type, playerId)) return;
+          testRecords.push({
+            player_id: playerId,
+            category_id: categoryId,
+            test_date: sessionDate,
+            test_category: test.test_category,
+            test_type: test.test_type,
+            result_value: parseFloat(value),
+            result_unit: test.result_unit || null,
+            notes: sessionId ? `Séance du ${sessionDate} (Session ID: ${sessionId})` : `Séance du ${sessionDate}`,
+          });
+        });
+      });
+
+      if (testRecords.length === 0) {
+        throw new Error("Aucun résultat à enregistrer");
+      }
+
+      const { error } = await supabase.from("generic_tests").insert(testRecords);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["generic_tests"] });
+      queryClient.invalidateQueries({ queryKey: ["existing_generic_tests", categoryId, sessionDate] });
+      toast.success("Résultats de tests enregistrés");
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Erreur lors de l'enregistrement");
+    },
+  });
+
+  const hasResults = testEntries.some(t =>
+    t.test_type && Object.values(t.player_results).some(v => v && v.trim() !== "")
   );
-
-  const render1600mSection = (entry: TestEntry) => (
-    <div className="space-y-3">
-      <ScrollArea className="max-h-[30vh]">
-        <div className="space-y-2 pr-2">
-          {players?.map((player) => {
-            const existing = existingTests?.speedTests.find(
-              (t) => t.player_id === player.id && t.test_type === "1600m_run"
-            );
-            return (
-              <div key={player.id} className="flex items-center gap-3 p-2.5 bg-muted/50 rounded-lg">
-                <Label className="w-36 font-medium text-sm truncate">{player.name}</Label>
-                {existing ? (
-                  <span className="text-sm text-muted-foreground">
-                    ✓ {existing.time_1600m_minutes}'{existing.time_1600m_seconds}"
-                  </span>
-                ) : (
-                  <div className="flex items-center gap-1">
-                    <Input
-                      type="number"
-                      placeholder="Min"
-                      className="w-16 h-8 text-sm"
-                      value={testResults[`speed_1600m_run_${player.id}`]?.minutes || ""}
-                      onChange={(e) =>
-                        handleSpeedResultChange(player.id, "1600m_run", "minutes", e.target.value)
-                      }
-                    />
-                    <span className="text-muted-foreground">'</span>
-                    <Input
-                      type="number"
-                      placeholder="Sec"
-                      className="w-16 h-8 text-sm"
-                      value={testResults[`speed_1600m_run_${player.id}`]?.seconds || ""}
-                      onChange={(e) =>
-                        handleSpeedResultChange(player.id, "1600m_run", "seconds", e.target.value)
-                      }
-                    />
-                    <span className="text-muted-foreground">"</span>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </ScrollArea>
-      <Button
-        onClick={() => saveSpeedTests.mutate({ testType: "1600m_run" })}
-        disabled={saveSpeedTests.isPending}
-        size="sm"
-      >
-        Enregistrer 1600m
-      </Button>
-    </div>
-  );
-
-  const renderStrengthSection = (entry: TestEntry) => {
-    const testName = entry.strengthTestName || "";
-    return (
-      <div className="space-y-3">
-        <div className="space-y-2">
-          <Label className="text-sm font-medium">Exercice de musculation</Label>
-          <Select
-            value={testName}
-            onValueChange={(v) => {
-              if (v === "__new__") {
-                updateStrengthTestName(entry.id, "");
-              } else {
-                updateStrengthTestName(entry.id, v);
-              }
-            }}
-          >
-            <SelectTrigger className="h-9">
-              <SelectValue placeholder="Sélectionner un exercice..." />
-            </SelectTrigger>
-            <SelectContent>
-              {existingStrengthTestNames && existingStrengthTestNames.length > 0 && (
-                <>
-                  {existingStrengthTestNames.map((name) => (
-                    <SelectItem key={name} value={name}>
-                      {name}
-                    </SelectItem>
-                  ))}
-                </>
-              )}
-              <SelectItem value="__new__">
-                ➕ Nouveau test...
-              </SelectItem>
-            </SelectContent>
-          </Select>
-          {(testName === "" || !existingStrengthTestNames?.includes(testName)) && (
-            <Input
-              placeholder="Nom du test (ex: Développé Couché, Squat...)"
-              value={testName}
-              onChange={(e) => updateStrengthTestName(entry.id, e.target.value)}
-              className="h-9"
-            />
-          )}
-        </div>
-
-        {testName && (
-          <>
-            <ScrollArea className="max-h-[30vh]">
-              <div className="space-y-2 pr-2">
-                {players?.map((player) => {
-                  const existing = existingTests?.strengthTests.find(
-                    (t) => t.player_id === player.id && t.test_name === testName
-                  );
-                  return (
-                    <div key={player.id} className="flex items-center gap-3 p-2.5 bg-muted/50 rounded-lg">
-                      <Label className="w-36 font-medium text-sm truncate">{player.name}</Label>
-                      {existing ? (
-                        <span className="text-sm text-muted-foreground">
-                          ✓ {existing.weight_kg}kg
-                        </span>
-                      ) : (
-                        <div className="flex items-center gap-2">
-                          <Input
-                            type="number"
-                            step="0.5"
-                            placeholder="kg"
-                            className="w-24 h-8 text-sm"
-                            value={testResults[`strength_${testName}_${player.id}`] || ""}
-                            onChange={(e) =>
-                              setTestResults((prev) => ({
-                                ...prev,
-                                [`strength_${testName}_${player.id}`]: e.target.value,
-                              }))
-                            }
-                          />
-                          <Dumbbell className="h-4 w-4 text-muted-foreground" />
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </ScrollArea>
-            <Button
-              onClick={() => saveStrengthTests.mutate({ testName })}
-              disabled={saveStrengthTests.isPending || !testName}
-              size="sm"
-            >
-              Enregistrer {testName}
-            </Button>
-          </>
-        )}
-      </div>
-    );
-  };
-
-  const renderTestSection = (entry: TestEntry) => {
-    switch (entry.type) {
-      case "sprint_40m":
-        return renderSprintSection(entry);
-      case "1600m_run":
-        return render1600mSection(entry);
-      case "musculation":
-        return renderStrengthSection(entry);
-    }
-  };
-
-  const getTestIcon = (type: string) => {
-    return AVAILABLE_TESTS.find(t => t.value === type)?.icon || "📊";
-  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            <ClipboardCheck className="h-5 w-5 text-amber-500" />
             Saisie des tests - {format(new Date(sessionDate), "PPP", { locale: fr })}
           </DialogTitle>
         </DialogHeader>
 
         <ScrollArea className="flex-1 pr-2">
           <div className="space-y-4">
-            {/* Add test selector */}
-            <div className="flex items-center gap-3 p-3 border-2 border-dashed rounded-lg bg-muted/20">
-              <Select value={addingTestType} onValueChange={setAddingTestType}>
-                <SelectTrigger className="flex-1 h-9">
-                  <SelectValue placeholder="Choisir un test à ajouter..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {AVAILABLE_TESTS.map((test) => (
-                    <SelectItem key={test.value} value={test.value}>
-                      {test.icon} {test.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button
-                type="button"
-                size="sm"
-                onClick={() => addTestSection(addingTestType)}
-                disabled={!addingTestType}
-              >
-                <Plus className="h-4 w-4 mr-1" />
-                Ajouter
-              </Button>
-            </div>
+            {/* Add test button */}
+            <Button
+              type="button"
+              onClick={addTest}
+              variant="outline"
+              className="w-full border-2 border-dashed border-amber-500/40 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/20"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Ajouter un test
+            </Button>
 
-            {selectedTests.length === 0 && (
+            {testEntries.length === 0 && (
               <div className="text-center py-8 text-muted-foreground">
-                <Clock className="h-10 w-10 mx-auto mb-3 opacity-40" />
+                <ClipboardCheck className="h-10 w-10 mx-auto mb-3 opacity-40" />
                 <p className="text-sm">Sélectionnez les tests que vous souhaitez saisir</p>
-                <p className="text-xs mt-1">Seuls les tests choisis seront proposés aux athlètes</p>
+                <p className="text-xs mt-1">Choisissez parmi toutes les catégories de tests disponibles</p>
               </div>
             )}
 
-            {/* Render selected test sections */}
-            {selectedTests.map((entry) => (
-              <div key={entry.id} className="border rounded-xl p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg">{getTestIcon(entry.type)}</span>
-                    <h3 className="font-semibold text-sm">{entry.label}</h3>
-                    {entry.type === "musculation" && entry.strengthTestName && (
-                      <Badge variant="secondary" className="text-xs">
-                        {entry.strengthTestName}
-                      </Badge>
-                    )}
-                  </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 text-destructive"
-                    onClick={() => removeTestSection(entry.id)}
+            {/* Test entries */}
+            {testEntries.map((test, idx) => {
+              const currentCategory = testCategories.find(c => c.value === test.test_category);
+              const isExpanded = expandedTestId === test.id;
+              const filledCount = getFilledCount(test);
+
+              return (
+                <div
+                  key={test.id}
+                  className={cn(
+                    "border-2 rounded-xl transition-all",
+                    isExpanded
+                      ? "border-amber-500 bg-amber-500/5"
+                      : "border-amber-500/30 bg-background hover:border-amber-500/50"
+                  )}
+                >
+                  {/* Header */}
+                  <div
+                    className="flex items-center gap-3 p-4 cursor-pointer"
+                    onClick={() => setExpandedTestId(isExpanded ? null : test.id)}
                   >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                    <div className="w-8 h-8 rounded-full bg-amber-500 flex items-center justify-center text-white font-bold text-sm">
+                      {idx + 1}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      {test.test_type ? (
+                        <span className="font-medium truncate">{getTestLabel(test)}</span>
+                      ) : (
+                        <span className="text-muted-foreground italic">Cliquez pour configurer...</span>
+                      )}
+                      {test.test_type && (
+                        <div className="flex items-center gap-2 mt-1">
+                          <Badge variant="outline" className="text-xs">
+                            {test.result_unit || "valeur"}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground">
+                            {filledCount}/{players?.length || 0} résultats
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeTest(test.id);
+                      }}
+                      className="h-8 w-8 text-destructive shrink-0"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+
+                  {/* Expanded content */}
+                  {isExpanded && (
+                    <div className="px-4 pb-4 pt-0 space-y-4">
+                      {/* Test selection */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <Label className="text-xs">Catégorie de test</Label>
+                          <Select
+                            value={test.test_category}
+                            onValueChange={(v) => handleCategoryChange(test.id, v)}
+                          >
+                            <SelectTrigger className="h-9">
+                              <SelectValue placeholder="Sélectionner..." />
+                            </SelectTrigger>
+                            <SelectContent className="z-[9999] max-h-60">
+                              {testCategories.map((cat) => (
+                                <SelectItem key={cat.value} value={cat.value}>
+                                  {cat.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <Label className="text-xs">Type de test</Label>
+                          <Select
+                            value={test.test_type}
+                            onValueChange={(v) => handleTestTypeChange(test.id, v)}
+                            disabled={!test.test_category}
+                          >
+                            <SelectTrigger className="h-9">
+                              <SelectValue placeholder="Sélectionner..." />
+                            </SelectTrigger>
+                            <SelectContent className="z-[9999] max-h-60">
+                              {currentCategory?.tests.map((t) => (
+                                <SelectItem key={t.value} value={t.value}>
+                                  {t.label} {t.unit && `(${t.unit})`}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
+                      {/* Player results */}
+                      {test.test_type && players && players.length > 0 && (
+                        <div className="space-y-2">
+                          <Label className="text-xs">
+                            Résultats des athlètes ({test.result_unit || "valeur"})
+                          </Label>
+                          <ScrollArea className="max-h-48">
+                            <div className="grid grid-cols-2 gap-2 pr-2">
+                              {players.map((player) => {
+                                const existing = getExistingResult(test.test_type, player.id);
+                                return (
+                                  <div
+                                    key={player.id}
+                                    className={cn(
+                                      "flex items-center gap-2 p-2 rounded-lg border",
+                                      existing
+                                        ? "border-emerald-300 bg-emerald-50/50 dark:bg-emerald-900/10"
+                                        : test.player_results[player.id]
+                                          ? "border-amber-300 bg-amber-50/50 dark:bg-amber-900/10"
+                                          : "border-border"
+                                    )}
+                                  >
+                                    <Avatar className="h-6 w-6 shrink-0">
+                                      <AvatarImage src={player.avatar_url || undefined} />
+                                      <AvatarFallback className="text-xs">
+                                        {player.name.slice(0, 2).toUpperCase()}
+                                      </AvatarFallback>
+                                    </Avatar>
+                                    <span className="text-sm truncate flex-1">{player.name}</span>
+                                    {existing ? (
+                                      <span className="text-xs text-emerald-600 font-medium">
+                                        ✓ {existing.result_value} {existing.result_unit}
+                                      </span>
+                                    ) : (
+                                      <Input
+                                        type="number"
+                                        step="0.01"
+                                        placeholder={test.result_unit || "valeur"}
+                                        className="h-7 w-20 text-xs"
+                                        value={test.player_results[player.id] || ""}
+                                        onChange={(e) => updatePlayerResult(test.id, player.id, e.target.value)}
+                                      />
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </ScrollArea>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
-                {renderTestSection(entry)}
-              </div>
-            ))}
+              );
+            })}
+
+            {/* Save button */}
+            {hasResults && (
+              <Button
+                onClick={() => saveTests.mutate()}
+                disabled={saveTests.isPending}
+                className="w-full bg-amber-500 hover:bg-amber-600 text-white"
+              >
+                Enregistrer les résultats
+              </Button>
+            )}
           </div>
         </ScrollArea>
       </DialogContent>

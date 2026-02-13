@@ -47,7 +47,7 @@ export function SessionFeedbackDialog({
 }: SessionFeedbackDialogProps) {
   const [rpeValues, setRpeValues] = useState<Record<string, { rpe: string; duration: string }>>({});
   const [sessionTests, setSessionTests] = useState<SessionTest[]>([]);
-  const [activeTab, setActiveTab] = useState("rpe");
+  const [activeTab, setActiveTab] = useState(sessionType === "test" ? "tests" : "rpe");
   const queryClient = useQueryClient();
 
   // Fetch category to get sport type
@@ -154,14 +154,50 @@ export function SessionFeedbackDialog({
     }
   }, [players, defaultDuration, open]);
 
+  // Pre-load tests configured for this session
+  const { data: preloadedTests } = useQuery({
+    queryKey: ["session-preloaded-tests", sessionId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("generic_tests")
+        .select("test_category, test_type, result_unit")
+        .ilike("notes", `%Session ID: ${sessionId}%`)
+        .limit(20);
+      if (error) throw error;
+      const uniqueTests = new Map<string, { test_category: string; test_type: string; result_unit: string | null }>();
+      data?.forEach(t => {
+        const key = `${t.test_category}_${t.test_type}`;
+        if (!uniqueTests.has(key)) {
+          uniqueTests.set(key, t);
+        }
+      });
+      return Array.from(uniqueTests.values());
+    },
+    enabled: open && !!sessionId,
+  });
+
+  // Pre-populate tests from session data when dialog opens
+  useEffect(() => {
+    if (preloadedTests && preloadedTests.length > 0 && sessionTests.length === 0 && open) {
+      const entries: SessionTest[] = preloadedTests.map(t => ({
+        id: crypto.randomUUID(),
+        test_category: t.test_category,
+        test_type: t.test_type,
+        result_unit: t.result_unit || "",
+        player_results: {},
+      }));
+      setSessionTests(entries);
+    }
+  }, [preloadedTests, open]);
+
   // Reset values when dialog closes
   useEffect(() => {
     if (!open) {
       setRpeValues({});
       setSessionTests([]);
-      setActiveTab("rpe");
+      setActiveTab(sessionType === "test" ? "tests" : "rpe");
     }
-  }, [open]);
+  }, [open, sessionType]);
 
   // Calculate AWCR for a player
   const calculateAWCR = async (playerId: string, sessionDateStr: string, newLoad: number) => {
