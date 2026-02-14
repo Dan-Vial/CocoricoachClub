@@ -36,9 +36,12 @@ interface GenericTestsSectionProps {
 
 export function GenericTestsSection({ categoryId, sportType, defaultCategory }: GenericTestsSectionProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [filterCategory, setFilterCategory] = useState<string>(defaultCategory === "rehab" ? "all" : (defaultCategory || "all"));
-  const [filterTestType, setFilterTestType] = useState<string>("all");
   const isRehabMode = defaultCategory === "rehab";
+  const isSingleCategoryMode = !!defaultCategory && defaultCategory !== "rehab" && defaultCategory !== "all";
+  const [filterCategory, setFilterCategory] = useState<string>(
+    isRehabMode ? "all" : (defaultCategory || "all")
+  );
+  const [filterTestType, setFilterTestType] = useState<string>("all");
   const queryClient = useQueryClient();
   const { isViewer } = useViewerModeContext();
 
@@ -173,7 +176,12 @@ export function GenericTestsSection({ categoryId, sportType, defaultCategory }: 
     <Card className="bg-gradient-card">
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-lg">
-          {isRehabMode ? "Tests de Réathlétisation" : "Tous les Tests de Performance"}
+          {isRehabMode 
+            ? "Tests de Réathlétisation" 
+            : isSingleCategoryMode 
+              ? (filteredTestCategories.find(c => c.value === defaultCategory)?.label || formatCategoryLabel(defaultCategory || ""))
+              : "Tous les Tests de Performance"
+          }
         </CardTitle>
         {!isViewer && (
           <Button size="sm" onClick={() => setIsDialogOpen(true)}>
@@ -188,23 +196,28 @@ export function GenericTestsSection({ categoryId, sportType, defaultCategory }: 
             <Filter className="h-4 w-4 text-muted-foreground" />
             <span className="text-sm text-muted-foreground">Filtrer:</span>
           </div>
-          <Select value={filterCategory} onValueChange={handleCategoryFilterChange}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Toutes catégories" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Toutes catégories</SelectItem>
-              {filteredTestCategories.map((category) => (
-                <SelectItem key={category.value} value={category.value}>
-                  {category.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
 
+          {/* Category dropdown - hidden in single category mode */}
+          {!isSingleCategoryMode && (
+            <Select value={filterCategory} onValueChange={handleCategoryFilterChange}>
+              <SelectTrigger className="w-[220px]">
+                <SelectValue placeholder="Toutes catégories" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Toutes catégories</SelectItem>
+                {filteredTestCategories.map((category) => (
+                  <SelectItem key={category.value} value={category.value}>
+                    {category.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+
+          {/* Test type dropdown - always visible when a category is selected */}
           {filterCategory !== "all" && selectedCategory && (
             <Select value={filterTestType} onValueChange={setFilterTestType}>
-              <SelectTrigger className="w-[200px]">
+              <SelectTrigger className="w-[250px]">
                 <SelectValue placeholder="Tous les tests" />
               </SelectTrigger>
               <SelectContent>
