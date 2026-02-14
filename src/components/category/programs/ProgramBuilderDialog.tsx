@@ -159,6 +159,12 @@ export function ProgramBuilderDialog({
   const [activeExercise, setActiveExercise] = useState<any>(null);
   const [selectedInjuryId, setSelectedInjuryId] = useState<string>("");
   const [selectedInjuryType, setSelectedInjuryType] = useState<string>("");
+  const [rehabPhasesConfig, setRehabPhasesConfig] = useState([
+    { key: "phase_1", name: "Phase 1 - Réhabilitation", enabled: true, sessions: 3, sessionNames: ["Mobilité articulaire", "Contrôle moteur", "Renforcement isométrique"] },
+    { key: "phase_2", name: "Phase 2 - Renforcement", enabled: true, sessions: 3, sessionNames: ["Renforcement concentrique", "Renforcement excentrique", "Proprioception"] },
+    { key: "phase_3", name: "Phase 3 - Retour terrain", enabled: true, sessions: 3, sessionNames: ["Course progressive", "Changements de direction", "Exercices sport-spécifiques"] },
+    { key: "phase_4", name: "Phase 4 - Retour compétition", enabled: true, sessions: 3, sessionNames: ["Entraînement collectif adapté", "Match simulé", "Validation retour"] },
+  ]);
 
   // Fetch category to get sport type
   const { data: category } = useQuery({
@@ -782,38 +788,75 @@ export function ProgramBuilderDialog({
                           </div>
                         )}
 
-                        {/* Button to auto-generate 4 rehab phases as weeks */}
-                        {!programId && (
+                        {/* Configurable rehab phases */}
+                        <div className="space-y-3">
+                          <p className="text-sm font-medium text-amber-700 dark:text-amber-400">
+                            Configurer les phases (à la carte)
+                          </p>
+                          {rehabPhasesConfig.map((phase, idx) => (
+                            <div key={phase.key} className="flex items-center gap-3 rounded-md border p-2">
+                              <input
+                                type="checkbox"
+                                checked={phase.enabled}
+                                onChange={(e) => {
+                                  const updated = [...rehabPhasesConfig];
+                                  updated[idx] = { ...updated[idx], enabled: e.target.checked };
+                                  setRehabPhasesConfig(updated);
+                                }}
+                                className="h-4 w-4 rounded accent-primary"
+                              />
+                              <span className={`text-sm flex-1 ${!phase.enabled ? "text-muted-foreground line-through" : "font-medium"}`}>
+                                {phase.name}
+                              </span>
+                              <div className="flex items-center gap-1">
+                                <Label className="text-xs text-muted-foreground whitespace-nowrap">Séances:</Label>
+                                <Input
+                                  type="number"
+                                  min={1}
+                                  max={7}
+                                  value={phase.sessions}
+                                  disabled={!phase.enabled}
+                                  onChange={(e) => {
+                                    const val = Math.max(1, Math.min(7, parseInt(e.target.value) || 1));
+                                    const updated = [...rehabPhasesConfig];
+                                    updated[idx] = { ...updated[idx], sessions: val };
+                                    setRehabPhasesConfig(updated);
+                                  }}
+                                  className="w-16 h-8 text-xs text-center"
+                                />
+                              </div>
+                            </div>
+                          ))}
+
                           <Button
                             type="button"
                             variant="outline"
                             className="w-full border-amber-300 text-amber-700 hover:bg-amber-100 dark:border-amber-700 dark:text-amber-400 dark:hover:bg-amber-900/30"
                             onClick={() => {
-                              const rehabPhases = [
-                                { name: "Phase 1 - Réhabilitation", sessions: ["Mobilité articulaire", "Contrôle moteur", "Renforcement isométrique"] },
-                                { name: "Phase 2 - Renforcement", sessions: ["Renforcement concentrique", "Renforcement excentrique", "Proprioception"] },
-                                { name: "Phase 3 - Retour terrain", sessions: ["Course progressive", "Changements de direction", "Exercices sport-spécifiques"] },
-                                { name: "Phase 4 - Retour compétition", sessions: ["Entraînement collectif adapté", "Match simulé", "Validation retour"] },
-                              ];
-                              const newWeeks: ProgramWeek[] = rehabPhases.map((phase, index) => ({
+                              const enabledPhases = rehabPhasesConfig.filter(p => p.enabled);
+                              if (enabledPhases.length === 0) {
+                                toast.error("Sélectionnez au moins une phase");
+                                return;
+                              }
+                              const newWeeks: ProgramWeek[] = enabledPhases.map((phase, index) => ({
                                 id: crypto.randomUUID(),
                                 week_number: index + 1,
                                 name: phase.name,
-                                sessions: phase.sessions.map((sessionName, sIndex) => ({
+                                sessions: Array.from({ length: phase.sessions }, (_, sIndex) => ({
                                   id: crypto.randomUUID(),
                                   session_number: sIndex + 1,
-                                  name: sessionName,
+                                  name: phase.sessionNames[sIndex] || `Séance ${sIndex + 1}`,
                                   exercises: [],
                                 })),
                               }));
                               setWeeks(newWeeks);
-                              toast.success("4 phases de réathlétisation générées");
+                              toast.success(`${enabledPhases.length} phase(s) générée(s)`);
                             }}
                           >
                             <Plus className="h-4 w-4 mr-2" />
-                            Générer les 4 phases de réathlétisation
+                            Générer le programme
                           </Button>
-                        )}
+                        </div>
                       </CardContent>
                     </Card>
                   )}
