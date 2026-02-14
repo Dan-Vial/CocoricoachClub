@@ -25,10 +25,11 @@ interface UnifiedTestDialogProps {
   sportType?: string;
   defaultFilterCategory?: string;
   defaultFilterTestType?: string;
+  allowCustomTest?: boolean;
 }
 
 export function UnifiedTestDialog({
-  open, onOpenChange, categoryId, sportType, defaultFilterCategory, defaultFilterTestType,
+  open, onOpenChange, categoryId, sportType, defaultFilterCategory, defaultFilterTestType, allowCustomTest = true,
 }: UnifiedTestDialogProps) {
   const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
   const [selectionMode, setSelectionMode] = useState<"all" | "specific">("all");
@@ -169,14 +170,16 @@ export function UnifiedTestDialog({
               onSelectionModeChange={setSelectionMode} players={players || []}
             />
 
-            <div className="flex items-center gap-2">
-              <Button
-                type="button" size="sm" variant={isCustom ? "default" : "outline"}
-                onClick={() => { setIsCustom(!isCustom); setSelectedGroup(""); setSelectedZone(""); setSelectedTest(""); setPlayerResults({}); }}
-              >
-                ✨ Test personnalisé
-              </Button>
-            </div>
+            {allowCustomTest && (
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button" size="sm" variant={isCustom ? "default" : "outline"}
+                  onClick={() => { setIsCustom(!isCustom); setSelectedGroup(""); setSelectedZone(""); setSelectedTest(""); setPlayerResults({}); }}
+                >
+                  ✨ Test personnalisé
+                </Button>
+              </div>
+            )}
 
             {!isCustom && (
               <HierarchicalTestSelector

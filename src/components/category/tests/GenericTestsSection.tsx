@@ -318,6 +318,7 @@ export function GenericTestsSection({ categoryId, sportType, defaultCategory }: 
         sportType={sportType}
         defaultFilterCategory={filterCategory !== "all" ? filterCategory : undefined}
         defaultFilterTestType={filterTestType !== "all" ? filterTestType : undefined}
+        allowCustomTest={!defaultCategory || defaultCategory === "all"}
       />
 
       {filterTestType !== "all" && selectedCategory && (() => {
