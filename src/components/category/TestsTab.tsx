@@ -27,6 +27,7 @@ export function TestsTab({ categoryId, sportType }: TestsTabProps) {
             <TabsTrigger value="mobility">Mobilité</TabsTrigger>
             <TabsTrigger value="jump">Détente</TabsTrigger>
             <TabsTrigger value="field">Tests Terrains</TabsTrigger>
+            <TabsTrigger value="rehab" className="text-emerald-700 dark:text-emerald-400">Réathlétisation</TabsTrigger>
           </TabsList>
 
           <TabsContent value="all" className="space-y-6">
@@ -51,6 +52,10 @@ export function TestsTab({ categoryId, sportType }: TestsTabProps) {
 
           <TabsContent value="field">
             <FieldTestsSection categoryId={categoryId} sportType={sportType} />
+          </TabsContent>
+
+          <TabsContent value="rehab">
+            <GenericTestsSection categoryId={categoryId} sportType={sportType} defaultCategory="rehab" />
           </TabsContent>
         </Tabs>
       </CardContent>

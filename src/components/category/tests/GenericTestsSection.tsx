@@ -31,11 +31,12 @@ import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 interface GenericTestsSectionProps {
   categoryId: string;
   sportType?: string;
+  defaultCategory?: string;
 }
 
-export function GenericTestsSection({ categoryId, sportType }: GenericTestsSectionProps) {
+export function GenericTestsSection({ categoryId, sportType, defaultCategory }: GenericTestsSectionProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [filterCategory, setFilterCategory] = useState<string>("all");
+  const [filterCategory, setFilterCategory] = useState<string>(defaultCategory || "all");
   const [filterTestType, setFilterTestType] = useState<string>("all");
   const queryClient = useQueryClient();
   const { isViewer } = useViewerModeContext();

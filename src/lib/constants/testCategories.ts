@@ -438,6 +438,192 @@ export const TEST_CATEGORIES: TestCategory[] = [
       { value: "judo_golden_score_endurance", label: "Endurance golden score", unit: "score" },
     ],
   },
+  // Réathlétisation / Kiné - Force musculaire bilatérale
+  {
+    value: "rehab_ischio_quadri",
+    label: "Réathlé - Ischio-jambiers / Quadriceps",
+    tests: [
+      // Ischio-jambiers
+      { value: "rehab_ischio_conc_d", label: "Ischio concentrique - Droit", unit: "N" },
+      { value: "rehab_ischio_conc_g", label: "Ischio concentrique - Gauche", unit: "N" },
+      { value: "rehab_ischio_exc_d", label: "Ischio excentrique - Droit", unit: "N" },
+      { value: "rehab_ischio_exc_g", label: "Ischio excentrique - Gauche", unit: "N" },
+      { value: "rehab_ischio_iso_d", label: "Ischio isométrique - Droit", unit: "N" },
+      { value: "rehab_ischio_iso_g", label: "Ischio isométrique - Gauche", unit: "N" },
+      { value: "rehab_ischio_nordbord_d", label: "NordBord - Droit", unit: "N" },
+      { value: "rehab_ischio_nordbord_g", label: "NordBord - Gauche", unit: "N" },
+      // Quadriceps
+      { value: "rehab_quadri_conc_d", label: "Quadriceps concentrique - Droit", unit: "N" },
+      { value: "rehab_quadri_conc_g", label: "Quadriceps concentrique - Gauche", unit: "N" },
+      { value: "rehab_quadri_exc_d", label: "Quadriceps excentrique - Droit", unit: "N" },
+      { value: "rehab_quadri_exc_g", label: "Quadriceps excentrique - Gauche", unit: "N" },
+      { value: "rehab_quadri_iso_d", label: "Quadriceps isométrique - Droit", unit: "N" },
+      { value: "rehab_quadri_iso_g", label: "Quadriceps isométrique - Gauche", unit: "N" },
+      // Ratio I/Q
+      { value: "rehab_ratio_iq_d", label: "Ratio I/Q concentrique - Droit", unit: "%" },
+      { value: "rehab_ratio_iq_g", label: "Ratio I/Q concentrique - Gauche", unit: "%" },
+      { value: "rehab_ratio_iq_fonc_d", label: "Ratio I/Q fonctionnel - Droit", unit: "%" },
+      { value: "rehab_ratio_iq_fonc_g", label: "Ratio I/Q fonctionnel - Gauche", unit: "%" },
+    ],
+  },
+  {
+    value: "rehab_adducteurs_abducteurs",
+    label: "Réathlé - Adducteurs / Abducteurs",
+    tests: [
+      { value: "rehab_add_d", label: "Adducteurs - Droit", unit: "N" },
+      { value: "rehab_add_g", label: "Adducteurs - Gauche", unit: "N" },
+      { value: "rehab_abd_d", label: "Abducteurs - Droit", unit: "N" },
+      { value: "rehab_abd_g", label: "Abducteurs - Gauche", unit: "N" },
+      { value: "rehab_add_squeeze", label: "Adducteur Squeeze Test (bilatéral)", unit: "N" },
+      { value: "rehab_add_iso_long_d", label: "Adducteur long isométrique - Droit", unit: "N" },
+      { value: "rehab_add_iso_long_g", label: "Adducteur long isométrique - Gauche", unit: "N" },
+      { value: "rehab_copenhagen_d", label: "Copenhagen Adduction - Droit", unit: "s", isTime: true },
+      { value: "rehab_copenhagen_g", label: "Copenhagen Adduction - Gauche", unit: "s", isTime: true },
+    ],
+  },
+  {
+    value: "rehab_epaule",
+    label: "Réathlé - Épaule",
+    tests: [
+      // Rotateurs
+      { value: "rehab_re_conc_d", label: "Rotation externe concentrique - Droit", unit: "N" },
+      { value: "rehab_re_conc_g", label: "Rotation externe concentrique - Gauche", unit: "N" },
+      { value: "rehab_ri_conc_d", label: "Rotation interne concentrique - Droit", unit: "N" },
+      { value: "rehab_ri_conc_g", label: "Rotation interne concentrique - Gauche", unit: "N" },
+      { value: "rehab_re_iso_d", label: "Rotation externe isométrique - Droit", unit: "N" },
+      { value: "rehab_re_iso_g", label: "Rotation externe isométrique - Gauche", unit: "N" },
+      { value: "rehab_ri_iso_d", label: "Rotation interne isométrique - Droit", unit: "N" },
+      { value: "rehab_ri_iso_g", label: "Rotation interne isométrique - Gauche", unit: "N" },
+      // Ratio RE/RI
+      { value: "rehab_ratio_re_ri_d", label: "Ratio RE/RI - Droit", unit: "%" },
+      { value: "rehab_ratio_re_ri_g", label: "Ratio RE/RI - Gauche", unit: "%" },
+      // Autres épaule
+      { value: "rehab_abd_epaule_d", label: "Abduction épaule - Droit", unit: "N" },
+      { value: "rehab_abd_epaule_g", label: "Abduction épaule - Gauche", unit: "N" },
+      { value: "rehab_flex_epaule_d", label: "Flexion épaule - Droit", unit: "N" },
+      { value: "rehab_flex_epaule_g", label: "Flexion épaule - Gauche", unit: "N" },
+    ],
+  },
+  {
+    value: "rehab_cheville_pied",
+    label: "Réathlé - Cheville / Pied",
+    tests: [
+      { value: "rehab_dorsiflexion_d", label: "Dorsiflexion - Droit", unit: "°" },
+      { value: "rehab_dorsiflexion_g", label: "Dorsiflexion - Gauche", unit: "°" },
+      { value: "rehab_eversion_d", label: "Éversion isométrique - Droit", unit: "N" },
+      { value: "rehab_eversion_g", label: "Éversion isométrique - Gauche", unit: "N" },
+      { value: "rehab_inversion_d", label: "Inversion isométrique - Droit", unit: "N" },
+      { value: "rehab_inversion_g", label: "Inversion isométrique - Gauche", unit: "N" },
+      { value: "rehab_flex_plantaire_d", label: "Flexion plantaire - Droit", unit: "N" },
+      { value: "rehab_flex_plantaire_g", label: "Flexion plantaire - Gauche", unit: "N" },
+      { value: "rehab_calf_raise_d", label: "Calf Raise endurance - Droit", unit: "reps" },
+      { value: "rehab_calf_raise_g", label: "Calf Raise endurance - Gauche", unit: "reps" },
+    ],
+  },
+  {
+    value: "rehab_hanche",
+    label: "Réathlé - Hanche / Fessiers",
+    tests: [
+      { value: "rehab_ext_hanche_d", label: "Extension hanche - Droit", unit: "N" },
+      { value: "rehab_ext_hanche_g", label: "Extension hanche - Gauche", unit: "N" },
+      { value: "rehab_flex_hanche_d", label: "Flexion hanche - Droit", unit: "N" },
+      { value: "rehab_flex_hanche_g", label: "Flexion hanche - Gauche", unit: "N" },
+      { value: "rehab_abd_hanche_d", label: "Abduction hanche - Droit", unit: "N" },
+      { value: "rehab_abd_hanche_g", label: "Abduction hanche - Gauche", unit: "N" },
+      { value: "rehab_add_hanche_d", label: "Adduction hanche - Droit", unit: "N" },
+      { value: "rehab_add_hanche_g", label: "Adduction hanche - Gauche", unit: "N" },
+      { value: "rehab_re_hanche_d", label: "Rotation externe hanche - Droit", unit: "°" },
+      { value: "rehab_re_hanche_g", label: "Rotation externe hanche - Gauche", unit: "°" },
+      { value: "rehab_ri_hanche_d", label: "Rotation interne hanche - Droit", unit: "°" },
+      { value: "rehab_ri_hanche_g", label: "Rotation interne hanche - Gauche", unit: "°" },
+    ],
+  },
+  {
+    value: "rehab_genou",
+    label: "Réathlé - Genou",
+    tests: [
+      { value: "rehab_ext_genou_d", label: "Extension genou isométrique - Droit", unit: "N" },
+      { value: "rehab_ext_genou_g", label: "Extension genou isométrique - Gauche", unit: "N" },
+      { value: "rehab_flex_genou_d", label: "Flexion genou isométrique - Droit", unit: "N" },
+      { value: "rehab_flex_genou_g", label: "Flexion genou isométrique - Gauche", unit: "N" },
+      { value: "rehab_lachman", label: "Lachman (laxité antérieure)", unit: "mm" },
+      { value: "rehab_pivot_shift", label: "Pivot Shift", unit: "score" },
+      { value: "rehab_rom_flexion_d", label: "ROM Flexion - Droit", unit: "°" },
+      { value: "rehab_rom_flexion_g", label: "ROM Flexion - Gauche", unit: "°" },
+      { value: "rehab_rom_extension_d", label: "ROM Extension - Droit", unit: "°" },
+      { value: "rehab_rom_extension_g", label: "ROM Extension - Gauche", unit: "°" },
+    ],
+  },
+  {
+    value: "rehab_tronc",
+    label: "Réathlé - Tronc / Rachis",
+    tests: [
+      { value: "rehab_gainage_ventral", label: "Gainage ventral (planche)", unit: "s", isTime: true },
+      { value: "rehab_gainage_lateral_d", label: "Gainage latéral - Droit", unit: "s", isTime: true },
+      { value: "rehab_gainage_lateral_g", label: "Gainage latéral - Gauche", unit: "s", isTime: true },
+      { value: "rehab_gainage_dorsal", label: "Gainage dorsal (Sorensen)", unit: "s", isTime: true },
+      { value: "rehab_flexion_tronc", label: "Force flexion tronc", unit: "N" },
+      { value: "rehab_extension_tronc", label: "Force extension tronc", unit: "N" },
+      { value: "rehab_rotation_tronc_d", label: "Force rotation tronc - Droit", unit: "N" },
+      { value: "rehab_rotation_tronc_g", label: "Force rotation tronc - Gauche", unit: "N" },
+    ],
+  },
+  {
+    value: "rehab_fonctionnel",
+    label: "Réathlé - Tests Fonctionnels",
+    tests: [
+      { value: "rehab_single_leg_squat_d", label: "Single Leg Squat - Droit", unit: "score" },
+      { value: "rehab_single_leg_squat_g", label: "Single Leg Squat - Gauche", unit: "score" },
+      { value: "rehab_hop_test_d", label: "Single Hop Test - Droit", unit: "cm" },
+      { value: "rehab_hop_test_g", label: "Single Hop Test - Gauche", unit: "cm" },
+      { value: "rehab_triple_hop_d", label: "Triple Hop Test - Droit", unit: "cm" },
+      { value: "rehab_triple_hop_g", label: "Triple Hop Test - Gauche", unit: "cm" },
+      { value: "rehab_crossover_hop_d", label: "Crossover Hop Test - Droit", unit: "cm" },
+      { value: "rehab_crossover_hop_g", label: "Crossover Hop Test - Gauche", unit: "cm" },
+      { value: "rehab_6m_timed_hop_d", label: "6m Timed Hop - Droit", unit: "s", isTime: true },
+      { value: "rehab_6m_timed_hop_g", label: "6m Timed Hop - Gauche", unit: "s", isTime: true },
+      { value: "rehab_y_balance_ant_d", label: "Y-Balance Antérieur - Droit", unit: "cm" },
+      { value: "rehab_y_balance_ant_g", label: "Y-Balance Antérieur - Gauche", unit: "cm" },
+      { value: "rehab_y_balance_pm_d", label: "Y-Balance Postéro-médial - Droit", unit: "cm" },
+      { value: "rehab_y_balance_pm_g", label: "Y-Balance Postéro-médial - Gauche", unit: "cm" },
+      { value: "rehab_y_balance_pl_d", label: "Y-Balance Postéro-latéral - Droit", unit: "cm" },
+      { value: "rehab_y_balance_pl_g", label: "Y-Balance Postéro-latéral - Gauche", unit: "cm" },
+      { value: "rehab_star_excursion_d", label: "Star Excursion Balance - Droit", unit: "cm" },
+      { value: "rehab_star_excursion_g", label: "Star Excursion Balance - Gauche", unit: "cm" },
+      { value: "rehab_fms_score", label: "FMS Total Score", unit: "score" },
+    ],
+  },
+  {
+    value: "rehab_isocinetique",
+    label: "Réathlé - Isocinétique",
+    tests: [
+      // Genou 60°/s
+      { value: "rehab_isocin_quad_60_d", label: "Quadriceps 60°/s - Droit", unit: "Nm" },
+      { value: "rehab_isocin_quad_60_g", label: "Quadriceps 60°/s - Gauche", unit: "Nm" },
+      { value: "rehab_isocin_ischio_60_d", label: "Ischio 60°/s - Droit", unit: "Nm" },
+      { value: "rehab_isocin_ischio_60_g", label: "Ischio 60°/s - Gauche", unit: "Nm" },
+      // Genou 180°/s
+      { value: "rehab_isocin_quad_180_d", label: "Quadriceps 180°/s - Droit", unit: "Nm" },
+      { value: "rehab_isocin_quad_180_g", label: "Quadriceps 180°/s - Gauche", unit: "Nm" },
+      { value: "rehab_isocin_ischio_180_d", label: "Ischio 180°/s - Droit", unit: "Nm" },
+      { value: "rehab_isocin_ischio_180_g", label: "Ischio 180°/s - Gauche", unit: "Nm" },
+      // Genou 300°/s
+      { value: "rehab_isocin_quad_300_d", label: "Quadriceps 300°/s - Droit", unit: "Nm" },
+      { value: "rehab_isocin_quad_300_g", label: "Quadriceps 300°/s - Gauche", unit: "Nm" },
+      { value: "rehab_isocin_ischio_300_d", label: "Ischio 300°/s - Droit", unit: "Nm" },
+      { value: "rehab_isocin_ischio_300_g", label: "Ischio 300°/s - Gauche", unit: "Nm" },
+      // Épaule
+      { value: "rehab_isocin_re_epaule_d", label: "RE Épaule 60°/s - Droit", unit: "Nm" },
+      { value: "rehab_isocin_re_epaule_g", label: "RE Épaule 60°/s - Gauche", unit: "Nm" },
+      { value: "rehab_isocin_ri_epaule_d", label: "RI Épaule 60°/s - Droit", unit: "Nm" },
+      { value: "rehab_isocin_ri_epaule_g", label: "RI Épaule 60°/s - Gauche", unit: "Nm" },
+      // Cheville
+      { value: "rehab_isocin_dorsiflex_d", label: "Dorsiflexion 30°/s - Droit", unit: "Nm" },
+      { value: "rehab_isocin_dorsiflex_g", label: "Dorsiflexion 30°/s - Gauche", unit: "Nm" },
+      { value: "rehab_isocin_plantarflex_d", label: "Flexion plantaire 30°/s - Droit", unit: "Nm" },
+      { value: "rehab_isocin_plantarflex_g", label: "Flexion plantaire 30°/s - Gauche", unit: "Nm" },
+    ],
+  },
 ];
 
 // Fonction utilitaire pour obtenir le label complet d'un test
@@ -481,43 +667,47 @@ export function getTestCategoriesForSport(sportType: string): TestCategory[] {
     !cat.value.startsWith("basketball_") && 
     !cat.value.startsWith("aviron_") &&
     !cat.value.startsWith("athletisme_") &&
-    !cat.value.startsWith("judo_")
+    !cat.value.startsWith("judo_") &&
+    !cat.value.startsWith("rehab_")
   );
+
+  // Rehab categories are always included
+  const rehabCategories = TEST_CATEGORIES.filter(cat => cat.value.startsWith("rehab_"));
   
   if (baseSport === "bowling") {
     const bowlingCategories = TEST_CATEGORIES.filter(cat => 
       cat.value.startsWith("bowling_")
     );
-    return [...baseCategories, ...bowlingCategories];
+    return [...baseCategories, ...rehabCategories, ...bowlingCategories];
   }
   
   if (baseSport === "basketball") {
     const basketballCategories = TEST_CATEGORIES.filter(cat => 
       cat.value.startsWith("basketball_")
     );
-    return [...baseCategories, ...basketballCategories];
+    return [...baseCategories, ...rehabCategories, ...basketballCategories];
   }
   
   if (baseSport === "aviron") {
     const avironCategories = TEST_CATEGORIES.filter(cat => 
       cat.value.startsWith("aviron_")
     );
-    return [...baseCategories, ...avironCategories];
+    return [...baseCategories, ...rehabCategories, ...avironCategories];
   }
   
   if (baseSport === "athletisme") {
     const athletismeCategories = TEST_CATEGORIES.filter(cat => 
       cat.value.startsWith("athletisme_")
     );
-    return [...baseCategories, ...athletismeCategories];
+    return [...baseCategories, ...rehabCategories, ...athletismeCategories];
   }
   
   if (baseSport === "judo") {
     const judoCategories = TEST_CATEGORIES.filter(cat => 
       cat.value.startsWith("judo_")
     );
-    return [...baseCategories, ...judoCategories];
+    return [...baseCategories, ...rehabCategories, ...judoCategories];
   }
   
-  return baseCategories;
+  return [...baseCategories, ...rehabCategories];
 }
