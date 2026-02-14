@@ -20,11 +20,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Trash2, Filter } from "lucide-react";
+import { Plus, Trash2, Filter, ClipboardList, CalendarPlus } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { UnifiedTestDialog } from "./UnifiedTestDialog";
+import { ScheduleTestDialog } from "./ScheduleTestDialog";
 import { TEST_CATEGORIES, getTestLabel, getTestCategoriesForSport, TestCategory } from "@/lib/constants/testCategories";
 import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 
@@ -36,6 +37,7 @@ interface GenericTestsSectionProps {
 
 export function GenericTestsSection({ categoryId, sportType, defaultCategory }: GenericTestsSectionProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isScheduleDialogOpen, setIsScheduleDialogOpen] = useState(false);
   const isRehabMode = defaultCategory === "rehab";
   const isSingleCategoryMode = !!defaultCategory && defaultCategory !== "rehab" && defaultCategory !== "all";
   const [filterCategory, setFilterCategory] = useState<string>(
@@ -184,9 +186,16 @@ export function GenericTestsSection({ categoryId, sportType, defaultCategory }: 
           }
         </CardTitle>
         {!isViewer && (
-          <Button size="sm" onClick={() => setIsDialogOpen(true)}>
-            <Plus className="h-4 w-4 mr-1" /> Ajouter un test
-          </Button>
+          <div className="flex gap-2">
+            <Button size="sm" onClick={() => setIsDialogOpen(true)}>
+              <ClipboardList className="h-4 w-4 mr-1" /> Saisir des résultats
+            </Button>
+            {filterTestType !== "all" && selectedCategory && (
+              <Button size="sm" variant="outline" onClick={() => setIsScheduleDialogOpen(true)}>
+                <CalendarPlus className="h-4 w-4 mr-1" /> Planifier
+              </Button>
+            )}
+          </div>
         )}
       </CardHeader>
       <CardContent>
@@ -240,8 +249,8 @@ export function GenericTestsSection({ categoryId, sportType, defaultCategory }: 
             <p className="text-muted-foreground mb-4">Aucun test enregistré</p>
             {!isViewer && (
               <Button onClick={() => setIsDialogOpen(true)} variant="outline" size="sm" className="gap-2">
-                <Plus className="h-4 w-4" />
-                Ajouter le premier test
+                <ClipboardList className="h-4 w-4" />
+                Saisir le premier test
               </Button>
             )}
           </div>
@@ -308,6 +317,24 @@ export function GenericTestsSection({ categoryId, sportType, defaultCategory }: 
         categoryId={categoryId}
         sportType={sportType}
       />
+
+      {filterTestType !== "all" && selectedCategory && (() => {
+        const cat = filteredTestCategories.find(c => c.value === filterCategory);
+        const test = cat?.tests.find(t => t.value === filterTestType);
+        if (!cat || !test) return null;
+        return (
+          <ScheduleTestDialog
+            open={isScheduleDialogOpen}
+            onOpenChange={setIsScheduleDialogOpen}
+            categoryId={categoryId}
+            testCategoryLabel={cat.label}
+            testTypeLabel={test.label}
+            testCategory={cat.value}
+            testType={test.value}
+            testUnit={test.unit || ""}
+          />
+        );
+      })()}
     </Card>
   );
 }
