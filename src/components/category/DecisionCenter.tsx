@@ -29,7 +29,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
     User,
     ChevronRight,
     Heart,
-    ClipboardCheck
+    ClipboardCheck,
+    Swords,
+    MapPin
   } from "lucide-react";
 import { format, addDays, subDays } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -44,6 +46,7 @@ import { NotifyAthletesDialog } from "@/components/notifications/NotifyAthletesD
 import { parseTestsFromNotes } from "@/lib/utils/sessionNotes";
 import { getTestCategoriesForSport } from "@/lib/constants/testCategories";
 import { AddWellnessDialog } from "./AddWellnessDialog";
+import { isIndividualSport } from "@/lib/constants/sportTypes";
  
  interface DecisionCenterProps {
    categoryId: string;
@@ -116,7 +119,27 @@ import { AddWellnessDialog } from "./AddWellnessDialog";
       },
     });
 
-    const testCategories = useMemo(() => getTestCategoriesForSport(categoryData?.rugby_type || ""), [categoryData?.rugby_type]);
+    const sportType = categoryData?.rugby_type || "";
+    const isIndividual = isIndividualSport(sportType);
+    const matchLabel = isIndividual ? "Compétition" : "Match";
+    const testCategories = useMemo(() => getTestCategoriesForSport(sportType), [sportType]);
+
+    // Fetch upcoming matches/competitions
+    const { data: upcomingMatches = [] } = useQuery({
+      queryKey: ["upcoming_matches_decision", categoryId, today],
+      queryFn: async () => {
+        const { data, error } = await supabase
+          .from("matches")
+          .select("*")
+          .eq("category_id", categoryId)
+          .gte("match_date", today)
+          .order("match_date")
+          .order("match_time")
+          .limit(3);
+        if (error) throw error;
+        return data;
+      },
+    });
 
     const getTestNamesFromSession = (session: any): string[] => {
       const tests = parseTestsFromNotes(session.notes);
@@ -730,6 +753,109 @@ import { AddWellnessDialog } from "./AddWellnessDialog";
               )}
             </CardContent>
           </Card>
+
+        {/* 1.7️⃣ PROCHAIN MATCH / COMPÉTITION */}
+        {upcomingMatches.length > 0 && (
+          <Card className="border-2 border-purple-500/20 bg-gradient-to-r from-purple-500/5 to-transparent">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Swords className="h-5 w-5 text-purple-600" />
+                {upcomingMatches.length === 1 
+                  ? `Prochain ${matchLabel.toLowerCase()}`
+                  : `Prochains ${matchLabel.toLowerCase()}s`}
+                <Badge variant="secondary" className="ml-auto text-xs">
+                  {upcomingMatches.length}
+                </Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {upcomingMatches.map((match, idx) => {
+                  const matchDate = new Date(match.match_date);
+                  const isToday = match.match_date === today;
+                  const isTomorrow = match.match_date === format(addDays(new Date(), 1), "yyyy-MM-dd");
+                  const daysUntil = Math.ceil((matchDate.getTime() - new Date().setHours(0,0,0,0)) / (1000 * 60 * 60 * 24));
+                  
+                  return (
+                    <div 
+                      key={match.id}
+                      className={cn(
+                        "flex items-center justify-between p-3 rounded-lg transition-colors",
+                        isToday 
+                          ? "bg-purple-100 dark:bg-purple-900/30 border border-purple-300 dark:border-purple-700" 
+                          : "bg-muted/50"
+                      )}
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className={cn(
+                          "flex flex-col items-center justify-center w-12 h-12 rounded-lg text-center shrink-0",
+                          isToday 
+                            ? "bg-purple-600 text-white" 
+                            : "bg-muted"
+                        )}>
+                          <span className="text-xs font-medium leading-none">
+                            {format(matchDate, "EEE", { locale: fr })}
+                          </span>
+                          <span className="text-lg font-bold leading-none">
+                            {format(matchDate, "d")}
+                          </span>
+                          <span className="text-[10px] leading-none">
+                            {format(matchDate, "MMM", { locale: fr })}
+                          </span>
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="font-semibold text-sm truncate">
+                              {match.is_home != null 
+                                ? (match.is_home ? `vs ${match.opponent}` : `@ ${match.opponent}`)
+                                : match.opponent}
+                            </p>
+                            {match.is_home != null && (
+                              <Badge 
+                                variant="outline" 
+                                className={cn(
+                                  "text-[10px] px-1.5 py-0 shrink-0",
+                                  match.is_home 
+                                    ? "border-green-500 text-green-600" 
+                                    : "border-blue-500 text-blue-600"
+                                )}
+                              >
+                                {match.is_home ? "DOM" : "EXT"}
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            {match.match_time && (
+                              <span className="flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                {match.match_time.slice(0, 5)}
+                              </span>
+                            )}
+                            {match.location && (
+                              <span className="flex items-center gap-1 truncate">
+                                <MapPin className="h-3 w-3" />
+                                {match.location}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs mt-0.5">
+                            {isToday ? (
+                              <span className="font-semibold text-purple-600 dark:text-purple-400">Aujourd'hui</span>
+                            ) : isTomorrow ? (
+                              <span className="font-medium text-orange-600 dark:text-orange-400">Demain</span>
+                            ) : (
+                              <span className="text-muted-foreground">Dans {daysUntil} jour{daysUntil > 1 ? "s" : ""}</span>
+                            )}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
   
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
          {/* 2️⃣ AUJOURD'HUI / DEMAIN */}
