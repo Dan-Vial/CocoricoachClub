@@ -20,9 +20,9 @@ import {
 } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
-import { ProgramWeekSection } from "./ProgramWeekSection";
+import { ProgramBlockSection, type ProgramBlock } from "./ProgramBlockSection";
 import { ExerciseLibrarySidebar } from "./ExerciseLibrarySidebar";
-import { Plus, Save, AlertTriangle } from "lucide-react";
+import { Plus, Save, AlertTriangle, Layers } from "lucide-react";
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent } from "@dnd-kit/core";
 import { Badge } from "@/components/ui/badge";
 import { getTrainingTypesForSport } from "@/lib/constants/trainingTypes";
@@ -50,6 +50,8 @@ interface ProgramWeek {
   id: string;
   week_number: number;
   name?: string;
+  block_name?: string;
+  block_order?: number;
   sessions: ProgramSession[];
 }
 
@@ -154,7 +156,7 @@ export function ProgramBuilderDialog({
   const [bodyZone, setBodyZone] = useState<string>("");
   const [theme, setTheme] = useState<string>("");
   const [subTheme, setSubTheme] = useState<string>("");
-  const [weeks, setWeeks] = useState<ProgramWeek[]>([]);
+  const [blocks, setBlocks] = useState<ProgramBlock[]>([]);
   const [saving, setSaving] = useState(false);
   const [activeExercise, setActiveExercise] = useState<any>(null);
   const [selectedInjuryId, setSelectedInjuryId] = useState<string>("");
@@ -288,6 +290,35 @@ export function ProgramBuilderDialog({
     enabled: !!programId,
   });
 
+  // Helper: convert flat weeks to blocks
+  const weeksToBlocks = (weeks: ProgramWeek[]): ProgramBlock[] => {
+    const blockMap = new Map<string, ProgramWeek[]>();
+    for (const week of weeks) {
+      const blockName = week.block_name || "Bloc 1";
+      if (!blockMap.has(blockName)) blockMap.set(blockName, []);
+      blockMap.get(blockName)!.push(week);
+    }
+    return Array.from(blockMap.entries()).map(([name, bWeeks], idx) => ({
+      id: crypto.randomUUID(),
+      name,
+      order: bWeeks[0]?.block_order ?? idx,
+      weeks: bWeeks,
+    })).sort((a, b) => a.order - b.order);
+  };
+
+  // Helper: convert blocks to flat weeks
+  const blocksToWeeks = (blks: ProgramBlock[]): ProgramWeek[] => {
+    let globalWeekNumber = 1;
+    return blks.flatMap((block, blockIdx) =>
+      block.weeks.map((w) => ({
+        ...w,
+        week_number: globalWeekNumber++,
+        block_name: block.name,
+        block_order: blockIdx,
+      }))
+    );
+  };
+
   useEffect(() => {
     if (existingProgram) {
       setName(existingProgram.name);
@@ -301,6 +332,8 @@ export function ProgramBuilderDialog({
         id: w.id,
         week_number: w.week_number,
         name: w.name,
+        block_name: w.block_name,
+        block_order: w.block_order,
         sessions: w.program_sessions?.map((s: any) => ({
           id: s.id,
           session_number: s.session_number,
@@ -334,11 +367,19 @@ export function ProgramBuilderDialog({
         })).sort((a: any, b: any) => a.session_number - b.session_number) || [],
       })) || [];
 
-      setWeeks(loadedWeeks.length > 0 ? loadedWeeks : [createEmptyWeek(1)]);
+      const loadedBlocks = weeksToBlocks(loadedWeeks);
+      setBlocks(loadedBlocks.length > 0 ? loadedBlocks : [createEmptyBlock(1)]);
     } else if (!programId) {
-      setWeeks([createEmptyWeek(1)]);
+      setBlocks([createEmptyBlock(1)]);
     }
   }, [existingProgram, programId]);
+
+  const createEmptyBlock = (order: number): ProgramBlock => ({
+    id: crypto.randomUUID(),
+    name: `Bloc ${order}`,
+    order,
+    weeks: [createEmptyWeek(1)],
+  });
 
   const createEmptyWeek = (weekNumber: number): ProgramWeek => ({
     id: crypto.randomUUID(),
@@ -353,49 +394,54 @@ export function ProgramBuilderDialog({
     exercises: [],
   });
 
-  const addWeek = () => {
-    setWeeks([...weeks, createEmptyWeek(weeks.length + 1)]);
+  const addBlock = () => {
+    setBlocks([...blocks, createEmptyBlock(blocks.length + 1)]);
   };
 
-  const duplicateWeek = (weekIndex: number) => {
-    const weekToDupe = weeks[weekIndex];
-    const newWeek: ProgramWeek = {
-      ...weekToDupe,
+  const duplicateBlock = (blockIndex: number) => {
+    const blockToDupe = blocks[blockIndex];
+    const newBlock: ProgramBlock = {
+      ...blockToDupe,
       id: crypto.randomUUID(),
-      week_number: weeks.length + 1,
-      sessions: weekToDupe.sessions.map((s) => ({
-        ...s,
+      name: `${blockToDupe.name} (copie)`,
+      order: blocks.length + 1,
+      weeks: blockToDupe.weeks.map((w) => ({
+        ...w,
         id: crypto.randomUUID(),
-        exercises: s.exercises.map((e) => ({
-          ...e,
+        sessions: w.sessions.map((s) => ({
+          ...s,
           id: crypto.randomUUID(),
-          group_id: e.group_id ? crypto.randomUUID() : undefined,
+          exercises: s.exercises.map((e) => ({
+            ...e,
+            id: crypto.randomUUID(),
+            group_id: e.group_id ? crypto.randomUUID() : undefined,
+          })),
         })),
       })),
     };
-    setWeeks([...weeks, newWeek]);
+    setBlocks([...blocks, newBlock]);
   };
 
-  const deleteWeek = (weekIndex: number) => {
-    if (weeks.length === 1) {
-      toast.error("Le programme doit avoir au moins une semaine");
+  const deleteBlock = (blockIndex: number) => {
+    if (blocks.length === 1) {
+      toast.error("Le programme doit avoir au moins un bloc");
       return;
     }
-    const newWeeks = weeks.filter((_, i) => i !== weekIndex);
-    setWeeks(newWeeks.map((w, i) => ({ ...w, week_number: i + 1 })));
+    const newBlocks = blocks.filter((_, i) => i !== blockIndex);
+    setBlocks(newBlocks.map((b, i) => ({ ...b, order: i + 1 })));
   };
 
-  const updateWeek = (weekIndex: number, updatedWeek: ProgramWeek) => {
-    const newWeeks = [...weeks];
-    newWeeks[weekIndex] = updatedWeek;
-    setWeeks(newWeeks);
+  const updateBlock = (blockIndex: number, updatedBlock: ProgramBlock) => {
+    const newBlocks = [...blocks];
+    newBlocks[blockIndex] = updatedBlock;
+    setBlocks(newBlocks);
   };
 
-  const handleDragStart = (event: DragStartEvent) => {
+  const handleDragStart = (event: any) => {
     setActiveExercise(event.active.data.current);
   };
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleDragEnd = (event: any) => {
     setActiveExercise(null);
     const { active, over } = event;
 
@@ -404,32 +450,35 @@ export function ProgramBuilderDialog({
     const droppedExercise = active.data.current;
     const targetSessionId = over.id as string;
 
-    // Find the session and add the exercise
-    const newWeeks = weeks.map((week) => ({
-      ...week,
-      sessions: week.sessions.map((session) => {
-        if (session.id === targetSessionId) {
-          const newExercise: ProgramExercise = {
-            id: crypto.randomUUID(),
-            exercise_name: droppedExercise.name,
-            library_exercise_id: droppedExercise.id,
-            exercise_category: droppedExercise.category, // Pass category for specialized inputs
-            order_index: session.exercises.length,
-            method: "normal",
-            sets: 3,
-            reps: "10",
-            rest_seconds: 90,
-          };
-          return {
-            ...session,
-            exercises: [...session.exercises, newExercise],
-          };
-        }
-        return session;
-      }),
+    // Find the session across all blocks and add the exercise
+    const newBlocks = blocks.map((block) => ({
+      ...block,
+      weeks: block.weeks.map((week) => ({
+        ...week,
+        sessions: week.sessions.map((session) => {
+          if (session.id === targetSessionId) {
+            const newExercise: ProgramExercise = {
+              id: crypto.randomUUID(),
+              exercise_name: droppedExercise.name,
+              library_exercise_id: droppedExercise.id,
+              exercise_category: droppedExercise.category,
+              order_index: session.exercises.length,
+              method: "normal",
+              sets: 3,
+              reps: "10",
+              rest_seconds: 90,
+            };
+            return {
+              ...session,
+              exercises: [...session.exercises, newExercise],
+            };
+          }
+          return session;
+        }),
+      })),
     }));
 
-    setWeeks(newWeeks);
+    setBlocks(newBlocks);
     toast.success(`${droppedExercise.name} ajouté`);
   };
 
@@ -483,13 +532,16 @@ export function ProgramBuilderDialog({
       }
 
       // Insert weeks, sessions, and exercises
-      for (const week of weeks) {
+      const allWeeks = blocksToWeeks(blocks);
+      for (const week of allWeeks) {
         const { data: weekData, error: weekError } = await supabase
           .from("program_weeks")
           .insert({
             program_id: programIdToUse,
             week_number: week.week_number,
             name: week.name,
+            block_name: week.block_name || null,
+            block_order: week.block_order ?? 0,
           })
           .select()
           .single();
@@ -853,19 +905,27 @@ export function ProgramBuilderDialog({
                                 toast.error("Sélectionnez au moins une phase");
                                 return;
                               }
-                              const newWeeks: ProgramWeek[] = enabledPhases.map((phase, index) => ({
+                              // Each phase becomes a block, each block has 1 week with N sessions
+                              const newBlocks: ProgramBlock[] = enabledPhases.map((phase, index) => ({
                                 id: crypto.randomUUID(),
-                                week_number: index + 1,
                                 name: phase.name,
-                                sessions: Array.from({ length: phase.sessions }, (_, sIndex) => ({
+                                order: index,
+                                weeks: [{
                                   id: crypto.randomUUID(),
-                                  session_number: sIndex + 1,
-                                  name: phase.sessionNames[sIndex] || `Séance ${sIndex + 1}`,
-                                  exercises: [],
-                                })),
+                                  week_number: 1,
+                                  name: `Semaine 1`,
+                                  block_name: phase.name,
+                                  block_order: index,
+                                  sessions: Array.from({ length: phase.sessions }, (_, sIndex) => ({
+                                    id: crypto.randomUUID(),
+                                    session_number: sIndex + 1,
+                                    name: phase.sessionNames[sIndex] || `Séance ${sIndex + 1}`,
+                                    exercises: [],
+                                  })),
+                                }],
                               }));
-                              setWeeks(newWeeks);
-                              toast.success(`${enabledPhases.length} phase(s) générée(s)`);
+                              setBlocks(newBlocks);
+                              toast.success(`${enabledPhases.length} bloc(s) de phase générés`);
                             }}
                           >
                             <Plus className="h-4 w-4 mr-2" />
@@ -908,25 +968,26 @@ export function ProgramBuilderDialog({
                   </div>
                 </div>
 
-                {/* Weeks structure */}
+                {/* Block structure */}
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <h3 className="font-semibold">Structure du programme</h3>
-                    <Button variant="outline" onClick={addWeek}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Semaine
+                    <Button variant="outline" onClick={addBlock}>
+                      <Layers className="h-4 w-4 mr-2" />
+                      Ajouter un bloc
                     </Button>
                   </div>
 
                   <div className="space-y-4">
-                    {weeks.map((week, weekIndex) => (
-                      <ProgramWeekSection
-                        key={week.id}
-                        week={week}
-                        weekIndex={weekIndex}
-                        onUpdate={(updated) => updateWeek(weekIndex, updated)}
-                        onDuplicate={() => duplicateWeek(weekIndex)}
-                        onDelete={() => deleteWeek(weekIndex)}
+                    {blocks.map((block, blockIndex) => (
+                      <ProgramBlockSection
+                        key={block.id}
+                        block={block}
+                        blockIndex={blockIndex}
+                        onUpdate={(updated) => updateBlock(blockIndex, updated)}
+                        onDuplicate={() => duplicateBlock(blockIndex)}
+                        onDelete={() => deleteBlock(blockIndex)}
+                        canDelete={blocks.length > 1}
                       />
                     ))}
                   </div>
