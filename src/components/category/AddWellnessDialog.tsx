@@ -157,7 +157,7 @@ export function AddWellnessDialog({ open, onOpenChange, categoryId }: AddWellnes
     addWellness.mutate();
   };
 
-  const ScoreSlider = ({ 
+  const ScoreButton = ({ 
     label, 
     value, 
     onChange, 
@@ -169,23 +169,20 @@ export function AddWellnessDialog({ open, onOpenChange, categoryId }: AddWellnes
     labels: string[];
   }) => (
     <div className="space-y-3">
-      <div className="flex justify-between items-center">
-        <Label>{label}</Label>
-        <span className="text-sm text-muted-foreground">
-          {value} - {labels[value]}
-        </span>
-      </div>
-      <Slider
-        value={[value]}
-        onValueChange={([v]) => onChange(v)}
-        min={1}
-        max={5}
-        step={1}
-        className="w-full"
-      />
-      <div className="flex justify-between text-xs text-muted-foreground">
-        <span>1</span>
-        <span>5</span>
+      <Label>{label}</Label>
+      <div className="flex gap-2 flex-wrap">
+        {[1, 2, 3, 4, 5].map((score) => (
+          <Button
+            key={score}
+            type="button"
+            variant={value === score ? "default" : "outline"}
+            size="sm"
+            onClick={() => onChange(score)}
+            className="flex-1 text-xs whitespace-normal h-auto py-2 px-1"
+          >
+            <span className="text-center line-clamp-2">{labels[score]}</span>
+          </Button>
+        ))}
       </div>
     </div>
   );
@@ -231,28 +228,28 @@ export function AddWellnessDialog({ open, onOpenChange, categoryId }: AddWellnes
           <div className="space-y-4 p-4 bg-muted/50 rounded-lg">
             <h4 className="font-medium">Wellness</h4>
             
-            <ScoreSlider
+            <ScoreButton
               label="Qualité du sommeil"
               value={sleepQuality}
               onChange={setSleepQuality}
               labels={scoreLabels.sleep_quality}
             />
 
-            <ScoreSlider
+            <ScoreButton
               label="Durée du sommeil"
               value={sleepDuration}
               onChange={setSleepDuration}
               labels={scoreLabels.sleep_duration}
             />
 
-            <ScoreSlider
+            <ScoreButton
               label="Fatigue générale"
               value={generalFatigue}
               onChange={setGeneralFatigue}
               labels={scoreLabels.general_fatigue}
             />
 
-            <ScoreSlider
+            <ScoreButton
               label="Stress / Charge mentale"
               value={stressLevel}
               onChange={setStressLevel}
@@ -266,14 +263,14 @@ export function AddWellnessDialog({ open, onOpenChange, categoryId }: AddWellnes
               1 = aucune gêne • 5 = douleur limitante
             </p>
 
-            <ScoreSlider
+            <ScoreButton
               label="Haut du corps"
               value={sorenessUpper}
               onChange={setSorenessUpper}
               labels={scoreLabels.soreness}
             />
 
-            <ScoreSlider
+            <ScoreButton
               label="Bas du corps"
               value={sorenessLower}
               onChange={setSorenessLower}
