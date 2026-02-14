@@ -60,7 +60,6 @@ import { getTrainingTypesForSport, trainingTypeHasExercises } from "@/lib/consta
 import { QuickAddExerciseDialog } from "@/components/library/QuickAddExerciseDialog";
 import { DndContext, DragEndEvent, DragStartEvent, DragOverlay, useDraggable, useDroppable } from "@dnd-kit/core";
 import { ExerciseLibrarySidebar } from "@/components/category/programs/ExerciseLibrarySidebar";
-import { TrainingMethodSelect } from "@/components/category/sessions/TrainingMethodSelect";
 import {
   TRAINING_STYLES,
   getTrainingStyleConfig,
@@ -1430,11 +1429,10 @@ export function SessionFormDialog({
            {!isGrouped && (
              <div>
                <Label className="text-xs text-muted-foreground">Méthode</Label>
-               <TrainingMethodSelect
+               <Select
                  value={exercise.set_type}
                  onValueChange={(v) => {
                    if (LINKABLE_METHODS.includes(v) || CARDIO_BLOCK_METHODS.includes(v)) {
-                     // For block methods, convert to block and remove this exercise
                      removeExercise(index);
                      createMethodBlock(v);
                    } else if (DROP_METHODS.includes(v)) {
@@ -1449,8 +1447,23 @@ export function SessionFormDialog({
                      });
                    }
                  }}
-                 showColorDot={true}
-               />
+               >
+                 <SelectTrigger className="h-8 text-xs">
+                   <SelectValue />
+                 </SelectTrigger>
+                 <SelectContent className="max-h-80">
+                   {TRAINING_STYLES.map((style) => (
+                     <SelectItem key={style.value} value={style.value}>
+                       <div className="flex items-center gap-2">
+                         {style.color && (
+                           <div className={cn("w-2 h-2 rounded-full", style.color)} />
+                         )}
+                         <span>{style.label}</span>
+                       </div>
+                     </SelectItem>
+                   ))}
+                 </SelectContent>
+               </Select>
              </div>
            )}
           <div className={isGrouped ? "col-span-2" : ""}>
@@ -2317,9 +2330,9 @@ export function SessionFormDialog({
       <div className="space-y-2">
         <Label className="text-xs text-muted-foreground">Créer un bloc d'exercices</Label>
         <div className="flex flex-wrap gap-2">
+          <TooltipProvider delayDuration={200}>
           {blockMethods.map(style => (
-            <TooltipProvider key={style.value}>
-              <Tooltip>
+              <Tooltip key={style.value}>
                 <TooltipTrigger asChild>
                   <Button
                     type="button"
@@ -2336,12 +2349,12 @@ export function SessionFormDialog({
                     {style.label}
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>
+                <TooltipContent side="bottom" className="z-[9999]">
                   <p className="text-xs max-w-xs">{style.description}</p>
                 </TooltipContent>
               </Tooltip>
-            </TooltipProvider>
           ))}
+          </TooltipProvider>
         </div>
       </div>
     );
