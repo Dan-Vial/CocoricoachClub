@@ -1,13 +1,66 @@
 import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { GenericTestsSection } from "./tests/GenericTestsSection";
 import { getTestCategoriesForSport } from "@/lib/constants/testCategories";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { ColoredNavTabsList } from "@/components/ui/colored-nav-tabs";
+import * as TabsPrimitive from "@radix-ui/react-tabs";
+import { cn } from "@/lib/utils";
 
 interface TestsTabProps {
   categoryId: string;
   sportType?: string;
+}
+
+// Color palette for test categories
+const TEST_TAB_COLORS = [
+  "hsl(220 80% 55%)",   // blue
+  "hsl(320 75% 55%)",   // magenta
+  "hsl(35 90% 55%)",    // orange
+  "hsl(160 65% 45%)",   // green
+  "hsl(280 70% 55%)",   // purple
+  "hsl(200 85% 50%)",   // cyan
+  "hsl(350 80% 60%)",   // red
+  "hsl(45 95% 50%)",    // yellow
+  "hsl(190 80% 45%)",   // teal
+  "hsl(260 70% 60%)",   // indigo
+  "hsl(140 60% 45%)",   // emerald
+  "hsl(10 80% 55%)",    // coral
+] as const;
+
+function TestCategoryTrigger({ value, label, colorIndex }: { value: string; label: string; colorIndex: number }) {
+  const color = TEST_TAB_COLORS[colorIndex % TEST_TAB_COLORS.length];
+
+  return (
+    <TabsPrimitive.Trigger
+      value={value}
+      className={cn(
+        "group relative inline-flex items-center px-4 py-2 rounded-lg font-medium text-sm",
+        "transition-all duration-200 ease-out whitespace-nowrap",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+        "hover:opacity-80",
+        "data-[state=active]:text-white data-[state=active]:shadow-md data-[state=active]:scale-105",
+      )}
+      style={{
+        color: color,
+        borderWidth: "2px",
+        borderColor: color,
+        borderStyle: "solid",
+      }}
+    >
+      {/* Active fill background */}
+      <span
+        className={cn(
+          "absolute inset-0 rounded-md transition-all duration-200",
+          "opacity-0 scale-95",
+          "group-data-[state=active]:opacity-100 group-data-[state=active]:scale-100"
+        )}
+        style={{ backgroundColor: color }}
+      />
+      <span className="relative z-10">{label}</span>
+    </TabsPrimitive.Trigger>
+  );
 }
 
 export function TestsTab({ categoryId, sportType }: TestsTabProps) {
@@ -26,19 +79,24 @@ export function TestsTab({ categoryId, sportType }: TestsTabProps) {
       <CardContent>
         <Tabs defaultValue="all" className="space-y-4">
           <ScrollArea className="w-full">
-            <TabsList className="flex w-max gap-1 h-auto">
-              <TabsTrigger value="all">Tous</TabsTrigger>
-              {testCategories.nonRehab.map((cat) => (
-                <TabsTrigger key={cat.value} value={cat.value} className="whitespace-nowrap">
-                  {cat.label}
-                </TabsTrigger>
+            <ColoredNavTabsList className="flex w-max gap-1.5 p-2">
+              <TestCategoryTrigger value="all" label="Tous" colorIndex={0} />
+              {testCategories.nonRehab.map((cat, i) => (
+                <TestCategoryTrigger
+                  key={cat.value}
+                  value={cat.value}
+                  label={cat.label}
+                  colorIndex={i + 1}
+                />
               ))}
               {testCategories.hasRehab && (
-                <TabsTrigger value="rehab" className="text-emerald-700 dark:text-emerald-400 whitespace-nowrap">
-                  Réathlétisation
-                </TabsTrigger>
+                <TestCategoryTrigger
+                  value="rehab"
+                  label="Réathlétisation"
+                  colorIndex={testCategories.nonRehab.length + 1}
+                />
               )}
-            </TabsList>
+            </ColoredNavTabsList>
             <ScrollBar orientation="horizontal" />
           </ScrollArea>
 
