@@ -29,6 +29,7 @@ interface ProgramExercise {
   is_rm_test?: boolean;
   rm_test_type?: string;
   target_velocity?: number;
+  target_force_newton?: number | null;
   erg_data?: any;
   running_data?: any;
   bodyweight_data?: any;

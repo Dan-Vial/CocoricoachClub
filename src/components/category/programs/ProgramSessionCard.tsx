@@ -99,6 +99,7 @@ interface ProgramExercise {
   running_data?: RunningData;
   bodyweight_data?: BodyweightData;
   target_velocity?: number; // VBT - target velocity in m/s
+  target_force_newton?: number | null; // Force in Newton
 }
 
 interface ProgramSession {
@@ -1227,7 +1228,7 @@ export function ProgramSessionCard({
                     )}
 
                     {/* VBT toggle - available on all methods */}
-                    <div className="col-span-full flex items-center gap-2 mt-1">
+                    <div className="col-span-full flex items-center gap-2 mt-1 flex-wrap">
                       <button
                         type="button"
                         className={`text-[10px] px-2 py-0.5 rounded-full border transition-colors ${
@@ -1265,6 +1266,46 @@ export function ProgramSessionCard({
                             className="h-7 text-xs w-20"
                             onClick={(e) => e.stopPropagation()}
                           />
+                        </div>
+                      )}
+                      {/* Force (N) toggle */}
+                      <button
+                        type="button"
+                        className={`text-[10px] px-2 py-0.5 rounded-full border transition-colors ${
+                          exercise.target_force_newton != null
+                            ? "bg-amber-100 border-amber-400 text-amber-700"
+                            : "bg-muted border-border text-muted-foreground hover:border-amber-300"
+                        }`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (exercise.target_force_newton != null) {
+                            updateExercise(index, "target_force_newton", null);
+                          } else {
+                            updateExercise(index, "target_force_newton", 0);
+                          }
+                        }}
+                      >
+                        💪 Force
+                      </button>
+                      {exercise.target_force_newton != null && (
+                        <div className="flex items-center gap-1">
+                          <Input
+                            type="number"
+                            min={0}
+                            step="1"
+                            value={exercise.target_force_newton || ""}
+                            onChange={(e) =>
+                              updateExercise(
+                                index,
+                                "target_force_newton",
+                                e.target.value ? parseFloat(e.target.value) : null
+                              )
+                            }
+                            placeholder="500"
+                            className="h-7 text-xs w-24"
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                          <span className="text-[10px] text-muted-foreground">N</span>
                         </div>
                       )}
                     </div>

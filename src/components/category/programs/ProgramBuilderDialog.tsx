@@ -84,6 +84,7 @@ interface ProgramExercise {
   is_rm_test?: boolean;
   rm_test_type?: string;
   target_velocity?: number;
+  target_force_newton?: number | null;
   erg_data?: any;
   running_data?: any;
   bodyweight_data?: any;
@@ -360,6 +361,7 @@ export function ProgramBuilderDialog({
             is_rm_test: e.is_rm_test,
             rm_test_type: e.rm_test_type,
             target_velocity: e.target_velocity,
+            target_force_newton: e.target_force_newton,
             erg_data: e.erg_data,
             running_data: e.running_data,
             bodyweight_data: e.bodyweight_data,
@@ -584,6 +586,7 @@ export function ProgramBuilderDialog({
               is_rm_test: ex.is_rm_test || false,
               rm_test_type: ex.rm_test_type || null,
               target_velocity: ex.target_velocity || null,
+              target_force_newton: ex.target_force_newton || null,
               erg_data: ex.erg_data ? JSON.stringify(ex.erg_data) : null,
               running_data: ex.running_data ? JSON.stringify(ex.running_data) : null,
               bodyweight_data: ex.bodyweight_data ? JSON.stringify(ex.bodyweight_data) : null,

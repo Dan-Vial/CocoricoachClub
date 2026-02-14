@@ -163,6 +163,7 @@ interface Exercise {
   tempo?: string;
   target_rpe?: number;
   target_velocity?: number; // VBT - target velocity in m/s
+  target_force_newton?: number | null; // Force in Newton
 }
 
 const emptyExercise = (index: number, groupId?: string, groupOrder?: number, method?: string): Exercise => ({
@@ -2193,7 +2194,7 @@ export function SessionFormDialog({
               )}
             </div>
             {/* VBT toggle */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <button
                 type="button"
                 className={`text-[10px] px-2 py-0.5 rounded-full border transition-colors ${
@@ -2238,6 +2239,38 @@ export function SessionFormDialog({
                     />
                   </div>
                   <span className="text-[10px] text-muted-foreground">m/s</span>
+                </div>
+              )}
+              {/* Force (N) toggle */}
+              <button
+                type="button"
+                className={`text-[10px] px-2 py-0.5 rounded-full border transition-colors ${
+                  exercise.target_force_newton != null
+                    ? "bg-amber-100 border-amber-400 text-amber-700"
+                    : "bg-muted border-border text-muted-foreground hover:border-amber-300"
+                }`}
+                onClick={() => {
+                  if (exercise.target_force_newton != null) {
+                    updateExercise(index, "target_force_newton", undefined);
+                  } else {
+                    updateExercise(index, "target_force_newton", 0);
+                  }
+                }}
+              >
+                💪 Force
+              </button>
+              {exercise.target_force_newton != null && (
+                <div className="flex items-center gap-1">
+                  <Input
+                    type="number"
+                    min="0"
+                    step="1"
+                    className="h-7 text-xs w-24"
+                    placeholder="500"
+                    value={exercise.target_force_newton || ""}
+                    onChange={(e) => updateExercise(index, "target_force_newton", e.target.value ? parseFloat(e.target.value) : null)}
+                  />
+                  <span className="text-[10px] text-muted-foreground">N</span>
                 </div>
               )}
             </div>

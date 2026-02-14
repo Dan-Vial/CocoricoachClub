@@ -155,6 +155,7 @@ export function ProgramsTab({ categoryId }: ProgramsTabProps) {
               is_rm_test: ex.is_rm_test,
               rm_test_type: ex.rm_test_type,
               target_velocity: ex.target_velocity,
+              target_force_newton: ex.target_force_newton,
               erg_data: ex.erg_data,
               running_data: ex.running_data,
             }));

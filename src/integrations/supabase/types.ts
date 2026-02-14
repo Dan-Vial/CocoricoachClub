@@ -2146,6 +2146,7 @@ export type Database = {
           rpe: number | null
           set_type: string | null
           sets: number
+          target_force_newton: number | null
           tempo: string | null
           training_session_id: string
           weight_kg: number | null
@@ -2167,6 +2168,7 @@ export type Database = {
           rpe?: number | null
           set_type?: string | null
           sets?: number
+          target_force_newton?: number | null
           tempo?: string | null
           training_session_id: string
           weight_kg?: number | null
@@ -2188,6 +2190,7 @@ export type Database = {
           rpe?: number | null
           set_type?: string | null
           sets?: number
+          target_force_newton?: number | null
           tempo?: string | null
           training_session_id?: string
           weight_kg?: number | null
@@ -4769,6 +4772,7 @@ export type Database = {
           running_data: Json | null
           session_id: string
           sets: number | null
+          target_force_newton: number | null
           target_velocity: number | null
           tempo: string | null
         }
@@ -4795,6 +4799,7 @@ export type Database = {
           running_data?: Json | null
           session_id: string
           sets?: number | null
+          target_force_newton?: number | null
           target_velocity?: number | null
           tempo?: string | null
         }
@@ -4821,6 +4826,7 @@ export type Database = {
           running_data?: Json | null
           session_id?: string
           sets?: number | null
+          target_force_newton?: number | null
           target_velocity?: number | null
           tempo?: string | null
         }
