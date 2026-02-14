@@ -33,12 +33,12 @@ export function TrainingMethodSelect({
   const selectedStyle = TRAINING_STYLES.find(s => s.value === value);
   
   return (
-    <div className="flex items-center gap-1 w-full">
+    <div className="flex items-center gap-1 w-full min-w-0">
       <Select value={value} onValueChange={onValueChange}>
         <SelectTrigger className={cn("h-8 text-xs flex-1", triggerClassName)}>
           <SelectValue />
         </SelectTrigger>
-        <SelectContent className={cn("max-h-80", className)}>
+        <SelectContent className={cn("max-h-80 z-[9999]", className)}>
           {TRAINING_STYLES.map((style) => (
             <SelectItem key={style.value} value={style.value}>
               <div className="flex items-center gap-2">
