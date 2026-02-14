@@ -44,9 +44,6 @@ export function GenericTestsSection({ categoryId, sportType, defaultCategory }: 
 
   // Get filtered test categories based on sport type and mode
   const allSportCategories = getTestCategoriesForSport(sportType || "");
-  const baseTestCategories = isRehabMode
-    ? allSportCategories.filter(c => c.value.startsWith("rehab_"))
-    : allSportCategories.filter(c => !c.value.startsWith("rehab_"));
 
   // Fetch all tests to discover unique categories and types from DB
   const { data: allTestsForDiscovery } = useQuery({
@@ -61,13 +58,26 @@ export function GenericTestsSection({ categoryId, sportType, defaultCategory }: 
     },
   });
 
-  // Dynamically build test categories including those discovered from DB
+  // Build categories depending on mode
   const filteredTestCategories = useMemo(() => {
-    const categories = [...baseTestCategories];
+    // Separate rehab and non-rehab categories
+    const rehabCats = allSportCategories.filter(c => c.value.startsWith("rehab_"));
+    const nonRehabCats = allSportCategories.filter(c => !c.value.startsWith("rehab_"));
+
+    let categories: TestCategory[];
+    
+    if (isRehabMode) {
+      // In rehab mode: show each rehab subcategory as a selectable category
+      categories = [...rehabCats];
+    } else {
+      // In normal mode: show non-rehab categories only
+      categories = [...nonRehabCats];
+    }
+
+    // Dynamically add categories discovered from DB
     const existingCategoryValues = new Set(categories.map(c => c.value));
     const existingTestsByCategory = new Map<string, Set<string>>();
 
-    // Track existing tests in each category
     categories.forEach(cat => {
       existingTestsByCategory.set(cat.value, new Set(cat.tests.map(t => t.value)));
     });
@@ -76,10 +86,12 @@ export function GenericTestsSection({ categoryId, sportType, defaultCategory }: 
       allTestsForDiscovery.forEach(test => {
         const catValue = test.test_category;
         const testType = test.test_type;
-
         if (!catValue || !testType) return;
 
-        // If category doesn't exist, create it
+        // Only add if it matches current mode
+        const isRehabCat = catValue.startsWith("rehab_");
+        if (isRehabMode !== isRehabCat) return;
+
         if (!existingCategoryValues.has(catValue)) {
           const newCategory: TestCategory = {
             value: catValue,
@@ -90,7 +102,6 @@ export function GenericTestsSection({ categoryId, sportType, defaultCategory }: 
           existingCategoryValues.add(catValue);
           existingTestsByCategory.set(catValue, new Set([testType]));
         } else {
-          // Category exists, check if test type exists
           const existingTests = existingTestsByCategory.get(catValue);
           if (existingTests && !existingTests.has(testType)) {
             const category = categories.find(c => c.value === catValue);
@@ -104,7 +115,7 @@ export function GenericTestsSection({ categoryId, sportType, defaultCategory }: 
     }
 
     return categories;
-  }, [baseTestCategories, allTestsForDiscovery]);
+  }, [allSportCategories, allTestsForDiscovery, isRehabMode]);
 
   const { data: tests, isLoading } = useQuery({
     queryKey: ["generic_tests", categoryId, filterCategory, filterTestType, isRehabMode],
@@ -116,10 +127,9 @@ export function GenericTestsSection({ categoryId, sportType, defaultCategory }: 
         .order("test_date", { ascending: false });
 
       if (isRehabMode) {
-        query = query.like("test_category", "rehab_%");
+        query = query.ilike("test_category", "rehab_%");
       } else {
-        // In normal mode, exclude rehab tests
-        query = query.not("test_category", "like", "rehab_%");
+        query = query.or("test_category.not.ilike.rehab_%,test_category.is.null");
       }
 
       if (filterCategory !== "all") {

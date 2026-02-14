@@ -61,21 +61,30 @@ export function CoachDashboard({ categoryId }: CoachDashboardProps) {
         .eq("category_id", categoryId)
         .neq("status", "healed")
         .order("injury_date", { ascending: false });
-      if (error) throw error;
+      if (error) {
+        console.warn("Injuries query error:", error.message);
+        return [];
+      }
       return data;
     },
+    retry: 1,
   });
 
-  // Fetch EWMA data (replacing AWCR)
+  // Fetch EWMA data (replacing AWCR) - limit to last 60 days for performance
   const { data: ewmaData } = useQuery({
     queryKey: ["ewma_summary", categoryId],
     queryFn: async () => {
+      const sixtyDaysAgo = format(addDays(new Date(), -60), "yyyy-MM-dd");
       const { data, error } = await supabase
         .from("awcr_tracking")
         .select("player_id, awcr, acute_load, chronic_load, players(name)")
         .eq("category_id", categoryId)
+        .gte("session_date", sixtyDaysAgo)
         .order("session_date", { ascending: false });
-      if (error) throw error;
+      if (error) {
+        console.warn("EWMA query error:", error.message);
+        return {};
+      }
 
       // Get latest EWMA per player (using existing data structure)
       const latestByPlayer: Record<string, { ewmaRatio: number; acute: number; chronic: number; name: string }> = {};
@@ -92,6 +101,7 @@ export function CoachDashboard({ categoryId }: CoachDashboardProps) {
       });
       return latestByPlayer;
     },
+    retry: 1,
   });
 
   // Fetch wellness data
@@ -104,9 +114,13 @@ export function CoachDashboard({ categoryId }: CoachDashboardProps) {
         .eq("category_id", categoryId)
         .gte("tracking_date", format(addDays(new Date(), -7), "yyyy-MM-dd"))
         .order("tracking_date", { ascending: false });
-      if (error) throw error;
+      if (error) {
+        console.warn("Wellness query error:", error.message);
+        return [];
+      }
       return data;
     },
+    retry: 1,
   });
 
   // Fetch medical records due soon
@@ -119,9 +133,13 @@ export function CoachDashboard({ categoryId }: CoachDashboardProps) {
         .eq("category_id", categoryId)
         .lte("next_due_date", format(addDays(new Date(), 30), "yyyy-MM-dd"))
         .order("next_due_date");
-      if (error) throw error;
+      if (error) {
+        console.warn("Medical records query error:", error.message);
+        return [];
+      }
       return data;
     },
+    retry: 1,
   });
 
   // Fetch RTP protocols in progress
@@ -133,9 +151,13 @@ export function CoachDashboard({ categoryId }: CoachDashboardProps) {
         .select("*, players(name), injuries(injury_type)")
         .eq("category_id", categoryId)
         .eq("status", "in_progress");
-      if (error) throw error;
+      if (error) {
+        console.warn("RTP query error:", error.message);
+        return [];
+      }
       return data;
     },
+    retry: 1,
   });
 
   // Calculate stats
