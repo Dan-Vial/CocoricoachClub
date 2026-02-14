@@ -3,28 +3,38 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, Heart, Moon, Zap, Frown, ChevronDown, ChevronUp } from "lucide-react";
+import { CheckCircle2, Heart, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 import { NAV_COLORS } from "@/components/ui/colored-nav-tabs";
+import { cn } from "@/lib/utils";
 
 interface Props {
   playerId: string;
   categoryId: string;
 }
 
+const EMOJI_OPTIONS = [
+  { value: 1, emoji: "😫", label: "Très mauvais" },
+  { value: 2, emoji: "😟", label: "Mauvais" },
+  { value: 3, emoji: "😐", label: "Moyen" },
+  { value: 4, emoji: "🙂", label: "Bien" },
+  { value: 5, emoji: "😄", label: "Excellent" },
+];
+
+const SLEEP_HOURS = [4, 5, 6, 7, 8, 9, 10, 11, 12];
+
 const WELLNESS_FIELDS = [
-  { key: "sleep_quality", label: "Qualité du sommeil", icon: Moon, low: "Mauvais", high: "Excellent" },
-  { key: "sleep_duration", label: "Heures de sommeil", isNumber: true },
-  { key: "general_fatigue", label: "Fatigue générale", icon: Zap, low: "Aucune", high: "Épuisé" },
-  { key: "soreness_upper_body", label: "Douleurs haut du corps", icon: Frown, low: "Aucune", high: "Très fortes" },
-  { key: "soreness_lower_body", label: "Douleurs bas du corps", icon: Frown, low: "Aucune", high: "Très fortes" },
-  { key: "stress_level", label: "Stress", icon: Frown, low: "Détendu", high: "Très stressé" },
+  { key: "sleep_quality", label: "Qualité du sommeil", emoji: "😴" },
+  { key: "sleep_duration", label: "Heures de sommeil", emoji: "🛏️", isNumber: true },
+  { key: "general_fatigue", label: "Fatigue générale", emoji: "🔋", inverted: true },
+  { key: "soreness_upper_body", label: "Douleurs haut du corps", emoji: "💪", inverted: true },
+  { key: "soreness_lower_body", label: "Douleurs bas du corps", emoji: "🦵", inverted: true },
+  { key: "stress_level", label: "Stress", emoji: "🧠", inverted: true },
 ] as const;
 
 export function AthleteSpaceWellness({ playerId, categoryId }: Props) {
@@ -47,16 +57,20 @@ export function AthleteSpaceWellness({ playerId, categoryId }: Props) {
   });
 
   const [values, setValues] = useState({
-    sleep_quality: 3,
-    sleep_duration: 7,
-    general_fatigue: 3,
-    soreness_upper_body: 3,
-    soreness_lower_body: 3,
-    stress_level: 3,
+    sleep_quality: 0,
+    sleep_duration: 0,
+    general_fatigue: 0,
+    soreness_upper_body: 0,
+    soreness_lower_body: 0,
+    stress_level: 0,
   });
   const [hasSpecificPain, setHasSpecificPain] = useState(false);
   const [painLocation, setPainLocation] = useState("");
   const [notes, setNotes] = useState("");
+
+  const allFieldsFilled = values.sleep_quality > 0 && values.sleep_duration > 0 &&
+    values.general_fatigue > 0 && values.soreness_upper_body > 0 &&
+    values.soreness_lower_body > 0 && values.stress_level > 0;
 
   const submitWellness = useMutation({
     mutationFn: async () => {
@@ -123,7 +137,7 @@ export function AthleteSpaceWellness({ playerId, categoryId }: Props) {
     );
   }
 
-  // Not filled yet — clickable block
+  // Not filled yet
   return (
     <Card className="shadow-md border-2" style={{ borderColor: `${NAV_COLORS.sante.base}40`, backgroundColor: `${NAV_COLORS.sante.base}06` }}>
       <button
@@ -153,45 +167,77 @@ export function AthleteSpaceWellness({ playerId, categoryId }: Props) {
       {expanded && (
         <CardContent className="space-y-5 pt-0">
           {WELLNESS_FIELDS.map(field => {
+            const currentValue = (values as any)[field.key];
+
             if ('isNumber' in field && field.isNumber) {
               return (
                 <div key={field.key}>
-                  <div className="flex items-center justify-between mb-2">
-                    <Label className="text-sm">{field.label}</Label>
-                    <span className="text-lg font-bold" style={{ color: NAV_COLORS.sante.base }}>{(values as any)[field.key]}h</span>
+                  <Label className="text-sm flex items-center gap-1.5 mb-3">
+                    <span className="text-base">{field.emoji}</span>
+                    {field.label}
+                    {currentValue > 0 && (
+                      <Badge variant="secondary" className="ml-auto text-xs font-bold">{currentValue}h</Badge>
+                    )}
+                  </Label>
+                  <div className="flex flex-wrap gap-2">
+                    {SLEEP_HOURS.map(hour => (
+                      <button
+                        key={hour}
+                        type="button"
+                        onClick={() => setValues(prev => ({ ...prev, [field.key]: hour }))}
+                        className={cn(
+                          "h-10 w-12 rounded-xl text-sm font-semibold transition-all duration-200",
+                          "border-2 hover:scale-105 active:scale-95",
+                          currentValue === hour
+                            ? "text-white shadow-md scale-105"
+                            : "bg-background border-border text-foreground hover:border-primary/50"
+                        )}
+                        style={currentValue === hour ? { backgroundColor: NAV_COLORS.sante.base, borderColor: NAV_COLORS.sante.base } : {}}
+                      >
+                        {hour}h
+                      </button>
+                    ))}
                   </div>
-                  <Slider
-                    value={[(values as any)[field.key]]}
-                    onValueChange={([v]) => setValues(prev => ({ ...prev, [field.key]: v }))}
-                    min={3}
-                    max={12}
-                    step={0.5}
-                  />
                 </div>
               );
             }
+
+            const invertedLabels = 'inverted' in field && field.inverted;
+
             return (
               <div key={field.key}>
-                <div className="flex items-center justify-between mb-2">
-                  <Label className="text-sm flex items-center gap-1.5">
-                    {'icon' in field && field.icon && <field.icon className="h-3.5 w-3.5 text-muted-foreground" />}
-                    {field.label}
-                  </Label>
-                  <span className="text-lg font-bold" style={{ color: NAV_COLORS.sante.base }}>{(values as any)[field.key]}/5</span>
+                <Label className="text-sm flex items-center gap-1.5 mb-3">
+                  <span className="text-base">{field.emoji}</span>
+                  {field.label}
+                  {currentValue > 0 && (
+                    <Badge variant="secondary" className="ml-auto text-xs font-bold">{currentValue}/5</Badge>
+                  )}
+                </Label>
+                <div className="flex gap-2">
+                  {(invertedLabels ? [...EMOJI_OPTIONS].reverse() : EMOJI_OPTIONS).map(opt => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setValues(prev => ({ ...prev, [field.key]: opt.value }))}
+                      className={cn(
+                        "flex-1 flex flex-col items-center gap-1 py-2.5 rounded-xl transition-all duration-200",
+                        "border-2 hover:scale-105 active:scale-95",
+                        currentValue === opt.value
+                          ? "shadow-md scale-105 bg-primary/5"
+                          : "bg-background border-border hover:border-primary/50"
+                      )}
+                      style={currentValue === opt.value ? { borderColor: NAV_COLORS.sante.base } : {}}
+                    >
+                      <span className={cn("text-2xl transition-transform", currentValue === opt.value && "scale-110")}>{opt.emoji}</span>
+                      <span className={cn(
+                        "text-[9px] font-medium leading-tight",
+                        currentValue === opt.value ? "font-bold" : "text-muted-foreground"
+                      )} style={currentValue === opt.value ? { color: NAV_COLORS.sante.base } : {}}>
+                        {opt.value}
+                      </span>
+                    </button>
+                  ))}
                 </div>
-                <Slider
-                  value={[(values as any)[field.key]]}
-                  onValueChange={([v]) => setValues(prev => ({ ...prev, [field.key]: v }))}
-                  min={1}
-                  max={5}
-                  step={1}
-                />
-                {'low' in field && (
-                  <div className="flex justify-between text-[10px] text-muted-foreground mt-0.5">
-                    <span>{field.low}</span>
-                    <span>{field.high}</span>
-                  </div>
-                )}
               </div>
             );
           })}
@@ -220,9 +266,9 @@ export function AthleteSpaceWellness({ playerId, categoryId }: Props) {
             />
           </div>
 
-          <Button 
-            onClick={() => submitWellness.mutate()} 
-            disabled={submitWellness.isPending} 
+          <Button
+            onClick={() => submitWellness.mutate()}
+            disabled={submitWellness.isPending || !allFieldsFilled}
             className="w-full"
             style={{ backgroundColor: NAV_COLORS.sante.base }}
           >

@@ -247,11 +247,11 @@ export function AthleteSpaceDashboard({ playerId, categoryId, playerName, sportT
         </Card>
       </div>
 
-      {/* RPE du jour */}
-      <AthleteSpaceRpe playerId={playerId} categoryId={categoryId} />
-
       {/* Wellness du jour */}
       <AthleteSpaceWellness playerId={playerId} categoryId={categoryId} />
+
+      {/* RPE du jour */}
+      <AthleteSpaceRpe playerId={playerId} categoryId={categoryId} />
 
       {/* Charge chart */}
       {chartData.length > 0 && (
