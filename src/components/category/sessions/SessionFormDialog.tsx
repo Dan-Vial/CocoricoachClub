@@ -2696,10 +2696,22 @@ export function SessionFormDialog({
                           {players?.map((player) => (
                              <div
                               key={player.id}
+                              role="button"
+                              tabIndex={0}
                               onClick={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
-                                togglePlayer(player.id);
+                                // Only toggle if click was NOT on the checkbox itself
+                                if (!(e.target as HTMLElement).closest('button[role="checkbox"]')) {
+                                  togglePlayer(player.id);
+                                }
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  togglePlayer(player.id);
+                                }
                               }}
                               className={cn(
                                 "flex items-center gap-2 p-2 rounded-md border cursor-pointer transition-colors",
