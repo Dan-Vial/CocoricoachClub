@@ -394,25 +394,27 @@ export default function AthleteSpace() {
               >
                <BookOpen className="h-3.5 w-3.5" />
                  Conseils
-               </TabsTrigger>
-               <TabsTrigger 
-                 value="messaging"
-                 className="athlete-tab relative gap-1.5 px-3 py-2 rounded-xl font-semibold transition-all duration-200 data-[state=active]:shadow-lg"
-                 style={{
-                   color: NAV_COLORS.communication.base,
-                   backgroundColor: `${NAV_COLORS.communication.base}15`,
-                   borderBottom: `3px solid ${NAV_COLORS.communication.base}`,
-                   ["--tab-color" as string]: NAV_COLORS.communication.base,
-                 }}
-               >
-                 <MessageSquare className="h-3.5 w-3.5" />
-                 Messagerie
-                 {unreadCount > 0 && (
-                   <span className="absolute -top-1 -right-1 h-4 min-w-[16px] flex items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold px-1">
-                     {unreadCount > 9 ? "9+" : unreadCount}
-                   </span>
-                 )}
-               </TabsTrigger>
+                </TabsTrigger>
+               {!isSuperAdminView && (
+                 <TabsTrigger 
+                    value="messaging"
+                    className="athlete-tab relative gap-1.5 px-3 py-2 rounded-xl font-semibold transition-all duration-200 data-[state=active]:shadow-lg"
+                    style={{
+                      color: NAV_COLORS.communication.base,
+                      backgroundColor: `${NAV_COLORS.communication.base}15`,
+                      borderBottom: `3px solid ${NAV_COLORS.communication.base}`,
+                      ["--tab-color" as string]: NAV_COLORS.communication.base,
+                    }}
+                  >
+                    <MessageSquare className="h-3.5 w-3.5" />
+                    Messagerie
+                    {unreadCount > 0 && (
+                      <span className="absolute -top-1 -right-1 h-4 min-w-[16px] flex items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold px-1">
+                        {unreadCount > 9 ? "9+" : unreadCount}
+                      </span>
+                    )}
+                  </TabsTrigger>
+               )}
              </TabsList>
 
           <TabsContent value="dashboard">
@@ -464,9 +466,11 @@ export default function AthleteSpace() {
             <AthleteSpaceEducation sportType={athleteInfo.sport_type} />
           </TabsContent>
 
-          <TabsContent value="messaging">
-            <MessagingTab categoryId={athleteInfo.category_id} />
-          </TabsContent>
+          {!isSuperAdminView && (
+            <TabsContent value="messaging">
+              <MessagingTab categoryId={athleteInfo.category_id} />
+            </TabsContent>
+          )}
         </Tabs>
       </main>
     </div>
