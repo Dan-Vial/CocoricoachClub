@@ -4881,6 +4881,8 @@ export type Database = {
       }
       program_weeks: {
         Row: {
+          block_name: string | null
+          block_order: number | null
           created_at: string
           id: string
           name: string | null
@@ -4888,6 +4890,8 @@ export type Database = {
           week_number: number
         }
         Insert: {
+          block_name?: string | null
+          block_order?: number | null
           created_at?: string
           id?: string
           name?: string | null
@@ -4895,6 +4899,8 @@ export type Database = {
           week_number?: number
         }
         Update: {
+          block_name?: string | null
+          block_order?: number | null
           created_at?: string
           id?: string
           name?: string | null
