@@ -799,6 +799,9 @@ export function SessionFormDialog({
       queryClient.invalidateQueries({ queryKey: ["session-blocks-calendar"] });
       queryClient.invalidateQueries({ queryKey: ["session-blocks-edit"] });
       queryClient.invalidateQueries({ queryKey: ["sessions", categoryId] });
+      queryClient.invalidateQueries({ queryKey: ["today_sessions_decision", categoryId] });
+      queryClient.invalidateQueries({ queryKey: ["tomorrow_sessions_decision", categoryId] });
+      queryClient.invalidateQueries({ queryKey: ["today_attendance_decision", categoryId] });
       
       const exerciseCount = exercises.filter((e) => e.exercise_name.trim()).length;
       const gpsCount = gpsData.filter(d => d.matchedPlayer).length;
