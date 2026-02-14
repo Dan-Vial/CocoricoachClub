@@ -682,7 +682,7 @@ export function ProgramBuilderDialog({
                                     </SelectItem>
                                   ))
                                 ) : (
-                                  <SelectItem value="" disabled>
+                                  <SelectItem value="__none__" disabled>
                                     Aucune blessure active
                                   </SelectItem>
                                 )}
