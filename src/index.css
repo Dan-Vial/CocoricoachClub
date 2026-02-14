@@ -465,3 +465,10 @@ All colors MUST be HSL.
   .bg-stone-500 { background-color: rgb(120, 113, 108) !important; color: white !important; }
   .bg-slate-500 { background-color: rgb(100, 116, 139) !important; color: white !important; }
 }
+
+/* Athlete Space tabs — active state uses CSS custom property --tab-color for background */
+.athlete-tab[data-state="active"] {
+  background-color: var(--tab-color) !important;
+  color: white !important;
+  border-bottom-color: transparent !important;
+}

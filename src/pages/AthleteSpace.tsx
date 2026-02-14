@@ -302,111 +302,118 @@ export default function AthleteSpace() {
       {/* Content */}
       <main className="max-w-5xl mx-auto px-4 py-6">
        <Tabs defaultValue="dashboard" className="w-full">
-           <TabsList className="w-full flex overflow-x-auto gap-1.5 h-auto flex-wrap justify-start bg-transparent p-0 mb-6">
-             <TabsTrigger 
-               value="dashboard" 
-               className="gap-1.5 px-3 py-2 rounded-lg transition-all duration-200"
-               style={{
-                 color: NAV_COLORS.sante.base,
-                 borderBottom: `2px solid ${NAV_COLORS.sante.base}`,
-                 opacity: 0.6
-               }}
-               data-active-color={NAV_COLORS.sante.base}
-             >
-               <BarChart3 className="h-3.5 w-3.5" />
-               <span className="hidden sm:inline">Tableau de bord</span>
-               <span className="sm:hidden">Accueil</span>
-             </TabsTrigger>
-             <TabsTrigger 
-               value="rpe"
-               className="gap-1.5 px-3 py-2 rounded-lg transition-all duration-200"
-               style={{
-                 color: NAV_COLORS.performance.base,
-                 borderBottom: `2px solid ${NAV_COLORS.performance.base}`,
-                 opacity: 0.6
-               }}
-             >
-               <Activity className="h-3.5 w-3.5" />
-               RPE
-             </TabsTrigger>
-             <TabsTrigger 
-               value="wellness"
-               className="gap-1.5 px-3 py-2 rounded-lg transition-all duration-200"
-               style={{
-                 color: NAV_COLORS.sante.base,
-                 borderBottom: `2px solid ${NAV_COLORS.sante.base}`,
-                 opacity: 0.6
-               }}
-             >
-               <Heart className="h-3.5 w-3.5" />
-               Wellness
-             </TabsTrigger>
-             <TabsTrigger 
-               value="progression"
-               className="gap-1.5 px-3 py-2 rounded-lg transition-all duration-200"
-               style={{
-                 color: NAV_COLORS.programmation.base,
-                 borderBottom: `2px solid ${NAV_COLORS.programmation.base}`,
-                 opacity: 0.6
-               }}
-             >
-               <BarChart3 className="h-3.5 w-3.5" />
-               Progression
-             </TabsTrigger>
-             <TabsTrigger 
-               value="objectives"
-               className="gap-1.5 px-3 py-2 rounded-lg transition-all duration-200"
-               style={{
-                 color: NAV_COLORS.planification.base,
-                 borderBottom: `2px solid ${NAV_COLORS.planification.base}`,
-                 opacity: 0.6
-               }}
-             >
-               <Target className="h-3.5 w-3.5" />
-               Objectifs
-             </TabsTrigger>
-             <TabsTrigger 
-               value="health"
-               className="gap-1.5 px-3 py-2 rounded-lg transition-all duration-200"
-               style={{
-                 color: NAV_COLORS.sante.base,
-                 borderBottom: `2px solid ${NAV_COLORS.sante.base}`,
-                 opacity: 0.6
-               }}
-             >
-               <Shield className="h-3.5 w-3.5" />
-               Santé
-             </TabsTrigger>
-             <TabsTrigger 
-               value="education"
-               className="gap-1.5 px-3 py-2 rounded-lg transition-all duration-200"
-               style={{
-                 color: NAV_COLORS.effectif.base,
-                 borderBottom: `2px solid ${NAV_COLORS.effectif.base}`,
-                 opacity: 0.6
-               }}
-             >
-              <BookOpen className="h-3.5 w-3.5" />
-                Conseils
-              </TabsTrigger>
+            <TabsList className="w-full flex overflow-x-auto gap-1.5 h-auto flex-wrap justify-start bg-transparent p-0 mb-6">
               <TabsTrigger 
-                value="messaging"
-                className="relative gap-1.5 px-3 py-2 rounded-lg transition-all duration-200"
+                value="dashboard" 
+                className="athlete-tab gap-1.5 px-3 py-2 rounded-xl font-semibold transition-all duration-200 data-[state=active]:shadow-lg"
                 style={{
-                  color: NAV_COLORS.communication.base,
-                  borderBottom: `2px solid ${NAV_COLORS.communication.base}`,
-                  opacity: 0.6
+                  color: NAV_COLORS.sante.base,
+                  backgroundColor: `${NAV_COLORS.sante.base}15`,
+                  borderBottom: `3px solid ${NAV_COLORS.sante.base}`,
+                  ["--tab-color" as string]: NAV_COLORS.sante.base,
                 }}
               >
-                <MessageSquare className="h-3.5 w-3.5" />
-                Messagerie
-                {unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 h-4 min-w-[16px] flex items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold px-1">
-                    {unreadCount > 9 ? "9+" : unreadCount}
-                  </span>
-                )}
+                <BarChart3 className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Tableau de bord</span>
+                <span className="sm:hidden">Accueil</span>
               </TabsTrigger>
-            </TabsList>
+              <TabsTrigger 
+                value="rpe"
+                className="athlete-tab gap-1.5 px-3 py-2 rounded-xl font-semibold transition-all duration-200 data-[state=active]:shadow-lg"
+                style={{
+                  color: NAV_COLORS.performance.base,
+                  backgroundColor: `${NAV_COLORS.performance.base}15`,
+                  borderBottom: `3px solid ${NAV_COLORS.performance.base}`,
+                  ["--tab-color" as string]: NAV_COLORS.performance.base,
+                }}
+              >
+                <Activity className="h-3.5 w-3.5" />
+                RPE
+              </TabsTrigger>
+              <TabsTrigger 
+                value="wellness"
+                className="athlete-tab gap-1.5 px-3 py-2 rounded-xl font-semibold transition-all duration-200 data-[state=active]:shadow-lg"
+                style={{
+                  color: NAV_COLORS.sante.base,
+                  backgroundColor: `${NAV_COLORS.sante.base}15`,
+                  borderBottom: `3px solid ${NAV_COLORS.sante.base}`,
+                  ["--tab-color" as string]: NAV_COLORS.sante.base,
+                }}
+              >
+                <Heart className="h-3.5 w-3.5" />
+                Wellness
+              </TabsTrigger>
+              <TabsTrigger 
+                value="progression"
+                className="athlete-tab gap-1.5 px-3 py-2 rounded-xl font-semibold transition-all duration-200 data-[state=active]:shadow-lg"
+                style={{
+                  color: NAV_COLORS.programmation.base,
+                  backgroundColor: `${NAV_COLORS.programmation.base}15`,
+                  borderBottom: `3px solid ${NAV_COLORS.programmation.base}`,
+                  ["--tab-color" as string]: NAV_COLORS.programmation.base,
+                }}
+              >
+                <BarChart3 className="h-3.5 w-3.5" />
+                Progression
+              </TabsTrigger>
+              <TabsTrigger 
+                value="objectives"
+                className="athlete-tab gap-1.5 px-3 py-2 rounded-xl font-semibold transition-all duration-200 data-[state=active]:shadow-lg"
+                style={{
+                  color: NAV_COLORS.planification.base,
+                  backgroundColor: `${NAV_COLORS.planification.base}15`,
+                  borderBottom: `3px solid ${NAV_COLORS.planification.base}`,
+                  ["--tab-color" as string]: NAV_COLORS.planification.base,
+                }}
+              >
+                <Target className="h-3.5 w-3.5" />
+                Objectifs
+              </TabsTrigger>
+              <TabsTrigger 
+                value="health"
+                className="athlete-tab gap-1.5 px-3 py-2 rounded-xl font-semibold transition-all duration-200 data-[state=active]:shadow-lg"
+                style={{
+                  color: NAV_COLORS.sante.base,
+                  backgroundColor: `${NAV_COLORS.sante.base}15`,
+                  borderBottom: `3px solid ${NAV_COLORS.sante.base}`,
+                  ["--tab-color" as string]: NAV_COLORS.sante.base,
+                }}
+              >
+                <Shield className="h-3.5 w-3.5" />
+                Santé
+              </TabsTrigger>
+              <TabsTrigger 
+                value="education"
+                className="athlete-tab gap-1.5 px-3 py-2 rounded-xl font-semibold transition-all duration-200 data-[state=active]:shadow-lg"
+                style={{
+                  color: NAV_COLORS.effectif.base,
+                  backgroundColor: `${NAV_COLORS.effectif.base}15`,
+                  borderBottom: `3px solid ${NAV_COLORS.effectif.base}`,
+                  ["--tab-color" as string]: NAV_COLORS.effectif.base,
+                }}
+              >
+               <BookOpen className="h-3.5 w-3.5" />
+                 Conseils
+               </TabsTrigger>
+               <TabsTrigger 
+                 value="messaging"
+                 className="athlete-tab relative gap-1.5 px-3 py-2 rounded-xl font-semibold transition-all duration-200 data-[state=active]:shadow-lg"
+                 style={{
+                   color: NAV_COLORS.communication.base,
+                   backgroundColor: `${NAV_COLORS.communication.base}15`,
+                   borderBottom: `3px solid ${NAV_COLORS.communication.base}`,
+                   ["--tab-color" as string]: NAV_COLORS.communication.base,
+                 }}
+               >
+                 <MessageSquare className="h-3.5 w-3.5" />
+                 Messagerie
+                 {unreadCount > 0 && (
+                   <span className="absolute -top-1 -right-1 h-4 min-w-[16px] flex items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold px-1">
+                     {unreadCount > 9 ? "9+" : unreadCount}
+                   </span>
+                 )}
+               </TabsTrigger>
+             </TabsList>
 
           <TabsContent value="dashboard">
             <AthleteSpaceDashboard
