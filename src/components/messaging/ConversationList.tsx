@@ -143,16 +143,37 @@ export function ConversationList({ categoryId, selectedId, onSelect }: Conversat
   });
 
   const { data: conversations, isLoading } = useQuery({
-    queryKey: ["conversations", categoryId],
+    queryKey: ["conversations", categoryId, user?.id],
     queryFn: async () => {
+      if (!user) return [];
+      
+      // Get conversation IDs where user is a participant
+      const { data: participantData, error: partError } = await supabase
+        .from("conversation_participants")
+        .select("conversation_id")
+        .eq("user_id", user.id);
+      
+      if (partError) throw partError;
+      
+      const participantConvIds = (participantData || []).map(p => p.conversation_id);
+      
+      // Fetch all category conversations
       const { data, error } = await supabase
         .from("conversations")
         .select("*")
         .eq("category_id", categoryId)
         .order("updated_at", { ascending: false });
       if (error) throw error;
-      return data as Conversation[];
+      
+      // Filter: show group/channel conversations + only DMs where user is participant
+      return (data as Conversation[]).filter(conv => {
+        if (conv.conversation_type === "direct") {
+          return participantConvIds.includes(conv.id);
+        }
+        return true; // Show all groups/channels
+      });
     },
+    enabled: !!user,
   });
 
   // Auto-create default conversations if missing
