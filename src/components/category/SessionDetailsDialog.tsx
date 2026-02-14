@@ -19,7 +19,8 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Dumbbell, Users, Activity, Clock, Calendar, Printer, Calculator, Info, Bell } from "lucide-react";
 import { getCategoryLabel } from "@/lib/constants/exerciseCategories";
-import { printElement } from "@/lib/pdfExport";
+import { printElement, exportSessionToPdf, preparePdfWithSettings } from "@/lib/pdfExport";
+import { TEST_CATEGORIES } from "@/lib/constants/testCategories";
 import { getTrainingStyleConfig, isLinkableMethod, isCardioBlockMethod } from "@/lib/constants/trainingStyles";
 import { cn } from "@/lib/utils";
 import { calculateWeightedRpe, formatDuration } from "@/lib/weightedRpeCalculations";
@@ -80,9 +81,20 @@ export function SessionDetailsDialog({
   const [isNotifyOpen, setIsNotifyOpen] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
 
-  const handlePrint = () => {
-    if (printRef.current) {
-      printElement(printRef.current, `Séance du ${format(new Date(sessionDate), "PPP", { locale: fr })}`);
+  const handlePrint = async () => {
+    if (!session) return;
+    try {
+      const { settings: pdfSettings, logoBase64 } = await preparePdfWithSettings(categoryId);
+      await exportSessionToPdf(session, exercises || [], session.training_type || "Séance", {
+        customSettings: pdfSettings,
+        logoBase64,
+        blocks: sessionBlocks || [],
+        testCategories: TEST_CATEGORIES,
+      });
+    } catch {
+      if (printRef.current) {
+        printElement(printRef.current, `Séance du ${format(new Date(sessionDate), "PPP", { locale: fr })}`);
+      }
     }
   };
   

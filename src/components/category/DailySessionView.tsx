@@ -43,7 +43,8 @@ import { cn } from "@/lib/utils";
 import { useFieldMode } from "@/contexts/FieldModeContext";
 import { AddWellnessDialog } from "./AddWellnessDialog";
 import { GroupedExerciseList } from "./GroupedExerciseList";
-import { printElement, exportSessionToPdf } from "@/lib/pdfExport";
+import { printElement, exportSessionToPdf, preparePdfWithSettings } from "@/lib/pdfExport";
+import { TEST_CATEGORIES } from "@/lib/constants/testCategories";
 import { SessionFeedbackDialog } from "./calendar/SessionFeedbackDialog";
 import { EditSessionDialog } from "./EditSessionDialog";
 
@@ -91,8 +92,25 @@ export function DailySessionView({ categoryId, categoryName = "Catégorie" }: Da
     }
   };
 
-  const handlePrintSession = (session: any, exercises: any[]) => {
-    exportSessionToPdf(session, exercises, categoryName);
+  const handlePrintSession = async (session: any, exercises: any[]) => {
+    try {
+      const { settings: pdfSettings, logoBase64 } = await preparePdfWithSettings(categoryId);
+      // Fetch blocks for this session
+      const { data: blocks } = await supabase
+        .from("training_session_blocks")
+        .select("*")
+        .eq("training_session_id", session.id)
+        .order("block_order");
+      
+      await exportSessionToPdf(session, exercises, categoryName, {
+        customSettings: pdfSettings,
+        logoBase64,
+        blocks: blocks || [],
+        testCategories: TEST_CATEGORIES,
+      });
+    } catch {
+      exportSessionToPdf(session, exercises, categoryName);
+    }
   };
 
   // Fetch today's sessions

@@ -498,12 +498,27 @@ const groupExercisesForPdf = (exercises: any[]): { groupId: string | null; exerc
   return groups;
 };
 
+// Helper to resolve test label from TEST_CATEGORIES
+const resolveTestLabel = (testType: string, allCategories: any[]): string => {
+  for (const cat of allCategories) {
+    const found = cat.tests?.find((t: any) => t.value === testType);
+    if (found) return found.label;
+  }
+  return testType;
+};
+
 // Export session details to PDF with enhanced design
-export const exportSessionToPdf = (
+export const exportSessionToPdf = async (
   session: any,
   exercises: any[],
-  categoryName: string
-): void => {
+  categoryName: string,
+  options?: {
+    customSettings?: PdfCustomSettings | null;
+    logoBase64?: string | null;
+    blocks?: any[];
+    testCategories?: any[];
+  }
+): Promise<void> => {
   const pdf = new jsPDF({
     orientation: "portrait",
     unit: "mm",
@@ -515,72 +530,200 @@ export const exportSessionToPdf = (
   const contentWidth = pageWidth - margin * 2;
   const sessionDate = new Date(session.session_date);
   const weekNum = getWeekNumber(sessionDate);
+  const customSettings = options?.customSettings;
+  const logoBase64 = options?.logoBase64;
+
+  const headerColor = customSettings?.header_color ? hexToRgb(customSettings.header_color) : colors.primary;
+  const accentColor = customSettings?.accent_color ? hexToRgb(customSettings.accent_color) : colors.secondary;
   
-  // Header with week number
-  pdf.setFillColor(...colors.primary);
-  pdf.rect(0, 0, pageWidth, 40, 'F');
+  // --- HEADER ---
+  pdf.setFillColor(...headerColor);
+  pdf.rect(0, 0, pageWidth, 42, 'F');
+  
+  let xOffset = margin;
+  
+  // Logo
+  if (customSettings?.show_logo !== false && logoBase64) {
+    try {
+      pdf.addImage(logoBase64, "PNG", margin, 5, 30, 30);
+      xOffset = margin + 35;
+    } catch { /* ignore */ }
+  }
   
   pdf.setTextColor(...colors.white);
-  pdf.setFontSize(20);
+  pdf.setFontSize(18);
   pdf.setFont("helvetica", "bold");
-  pdf.text(session.training_type || "Séance", margin, 18);
+  pdf.text(session.training_type || "Séance", xOffset, 16);
   
-  pdf.setFontSize(12);
+  pdf.setFontSize(11);
   pdf.setFont("helvetica", "normal");
-  pdf.text(categoryName, margin, 27);
+  const subtitleParts: string[] = [];
+  if (customSettings?.show_club_name !== false && customSettings?.club_name_override) {
+    subtitleParts.push(customSettings.club_name_override);
+  }
+  if (customSettings?.show_category_name !== false) {
+    subtitleParts.push(categoryName);
+  }
+  if (subtitleParts.length > 0) {
+    pdf.text(subtitleParts.join(" • "), xOffset, 25);
+  }
   
-  pdf.setFontSize(10);
-  pdf.text(format(sessionDate, "EEEE dd MMMM yyyy", { locale: fr }), margin, 35);
+  if (customSettings?.show_date !== false) {
+    pdf.setFontSize(9);
+    pdf.text(format(sessionDate, "EEEE dd MMMM yyyy", { locale: fr }), xOffset, 33);
+  }
   
-  // Week number badge
-  pdf.setFillColor(...colors.secondary);
-  pdf.roundedRect(pageWidth - margin - 25, 10, 25, 15, 2, 2, 'F');
+  // Week badge
+  pdf.setFillColor(...accentColor);
+  pdf.roundedRect(pageWidth - margin - 28, 8, 28, 16, 3, 3, 'F');
   pdf.setTextColor(...colors.white);
-  pdf.setFontSize(9);
+  pdf.setFontSize(10);
   pdf.setFont("helvetica", "bold");
-  pdf.text(`S${weekNum}`, pageWidth - margin - 17, 19.5);
+  pdf.text(`S${weekNum}`, pageWidth - margin - 21, 18);
   
   let yPos = 50;
   pdf.setTextColor(...colors.dark);
   
-  // Session info card
+  // --- SESSION INFO CARD ---
   pdf.setFillColor(...colors.light);
-  pdf.roundedRect(margin, yPos, contentWidth, 20, 2, 2, 'F');
+  pdf.roundedRect(margin, yPos, contentWidth, 18, 3, 3, 'F');
   
   pdf.setFontSize(9);
   pdf.setFont("helvetica", "normal");
-  const infos = [
-    session.session_start_time ? `🕐 ${session.session_start_time.slice(0, 5)}${session.session_end_time ? ` - ${session.session_end_time.slice(0, 5)}` : ""}` : null,
-    session.intensity ? `💪 Intensité: ${session.intensity}/10` : null,
-    exercises.length > 0 ? `📋 ${exercises.length} exercices` : null,
-  ].filter(Boolean);
+  const infos: string[] = [];
+  if (session.session_start_time) {
+    infos.push(`Horaire: ${session.session_start_time.slice(0, 5)}${session.session_end_time ? ` - ${session.session_end_time.slice(0, 5)}` : ""}`);
+  }
+  if (session.intensity) {
+    infos.push(`Intensité: ${session.intensity}/10`);
+  }
+  if (exercises.length > 0) {
+    infos.push(`${exercises.length} exercices`);
+  }
+  if (session.location) {
+    infos.push(`Lieu: ${session.location}`);
+  }
   
   let xInfo = margin + 5;
   infos.forEach((info) => {
-    if (info) {
-      pdf.text(info, xInfo, yPos + 12);
-      xInfo += 55;
-    }
-  });
-  yPos += 28;
-  
-  // Notes section
-  if (session.notes) {
-    pdf.setFillColor(255, 251, 235); // amber-50
-    pdf.roundedRect(margin, yPos, contentWidth, 15, 2, 2, 'F');
-    pdf.setDrawColor(234, 179, 8); // amber-500
-    pdf.setLineWidth(0.5);
-    pdf.roundedRect(margin, yPos, contentWidth, 15, 2, 2, 'S');
-    
+    pdf.setTextColor(...colors.muted);
     pdf.setFontSize(8);
-    pdf.setTextColor(...colors.dark);
-    const noteLines = pdf.splitTextToSize(session.notes, contentWidth - 10);
-    pdf.text(noteLines.slice(0, 2), margin + 5, yPos + 8);
-    yPos += 20;
+    pdf.text(info, xInfo, yPos + 11);
+    xInfo += pdf.getTextWidth(info) + 10;
+  });
+  yPos += 24;
+  
+  // --- BLOCKS SECTION ---
+  const blocks = options?.blocks;
+  if (blocks && blocks.length > 0) {
+    yPos = drawSectionTitle(pdf, "Blocs de la séance", yPos, margin);
+    yPos += 2;
+    
+    blocks.forEach((block: any, idx: number) => {
+      yPos = checkPageBreak(pdf, yPos, 16);
+      const blockColor = trainingTypeColors[block.training_type] || accentColor;
+      
+      pdf.setFillColor(blockColor[0], blockColor[1], blockColor[2]);
+      pdf.roundedRect(margin, yPos, contentWidth, 14, 2, 2, 'F');
+      
+      pdf.setTextColor(...colors.white);
+      pdf.setFontSize(9);
+      pdf.setFont("helvetica", "bold");
+      pdf.text(`Bloc ${idx + 1}: ${block.training_type || ""}`, margin + 5, yPos + 6);
+      
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(8);
+      const blockInfos: string[] = [];
+      if (block.start_time) blockInfos.push(block.start_time.slice(0, 5));
+      if (block.duration_minutes) blockInfos.push(`${block.duration_minutes} min`);
+      if (block.intensity) blockInfos.push(`Int: ${block.intensity}/10`);
+      if (blockInfos.length > 0) {
+        pdf.text(blockInfos.join(" • "), margin + 5, yPos + 11);
+      }
+      
+      yPos += 18;
+    });
+    yPos += 4;
   }
   
-  // Exercises section
+  // --- TESTS SECTION ---
+  // Parse tests from notes metadata
+  const testMatch = session.notes?.match(/<!--TESTS:(.*?)-->/);
+  if (testMatch) {
+    try {
+      const parsedTests = JSON.parse(testMatch[1]);
+      if (parsedTests && parsedTests.length > 0) {
+        yPos = checkPageBreak(pdf, yPos, 20 + parsedTests.length * 10);
+        yPos = drawSectionTitle(pdf, "Tests planifiés", yPos, margin);
+        yPos += 2;
+        
+        const testCats = options?.testCategories || [];
+        
+        parsedTests.forEach((test: any, idx: number) => {
+          yPos = checkPageBreak(pdf, yPos, 12);
+          
+          // Alternate rows
+          if (idx % 2 === 0) {
+            pdf.setFillColor(245, 248, 255);
+            pdf.roundedRect(margin, yPos, contentWidth, 10, 1, 1, 'F');
+          }
+          
+          pdf.setTextColor(...accentColor);
+          pdf.setFontSize(9);
+          pdf.setFont("helvetica", "bold");
+          pdf.text(`${idx + 1}.`, margin + 3, yPos + 7);
+          
+          const label = resolveTestLabel(test.test_type, testCats);
+          pdf.setTextColor(...colors.dark);
+          pdf.setFont("helvetica", "normal");
+          pdf.text(label, margin + 12, yPos + 7);
+          
+          // Unit badge
+          const unit = test.result_unit || "";
+          if (unit) {
+            pdf.setFontSize(7);
+            pdf.setTextColor(...colors.muted);
+            const unitText = `(${unit})`;
+            const unitWidth = pdf.getTextWidth(unitText);
+            pdf.text(unitText, pageWidth - margin - unitWidth - 4, yPos + 7);
+          }
+          
+          yPos += 10;
+        });
+        yPos += 6;
+      }
+    } catch { /* ignore parse error */ }
+  }
+  
+  // --- NOTES SECTION (cleaned) ---
+  const cleanNotes = session.notes?.replace(/<!--TESTS:.*?-->/g, "").trim();
+  if (cleanNotes) {
+    yPos = checkPageBreak(pdf, yPos, 22);
+    
+    pdf.setFillColor(255, 251, 235);
+    const noteLines = pdf.splitTextToSize(cleanNotes, contentWidth - 14);
+    const noteHeight = Math.max(14, 8 + noteLines.length * 4);
+    pdf.roundedRect(margin, yPos, contentWidth, noteHeight, 3, 3, 'F');
+    
+    pdf.setDrawColor(234, 179, 8);
+    pdf.setLineWidth(0.5);
+    pdf.roundedRect(margin, yPos, contentWidth, noteHeight, 3, 3, 'S');
+    
+    pdf.setFontSize(7);
+    pdf.setFont("helvetica", "bold");
+    pdf.setTextColor(180, 130, 0);
+    pdf.text("Notes", margin + 5, yPos + 5);
+    
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(8);
+    pdf.setTextColor(...colors.dark);
+    pdf.text(noteLines.slice(0, 5), margin + 5, yPos + 10);
+    yPos += noteHeight + 6;
+  }
+  
+  // --- EXERCISES SECTION ---
   if (exercises && exercises.length > 0) {
+    yPos = checkPageBreak(pdf, yPos, 20);
     yPos = drawSectionTitle(pdf, "Programme d'exercices", yPos, margin);
     yPos += 2;
     
@@ -590,8 +733,7 @@ export const exportSessionToPdf = (
       yPos = checkPageBreak(pdf, yPos, 35);
       
       if (group.groupId) {
-        // Grouped exercises (superset, circuit, etc.)
-        const methodColor = methodColors[group.method] || colors.secondary;
+        const methodColor = methodColors[group.method] || accentColor;
         const methodLabel = {
           superset: "Superset",
           biset: "Biset",
@@ -607,55 +749,62 @@ export const exportSessionToPdf = (
           death_by: "Death By",
         }[group.method] || group.method;
         
-        // Draw block container with colored border
-        const blockHeight = 12 + group.exercises.length * 14;
-        pdf.setDrawColor(...methodColor);
-        pdf.setLineWidth(1);
-        pdf.roundedRect(margin, yPos, contentWidth, blockHeight, 2, 2, 'S');
+        const blockHeight = 14 + group.exercises.length * 14;
         
-        // Block background
-        pdf.setFillColor(methodColor[0], methodColor[1], methodColor[2], 0.1);
-        pdf.roundedRect(margin + 0.5, yPos + 0.5, contentWidth - 1, blockHeight - 1, 2, 2, 'F');
+        // Container with accent border
+        pdf.setDrawColor(...methodColor);
+        pdf.setLineWidth(1.2);
+        pdf.roundedRect(margin, yPos, contentWidth, blockHeight, 3, 3, 'S');
+        
+        // Light fill (blend color with white for transparency effect)
+        pdf.setFillColor(
+          Math.round(methodColor[0] * 0.06 + 255 * 0.94),
+          Math.round(methodColor[1] * 0.06 + 255 * 0.94),
+          Math.round(methodColor[2] * 0.06 + 255 * 0.94)
+        );
+        pdf.roundedRect(margin + 0.5, yPos + 0.5, contentWidth - 1, blockHeight - 1, 3, 3, 'F');
         
         // Method badge
         pdf.setFillColor(...methodColor);
-        pdf.roundedRect(margin + 3, yPos + 3, 25, 6, 1, 1, 'F');
+        const badgeWidth = pdf.getTextWidth(methodLabel) + 10;
+        pdf.roundedRect(margin + 4, yPos + 3, badgeWidth, 7, 2, 2, 'F');
         pdf.setTextColor(...colors.white);
         pdf.setFontSize(7);
         pdf.setFont("helvetica", "bold");
-        pdf.text(methodLabel, margin + 5, yPos + 7);
+        pdf.text(methodLabel, margin + 9, yPos + 7.5);
         
-        // Exercises count
+        // Exercise count
         pdf.setTextColor(...colors.muted);
         pdf.setFontSize(7);
         pdf.setFont("helvetica", "normal");
-        pdf.text(`${group.exercises.length} exercices`, margin + 32, yPos + 7);
+        pdf.text(`${group.exercises.length} exercices`, margin + badgeWidth + 10, yPos + 7.5);
         
-        let exY = yPos + 12;
+        let exY = yPos + 14;
         group.exercises.forEach((ex, exIdx) => {
           pdf.setTextColor(...methodColor);
           pdf.setFont("helvetica", "bold");
           pdf.setFontSize(8);
-          pdf.text(`${exIdx + 1}.`, margin + 5, exY + 4);
+          pdf.text(`${exIdx + 1}.`, margin + 6, exY + 4);
           
           pdf.setTextColor(...colors.dark);
           pdf.setFont("helvetica", "normal");
-          pdf.text(ex.exercise_name || "-", margin + 12, exY + 4);
+          pdf.text(ex.exercise_name || "-", margin + 14, exY + 4);
           
-          // Details
           pdf.setFontSize(7);
           pdf.setTextColor(...colors.muted);
           const details = [
             `${ex.sets || 0}×${ex.reps || 0}`,
             ex.weight_kg ? `${ex.weight_kg}kg` : null,
             ex.rest_seconds ? `${ex.rest_seconds}s repos` : null,
+            ex.rpe ? `RPE ${ex.rpe}` : null,
           ].filter(Boolean).join(" • ");
-          pdf.text(details, margin + 80, exY + 4);
+          const detailsW = pdf.getTextWidth(details);
+          pdf.text(details, pageWidth - margin - detailsW - 6, exY + 4);
           
           exY += 14;
         });
         
-        yPos += blockHeight + 5;
+        yPos += blockHeight + 6;
       } else {
         // Single exercise
         const ex = group.exercises[0];
@@ -663,14 +812,16 @@ export const exportSessionToPdf = (
         const methodColor = methodColors[method];
         
         if (methodColor && method !== "normal") {
-          // Colored single exercise
           pdf.setDrawColor(...methodColor);
           pdf.setLineWidth(0.5);
           pdf.roundedRect(margin, yPos, contentWidth, 14, 2, 2, 'S');
-          pdf.setFillColor(methodColor[0], methodColor[1], methodColor[2], 0.05);
+          pdf.setFillColor(
+            Math.round(methodColor[0] * 0.05 + 255 * 0.95),
+            Math.round(methodColor[1] * 0.05 + 255 * 0.95),
+            Math.round(methodColor[2] * 0.05 + 255 * 0.95)
+          );
           pdf.roundedRect(margin + 0.3, yPos + 0.3, contentWidth - 0.6, 13.4, 2, 2, 'F');
         } else {
-          // Normal exercise with light background
           pdf.setFillColor(...colors.light);
           pdf.roundedRect(margin, yPos, contentWidth, 14, 2, 2, 'F');
         }
@@ -678,9 +829,8 @@ export const exportSessionToPdf = (
         pdf.setTextColor(...colors.dark);
         pdf.setFontSize(9);
         pdf.setFont("helvetica", "bold");
-        pdf.text(ex.exercise_name || "-", margin + 4, yPos + 9);
+        pdf.text(ex.exercise_name || "-", margin + 5, yPos + 9);
         
-        // Details on the right
         pdf.setFontSize(8);
         pdf.setFont("helvetica", "normal");
         pdf.setTextColor(...colors.muted);
@@ -689,17 +839,18 @@ export const exportSessionToPdf = (
           ex.weight_kg ? `${ex.weight_kg}kg` : null,
           ex.rest_seconds ? `${ex.rest_seconds}s` : null,
           ex.tempo ? `T:${ex.tempo}` : null,
+          ex.rpe ? `RPE ${ex.rpe}` : null,
         ].filter(Boolean).join(" | ");
         const detailsWidth = pdf.getTextWidth(details);
-        pdf.text(details, pageWidth - margin - detailsWidth - 4, yPos + 9);
+        pdf.text(details, pageWidth - margin - detailsWidth - 5, yPos + 9);
         
         yPos += 18;
       }
     });
     
-    // Totals
-    yPos += 5;
-    yPos = checkPageBreak(pdf, yPos, 15);
+    // Totals bar
+    yPos += 4;
+    yPos = checkPageBreak(pdf, yPos, 16);
     
     let totalTonnage = 0;
     let totalSets = 0;
@@ -708,14 +859,26 @@ export const exportSessionToPdf = (
       totalSets += ex.sets || 0;
     });
     
-    pdf.setFillColor(...colors.dark);
-    pdf.roundedRect(margin, yPos, contentWidth, 12, 2, 2, 'F');
+    pdf.setFillColor(...headerColor);
+    pdf.roundedRect(margin, yPos, contentWidth, 14, 3, 3, 'F');
     pdf.setTextColor(...colors.white);
     pdf.setFontSize(9);
     pdf.setFont("helvetica", "bold");
-    pdf.text(`📊 Tonnage: ${totalTonnage.toLocaleString()} kg`, margin + 5, yPos + 8);
-    pdf.text(`📋 ${exercises.length} exercices`, margin + 65, yPos + 8);
-    pdf.text(`🔄 ${totalSets} séries`, margin + 110, yPos + 8);
+    
+    const totals = [
+      `Tonnage: ${totalTonnage.toLocaleString()} kg`,
+      `${exercises.length} exercices`,
+      `${totalSets} séries`,
+    ].join("   •   ");
+    pdf.text(totals, margin + 8, yPos + 9);
+  }
+  
+  // --- FOOTER ---
+  if (customSettings?.footer_text) {
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    pdf.setFontSize(7);
+    pdf.setTextColor(...colors.muted);
+    pdf.text(customSettings.footer_text, pageWidth / 2, pageHeight - 5, { align: "center" });
   }
   
   pdf.save(`seance-${session.training_type || "training"}-${format(sessionDate, "yyyy-MM-dd")}.pdf`);
