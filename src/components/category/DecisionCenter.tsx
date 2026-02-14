@@ -515,14 +515,23 @@ import { isIndividualSport } from "@/lib/constants/sportTypes";
                    </span>
                  </div>
                )}
-               {groupStatus.injured > 0 && (
-                 <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-100 dark:bg-red-900/30">
-                   <XCircle className="h-4 w-4 text-red-600" />
-                   <span className="font-semibold text-red-700 dark:text-red-400">
-                     {groupStatus.injured} blessé{groupStatus.injured > 1 ? "s" : ""}
-                   </span>
-                 </div>
-               )}
+                {groupStatus.injured > 0 && (() => {
+                  const injuredNames = injuries
+                    .filter(i => i.status === "active")
+                    .map(i => players.find(p => p.id === i.player_id)?.name)
+                    .filter(Boolean);
+                  return (
+                    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-100 dark:bg-red-900/30">
+                      <XCircle className="h-4 w-4 text-red-600 shrink-0" />
+                      <span className="font-semibold text-red-700 dark:text-red-400">
+                        {groupStatus.injured} blessé{groupStatus.injured > 1 ? "s" : ""}
+                      </span>
+                      <span className="text-xs text-red-600 dark:text-red-400 truncate">
+                        ({injuredNames.join(", ")})
+                      </span>
+                    </div>
+                  );
+                })()}
                {groupStatus.uncertain > 0 && (
                  <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-yellow-100 dark:bg-yellow-900/30">
                    <Clock className="h-4 w-4 text-yellow-600" />
