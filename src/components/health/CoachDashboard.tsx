@@ -17,7 +17,19 @@ import {
   Syringe,
   HeartPulse,
 } from "lucide-react";
-import { format, differenceInDays, addDays, isSameMonth, parseISO } from "date-fns";
+import { format, differenceInDays, addDays, isSameMonth, parseISO, isValid } from "date-fns";
+
+const safeFormat = (date: Date | string | null | undefined, fmt: string, options?: any): string => {
+  if (!date) return "N/A";
+  const d = typeof date === "string" ? new Date(date) : date;
+  return isValid(d) ? format(d, fmt, options) : "N/A";
+};
+
+const safeDiffDays = (dateLeft: Date | string | null | undefined, dateRight: Date): number => {
+  if (!dateLeft) return 0;
+  const d = typeof dateLeft === "string" ? new Date(dateLeft) : dateLeft;
+  return isValid(d) ? differenceInDays(d, dateRight) : 0;
+};
 import { fr } from "date-fns/locale";
 
 interface CoachDashboardProps {
@@ -155,15 +167,15 @@ export function CoachDashboard({ categoryId }: CoachDashboardProps) {
   const birthdaysThisMonth = players?.filter((p) => {
     if (!p.birth_date) return false;
     const birthDate = parseISO(p.birth_date);
-    return isSameMonth(birthDate, new Date());
+    return isValid(birthDate) && isSameMonth(birthDate, new Date());
   });
 
   // Medical records stats
   const expiredMedical = medicalRecords?.filter((r) => {
-    return differenceInDays(new Date(r.next_due_date), new Date()) < 0;
+    return safeDiffDays(r.next_due_date, new Date()) < 0;
   });
   const dueSoonMedical = medicalRecords?.filter((r) => {
-    const days = differenceInDays(new Date(r.next_due_date), new Date());
+    const days = safeDiffDays(r.next_due_date, new Date());
     return days >= 0 && days <= 30;
   });
 
@@ -264,7 +276,7 @@ export function CoachDashboard({ categoryId }: CoachDashboardProps) {
                       <p className="font-medium text-sm">{record.players?.name}</p>
                       <p className="text-xs text-muted-foreground">
                         {record.name} expiré depuis{" "}
-                        {Math.abs(differenceInDays(new Date(record.next_due_date), new Date()))} jours
+                        {Math.abs(safeDiffDays(record.next_due_date, new Date()))} jours
                       </p>
                     </div>
                   </div>
@@ -352,7 +364,7 @@ export function CoachDashboard({ categoryId }: CoachDashboardProps) {
                       <p className="text-xs text-muted-foreground">{record.name}</p>
                     </div>
                     <Badge variant="outline">
-                      {differenceInDays(new Date(record.next_due_date), new Date())}j
+                      {safeDiffDays(record.next_due_date, new Date())}j
                     </Badge>
                   </div>
                 ))}
@@ -385,7 +397,7 @@ export function CoachDashboard({ categoryId }: CoachDashboardProps) {
                       <p className="font-medium text-sm">{player.name}</p>
                       <p className="text-xs text-muted-foreground">
                         Anniversaire le{" "}
-                        {format(parseISO(player.birth_date!), "dd MMMM", { locale: fr })}
+                        {safeFormat(player.birth_date ? parseISO(player.birth_date) : null, "dd MMMM", { locale: fr })}
                       </p>
                     </div>
                   </div>
@@ -427,10 +439,10 @@ export function CoachDashboard({ categoryId }: CoachDashboardProps) {
                     </Badge>
                   </div>
                   <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>Depuis: {format(new Date(injury.injury_date), "dd/MM")}</span>
+                    <span>Depuis: {safeFormat(injury.injury_date, "dd/MM")}</span>
                     {injury.estimated_return_date && (
                       <span>
-                        Retour: {format(new Date(injury.estimated_return_date), "dd/MM")}
+                        Retour: {safeFormat(injury.estimated_return_date, "dd/MM")}
                       </span>
                     )}
                   </div>
