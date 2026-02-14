@@ -123,10 +123,10 @@ const BASE_THEMES = [
     { value: "recup_active", label: "Récupération active" },
   ]},
   { value: "reathletisation", label: "Réathlétisation", subOptions: [
-    { value: "phase_1", label: "Phase 1 - Contrôle moteur" },
-    { value: "phase_2", label: "Phase 2 - Force" },
-    { value: "phase_3", label: "Phase 3 - Puissance" },
-    { value: "phase_4", label: "Phase 4 - Sport spécifique" },
+    { value: "phase_1", label: "Phase 1 - Réhabilitation" },
+    { value: "phase_2", label: "Phase 2 - Renforcement" },
+    { value: "phase_3", label: "Phase 3 - Retour terrain" },
+    { value: "phase_4", label: "Phase 4 - Retour compétition" },
   ]},
   { value: "terrain", label: "Terrain", subOptions: [] }, // Will be populated dynamically
 ];
@@ -780,6 +780,39 @@ export function ProgramBuilderDialog({
                               );
                             })()}
                           </div>
+                        )}
+
+                        {/* Button to auto-generate 4 rehab phases as weeks */}
+                        {!programId && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="w-full border-amber-300 text-amber-700 hover:bg-amber-100 dark:border-amber-700 dark:text-amber-400 dark:hover:bg-amber-900/30"
+                            onClick={() => {
+                              const rehabPhases = [
+                                { name: "Phase 1 - Réhabilitation", sessions: ["Mobilité articulaire", "Contrôle moteur", "Renforcement isométrique"] },
+                                { name: "Phase 2 - Renforcement", sessions: ["Renforcement concentrique", "Renforcement excentrique", "Proprioception"] },
+                                { name: "Phase 3 - Retour terrain", sessions: ["Course progressive", "Changements de direction", "Exercices sport-spécifiques"] },
+                                { name: "Phase 4 - Retour compétition", sessions: ["Entraînement collectif adapté", "Match simulé", "Validation retour"] },
+                              ];
+                              const newWeeks: ProgramWeek[] = rehabPhases.map((phase, index) => ({
+                                id: crypto.randomUUID(),
+                                week_number: index + 1,
+                                name: phase.name,
+                                sessions: phase.sessions.map((sessionName, sIndex) => ({
+                                  id: crypto.randomUUID(),
+                                  session_number: sIndex + 1,
+                                  name: sessionName,
+                                  exercises: [],
+                                })),
+                              }));
+                              setWeeks(newWeeks);
+                              toast.success("4 phases de réathlétisation générées");
+                            }}
+                          >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Générer les 4 phases de réathlétisation
+                          </Button>
                         )}
                       </CardContent>
                     </Card>
