@@ -76,6 +76,26 @@ export function GpsSessionsList({ sessions, isLoading, onRefresh, categoryId }: 
     }
   };
 
+  const handleDeleteByDate = async (date: string) => {
+    const sessionsForDate = sessionsByDate[date];
+    if (!sessionsForDate?.length) return;
+    
+    try {
+      const ids = sessionsForDate.map(s => s.id);
+      const { error } = await supabase
+        .from('gps_sessions')
+        .delete()
+        .in('id', ids);
+
+      if (error) throw error;
+      toast.success(`${ids.length} session(s) GPS supprimée(s)`);
+      onRefresh();
+    } catch (error) {
+      console.error('Delete by date error:', error);
+      toast.error("Erreur lors de la suppression");
+    }
+  };
+
   // Parse raw_data to display all imported columns
   const getRawDataEntries = (rawData: Json | null): [string, string][] => {
     if (!rawData || typeof rawData !== 'object' || Array.isArray(rawData)) return [];
@@ -161,16 +181,44 @@ export function GpsSessionsList({ sessions, isLoading, onRefresh, categoryId }: 
         <div className="space-y-6">
           {sortedDates.map(date => (
             <div key={date}>
-              <h4 className="font-medium mb-3 flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-muted-foreground" />
-                {format(new Date(date), 'EEEE d MMMM yyyy', { locale: fr })}
-                {sessionsByDate[date][0].session_name && (
-                  <span className="text-muted-foreground font-normal">
-                    - {sessionsByDate[date][0].session_name}
-                  </span>
-                )}
-                {getSourceBadge(sessionsByDate[date][0].source)}
-              </h4>
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="font-medium flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                  {format(new Date(date), 'EEEE d MMMM yyyy', { locale: fr })}
+                  {sessionsByDate[date][0].session_name && (
+                    <span className="text-muted-foreground font-normal">
+                      - {sessionsByDate[date][0].session_name}
+                    </span>
+                  )}
+                  {getSourceBadge(sessionsByDate[date][0].source)}
+                  <Badge variant="secondary" className="text-xs">{sessionsByDate[date].length} joueur(s)</Badge>
+                </h4>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="outline" size="sm" className="text-destructive hover:text-destructive border-destructive/30 hover:bg-destructive/10">
+                      <Trash2 className="h-3.5 w-3.5 mr-1" />
+                      Supprimer la séance
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Supprimer toute la séance GPS ?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Cela supprimera les {sessionsByDate[date].length} enregistrement(s) GPS du {format(new Date(date), 'd MMMM yyyy', { locale: fr })}. Cette action est irréversible.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Annuler</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => handleDeleteByDate(date)}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        Supprimer tout
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
               
               <div className="overflow-x-auto">
                 <Table>
