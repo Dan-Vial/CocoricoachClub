@@ -7134,6 +7134,7 @@ export type Database = {
           id: string
           notes: string | null
           pain_location: string | null
+          pain_zone: string | null
           player_id: string
           sleep_duration: number
           sleep_quality: number
@@ -7150,6 +7151,7 @@ export type Database = {
           id?: string
           notes?: string | null
           pain_location?: string | null
+          pain_zone?: string | null
           player_id: string
           sleep_duration: number
           sleep_quality: number
@@ -7166,6 +7168,7 @@ export type Database = {
           id?: string
           notes?: string | null
           pain_location?: string | null
+          pain_zone?: string | null
           player_id?: string
           sleep_duration?: number
           sleep_quality?: number

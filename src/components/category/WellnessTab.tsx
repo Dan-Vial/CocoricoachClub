@@ -12,6 +12,7 @@ import { fr } from "date-fns/locale";
 import { AddWellnessDialog } from "./AddWellnessDialog";
 import { InjuryRiskAssessment } from "./InjuryRiskAssessment";
 import { MenstrualCycleSection } from "./MenstrualCycleSection";
+import { WellnessPainStats } from "./WellnessPainStats";
 import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
@@ -92,6 +93,7 @@ export function WellnessTab({ categoryId }: WellnessTabProps) {
       <Tabs defaultValue="tracking" className="space-y-4">
         <TabsList>
           <TabsTrigger value="tracking">Suivi Wellness</TabsTrigger>
+          <TabsTrigger value="pain-stats">Statistiques Douleurs</TabsTrigger>
           <TabsTrigger value="risk">Risque Blessure (AWCR + Wellness)</TabsTrigger>
           {isFeminine && (
             <TabsTrigger value="menstrual">Cycle Menstruel</TabsTrigger>
@@ -269,6 +271,10 @@ export function WellnessTab({ categoryId }: WellnessTabProps) {
             )}
           </CardContent>
         </Card>
+      </TabsContent>
+
+      <TabsContent value="pain-stats">
+        <WellnessPainStats categoryId={categoryId} />
       </TabsContent>
 
       <TabsContent value="risk">
