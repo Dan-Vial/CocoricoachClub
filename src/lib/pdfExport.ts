@@ -134,14 +134,52 @@ export const drawPdfHeader = (
   return 45;
 };
 
-// Helper to prepare PDF with custom settings
+// Helper to prepare PDF with custom settings (with club fallback)
 export const preparePdfWithSettings = async (categoryId: string) => {
   const settings = await fetchPdfSettings(categoryId);
   let logoBase64: string | null = null;
-  if (settings?.logo_url && settings.show_logo !== false) {
-    logoBase64 = await loadImageAsBase64(settings.logo_url);
+  let effectiveSettings: PdfCustomSettings | null = settings;
+
+  // If no custom logo, try to fallback to club logo
+  const logoUrl = settings?.logo_url;
+  let clubLogoUrl: string | null = null;
+  let clubName: string | null = null;
+
+  try {
+    const { data: catInfo } = await supabase
+      .from("categories")
+      .select("name, clubs(name, logo_url)")
+      .eq("id", categoryId)
+      .single();
+    
+    if (catInfo) {
+      const club = catInfo.clubs as any;
+      clubLogoUrl = club?.logo_url || null;
+      clubName = club?.name || null;
+    }
+  } catch {
+    // ignore
   }
-  return { settings, logoBase64 };
+
+  const finalLogoUrl = logoUrl || clubLogoUrl;
+  if (finalLogoUrl && (settings?.show_logo !== false)) {
+    logoBase64 = await loadImageAsBase64(finalLogoUrl);
+  }
+
+  // Build effective settings with club fallback
+  if (!effectiveSettings) {
+    effectiveSettings = {
+      show_logo: true,
+      show_club_name: true,
+      show_category_name: true,
+      show_date: true,
+      club_name_override: clubName,
+    };
+  } else if (!effectiveSettings.club_name_override && clubName) {
+    effectiveSettings = { ...effectiveSettings, club_name_override: clubName };
+  }
+
+  return { settings: effectiveSettings, logoBase64 };
 };
 
 // Draw section title
