@@ -11,6 +11,43 @@ export interface TestCategory {
   value: string;
   label: string;
   tests: TestOption[];
+  group?: string; // Group key for hierarchical display
+  groupLabel?: string; // Display label for the group
+}
+
+export interface TestGroup {
+  key: string;
+  label: string;
+  categories: TestCategory[];
+}
+
+// Get grouped test categories for hierarchical display
+// Returns standalone categories + grouped categories
+export function getGroupedTestCategories(categories: TestCategory[]): { standalone: TestCategory[]; groups: TestGroup[] } {
+  const grouped = new Map<string, TestCategory[]>();
+  const standalone: TestCategory[] = [];
+
+  for (const cat of categories) {
+    if (cat.group) {
+      if (!grouped.has(cat.group)) {
+        grouped.set(cat.group, []);
+      }
+      grouped.get(cat.group)!.push(cat);
+    } else {
+      standalone.push(cat);
+    }
+  }
+
+  const groups: TestGroup[] = [];
+  for (const [key, cats] of grouped) {
+    groups.push({
+      key,
+      label: cats[0]?.groupLabel || key,
+      categories: cats,
+    });
+  }
+
+  return { standalone, groups };
 }
 
 export const TEST_CATEGORIES: TestCategory[] = [
@@ -161,7 +198,9 @@ export const TEST_CATEGORIES: TestCategory[] = [
   },
   {
     value: "bowling_force",
-    label: "Bowling - Force / Stabilité",
+    label: "Force / Stabilité",
+    group: "bowling",
+    groupLabel: "Bowling",
     tests: [
       { value: "bowling_grip_strength", label: "Force de préhension (dynamomètre)", unit: "kg" },
       { value: "bowling_wrist_flexors", label: "Force fléchisseurs poignet", unit: "kg" },
@@ -173,7 +212,9 @@ export const TEST_CATEGORIES: TestCategory[] = [
   },
   {
     value: "bowling_balance",
-    label: "Bowling - Équilibre / Coordination",
+    label: "Équilibre / Coordination",
+    group: "bowling",
+    groupLabel: "Bowling",
     tests: [
       { value: "bowling_y_balance_ant", label: "Y-Balance Test - Antérieur", unit: "cm" },
       { value: "bowling_y_balance_pm", label: "Y-Balance Test - Postéro-médial", unit: "cm" },
@@ -184,7 +225,9 @@ export const TEST_CATEGORIES: TestCategory[] = [
   },
   {
     value: "bowling_endurance",
-    label: "Bowling - Endurance Spécifique",
+    label: "Endurance Spécifique",
+    group: "bowling",
+    groupLabel: "Bowling",
     tests: [
       { value: "bowling_fatigue_test", label: "Test de répétition de lancers (fatigue)", unit: "score" },
       { value: "bowling_speed_maintain", label: "Maintien de la vitesse sur séries longues", unit: "%" },
@@ -194,7 +237,9 @@ export const TEST_CATEGORIES: TestCategory[] = [
   },
   {
     value: "bowling_cognitive",
-    label: "Bowling - Perceptivo-cognitif",
+    label: "Perceptivo-cognitif",
+    group: "bowling",
+    groupLabel: "Bowling",
     tests: [
       { value: "bowling_visual_reaction", label: "Temps de réaction visuel", unit: "ms", isTime: true },
       { value: "bowling_trajectory_reading", label: "Prise d'information trajectoire", unit: "score" },
@@ -204,7 +249,9 @@ export const TEST_CATEGORIES: TestCategory[] = [
   },
   {
     value: "bowling_mental",
-    label: "Bowling - Mental / Comportemental",
+    label: "Mental / Comportemental",
+    group: "bowling",
+    groupLabel: "Bowling",
     tests: [
       { value: "bowling_pre_shot_routine", label: "Stabilité routine pré-lancer", unit: "%" },
       { value: "bowling_stress_management", label: "Gestion du stress (questionnaire)", unit: "score" },
@@ -215,7 +262,9 @@ export const TEST_CATEGORIES: TestCategory[] = [
   // Aviron specific tests
   {
     value: "aviron_ergo",
-    label: "Aviron - Ergomètre",
+    label: "Ergomètre",
+    group: "aviron",
+    groupLabel: "Aviron",
     tests: [
       { value: "aviron_ergo_2000m", label: "2000m Ergomètre", unit: "min.s", isTime: true },
       { value: "aviron_ergo_6000m", label: "6000m Ergomètre", unit: "min.s", isTime: true },
@@ -228,7 +277,9 @@ export const TEST_CATEGORIES: TestCategory[] = [
   },
   {
     value: "aviron_physio",
-    label: "Aviron - Tests Physiologiques",
+    label: "Tests Physiologiques",
+    group: "aviron",
+    groupLabel: "Aviron",
     tests: [
       { value: "aviron_vo2max", label: "VO2max (test labo)", unit: "ml/kg/min" },
       { value: "aviron_lactate_threshold", label: "Seuil Lactique", unit: "mmol/L" },
@@ -240,7 +291,9 @@ export const TEST_CATEGORIES: TestCategory[] = [
   },
   {
     value: "aviron_force",
-    label: "Aviron - Force Spécifique",
+    label: "Force Spécifique",
+    group: "aviron",
+    groupLabel: "Aviron",
     tests: [
       { value: "aviron_leg_press_max", label: "Leg Press Max", unit: "kg" },
       { value: "aviron_bench_pull", label: "Bench Pull 1RM", unit: "kg" },
@@ -252,7 +305,9 @@ export const TEST_CATEGORIES: TestCategory[] = [
   },
   {
     value: "aviron_technique",
-    label: "Aviron - Technique / Eau",
+    label: "Technique / Eau",
+    group: "aviron",
+    groupLabel: "Aviron",
     tests: [
       { value: "aviron_stroke_rate_max", label: "Cadence Max (coups/min)", unit: "c/min" },
       { value: "aviron_stroke_efficiency", label: "Efficacité du coup (m/coup)", unit: "m" },
@@ -263,7 +318,9 @@ export const TEST_CATEGORIES: TestCategory[] = [
   },
   {
     value: "aviron_flexibility",
-    label: "Aviron - Souplesse / Mobilité",
+    label: "Souplesse / Mobilité",
+    group: "aviron",
+    groupLabel: "Aviron",
     tests: [
       { value: "aviron_sit_and_reach", label: "Sit and Reach", unit: "cm" },
       { value: "aviron_hip_flexion", label: "Flexion hanche", unit: "°" },
@@ -274,7 +331,9 @@ export const TEST_CATEGORIES: TestCategory[] = [
   },
   {
     value: "basketball_agility",
-    label: "Basketball - Agilité / Vitesse",
+    label: "Agilité / Vitesse",
+    group: "basketball",
+    groupLabel: "Basketball",
     tests: [
       { value: "basketball_lane_agility", label: "Lane Agility Test", unit: "s", isTime: true },
       { value: "basketball_t_test", label: "Agility T-Test", unit: "s", isTime: true },
@@ -287,7 +346,9 @@ export const TEST_CATEGORIES: TestCategory[] = [
   },
   {
     value: "basketball_jump",
-    label: "Basketball - Détente verticale",
+    label: "Détente verticale",
+    group: "basketball",
+    groupLabel: "Basketball",
     tests: [
       { value: "basketball_vertical_jump_standing", label: "Vertical Jump (debout)", unit: "cm" },
       { value: "basketball_vertical_jump_max", label: "Vertical Jump (avec élan)", unit: "cm" },
@@ -297,7 +358,9 @@ export const TEST_CATEGORIES: TestCategory[] = [
   },
   {
     value: "basketball_endurance",
-    label: "Basketball - Endurance",
+    label: "Endurance",
+    group: "basketball",
+    groupLabel: "Basketball",
     tests: [
       { value: "basketball_beep_test", label: "Beep Test (Yo-Yo)", unit: "palier" },
       { value: "basketball_suicide_drill", label: "Suicide Drill (ligne à ligne)", unit: "s", isTime: true },
@@ -307,7 +370,9 @@ export const TEST_CATEGORIES: TestCategory[] = [
   },
   {
     value: "basketball_skills",
-    label: "Basketball - Compétences spécifiques",
+    label: "Compétences spécifiques",
+    group: "basketball",
+    groupLabel: "Basketball",
     tests: [
       { value: "basketball_ball_handling", label: "Ball Handling Test", unit: "s", isTime: true },
       { value: "basketball_layup_drill", label: "Layup Drill (1 min)", unit: "réussites" },
@@ -319,7 +384,9 @@ export const TEST_CATEGORIES: TestCategory[] = [
   // Athletics specific tests - Sprints
   {
     value: "athletisme_sprints",
-    label: "Athlétisme - Sprints",
+    label: "Sprints",
+    group: "athletisme",
+    groupLabel: "Athlétisme",
     tests: [
       { value: "athle_60m", label: "60m (Salle)", unit: "s", isTime: true },
       { value: "athle_100m", label: "100m", unit: "s", isTime: true },
@@ -335,7 +402,9 @@ export const TEST_CATEGORIES: TestCategory[] = [
   // Athletics - Hurdles
   {
     value: "athletisme_haies",
-    label: "Athlétisme - Haies",
+    label: "Haies",
+    group: "athletisme",
+    groupLabel: "Athlétisme",
     tests: [
       { value: "athle_60mh", label: "60m Haies (Salle)", unit: "s", isTime: true },
       { value: "athle_100mh", label: "100m Haies (Femmes)", unit: "s", isTime: true },
@@ -348,7 +417,9 @@ export const TEST_CATEGORIES: TestCategory[] = [
   // Athletics - Middle distance
   {
     value: "athletisme_demi_fond",
-    label: "Athlétisme - Demi-fond",
+    label: "Demi-fond",
+    group: "athletisme",
+    groupLabel: "Athlétisme",
     tests: [
       { value: "athle_800m", label: "800m", unit: "min.s", isTime: true },
       { value: "athle_1000m", label: "1000m", unit: "min.s", isTime: true },
@@ -361,7 +432,9 @@ export const TEST_CATEGORIES: TestCategory[] = [
   // Athletics - Long distance
   {
     value: "athletisme_fond",
-    label: "Athlétisme - Fond",
+    label: "Fond",
+    group: "athletisme",
+    groupLabel: "Athlétisme",
     tests: [
       { value: "athle_3000m", label: "3000m", unit: "min.s", isTime: true },
       { value: "athle_3000m_steeple", label: "3000m Steeple", unit: "min.s", isTime: true },
@@ -375,7 +448,9 @@ export const TEST_CATEGORIES: TestCategory[] = [
   // Athletics - Jumps
   {
     value: "athletisme_sauts",
-    label: "Athlétisme - Sauts",
+    label: "Sauts",
+    group: "athletisme",
+    groupLabel: "Athlétisme",
     tests: [
       { value: "athle_long_jump", label: "Saut en longueur", unit: "m" },
       { value: "athle_triple_jump", label: "Triple saut", unit: "m" },
@@ -390,7 +465,9 @@ export const TEST_CATEGORIES: TestCategory[] = [
   // Athletics - Throws
   {
     value: "athletisme_lancers",
-    label: "Athlétisme - Lancers",
+    label: "Lancers",
+    group: "athletisme",
+    groupLabel: "Athlétisme",
     tests: [
       { value: "athle_shot_put", label: "Lancer du poids", unit: "m" },
       { value: "athle_discus", label: "Lancer du disque", unit: "m" },
@@ -404,7 +481,9 @@ export const TEST_CATEGORIES: TestCategory[] = [
   // Athletics - Combined events
   {
     value: "athletisme_combines",
-    label: "Athlétisme - Épreuves combinées",
+    label: "Épreuves combinées",
+    group: "athletisme",
+    groupLabel: "Athlétisme",
     tests: [
       { value: "athle_decathlon_total", label: "Total Décathlon", unit: "points" },
       { value: "athle_heptathlon_total", label: "Total Heptathlon", unit: "points" },
@@ -416,7 +495,9 @@ export const TEST_CATEGORIES: TestCategory[] = [
   // Judo specific tests
   {
     value: "judo_physique",
-    label: "Judo - Tests Physiques",
+    label: "Tests Physiques",
+    group: "judo",
+    groupLabel: "Judo",
     tests: [
       { value: "judo_uchi_komi_30s", label: "Uchi-komi 30 sec", unit: "reps" },
       { value: "judo_uchi_komi_1min", label: "Uchi-komi 1 min", unit: "reps" },
@@ -429,7 +510,9 @@ export const TEST_CATEGORIES: TestCategory[] = [
   },
   {
     value: "judo_combat",
-    label: "Judo - Tests de Combat",
+    label: "Tests de Combat",
+    group: "judo",
+    groupLabel: "Judo",
     tests: [
       { value: "judo_randori_intensity", label: "Intensité randori (GPS)", unit: "m/min" },
       { value: "judo_tokui_waza_success", label: "% réussite tokui-waza", unit: "%" },
@@ -441,7 +524,9 @@ export const TEST_CATEGORIES: TestCategory[] = [
   // Réathlétisation / Kiné - Force musculaire bilatérale
   {
     value: "rehab_ischio_quadri",
-    label: "Réathlé - Ischio-jambiers / Quadriceps",
+    label: "Ischio-jambiers / Quadriceps",
+    group: "reathletisation",
+    groupLabel: "Réathlétisation",
     tests: [
       // Ischio-jambiers
       { value: "rehab_ischio_conc_d", label: "Ischio concentrique - Droit", unit: "N" },
@@ -468,7 +553,9 @@ export const TEST_CATEGORIES: TestCategory[] = [
   },
   {
     value: "rehab_adducteurs_abducteurs",
-    label: "Réathlé - Adducteurs / Abducteurs",
+    label: "Adducteurs / Abducteurs",
+    group: "reathletisation",
+    groupLabel: "Réathlétisation",
     tests: [
       { value: "rehab_add_d", label: "Adducteurs - Droit", unit: "N" },
       { value: "rehab_add_g", label: "Adducteurs - Gauche", unit: "N" },
@@ -483,7 +570,9 @@ export const TEST_CATEGORIES: TestCategory[] = [
   },
   {
     value: "rehab_epaule",
-    label: "Réathlé - Épaule",
+    label: "Épaule",
+    group: "reathletisation",
+    groupLabel: "Réathlétisation",
     tests: [
       // Rotateurs
       { value: "rehab_re_conc_d", label: "Rotation externe concentrique - Droit", unit: "N" },
@@ -506,7 +595,9 @@ export const TEST_CATEGORIES: TestCategory[] = [
   },
   {
     value: "rehab_cheville_pied",
-    label: "Réathlé - Cheville / Pied",
+    label: "Cheville / Pied",
+    group: "reathletisation",
+    groupLabel: "Réathlétisation",
     tests: [
       { value: "rehab_dorsiflexion_d", label: "Dorsiflexion - Droit", unit: "°" },
       { value: "rehab_dorsiflexion_g", label: "Dorsiflexion - Gauche", unit: "°" },
@@ -522,7 +613,9 @@ export const TEST_CATEGORIES: TestCategory[] = [
   },
   {
     value: "rehab_hanche",
-    label: "Réathlé - Hanche / Fessiers",
+    label: "Hanche / Fessiers",
+    group: "reathletisation",
+    groupLabel: "Réathlétisation",
     tests: [
       { value: "rehab_ext_hanche_d", label: "Extension hanche - Droit", unit: "N" },
       { value: "rehab_ext_hanche_g", label: "Extension hanche - Gauche", unit: "N" },
@@ -540,7 +633,9 @@ export const TEST_CATEGORIES: TestCategory[] = [
   },
   {
     value: "rehab_genou",
-    label: "Réathlé - Genou",
+    label: "Genou",
+    group: "reathletisation",
+    groupLabel: "Réathlétisation",
     tests: [
       { value: "rehab_ext_genou_d", label: "Extension genou isométrique - Droit", unit: "N" },
       { value: "rehab_ext_genou_g", label: "Extension genou isométrique - Gauche", unit: "N" },
@@ -556,7 +651,9 @@ export const TEST_CATEGORIES: TestCategory[] = [
   },
   {
     value: "rehab_tronc",
-    label: "Réathlé - Tronc / Rachis",
+    label: "Tronc / Rachis",
+    group: "reathletisation",
+    groupLabel: "Réathlétisation",
     tests: [
       { value: "rehab_gainage_ventral", label: "Gainage ventral (planche)", unit: "s", isTime: true },
       { value: "rehab_gainage_lateral_d", label: "Gainage latéral - Droit", unit: "s", isTime: true },
@@ -570,7 +667,9 @@ export const TEST_CATEGORIES: TestCategory[] = [
   },
   {
     value: "rehab_fonctionnel",
-    label: "Réathlé - Tests Fonctionnels",
+    label: "Tests Fonctionnels",
+    group: "reathletisation",
+    groupLabel: "Réathlétisation",
     tests: [
       { value: "rehab_single_leg_squat_d", label: "Single Leg Squat - Droit", unit: "score" },
       { value: "rehab_single_leg_squat_g", label: "Single Leg Squat - Gauche", unit: "score" },
@@ -595,7 +694,9 @@ export const TEST_CATEGORIES: TestCategory[] = [
   },
   {
     value: "rehab_isocinetique",
-    label: "Réathlé - Isocinétique",
+    label: "Isocinétique",
+    group: "reathletisation",
+    groupLabel: "Réathlétisation",
     tests: [
       // Genou 60°/s
       { value: "rehab_isocin_quad_60_d", label: "Quadriceps 60°/s - Droit", unit: "Nm" },
@@ -631,7 +732,8 @@ export function getTestLabel(testValue: string): string {
   for (const category of TEST_CATEGORIES) {
     const test = category.tests.find((t) => t.value === testValue);
     if (test) {
-      return `${category.label} - ${test.label}`;
+      const prefix = category.group ? `${category.groupLabel} > ${category.label}` : category.label;
+      return `${prefix} - ${test.label}`;
     }
   }
   return testValue;
