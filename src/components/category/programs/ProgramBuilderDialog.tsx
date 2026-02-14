@@ -26,7 +26,7 @@ import { Plus, Save, AlertTriangle } from "lucide-react";
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent } from "@dnd-kit/core";
 import { Badge } from "@/components/ui/badge";
 import { getTrainingTypesForSport } from "@/lib/constants/trainingTypes";
-import { RUGBY_INJURY_TYPES, DEFAULT_REHAB_PHASES } from "@/lib/constants/rugbyInjuries";
+// Protocols are now fetched from the database (injury_protocols table)
 import { Card, CardContent } from "@/components/ui/card";
 
 interface ProgramBuilderDialogProps {
@@ -192,6 +192,22 @@ export function ProgramBuilderDialog({
         .eq("category_id", categoryId)
         .in("status", ["active", "recovering"])
         .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!categoryId && open && theme === "reathletisation",
+  });
+
+  // Fetch injury protocols (system defaults + category-specific)
+  const { data: injuryProtocols } = useQuery({
+    queryKey: ["injury-protocols-for-program", categoryId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("injury_protocols")
+        .select("id, name, injury_category, description, typical_duration_days_min, typical_duration_days_max, is_system_default")
+        .or(`is_system_default.eq.true,category_id.eq.${categoryId}`)
+        .order("injury_category")
+        .order("name");
       if (error) throw error;
       return data;
     },
@@ -690,51 +706,79 @@ export function ProgramBuilderDialog({
                             </Select>
                           </div>
 
-                          {/* Or select from pre-registered injury types */}
+                          {/* Or select from injury protocols */}
                           <div className="space-y-2">
-                            <Label>Ou type de blessure (pré-enregistré)</Label>
+                            <Label>Ou protocole de réathlétisation</Label>
                             <Select 
                               value={selectedInjuryType} 
                               onValueChange={(v) => {
                                 setSelectedInjuryType(v);
-                                setSelectedInjuryId(""); // Clear specific injury selection
+                                setSelectedInjuryId("");
                                 if (v && !name) {
-                                  setName(`Programme réathlétisation - ${v}`);
+                                  const protocol = injuryProtocols?.find(p => p.id === v);
+                                  if (protocol) {
+                                    setName(`Réathlétisation - ${protocol.name}`);
+                                  }
                                 }
                               }}
                             >
                               <SelectTrigger>
-                                <SelectValue placeholder="Choisir un type..." />
+                                <SelectValue placeholder="Choisir un protocole..." />
                               </SelectTrigger>
-                              <SelectContent>
-                                {RUGBY_INJURY_TYPES.map((injury) => (
-                                  <SelectItem key={injury.name} value={injury.name}>
-                                    <div className="flex items-center gap-2">
-                                      <Badge variant="outline" className="text-xs">
-                                        {injury.category}
-                                      </Badge>
-                                      <span>{injury.name}</span>
-                                    </div>
+                              <SelectContent className="z-[9999]">
+                                {injuryProtocols && injuryProtocols.length > 0 ? (
+                                  (() => {
+                                    const grouped = injuryProtocols.reduce((acc, p) => {
+                                      const cat = p.injury_category || "Autre";
+                                      if (!acc[cat]) acc[cat] = [];
+                                      acc[cat].push(p);
+                                      return acc;
+                                    }, {} as Record<string, typeof injuryProtocols>);
+                                    return Object.entries(grouped).map(([category, protocols]) => (
+                                      <div key={category}>
+                                        <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">{category}</div>
+                                        {protocols.map((protocol) => (
+                                          <SelectItem key={protocol.id} value={protocol.id}>
+                                            <div className="flex items-center gap-2">
+                                              <Badge variant="outline" className="text-xs shrink-0">
+                                                {protocol.injury_category}
+                                              </Badge>
+                                              <span className="truncate">{protocol.name}</span>
+                                            </div>
+                                          </SelectItem>
+                                        ))}
+                                      </div>
+                                    ));
+                                  })()
+                                ) : (
+                                  <SelectItem value="__none__" disabled>
+                                    Aucun protocole disponible
                                   </SelectItem>
-                                ))}
+                                )}
                               </SelectContent>
                             </Select>
                           </div>
                         </div>
 
-                        {/* Show injury details if selected */}
-                        {selectedInjuryType && (
+                        {/* Show protocol details if selected */}
+                        {selectedInjuryType && injuryProtocols && (
                           <div className="bg-white dark:bg-background rounded-lg p-3 border">
-                            <p className="text-sm font-medium mb-1">{selectedInjuryType}</p>
-                            {RUGBY_INJURY_TYPES.find(i => i.name === selectedInjuryType) && (
-                              <p className="text-xs text-muted-foreground">
-                                {RUGBY_INJURY_TYPES.find(i => i.name === selectedInjuryType)?.description}
-                                <br />
-                                <span className="font-medium">
-                                  Durée estimée: {RUGBY_INJURY_TYPES.find(i => i.name === selectedInjuryType)?.durationMin} - {RUGBY_INJURY_TYPES.find(i => i.name === selectedInjuryType)?.durationMax} jours
-                                </span>
-                              </p>
-                            )}
+                            {(() => {
+                              const protocol = injuryProtocols.find(p => p.id === selectedInjuryType);
+                              if (!protocol) return null;
+                              return (
+                                <>
+                                  <p className="text-sm font-medium mb-1">{protocol.name}</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {protocol.description || "Protocole de réathlétisation"}
+                                    <br />
+                                    <span className="font-medium">
+                                      Durée estimée: {protocol.typical_duration_days_min || "?"} - {protocol.typical_duration_days_max || "?"} jours
+                                    </span>
+                                  </p>
+                                </>
+                              );
+                            })()}
                           </div>
                         )}
                       </CardContent>
