@@ -444,32 +444,43 @@ export function CoachDashboard({ categoryId }: CoachDashboardProps) {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {injuries.map((injury: any) => (
-                <div
-                  key={injury.id}
-                  className="p-4 border rounded-lg space-y-2"
-                >
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <p className="font-medium">{injury.players?.name}</p>
-                      <p className="text-sm text-muted-foreground">{injury.injury_type}</p>
+              {injuries.map((injury: any) => {
+                const injuryDate = injury.injury_date ? new Date(injury.injury_date) : null;
+                const daysOut = injuryDate ? differenceInDays(new Date(), injuryDate) : null;
+                return (
+                  <div
+                    key={injury.id}
+                    className="p-4 border rounded-lg space-y-3"
+                  >
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="font-semibold text-base">{injury.players?.name}</p>
+                        <p className="text-sm text-destructive font-medium">{injury.injury_type}</p>
+                      </div>
+                      <Badge
+                        variant={injury.status === "active" ? "destructive" : "secondary"}
+                      >
+                        {injury.status === "active" ? "Active" : "Réhab"}
+                      </Badge>
                     </div>
-                    <Badge
-                      variant={injury.status === "active" ? "destructive" : "secondary"}
-                    >
-                      {injury.status === "active" ? "Active" : "Réhab"}
-                    </Badge>
+                    <div className="space-y-1 text-xs text-muted-foreground">
+                      <div className="flex items-center gap-1">
+                        <span className="font-medium text-foreground">Blessure le:</span>
+                        <span>{safeFormat(injury.injury_date, "EEEE dd MMMM yyyy", { locale: fr })}</span>
+                      </div>
+                      {daysOut !== null && (
+                        <p>Absent depuis <span className="font-medium text-foreground">{daysOut} jour{daysOut > 1 ? "s" : ""}</span></p>
+                      )}
+                      {injury.estimated_return_date && (
+                        <div className="flex items-center gap-1">
+                          <span className="font-medium text-foreground">Retour estimé:</span>
+                          <span>{safeFormat(injury.estimated_return_date, "EEEE dd MMMM yyyy", { locale: fr })}</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>Depuis: {safeFormat(injury.injury_date, "dd/MM")}</span>
-                    {injury.estimated_return_date && (
-                      <span>
-                        Retour: {safeFormat(injury.estimated_return_date, "dd/MM")}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </CardContent>
         </Card>
