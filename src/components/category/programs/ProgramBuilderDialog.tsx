@@ -125,8 +125,8 @@ const BASE_THEMES = [
     { value: "recup_active", label: "Récupération active" },
   ]},
   { value: "reathletisation", label: "Réathlétisation", subOptions: [
-    { value: "phase_1", label: "Phase 1 - Réhabilitation" },
-    { value: "phase_2", label: "Phase 2 - Renforcement" },
+    { value: "phase_1", label: "Phase 1 - Protection / Mobilité" },
+    { value: "phase_2", label: "Phase 2 - Renforcement progressif" },
     { value: "phase_3", label: "Phase 3 - Retour terrain" },
     { value: "phase_4", label: "Phase 4 - Retour compétition" },
   ]},
@@ -162,10 +162,10 @@ export function ProgramBuilderDialog({
   const [selectedInjuryId, setSelectedInjuryId] = useState<string>("");
   const [selectedInjuryType, setSelectedInjuryType] = useState<string>("");
   const [rehabPhasesConfig, setRehabPhasesConfig] = useState([
-    { key: "phase_1", name: "Phase 1 - Réhabilitation", enabled: true, sessions: 3, sessionNames: ["Mobilité articulaire", "Contrôle moteur", "Renforcement isométrique"] },
-    { key: "phase_2", name: "Phase 2 - Renforcement", enabled: true, sessions: 3, sessionNames: ["Renforcement concentrique", "Renforcement excentrique", "Proprioception"] },
-    { key: "phase_3", name: "Phase 3 - Retour terrain", enabled: true, sessions: 3, sessionNames: ["Course progressive", "Changements de direction", "Exercices sport-spécifiques"] },
-    { key: "phase_4", name: "Phase 4 - Retour compétition", enabled: true, sessions: 3, sessionNames: ["Entraînement collectif adapté", "Match simulé", "Validation retour"] },
+    { key: "phase_1", name: "Phase 1 - Protection / Mobilité", enabled: true, sessions: 3, sessionNames: ["Contrôle douleur", "Mobilité passive", "Contractions isométriques"] },
+    { key: "phase_2", name: "Phase 2 - Renforcement progressif", enabled: true, sessions: 3, sessionNames: ["Renforcement concentrique", "Renforcement excentrique", "Proprioception"] },
+    { key: "phase_3", name: "Phase 3 - Retour terrain", enabled: true, sessions: 3, sessionNames: ["Course progressive", "Changements de direction", "Gestes sport-spécifiques"] },
+    { key: "phase_4", name: "Phase 4 - Retour compétition", enabled: true, sessions: 3, sessionNames: ["Entraînement collectif", "Intensité match", "Tests de validation"] },
   ]);
 
   // Fetch category to get sport type
