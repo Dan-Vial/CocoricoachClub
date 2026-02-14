@@ -7,6 +7,7 @@ import { isIndividualSport } from "@/lib/constants/sportTypes";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { getDisplayNotes } from "@/lib/utils/sessionNotes";
 
 interface Session {
   id: string;
@@ -331,7 +332,7 @@ export function DailyCalendarView({
                         
                         {session.notes && (
                           <p className="text-sm text-muted-foreground mt-1 line-clamp-1">
-                            {session.notes}
+                            {getDisplayNotes(session.notes)}
                           </p>
                         )}
                         
