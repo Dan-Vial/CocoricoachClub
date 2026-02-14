@@ -83,7 +83,7 @@ export function PlayerTestsTab({ playerId, categoryId }: PlayerTestsTabProps) {
 
   // Filter generic tests by category
   const genericStrengthTests = allGenericTests?.filter(t => t.test_category === "musculation") || [];
-  const genericSpeedTests = allGenericTests?.filter(t => t.test_category === "vitesse") || [];
+  const genericSpeedTests = allGenericTests?.filter(t => t.test_category === "vitesse" || t.test_category === "cardio" || t.test_category === "endurance") || [];
   const genericMobilityTests = allGenericTests?.filter(t => t.test_category === "mobilite") || [];
   const genericJumpTests = allGenericTests?.filter(t => t.test_category === "detente") || [];
 

@@ -1,11 +1,13 @@
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { TrendingUp, Clock, Trophy } from "lucide-react";
+import { TrendingUp, Clock, Trophy, FlaskConical } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { getTestCategoriesForSport } from "@/lib/constants/testCategories";
 
 interface Props {
   playerId: string;
@@ -14,6 +16,8 @@ interface Props {
 }
 
 export function AthleteSpaceProgression({ playerId, categoryId, sportType }: Props) {
+  const testCategories = useMemo(() => getTestCategoriesForSport(sportType || ""), [sportType]);
+
   const { data: speedTests = [] } = useQuery({
     queryKey: ["athlete-space-speed-tests", playerId],
     queryFn: async () => {
@@ -40,6 +44,20 @@ export function AthleteSpaceProgression({ playerId, categoryId, sportType }: Pro
     },
   });
 
+  // Fetch generic tests (from session builder)
+  const { data: genericTests = [] } = useQuery({
+    queryKey: ["athlete-space-generic-tests", playerId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("generic_tests")
+        .select("*")
+        .eq("player_id", playerId)
+        .order("test_date", { ascending: true });
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
   const { data: matchStats = [] } = useQuery({
     queryKey: ["athlete-space-match-stats", playerId],
     queryFn: async () => {
@@ -54,7 +72,7 @@ export function AthleteSpaceProgression({ playerId, categoryId, sportType }: Pro
     },
   });
 
-  // Speed test chart - use time_40m_seconds
+  // Speed test chart
   const speedChartData = speedTests
     .filter(t => t.time_40m_seconds)
     .map(t => ({
@@ -71,6 +89,35 @@ export function AthleteSpaceProgression({ playerId, categoryId, sportType }: Pro
       date: format(new Date(t.test_date), "dd/MM", { locale: fr }),
       value: t.weight_kg,
     });
+  });
+
+  // Generic tests - group by test_type for charts
+  const genericByType: Record<string, { date: string; value: number; unit: string; label: string }[]> = {};
+  genericTests.forEach(t => {
+    const key = `${t.test_category}__${t.test_type}`;
+    if (!genericByType[key]) genericByType[key] = [];
+    
+    // Get human-readable label
+    const cat = testCategories.find(c => c.value === t.test_category);
+    const testDef = cat?.tests.find(tt => tt.value === t.test_type);
+    const label = testDef?.label || t.test_type?.replace(/_/g, " ") || "Test";
+    
+    genericByType[key].push({
+      date: format(new Date(t.test_date), "dd/MM", { locale: fr }),
+      value: t.result_value,
+      unit: t.result_unit || "",
+      label,
+    });
+  });
+
+  // Latest generic test results for summary
+  const latestGenericByType: Record<string, { value: number; unit: string; label: string; date: string }> = {};
+  genericTests.forEach(t => {
+    const key = `${t.test_category}__${t.test_type}`;
+    const cat = testCategories.find(c => c.value === t.test_category);
+    const testDef = cat?.tests.find(tt => tt.value === t.test_type);
+    const label = testDef?.label || t.test_type?.replace(/_/g, " ") || "Test";
+    latestGenericByType[key] = { value: t.result_value, unit: t.result_unit || "", label, date: t.test_date };
   });
 
   const getProgressionFeedback = (): string[] => {
@@ -100,12 +147,39 @@ export function AthleteSpaceProgression({ playerId, categoryId, sportType }: Pro
       }
     });
 
+    // Generic tests progression feedback
+    Object.entries(genericByType).forEach(([, data]) => {
+      if (data.length >= 2) {
+        const latest = data[data.length - 1];
+        const previous = data[data.length - 2];
+        const diff = latest.value - previous.value;
+        const isTimeTest = latest.unit === "s" || latest.unit === "min";
+        // For time-based tests, lower is better
+        if (isTimeTest) {
+          if (diff < 0) {
+            msgs.push(`⏱️ ${latest.label}: -${Math.abs(diff).toFixed(1)}${latest.unit} par rapport à ton dernier test !`);
+          }
+        } else {
+          if (diff > 0) {
+            msgs.push(`📈 ${latest.label}: +${diff.toFixed(1)}${latest.unit} depuis ton dernier test !`);
+          }
+        }
+      }
+    });
+
     if (msgs.length === 0) {
       msgs.push("📊 Tes résultats de tests s'afficheront ici au fur et à mesure.");
     }
 
     return msgs;
   };
+
+  const CHART_COLORS = [
+    "hsl(var(--accent))",
+    "hsl(var(--primary))",
+    "hsl(var(--warning, 38 92% 50%))",
+    "hsl(var(--destructive))",
+  ];
 
   return (
     <div className="space-y-6">
@@ -122,6 +196,31 @@ export function AthleteSpaceProgression({ playerId, categoryId, sportType }: Pro
           ))}
         </CardContent>
       </Card>
+
+      {/* Latest generic test results summary */}
+      {Object.keys(latestGenericByType).length > 0 && (
+        <Card className="bg-gradient-card shadow-md">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <FlaskConical className="h-4 w-4 text-primary" />
+              Derniers résultats de tests
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-3">
+              {Object.entries(latestGenericByType).map(([key, test]) => (
+                <div key={key} className="p-3 rounded-lg bg-muted/30 text-center">
+                  <p className="text-xs text-muted-foreground mb-1">{test.label}</p>
+                  <p className="text-lg font-bold">{test.value} <span className="text-xs font-normal text-muted-foreground">{test.unit}</span></p>
+                  <p className="text-[10px] text-muted-foreground">
+                    {format(new Date(test.date), "dd MMM yyyy", { locale: fr })}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {speedChartData.length > 1 && (
         <Card className="bg-gradient-card shadow-md">
@@ -156,6 +255,34 @@ export function AthleteSpaceProgression({ playerId, categoryId, sportType }: Pro
                   <YAxis className="text-[10px]" />
                   <Tooltip contentStyle={{ backgroundColor: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", fontSize: "12px" }} />
                   <Line type="monotone" dataKey="value" stroke="hsl(var(--primary))" strokeWidth={2} name="Charge (kg)" />
+                </LineChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        )
+      ))}
+
+      {/* Generic tests evolution charts */}
+      {Object.entries(genericByType).map(([key, data], i) => (
+        data.length > 1 && (
+          <Card key={key} className="bg-gradient-card shadow-md">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                Évolution {data[0].label}
+                <Badge variant="secondary" className="text-[10px]">{data[0].unit}</Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={160}>
+                <LineChart data={data}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <XAxis dataKey="date" className="text-[10px]" />
+                  <YAxis className="text-[10px]" />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", fontSize: "12px" }}
+                    formatter={(v: number) => [`${v} ${data[0].unit}`, data[0].label]}
+                  />
+                  <Line type="monotone" dataKey="value" stroke={CHART_COLORS[i % CHART_COLORS.length]} strokeWidth={2} name={data[0].label} />
                 </LineChart>
               </ResponsiveContainer>
             </CardContent>
