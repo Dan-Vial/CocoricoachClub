@@ -210,7 +210,10 @@ export function ProgramBuilderDialog({
     queryFn: async () => {
       const { data, error } = await supabase
         .from("injury_protocols")
-        .select("id, name, injury_category, description, typical_duration_days_min, typical_duration_days_max, is_system_default")
+        .select(`
+          id, name, injury_category, description, typical_duration_days_min, typical_duration_days_max, is_system_default,
+          protocol_phases (id, phase_number, name, description)
+        `)
         .or(`is_system_default.eq.true,category_id.eq.${categoryId}`)
         .order("injury_category")
         .order("name");
@@ -720,10 +723,22 @@ export function ProgramBuilderDialog({
                               onValueChange={(v) => {
                                 setSelectedInjuryType(v);
                                 setSelectedInjuryId("");
-                                if (v && !name) {
-                                  const protocol = injuryProtocols?.find(p => p.id === v);
-                                  if (protocol) {
+                                const protocol = injuryProtocols?.find(p => p.id === v);
+                                if (protocol) {
+                                  if (!name) {
                                     setName(`Réathlétisation - ${protocol.name}`);
+                                  }
+                                  // Update phases config from protocol phases
+                                  const protocolPhases = (protocol as any).protocol_phases;
+                                  if (protocolPhases && protocolPhases.length > 0) {
+                                    const sorted = [...protocolPhases].sort((a: any, b: any) => a.phase_number - b.phase_number);
+                                    setRehabPhasesConfig(sorted.map((p: any) => ({
+                                      key: `phase_${p.phase_number}`,
+                                      name: `Phase ${p.phase_number} - ${p.name}`,
+                                      enabled: true,
+                                      sessions: 3,
+                                      sessionNames: [p.description || `Séance 1`, `Séance 2`, `Séance 3`],
+                                    })));
                                   }
                                 }
                               }}
