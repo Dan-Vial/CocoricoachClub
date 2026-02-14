@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useUnreadMessages, markConversationAsRead } from "@/hooks/useUnreadMessages";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -79,6 +80,15 @@ export function ConversationList({ categoryId, selectedId, onSelect }: Conversat
   const [conversationToDelete, setConversationToDelete] = useState<string | null>(null);
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { byConversation: unreadByConversation } = useUnreadMessages(categoryId);
+
+  const handleSelect = async (convId: string) => {
+    onSelect(convId);
+    if (user) {
+      await markConversationAsRead(convId, user.id);
+      queryClient.invalidateQueries({ queryKey: ["unread-messages", categoryId, user.id] });
+    }
+  };
 
   // Fetch players for private messages
   const { data: players } = useQuery({
@@ -508,7 +518,7 @@ export function ConversationList({ categoryId, selectedId, onSelect }: Conversat
                     )}
                   >
                     <button
-                      onClick={() => onSelect(conv.id)}
+                      onClick={() => handleSelect(conv.id)}
                       className="flex items-center gap-3 flex-1 min-w-0"
                     >
                       {getConversationIcon(conv.conversation_type)}
@@ -524,6 +534,11 @@ export function ConversationList({ categoryId, selectedId, onSelect }: Conversat
                             : "Groupe"}
                         </p>
                       </div>
+                      {(unreadByConversation[conv.id] || 0) > 0 && (
+                        <Badge variant="destructive" className="h-5 min-w-[20px] flex items-center justify-center p-0 text-xs rounded-full">
+                          {unreadByConversation[conv.id] > 9 ? "9+" : unreadByConversation[conv.id]}
+                        </Badge>
+                      )}
                     </button>
 
                     {/* Delete button - hidden for default groups */}

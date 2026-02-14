@@ -154,12 +154,15 @@ ColoredNavTabsTrigger.displayName = "ColoredNavTabsTrigger";
 // Wrapper component that handles the active state styling
 interface ColoredTabTriggerProps extends Omit<ColoredNavTabsTriggerProps, "data-state"> {
   value: string;
+  badge?: number;
+  label?: string;
+  shortLabel?: string;
 }
 
 const ColoredTabTrigger = React.forwardRef<
   HTMLButtonElement,
   ColoredTabTriggerProps
->(({ colorKey, icon, children, className, value, ...props }, ref) => {
+>(({ colorKey, icon, children, className, value, badge, label, shortLabel, ...props }, ref) => {
   const colors = NAV_COLORS[colorKey];
   
   return (
@@ -194,7 +197,19 @@ const ColoredTabTrigger = React.forwardRef<
       {/* Content */}
       <span className="relative z-10 flex items-center gap-2">
         {icon && <span className="shrink-0">{icon}</span>}
-        <span className="whitespace-nowrap">{children}</span>
+        <span className="whitespace-nowrap">
+          {label ? (
+            <>
+              <span className="hidden sm:inline">{label}</span>
+              <span className="sm:hidden">{shortLabel || label}</span>
+            </>
+          ) : children}
+        </span>
+        {badge != null && badge > 0 && (
+          <span className="absolute -top-2 -right-3 h-4 min-w-[16px] flex items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold px-1">
+            {badge > 9 ? "9+" : badge}
+          </span>
+        )}
       </span>
     </TabsPrimitive.Trigger>
   );

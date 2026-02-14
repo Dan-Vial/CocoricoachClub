@@ -19,6 +19,7 @@ import { AthleteSpaceObjectives } from "@/components/athlete-space/AthleteSpaceO
 import { AthleteSpaceHealth } from "@/components/athlete-space/AthleteSpaceHealth";
 import { AthleteSpaceEducation } from "@/components/athlete-space/AthleteSpaceEducation";
 import { MessagingTab } from "@/components/messaging/MessagingTab";
+import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 
 interface AthleteInfo {
   player_id: string;
@@ -41,6 +42,7 @@ export default function AthleteSpace() {
   const [isSuperAdminView, setIsSuperAdminView] = useState(false);
   const [showPlayerSelector, setShowPlayerSelector] = useState(false);
   const [playerSearch, setPlayerSearch] = useState("");
+  const { total: unreadCount } = useUnreadMessages(athleteInfo?.category_id || "");
 
   const queryPlayerId = searchParams.get("playerId");
 
@@ -389,7 +391,7 @@ export default function AthleteSpace() {
               </TabsTrigger>
               <TabsTrigger 
                 value="messaging"
-                className="gap-1.5 px-3 py-2 rounded-lg transition-all duration-200"
+                className="relative gap-1.5 px-3 py-2 rounded-lg transition-all duration-200"
                 style={{
                   color: NAV_COLORS.communication.base,
                   borderBottom: `2px solid ${NAV_COLORS.communication.base}`,
@@ -398,6 +400,11 @@ export default function AthleteSpace() {
               >
                 <MessageSquare className="h-3.5 w-3.5" />
                 Messagerie
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 h-4 min-w-[16px] flex items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold px-1">
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
+                )}
               </TabsTrigger>
             </TabsList>
 

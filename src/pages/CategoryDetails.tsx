@@ -6,6 +6,7 @@ import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { ColoredNavTabsList, NAV_COLORS, NavColorKey } from "@/components/ui/colored-nav-tabs";
 import * as TabsPrimitive from "@radix-ui/react-tabs";
 import { ArrowLeft, LayoutDashboard, Shield, Users, Calendar, Zap, Heart, Trophy, MessageSquare, Loader2, Settings, FileCode, MapPin, Video, GraduationCap } from "lucide-react";
+import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 import { OverviewTab } from "@/components/category/OverviewTab";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { CategoryCoverUpload } from "@/components/category/CategoryCoverUpload";
@@ -43,9 +44,10 @@ interface ColoredTabTriggerProps {
   label: string;
   shortLabel?: string;
   disabled?: boolean;
+  badge?: number;
 }
 
-function ColoredTabTrigger({ value, colorKey, icon, label, shortLabel, disabled }: ColoredTabTriggerProps) {
+function ColoredTabTrigger({ value, colorKey, icon, label, shortLabel, disabled, badge }: ColoredTabTriggerProps) {
   const colors = NAV_COLORS[colorKey];
   
   if (disabled) {
@@ -87,6 +89,12 @@ function ColoredTabTrigger({ value, colorKey, icon, label, shortLabel, disabled 
         )}
         style={{ backgroundColor: colors.base }}
       />
+      {/* Unread badge */}
+      {badge != null && badge > 0 && (
+        <span className="absolute -top-1 -right-1 z-20 h-5 min-w-[20px] flex items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold px-1">
+          {badge > 9 ? "9+" : badge}
+        </span>
+      )}
       {/* Content - Icon on top, label below */}
       <span className="relative z-10 flex flex-col items-center gap-1">
         <span className="shrink-0 h-6 w-6 sm:h-7 sm:w-7">{icon}</span>
@@ -114,6 +122,7 @@ function CategoryDetailsContent() {
   const navigate = useNavigate();
   const { isViewer } = useViewerModeContext();
   const { isPublicAccess, token, clubName: publicClubName, categoryName: publicCategoryName } = usePublicAccess();
+  const { total: unreadMessagesCount } = useUnreadMessages(categoryId || "");
 
   // Fetch category data - use edge function for public access, direct query for authenticated
   const { data: category, isLoading } = useQuery({
@@ -358,6 +367,7 @@ function CategoryDetailsContent() {
                   icon={<MessageSquare className="h-6 w-6 sm:h-7 sm:w-7" />}
                   label="Communication"
                   shortLabel="Com"
+                  badge={unreadMessagesCount}
                 />
               )}
               {!isViewer && (

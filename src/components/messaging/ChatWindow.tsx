@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { markConversationAsRead } from "@/hooks/useUnreadMessages";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -85,6 +86,13 @@ export function ChatWindow({ conversationId, categoryId }: ChatWindowProps) {
     };
   }, [conversationId, queryClient]);
 
+  // Mark conversation as read when opened and when new messages arrive
+  useEffect(() => {
+    if (user && conversationId) {
+      markConversationAsRead(conversationId, user.id);
+      queryClient.invalidateQueries({ queryKey: ["unread-messages"] });
+    }
+  }, [conversationId, user, messages?.length, queryClient]);
   // Scroll to bottom on new messages
   useEffect(() => {
     if (scrollRef.current) {
