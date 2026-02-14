@@ -563,22 +563,37 @@ function GradeForm({ onSave, isLoading }: { onSave: (data: any) => void; isLoadi
     term: "",
     notes: "",
   });
+  const [customSubject, setCustomSubject] = useState("");
+  const isCustom = formData.subject === "Autre";
 
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
         <div className="col-span-2">
           <Label>Matière</Label>
-          <Select value={formData.subject} onValueChange={(v) => setFormData({ ...formData, subject: v })}>
-            <SelectTrigger>
-              <SelectValue placeholder="Sélectionner..." />
-            </SelectTrigger>
-            <SelectContent>
-              {SUBJECTS.map((subject) => (
-                <SelectItem key={subject} value={subject}>{subject}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="space-y-2">
+            <Select value={formData.subject} onValueChange={(v) => {
+              setFormData({ ...formData, subject: v });
+              if (v !== "Autre") setCustomSubject("");
+            }}>
+              <SelectTrigger>
+                <SelectValue placeholder="Sélectionner..." />
+              </SelectTrigger>
+              <SelectContent>
+                {SUBJECTS.map((subject) => (
+                  <SelectItem key={subject} value={subject}>{subject}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {isCustom && (
+              <Input 
+                placeholder="Entrer le nom de la matière" 
+                value={customSubject}
+                onChange={(e) => setCustomSubject(e.target.value)}
+                autoFocus
+              />
+            )}
+          </div>
         </div>
         <div>
           <Label>Note</Label>
@@ -632,10 +647,11 @@ function GradeForm({ onSave, isLoading }: { onSave: (data: any) => void; isLoadi
       <Button 
         onClick={() => onSave({
           ...formData,
+          subject: isCustom ? customSubject : formData.subject,
           grade: parseFloat(formData.grade),
           max_grade: parseFloat(formData.max_grade),
         })} 
-        disabled={isLoading || !formData.subject || !formData.grade} 
+        disabled={isLoading || !formData.subject || !formData.grade || (isCustom && !customSubject)} 
         className="w-full"
       >
         {isLoading ? "Ajout..." : "Ajouter la note"}
