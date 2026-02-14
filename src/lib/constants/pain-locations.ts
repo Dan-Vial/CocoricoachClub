@@ -1,0 +1,78 @@
+export const PAIN_ZONES = [
+  {
+    zone: "Haut du corps",
+    locations: [
+      "Épaule droite",
+      "Épaule gauche",
+      "Bras droit",
+      "Bras gauche",
+      "Coude droit",
+      "Coude gauche",
+      "Poignet droit",
+      "Poignet gauche",
+      "Main droite",
+      "Main gauche",
+      "Dos (haut)",
+      "Pectoral droit",
+      "Pectoral gauche",
+      "Côtes",
+      "Nuque / Cervicales",
+    ],
+  },
+  {
+    zone: "Bas du corps",
+    locations: [
+      "Cuisse droite (quadriceps)",
+      "Cuisse gauche (quadriceps)",
+      "Ischio-jambier droit",
+      "Ischio-jambier gauche",
+      "Genou droit",
+      "Genou gauche",
+      "Mollet droit",
+      "Mollet gauche",
+      "Cheville droite",
+      "Cheville gauche",
+      "Pied droit",
+      "Pied gauche",
+      "Hanche droite",
+      "Hanche gauche",
+      "Adducteur droit",
+      "Adducteur gauche",
+      "Dos (bas) / Lombaires",
+    ],
+  },
+  {
+    zone: "Tête",
+    locations: [
+      "Maux de tête",
+      "Migraine",
+      "Mâchoire",
+      "Vertiges",
+      "Commotion",
+    ],
+  },
+  {
+    zone: "Abdomen",
+    locations: [
+      "Abdominaux",
+      "Douleurs abdominales",
+      "Côté droit",
+      "Côté gauche",
+    ],
+  },
+  {
+    zone: "Maladie",
+    locations: [
+      "Fièvre",
+      "Grippe / État grippal",
+      "Gastro-entérite",
+      "Angine",
+      "Rhume",
+      "Fatigue générale / Surmenage",
+      "Allergie",
+      "Autre maladie",
+    ],
+  },
+] as const;
+
+export type PainZone = typeof PAIN_ZONES[number]["zone"];

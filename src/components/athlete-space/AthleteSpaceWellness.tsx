@@ -6,35 +6,87 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CheckCircle2, Heart, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 import { NAV_COLORS } from "@/components/ui/colored-nav-tabs";
 import { cn } from "@/lib/utils";
+import { PAIN_ZONES } from "@/lib/constants/pain-locations";
 
 interface Props {
   playerId: string;
   categoryId: string;
 }
 
-const EMOJI_OPTIONS = [
-  { value: 1, emoji: "😫", label: "Très mauvais" },
-  { value: 2, emoji: "😟", label: "Mauvais" },
-  { value: 3, emoji: "😐", label: "Moyen" },
-  { value: 4, emoji: "🙂", label: "Bien" },
-  { value: 5, emoji: "😄", label: "Excellent" },
-];
-
 const SLEEP_HOURS = [4, 5, 6, 7, 8, 9, 10, 11, 12];
 
 const WELLNESS_FIELDS = [
-  { key: "sleep_quality", label: "Qualité du sommeil", emoji: "😴" },
+  {
+    key: "sleep_quality",
+    label: "Qualité du sommeil",
+    emoji: "😴",
+    options: [
+      { value: 1, label: "Très mal dormi" },
+      { value: 2, label: "Mal dormi" },
+      { value: 3, label: "Moyennement dormi" },
+      { value: 4, label: "Bien dormi" },
+      { value: 5, label: "Très bien dormi" },
+    ],
+  },
   { key: "sleep_duration", label: "Heures de sommeil", emoji: "🛏️", isNumber: true },
-  { key: "general_fatigue", label: "Fatigue générale", emoji: "🔋", inverted: true },
-  { key: "soreness_upper_body", label: "Douleurs haut du corps", emoji: "💪", inverted: true },
-  { key: "soreness_lower_body", label: "Douleurs bas du corps", emoji: "🦵", inverted: true },
-  { key: "stress_level", label: "Stress", emoji: "🧠", inverted: true },
+  {
+    key: "general_fatigue",
+    label: "Fatigue générale",
+    emoji: "🔋",
+    inverted: true,
+    options: [
+      { value: 1, label: "Très en forme" },
+      { value: 2, label: "En forme" },
+      { value: 3, label: "Fatigué" },
+      { value: 4, label: "Très fatigué" },
+      { value: 5, label: "Épuisé" },
+    ],
+  },
+  {
+    key: "soreness_upper_body",
+    label: "Douleurs haut du corps",
+    emoji: "💪",
+    inverted: true,
+    options: [
+      { value: 1, label: "Aucune douleur" },
+      { value: 2, label: "Légère gêne" },
+      { value: 3, label: "Douleur modérée" },
+      { value: 4, label: "Douleur forte" },
+      { value: 5, label: "Douleur intense" },
+    ],
+  },
+  {
+    key: "soreness_lower_body",
+    label: "Douleurs bas du corps",
+    emoji: "🦵",
+    inverted: true,
+    options: [
+      { value: 1, label: "Aucune douleur" },
+      { value: 2, label: "Légère gêne" },
+      { value: 3, label: "Douleur modérée" },
+      { value: 4, label: "Douleur forte" },
+      { value: 5, label: "Douleur intense" },
+    ],
+  },
+  {
+    key: "stress_level",
+    label: "Stress",
+    emoji: "🧠",
+    inverted: true,
+    options: [
+      { value: 1, label: "Très détendu" },
+      { value: 2, label: "Détendu" },
+      { value: 3, label: "Un peu stressé" },
+      { value: 4, label: "Stressé" },
+      { value: 5, label: "Très stressé" },
+    ],
+  },
 ] as const;
 
 export function AthleteSpaceWellness({ playerId, categoryId }: Props) {
@@ -65,12 +117,15 @@ export function AthleteSpaceWellness({ playerId, categoryId }: Props) {
     stress_level: 0,
   });
   const [hasSpecificPain, setHasSpecificPain] = useState(false);
+  const [painZone, setPainZone] = useState("");
   const [painLocation, setPainLocation] = useState("");
   const [notes, setNotes] = useState("");
 
   const allFieldsFilled = values.sleep_quality > 0 && values.sleep_duration > 0 &&
     values.general_fatigue > 0 && values.soreness_upper_body > 0 &&
     values.soreness_lower_body > 0 && values.stress_level > 0;
+
+  const selectedZoneLocations = PAIN_ZONES.find(z => z.zone === painZone)?.locations || [];
 
   const submitWellness = useMutation({
     mutationFn: async () => {
@@ -85,6 +140,7 @@ export function AthleteSpaceWellness({ playerId, categoryId }: Props) {
         soreness_lower_body: values.soreness_lower_body,
         stress_level: values.stress_level,
         has_specific_pain: hasSpecificPain,
+        pain_zone: hasSpecificPain ? painZone : null,
         pain_location: hasSpecificPain ? painLocation : null,
         notes: notes || null,
       });
@@ -202,7 +258,7 @@ export function AthleteSpaceWellness({ playerId, categoryId }: Props) {
               );
             }
 
-            const invertedLabels = 'inverted' in field && field.inverted;
+            const fieldOptions = 'options' in field ? field.options : [];
 
             return (
               <div key={field.key}>
@@ -213,28 +269,22 @@ export function AthleteSpaceWellness({ playerId, categoryId }: Props) {
                     <Badge variant="secondary" className="ml-auto text-xs font-bold">{currentValue}/5</Badge>
                   )}
                 </Label>
-                <div className="flex gap-2">
-                  {(invertedLabels ? [...EMOJI_OPTIONS].reverse() : EMOJI_OPTIONS).map(opt => (
+                <div className="flex flex-col gap-2">
+                  {fieldOptions.map(opt => (
                     <button
                       key={opt.value}
                       type="button"
                       onClick={() => setValues(prev => ({ ...prev, [field.key]: opt.value }))}
                       className={cn(
-                        "flex-1 flex flex-col items-center gap-1 py-2.5 rounded-xl transition-all duration-200",
-                        "border-2 hover:scale-105 active:scale-95",
+                        "w-full text-left px-4 py-2.5 rounded-xl transition-all duration-200",
+                        "border-2 hover:scale-[1.01] active:scale-[0.99]",
                         currentValue === opt.value
-                          ? "shadow-md scale-105 bg-primary/5"
-                          : "bg-background border-border hover:border-primary/50"
+                          ? "shadow-md text-white font-semibold"
+                          : "bg-background border-border text-foreground hover:border-primary/50"
                       )}
-                      style={currentValue === opt.value ? { borderColor: NAV_COLORS.sante.base } : {}}
+                      style={currentValue === opt.value ? { backgroundColor: NAV_COLORS.sante.base, borderColor: NAV_COLORS.sante.base } : {}}
                     >
-                      <span className={cn("text-2xl transition-transform", currentValue === opt.value && "scale-110")}>{opt.emoji}</span>
-                      <span className={cn(
-                        "text-[9px] font-medium leading-tight",
-                        currentValue === opt.value ? "font-bold" : "text-muted-foreground"
-                      )} style={currentValue === opt.value ? { color: NAV_COLORS.sante.base } : {}}>
-                        {opt.value}
-                      </span>
+                      <span className="text-sm">{opt.label}</span>
                     </button>
                   ))}
                 </div>
@@ -243,16 +293,45 @@ export function AthleteSpaceWellness({ playerId, categoryId }: Props) {
           })}
 
           <div className="flex items-center gap-2">
-            <Checkbox checked={hasSpecificPain} onCheckedChange={(v) => setHasSpecificPain(!!v)} />
+            <Checkbox checked={hasSpecificPain} onCheckedChange={(v) => {
+              setHasSpecificPain(!!v);
+              if (!v) { setPainZone(""); setPainLocation(""); }
+            }} />
             <Label className="text-sm">J'ai une douleur spécifique</Label>
           </div>
 
           {hasSpecificPain && (
-            <Input
-              value={painLocation}
-              onChange={e => setPainLocation(e.target.value)}
-              placeholder="Localisation de la douleur (ex: genou droit)"
-            />
+            <div className="space-y-3">
+              <div>
+                <Label className="text-sm mb-1.5 block">Zone du corps</Label>
+                <Select value={painZone} onValueChange={(v) => { setPainZone(v); setPainLocation(""); }}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner une zone" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PAIN_ZONES.map(z => (
+                      <SelectItem key={z.zone} value={z.zone}>{z.zone}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {painZone && (
+                <div>
+                  <Label className="text-sm mb-1.5 block">Préciser la localisation</Label>
+                  <Select value={painLocation} onValueChange={setPainLocation}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Sélectionner la localisation" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {selectedZoneLocations.map(loc => (
+                        <SelectItem key={loc} value={loc}>{loc}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            </div>
           )}
 
           <div>
