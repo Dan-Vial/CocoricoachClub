@@ -4,8 +4,12 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, ArrowRightLeft, Edit2, Check, X, User } from "lucide-react";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { ArrowLeft, ArrowRightLeft, Edit2, Check, X, User, Activity, FlaskConical, Swords, CalendarDays, Heart, Utensils, GraduationCap, Bandage } from "lucide-react";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { ColoredNavTabsList } from "@/components/ui/colored-nav-tabs";
+import * as TabsPrimitive from "@radix-ui/react-tabs";
+import { cn } from "@/lib/utils";
 import { PlayerTestsTab } from "@/components/player/PlayerTestsTab";
 import { PlayerCalendarTab } from "@/components/player/PlayerCalendarTab";
 import { PlayerAwcrTab } from "@/components/player/PlayerAwcrTab";
@@ -32,6 +36,39 @@ import { getPositionsForSport } from "@/lib/constants/sportPositions";
 import { isIndividualSport, ATHLETISME_DISCIPLINES, ATHLETISME_SPECIALTIES, JUDO_WEIGHT_CATEGORIES, isAthletismeCategory, isJudoCategory, AVIRON_ROLES } from "@/lib/constants/sportTypes";
 import { getDisciplineLabel, getSpecialtyLabel } from "@/lib/constants/athleticProfiles";
 import { toast } from "sonner";
+
+function PlayerDetailTab({ value, label, icon: Icon, color }: { value: string; label: string; icon: React.ElementType; color: string }) {
+  return (
+    <TabsPrimitive.Trigger
+      value={value}
+      className={cn(
+        "group relative inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm",
+        "transition-all duration-200 ease-out whitespace-nowrap",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+        "hover:opacity-80",
+        "data-[state=active]:shadow-md data-[state=active]:scale-105",
+      )}
+      style={{ borderWidth: "2px", borderColor: color, borderStyle: "solid" }}
+    >
+      <span
+        className={cn(
+          "absolute inset-0 rounded-md transition-all duration-200",
+          "opacity-0 scale-95",
+          "group-data-[state=active]:opacity-100 group-data-[state=active]:scale-100"
+        )}
+        style={{ backgroundColor: color }}
+      />
+      <span className="relative z-10">
+        <Icon className="h-4 w-4 group-data-[state=active]:hidden" style={{ color }} />
+        <Icon className="h-4 w-4 hidden group-data-[state=active]:inline text-white" />
+      </span>
+      <span className="relative z-10">
+        <span className="group-data-[state=active]:hidden" style={{ color }}>{label}</span>
+        <span className="hidden group-data-[state=active]:inline text-white">{label}</span>
+      </span>
+    </TabsPrimitive.Trigger>
+  );
+}
 
 function PlayerDetailsContent() {
   const { playerId } = useParams<{ playerId: string }>();
@@ -424,16 +461,19 @@ function PlayerDetailsContent() {
         </div>
 
         <Tabs defaultValue="charge" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8">
-            <TabsTrigger value="charge">Charge</TabsTrigger>
-            <TabsTrigger value="tests">Tests</TabsTrigger>
-            <TabsTrigger value="matches">Matchs</TabsTrigger>
-            <TabsTrigger value="calendar">Calendrier</TabsTrigger>
-            <TabsTrigger value="wellness">Wellness</TabsTrigger>
-            <TabsTrigger value="nutrition">Nutrition</TabsTrigger>
-            <TabsTrigger value="academy">Académie</TabsTrigger>
-            <TabsTrigger value="injuries">Blessures</TabsTrigger>
-          </TabsList>
+          <ScrollArea className="w-full">
+            <ColoredNavTabsList className="flex w-max gap-1.5 p-2">
+              <PlayerDetailTab value="charge" label="Charge" icon={Activity} color="hsl(350 80% 55%)" />
+              <PlayerDetailTab value="tests" label="Tests" icon={FlaskConical} color="hsl(280 70% 55%)" />
+              <PlayerDetailTab value="matches" label="Matchs" icon={Swords} color="hsl(220 80% 55%)" />
+              <PlayerDetailTab value="calendar" label="Calendrier" icon={CalendarDays} color="hsl(35 90% 55%)" />
+              <PlayerDetailTab value="wellness" label="Wellness" icon={Heart} color="hsl(160 65% 45%)" />
+              <PlayerDetailTab value="nutrition" label="Nutrition" icon={Utensils} color="hsl(45 95% 50%)" />
+              <PlayerDetailTab value="academy" label="Académie" icon={GraduationCap} color="hsl(200 85% 50%)" />
+              <PlayerDetailTab value="injuries" label="Blessures" icon={Bandage} color="hsl(10 80% 55%)" />
+            </ColoredNavTabsList>
+            <ScrollBar orientation="horizontal" />
+          </ScrollArea>
 
           <TabsContent value="charge">
             <div className="space-y-6">
