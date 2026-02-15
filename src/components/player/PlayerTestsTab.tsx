@@ -15,6 +15,18 @@ import * as TabsPrimitive from "@radix-ui/react-tabs";
 import { cn } from "@/lib/utils";
 import { getTestCategoriesForSport, TestCategory } from "@/lib/constants/testCategories";
 
+/** Strip technical metadata (Session ID, HTML comments) from notes for display */
+function cleanNotes(notes: string | null): string {
+  if (!notes) return "-";
+  let cleaned = notes
+    .replace(/\(Session ID:\s*[a-f0-9-]+\)/gi, "")
+    .replace(/Session ID:\s*[a-f0-9-]+/gi, "")
+    .replace(/<!--[\s\S]*?-->/g, "")
+    .replace(/Séance du \d{4}-\d{2}-\d{2}\s*/g, "")
+    .trim();
+  return cleaned || "-";
+}
+
 interface PlayerTestsTabProps {
   playerId: string;
   categoryId: string;
@@ -200,7 +212,7 @@ export function PlayerTestsTab({ playerId, categoryId, sportType }: PlayerTestsT
                         <TableCell className="font-semibold text-primary">
                           {test.result_value} {test.result_unit || ""}
                         </TableCell>
-                        <TableCell className="max-w-[150px] truncate">{test.notes || "-"}</TableCell>
+                        <TableCell className="max-w-[150px] truncate">{cleanNotes(test.notes)}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -243,7 +255,7 @@ export function PlayerTestsTab({ playerId, categoryId, sportType }: PlayerTestsT
                     <TableCell className="font-semibold text-primary">
                       {test.result_value} {test.result_unit || ""}
                     </TableCell>
-                    <TableCell className="max-w-[150px] truncate">{test.notes || "-"}</TableCell>
+                    <TableCell className="max-w-[150px] truncate">{cleanNotes(test.notes)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
