@@ -111,8 +111,8 @@ export function AvailabilityScoreTab({ categoryId }: AvailabilityScoreTabProps) 
         if (playerInjury) {
           if (playerInjury.status === "active") {
             const sev = playerInjury.severity as string;
-            injuryScore = sev === "severe" ? 0 : sev === "moderate" ? 20 : 40;
-            factors.push(`Blessure ${sev === "severe" ? "grave" : sev === "moderate" ? "modérée" : "légère"}`);
+            injuryScore = (sev === "severe" || sev === "grave") ? 0 : (sev === "moderate" || sev === "modérée") ? 20 : 40;
+            factors.push(`Blessure ${(sev === "severe" || sev === "grave") ? "grave" : (sev === "moderate" || sev === "modérée") ? "modérée" : "légère"}`);
           } else {
             injuryScore = 70;
             factors.push("En réathlétisation");
