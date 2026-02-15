@@ -155,7 +155,7 @@ export function PerformanceHeatmap({ categoryId }: PerformanceHeatmapProps) {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="awcr">AWCR</SelectItem>
+            <SelectItem value="awcr">EWMA</SelectItem>
             <SelectItem value="training_load">Charge d'entraînement</SelectItem>
             <SelectItem value="wellness">Wellness</SelectItem>
             <SelectItem value="soreness">Douleurs musculaires</SelectItem>
@@ -186,7 +186,7 @@ export function PerformanceHeatmap({ categoryId }: PerformanceHeatmapProps) {
       <Card className="overflow-x-auto">
         <CardHeader>
           <CardTitle>
-            Heatmap - {selectedMetric === "awcr" ? "AWCR" : selectedMetric === "training_load" ? "Charge" : selectedMetric === "wellness" ? "Wellness" : "Douleurs"} - {format(selectedMonth, "MMMM yyyy", { locale: fr })}
+            Heatmap - {selectedMetric === "awcr" ? "EWMA" : selectedMetric === "training_load" ? "Charge" : selectedMetric === "wellness" ? "Wellness" : "Douleurs"} - {format(selectedMonth, "MMMM yyyy", { locale: fr })}
           </CardTitle>
         </CardHeader>
         <CardContent>
