@@ -17,6 +17,8 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { InviteClientDialog } from "./InviteClientDialog";
 import { ClientCategoryOptionsDialog } from "./ClientCategoryOptionsDialog";
+import { CreateClientCategoriesSection, CategoryDraft } from "./CreateClientCategoriesSection";
+import { MainSportCategory } from "@/lib/constants/sportTypes";
  
  interface Client {
    id: string;
@@ -43,19 +45,22 @@ export function SuperAdminClients() {
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [categoryOptionsClient, setCategoryOptionsClient] = useState<Client | null>(null);
    const [formData, setFormData] = useState({
-     name: "",
-     email: "",
-     phone: "",
-     address: "",
-     status: "trial",
-     max_clubs: 1,
-     max_categories_per_club: 3,
-     max_staff_users: 5,
-     max_athletes: 50,
-     notes: "",
-     video_enabled: false,
-     gps_data_enabled: false,
-   });
+      name: "",
+      email: "",
+      phone: "",
+      address: "",
+      status: "trial",
+      max_clubs: 1,
+      max_categories_per_club: 3,
+      max_staff_users: 5,
+      max_athletes: 50,
+      notes: "",
+      video_enabled: false,
+      gps_data_enabled: false,
+    });
+    const [clubName, setClubName] = useState("");
+    const [clubSport, setClubSport] = useState<MainSportCategory>("rugby");
+    const [categoryDrafts, setCategoryDrafts] = useState<CategoryDraft[]>([]);
  
      // Fetch formal clients with their subscriptions
      const { data: clients = [], isLoading } = useQuery({
@@ -157,41 +162,83 @@ export function SuperAdminClients() {
      });
  
    // Create client mutation
-   const createClient = useMutation({
-     mutationFn: async (data: typeof formData) => {
-       const trialEndsAt = data.status === "trial" 
-         ? new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString()
-         : null;
- 
-       const { error } = await supabase
-         .from("clients")
-         .insert({
-           name: data.name,
-           email: data.email || null,
-           phone: data.phone || null,
-           address: data.address || null,
-           status: data.status,
-           trial_ends_at: trialEndsAt,
-           max_clubs: data.max_clubs,
-           max_categories_per_club: data.max_categories_per_club,
-           max_staff_users: data.max_staff_users,
-           max_athletes: data.max_athletes,
-           notes: data.notes || null,
-           video_enabled: data.video_enabled,
-           gps_data_enabled: data.gps_data_enabled,
-         });
-       if (error) throw error;
-     },
-     onSuccess: () => {
-       toast.success("Client créé avec succès");
-       queryClient.invalidateQueries({ queryKey: ["super-admin-clients"] });
-       setIsAddDialogOpen(false);
-       resetForm();
-     },
-     onError: () => {
-       toast.error("Erreur lors de la création");
-     },
-   });
+    const createClient = useMutation({
+      mutationFn: async (data: typeof formData) => {
+        const trialEndsAt = data.status === "trial" 
+          ? new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString()
+          : null;
+  
+        const { data: clientData, error } = await supabase
+          .from("clients")
+          .insert({
+            name: data.name,
+            email: data.email || null,
+            phone: data.phone || null,
+            address: data.address || null,
+            status: data.status,
+            trial_ends_at: trialEndsAt,
+            max_clubs: data.max_clubs,
+            max_categories_per_club: data.max_categories_per_club,
+            max_staff_users: data.max_staff_users,
+            max_athletes: data.max_athletes,
+            notes: data.notes || null,
+            video_enabled: data.video_enabled,
+            gps_data_enabled: data.gps_data_enabled,
+          })
+          .select("id")
+          .single();
+        if (error) throw error;
+
+        // Create club if name provided
+        if (clubName.trim()) {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (!user) throw new Error("Non authentifié");
+
+          const { data: clubData, error: clubError } = await supabase
+            .from("clubs")
+            .insert({
+              name: clubName.trim(),
+              sport: clubSport,
+              user_id: user.id,
+              client_id: clientData.id,
+            })
+            .select("id")
+            .single();
+          if (clubError) throw clubError;
+
+          // Create categories for this club
+          if (categoryDrafts.length > 0) {
+            const categoriesToInsert = categoryDrafts
+              .filter(c => c.name.trim())
+              .map(c => ({
+                club_id: clubData.id,
+                name: c.name.trim(),
+                gender: c.gender,
+                rugby_type: c.rugby_type,
+                gps_enabled: c.gps_enabled,
+                video_enabled: c.video_enabled,
+                academy_enabled: c.academy_enabled,
+              }));
+
+            if (categoriesToInsert.length > 0) {
+              const { error: catError } = await supabase
+                .from("categories")
+                .insert(categoriesToInsert);
+              if (catError) throw catError;
+            }
+          }
+        }
+      },
+      onSuccess: () => {
+        toast.success("Client créé avec succès");
+        queryClient.invalidateQueries({ queryKey: ["super-admin-clients"] });
+        setIsAddDialogOpen(false);
+        resetForm();
+      },
+      onError: () => {
+        toast.error("Erreur lors de la création");
+      },
+    });
  
    // Update client mutation
    const updateClient = useMutation({
@@ -270,22 +317,25 @@ export function SuperAdminClients() {
      },
    });
  
-   const resetForm = () => {
-     setFormData({
-       name: "",
-       email: "",
-       phone: "",
-       address: "",
-       status: "trial",
-       max_clubs: 1,
-       max_categories_per_club: 3,
-       max_staff_users: 5,
-       max_athletes: 50,
-       notes: "",
-       video_enabled: false,
-       gps_data_enabled: false,
-     });
-   };
+    const resetForm = () => {
+      setFormData({
+        name: "",
+        email: "",
+        phone: "",
+        address: "",
+        status: "trial",
+        max_clubs: 1,
+        max_categories_per_club: 3,
+        max_staff_users: 5,
+        max_athletes: 50,
+        notes: "",
+        video_enabled: false,
+        gps_data_enabled: false,
+      });
+      setClubName("");
+      setClubSport("rugby");
+      setCategoryDrafts([]);
+    };
  
    const openEditDialog = (client: Client) => {
      setEditingClient(client);
@@ -464,9 +514,21 @@ export function SuperAdminClients() {
            onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
            placeholder="Notes internes..."
          />
-       </div>
-     </div>
-   );
+        </div>
+
+        {/* Club & Categories section - only in create mode */}
+        {!editingClient && (
+          <CreateClientCategoriesSection
+            clubName={clubName}
+            onClubNameChange={setClubName}
+            clubSport={clubSport}
+            onClubSportChange={setClubSport}
+            categories={categoryDrafts}
+            onCategoriesChange={setCategoryDrafts}
+          />
+        )}
+      </div>
+    );
  
    return (
      <Card>
