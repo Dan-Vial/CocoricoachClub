@@ -29,6 +29,7 @@ import { PerformanceTab } from "@/components/category/tabs/PerformanceTab";
 import { SanteTab } from "@/components/category/tabs/SanteTab";
 import { CompetitionTab } from "@/components/category/tabs/CompetitionTab";
 import { CommunicationTab } from "@/components/category/tabs/CommunicationTab";
+import { AcademyTab } from "@/components/category/AcademyTab";
 import { SettingsTab } from "@/components/category/tabs/SettingsTab";
 import { ProgrammationTab } from "@/components/category/tabs/ProgrammationTab";
 import { GpsDataTab } from "@/components/category/gps/GpsDataTab";
@@ -366,6 +367,15 @@ function CategoryDetailsContent() {
                   badge={unreadMessagesCount}
                 />
               )}
+              {!isViewer && isAcademy && (
+                <ColoredTabTrigger 
+                  value="academy" 
+                  colorKey="communication"
+                  icon={<GraduationCap className="h-6 w-6 sm:h-7 sm:w-7" />}
+                  label="Académie"
+                  shortLabel="Acad"
+                />
+              )}
               {!isViewer && (
                 <ColoredTabTrigger 
                   value="settings" 
@@ -441,8 +451,14 @@ function CategoryDetailsContent() {
             <TabsContent value="communication" className="space-y-4">
               <CommunicationTab 
                 categoryId={categoryId!} 
-                isAcademy={isAcademy}
+                isAcademy={false}
               />
+            </TabsContent>
+          )}
+
+          {!isViewer && isAcademy && (
+            <TabsContent value="academy" className="space-y-4">
+              <AcademyTab categoryId={categoryId!} />
             </TabsContent>
           )}
 
