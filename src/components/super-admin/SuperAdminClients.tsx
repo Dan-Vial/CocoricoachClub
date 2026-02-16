@@ -371,7 +371,7 @@ export function SuperAdminClients() {
      }
    };
  
-   const ClientForm = () => (
+   const clientFormContent = (
      <div className="space-y-4">
        <div className="grid grid-cols-2 gap-4">
          <div className="space-y-2">
@@ -563,7 +563,7 @@ export function SuperAdminClients() {
                    Ajoutez une nouvelle organisation cliente
                  </DialogDescription>
                </DialogHeader>
-               <ClientForm />
+                {clientFormContent}
                <DialogFooter>
                  <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
                    Annuler
@@ -809,7 +809,7 @@ export function SuperAdminClients() {
              <DialogHeader>
                <DialogTitle>Modifier le client</DialogTitle>
              </DialogHeader>
-             <ClientForm />
+             {clientFormContent}
              <DialogFooter>
                <Button variant="outline" onClick={() => setEditingClient(null)}>
                  Annuler
