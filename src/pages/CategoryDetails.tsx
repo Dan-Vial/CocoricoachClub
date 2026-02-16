@@ -19,7 +19,7 @@ import { PublicDataProvider, usePublicDataContext } from "@/contexts/PublicDataC
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import React from "react";
-import { useClientOptions } from "@/hooks/use-client-options";
+
 import { getSportLabel } from "@/lib/constants/sportTypes";
 
 // New mega-tabs
@@ -156,16 +156,12 @@ function CategoryDetailsContent() {
   });
 
   const isRugby7 = category?.rugby_type === "7";
-  const isAcademy = category?.rugby_type === "academie";
+  const isAcademy = category?.academy_enabled === true;
   const isNationalTeam = category?.rugby_type === "national_team";
   
-  // Fetch client options for GPS and Video visibility
-  const clubId = category?.clubs?.id;
-  const { videoEnabled, gpsEnabled } = useClientOptions(clubId);
-  
-  // Check if GPS/Video should be visible (sport type + client options)
-  const showGpsTab = isGpsSportType(category?.rugby_type) && gpsEnabled;
-  const showVideoTab = hasVideoAnalysis(category?.rugby_type) && videoEnabled;
+  // Check if GPS/Video/Academy should be visible (category-level flags)
+  const showGpsTab = isGpsSportType(category?.rugby_type) && (category?.gps_enabled === true);
+  const showVideoTab = hasVideoAnalysis(category?.rugby_type) && (category?.video_enabled === true);
 
   // In public mode, use the context values as fallback
   const displayCategoryName = category?.name || publicCategoryName || "Catégorie";
