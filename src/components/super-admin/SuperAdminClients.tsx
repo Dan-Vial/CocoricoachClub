@@ -493,7 +493,7 @@ export function SuperAdminClients() {
                     Créer manuellement
                   </Button>
                 </DialogTrigger>
-             <DialogContent className="max-w-2xl">
+              <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
                <DialogHeader>
                  <DialogTitle>Créer un client</DialogTitle>
                  <DialogDescription>
@@ -742,7 +742,7 @@ export function SuperAdminClients() {
  
          {/* Edit Dialog */}
          <Dialog open={!!editingClient} onOpenChange={(open) => !open && setEditingClient(null)}>
-           <DialogContent className="max-w-2xl">
+           <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
              <DialogHeader>
                <DialogTitle>Modifier le client</DialogTitle>
              </DialogHeader>
