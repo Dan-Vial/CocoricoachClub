@@ -62,7 +62,7 @@ export function TrainingLoadKPIs({ summary, isLoading }: TrainingLoadKPIsProps) 
           <Zap className="h-4 w-4 text-primary" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{summary.currentLoad}</div>
+          <div className="text-2xl font-bold">{Math.round(summary.currentLoad)}</div>
           <p className="text-xs text-muted-foreground">UA (unités arbitraires)</p>
         </CardContent>
       </Card>
@@ -81,7 +81,7 @@ export function TrainingLoadKPIs({ summary, isLoading }: TrainingLoadKPIsProps) 
           <Activity className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{summary.ewmaAcute}</div>
+          <div className="text-2xl font-bold">{summary.ewmaAcute.toFixed(1)}</div>
           <div className="flex items-center gap-1 text-xs text-muted-foreground">
             <TrendIcon className={`h-3 w-3 ${trendColor}`} />
             <span className={trendColor}>
@@ -105,7 +105,7 @@ export function TrainingLoadKPIs({ summary, isLoading }: TrainingLoadKPIsProps) 
           <Target className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{summary.ewmaChronic}</div>
+          <div className="text-2xl font-bold">{summary.ewmaChronic.toFixed(1)}</div>
           <p className="text-xs text-muted-foreground">Capacité de base (28j)</p>
         </CardContent>
       </Card>

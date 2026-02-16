@@ -331,21 +331,26 @@ export function transformToDailyLoadData(
   awcrData: any[],
   gpsData: any[]
 ): DailyLoadData[] {
-  const dataByDate = new Map<string, DailyLoadData>();
+  // Group by date, averaging across players for team view
+  const dataByDate = new Map<string, { totals: DailyLoadData; playerCount: number }>();
 
-  // Process AWCR data
+  // Process AWCR data - track unique players per date for averaging
+  const playersByDate = new Map<string, Set<string>>();
+
   awcrData.forEach(entry => {
     const date = entry.session_date;
+    if (!playersByDate.has(date)) playersByDate.set(date, new Set());
+    playersByDate.get(date)!.add(entry.player_id);
+
     const existing = dataByDate.get(date) || {
-      date,
-      rpe: 0,
-      duration: 0,
-      sRPE: 0,
+      totals: { date, rpe: 0, duration: 0, sRPE: 0 } as DailyLoadData,
+      playerCount: 0,
     };
 
-    existing.rpe = entry.rpe || existing.rpe;
-    existing.duration = entry.duration_minutes || existing.duration;
-    existing.sRPE = entry.training_load || (existing.rpe * existing.duration);
+    existing.totals.rpe += entry.rpe || 0;
+    existing.totals.duration += entry.duration_minutes || 0;
+    existing.totals.sRPE += entry.training_load || (entry.rpe * entry.duration_minutes) || 0;
+    existing.playerCount = playersByDate.get(date)!.size;
 
     dataByDate.set(date, existing);
   });
@@ -353,31 +358,46 @@ export function transformToDailyLoadData(
   // Process GPS data
   gpsData.forEach(entry => {
     const date = entry.session_date;
-    const base: DailyLoadData = {
-      date,
-      rpe: 0,
-      duration: 0,
-      sRPE: 0,
-    };
-    const existing: DailyLoadData = dataByDate.get(date) || base;
+    if (!playersByDate.has(date)) playersByDate.set(date, new Set());
+    playersByDate.get(date)!.add(entry.player_id);
 
-    existing.totalDistance = (existing.totalDistance || 0) + (entry.total_distance_m || 0);
-    existing.hsr = (existing.hsr || 0) + (entry.high_speed_distance_m || 0);
-    existing.sprintCount = (existing.sprintCount || 0) + (entry.sprint_count || 0);
-    existing.maxSpeed = Math.max(existing.maxSpeed || 0, entry.max_speed_ms || 0);
-    existing.accelerations = (existing.accelerations || 0) + (entry.accelerations || 0) + (entry.decelerations || 0);
-    existing.decelerations = (existing.decelerations || 0) + (entry.decelerations || 0);
-    existing.playerLoad = (existing.playerLoad || 0) + (entry.player_load || 0);
-    existing.relativeDistance = existing.totalDistance && existing.duration 
-      ? existing.totalDistance / existing.duration 
-      : undefined;
+    const existing = dataByDate.get(date) || {
+      totals: { date, rpe: 0, duration: 0, sRPE: 0 } as DailyLoadData,
+      playerCount: 0,
+    };
+
+    existing.totals.totalDistance = (existing.totals.totalDistance || 0) + (entry.total_distance_m || 0);
+    existing.totals.hsr = (existing.totals.hsr || 0) + (entry.high_speed_distance_m || 0);
+    existing.totals.sprintCount = (existing.totals.sprintCount || 0) + (entry.sprint_count || 0);
+    existing.totals.maxSpeed = Math.max(existing.totals.maxSpeed || 0, entry.max_speed_ms || 0);
+    existing.totals.accelerations = (existing.totals.accelerations || 0) + (entry.accelerations || 0) + (entry.decelerations || 0);
+    existing.totals.decelerations = (existing.totals.decelerations || 0) + (entry.decelerations || 0);
+    existing.totals.playerLoad = (existing.totals.playerLoad || 0) + (entry.player_load || 0);
+    existing.playerCount = playersByDate.get(date)!.size;
 
     dataByDate.set(date, existing);
   });
 
-  return Array.from(dataByDate.values()).sort((a, b) => 
-    new Date(a.date).getTime() - new Date(b.date).getTime()
-  );
+  // Average values by number of unique players per date
+  return Array.from(dataByDate.values()).map(({ totals, playerCount }) => {
+    const n = Math.max(playerCount, 1);
+    return {
+      date: totals.date,
+      rpe: Math.round((totals.rpe / n) * 100) / 100,
+      duration: Math.round((totals.duration / n) * 100) / 100,
+      sRPE: Math.round((totals.sRPE / n) * 100) / 100,
+      totalDistance: totals.totalDistance ? Math.round((totals.totalDistance / n) * 100) / 100 : undefined,
+      hsr: totals.hsr ? Math.round((totals.hsr / n) * 100) / 100 : undefined,
+      sprintCount: totals.sprintCount ? Math.round((totals.sprintCount / n) * 100) / 100 : undefined,
+      maxSpeed: totals.maxSpeed,
+      accelerations: totals.accelerations ? Math.round((totals.accelerations / n) * 100) / 100 : undefined,
+      decelerations: totals.decelerations ? Math.round((totals.decelerations / n) * 100) / 100 : undefined,
+      playerLoad: totals.playerLoad ? Math.round((totals.playerLoad / n) * 100) / 100 : undefined,
+      relativeDistance: totals.totalDistance && totals.duration 
+        ? Math.round((totals.totalDistance / n) / (totals.duration / n) * 100) / 100
+        : undefined,
+    };
+  }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 }
 
 /**
