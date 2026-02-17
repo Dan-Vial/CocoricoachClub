@@ -7472,6 +7472,7 @@ export type Database = {
         | "mental_coach"
         | "prepa_physique"
         | "administratif"
+        | "athlete"
       injury_severity: "légère" | "modérée" | "grave"
       injury_status: "active" | "recovering" | "healed"
       period_type: "préparation" | "compétition" | "récupération" | "trêve"
@@ -7611,6 +7612,7 @@ export const Constants = {
         "mental_coach",
         "prepa_physique",
         "administratif",
+        "athlete",
       ],
       injury_severity: ["légère", "modérée", "grave"],
       injury_status: ["active", "recovering", "healed"],

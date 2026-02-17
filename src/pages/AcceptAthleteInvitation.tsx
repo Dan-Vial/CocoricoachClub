@@ -150,7 +150,23 @@ export default function AcceptAthleteInvitation() {
         console.error("Error linking player to user:", playerError);
       }
 
-      // 3. Update invitation status
+      // 3. Add user as category_member with 'athlete' role
+      const { error: memberError } = await supabase
+        .from("category_members")
+        .insert({
+          category_id: invitation.category_id,
+          user_id: authData.user.id,
+          role: "athlete" as any,
+          invited_by: null,
+        })
+        .select()
+        .single();
+
+      if (memberError) {
+        console.error("Error adding athlete to category_members:", memberError);
+      }
+
+      // 4. Update invitation status
       const { error: invitationError } = await supabase
         .from("athlete_invitations")
         .update({
