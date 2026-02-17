@@ -805,6 +805,33 @@ export function SuperAdminClients() {
                         <Button
                           variant="ghost"
                           size="icon"
+                          title="Copier le lien d'invitation"
+                          onClick={async () => {
+                            if (!client.email) {
+                              toast.error("Pas d'email pour ce client");
+                              return;
+                            }
+                            const { data: inv } = await supabase
+                              .from("ambassador_invitations")
+                              .select("token")
+                              .eq("email", client.email)
+                              .order("created_at", { ascending: false })
+                              .limit(1)
+                              .maybeSingle();
+                            if (inv?.token) {
+                              const link = `${window.location.origin}/ambassador-invitation?token=${inv.token}`;
+                              await navigator.clipboard.writeText(link);
+                              toast.success("Lien d'invitation copié !");
+                            } else {
+                              toast.error("Aucune invitation trouvée pour ce client");
+                            }
+                          }}
+                        >
+                          <Link className="h-4 w-4 text-muted-foreground" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           title="Options des catégories"
                           onClick={() => setCategoryOptionsClient(client)}
                         >
