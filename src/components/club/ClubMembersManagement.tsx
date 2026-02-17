@@ -131,7 +131,7 @@ export function ClubMembersManagement({ clubId, categories, canManage }: ClubMem
   const updateMember = useMutation({
     mutationFn: async ({ memberId, role, assignedCategories }: { 
       memberId: string; 
-      role: "admin" | "coach" | "viewer" | "physio" | "doctor" | "mental_coach";
+      role: "admin" | "coach" | "viewer" | "physio" | "doctor" | "mental_coach" | "prepa_physique" | "administratif";
       assignedCategories: string[] | null;
     }) => {
       const { error } = await supabase
@@ -166,7 +166,7 @@ export function ClubMembersManagement({ clubId, categories, canManage }: ClubMem
     
     updateMember.mutate({
       memberId: editingMember.id,
-      role: editingMember.role as "admin" | "coach" | "viewer" | "physio" | "doctor" | "mental_coach",
+      role: editingMember.role as "admin" | "coach" | "viewer" | "physio" | "doctor" | "mental_coach" | "prepa_physique" | "administratif",
       assignedCategories: allCategories ? null : selectedCategories,
     });
   };
@@ -179,6 +179,8 @@ export function ClubMembersManagement({ clubId, categories, canManage }: ClubMem
       physio: { label: "Kiné", variant: "secondary" },
       doctor: { label: "Médecin", variant: "secondary" },
       mental_coach: { label: "Mental", variant: "secondary" },
+      prepa_physique: { label: "Prépa Physique", variant: "secondary" },
+      administratif: { label: "Administratif", variant: "secondary" },
     };
     const config = variants[role] || variants.viewer;
     return <Badge variant={config.variant}>{config.label}</Badge>;
@@ -352,6 +354,8 @@ export function ClubMembersManagement({ clubId, categories, canManage }: ClubMem
                     <SelectItem value="physio">Kinésithérapeute</SelectItem>
                     <SelectItem value="doctor">Médecin</SelectItem>
                     <SelectItem value="mental_coach">Préparateur Mental</SelectItem>
+                    <SelectItem value="prepa_physique">Préparateur Physique</SelectItem>
+                    <SelectItem value="administratif">Administratif</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

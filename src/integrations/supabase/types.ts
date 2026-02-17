@@ -7467,6 +7467,8 @@ export type Database = {
         | "physio"
         | "doctor"
         | "mental_coach"
+        | "prepa_physique"
+        | "administratif"
       injury_severity: "légère" | "modérée" | "grave"
       injury_status: "active" | "recovering" | "healed"
       period_type: "préparation" | "compétition" | "récupération" | "trêve"
@@ -7604,6 +7606,8 @@ export const Constants = {
         "physio",
         "doctor",
         "mental_coach",
+        "prepa_physique",
+        "administratif",
       ],
       injury_severity: ["légère", "modérée", "grave"],
       injury_status: ["active", "recovering", "healed"],

@@ -14,7 +14,7 @@ import { Copy, Check, Link } from "lucide-react";
 
 const invitationSchema = z.object({
   email: z.string().email("Email invalide"),
-  role: z.enum(["admin", "coach", "viewer", "physio", "doctor", "mental_coach"]),
+  role: z.enum(["admin", "coach", "viewer", "physio", "doctor", "mental_coach", "prepa_physique", "administratif"]),
 });
 
 type InvitationForm = z.infer<typeof invitationSchema>;
@@ -238,6 +238,18 @@ export function InviteMemberDialog({ open, onOpenChange, clubId }: InviteMemberD
                     <div>
                       <div className="font-medium">Préparateur Mental</div>
                       <div className="text-xs text-muted-foreground">Accès wellness et suivi psychologique</div>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="prepa_physique">
+                    <div>
+                      <div className="font-medium">Préparateur Physique</div>
+                      <div className="text-xs text-muted-foreground">Accès programmes, séances et données physiques</div>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="administratif">
+                    <div>
+                      <div className="font-medium">Administratif</div>
+                      <div className="text-xs text-muted-foreground">Accès documents, logistique et gestion administrative</div>
                     </div>
                   </SelectItem>
                 </SelectContent>

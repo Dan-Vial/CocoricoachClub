@@ -68,6 +68,8 @@ export function ClubInvitationsSection({ clubId }: ClubInvitationsSectionProps) 
       physio: { label: "Kiné", variant: "secondary" },
       doctor: { label: "Médecin", variant: "secondary" },
       mental_coach: { label: "Mental", variant: "secondary" },
+      prepa_physique: { label: "Prépa Physique", variant: "secondary" },
+      administratif: { label: "Administratif", variant: "secondary" },
     };
     const config = variants[role] || variants.viewer;
     return <Badge variant={config.variant}>{config.label}</Badge>;
