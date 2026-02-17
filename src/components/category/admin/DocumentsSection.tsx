@@ -35,6 +35,8 @@ interface AdminDocument {
 const DOCUMENT_TYPES = [
   { value: "license", label: "Licence sportive" },
   { value: "medical_certificate", label: "Certificat médical" },
+  { value: "medical_return_training", label: "Certificat de reprise à l'entraînement" },
+  { value: "medical_return_competition", label: "Certificat de reprise à la compétition" },
   { value: "identity", label: "Pièce d'identité" },
   { value: "contract", label: "Contrat" },
   { value: "insurance", label: "Assurance" },
