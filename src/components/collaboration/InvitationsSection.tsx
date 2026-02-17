@@ -32,7 +32,7 @@ export function InvitationsSection({ clubId, canManage }: InvitationsSectionProp
         .from("club_invitations")
         .select("*")
         .eq("club_id", clubId)
-        .eq("status", "pending")
+        .in("status", ["pending", "accepted"])
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as any;
@@ -101,10 +101,20 @@ export function InvitationsSection({ clubId, canManage }: InvitationsSectionProp
     const variants: Record<string, { label: string; variant: "default" | "secondary" | "outline" }> = {
       admin: { label: "Admin", variant: "default" },
       coach: { label: "Coach", variant: "secondary" },
+      prepa_physique: { label: "Prépa. Physique", variant: "secondary" },
+      doctor: { label: "Médecin", variant: "secondary" },
+      administratif: { label: "Administratif", variant: "secondary" },
       viewer: { label: "Viewer", variant: "outline" },
     };
     const config = variants[role] || variants.viewer;
     return <Badge variant={config.variant}>{config.label}</Badge>;
+  };
+
+  const getStatusBadge = (status: string) => {
+    if (status === "accepted") {
+      return <Badge variant="outline" className="text-blue-600 border-blue-600">Acceptée</Badge>;
+    }
+    return <Badge variant="outline" className="text-green-600 border-green-600">En attente</Badge>;
   };
 
   if (!canManage && (!invitations || invitations.length === 0)) {
@@ -114,7 +124,7 @@ export function InvitationsSection({ clubId, canManage }: InvitationsSectionProp
   return (
     <Card className="bg-gradient-card shadow-md">
       <CardHeader>
-        <CardTitle>Invitations en Attente</CardTitle>
+        <CardTitle>Invitations</CardTitle>
       </CardHeader>
       <CardContent>
         {invitations && invitations.length > 0 ? (
@@ -137,9 +147,7 @@ export function InvitationsSection({ clubId, canManage }: InvitationsSectionProp
                     {format(new Date(invitation.created_at), "dd MMM yyyy", { locale: fr })}
                   </TableCell>
                   <TableCell>
-                    <Badge variant="outline" className="text-green-600 border-green-600">
-                      N'expire jamais
-                    </Badge>
+                    {getStatusBadge(invitation.status)}
                   </TableCell>
                   {canManage && (
                     <TableCell>
@@ -147,18 +155,22 @@ export function InvitationsSection({ clubId, canManage }: InvitationsSectionProp
                         <Button
                           variant="ghost"
                           size="icon"
+                          title="Copier le lien d'invitation"
                           onClick={() => copyInvitationLink(invitation)}
                         >
                           <Copy className="h-4 w-4" />
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => deleteInvitation.mutate(invitation.id)}
-                          disabled={deleteInvitation.isPending}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
+                        {invitation.status === "pending" && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            title="Annuler l'invitation"
+                            onClick={() => deleteInvitation.mutate(invitation.id)}
+                            disabled={deleteInvitation.isPending}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   )}
