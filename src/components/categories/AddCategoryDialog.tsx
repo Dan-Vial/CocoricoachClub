@@ -189,6 +189,8 @@ export function AddCategoryDialog({
       physio: "Kiné",
       doctor: "Médecin",
       mental_coach: "Mental",
+      prepa_physique: "Prépa Physique",
+      administratif: "Administratif",
     };
     return labels[role] || role;
   };

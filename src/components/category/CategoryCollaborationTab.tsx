@@ -34,10 +34,11 @@ interface CategoryCollaborationTabProps {
 const AVAILABLE_ROLES = [
   { value: "admin", label: "Admin", description: "Accès complet à la gestion", variant: "default" as const },
   { value: "coach", label: "Coach", description: "Gestion des entraînements et matchs", variant: "secondary" as const },
-  { value: "prepa", label: "Préparateur Physique", description: "Suivi physique et charge", variant: "secondary" as const },
+  { value: "prepa_physique", label: "Préparateur Physique", description: "Suivi physique et charge", variant: "secondary" as const },
   { value: "doctor", label: "Médecin", description: "Accès médical complet", variant: "secondary" as const },
   { value: "physio", label: "Kinésithérapeute", description: "Blessures et récupération", variant: "secondary" as const },
   { value: "mental_coach", label: "Préparateur Mental", description: "Wellness et suivi psychologique", variant: "secondary" as const },
+  { value: "administratif", label: "Administratif", description: "Documents et gestion administrative", variant: "secondary" as const },
   { value: "viewer", label: "Viewer", description: "Consultation uniquement", variant: "outline" as const },
 ];
 
