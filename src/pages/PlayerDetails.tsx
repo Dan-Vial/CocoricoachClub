@@ -86,7 +86,7 @@ function PlayerDetailsContent() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("players")
-        .select("*, categories(id, name, club_id, rugby_type)")
+        .select("*, categories(id, name, club_id, rugby_type, academy_enabled, gps_enabled, video_enabled)")
         .eq("id", playerId!)
         .single();
       if (error) throw error;
@@ -469,7 +469,9 @@ function PlayerDetailsContent() {
               <PlayerDetailTab value="calendar" label="Calendrier" icon={CalendarDays} color="hsl(35 90% 55%)" />
               <PlayerDetailTab value="wellness" label="Wellness" icon={Heart} color="hsl(160 65% 45%)" />
               <PlayerDetailTab value="nutrition" label="Nutrition" icon={Utensils} color="hsl(45 95% 50%)" />
-              <PlayerDetailTab value="academy" label="Académie" icon={GraduationCap} color="hsl(200 85% 50%)" />
+              {(player?.categories as any)?.academy_enabled && (
+                <PlayerDetailTab value="academy" label="Académie" icon={GraduationCap} color="hsl(200 85% 50%)" />
+              )}
               <PlayerDetailTab value="injuries" label="Blessures" icon={Bandage} color="hsl(10 80% 55%)" />
             </ColoredNavTabsList>
             <ScrollBar orientation="horizontal" />
