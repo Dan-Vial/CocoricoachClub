@@ -350,11 +350,8 @@ export function ClubMembersManagement({ clubId, categories, canManage }: ClubMem
                   <SelectContent>
                     <SelectItem value="admin">Admin - Accès complet</SelectItem>
                     <SelectItem value="coach">Coach - Données sportives</SelectItem>
-                    <SelectItem value="viewer">Viewer - Lecture seule</SelectItem>
-                    <SelectItem value="physio">Kinésithérapeute</SelectItem>
-                    <SelectItem value="doctor">Médecin</SelectItem>
-                    <SelectItem value="mental_coach">Préparateur Mental</SelectItem>
                     <SelectItem value="prepa_physique">Préparateur Physique</SelectItem>
+                    <SelectItem value="doctor">Médecin</SelectItem>
                     <SelectItem value="administratif">Administratif</SelectItem>
                   </SelectContent>
                 </Select>

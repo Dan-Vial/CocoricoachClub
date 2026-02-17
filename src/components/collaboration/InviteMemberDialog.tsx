@@ -9,12 +9,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { Copy, Check, Link } from "lucide-react";
+import { Copy, Check } from "lucide-react";
 
 const invitationSchema = z.object({
   email: z.string().email("Email invalide"),
-  role: z.enum(["admin", "coach", "viewer", "physio", "doctor", "mental_coach", "prepa_physique", "administratif"]),
+  role: z.enum(["admin", "coach", "prepa_physique", "doctor", "administratif"]),
 });
 
 type InvitationForm = z.infer<typeof invitationSchema>;
@@ -30,6 +31,8 @@ export function InviteMemberDialog({ open, onOpenChange, clubId }: InviteMemberD
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [generatedLink, setGeneratedLink] = useState<string | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
+  const [allCategories, setAllCategories] = useState(true);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
   const form = useForm<InvitationForm>({
     resolver: zodResolver(invitationSchema),
@@ -39,7 +42,6 @@ export function InviteMemberDialog({ open, onOpenChange, clubId }: InviteMemberD
     },
   });
 
-  // Fetch club name for the email
   const { data: club } = useQuery({
     queryKey: ["club-for-invitation", clubId],
     queryFn: async () => {
@@ -54,7 +56,20 @@ export function InviteMemberDialog({ open, onOpenChange, clubId }: InviteMemberD
     enabled: open,
   });
 
-  // Fetch current user profile for inviter name
+  const { data: categories = [] } = useQuery({
+    queryKey: ["club-categories-for-invitation", clubId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("categories")
+        .select("id, name")
+        .eq("club_id", clubId)
+        .order("name");
+      if (error) throw error;
+      return data;
+    },
+    enabled: open,
+  });
+
   const { data: profile } = useQuery({
     queryKey: ["current-user-profile"],
     queryFn: async () => {
@@ -84,14 +99,26 @@ export function InviteMemberDialog({ open, onOpenChange, clubId }: InviteMemberD
   const handleClose = () => {
     setGeneratedLink(null);
     setLinkCopied(false);
+    setAllCategories(true);
+    setSelectedCategories([]);
     form.reset();
     onOpenChange(false);
+  };
+
+  const toggleCategory = (categoryId: string) => {
+    setSelectedCategories(prev =>
+      prev.includes(categoryId)
+        ? prev.filter(id => id !== categoryId)
+        : [...prev, categoryId]
+    );
   };
 
   const mutation = useMutation({
     mutationFn: async (data: InvitationForm) => {
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) throw new Error("Non authentifié");
+
+      const assignedCategories = allCategories ? null : selectedCategories;
 
       const { data: invitation, error } = await (supabase as any)
         .from("club_invitations")
@@ -100,6 +127,7 @@ export function InviteMemberDialog({ open, onOpenChange, clubId }: InviteMemberD
           email: data.email,
           role: data.role,
           invited_by: user.user.id,
+          assigned_categories: assignedCategories,
         })
         .select("token")
         .single();
@@ -147,6 +175,10 @@ export function InviteMemberDialog({ open, onOpenChange, clubId }: InviteMemberD
   });
 
   const onSubmit = (data: InvitationForm) => {
+    if (!allCategories && selectedCategories.length === 0) {
+      toast.error("Veuillez sélectionner au moins une catégorie");
+      return;
+    }
     setIsSubmitting(true);
     mutation.mutate(data);
   };
@@ -204,46 +236,28 @@ export function InviteMemberDialog({ open, onOpenChange, clubId }: InviteMemberD
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="coach">
-                    <div>
-                      <div className="font-medium">Coach</div>
-                      <div className="text-xs text-muted-foreground">Accès aux données d'entraînement et joueurs</div>
-                    </div>
-                  </SelectItem>
                   <SelectItem value="admin">
                     <div>
                       <div className="font-medium">Admin</div>
                       <div className="text-xs text-muted-foreground">Accès complet + gestion des membres</div>
                     </div>
                   </SelectItem>
-                  <SelectItem value="viewer">
+                  <SelectItem value="coach">
                     <div>
-                      <div className="font-medium">Viewer</div>
-                      <div className="text-xs text-muted-foreground">Consultation uniquement (lecture seule)</div>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="physio">
-                    <div>
-                      <div className="font-medium">Kinésithérapeute</div>
-                      <div className="text-xs text-muted-foreground">Accès blessures, wellness et récupération</div>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="doctor">
-                    <div>
-                      <div className="font-medium">Médecin</div>
-                      <div className="text-xs text-muted-foreground">Accès médical complet et protocoles</div>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="mental_coach">
-                    <div>
-                      <div className="font-medium">Préparateur Mental</div>
-                      <div className="text-xs text-muted-foreground">Accès wellness et suivi psychologique</div>
+                      <div className="font-medium">Coach</div>
+                      <div className="text-xs text-muted-foreground">Accès aux données d'entraînement et joueurs</div>
                     </div>
                   </SelectItem>
                   <SelectItem value="prepa_physique">
                     <div>
                       <div className="font-medium">Préparateur Physique</div>
                       <div className="text-xs text-muted-foreground">Accès programmes, séances et données physiques</div>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="doctor">
+                    <div>
+                      <div className="font-medium">Médecin</div>
+                      <div className="text-xs text-muted-foreground">Accès médical complet et protocoles</div>
                     </div>
                   </SelectItem>
                   <SelectItem value="administratif">
@@ -254,6 +268,43 @@ export function InviteMemberDialog({ open, onOpenChange, clubId }: InviteMemberD
                   </SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+
+            <div className="space-y-3">
+              <Label>Accès aux catégories</Label>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="all-categories"
+                  checked={allCategories}
+                  onCheckedChange={(checked) => {
+                    setAllCategories(!!checked);
+                    if (checked) setSelectedCategories([]);
+                  }}
+                />
+                <label htmlFor="all-categories" className="text-sm font-medium cursor-pointer">
+                  Toutes les catégories
+                </label>
+              </div>
+              {!allCategories && (
+                <div className="border rounded-lg p-3 space-y-2 max-h-40 overflow-y-auto">
+                  {categories.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">Aucune catégorie disponible</p>
+                  ) : (
+                    categories.map((cat) => (
+                      <div key={cat.id} className="flex items-center gap-2">
+                        <Checkbox
+                          id={`cat-${cat.id}`}
+                          checked={selectedCategories.includes(cat.id)}
+                          onCheckedChange={() => toggleCategory(cat.id)}
+                        />
+                        <label htmlFor={`cat-${cat.id}`} className="text-sm cursor-pointer">
+                          {cat.name}
+                        </label>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="bg-muted/50 p-3 rounded-lg text-sm space-y-2">

@@ -961,6 +961,7 @@ export type Database = {
       }
       club_invitations: {
         Row: {
+          assigned_categories: string[] | null
           club_id: string
           created_at: string
           email: string
@@ -972,6 +973,7 @@ export type Database = {
           token: string
         }
         Insert: {
+          assigned_categories?: string[] | null
           club_id: string
           created_at?: string
           email: string
@@ -983,6 +985,7 @@ export type Database = {
           token?: string
         }
         Update: {
+          assigned_categories?: string[] | null
           club_id?: string
           created_at?: string
           email?: string
