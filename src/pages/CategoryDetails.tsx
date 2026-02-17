@@ -14,6 +14,7 @@ import { GlobalPlayerSearch } from "@/components/search/GlobalPlayerSearch";
 import { EditableCategoryName } from "@/components/category/EditableCategoryName";
 import { EditableRugbyType } from "@/components/category/EditableRugbyType";
 import { ViewerModeProvider, useViewerModeContext } from "@/contexts/ViewerModeContext";
+import { useMenuPermissions } from "@/hooks/useMenuPermissions";
 import { usePublicAccess } from "@/contexts/PublicAccessContext";
 import { PublicDataProvider, usePublicDataContext } from "@/contexts/PublicDataContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -164,6 +165,9 @@ function CategoryDetailsContent() {
   const showGpsTab = isGpsSportType(category?.rugby_type) && (category?.gps_enabled === true);
   const showVideoTab = hasVideoAnalysis(category?.rugby_type) && (category?.video_enabled === true);
 
+  // Menu permissions based on role_menu_permissions matrix
+  const { canSeeMenu } = useMenuPermissions(category?.clubs?.id, categoryId);
+
   // In public mode, use the context values as fallback
   const displayCategoryName = category?.name || publicCategoryName || "Catégorie";
   const displayClubName = category?.clubs?.name || publicClubName || "Club";
@@ -279,7 +283,7 @@ function CategoryDetailsContent() {
                label="Centre de décision"
                shortLabel="Décision"
               />
-              {!isViewer && (
+              {canSeeMenu("administratif") && (
                 <ColoredTabTrigger
                   value="admin" 
                   colorKey="admin"
@@ -288,7 +292,7 @@ function CategoryDetailsContent() {
                   shortLabel="Admin"
                 />
               )}
-              {!isViewer && (
+              {canSeeMenu("academique") && (
                 <ColoredTabTrigger
                   value="academic" 
                   colorKey="effectif"
@@ -297,49 +301,59 @@ function CategoryDetailsContent() {
                   shortLabel="Acad"
                 />
               )}
-              <ColoredTabTrigger 
-                value="effectif" 
-                colorKey="effectif"
-                icon={<Users className="h-6 w-6 sm:h-7 sm:w-7" />}
-                label="Effectif"
-                shortLabel="Équipe"
-              />
-              <ColoredTabTrigger 
-                value="planification" 
-                colorKey="planification"
-                icon={<Calendar className="h-6 w-6 sm:h-7 sm:w-7" />}
-                label="Planification"
-                shortLabel="Planning"
-              />
-              <ColoredTabTrigger 
-                value="programmation" 
-                colorKey="programmation"
-                icon={<FileCode className="h-6 w-6 sm:h-7 sm:w-7" />}
-                label="Programmation"
-                shortLabel="Prog"
-                disabled={isViewer}
-              />
-              <ColoredTabTrigger 
-                value="performance" 
-                colorKey="performance"
-                icon={<Zap className="h-6 w-6 sm:h-7 sm:w-7" />}
-                label="Entrainement"
-                shortLabel="Entraîn"
-                disabled={isViewer}
-              />
-              <ColoredTabTrigger 
-                value="sante" 
-                colorKey="sante"
-                icon={<Heart className="h-6 w-6 sm:h-7 sm:w-7" />}
-                label="Santé"
-              />
-              <ColoredTabTrigger 
-                value="competition" 
-                colorKey="competition"
-                icon={<Trophy className="h-6 w-6 sm:h-7 sm:w-7" />}
-                label="Compétition"
-                shortLabel="Compét"
-              />
+              {canSeeMenu("effectif") && (
+                <ColoredTabTrigger 
+                  value="effectif" 
+                  colorKey="effectif"
+                  icon={<Users className="h-6 w-6 sm:h-7 sm:w-7" />}
+                  label="Effectif"
+                  shortLabel="Équipe"
+                />
+              )}
+              {canSeeMenu("planification") && (
+                <ColoredTabTrigger 
+                  value="planification" 
+                  colorKey="planification"
+                  icon={<Calendar className="h-6 w-6 sm:h-7 sm:w-7" />}
+                  label="Planification"
+                  shortLabel="Planning"
+                />
+              )}
+              {canSeeMenu("programmation") && (
+                <ColoredTabTrigger 
+                  value="programmation" 
+                  colorKey="programmation"
+                  icon={<FileCode className="h-6 w-6 sm:h-7 sm:w-7" />}
+                  label="Programmation"
+                  shortLabel="Prog"
+                />
+              )}
+              {canSeeMenu("performance") && (
+                <ColoredTabTrigger 
+                  value="performance" 
+                  colorKey="performance"
+                  icon={<Zap className="h-6 w-6 sm:h-7 sm:w-7" />}
+                  label="Entrainement"
+                  shortLabel="Entraîn"
+                />
+              )}
+              {canSeeMenu("sante") && (
+                <ColoredTabTrigger 
+                  value="sante" 
+                  colorKey="sante"
+                  icon={<Heart className="h-6 w-6 sm:h-7 sm:w-7" />}
+                  label="Santé"
+                />
+              )}
+              {canSeeMenu("competition") && (
+                <ColoredTabTrigger 
+                  value="competition" 
+                  colorKey="competition"
+                  icon={<Trophy className="h-6 w-6 sm:h-7 sm:w-7" />}
+                  label="Compétition"
+                  shortLabel="Compét"
+                />
+              )}
               {showGpsTab && (
                 <ColoredTabTrigger 
                   value="gps" 
@@ -357,7 +371,7 @@ function CategoryDetailsContent() {
                   shortLabel="Vidéo"
                 />
               )}
-              {!isViewer && (
+              {canSeeMenu("messagerie") && (
                 <ColoredTabTrigger 
                   value="communication" 
                   colorKey="communication"
@@ -376,7 +390,7 @@ function CategoryDetailsContent() {
                   shortLabel="Acad"
                 />
               )}
-              {!isViewer && (
+              {canSeeMenu("parametres") && (
                 <ColoredTabTrigger 
                   value="settings" 
                   colorKey="settings"
@@ -392,46 +406,58 @@ function CategoryDetailsContent() {
             <OverviewTab categoryId={categoryId!} categoryName={displayCategoryName} />
           </TabsContent>
 
-          {!isViewer && (
+          {canSeeMenu("administratif") && (
             <TabsContent value="admin" className="space-y-4">
               <AdminTab categoryId={categoryId!} />
             </TabsContent>
           )}
 
-          {!isViewer && (
+          {canSeeMenu("academique") && (
             <TabsContent value="academic" className="space-y-4">
               <AcademicTab categoryId={categoryId!} />
             </TabsContent>
           )}
 
-          <TabsContent value="effectif" className="space-y-4">
-            <EffectifTab categoryId={categoryId!} />
-          </TabsContent>
+          {canSeeMenu("effectif") && (
+            <TabsContent value="effectif" className="space-y-4">
+              <EffectifTab categoryId={categoryId!} />
+            </TabsContent>
+          )}
 
-          <TabsContent value="planification" className="space-y-4">
-            <PlanificationTab categoryId={categoryId!} />
-          </TabsContent>
+          {canSeeMenu("planification") && (
+            <TabsContent value="planification" className="space-y-4">
+              <PlanificationTab categoryId={categoryId!} />
+            </TabsContent>
+          )}
 
-          <TabsContent value="programmation" className="space-y-4">
-            <ProgrammationTab categoryId={categoryId!} />
-          </TabsContent>
+          {canSeeMenu("programmation") && (
+            <TabsContent value="programmation" className="space-y-4">
+              <ProgrammationTab categoryId={categoryId!} />
+            </TabsContent>
+          )}
 
-          <TabsContent value="performance" className="space-y-4">
-            <PerformanceTab categoryId={categoryId!} />
-          </TabsContent>
+          {canSeeMenu("performance") && (
+            <TabsContent value="performance" className="space-y-4">
+              <PerformanceTab categoryId={categoryId!} />
+            </TabsContent>
+          )}
 
-          <TabsContent value="sante" className="space-y-4">
-            <SanteTab categoryId={categoryId!} />
-          </TabsContent>
+          {canSeeMenu("sante") && (
+            <TabsContent value="sante" className="space-y-4">
+              <SanteTab categoryId={categoryId!} />
+            </TabsContent>
+          )}
 
-          <TabsContent value="competition" className="space-y-4">
-            <CompetitionTab 
-              categoryId={categoryId!} 
-              isRugby7={isRugby7} 
-              isNationalTeam={isNationalTeam}
-              sportType={category?.rugby_type}
-            />
-          </TabsContent>
+          {canSeeMenu("competition") && (
+            <TabsContent value="competition" className="space-y-4">
+              <CompetitionTab 
+                categoryId={categoryId!} 
+                isRugby7={isRugby7} 
+                isNationalTeam={isNationalTeam}
+                sportType={category?.rugby_type}
+              />
+            </TabsContent>
+          )}
 
           {/* GPS Tab - Only for Football and Rugby + Client option enabled */}
           {showGpsTab && (
@@ -447,7 +473,7 @@ function CategoryDetailsContent() {
             </TabsContent>
           )}
 
-          {!isViewer && (
+          {canSeeMenu("messagerie") && (
             <TabsContent value="communication" className="space-y-4">
               <CommunicationTab 
                 categoryId={categoryId!} 
@@ -462,7 +488,7 @@ function CategoryDetailsContent() {
             </TabsContent>
           )}
 
-          {!isViewer && (
+          {canSeeMenu("parametres") && (
             <TabsContent value="settings" className="space-y-4">
               <SettingsTab categoryId={categoryId!} />
             </TabsContent>
