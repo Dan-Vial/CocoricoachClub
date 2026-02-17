@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/components/ui/sonner";
-import { Shield, Users, UserCog, Dumbbell, Stethoscope, User, Crown } from "lucide-react";
+import { Shield, Users, UserCog, Dumbbell, Stethoscope, User, Crown, ClipboardList } from "lucide-react";
 
 interface RoleMenuPermission {
   id: string;
@@ -15,6 +15,7 @@ interface RoleMenuPermission {
   staff_coach_visible: boolean;
   staff_prepa_visible: boolean;
   staff_doctor_visible: boolean;
+  staff_administratif_visible: boolean;
 }
 
 const roleColumns = [
@@ -24,6 +25,7 @@ const roleColumns = [
   { key: "staff_coach_visible", label: "Coach", icon: UserCog, alwaysChecked: false },
   { key: "staff_prepa_visible", label: "Prépa", icon: Dumbbell, alwaysChecked: false },
   { key: "staff_doctor_visible", label: "Médecin", icon: Stethoscope, alwaysChecked: false },
+  { key: "staff_administratif_visible", label: "Administratif", icon: ClipboardList, alwaysChecked: false },
 ] as const;
 
 export function RoleMenuPermissions() {

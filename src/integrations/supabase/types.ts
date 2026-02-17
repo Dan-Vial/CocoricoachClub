@@ -5598,6 +5598,7 @@ export type Database = {
           menu_label: string
           player_visible: boolean
           staff_admin_visible: boolean
+          staff_administratif_visible: boolean
           staff_coach_visible: boolean
           staff_doctor_visible: boolean
           staff_prepa_visible: boolean
@@ -5610,6 +5611,7 @@ export type Database = {
           menu_label: string
           player_visible?: boolean
           staff_admin_visible?: boolean
+          staff_administratif_visible?: boolean
           staff_coach_visible?: boolean
           staff_doctor_visible?: boolean
           staff_prepa_visible?: boolean
@@ -5622,6 +5624,7 @@ export type Database = {
           menu_label?: string
           player_visible?: boolean
           staff_admin_visible?: boolean
+          staff_administratif_visible?: boolean
           staff_coach_visible?: boolean
           staff_doctor_visible?: boolean
           staff_prepa_visible?: boolean
