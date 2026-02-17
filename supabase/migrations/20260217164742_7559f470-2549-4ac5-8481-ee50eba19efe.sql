@@ -1,0 +1,1 @@
+ALTER TABLE public.clients ADD COLUMN academy_enabled BOOLEAN DEFAULT false;

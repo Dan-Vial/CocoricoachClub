@@ -862,6 +862,7 @@ export type Database = {
       }
       clients: {
         Row: {
+          academy_enabled: boolean | null
           address: string | null
           created_at: string
           email: string | null
@@ -881,6 +882,7 @@ export type Database = {
           video_enabled: boolean | null
         }
         Insert: {
+          academy_enabled?: boolean | null
           address?: string | null
           created_at?: string
           email?: string | null
@@ -900,6 +902,7 @@ export type Database = {
           video_enabled?: boolean | null
         }
         Update: {
+          academy_enabled?: boolean | null
           address?: string | null
           created_at?: string
           email?: string | null

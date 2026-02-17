@@ -12,7 +12,7 @@
  import { Textarea } from "@/components/ui/textarea";
  import { Checkbox } from "@/components/ui/checkbox";
  import { toast } from "@/components/ui/sonner";
-import { Plus, Edit, Pause, Play, Trash2, Building2, Mail, Video, MapPin, FolderOpen, User, Gift, DollarSign, Copy, Link, Check } from "lucide-react";
+import { Plus, Edit, Pause, Play, Trash2, Building2, Mail, Video, MapPin, FolderOpen, User, Gift, DollarSign, Copy, Link, Check, GraduationCap } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { InviteClientDialog } from "./InviteClientDialog";
@@ -34,8 +34,9 @@ import { MainSportCategory } from "@/lib/constants/sportTypes";
    max_athletes: number;
    notes: string | null;
    created_at: string;
-   video_enabled: boolean;
-   gps_data_enabled: boolean;
+    video_enabled: boolean;
+    gps_data_enabled: boolean;
+    academy_enabled: boolean;
  }
  
 export function SuperAdminClients() {
@@ -55,8 +56,9 @@ export function SuperAdminClients() {
       max_staff_users: 5,
       max_athletes: 50,
       notes: "",
-      video_enabled: false,
-      gps_data_enabled: false,
+       video_enabled: false,
+       gps_data_enabled: false,
+       academy_enabled: false,
     });
     const [clubName, setClubName] = useState("");
     const [clubSport, setClubSport] = useState<MainSportCategory>("rugby");
@@ -184,8 +186,9 @@ export function SuperAdminClients() {
             max_staff_users: data.max_staff_users,
             max_athletes: data.max_athletes,
             notes: data.notes || null,
-            video_enabled: data.video_enabled,
-            gps_data_enabled: data.gps_data_enabled,
+             video_enabled: data.video_enabled,
+             gps_data_enabled: data.gps_data_enabled,
+             academy_enabled: data.academy_enabled,
           })
           .select("id")
           .single();
@@ -321,8 +324,9 @@ export function SuperAdminClients() {
            max_staff_users: data.max_staff_users,
            max_athletes: data.max_athletes,
            notes: data.notes || null,
-           video_enabled: data.video_enabled,
-           gps_data_enabled: data.gps_data_enabled,
+            video_enabled: data.video_enabled,
+            gps_data_enabled: data.gps_data_enabled,
+            academy_enabled: data.academy_enabled,
          })
          .eq("id", id);
        if (error) throw error;
@@ -395,8 +399,9 @@ export function SuperAdminClients() {
         max_staff_users: 5,
         max_athletes: 50,
         notes: "",
-        video_enabled: false,
-        gps_data_enabled: false,
+         video_enabled: false,
+         gps_data_enabled: false,
+         academy_enabled: false,
       });
       setClubName("");
       setClubSport("rugby");
@@ -429,8 +434,9 @@ export function SuperAdminClients() {
        max_staff_users: client.max_staff_users,
        max_athletes: client.max_athletes,
        notes: client.notes || "",
-       video_enabled: client.video_enabled || false,
-       gps_data_enabled: client.gps_data_enabled || false,
+        video_enabled: client.video_enabled || false,
+        gps_data_enabled: client.gps_data_enabled || false,
+        academy_enabled: (client as any).academy_enabled || false,
      });
    };
  
@@ -552,38 +558,48 @@ export function SuperAdminClients() {
 
        {/* Options section */}
        <div className="space-y-3 p-4 rounded-lg border bg-muted/30">
-         <Label className="text-base font-semibold">Options (Football & Rugby uniquement)</Label>
-         <div className="flex flex-col gap-3">
-           <div className="flex items-center space-x-3">
-             <Checkbox
-               id="video_enabled"
-               checked={formData.video_enabled}
-               onCheckedChange={(checked) => setFormData({ ...formData, video_enabled: checked === true })}
-             />
-             <div className="flex items-center gap-2">
-               <Video className="h-4 w-4 text-muted-foreground" />
-               <label htmlFor="video_enabled" className="text-sm font-medium cursor-pointer">
-                 Analyse Vidéo
-               </label>
-             </div>
-           </div>
-           <div className="flex items-center space-x-3">
-             <Checkbox
-               id="gps_data_enabled"
-               checked={formData.gps_data_enabled}
-               onCheckedChange={(checked) => setFormData({ ...formData, gps_data_enabled: checked === true })}
-             />
-             <div className="flex items-center gap-2">
-               <MapPin className="h-4 w-4 text-muted-foreground" />
-               <label htmlFor="gps_data_enabled" className="text-sm font-medium cursor-pointer">
-                 Data GPS
-               </label>
-             </div>
-           </div>
-         </div>
-         <p className="text-xs text-muted-foreground">
-           Ces options n'apparaîtront que pour les catégories Football et Rugby
-         </p>
+          <Label className="text-base font-semibold">Options</Label>
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center space-x-3">
+              <Checkbox
+                id="video_enabled"
+                checked={formData.video_enabled}
+                onCheckedChange={(checked) => setFormData({ ...formData, video_enabled: checked === true })}
+              />
+              <div className="flex items-center gap-2">
+                <Video className="h-4 w-4 text-muted-foreground" />
+                <label htmlFor="video_enabled" className="text-sm font-medium cursor-pointer">
+                  Analyse Vidéo
+                </label>
+              </div>
+            </div>
+            <div className="flex items-center space-x-3">
+              <Checkbox
+                id="gps_data_enabled"
+                checked={formData.gps_data_enabled}
+                onCheckedChange={(checked) => setFormData({ ...formData, gps_data_enabled: checked === true })}
+              />
+              <div className="flex items-center gap-2">
+                <MapPin className="h-4 w-4 text-muted-foreground" />
+                <label htmlFor="gps_data_enabled" className="text-sm font-medium cursor-pointer">
+                  Data GPS
+                </label>
+              </div>
+            </div>
+            <div className="flex items-center space-x-3">
+              <Checkbox
+                id="academy_enabled"
+                checked={formData.academy_enabled}
+                onCheckedChange={(checked) => setFormData({ ...formData, academy_enabled: checked === true })}
+              />
+              <div className="flex items-center gap-2">
+                <GraduationCap className="h-4 w-4 text-muted-foreground" />
+                <label htmlFor="academy_enabled" className="text-sm font-medium cursor-pointer">
+                  Académie
+                </label>
+              </div>
+            </div>
+          </div>
        </div>
 
        <div className="space-y-2">
