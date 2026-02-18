@@ -288,30 +288,6 @@ export default function Clubs() {
       </div>
 
       <div className="container mx-auto max-w-6xl px-4 py-8">
-        {/* DEBUG - diagnostic redirection athlète */}
-        <Card className="border-2 border-destructive bg-destructive/5 mb-4">
-          <CardContent className="py-4 text-xs font-mono space-y-1">
-            <p className="font-bold text-destructive text-sm">🔍 DEBUG Redirection Athlète</p>
-            <p>athleteCheckLoading: {String(athleteCheckLoading)}</p>
-            <p>athleteCategories: {JSON.stringify(athleteCategories)}</p>
-            <p>isLoading (clubs): {String(isLoading)}</p>
-            <p>clubs: {JSON.stringify(clubs?.map(c => ({id: c.id, name: c.name})))}</p>
-            <p>superAdminLoading: {String(superAdminLoading)}</p>
-            <p>isSuperAdmin: {JSON.stringify(isSuperAdmin)}</p>
-            <p>approvedLoading: {String(approvedLoading)}</p>
-            <p>isApproved: {JSON.stringify(isApproved)}</p>
-            <hr className="border-destructive/30 my-2" />
-            <p>hasOnlyAthleteRole: {String(athleteCategories && athleteCategories.length > 0 && athleteCategories.every(cm => cm.role === "athlete"))}</p>
-            <p>hasNoClubs: {String(!clubs || clubs.length === 0)}</p>
-            <p>notSuperAdmin: {String(!isSuperAdmin)}</p>
-            <p className="font-bold">shouldRedirect: {String(
-              athleteCategories && athleteCategories.length > 0 && athleteCategories.every(cm => cm.role === "athlete") &&
-              (!clubs || clubs.length === 0) &&
-              !isSuperAdmin
-            )}</p>
-          </CardContent>
-        </Card>
-
         <InjuryReturnAlerts />
         
         {/* Pending approval message */}
