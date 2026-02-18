@@ -288,20 +288,7 @@ export default function Clubs() {
       </div>
 
       <div className="container mx-auto max-w-6xl px-4 py-8">
-        {/* DEBUG INFO - à supprimer après diagnostic */}
-        <Card className="bg-red-50 border-red-300 dark:bg-red-950/30 dark:border-red-800 mb-4">
-          <CardContent className="py-4 text-xs font-mono text-red-800 dark:text-red-200 space-y-1">
-            <p><strong>DEBUG Margaux:</strong></p>
-            <p>user.id: {user?.id}</p>
-            <p>athleteCategories: {JSON.stringify(athleteCategories)}</p>
-            <p>clubs: {JSON.stringify(clubs?.map(c => ({id: c.id, name: c.name})))}</p>
-            <p>isSuperAdmin: {JSON.stringify(isSuperAdmin)}</p>
-            <p>isApproved: {JSON.stringify(isApproved)}</p>
-            <p>hasOnlyAthleteRole: {String(athleteCategories && athleteCategories.length > 0 && athleteCategories.every(cm => cm.role === "athlete"))}</p>
-            <p>hasNoClubs: {String(!clubs || clubs.length === 0)}</p>
-            <p>notSuperAdmin: {String(isSuperAdmin === false)}</p>
-          </CardContent>
-        </Card>
+        
 
         <InjuryReturnAlerts />
         
