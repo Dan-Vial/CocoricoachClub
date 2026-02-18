@@ -235,6 +235,7 @@ function PlayerDetailsContent() {
     );
   }
 
+  const fullName = player.first_name ? `${player.first_name} ${player.name}` : player.name;
   const attributeValue = getAttributeValue();
   const specialtyValue = getSpecialtyValue();
   const showAttributeEditor = isTeamSport || isAthletics || isJudo || isAviron;
@@ -270,7 +271,7 @@ function PlayerDetailsContent() {
         <Card className="mb-6 bg-gradient-card shadow-md">
           <CardHeader className="flex flex-row items-center justify-between">
             <div className="space-y-2">
-              <CardTitle className="text-3xl">{player.name}</CardTitle>
+              <CardTitle className="text-3xl">{fullName}</CardTitle>
               <p className="text-muted-foreground">{player.categories?.name}</p>
               
               {/* Editable position/discipline */}
@@ -413,7 +414,7 @@ function PlayerDetailsContent() {
             <AthleteAccessSection 
               playerId={playerId!} 
               categoryId={player.category_id}
-              playerName={player.name}
+              playerName={fullName}
             />
           </div>
         )}
@@ -423,7 +424,7 @@ function PlayerDetailsContent() {
           <PlayerReferenceCard 
             categoryId={player.category_id}
             playerId={playerId!}
-            playerName={player.name}
+            playerName={fullName}
           />
         </div>
 
@@ -432,7 +433,7 @@ function PlayerDetailsContent() {
           <PlayerProfile 
             playerId={playerId!} 
             categoryId={player.category_id}
-            playerName={player.name}
+            playerName={fullName}
             avatarUrl={player.avatar_url}
             sportType={(player.categories as { rugby_type?: string })?.rugby_type}
             discipline={player.discipline}
@@ -482,7 +483,7 @@ function PlayerDetailsContent() {
               <PlayerTrainingLoadCard 
                 playerId={playerId!} 
                 categoryId={player.category_id} 
-                playerName={player.name}
+                playerName={fullName}
               />
               <PlayerAwcrTab playerId={playerId!} categoryId={player.category_id} />
             </div>
@@ -496,7 +497,7 @@ function PlayerDetailsContent() {
             <PlayerMatchesTab 
               playerId={playerId!} 
               categoryId={player.category_id} 
-              playerName={player.name}
+              playerName={fullName}
               sportType={(player.categories as { rugby_type?: string })?.rugby_type}
             />
           </TabsContent>
@@ -515,11 +516,11 @@ function PlayerDetailsContent() {
           </TabsContent>
 
           <TabsContent value="academy">
-            <PlayerAcademyTab playerId={playerId!} categoryId={player.category_id} playerName={player.name} />
+            <PlayerAcademyTab playerId={playerId!} categoryId={player.category_id} playerName={fullName} />
           </TabsContent>
 
           <TabsContent value="injuries">
-            <PlayerInjuriesTab playerId={playerId!} categoryId={player.category_id} playerName={player.name} />
+            <PlayerInjuriesTab playerId={playerId!} categoryId={player.category_id} playerName={fullName} />
           </TabsContent>
         </Tabs>
 
@@ -528,7 +529,7 @@ function PlayerDetailsContent() {
             open={transferDialogOpen}
             onOpenChange={setTransferDialogOpen}
             playerId={playerId!}
-            playerName={player.name}
+            playerName={fullName}
             currentCategoryId={player.category_id}
             currentCategoryName={player.categories?.name || ""}
             clubId={player.categories?.club_id || ""}
