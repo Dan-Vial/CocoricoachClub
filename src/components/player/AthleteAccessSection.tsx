@@ -25,19 +25,38 @@ export function AthleteAccessSection({ playerId, categoryId, playerName }: Athle
   const [isEditingEmail, setIsEditingEmail] = useState(false);
   const [emailValue, setEmailValue] = useState("");
 
-  // Fetch player email
+  // Fetch player email and user_id
   const { data: player } = useQuery({
     queryKey: ["player-email", playerId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("players")
-        .select("email")
+        .select("email, user_id")
         .eq("id", playerId)
         .single();
       if (error) throw error;
       return data;
     },
   });
+
+  // Fetch athlete invitation link (only if player not yet connected)
+  const { data: invitation } = useQuery({
+    queryKey: ["athlete-invitation", playerId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("athlete_invitations")
+        .select("token, status, email")
+        .eq("player_id", playerId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !player?.user_id, // Only fetch if player has no linked account
+  });
+
+  const playerIsConnected = !!player?.user_id;
 
   const queryKey = ["athlete-access-tokens", playerId];
 
@@ -191,6 +210,50 @@ export function AthleteAccessSection({ playerId, categoryId, playerName }: Athle
             </div>
           )}
         </div>
+
+        {/* Invitation Link Section - hidden when player is connected */}
+        {!playerIsConnected && invitation?.token && (
+          <div className="space-y-2">
+            <Label className="flex items-center gap-2">
+              <Link2 className="h-4 w-4" />
+              Lien d'inscription
+            </Label>
+            <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 space-y-2">
+              <p className="text-xs text-muted-foreground">
+                Partagez ce lien pour que l'athlète crée son compte et accède à l'application.
+              </p>
+              <div className="flex items-center gap-2">
+                <Input
+                  value={`${window.location.origin}/accept-athlete-invitation?token=${invitation.token}`}
+                  readOnly
+                  className="text-xs"
+                />
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    navigator.clipboard.writeText(`${window.location.origin}/accept-athlete-invitation?token=${invitation.token}`);
+                    toast.success("Lien d'inscription copié !");
+                  }}
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </div>
+              <Badge variant="secondary" className="text-xs">
+                {invitation.status === "accepted" ? "Acceptée" : "En attente"}
+              </Badge>
+            </div>
+          </div>
+        )}
+
+        {playerIsConnected && (
+          <div className="p-3 rounded-lg bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800">
+            <p className="text-sm font-medium text-green-700 dark:text-green-300 flex items-center gap-2">
+              <Check className="h-4 w-4" />
+              Athlète connecté à l'application
+            </p>
+          </div>
+        )}
 
         {/* Token Section */}
         {isLoading ? (
