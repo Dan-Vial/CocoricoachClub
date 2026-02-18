@@ -31,6 +31,7 @@ interface AthleteInfo {
   sport_type?: string;
   position?: string;
   avatar_url?: string;
+  cover_image_url?: string;
 }
 
 export default function AthleteSpace() {
@@ -38,6 +39,8 @@ export default function AthleteSpace() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [athleteInfo, setAthleteInfo] = useState<AthleteInfo | null>(null);
+  const [allAthleteEntries, setAllAthleteEntries] = useState<AthleteInfo[]>([]);
+  const [showCategorySelector, setShowCategorySelector] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSuperAdminView, setIsSuperAdminView] = useState(false);
   const [showPlayerSelector, setShowPlayerSelector] = useState(false);
@@ -71,6 +74,8 @@ export default function AthleteSpace() {
     enabled: showPlayerSelector && !!isSuperAdmin,
   });
 
+  const queryCategoryId = searchParams.get("categoryId");
+
   useEffect(() => {
     if (authLoading) return;
     if (!user) {
@@ -78,7 +83,7 @@ export default function AthleteSpace() {
       return;
     }
     fetchAthleteData();
-  }, [user, authLoading, queryPlayerId]);
+  }, [user, authLoading, queryPlayerId, queryCategoryId]);
 
   const fetchAthleteData = async () => {
     try {
@@ -91,7 +96,7 @@ export default function AthleteSpace() {
             .from("players")
             .select(`
               id, name, first_name, category_id, position, avatar_url,
-              categories!inner(name, rugby_type, clubs!inner(name))
+              categories!inner(name, rugby_type, cover_image_url, clubs!inner(name))
             `)
             .eq("id", queryPlayerId)
             .single();
@@ -111,22 +116,22 @@ export default function AthleteSpace() {
             sport_type: (player.categories as any).rugby_type,
             position: player.position || undefined,
             avatar_url: player.avatar_url || undefined,
+            cover_image_url: (player.categories as any).cover_image_url || undefined,
           });
           return;
         }
       }
 
-      // Normal athlete flow
-      const { data: player, error } = await supabase
+      // Normal athlete flow - fetch ALL player entries for this user
+      const { data: players, error } = await supabase
         .from("players")
         .select(`
           id, name, first_name, category_id, position, avatar_url,
-          categories!inner(name, rugby_type, clubs!inner(name))
+          categories!inner(name, rugby_type, cover_image_url, clubs!inner(name))
         `)
-        .eq("user_id", user!.id)
-        .single();
+        .eq("user_id", user!.id);
 
-      if (error || !player) {
+      if (error || !players || players.length === 0) {
         // If super admin, show player selector instead of redirecting
         const { data: isSA } = await supabase.rpc("is_super_admin", { _user_id: user!.id });
         if (isSA) {
@@ -138,7 +143,7 @@ export default function AthleteSpace() {
         return;
       }
 
-      setAthleteInfo({
+      const entries: AthleteInfo[] = players.map(player => ({
         player_id: player.id,
         player_name: player.name,
         player_first_name: player.first_name || undefined,
@@ -148,7 +153,23 @@ export default function AthleteSpace() {
         sport_type: (player.categories as any).rugby_type,
         position: player.position || undefined,
         avatar_url: player.avatar_url || undefined,
-      });
+        cover_image_url: (player.categories as any).cover_image_url || undefined,
+      }));
+
+      setAllAthleteEntries(entries);
+
+      // If a specific category is selected via query param, use it
+      if (queryCategoryId) {
+        const selected = entries.find(e => e.category_id === queryCategoryId);
+        if (selected) {
+          setAthleteInfo(selected);
+          setShowCategorySelector(false);
+          return;
+        }
+      }
+
+      // Always show category selector first (user clicks to enter)
+      setShowCategorySelector(true);
     } catch (err) {
       console.error("Error fetching athlete data:", err);
       navigate("/");
@@ -243,6 +264,66 @@ export default function AthleteSpace() {
     );
   }
 
+  // Category selector for athletes with multiple categories (or always show first)
+  if (showCategorySelector && !athleteInfo) {
+    const displayName = allAthleteEntries[0]?.player_first_name
+      ? `${allAthleteEntries[0].player_first_name} ${allAthleteEntries[0].player_name}`
+      : allAthleteEntries[0]?.player_name || "Athlète";
+
+    return (
+      <div className="min-h-screen bg-background">
+        <header className="sticky top-0 z-50 border-b bg-card/95 backdrop-blur">
+          <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                <User className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h1 className="text-base font-semibold">Bonjour {displayName} 👋</h1>
+                <p className="text-xs text-muted-foreground">Choisissez votre catégorie</p>
+              </div>
+            </div>
+            <Button variant="ghost" size="icon" onClick={() => signOut()}>
+              <LogOut className="h-4 w-4" />
+            </Button>
+          </div>
+        </header>
+        <main className="max-w-3xl mx-auto px-4 py-6">
+          <h2 className="text-lg font-semibold mb-4">Mes catégories</h2>
+          <div className="grid gap-3">
+            {allAthleteEntries.map((entry) => (
+              <Card
+                key={entry.category_id}
+                className="cursor-pointer hover:shadow-md transition-shadow overflow-hidden"
+                onClick={() => {
+                  setAthleteInfo(entry);
+                  setShowCategorySelector(false);
+                  setSearchParams({ categoryId: entry.category_id });
+                }}
+              >
+                {entry.cover_image_url && (
+                  <div className="h-24 w-full overflow-hidden">
+                    <img src={entry.cover_image_url} alt={entry.category_name} className="w-full h-full object-cover" />
+                  </div>
+                )}
+                <CardContent className="p-4 flex items-center justify-between">
+                  <div>
+                    <h3 className="font-semibold text-base">{entry.category_name}</h3>
+                    <p className="text-sm text-muted-foreground">{entry.club_name}</p>
+                    {entry.position && (
+                      <Badge variant="secondary" className="mt-1 text-xs">{entry.position}</Badge>
+                    )}
+                  </div>
+                  <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   if (!athleteInfo) return null;
 
   const displayName = athleteInfo.player_first_name
@@ -264,8 +345,16 @@ export default function AthleteSpace() {
       <header className="sticky top-0 z-50 border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {isSuperAdminView && (
-              <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+            {(isSuperAdminView || allAthleteEntries.length > 1) && (
+              <Button variant="ghost" size="icon" onClick={() => {
+                if (isSuperAdminView) {
+                  navigate(-1);
+                } else {
+                  setAthleteInfo(null);
+                  setShowCategorySelector(true);
+                  setSearchParams({});
+                }
+              }}>
                 <ArrowLeft className="h-4 w-4" />
               </Button>
             )}
