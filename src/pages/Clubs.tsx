@@ -146,15 +146,15 @@ export default function Clubs() {
   // Redirect pure athletes to athlete-space
   useEffect(() => {
     if (athleteCheckLoading || !athleteCategories) return;
-    // Wait for clubs to finish loading (isLoading could be false if query is disabled)
     if (isLoading) return;
+    if (superAdminLoading) return; // Wait for super admin check to complete
     const hasOnlyAthleteRole = athleteCategories.length > 0 && athleteCategories.every(cm => cm.role === "athlete");
     const hasNoClubs = !clubs || clubs.length === 0;
-    const notSuperAdmin = isSuperAdmin === false;
+    const notSuperAdmin = !isSuperAdmin;
     if (hasOnlyAthleteRole && hasNoClubs && notSuperAdmin) {
       navigate("/athlete-space", { replace: true });
     }
-  }, [athleteCategories, athleteCheckLoading, clubs, isLoading, isSuperAdmin, navigate]);
+  }, [athleteCategories, athleteCheckLoading, clubs, isLoading, isSuperAdmin, superAdminLoading, navigate]);
 
   const deleteClub = useMutation({
     mutationFn: async (clubId: string) => {
