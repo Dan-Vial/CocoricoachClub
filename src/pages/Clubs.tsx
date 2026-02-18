@@ -104,7 +104,7 @@ export default function Clubs() {
   });
 
   // Check if user is super admin
-  const { data: isSuperAdmin } = useQuery({
+  const { data: isSuperAdmin, isLoading: superAdminLoading } = useQuery({
     queryKey: ["is-super-admin", user?.id],
     queryFn: async () => {
       if (!user?.id) return false;
@@ -124,7 +124,7 @@ export default function Clubs() {
   });
 
   // Check if user is approved to create clubs
-  const { data: isApproved } = useQuery({
+  const { data: isApproved, isLoading: approvedLoading } = useQuery({
     queryKey: ["is-approved", user?.id],
     queryFn: async () => {
       if (!user?.id) return false;
@@ -213,7 +213,7 @@ export default function Clubs() {
 
   // Wait for athlete check to complete before rendering anything
   // This prevents showing "en attente de validation" to athletes before redirect
-  if (authLoading || isLoading || athleteCheckLoading) {
+  if (authLoading || isLoading || athleteCheckLoading || superAdminLoading || approvedLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <p className="text-muted-foreground">Chargement...</p>
