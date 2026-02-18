@@ -121,43 +121,19 @@ export default function AcceptAthleteInvitation() {
         throw new Error("Erreur lors de la création du compte");
       }
 
-      // 2. Update the player with user_id
-      const { error: playerError } = await supabase
-        .from("players")
-        .update({ user_id: authData.user.id })
-        .eq("id", invitation.player_id);
+      // 2. Accept invitation server-side (link player, add category member, update status)
+      const { data: acceptResult, error: acceptError } = await supabase.rpc(
+        "accept_athlete_invitation_signup",
+        { _token: token!, _user_id: authData.user.id }
+      );
 
-      if (playerError) {
-        console.error("Error linking player to user:", playerError);
-      }
-
-      // 3. Add user as category_member with 'athlete' role
-      const { error: memberError } = await supabase
-        .from("category_members")
-        .insert({
-          category_id: invitation.category_id,
-          user_id: authData.user.id,
-          role: "athlete" as any,
-          invited_by: null,
-        })
-        .select()
-        .single();
-
-      if (memberError) {
-        console.error("Error adding athlete to category_members:", memberError);
-      }
-
-      // 4. Update invitation status
-      const { error: invitationError } = await supabase
-        .from("athlete_invitations")
-        .update({
-          status: "accepted",
-          accepted_at: new Date().toISOString(),
-        })
-        .eq("id", invitation.id);
-
-      if (invitationError) {
-        console.error("Error updating invitation:", invitationError);
+      if (acceptError) {
+        console.error("Error accepting invitation:", acceptError);
+      } else {
+        const result = acceptResult as any;
+        if (!result?.success) {
+          console.error("Accept invitation failed:", result?.error);
+        }
       }
 
       toast.success("Compte créé avec succès ! Bienvenue dans l'équipe 🏆");

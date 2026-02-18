@@ -7454,6 +7454,10 @@ export type Database = {
         Args: { invitation_token: string }
         Returns: boolean
       }
+      accept_athlete_invitation_signup: {
+        Args: { _token: string; _user_id: string }
+        Returns: Json
+      }
       accept_category_invitation: { Args: { _token: string }; Returns: Json }
       accept_club_invitation: { Args: { _token: string }; Returns: Json }
       can_access_category: {
