@@ -7520,6 +7520,7 @@ export type Database = {
         Args: { _conversation_id: string; _user_id: string }
         Returns: boolean
       }
+      validate_athlete_invitation: { Args: { _token: string }; Returns: Json }
       validate_athlete_token: { Args: { _token: string }; Returns: Json }
       validate_public_token: { Args: { _token: string }; Returns: Json }
     }

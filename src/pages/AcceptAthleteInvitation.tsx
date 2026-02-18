@@ -45,53 +45,34 @@ export default function AcceptAthleteInvitation() {
 
   const validateToken = async () => {
     try {
-      // Fetch invitation with related data
-      const { data, error: fetchError } = await supabase
-        .from("athlete_invitations")
-        .select("*")
-        .eq("token", token)
-        .single();
+      const { data, error: rpcError } = await supabase.rpc("validate_athlete_invitation", {
+        _token: token!,
+      });
 
-      if (fetchError || !data) {
-        setError("Lien d'invitation invalide ou expiré");
+      if (rpcError) {
+        console.error("RPC error:", rpcError);
+        setError("Erreur lors de la validation de l'invitation");
         return;
       }
 
-      // Check if already accepted
-      if (data.status === "accepted") {
-        setError("Cette invitation a déjà été utilisée. Connecte-toi à ton compte.");
-        return;
-      }
+      const result = data as any;
 
-      // Check if expired
-      if (data.expires_at && new Date(data.expires_at) < new Date()) {
-        setError("Ce lien d'invitation a expiré. Contacte ton staff pour en recevoir un nouveau.");
-        return;
-      }
-
-      // Fetch player, category, and club details separately
-      const [playerRes, categoryRes, clubRes] = await Promise.all([
-        supabase.from("players").select("name, first_name").eq("id", data.player_id).single(),
-        supabase.from("categories").select("name").eq("id", data.category_id).single(),
-        supabase.from("clubs").select("name").eq("id", data.club_id).single(),
-      ]);
-
-      if (playerRes.error || categoryRes.error || clubRes.error) {
-        setError("Erreur lors du chargement des données");
+      if (!result?.success) {
+        setError(result?.error || "Lien d'invitation invalide");
         return;
       }
 
       setInvitation({
-        id: data.id,
-        email: data.email,
-        player_id: data.player_id,
-        category_id: data.category_id,
-        club_id: data.club_id,
-        status: data.status,
-        player_name: playerRes.data.name,
-        player_first_name: playerRes.data.first_name,
-        club_name: clubRes.data.name,
-        category_name: categoryRes.data.name,
+        id: result.id,
+        email: result.email,
+        player_id: result.player_id,
+        category_id: result.category_id,
+        club_id: result.club_id,
+        status: result.status,
+        player_name: result.player_name,
+        player_first_name: result.player_first_name,
+        club_name: result.club_name,
+        category_name: result.category_name,
       });
     } catch (err) {
       console.error("Error validating invitation:", err);
