@@ -25,6 +25,22 @@ export default function Clubs() {
     }
   }, [user, authLoading, navigate]);
 
+  // Check if user is an athlete (has category_members with role 'athlete' and no other roles)
+  const { data: athleteCategories, isLoading: athleteCheckLoading } = useQuery({
+    queryKey: ["athlete-role-check", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const { data, error } = await supabase
+        .from("category_members")
+        .select("category_id, role")
+        .eq("user_id", user.id);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!user?.id,
+  });
+
+
   // Fetch clubs owned by user OR where user is a club member
   const { data: clubs, isLoading } = useQuery({
     queryKey: ["my-clubs", user?.id],
@@ -126,6 +142,16 @@ export default function Clubs() {
     },
     enabled: !!user?.id,
   });
+
+  // Redirect pure athletes to athlete-space
+  useEffect(() => {
+    if (athleteCheckLoading || !athleteCategories || isLoading) return;
+    const hasOnlyAthleteRole = athleteCategories.length > 0 && athleteCategories.every(cm => cm.role === "athlete");
+    const hasNoClubs = !clubs || clubs.length === 0;
+    if (hasOnlyAthleteRole && hasNoClubs && !isSuperAdmin) {
+      navigate("/athlete-space", { replace: true });
+    }
+  }, [athleteCategories, athleteCheckLoading, clubs, isLoading, isSuperAdmin, navigate]);
 
   const deleteClub = useMutation({
     mutationFn: async (clubId: string) => {
