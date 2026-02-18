@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -67,10 +67,10 @@ export function StatPreferencesDialog({
   const [statToDelete, setStatToDelete] = useState<CustomStat | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   
-  // Get all available stats for this sport
-  const allStats = getStatsForSport(sportType, false);
-  const goalkeeperStats = getStatsForSport(sportType, true);
-  const statCategories = getStatCategories(sportType);
+  // Get all available stats for this sport (memoized to avoid infinite loops)
+  const allStats = useMemo(() => getStatsForSport(sportType, false), [sportType]);
+  const goalkeeperStats = useMemo(() => getStatsForSport(sportType, true), [sportType]);
+  const statCategories = useMemo(() => getStatCategories(sportType), [sportType]);
 
   // Fetch existing preferences
   const { data: existingPrefs, isLoading } = useQuery({
@@ -103,17 +103,26 @@ export function StatPreferencesDialog({
   });
 
   // Initialize enabled stats from existing prefs or all stats
+  const initializedRef = useRef(false);
   useEffect(() => {
+    // Reset when dialog reopens
+    if (!open) {
+      initializedRef.current = false;
+      return;
+    }
+    if (initializedRef.current) return;
+    if (isLoading) return;
+
     if (existingPrefs?.enabled_stats && existingPrefs.enabled_stats.length > 0) {
       setEnabledStats(existingPrefs.enabled_stats);
     } else {
-      // Default: all stats enabled
       const allStatKeys = [...allStats, ...goalkeeperStats].map(s => s.key);
       const customStatKeys = customStats.map(s => s.key);
       const uniqueKeys = [...new Set([...allStatKeys, ...customStatKeys])];
       setEnabledStats(uniqueKeys);
     }
-  }, [existingPrefs, allStats, goalkeeperStats, customStats]);
+    initializedRef.current = true;
+  }, [open, isLoading, existingPrefs, allStats, goalkeeperStats, customStats]);
 
   // Set default selected category
   useEffect(() => {
