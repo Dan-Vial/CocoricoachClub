@@ -297,7 +297,10 @@ export function PlayersTab({ categoryId }: PlayersTabProps) {
             </TableHeader>
             <TableBody>
               {filteredPlayers?.map((player: any) => {
-                const initials = player.name
+                const fullName = player.first_name 
+                  ? `${player.first_name} ${player.name}` 
+                  : player.name;
+                const initials = fullName
                   .split(" ")
                   .map((n: string) => n[0])
                   .join("")
@@ -313,12 +316,12 @@ export function PlayersTab({ categoryId }: PlayersTabProps) {
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-3">
                         <Avatar className="h-10 w-10">
-                          <AvatarImage src={player.avatar_url || undefined} alt={player.name} />
+                          <AvatarImage src={player.avatar_url || undefined} alt={fullName} />
                           <AvatarFallback className="bg-primary/10 text-primary">
                             {initials}
                           </AvatarFallback>
                         </Avatar>
-                        <span>{player.name}</span>
+                        <span>{fullName}</span>
                       </div>
                     </TableCell>
                     {hasAttributeColumn && (
@@ -334,7 +337,7 @@ export function PlayersTab({ categoryId }: PlayersTabProps) {
                             size="icon"
                             onClick={(e) => {
                               e.stopPropagation();
-                              if (confirm(`Êtes-vous sûr de vouloir supprimer l'athlète ${player.name} ?`)) {
+                              if (confirm(`Êtes-vous sûr de vouloir supprimer l'athlète ${fullName} ?`)) {
                                 deletePlayer.mutate(player.id);
                               }
                             }}
