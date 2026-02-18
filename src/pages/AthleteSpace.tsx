@@ -42,6 +42,7 @@ export default function AthleteSpace() {
   const [allAthleteEntries, setAllAthleteEntries] = useState<AthleteInfo[]>([]);
   const [showCategorySelector, setShowCategorySelector] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [isSuperAdminView, setIsSuperAdminView] = useState(false);
   const [showPlayerSelector, setShowPlayerSelector] = useState(false);
   const [playerSearch, setPlayerSearch] = useState("");
@@ -131,15 +132,22 @@ export default function AthleteSpace() {
         `)
         .eq("user_id", user!.id);
 
-      if (error || !players || players.length === 0) {
+      console.log("AthleteSpace: players query result", { players, error, userId: user!.id });
+
+      if (error) {
+        console.error("AthleteSpace: players query error", error);
+        setLoadError(`Erreur de chargement: ${error.message}`);
+        return;
+      }
+
+      if (!players || players.length === 0) {
         // If super admin, show player selector instead of redirecting
         const { data: isSA } = await supabase.rpc("is_super_admin", { _user_id: user!.id });
         if (isSA) {
           setShowPlayerSelector(true);
-          setIsLoading(false);
           return;
         }
-        navigate("/");
+        setLoadError("Aucun profil joueur trouvé pour ce compte. Contacte ton staff pour vérifier ton invitation.");
         return;
       }
 
@@ -170,9 +178,9 @@ export default function AthleteSpace() {
 
       // Always show category selector first (user clicks to enter)
       setShowCategorySelector(true);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error fetching athlete data:", err);
-      navigate("/");
+      setLoadError(`Erreur inattendue: ${err?.message || "Contacte ton staff."}`);
     } finally {
       setIsLoading(false);
     }
@@ -196,6 +204,31 @@ export default function AthleteSpace() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="max-w-md w-full">
+          <CardContent className="pt-6 text-center space-y-4">
+            <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center mx-auto">
+              <Shield className="h-6 w-6 text-destructive" />
+            </div>
+            <h2 className="text-lg font-semibold">Problème de chargement</h2>
+            <p className="text-sm text-muted-foreground">{loadError}</p>
+            <div className="flex gap-2 justify-center">
+              <Button variant="outline" onClick={() => { setLoadError(null); setIsLoading(true); fetchAthleteData(); }}>
+                Réessayer
+              </Button>
+              <Button variant="ghost" onClick={() => signOut()}>
+                <LogOut className="h-4 w-4 mr-2" />
+                Déconnexion
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
