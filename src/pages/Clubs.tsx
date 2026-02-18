@@ -211,7 +211,9 @@ export default function Clubs() {
     },
   });
 
-  if (authLoading || isLoading) {
+  // Wait for athlete check to complete before rendering anything
+  // This prevents showing "en attente de validation" to athletes before redirect
+  if (authLoading || isLoading || athleteCheckLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <p className="text-muted-foreground">Chargement...</p>
@@ -221,6 +223,18 @@ export default function Clubs() {
 
   if (!user) {
     return null;
+  }
+
+  // If user is a pure athlete, don't render the clubs page (redirect is in progress)
+  const hasOnlyAthleteRole = athleteCategories && athleteCategories.length > 0 && athleteCategories.every(cm => cm.role === "athlete");
+  const hasNoClubs = !clubs || clubs.length === 0;
+  const notSuperAdmin = isSuperAdmin === false;
+  if (hasOnlyAthleteRole && hasNoClubs && notSuperAdmin) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="text-muted-foreground">Redirection vers votre espace athlète...</p>
+      </div>
+    );
   }
 
   return (
