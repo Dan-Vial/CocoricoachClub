@@ -36,7 +36,7 @@ import { ProgrammationTab } from "@/components/category/tabs/ProgrammationTab";
 import { GpsDataTab } from "@/components/category/gps/GpsDataTab";
 import { VideoAnalysisTab } from "@/components/category/video/VideoAnalysisTab";
 import { AdminTab } from "@/components/category/tabs/AdminTab";
-import { AcademicTab } from "@/components/category/tabs/AcademicTab";
+
 
 // Colored Tab Trigger Component - Large icons with labels below
 interface ColoredTabTriggerProps {
@@ -294,10 +294,10 @@ function CategoryDetailsContent() {
               )}
               {canSeeMenu("academique") && (
                 <ColoredTabTrigger
-                  value="academic" 
+                  value="academy" 
                   colorKey="effectif"
                   icon={<GraduationCap className="h-6 w-6 sm:h-7 sm:w-7" />}
-                  label="Académique"
+                  label="Académie"
                   shortLabel="Acad"
                 />
               )}
@@ -381,15 +381,6 @@ function CategoryDetailsContent() {
                   badge={unreadMessagesCount}
                 />
               )}
-              {!isViewer && isAcademy && (
-                <ColoredTabTrigger 
-                  value="academy" 
-                  colorKey="communication"
-                  icon={<GraduationCap className="h-6 w-6 sm:h-7 sm:w-7" />}
-                  label="Académie"
-                  shortLabel="Acad"
-                />
-              )}
               {canSeeMenu("parametres") && (
                 <ColoredTabTrigger 
                   value="settings" 
@@ -413,8 +404,8 @@ function CategoryDetailsContent() {
           )}
 
           {canSeeMenu("academique") && (
-            <TabsContent value="academic" className="space-y-4">
-              <AcademicTab categoryId={categoryId!} />
+            <TabsContent value="academy" className="space-y-4">
+              <AcademyTab categoryId={categoryId!} />
             </TabsContent>
           )}
 
@@ -482,11 +473,6 @@ function CategoryDetailsContent() {
             </TabsContent>
           )}
 
-          {!isViewer && isAcademy && (
-            <TabsContent value="academy" className="space-y-4">
-              <AcademyTab categoryId={categoryId!} />
-            </TabsContent>
-          )}
 
           {canSeeMenu("parametres") && (
             <TabsContent value="settings" className="space-y-4">
