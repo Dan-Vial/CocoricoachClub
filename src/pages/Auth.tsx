@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,6 +39,8 @@ async function getPostLoginRedirect(userId: string): Promise<string> {
 
 export default function Auth() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const redirectUrl = searchParams.get("redirect");
   const [isLoading, setIsLoading] = useState(false);
   
   const [loginEmail, setLoginEmail] = useState("");
@@ -70,6 +72,13 @@ export default function Auth() {
       }
 
       toast.success("Connexion réussie");
+      
+      // If there's a redirect URL (e.g. from invitation link), use it
+      if (redirectUrl) {
+        navigate(redirectUrl);
+        return;
+      }
+      
       const { data: sessionData } = await supabase.auth.getSession();
       const uid = sessionData?.session?.user?.id;
       if (uid) {
@@ -121,6 +130,13 @@ export default function Auth() {
       }
 
       toast.success("Compte créé avec succès");
+      
+      // If there's a redirect URL (e.g. from invitation link), use it
+      if (redirectUrl) {
+        navigate(redirectUrl);
+        return;
+      }
+      
       const { data: sessionData } = await supabase.auth.getSession();
       const uid = sessionData?.session?.user?.id;
       if (uid) {
