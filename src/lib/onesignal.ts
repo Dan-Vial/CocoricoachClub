@@ -122,30 +122,45 @@ export async function buildUserTags(userId: string): Promise<Record<string, stri
       .select("club_id, role")
       .eq("user_id", userId);
 
-    // Get owned clubs
+    // Get owned clubs with names
     const { data: ownedClubs } = await supabase
       .from("clubs")
-      .select("id")
+      .select("id, name")
       .eq("user_id", userId);
 
-    // Get category memberships
+    // Get category memberships with category names
     const { data: categoryMemberships } = await supabase
       .from("category_members")
-      .select("category_id, role")
+      .select("category_id, role, categories(name)")
       .eq("user_id", userId);
 
     // Build club_ids tag (comma-separated)
     const allClubIds = new Set<string>();
+    const clubNames = new Set<string>();
     clubMemberships?.forEach((m) => allClubIds.add(m.club_id));
-    ownedClubs?.forEach((c) => allClubIds.add(c.id));
+    ownedClubs?.forEach((c) => {
+      allClubIds.add(c.id);
+      clubNames.add(c.name);
+    });
 
     if (allClubIds.size > 0) {
       tags.club_ids = Array.from(allClubIds).join(",");
     }
+    if (clubNames.size > 0) {
+      tags.club_names = Array.from(clubNames).join(",");
+    }
 
-    // Build category_ids tag
+    // Build category_ids and category_names tags
     if (categoryMemberships && categoryMemberships.length > 0) {
       tags.category_ids = categoryMemberships.map((m) => m.category_id).join(",");
+      const catNames = categoryMemberships
+        .map((m: any) => m.categories?.name)
+        .filter(Boolean);
+      if (catNames.length > 0) {
+        tags.category_names = catNames.join(",");
+        // Also set "team" tag for the first category (for simple filtering)
+        tags.team = catNames[0];
+      }
     }
 
     // Determine primary role (highest privilege)
@@ -162,8 +177,8 @@ export async function buildUserTags(userId: string): Promise<Record<string, stri
       }
     }
 
-    // Determine user_type
-    tags.user_type = roles.has("athlete") && roles.size === 1 ? "athlete" : "staff";
+    // Determine user_type (player vs staff)
+    tags.user_type = roles.has("athlete") && roles.size === 1 ? "player" : "staff";
 
     // Check super admin
     const { data: isSuperAdmin } = await supabase

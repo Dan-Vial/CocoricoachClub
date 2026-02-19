@@ -128,37 +128,66 @@ export function MatchNotifyDialog({
         throw new Error("Veuillez sélectionner au moins un canal de notification");
       }
 
-      const athletesToNotify = athletes.filter((a) => {
-        if (sendEmail && a.email) return true;
-        if (sendSms && a.phone) return true;
-        return false;
-      });
+      const results: { emailsSent: number; smsSent: number; pushSent: number } = { emailsSent: 0, smsSent: 0, pushSent: 0 };
+      const subject = isIndividual ? "Convocation compétition" : `Convocation match vs ${match.opponent}`;
+      const eventDetails = {
+        date: format(new Date(match.match_date), "EEEE d MMMM yyyy", { locale: fr }),
+        time: match.match_time ? match.match_time.substring(0, 5) : undefined,
+        location: match.location || undefined,
+      };
 
-      if (athletesToNotify.length === 0) {
-        throw new Error("Aucun athlète n'a les coordonnées requises pour la notification");
+      // Send push via targeted notification (by category)
+      if (sendPush) {
+        const { data: pushData, error: pushError } = await supabase.functions.invoke("send-targeted-notification", {
+          body: {
+            title: subject,
+            message: finalMessage,
+            category_ids: [categoryId],
+            roles: ["player"],
+            channels: ["push"],
+            event_type: "match",
+            event_details: eventDetails,
+          },
+        });
+        if (!pushError && pushData) results.pushSent = pushData.pushSent || 0;
       }
 
-      const { data, error } = await supabase.functions.invoke("notify-athletes", {
-        body: {
-          athletes: athletesToNotify.map((a) => ({
-            name: a.name,
-            email: a.email,
-            phone: a.phone,
-          })),
-          subject: isIndividual ? "Convocation compétition" : `Convocation match vs ${match.opponent}`,
-          message: finalMessage,
-          channels,
-          eventType: "match",
-          eventDetails: {
-            date: format(new Date(match.match_date), "EEEE d MMMM yyyy", { locale: fr }),
-            time: match.match_time ? match.match_time.substring(0, 5) : undefined,
-            location: match.location || undefined,
-          },
-        },
-      });
+      // Send email/SMS via individual notification
+      if (sendEmail || sendSms) {
+        const athletesToNotify = athletes.filter((a) => {
+          if (sendEmail && a.email) return true;
+          if (sendSms && a.phone) return true;
+          return false;
+        });
 
-      if (error) throw error;
-      return data;
+        if (athletesToNotify.length > 0) {
+          const individualChannels: ("email" | "sms")[] = [];
+          if (sendEmail) individualChannels.push("email");
+          if (sendSms) individualChannels.push("sms");
+
+          const { data, error } = await supabase.functions.invoke("notify-athletes", {
+            body: {
+              athletes: athletesToNotify.map((a) => ({
+                name: a.name,
+                email: a.email,
+                phone: a.phone,
+              })),
+              subject,
+              message: finalMessage,
+              channels: individualChannels,
+              eventType: "match",
+              eventDetails,
+            },
+          });
+
+          if (!error && data) {
+            results.emailsSent = data.emailsSent || 0;
+            results.smsSent = data.smsSent || 0;
+          }
+        }
+      }
+
+      return results;
     },
     onSuccess: (data) => {
       const parts = [];
@@ -166,7 +195,7 @@ export function MatchNotifyDialog({
       if (data.smsSent > 0) parts.push(`${data.smsSent} SMS`);
       if (data.pushSent > 0) parts.push(`${data.pushSent} push`);
       
-      toast.success(`Convocations envoyées : ${parts.join(", ")}`);
+      toast.success(`Convocations envoyées : ${parts.join(", ") || "aucune"}`);
       onOpenChange(false);
       setMessage("");
     },

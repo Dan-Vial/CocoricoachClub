@@ -43,35 +43,49 @@ serve(async (req: Request) => {
       .select("club_id, role")
       .eq("user_id", user_id);
 
-    // Get owned clubs
+    // Get owned clubs with names
     const { data: ownedClubs } = await supabase
       .from("clubs")
-      .select("id")
+      .select("id, name")
       .eq("user_id", user_id);
 
-    // Get category memberships
+    // Get category memberships with names
     const { data: categoryMemberships } = await supabase
       .from("category_members")
-      .select("category_id, role")
+      .select("category_id, role, categories(name)")
       .eq("user_id", user_id);
 
-    // Build club_ids
+    // Build club_ids and club_names
     const allClubIds = new Set<string>();
-    clubMemberships?.forEach((m) => allClubIds.add(m.club_id));
-    ownedClubs?.forEach((c) => allClubIds.add(c.id));
+    const clubNames = new Set<string>();
+    clubMemberships?.forEach((m: any) => allClubIds.add(m.club_id));
+    ownedClubs?.forEach((c: any) => {
+      allClubIds.add(c.id);
+      clubNames.add(c.name);
+    });
     tags.club_ids = Array.from(allClubIds).join(",");
+    tags.club_names = Array.from(clubNames).join(",");
 
-    // Build category_ids
+    // Build category_ids and category_names
     if (categoryMemberships && categoryMemberships.length > 0) {
-      tags.category_ids = categoryMemberships.map((m) => m.category_id).join(",");
+      tags.category_ids = categoryMemberships.map((m: any) => m.category_id).join(",");
+      const catNames = categoryMemberships
+        .map((m: any) => m.categories?.name)
+        .filter(Boolean);
+      tags.category_names = catNames.join(",");
+      if (catNames.length > 0) {
+        tags.team = catNames[0];
+      }
     } else {
       tags.category_ids = "";
+      tags.category_names = "";
+      tags.team = "";
     }
 
     // Determine role
     const roles = new Set<string>();
-    clubMemberships?.forEach((m) => roles.add(m.role));
-    categoryMemberships?.forEach((m) => roles.add(m.role));
+    clubMemberships?.forEach((m: any) => roles.add(m.role));
+    categoryMemberships?.forEach((m: any) => roles.add(m.role));
     if (ownedClubs && ownedClubs.length > 0) roles.add("admin");
 
     const roleHierarchy = ["admin", "coach", "physio", "doctor", "viewer", "athlete"];
@@ -94,7 +108,7 @@ serve(async (req: Request) => {
       tags.role = "super_admin";
     }
 
-    tags.user_type = roles.has("athlete") && roles.size === 1 ? "athlete" : "staff";
+    tags.user_type = roles.has("athlete") && roles.size === 1 ? "player" : "staff";
 
     // Update tags via OneSignal REST API
     const updateResponse = await fetch(
