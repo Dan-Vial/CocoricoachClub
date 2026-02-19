@@ -42,9 +42,11 @@ export default function Auth() {
   const [searchParams] = useSearchParams();
   const redirectUrl = searchParams.get("redirect");
   const [isLoading, setIsLoading] = useState(false);
-  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotStep, setForgotStep] = useState<"hidden" | "email" | "reset" | "success">("hidden");
   const [forgotEmail, setForgotEmail] = useState("");
   const [forgotLoading, setForgotLoading] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
@@ -105,15 +107,55 @@ export default function Auth() {
     e.preventDefault();
     setForgotLoading(true);
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
-        redirectTo: `${window.location.origin}/reset-password`,
+      // Check if email exists via a lightweight query
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("email", forgotEmail)
+        .maybeSingle();
+      
+      if (error) throw error;
+      if (!data) {
+        toast.error("Aucun compte trouvé avec cet email");
+        return;
+      }
+      // Email exists, show password reset form
+      setForgotStep("reset");
+    } catch (error: any) {
+      toast.error(error.message || "Erreur lors de la vérification");
+    } finally {
+      setForgotLoading(false);
+    }
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPassword.length < 6) {
+      toast.error("Le mot de passe doit contenir au moins 6 caractères");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error("Les mots de passe ne correspondent pas");
+      return;
+    }
+    setForgotLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("reset-password", {
+        body: { email: forgotEmail, newPassword },
       });
       if (error) throw error;
-      toast.success("Un email de réinitialisation a été envoyé ! Vérifiez votre boîte de réception.");
-      setShowForgotPassword(false);
-      setForgotEmail("");
+      if (data?.error) throw new Error(data.error);
+      
+      setForgotStep("success");
+      toast.success("Mot de passe mis à jour avec succès !");
+      setTimeout(() => {
+        setForgotStep("hidden");
+        setForgotEmail("");
+        setNewPassword("");
+        setConfirmPassword("");
+      }, 2000);
     } catch (error: any) {
-      toast.error(error.message || "Erreur lors de l'envoi de l'email");
+      toast.error(error.message || "Erreur lors de la mise à jour");
     } finally {
       setForgotLoading(false);
     }
@@ -194,10 +236,10 @@ export default function Auth() {
             </TabsList>
             
             <TabsContent value="login">
-              {showForgotPassword ? (
+              {forgotStep === "email" ? (
                 <form onSubmit={handleForgotPassword} className="space-y-4">
                   <p className="text-sm text-muted-foreground">
-                    Entrez votre adresse email. Vous recevrez un lien pour réinitialiser votre mot de passe.
+                    Entrez votre adresse email pour réinitialiser votre mot de passe.
                   </p>
                   <div className="space-y-2">
                     <Label htmlFor="forgot-email">Email</Label>
@@ -212,17 +254,65 @@ export default function Auth() {
                     />
                   </div>
                   <Button type="submit" className="w-full" disabled={forgotLoading}>
-                    {forgotLoading ? "Envoi..." : "Envoyer le lien de réinitialisation"}
+                    {forgotLoading ? "Vérification..." : "Continuer"}
                   </Button>
                   <Button
                     type="button"
                     variant="ghost"
                     className="w-full"
-                    onClick={() => setShowForgotPassword(false)}
+                    onClick={() => setForgotStep("hidden")}
                   >
                     Retour à la connexion
                   </Button>
                 </form>
+              ) : forgotStep === "reset" ? (
+                <form onSubmit={handleResetPassword} className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    Compte trouvé pour <span className="font-medium text-foreground">{forgotEmail}</span>. Choisissez votre nouveau mot de passe.
+                  </p>
+                  <div className="space-y-2">
+                    <Label htmlFor="new-password">Nouveau mot de passe</Label>
+                    <Input
+                      id="new-password"
+                      type="password"
+                      placeholder="Minimum 6 caractères"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      required
+                      disabled={forgotLoading}
+                      minLength={6}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="confirm-password">Confirmer le mot de passe</Label>
+                    <Input
+                      id="confirm-password"
+                      type="password"
+                      placeholder="Répétez le mot de passe"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      required
+                      disabled={forgotLoading}
+                      minLength={6}
+                    />
+                  </div>
+                  <Button type="submit" className="w-full" disabled={forgotLoading}>
+                    {forgotLoading ? "Mise à jour..." : "Mettre à jour le mot de passe"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="w-full"
+                    onClick={() => { setForgotStep("hidden"); setNewPassword(""); setConfirmPassword(""); }}
+                  >
+                    Annuler
+                  </Button>
+                </form>
+              ) : forgotStep === "success" ? (
+                <div className="text-center space-y-3 py-4">
+                  <p className="text-sm font-medium text-primary">✓ Mot de passe mis à jour avec succès !</p>
+                  <p className="text-xs text-muted-foreground">Vous pouvez maintenant vous connecter.</p>
+                </div>
               ) : (
               <form onSubmit={handleLogin} className="space-y-4">
                 <div className="space-y-2">
@@ -255,7 +345,7 @@ export default function Auth() {
                   type="button"
                   variant="link"
                   className="w-full text-sm text-muted-foreground"
-                  onClick={() => setShowForgotPassword(true)}
+                  onClick={() => setForgotStep("email")}
                 >
                   Mot de passe oublié ?
                 </Button>

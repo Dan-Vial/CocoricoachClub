@@ -17,7 +17,6 @@ import ClubDetails from "./pages/ClubDetails";
 import CategoryDetails from "./pages/CategoryDetails";
 import PlayerDetails from "./pages/PlayerDetails";
 import Auth from "./pages/Auth";
-import ResetPassword from "./pages/ResetPassword";
 import Dashboard from "./pages/Dashboard";
 import AcceptInvitation from "./pages/AcceptInvitation";
 import PublicView from "./pages/PublicView";
@@ -100,7 +99,6 @@ const App = () => (
                 <PWAInstallPrompt />
                 <Routes>
                   <Route path="/auth" element={<Auth />} />
-                  <Route path="/reset-password" element={<ResetPassword />} />
                   <Route path="/" element={<Clubs />} />
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/accept-invitation" element={<AcceptInvitation />} />
