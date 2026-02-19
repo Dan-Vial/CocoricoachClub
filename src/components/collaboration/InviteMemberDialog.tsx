@@ -11,7 +11,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { Copy, Check } from "lucide-react";
+import { Copy, Check, AlertTriangle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const invitationSchema = z.object({
   email: z.string().email("Email invalide"),
@@ -47,7 +48,7 @@ export function InviteMemberDialog({ open, onOpenChange, clubId }: InviteMemberD
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clubs")
-        .select("name")
+        .select("name, client_id")
         .eq("id", clubId)
         .single();
       if (error) throw error;
@@ -55,6 +56,39 @@ export function InviteMemberDialog({ open, onOpenChange, clubId }: InviteMemberD
     },
     enabled: open,
   });
+
+  // Fetch client limits
+  const { data: clientLimits } = useQuery({
+    queryKey: ["client-limits", club?.client_id],
+    queryFn: async () => {
+      if (!club?.client_id) return null;
+      const { data, error } = await supabase
+        .from("clients")
+        .select("max_staff_users")
+        .eq("id", club.client_id)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: open && !!club?.client_id,
+  });
+
+  // Fetch current staff count
+  const { data: currentStaffCount = 0 } = useQuery({
+    queryKey: ["club-staff-count", clubId],
+    queryFn: async () => {
+      const { count, error } = await (supabase as any)
+        .from("club_members")
+        .select("id", { count: "exact", head: true })
+        .eq("club_id", clubId);
+      if (error) throw error;
+      return count || 0;
+    },
+    enabled: open,
+  });
+
+  const maxStaff = clientLimits?.max_staff_users ?? null;
+  const isStaffFull = maxStaff !== null && currentStaffCount >= maxStaff;
 
   const { data: categories = [] } = useQuery({
     queryKey: ["club-categories-for-invitation", clubId],
@@ -213,6 +247,21 @@ export function InviteMemberDialog({ open, onOpenChange, clubId }: InviteMemberD
           </div>
         ) : (
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            {isStaffFull && (
+              <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription>
+                  Limite de staff atteinte ({currentStaffCount}/{maxStaff}). Retirez un membre existant avant d'en inviter un nouveau.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {maxStaff !== null && !isStaffFull && (
+              <p className="text-xs text-muted-foreground">
+                Staff : {currentStaffCount}/{maxStaff} membre(s) utilisé(s)
+              </p>
+            )}
+
             <div>
               <Label htmlFor="email">Email</Label>
               <Input
@@ -220,6 +269,7 @@ export function InviteMemberDialog({ open, onOpenChange, clubId }: InviteMemberD
                 type="email"
                 {...form.register("email")}
                 placeholder="exemple@email.com"
+                disabled={isStaffFull}
               />
               {form.formState.errors.email && (
                 <p className="text-sm text-destructive mt-1">{form.formState.errors.email.message}</p>
@@ -231,6 +281,7 @@ export function InviteMemberDialog({ open, onOpenChange, clubId }: InviteMemberD
               <Select
                 onValueChange={(value) => form.setValue("role", value as any)}
                 defaultValue="coach"
+                disabled={isStaffFull}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -280,6 +331,7 @@ export function InviteMemberDialog({ open, onOpenChange, clubId }: InviteMemberD
                     setAllCategories(!!checked);
                     if (checked) setSelectedCategories([]);
                   }}
+                  disabled={isStaffFull}
                 />
                 <label htmlFor="all-categories" className="text-sm font-medium cursor-pointer">
                   Toutes les catégories
@@ -320,7 +372,7 @@ export function InviteMemberDialog({ open, onOpenChange, clubId }: InviteMemberD
               <Button type="button" variant="outline" onClick={handleClose}>
                 Annuler
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
+              <Button type="submit" disabled={isSubmitting || isStaffFull}>
                 {isSubmitting ? "Envoi..." : "Envoyer l'Invitation"}
               </Button>
             </div>
