@@ -15,22 +15,40 @@ let isInitialized = false;
 
 /**
  * Initialize OneSignal SDK (already loaded via index.html)
- * Automatically requests push notification permission for all users.
+ * Does NOT auto-prompt — permission is requested explicitly via UI components.
  */
 export async function initOneSignal(): Promise<void> {
   if (isInitialized) return;
   if (typeof window === "undefined" || !window.OneSignal) return;
   isInitialized = true;
   console.log("[OneSignal] SDK ready");
+}
 
-  // Automatically prompt for push notification permission if not yet decided
-  try {
-    window.OneSignal.push(function () {
-      window.OneSignal.showNativePrompt();
-    });
-  } catch (err) {
-    console.error("[OneSignal] Auto-prompt error:", err);
-  }
+/**
+ * Trigger the OneSignal native push permission prompt.
+ * Returns true if granted, false otherwise.
+ */
+export async function requestOneSignalPermission(): Promise<boolean> {
+  if (typeof window === "undefined" || !window.OneSignal) return false;
+  return new Promise((resolve) => {
+    try {
+      window.OneSignal.push(async function () {
+        await window.OneSignal.showNativePrompt();
+        resolve(Notification.permission === "granted");
+      });
+    } catch (err) {
+      console.error("[OneSignal] Permission request error:", err);
+      resolve(false);
+    }
+  });
+}
+
+/**
+ * Check current OneSignal push permission status.
+ */
+export function getOneSignalPermission(): NotificationPermission {
+  if (typeof window === "undefined" || !("Notification" in window)) return "default";
+  return Notification.permission;
 }
 
 /**

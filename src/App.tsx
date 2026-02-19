@@ -10,6 +10,8 @@ import { FieldModeProvider } from "@/contexts/FieldModeContext";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import PWAUpdatePrompt from "@/components/PWAUpdatePrompt";
 import OfflineIndicator from "@/components/OfflineIndicator";
+import { NotificationOnboarding } from "@/components/notifications/NotificationOnboarding";
+import { NotificationReminderModal } from "@/components/notifications/NotificationReminderModal";
 import { ViewerModeBanner } from "@/components/ViewerModeBanner";
 import { FieldModeToggle } from "@/components/FieldModeToggle";
 import Clubs from "./pages/Clubs";
@@ -97,6 +99,8 @@ const App = () => (
                 <FieldModeToggle />
                 <PWAUpdatePrompt />
                 <PWAInstallPrompt />
+                <NotificationOnboarding />
+                <NotificationReminderModal />
                 <Routes>
                   <Route path="/auth" element={<Auth />} />
                   <Route path="/" element={<Clubs />} />
