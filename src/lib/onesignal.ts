@@ -15,12 +15,22 @@ let isInitialized = false;
 
 /**
  * Initialize OneSignal SDK (already loaded via index.html)
+ * Automatically requests push notification permission for all users.
  */
 export async function initOneSignal(): Promise<void> {
   if (isInitialized) return;
   if (typeof window === "undefined" || !window.OneSignal) return;
   isInitialized = true;
   console.log("[OneSignal] SDK ready");
+
+  // Automatically prompt for push notification permission if not yet decided
+  try {
+    window.OneSignal.push(function () {
+      window.OneSignal.showNativePrompt();
+    });
+  } catch (err) {
+    console.error("[OneSignal] Auto-prompt error:", err);
+  }
 }
 
 /**
