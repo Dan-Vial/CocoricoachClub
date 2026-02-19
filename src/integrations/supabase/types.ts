@@ -7347,6 +7347,24 @@ export type Database = {
         }
         Relationships: []
       }
+      all_invitations: {
+        Row: {
+          accepted_at: string | null
+          category_ids: string[] | null
+          club_id: string | null
+          created_at: string | null
+          email: string | null
+          expires_at: string | null
+          id: string | null
+          invitation_type: string | null
+          invited_by: string | null
+          recipient_name: string | null
+          role: string | null
+          status: string | null
+          token: string | null
+        }
+        Relationships: []
+      }
       safe_category_invitations: {
         Row: {
           category_id: string | null
@@ -7515,6 +7533,10 @@ export type Database = {
           _entity_type: string
         }
         Returns: string
+      }
+      renew_invitation: {
+        Args: { _invitation_id: string; _table_name: string }
+        Returns: Json
       }
       user_is_conversation_admin: {
         Args: { _conversation_id: string; _user_id: string }
