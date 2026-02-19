@@ -18,17 +18,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Trash2, Filter, Eye } from "lucide-react";
+import { Plus, Trash2, Filter, Eye, Copy, Check, Mail, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { AddPlayerDialogWithInvite } from "./AddPlayerDialogWithInvite";
 import { useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 import { useViewerPlayers } from "@/hooks/use-viewer-data";
 import { getDisciplineLabel, getSpecialtyLabel } from "@/lib/constants/athleticProfiles";
 import { isAthletismeCategory, isJudoCategory, isIndividualSport, ATHLETISME_SPECIALTIES } from "@/lib/constants/sportTypes";
 import { getPositionsForSport } from "@/lib/constants/sportPositions";
+import { getInvitationStatus } from "@/hooks/useResendInvitation";
 
 import { AVIRON_ROLES } from "@/lib/constants/sportTypes";
 
@@ -45,11 +47,37 @@ interface PlayersTabProps {
 export function PlayersTab({ categoryId }: PlayersTabProps) {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [disciplineFilter, setDisciplineFilter] = useState<string>("all");
+  const [copiedInviteId, setCopiedInviteId] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { isViewer } = useViewerModeContext();
 
   const { data: players, isLoading } = useViewerPlayers(categoryId);
+
+  // Fetch all athlete invitations for this category
+  const { data: invitations } = useQuery({
+    queryKey: ["athlete-invitations-list", categoryId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("athlete_invitations")
+        .select("id, player_id, token, status, expires_at")
+        .eq("category_id", categoryId)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Group invitations by player_id (latest first)
+  const invitationsByPlayer = useMemo(() => {
+    const map = new Map<string, typeof invitations extends (infer T)[] | null ? T : never>();
+    invitations?.forEach((inv) => {
+      if (!map.has(inv.player_id)) {
+        map.set(inv.player_id, inv);
+      }
+    });
+    return map;
+  }, [invitations]);
 
   // Fetch category to check sport type
   const { data: category } = useQuery({
@@ -292,6 +320,7 @@ export function PlayersTab({ categoryId }: PlayersTabProps) {
               <TableRow>
                 <TableHead>Nom</TableHead>
                 {hasAttributeColumn && <TableHead>{attributeColumnLabel}</TableHead>}
+                {!isViewer && <TableHead>Inscription</TableHead>}
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -327,6 +356,65 @@ export function PlayersTab({ categoryId }: PlayersTabProps) {
                     {hasAttributeColumn && (
                       <TableCell>
                         {getAttributeDisplay(player)}
+                      </TableCell>
+                    )}
+                    {!isViewer && (
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        {(() => {
+                          if (player.user_id) {
+                            return (
+                              <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300 gap-1">
+                                <Check className="h-3 w-3" />
+                                Connecté
+                              </Badge>
+                            );
+                          }
+                          const inv = invitationsByPlayer.get(player.id);
+                          if (!inv) {
+                            return (
+                              <span className="text-xs text-muted-foreground">—</span>
+                            );
+                          }
+                          const status = getInvitationStatus(inv.status, inv.expires_at);
+                          const link = `${window.location.origin}/accept-athlete-invitation?token=${inv.token}`;
+                          return (
+                            <TooltipProvider>
+                              <div className="flex items-center gap-1.5">
+                                <Badge variant="outline" className={
+                                  status === "expired" 
+                                    ? "text-destructive border-destructive/30" 
+                                    : "text-amber-600 border-amber-300 dark:text-amber-400"
+                                }>
+                                  {status === "expired" ? "Expiré" : "En attente"}
+                                </Badge>
+                                {status === "pending" && (
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        size="icon"
+                                        variant="ghost"
+                                        className="h-7 w-7"
+                                        onClick={() => {
+                                          navigator.clipboard.writeText(link);
+                                          setCopiedInviteId(inv.id);
+                                          toast.success("Lien d'inscription copié !");
+                                          setTimeout(() => setCopiedInviteId(null), 2000);
+                                        }}
+                                      >
+                                        {copiedInviteId === inv.id ? (
+                                          <Check className="h-3.5 w-3.5 text-green-600" />
+                                        ) : (
+                                          <Copy className="h-3.5 w-3.5" />
+                                        )}
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>Copier le lien d'inscription</TooltipContent>
+                                  </Tooltip>
+                                )}
+                              </div>
+                            </TooltipProvider>
+                          );
+                        })()}
                       </TableCell>
                     )}
                     <TableCell className="text-right">
