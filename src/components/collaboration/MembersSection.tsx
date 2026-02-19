@@ -19,6 +19,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Trash2, Crown } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -28,6 +39,14 @@ interface MembersSectionProps {
   clubId: string;
   canManage: boolean;
 }
+
+const ROLE_LABELS: Record<string, string> = {
+  admin: "Admin",
+  coach: "Coach",
+  prepa_physique: "Prépa. Physique",
+  doctor: "Médecin",
+  administratif: "Administratif",
+};
 
 export function MembersSection({ clubId, canManage }: MembersSectionProps) {
   const queryClient = useQueryClient();
@@ -42,7 +61,6 @@ export function MembersSection({ clubId, canManage }: MembersSectionProps) {
         .order("created_at", { ascending: false });
       if (error) throw error;
 
-      // Fetch user emails separately
       if (data && data.length > 0) {
         const userIds = data.map((m: any) => m.user_id);
         const { data: profiles } = await supabase
@@ -70,7 +88,6 @@ export function MembersSection({ clubId, canManage }: MembersSectionProps) {
         .single();
       if (error) throw error;
 
-      // Fetch owner profile
       const { data: profileData } = await supabase
         .from("profiles")
         .select("email, full_name")
@@ -85,15 +102,32 @@ export function MembersSection({ clubId, canManage }: MembersSectionProps) {
   });
 
   const removeMember = useMutation({
-    mutationFn: async (memberId: string) => {
+    mutationFn: async (member: any) => {
+      // Remove from all category_members for this club's categories
+      const { data: categories } = await supabase
+        .from("categories")
+        .select("id")
+        .eq("club_id", clubId);
+
+      if (categories && categories.length > 0) {
+        const categoryIds = categories.map((c) => c.id);
+        await (supabase as any)
+          .from("category_members")
+          .delete()
+          .eq("user_id", member.user_id)
+          .in("category_id", categoryIds);
+      }
+
+      // Remove from club_members
       const { error } = await (supabase as any)
         .from("club_members")
         .delete()
-        .eq("id", memberId);
+        .eq("id", member.id);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["club-members", clubId] });
+      queryClient.invalidateQueries({ queryKey: ["club-members-full", clubId] });
       toast.success("Membre retiré avec succès");
     },
     onError: () => {
@@ -102,12 +136,28 @@ export function MembersSection({ clubId, canManage }: MembersSectionProps) {
   });
 
   const updateRole = useMutation({
-    mutationFn: async ({ memberId, newRole }: { memberId: string; newRole: string }) => {
+    mutationFn: async ({ memberId, userId, newRole }: { memberId: string; userId: string; newRole: string }) => {
+      // Update club_members role
       const { error } = await (supabase as any)
         .from("club_members")
         .update({ role: newRole })
         .eq("id", memberId);
       if (error) throw error;
+
+      // Also update category_members role for all categories of this club
+      const { data: categories } = await supabase
+        .from("categories")
+        .select("id")
+        .eq("club_id", clubId);
+
+      if (categories && categories.length > 0) {
+        const categoryIds = categories.map((c) => c.id);
+        await (supabase as any)
+          .from("category_members")
+          .update({ role: newRole })
+          .eq("user_id", userId)
+          .in("category_id", categoryIds);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["club-members", clubId] });
@@ -123,13 +173,9 @@ export function MembersSection({ clubId, canManage }: MembersSectionProps) {
   }
 
   const getRoleBadge = (role: string) => {
-    const variants: Record<string, { label: string; variant: "default" | "secondary" | "outline" }> = {
-      admin: { label: "Admin", variant: "default" },
-      coach: { label: "Coach", variant: "secondary" },
-      viewer: { label: "Viewer", variant: "outline" },
-    };
-    const config = variants[role] || variants.viewer;
-    return <Badge variant={config.variant}>{config.label}</Badge>;
+    const label = ROLE_LABELS[role] || role;
+    const variant = role === "admin" ? "default" : "secondary";
+    return <Badge variant={variant}>{label}</Badge>;
   };
 
   return (
@@ -176,27 +222,19 @@ export function MembersSection({ clubId, canManage }: MembersSectionProps) {
                     {canManage ? (
                       <Select
                         value={member.role}
-                        onValueChange={(value) => updateRole.mutate({ memberId: member.id, newRole: value })}
+                        onValueChange={(value) => updateRole.mutate({ memberId: member.id, userId: member.user_id, newRole: value })}
                       >
-                        <SelectTrigger className="w-32">
+                        <SelectTrigger className="w-40">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="viewer">
-                            <div className="flex items-center gap-2">
-                              <Badge variant="outline" className="text-xs">Viewer</Badge>
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="coach">
-                            <div className="flex items-center gap-2">
-                              <Badge variant="secondary" className="text-xs">Coach</Badge>
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="admin">
-                            <div className="flex items-center gap-2">
-                              <Badge variant="default" className="text-xs">Admin</Badge>
-                            </div>
-                          </SelectItem>
+                          {Object.entries(ROLE_LABELS).map(([value, label]) => (
+                            <SelectItem key={value} value={value}>
+                              <Badge variant={value === "admin" ? "default" : "secondary"} className="text-xs">
+                                {label}
+                              </Badge>
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     ) : (
@@ -208,14 +246,34 @@ export function MembersSection({ clubId, canManage }: MembersSectionProps) {
                   </TableCell>
                   {canManage && (
                     <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => removeMember.mutate(member.id)}
-                        disabled={removeMember.isPending}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            disabled={removeMember.isPending}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Retirer ce membre ?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              {member.profile?.full_name || "Ce membre"} sera retiré du club et de toutes les catégories associées. Vous pourrez ensuite inviter quelqu'un d'autre à sa place.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Annuler</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => removeMember.mutate(member)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              Retirer
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </TableCell>
                   )}
                 </TableRow>
