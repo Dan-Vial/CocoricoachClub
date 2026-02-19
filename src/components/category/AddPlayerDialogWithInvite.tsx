@@ -23,8 +23,9 @@ import { toast } from "sonner";
 import { playerSchema } from "@/lib/validations";
 import { ATHLETISME_DISCIPLINES, ATHLETISME_SPECIALTIES, JUDO_WEIGHT_CATEGORIES, AVIRON_ROLES, isAthletismeCategory, isJudoCategory, isIndividualSport } from "@/lib/constants/sportTypes";
 import { getPositionsForSport } from "@/lib/constants/sportPositions";
-import { Loader2, Send, UserPlus, Copy, Check } from "lucide-react";
+import { Loader2, Send, UserPlus, Copy, Check, AlertTriangle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface AddPlayerDialogWithInviteProps {
   open: boolean;
@@ -67,6 +68,47 @@ export function AddPlayerDialogWithInvite({
       return data;
     },
   });
+
+  // Fetch client athlete limits
+  const { data: clientLimits } = useQuery({
+    queryKey: ["client-athlete-limits", categoryData?.club_id],
+    queryFn: async () => {
+      if (!categoryData?.club_id) return null;
+      const { data: club, error: clubError } = await supabase
+        .from("clubs")
+        .select("client_id")
+        .eq("id", categoryData.club_id)
+        .single();
+      if (clubError || !club?.client_id) return null;
+      const { data, error } = await supabase
+        .from("clients")
+        .select("max_athletes")
+        .eq("id", club.client_id)
+        .single();
+      if (error) return null;
+      return data;
+    },
+    enabled: open && !!categoryData?.club_id,
+    staleTime: 0,
+  });
+
+  // Current player count in this category
+  const { data: currentPlayerCount = 0 } = useQuery({
+    queryKey: ["category-player-count", categoryId],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("players")
+        .select("id", { count: "exact", head: true })
+        .eq("category_id", categoryId);
+      if (error) throw error;
+      return count || 0;
+    },
+    enabled: open,
+    staleTime: 0,
+  });
+
+  const maxAthletes = clientLimits?.max_athletes ?? null;
+  const isAthletesFull = maxAthletes !== null && currentPlayerCount >= maxAthletes;
 
   const sportType = categoryData?.rugby_type || "XV";
   const isAthletics = categoryData?.rugby_type ? isAthletismeCategory(categoryData.rugby_type) : false;
@@ -305,6 +347,20 @@ export function AddPlayerDialogWithInvite({
         ) : (
         <form onSubmit={handleSubmit}>
           <div className="space-y-4 py-4">
+            {isAthletesFull && (
+              <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription>
+                  Limite d'athlètes atteinte ({currentPlayerCount}/{maxAthletes}). Retirez un athlète existant avant d'en ajouter un nouveau.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {maxAthletes !== null && !isAthletesFull && (
+              <p className="text-xs text-muted-foreground">
+                Athlètes : {currentPlayerCount}/{maxAthletes} dans cette catégorie
+              </p>
+            )}
             {/* First Name */}
             <div className="space-y-2">
               <Label htmlFor="firstName">Prénom</Label>
@@ -533,7 +589,7 @@ export function AddPlayerDialogWithInvite({
             </Button>
             <Button
               type="submit"
-              disabled={!lastName.trim() || isLoading}
+              disabled={!lastName.trim() || isLoading || isAthletesFull}
             >
               {isLoading ? (
                 <>

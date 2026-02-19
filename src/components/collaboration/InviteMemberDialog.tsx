@@ -71,6 +71,7 @@ export function InviteMemberDialog({ open, onOpenChange, clubId }: InviteMemberD
       return data;
     },
     enabled: open && !!club?.client_id,
+    staleTime: 0,
   });
 
   // Fetch current staff count
@@ -85,6 +86,7 @@ export function InviteMemberDialog({ open, onOpenChange, clubId }: InviteMemberD
       return count || 0;
     },
     enabled: open,
+    staleTime: 0,
   });
 
   const maxStaff = clientLimits?.max_staff_users ?? null;

@@ -19,6 +19,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { AlertTriangle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { playerSchema } from "@/lib/validations";
 import { ATHLETISME_DISCIPLINES, ATHLETISME_SPECIALTIES, JUDO_WEIGHT_CATEGORIES, AVIRON_ROLES, isAthletismeCategory, isJudoCategory, isIndividualSport } from "@/lib/constants/sportTypes";
 import { getPositionsForSport } from "@/lib/constants/sportPositions";
@@ -58,6 +60,46 @@ export function AddPlayerDialog({
       return data;
     },
   });
+
+  // Fetch client athlete limits
+  const { data: clientLimits } = useQuery({
+    queryKey: ["client-athlete-limits", category?.club_id],
+    queryFn: async () => {
+      if (!category?.club_id) return null;
+      const { data: club, error: clubError } = await supabase
+        .from("clubs")
+        .select("client_id")
+        .eq("id", category.club_id)
+        .single();
+      if (clubError || !club?.client_id) return null;
+      const { data, error } = await supabase
+        .from("clients")
+        .select("max_athletes")
+        .eq("id", club.client_id)
+        .single();
+      if (error) return null;
+      return data;
+    },
+    enabled: open && !!category?.club_id,
+    staleTime: 0,
+  });
+
+  const { data: currentPlayerCount = 0 } = useQuery({
+    queryKey: ["category-player-count", categoryId],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("players")
+        .select("id", { count: "exact", head: true })
+        .eq("category_id", categoryId);
+      if (error) throw error;
+      return count || 0;
+    },
+    enabled: open,
+    staleTime: 0,
+  });
+
+  const maxAthletes = clientLimits?.max_athletes ?? null;
+  const isAthletesFull = maxAthletes !== null && currentPlayerCount >= maxAthletes;
 
   // Fetch active season for the club
   const { data: activeSeason } = useQuery({
@@ -179,6 +221,20 @@ export function AddPlayerDialog({
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="space-y-4 py-4">
+            {isAthletesFull && (
+              <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription>
+                  Limite d'athlètes atteinte ({currentPlayerCount}/{maxAthletes}). Retirez un athlète existant avant d'en ajouter un nouveau.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {maxAthletes !== null && !isAthletesFull && (
+              <p className="text-xs text-muted-foreground">
+                Athlètes : {currentPlayerCount}/{maxAthletes} dans cette catégorie
+              </p>
+            )}
             <div className="space-y-2">
               <Label htmlFor="playerName">Nom de l'athlète</Label>
               <Input
@@ -378,7 +434,7 @@ export function AddPlayerDialog({
             </Button>
             <Button
               type="submit"
-              disabled={!playerName.trim() || addPlayer.isPending}
+              disabled={!playerName.trim() || addPlayer.isPending || isAthletesFull}
             >
               {addPlayer.isPending ? "Ajout..." : "Ajouter"}
             </Button>
