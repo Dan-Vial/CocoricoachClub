@@ -18,6 +18,9 @@ interface TargetedNotificationRequest {
   channels: ("push" | "email" | "sms")[];
   event_type?: "session" | "match" | "event" | "custom";
   session_id?: string;
+  /** If set, sends ONLY to players tagged with participates_training_<training_session_id>.
+   *  This is the most precise targeting — one tag per player per session. */
+  training_session_id?: string;
   event_details?: { date?: string; time?: string; location?: string };
 }
 
@@ -126,7 +129,7 @@ serve(async (req: Request) => {
     const {
       title, message, url,
       category_ids, roles, club_id, target_user_ids,
-      channels, event_type, session_id, event_details,
+      channels, event_type, session_id, training_session_id, event_details,
     } = body;
 
     if (!title || !message) throw new Error("title and message are required");
@@ -134,20 +137,30 @@ serve(async (req: Request) => {
 
     const expandedRoles = roles ? expandRoles(roles) : [];
 
-    // ── Targeting strategy ────────────────────────────────────────────────────
-    //  Priority 1 – direct user IDs (specific participants)
-    //               → include_aliases / external_id  (precise)
-    //  Priority 2 – category / club broadcast
-    //               → OneSignal tag filters (club_ids, category_ids, role)
-    //                 No DB round-trip needed; works on subscribed+tagged devices
+    // ── Targeting strategy (priority order) ──────────────────────────────────
+    //  P0 – training_session_id  → filter on tag "participates_training_<id>"
+    //       Most precise: only players explicitly tagged for this session.
+    //  P1 – target_user_ids      → include_aliases / external_id
+    //  P2 – category_ids / club  → OneSignal tag filters (broadcast)
 
     let targetUserIds: string[] = [];
     let useTagFilters = false;
+    let participatesFilter: string | null = null; // tag key for P0
 
-    if (target_user_ids && target_user_ids.length > 0) {
+    if (training_session_id) {
+      // P0 — per-session participant tag filter
+      participatesFilter = `participates_training_${training_session_id}`;
+      useTagFilters = true;
+      console.log(
+        `[send-targeted-notification] Mode: participates_training filter — ` +
+        `tag="${participatesFilter}"`
+      );
+    } else if (target_user_ids && target_user_ids.length > 0) {
+      // P1 — explicit user IDs
       targetUserIds = [...new Set(target_user_ids)];
       console.log(`[send-targeted-notification] Mode: external_id — ${targetUserIds.length} user(s)`);
     } else if (category_ids?.length || club_id) {
+      // P2 — category / club broadcast via tags
       useTagFilters = true;
       console.log(
         `[send-targeted-notification] Mode: tag filters — ` +
@@ -193,13 +206,27 @@ serve(async (req: Request) => {
         }
 
         if (useTagFilters) {
-          // ── Tag-filter broadcast (club / category) ─────────────────────────
-          const filters = buildTagFilters(club_id, category_ids, expandedRoles);
+          let filters: Record<string, unknown>[];
+
+          if (participatesFilter) {
+            // P0 — per-session participant tag: most precise targeting
+            // Filter: tag "participates_training_<session_id>" exists (= "true")
+            filters = [
+              { field: "tag", key: participatesFilter, relation: "=", value: "true" },
+            ];
+            console.log(
+              `[send-targeted-notification] Push P0 filter (participates_training): ${participatesFilter}`
+            );
+          } else {
+            // P2 — club/category broadcast
+            filters = buildTagFilters(club_id, category_ids, expandedRoles);
+            console.log("[send-targeted-notification] Push P2 filters:", JSON.stringify(filters));
+          }
+
           if (filters.length === 0) {
             console.warn("[send-targeted-notification] No filters built — push skipped.");
           } else {
             pushBody.filters = filters;
-            console.log("[send-targeted-notification] Push with filters:", JSON.stringify(filters));
 
             const res = await fetch("https://api.onesignal.com/notifications", {
               method: "POST",
@@ -207,7 +234,7 @@ serve(async (req: Request) => {
               body: JSON.stringify(pushBody),
             });
             const json = await res.json();
-            console.log("[send-targeted-notification] OneSignal response (filters):", json);
+            console.log("[send-targeted-notification] OneSignal response (tag-filter):", json);
             if (res.ok) {
               results.pushSent = json.recipients ?? 0;
               console.log(`[send-targeted-notification] ✅ Push sent to ${results.pushSent} device(s). ID: ${json.id}`);
@@ -217,7 +244,7 @@ serve(async (req: Request) => {
             }
           }
         } else {
-          // ── Exact external_id targeting ────────────────────────────────────
+          // P1 — Exact external_id targeting
           pushBody.include_aliases = { external_id: targetUserIds };
           console.log("[send-targeted-notification] Push with external_ids:", targetUserIds);
 
