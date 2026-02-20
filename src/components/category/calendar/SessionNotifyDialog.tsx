@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
-import { Mail, Phone, Send, Loader2, Users, CalendarPlus, Clock, XCircle, Bell } from "lucide-react";
+import { Mail, Send, Loader2, Users, CalendarPlus, Clock, XCircle, Bell } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -69,7 +69,6 @@ export function SessionNotifyDialog({
   const [notificationType, setNotificationType] = useState("event_added");
   const [message, setMessage] = useState("");
   const [sendEmail, setSendEmail] = useState(true);
-  const [sendSms, setSendSms] = useState(false);
   const [sendPush, setSendPush] = useState(true);
 
   // Fetch players associated with this session (from awcr_tracking)
@@ -118,18 +117,11 @@ export function SessionNotifyDialog({
 
   const sendNotification = useMutation({
     mutationFn: async () => {
-      const channels: ("email" | "sms" | "push")[] = [];
-      if (sendEmail) channels.push("email");
-      if (sendSms) channels.push("sms");
-      if (sendPush) channels.push("push");
-
-      if (channels.length === 0) {
+      if (!sendEmail && !sendPush) {
         throw new Error("Veuillez sélectionner au moins un canal de notification");
       }
 
-      // Use targeted notification for push (by category/role)
-      // and individual notification for email/SMS
-      const results: { emailsSent: number; smsSent: number; pushSent: number } = { emailsSent: 0, smsSent: 0, pushSent: 0 };
+      const results: { emailsSent: number; pushSent: number } = { emailsSent: 0, pushSent: 0 };
       const eventDetails = {
         date: format(new Date(session.session_date), "EEEE d MMMM yyyy", { locale: fr }),
         time: session.session_start_time ? session.session_start_time.substring(0, 5) : undefined,
@@ -151,29 +143,20 @@ export function SessionNotifyDialog({
         if (!pushError && pushData) results.pushSent = pushData.pushSent || 0;
       }
 
-      // Send email/SMS via individual notification
-      if (sendEmail || sendSms) {
-        const athletesToNotify = athletes.filter((a) => {
-          if (sendEmail && a.email) return true;
-          if (sendSms && a.phone) return true;
-          return false;
-        });
+      // Send email via individual notification
+      if (sendEmail) {
+        const athletesToNotify = athletes.filter((a) => a.email);
 
         if (athletesToNotify.length > 0) {
-          const individualChannels: ("email" | "sms")[] = [];
-          if (sendEmail) individualChannels.push("email");
-          if (sendSms) individualChannels.push("sms");
-
           const { data, error } = await supabase.functions.invoke("notify-athletes", {
             body: {
               athletes: athletesToNotify.map((a) => ({
                 name: a.name,
                 email: a.email,
-                phone: a.phone,
               })),
               subject: selectedType?.label || "Notification",
               message: finalMessage,
-              channels: individualChannels,
+              channels: ["email"],
               eventType: "session",
               eventDetails,
             },
@@ -181,7 +164,6 @@ export function SessionNotifyDialog({
 
           if (!error && data) {
             results.emailsSent = data.emailsSent || 0;
-            results.smsSent = data.smsSent || 0;
           }
         }
       }
@@ -191,7 +173,6 @@ export function SessionNotifyDialog({
     onSuccess: (data) => {
       const parts = [];
       if (data.emailsSent > 0) parts.push(`${data.emailsSent} email(s)`);
-      if (data.smsSent > 0) parts.push(`${data.smsSent} SMS`);
       if (data.pushSent > 0) parts.push(`${data.pushSent} push`);
       
       toast.success(`Notifications envoyées : ${parts.join(", ") || "aucune"}`);
@@ -229,7 +210,7 @@ export function SessionNotifyDialog({
             <span className="text-sm">
               <strong>{athletes.length}</strong> athlète(s) 
               {sessionPlayers?.fromSession ? " (inscrits à la séance)" : " (tous)"} • 
-              <span className="text-muted-foreground"> {athletesWithEmail} avec email, {athletesWithPhone} avec téléphone</span>
+              <span className="text-muted-foreground"> {athletesWithEmail} avec email</span>
             </span>
           </div>
 
@@ -276,25 +257,6 @@ export function SessionNotifyDialog({
                   Email
                   <Badge variant="secondary" className="text-xs">
                     {athletesWithEmail}
-                  </Badge>
-                </label>
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="sendSms"
-                  checked={sendSms}
-                  onCheckedChange={(checked) => setSendSms(checked as boolean)}
-                  disabled={athletesWithPhone === 0}
-                />
-                <label
-                  htmlFor="sendSms"
-                  className="flex items-center gap-2 text-sm font-medium cursor-pointer"
-                >
-                  <Phone className="h-4 w-4" />
-                  SMS
-                  <Badge variant="secondary" className="text-xs">
-                    {athletesWithPhone}
                   </Badge>
                 </label>
               </div>
@@ -348,7 +310,7 @@ export function SessionNotifyDialog({
             </Button>
             <Button
               type="submit"
-              disabled={sendNotification.isPending || (!sendEmail && !sendSms && !sendPush) || loadingPlayers}
+              disabled={sendNotification.isPending || (!sendEmail && !sendPush) || loadingPlayers}
             >
               {sendNotification.isPending ? (
                 <>
