@@ -102,6 +102,7 @@ export function getOneSignalPermission(): NotificationPermission {
 
 /**
  * Login user to OneSignal: set external_id and tags
+ * Supports both SDK v16+ (OneSignal.login) and legacy v1 (setExternalUserId).
  */
 export async function oneSignalLogin(
   userId: string,
@@ -110,24 +111,50 @@ export async function oneSignalLogin(
 ): Promise<void> {
   if (typeof window === "undefined" || !window.OneSignal) return;
 
+  const tags: Record<string, string> = {
+    user_id: userId,
+    email: email,
+    ...userTags,
+  };
+
   try {
     const OneSignal = window.OneSignal;
-    OneSignal.push(function () {
-      // Set external user id
-      OneSignal.setExternalUserId(userId);
-      console.log("[OneSignal] External user ID set:", userId);
 
-      // Send all tags
-      const tags: Record<string, string> = {
-        user_id: userId,
-        email: email,
-        ...userTags,
-      };
-      OneSignal.sendTags(tags);
-      console.log("[OneSignal] Tags sent:", tags);
-    });
+    // ── SDK v16+ API (preferred) ─────────────────────────────────────────────
+    if (typeof OneSignal.login === "function") {
+      await OneSignal.login(userId);
+      console.log("[OneSignal] login() — external_id set:", userId);
+
+      // Add tags via User API (v16+)
+      if (OneSignal.User?.addTags) {
+        OneSignal.User.addTags(tags);
+        console.log("[OneSignal] User.addTags() sent:", tags);
+      } else if (OneSignal.User?.addTag) {
+        for (const [key, value] of Object.entries(tags)) {
+          OneSignal.User.addTag(key, value);
+        }
+        console.log("[OneSignal] User.addTag() sent:", tags);
+      }
+    } else {
+      // ── Legacy SDK v1 API (fallback) ─────────────────────────────────────────
+      OneSignal.push(function () {
+        OneSignal.setExternalUserId(userId);
+        console.log("[OneSignal] setExternalUserId() — external_id set:", userId);
+        OneSignal.sendTags(tags);
+        console.log("[OneSignal] sendTags() sent:", tags);
+      });
+    }
   } catch (err) {
     console.error("[OneSignal] Login error:", err);
+    // Last-resort fallback: try legacy push queue
+    try {
+      window.OneSignal!.push(function () {
+        window.OneSignal!.setExternalUserId(userId);
+        window.OneSignal!.sendTags(tags);
+      });
+    } catch {
+      // Silently ignore
+    }
   }
 }
 
@@ -139,21 +166,28 @@ export async function oneSignalLogout(): Promise<void> {
 
   try {
     const OneSignal = window.OneSignal;
-    OneSignal.push(function () {
-      OneSignal.removeExternalUserId();
-      OneSignal.deleteTags([
-        "user_id", "email", "club_ids", "category_ids",
-        "role", "user_type", "is_super_admin",
-      ]);
-      console.log("[OneSignal] User logged out, tags cleared");
-    });
+    // SDK v16+ logout
+    if (typeof OneSignal.logout === "function") {
+      await OneSignal.logout();
+      console.log("[OneSignal] logout() — user disconnected");
+    } else {
+      // Legacy fallback
+      OneSignal.push(function () {
+        OneSignal.removeExternalUserId();
+        OneSignal.deleteTags([
+          "user_id", "email", "club_ids", "category_ids",
+          "role", "user_type", "is_super_admin",
+        ]);
+        console.log("[OneSignal] User logged out (legacy), tags cleared");
+      });
+    }
   } catch (err) {
     console.error("[OneSignal] Logout error:", err);
   }
 }
 
 /**
- * Update OneSignal tags
+ * Update OneSignal tags (supports both SDK v16+ and legacy v1)
  */
 export async function updateOneSignalTags(
   tags: Record<string, string>
@@ -161,10 +195,22 @@ export async function updateOneSignalTags(
   if (typeof window === "undefined" || !window.OneSignal) return;
 
   try {
-    window.OneSignal.push(function () {
-      window.OneSignal!.sendTags(tags);
-      console.log("[OneSignal] Tags updated:", tags);
-    });
+    const OneSignal = window.OneSignal;
+    if (OneSignal.User?.addTags) {
+      OneSignal.User.addTags(tags);
+      console.log("[OneSignal] User.addTags() updated:", tags);
+    } else if (OneSignal.User?.addTag) {
+      for (const [key, value] of Object.entries(tags)) {
+        OneSignal.User.addTag(key, value);
+      }
+      console.log("[OneSignal] User.addTag() updated:", tags);
+    } else {
+      // Legacy fallback
+      OneSignal.push(function () {
+        OneSignal.sendTags(tags);
+        console.log("[OneSignal] sendTags() updated (legacy):", tags);
+      });
+    }
   } catch (err) {
     console.error("[OneSignal] Tag update error:", err);
   }
