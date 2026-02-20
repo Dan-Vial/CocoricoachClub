@@ -101,14 +101,32 @@ export function getOneSignalPermission(): NotificationPermission {
 }
 
 /**
- * Login user to OneSignal: set external_id and tags
- * Supports both SDK v16+ (OneSignal.login) and legacy v1 (setExternalUserId).
+ * Login user to OneSignal: set external_id, email and tags.
+ * Also calls the server-side edge function to ensure tags are synced
+ * even if the SDK is unavailable or blocked.
  */
 export async function oneSignalLogin(
   userId: string,
   email: string,
   userTags: Record<string, string>
 ): Promise<void> {
+  // ── Always sync server-side first (most reliable) ────────────────────────
+  try {
+    const { supabase } = await import("@/integrations/supabase/client");
+    supabase.functions.invoke("sync-onesignal-tags", {
+      body: { user_id: userId },
+    }).then((res) => {
+      if (res.error) {
+        console.warn("[OneSignal] Server sync error:", res.error);
+      } else {
+        console.log("[OneSignal] Server sync OK:", res.data);
+      }
+    }).catch(() => {});
+  } catch {
+    // Non-blocking
+  }
+
+  // ── SDK-side: link external_id and set tags in the browser ───────────────
   if (typeof window === "undefined" || !window.OneSignal) return;
 
   const tags: Record<string, string> = {
@@ -125,6 +143,11 @@ export async function oneSignalLogin(
       await OneSignal.login(userId);
       console.log("[OneSignal] login() — external_id set:", userId);
 
+      // Add email channel
+      if (email && OneSignal.User?.addEmail) {
+        try { OneSignal.User.addEmail(email); } catch { /* ignore */ }
+      }
+
       // Add tags via User API (v16+)
       if (OneSignal.User?.addTags) {
         OneSignal.User.addTags(tags);
@@ -136,7 +159,7 @@ export async function oneSignalLogin(
         console.log("[OneSignal] User.addTag() sent:", tags);
       }
     } else {
-      // ── Legacy SDK v1 API (fallback) ─────────────────────────────────────────
+      // ── Legacy SDK v1 API (fallback) ──────────────────────────────────────
       OneSignal.push(function () {
         OneSignal.setExternalUserId(userId);
         console.log("[OneSignal] setExternalUserId() — external_id set:", userId);
