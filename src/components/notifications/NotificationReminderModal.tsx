@@ -16,12 +16,11 @@ export function NotificationReminderModal() {
 
   useEffect(() => {
     if (!user) return;
-
-    // Don't show if permission already granted or denied
     if (!("Notification" in window)) return;
+
     const perm = window.Notification.permission;
 
-    // If already granted → silently re-sync tags to OneSignal (covers existing users of all roles)
+    // If already granted → silently re-sync tags (covers existing users of all roles)
     if (perm === "granted") {
       (async () => {
         try {
@@ -35,21 +34,27 @@ export function NotificationReminderModal() {
       return;
     }
 
+    // If denied by the browser — nothing we can do programmatically
     if (perm === "denied") return;
 
-    // Only show if the user has already completed onboarding (not first time)
-    const onboardingDone = localStorage.getItem(`${ONBOARDING_KEY}_${user.id}`);
-    if (!onboardingDone) return;
-
-    // Check if we already showed it today
+    // Permission still "default" — check if we should show the reminder
+    // Show if: onboarding was marked done (user dismissed it) OR never shown
     const lastShown = localStorage.getItem(`${LAST_SHOWN_KEY}_${user.id}`);
     if (lastShown) {
       const lastShownTime = parseInt(lastShown, 10);
+      // Don't re-show if shown today
       if (Date.now() - lastShownTime < ONE_DAY_MS) return;
     }
 
+    // Check if onboarding popup is already going to show (not done yet + no lastShown)
+    const onboardingDone = localStorage.getItem(`${ONBOARDING_KEY}_${user.id}`);
+    if (!onboardingDone && !lastShown) {
+      // The NotificationOnboarding fullscreen popup will handle it — don't show both
+      return;
+    }
+
     // Show after a short delay
-    const t = setTimeout(() => setOpen(true), 1500);
+    const t = setTimeout(() => setOpen(true), 2000);
     return () => clearTimeout(t);
   }, [user]);
 
@@ -64,16 +69,13 @@ export function NotificationReminderModal() {
     setIsHandling(true);
 
     try {
-      // Init OneSignal and request permission in parallel with nothing blocking
-      // initOneSignal is a no-op if already done, so it's fast
-      initOneSignal(); // fire and forget — just sets a flag
-
+      await initOneSignal();
       const granted = await requestOneSignalPermission();
       if (granted) {
-        // Build tags and login in parallel
         const tags = await buildUserTags(user.id);
-        oneSignalLogin(user.id, user.email || "", tags); // fire and forget
+        await oneSignalLogin(user.id, user.email || "", tags);
         localStorage.setItem(`${ONBOARDING_KEY}_${user.id}`, "done");
+        console.log("[NotificationReminderModal] Push granted & synced");
       } else {
         markShownToday();
       }
@@ -101,10 +103,22 @@ export function NotificationReminderModal() {
           </div>
         </div>
 
-        <h2 className="text-xl font-bold mb-2">Active les notifications</h2>
-        <p className="text-muted-foreground text-sm mb-6 leading-relaxed">
+        <h2 className="text-xl font-bold mb-2">Active les notifications push</h2>
+        <p className="text-muted-foreground text-sm mb-4 leading-relaxed">
           Ne rate aucune info importante (entraînements, matchs, rappels)
         </p>
+
+        <div className="space-y-2 text-left mb-6">
+          {[
+            { emoji: "📣", label: "Convocations en temps réel" },
+            { emoji: "🏋️", label: "Rappels de séances" },
+          ].map((item) => (
+            <div key={item.label} className="flex items-center gap-2 text-sm text-muted-foreground">
+              <span>{item.emoji}</span>
+              <span>{item.label}</span>
+            </div>
+          ))}
+        </div>
 
         <div className="space-y-2">
           <Button
@@ -113,7 +127,7 @@ export function NotificationReminderModal() {
             disabled={isHandling}
           >
             <Bell className="mr-2 h-4 w-4" />
-            {isHandling ? "Activation..." : "Activer maintenant"}
+            {isHandling ? "Activation..." : "Accepter les notifications"}
           </Button>
           <Button
             variant="ghost"

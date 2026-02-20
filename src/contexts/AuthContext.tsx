@@ -3,6 +3,7 @@ import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { initOneSignal, oneSignalLogin, oneSignalLogout, buildUserTags } from "@/lib/onesignal";
+import { resetOnboardingIfNeeded } from "@/components/notifications/NotificationOnboarding";
 
 const OFFLINE_SESSION_KEY = "rugby-offline-session";
 const OFFLINE_USER_KEY = "rugby-offline-user";
@@ -98,6 +99,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
         // Sync OneSignal on login (non-blocking, deferred)
         if (session?.user) {
+          // Reset onboarding flag if permission still "default" so popup re-appears
+          resetOnboardingIfNeeded(session.user.id);
           setTimeout(() => syncOneSignalUser(session.user), 1000);
         }
       }
@@ -111,6 +114,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setIsOfflineSession(false);
         saveOfflineSession(session, session.user);
         // Sync OneSignal for existing session
+        resetOnboardingIfNeeded(session.user.id);
         setTimeout(() => syncOneSignalUser(session.user), 1000);
       } else if (!navigator.onLine) {
         const { user: offlineUser, isOfflineSession: isOffline } = loadOfflineSession();
