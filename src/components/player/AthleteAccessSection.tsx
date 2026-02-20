@@ -37,6 +37,7 @@ export function AthleteAccessSection({ playerId, categoryId, playerName }: Athle
       if (error) throw error;
       return data;
     },
+    enabled: !!playerId,
   });
 
   // Fetch category to get club_id
@@ -51,6 +52,7 @@ export function AthleteAccessSection({ playerId, categoryId, playerName }: Athle
       if (error) throw error;
       return data;
     },
+    enabled: !!categoryId,
   });
 
   // Fetch athlete invitation
@@ -67,7 +69,7 @@ export function AthleteAccessSection({ playerId, categoryId, playerName }: Athle
       if (error) throw error;
       return data;
     },
-    enabled: !player?.user_id,
+    enabled: !!playerId && !player?.user_id,
   });
 
   // Create invitation link

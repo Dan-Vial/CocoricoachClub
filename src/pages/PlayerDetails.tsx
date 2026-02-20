@@ -409,7 +409,7 @@ function PlayerDetailsContent() {
         </div>
 
         {/* Athlete Access Section - only for coaches */}
-        {!isViewer && (
+        {!isViewer && player.category_id && (
           <div className="mb-6">
             <AthleteAccessSection 
               playerId={playerId!} 
