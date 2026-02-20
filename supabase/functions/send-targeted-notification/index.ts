@@ -10,19 +10,100 @@ const corsHeaders = {
 interface TargetedNotificationRequest {
   title: string;
   message: string;
-  url?: string; // Deep link URL
-  category_ids?: string[]; // Target specific categories/teams
-  roles?: string[]; // Target specific roles: "player", "staff", "admin", "coach", etc.
-  club_id?: string; // Target specific club
-  target_user_ids?: string[]; // Direct list of user IDs (highest priority)
+  url?: string;
+  category_ids?: string[];
+  roles?: string[];
+  club_id?: string;
+  target_user_ids?: string[];
   channels: ("push" | "email" | "sms")[];
   event_type?: "session" | "match" | "event" | "custom";
-  session_id?: string; // for analytics/logging
-  event_details?: {
-    date?: string;
-    time?: string;
-    location?: string;
-  };
+  session_id?: string;
+  event_details?: { date?: string; time?: string; location?: string };
+}
+
+// Role map: friendly aliases → actual OneSignal tag role values
+const ROLE_MAP: Record<string, string[]> = {
+  player: ["athlete"],
+  staff: ["admin", "coach", "physio", "doctor", "viewer", "prepa_physique", "administratif"],
+};
+
+function expandRoles(roles: string[]): string[] {
+  return roles.flatMap((r) => ROLE_MAP[r] || [r]);
+}
+
+/**
+ * Build OneSignal filter array from club_id / category_ids / roles tags.
+ * Filter format: https://documentation.onesignal.com/reference/create-notification#send-to-users-based-on-filters
+ *
+ * Tag structure stored per user:
+ *   - club_ids      : comma-separated string of club UUIDs
+ *   - category_ids  : comma-separated string of category UUIDs
+ *   - role          : single string (athlete | admin | coach | …)
+ */
+function buildTagFilters(
+  club_id: string | undefined,
+  category_ids: string[] | undefined,
+  expandedRoles: string[]
+): Record<string, unknown>[] {
+  const locationFilters: Record<string, unknown>[] = [];
+
+  if (club_id) {
+    locationFilters.push({ field: "tag", key: "club_ids", relation: "=", value: club_id });
+  }
+
+  if (category_ids && category_ids.length > 0) {
+    category_ids.forEach((cid, idx) => {
+      if (idx > 0 || locationFilters.length > 0) {
+        locationFilters.push({ operator: "OR" });
+      }
+      locationFilters.push({ field: "tag", key: "category_ids", relation: "=", value: cid });
+    });
+  }
+
+  if (expandedRoles.length === 0 || locationFilters.length === 0) {
+    return locationFilters;
+  }
+
+  // AND role filter(s) to location filters
+  const roleFilters: Record<string, unknown>[] = [];
+  expandedRoles.forEach((r, idx) => {
+    if (idx > 0) roleFilters.push({ operator: "OR" });
+    roleFilters.push({ field: "tag", key: "role", relation: "=", value: r });
+  });
+
+  return [...locationFilters, { operator: "AND" }, ...roleFilters];
+}
+
+function buildEmailHtml(
+  title: string,
+  message: string,
+  eventDetails?: { date?: string; time?: string; location?: string }
+): string {
+  const eventInfo = eventDetails
+    ? `<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:16px;margin:16px 0;">
+      ${eventDetails.date ? `<p style="margin:4px 0;"><strong>📅 Date:</strong> ${eventDetails.date}</p>` : ""}
+      ${eventDetails.time ? `<p style="margin:4px 0;"><strong>🕐 Heure:</strong> ${eventDetails.time}</p>` : ""}
+      ${eventDetails.location ? `<p style="margin:4px 0;"><strong>📍 Lieu:</strong> ${eventDetails.location}</p>` : ""}
+    </div>`
+    : "";
+
+  return `<!DOCTYPE html><html>
+  <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+  <body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f4f4f5;margin:0;padding:20px;">
+    <div style="max-width:600px;margin:0 auto;background:white;border-radius:12px;overflow:hidden;box-shadow:0 4px 6px rgba(0,0,0,.1);">
+      <div style="background:linear-gradient(135deg,#059669 0%,#10b981 100%);padding:32px;text-align:center;">
+        <h1 style="color:white;margin:0;font-size:24px;">🏉 CocoriCoach</h1>
+      </div>
+      <div style="padding:32px;">
+        <h2 style="color:#1f2937;margin:16px 0;">${title}</h2>
+        <p style="color:#4b5563;line-height:1.6;white-space:pre-wrap;">${message}</p>
+        ${eventInfo}
+      </div>
+      <div style="background:#f9fafb;padding:20px;text-align:center;border-top:1px solid #e5e7eb;">
+        <p style="color:#9ca3af;font-size:12px;margin:0;">© ${new Date().getFullYear()} CocoriCoach</p>
+      </div>
+    </div>
+  </body></html>`;
 }
 
 serve(async (req: Request) => {
@@ -42,110 +123,68 @@ serve(async (req: Request) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const body: TargetedNotificationRequest = await req.json();
-    const { title, message, url, category_ids, roles, club_id, target_user_ids, channels, event_type, session_id, event_details } = body;
+    const {
+      title, message, url,
+      category_ids, roles, club_id, target_user_ids,
+      channels, event_type, session_id, event_details,
+    } = body;
 
-    if (!title || !message) {
-      throw new Error("title and message are required");
-    }
+    if (!title || !message) throw new Error("title and message are required");
+    if (!channels || channels.length === 0) throw new Error("At least one channel is required");
 
-    if (!channels || channels.length === 0) {
-      throw new Error("At least one channel is required");
-    }
+    const expandedRoles = roles ? expandRoles(roles) : [];
 
-    console.log(`[send-targeted-notification] Action: event_type=${event_type}, session_id=${session_id}`);
-    console.log(`[send-targeted-notification] Channels: ${channels.join(", ")}`);
+    // ── Targeting strategy ────────────────────────────────────────────────────
+    //  Priority 1 – direct user IDs (specific participants)
+    //               → include_aliases / external_id  (precise)
+    //  Priority 2 – category / club broadcast
+    //               → OneSignal tag filters (club_ids, category_ids, role)
+    //                 No DB round-trip needed; works on subscribed+tagged devices
 
-    // Build list of target user IDs based on filters (priority order)
     let targetUserIds: string[] = [];
+    let useTagFilters = false;
 
-    // 1. Direct user IDs (highest priority — e.g. session participants)
     if (target_user_ids && target_user_ids.length > 0) {
-      targetUserIds = [...target_user_ids];
-      console.log(`[send-targeted-notification] Using direct target_user_ids: ${targetUserIds.length} users`);
-    }
-    // 2. Category-based targeting
-    else if (category_ids && category_ids.length > 0) {
-      const { data: catMembers } = await supabase
-        .from("category_members")
-        .select("user_id, role")
-        .in("category_id", category_ids);
-
-      if (catMembers) {
-        let filtered = catMembers;
-        if (roles && roles.length > 0) {
-          const roleMap: Record<string, string[]> = {
-            player: ["athlete"],
-            staff: ["admin", "coach", "physio", "doctor", "viewer", "prepa_physique", "administratif"],
-          };
-          const expandedRoles = roles.flatMap((r) => roleMap[r] || [r]);
-          filtered = filtered.filter((m) => expandedRoles.includes(m.role));
-        }
-        targetUserIds = filtered.map((m) => m.user_id);
-        console.log(`[send-targeted-notification] Category targeting: ${targetUserIds.length} users from ${category_ids.length} category(ies)`);
-      }
-    }
-    // 3. Club-based targeting
-    else if (club_id) {
-      const { data: clubMembers } = await supabase
-        .from("club_members")
-        .select("user_id, role")
-        .eq("club_id", club_id);
-
-      const { data: club } = await supabase
-        .from("clubs")
-        .select("user_id")
-        .eq("id", club_id)
-        .single();
-
-      const allMembers = [...(clubMembers || [])];
-      if (club) allMembers.push({ user_id: club.user_id, role: "admin" });
-
-      if (roles && roles.length > 0) {
-        const roleMap: Record<string, string[]> = {
-          player: ["athlete"],
-          staff: ["admin", "coach", "physio", "doctor", "viewer", "prepa_physique", "administratif"],
-        };
-        const expandedRoles = roles.flatMap((r) => roleMap[r] || [r]);
-        targetUserIds = allMembers.filter((m) => expandedRoles.includes(m.role)).map((m) => m.user_id);
-      } else {
-        targetUserIds = allMembers.map((m) => m.user_id);
-      }
-      console.log(`[send-targeted-notification] Club targeting: ${targetUserIds.length} users from club ${club_id}`);
-    }
-
-    // Deduplicate
-    targetUserIds = [...new Set(targetUserIds)];
-
-    if (targetUserIds.length === 0) {
-      console.warn("[send-targeted-notification] No matching users found — notification not sent.");
+      targetUserIds = [...new Set(target_user_ids)];
+      console.log(`[send-targeted-notification] Mode: external_id — ${targetUserIds.length} user(s)`);
+    } else if (category_ids?.length || club_id) {
+      useTagFilters = true;
+      console.log(
+        `[send-targeted-notification] Mode: tag filters — ` +
+        `club_id=${club_id}, category_ids=${JSON.stringify(category_ids)}, roles=${JSON.stringify(expandedRoles)}`
+      );
+    } else {
+      console.warn("[send-targeted-notification] No target specified — aborting.");
       return new Response(
-        JSON.stringify({ success: true, sent: 0, targetedUsers: 0, message: "No matching users found" }),
+        JSON.stringify({ success: true, sent: 0, targetedUsers: 0, message: "No target specified" }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log(`[send-targeted-notification] Final target: ${targetUserIds.length} unique user(s):`, targetUserIds);
-
     const results = { pushSent: 0, emailsSent: 0, smsSent: 0, errors: [] as string[] };
 
-    // Build push content with event details
+    // Build push message with event details appended
     let pushMessage = message;
     if (event_details?.date) pushMessage += `\n📅 ${event_details.date}`;
     if (event_details?.time) pushMessage += ` à ${event_details.time}`;
     if (event_details?.location) pushMessage += `\n📍 ${event_details.location}`;
 
-    // Send PUSH notifications (batch by external_id)
+    // ── PUSH ─────────────────────────────────────────────────────────────────
     if (channels.includes("push")) {
       try {
         const pushBody: Record<string, unknown> = {
           app_id: ONESIGNAL_APP_ID,
-          include_aliases: {
-            external_id: targetUserIds,
-          },
           target_channel: "push",
           headings: { en: title, fr: title },
           contents: { en: pushMessage, fr: pushMessage },
           name: `Targeted push: ${title}`,
+          // Custom data payload — available in notification click handler
+          data: {
+            event_type: event_type || "custom",
+            session_id: session_id || null,
+            training_id: session_id || null,
+            sent_at: new Date().toISOString(),
+          },
         };
 
         if (url) {
@@ -153,35 +192,49 @@ serve(async (req: Request) => {
           pushBody.web_url = url;
         }
 
-        // Add custom data for analytics + OneSignal tags
-        pushBody.data = {
-          event_type: event_type || "custom",
-          session_id: session_id || null,
-          training_id: session_id || null,
-          sent_at: new Date().toISOString(),
-        };
+        if (useTagFilters) {
+          // ── Tag-filter broadcast (club / category) ─────────────────────────
+          const filters = buildTagFilters(club_id, category_ids, expandedRoles);
+          if (filters.length === 0) {
+            console.warn("[send-targeted-notification] No filters built — push skipped.");
+          } else {
+            pushBody.filters = filters;
+            console.log("[send-targeted-notification] Push with filters:", JSON.stringify(filters));
 
-        console.log("[send-targeted-notification] Sending push to OneSignal:", JSON.stringify(pushBody));
-
-        const pushResponse = await fetch("https://api.onesignal.com/notifications", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Key ${ONESIGNAL_REST_API_KEY}`,
-          },
-          body: JSON.stringify(pushBody),
-        });
-
-        const pushResult = await pushResponse.json();
-        console.log("[send-targeted-notification] OneSignal push response:", pushResult);
-
-        if (pushResponse.ok) {
-          // OneSignal returns recipients count
-          results.pushSent = pushResult.recipients ?? targetUserIds.length;
-          console.log(`[send-targeted-notification] ✅ Push sent to ${results.pushSent} device(s). Notification ID: ${pushResult.id}`);
+            const res = await fetch("https://api.onesignal.com/notifications", {
+              method: "POST",
+              headers: { "Content-Type": "application/json", Authorization: `Key ${ONESIGNAL_REST_API_KEY}` },
+              body: JSON.stringify(pushBody),
+            });
+            const json = await res.json();
+            console.log("[send-targeted-notification] OneSignal response (filters):", json);
+            if (res.ok) {
+              results.pushSent = json.recipients ?? 0;
+              console.log(`[send-targeted-notification] ✅ Push sent to ${results.pushSent} device(s). ID: ${json.id}`);
+            } else {
+              console.error("[send-targeted-notification] ❌ Push error:", JSON.stringify(json));
+              results.errors.push(`Push: ${JSON.stringify(json)}`);
+            }
+          }
         } else {
-          console.error("[send-targeted-notification] ❌ Push error from OneSignal:", JSON.stringify(pushResult));
-          results.errors.push(`Push: ${JSON.stringify(pushResult)}`);
+          // ── Exact external_id targeting ────────────────────────────────────
+          pushBody.include_aliases = { external_id: targetUserIds };
+          console.log("[send-targeted-notification] Push with external_ids:", targetUserIds);
+
+          const res = await fetch("https://api.onesignal.com/notifications", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Key ${ONESIGNAL_REST_API_KEY}` },
+            body: JSON.stringify(pushBody),
+          });
+          const json = await res.json();
+          console.log("[send-targeted-notification] OneSignal response (external_id):", json);
+          if (res.ok) {
+            results.pushSent = json.recipients ?? targetUserIds.length;
+            console.log(`[send-targeted-notification] ✅ Push sent to ${results.pushSent} device(s). ID: ${json.id}`);
+          } else {
+            console.error("[send-targeted-notification] ❌ Push error:", JSON.stringify(json));
+            results.errors.push(`Push: ${JSON.stringify(json)}`);
+          }
         }
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : String(e);
@@ -190,9 +243,8 @@ serve(async (req: Request) => {
       }
     }
 
-    // Send EMAIL notifications
-    if (channels.includes("email")) {
-      // Get emails for target users
+    // ── EMAIL (only when we have explicit user IDs — tag filters can't resolve emails) ──
+    if (channels.includes("email") && targetUserIds.length > 0) {
       const { data: profiles } = await supabase
         .from("profiles")
         .select("id, email, full_name")
@@ -203,13 +255,9 @@ serve(async (req: Request) => {
       if (emails.length > 0) {
         try {
           const emailHtml = buildEmailHtml(title, message, event_details);
-
-          const emailResponse = await fetch("https://api.onesignal.com/notifications", {
+          const res = await fetch("https://api.onesignal.com/notifications", {
             method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Key ${ONESIGNAL_REST_API_KEY}`,
-            },
+            headers: { "Content-Type": "application/json", Authorization: `Key ${ONESIGNAL_REST_API_KEY}` },
             body: JSON.stringify({
               app_id: ONESIGNAL_APP_ID,
               include_email_tokens: emails,
@@ -218,12 +266,11 @@ serve(async (req: Request) => {
               email_from_name: "CocoriCoach",
             }),
           });
-
-          if (emailResponse.ok) {
+          if (res.ok) {
             results.emailsSent = emails.length;
           } else {
-            const errData = await emailResponse.json();
-            results.errors.push(`Email: ${JSON.stringify(errData)}`);
+            const err = await res.json();
+            results.errors.push(`Email: ${JSON.stringify(err)}`);
           }
         } catch (e: unknown) {
           results.errors.push(`Email error: ${e instanceof Error ? e.message : String(e)}`);
@@ -231,9 +278,8 @@ serve(async (req: Request) => {
       }
     }
 
-    // Send SMS notifications
-    if (channels.includes("sms")) {
-      // Get phone numbers from players linked to target users
+    // ── SMS (only when we have explicit user IDs) ─────────────────────────────
+    if (channels.includes("sms") && targetUserIds.length > 0) {
       const { data: players } = await supabase
         .from("players")
         .select("user_id, phone")
@@ -254,12 +300,9 @@ serve(async (req: Request) => {
           if (smsContent.length > 300) smsContent = smsContent.substring(0, 297) + "...";
 
           try {
-            const smsResponse = await fetch("https://api.onesignal.com/notifications", {
+            const res = await fetch("https://api.onesignal.com/notifications", {
               method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Key ${ONESIGNAL_REST_API_KEY}`,
-              },
+              headers: { "Content-Type": "application/json", Authorization: `Key ${ONESIGNAL_REST_API_KEY}` },
               body: JSON.stringify({
                 app_id: ONESIGNAL_APP_ID,
                 include_phone_numbers: [phone],
@@ -267,11 +310,10 @@ serve(async (req: Request) => {
                 contents: { en: smsContent },
               }),
             });
-
-            if (smsResponse.ok) results.smsSent++;
+            if (res.ok) results.smsSent++;
             else {
-              const errData = await smsResponse.json();
-              results.errors.push(`SMS ${phone}: ${JSON.stringify(errData)}`);
+              const err = await res.json();
+              results.errors.push(`SMS ${phone}: ${JSON.stringify(err)}`);
             }
           } catch (e: unknown) {
             results.errors.push(`SMS ${phone}: ${e instanceof Error ? e.message : String(e)}`);
@@ -285,7 +327,8 @@ serve(async (req: Request) => {
     return new Response(
       JSON.stringify({
         success: true,
-        targetedUsers: targetUserIds.length,
+        mode: useTagFilters ? "tag-filters" : "external_id",
+        targetedUsers: useTagFilters ? "n/a (tag-filter)" : targetUserIds.length,
         ...results,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -299,41 +342,3 @@ serve(async (req: Request) => {
     );
   }
 });
-
-function buildEmailHtml(
-  title: string,
-  message: string,
-  eventDetails?: { date?: string; time?: string; location?: string }
-): string {
-  const eventInfo = eventDetails
-    ? `
-    <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 16px; margin: 16px 0;">
-      ${eventDetails.date ? `<p style="margin: 4px 0;"><strong>📅 Date:</strong> ${eventDetails.date}</p>` : ""}
-      ${eventDetails.time ? `<p style="margin: 4px 0;"><strong>🕐 Heure:</strong> ${eventDetails.time}</p>` : ""}
-      ${eventDetails.location ? `<p style="margin: 4px 0;"><strong>📍 Lieu:</strong> ${eventDetails.location}</p>` : ""}
-    </div>
-  `
-    : "";
-
-  return `
-    <!DOCTYPE html>
-    <html>
-    <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
-    <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f4f4f5; margin: 0; padding: 20px;">
-      <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-        <div style="background: linear-gradient(135deg, #059669 0%, #10b981 100%); padding: 32px; text-align: center;">
-          <h1 style="color: white; margin: 0; font-size: 24px;">🏉 CocoriCoach</h1>
-        </div>
-        <div style="padding: 32px;">
-          <h2 style="color: #1f2937; margin: 16px 0;">${title}</h2>
-          <p style="color: #4b5563; line-height: 1.6; white-space: pre-wrap;">${message}</p>
-          ${eventInfo}
-        </div>
-        <div style="background: #f9fafb; padding: 20px; text-align: center; border-top: 1px solid #e5e7eb;">
-          <p style="color: #9ca3af; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} CocoriCoach</p>
-        </div>
-      </div>
-    </body>
-    </html>
-  `;
-}
