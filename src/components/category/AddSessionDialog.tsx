@@ -35,6 +35,7 @@ import { getTrainingTypesForSport, trainingTypeHasExercises } from "@/lib/consta
 import { QuickAddExerciseDialog } from "@/components/library/QuickAddExerciseDialog";
 import { SessionGpsImport, type GpsPlayerData } from "@/components/category/gps/SessionGpsImport";
 import { SessionBlocksManager, type SessionBlock } from "@/components/category/sessions/SessionBlocksManager";
+import { useSessionNotifications } from "@/lib/hooks/useSessionNotifications";
 
 interface AddSessionDialogProps {
   open: boolean;
@@ -72,6 +73,7 @@ export function AddSessionDialog({
   categoryId,
 }: AddSessionDialogProps) {
   const { user } = useAuth();
+  const { notify } = useSessionNotifications();
   const [date, setDate] = useState("");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
@@ -300,7 +302,7 @@ export function AddSessionDialog({
 
       return sessionData;
     },
-    onSuccess: () => {
+    onSuccess: (sessionData) => {
       queryClient.invalidateQueries({ queryKey: ["training_sessions", categoryId] });
       queryClient.invalidateQueries({ queryKey: ["today_sessions", categoryId] });
       queryClient.invalidateQueries({ queryKey: ["today_session_exercises"] });
@@ -316,11 +318,28 @@ export function AddSessionDialog({
       const gpsCount = gpsData.filter(d => d.matchedPlayer).length;
       const blockCount = sessionBlocks.filter(b => b.training_type).length;
       
-      let message = "Séance ajoutée";
-      if (blockCount > 0) message += ` avec ${blockCount} bloc(s)`;
-      if (exerciseCount > 0) message += ` et ${exerciseCount} exercice(s)`;
-      if (gpsCount > 0) message += ` et ${gpsCount} données GPS`;
-      toast.success(message);
+      let toastMessage = "Séance ajoutée";
+      if (blockCount > 0) toastMessage += ` avec ${blockCount} bloc(s)`;
+      if (exerciseCount > 0) toastMessage += ` et ${exerciseCount} exercice(s)`;
+      if (gpsCount > 0) toastMessage += ` et ${gpsCount} données GPS`;
+      toast.success(toastMessage);
+
+      // 🔔 Send push notifications to participants
+      const mainType = sessionBlocks.length > 0 ? sessionBlocks[0].training_type : type;
+      const participantIds = playerSelectionMode === "specific" && selectedPlayers.length > 0
+        ? selectedPlayers
+        : undefined; // undefined = notify all category members
+      
+      notify({
+        action: "created",
+        sessionId: sessionData?.id,
+        categoryId,
+        sessionDate: date,
+        sessionStartTime: startTime || null,
+        sessionType: mainType,
+        participantPlayerIds: participantIds,
+      });
+
       resetForm();
       onOpenChange(false);
     },

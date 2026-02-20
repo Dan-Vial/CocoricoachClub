@@ -3,6 +3,7 @@ import { getDisplayNotes } from "@/lib/utils/sessionNotes";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSessionNotifications } from "@/lib/hooks/useSessionNotifications";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -39,12 +40,14 @@ const trainingTypeLabels: Record<string, string> = {
 
 export function SessionsTab({ categoryId }: SessionsTabProps) {
   const { user } = useAuth();
+  const { notify } = useSessionNotifications();
   const queryClient = useQueryClient();
   const { isViewer } = useViewerModeContext();
   const [formOpen, setFormOpen] = useState(false);
   const [editingSession, setEditingSession] = useState<any | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
+  const [sessionToDeleteMeta, setSessionToDeleteMeta] = useState<{ date: string; type: string } | null>(null);
 
   const handlePrintSession = async (session: any) => {
     // Fetch exercises for this session
@@ -191,13 +194,26 @@ export function SessionsTab({ categoryId }: SessionsTabProps) {
       const { error } = await supabase.from("training_sessions").delete().eq("id", sessionId);
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: (_, sessionId) => {
       queryClient.invalidateQueries({ queryKey: ["training_sessions", categoryId] });
       queryClient.invalidateQueries({ queryKey: ["today_sessions", categoryId] });
       queryClient.invalidateQueries({ queryKey: ["today_session_exercises"] });
       toast.success("Séance supprimée");
+
+      // 🔔 Notify all category members of the cancellation
+      if (sessionToDeleteMeta) {
+        notify({
+          action: "cancelled",
+          sessionId,
+          categoryId,
+          sessionDate: sessionToDeleteMeta.date,
+          sessionType: sessionToDeleteMeta.type,
+        });
+      }
+
       setDeleteDialogOpen(false);
       setSessionToDelete(null);
+      setSessionToDeleteMeta(null);
     },
     onError: () => {
       toast.error("Erreur lors de la suppression");
@@ -209,8 +225,9 @@ export function SessionsTab({ categoryId }: SessionsTabProps) {
     setFormOpen(true);
   };
 
-  const handleDeleteClick = (sessionId: string) => {
-    setSessionToDelete(sessionId);
+  const handleDeleteClick = (session: { id: string; session_date: string; training_type: string }) => {
+    setSessionToDelete(session.id);
+    setSessionToDeleteMeta({ date: session.session_date, type: session.training_type });
     setDeleteDialogOpen(true);
   };
 
@@ -298,7 +315,7 @@ export function SessionsTab({ categoryId }: SessionsTabProps) {
                         variant="ghost"
                         size="icon"
                         className="text-destructive"
-                        onClick={() => handleDeleteClick(session.id)}
+                        onClick={() => handleDeleteClick(session)}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>

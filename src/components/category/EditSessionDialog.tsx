@@ -22,6 +22,7 @@ import {
 import { toast } from "sonner";
 import { getTrainingTypesForSport } from "@/lib/constants/trainingTypes";
 import { CustomTrainingTypeSelect } from "@/components/category/sessions/CustomTrainingTypeSelect";
+import { useSessionNotifications } from "@/lib/hooks/useSessionNotifications";
 
 interface Session {
   id: string;
@@ -52,6 +53,7 @@ export function EditSessionDialog({
   const [type, setType] = useState("");
   const [intensity, setIntensity] = useState("");
   const [notes, setNotes] = useState("");
+  const { notify } = useSessionNotifications();
   const queryClient = useQueryClient();
 
   // Fetch category to get sport type
@@ -103,6 +105,17 @@ export function EditSessionDialog({
       queryClient.invalidateQueries({ queryKey: ["today_sessions", categoryId] });
       queryClient.invalidateQueries({ queryKey: ["today_session_exercises"] });
       toast.success("Séance modifiée avec succès");
+
+      // 🔔 Notify all category members of the update
+      notify({
+        action: "updated",
+        sessionId: session?.id,
+        categoryId,
+        sessionDate: date,
+        sessionStartTime: startTime || null,
+        sessionType: type,
+      });
+
       onOpenChange(false);
     },
     onError: () => {

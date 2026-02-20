@@ -14,8 +14,10 @@ interface TargetedNotificationRequest {
   category_ids?: string[]; // Target specific categories/teams
   roles?: string[]; // Target specific roles: "player", "staff", "admin", "coach", etc.
   club_id?: string; // Target specific club
+  target_user_ids?: string[]; // Direct list of user IDs (highest priority)
   channels: ("push" | "email" | "sms")[];
   event_type?: "session" | "match" | "event" | "custom";
+  session_id?: string; // for analytics/logging
   event_details?: {
     date?: string;
     time?: string;
@@ -40,7 +42,7 @@ serve(async (req: Request) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const body: TargetedNotificationRequest = await req.json();
-    const { title, message, url, category_ids, roles, club_id, channels, event_type, event_details } = body;
+    const { title, message, url, category_ids, roles, club_id, target_user_ids, channels, event_type, session_id, event_details } = body;
 
     if (!title || !message) {
       throw new Error("title and message are required");
@@ -50,11 +52,19 @@ serve(async (req: Request) => {
       throw new Error("At least one channel is required");
     }
 
-    // Build list of target user IDs based on filters
+    console.log(`[send-targeted-notification] Action: event_type=${event_type}, session_id=${session_id}`);
+    console.log(`[send-targeted-notification] Channels: ${channels.join(", ")}`);
+
+    // Build list of target user IDs based on filters (priority order)
     let targetUserIds: string[] = [];
 
-    if (category_ids && category_ids.length > 0) {
-      // Get users in specified categories
+    // 1. Direct user IDs (highest priority — e.g. session participants)
+    if (target_user_ids && target_user_ids.length > 0) {
+      targetUserIds = [...target_user_ids];
+      console.log(`[send-targeted-notification] Using direct target_user_ids: ${targetUserIds.length} users`);
+    }
+    // 2. Category-based targeting
+    else if (category_ids && category_ids.length > 0) {
       const { data: catMembers } = await supabase
         .from("category_members")
         .select("user_id, role")
@@ -62,7 +72,6 @@ serve(async (req: Request) => {
 
       if (catMembers) {
         let filtered = catMembers;
-        // Filter by role if specified
         if (roles && roles.length > 0) {
           const roleMap: Record<string, string[]> = {
             player: ["athlete"],
@@ -72,15 +81,16 @@ serve(async (req: Request) => {
           filtered = filtered.filter((m) => expandedRoles.includes(m.role));
         }
         targetUserIds = filtered.map((m) => m.user_id);
+        console.log(`[send-targeted-notification] Category targeting: ${targetUserIds.length} users from ${category_ids.length} category(ies)`);
       }
-    } else if (club_id) {
-      // Get all users in the club
+    }
+    // 3. Club-based targeting
+    else if (club_id) {
       const { data: clubMembers } = await supabase
         .from("club_members")
         .select("user_id, role")
         .eq("club_id", club_id);
 
-      // Also get club owner
       const { data: club } = await supabase
         .from("clubs")
         .select("user_id")
@@ -100,17 +110,21 @@ serve(async (req: Request) => {
       } else {
         targetUserIds = allMembers.map((m) => m.user_id);
       }
+      console.log(`[send-targeted-notification] Club targeting: ${targetUserIds.length} users from club ${club_id}`);
     }
 
     // Deduplicate
     targetUserIds = [...new Set(targetUserIds)];
 
     if (targetUserIds.length === 0) {
+      console.warn("[send-targeted-notification] No matching users found — notification not sent.");
       return new Response(
-        JSON.stringify({ success: true, sent: 0, message: "No matching users found" }),
+        JSON.stringify({ success: true, sent: 0, targetedUsers: 0, message: "No matching users found" }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    console.log(`[send-targeted-notification] Final target: ${targetUserIds.length} unique user(s):`, targetUserIds);
 
     const results = { pushSent: 0, emailsSent: 0, smsSent: 0, errors: [] as string[] };
 
@@ -139,6 +153,15 @@ serve(async (req: Request) => {
           pushBody.web_url = url;
         }
 
+        // Add custom data for analytics
+        pushBody.data = {
+          event_type: event_type || "custom",
+          session_id: session_id || null,
+          sent_at: new Date().toISOString(),
+        };
+
+        console.log("[send-targeted-notification] Sending push to OneSignal:", JSON.stringify(pushBody));
+
         const pushResponse = await fetch("https://api.onesignal.com/notifications", {
           method: "POST",
           headers: {
@@ -149,15 +172,19 @@ serve(async (req: Request) => {
         });
 
         const pushResult = await pushResponse.json();
+        console.log("[send-targeted-notification] OneSignal push response:", pushResult);
+
         if (pushResponse.ok) {
-          results.pushSent = targetUserIds.length;
-          console.log("[send-targeted-notification] Push sent:", pushResult);
+          // OneSignal returns recipients count
+          results.pushSent = pushResult.recipients ?? targetUserIds.length;
+          console.log(`[send-targeted-notification] ✅ Push sent to ${results.pushSent} device(s). Notification ID: ${pushResult.id}`);
         } else {
-          console.error("[send-targeted-notification] Push error:", pushResult);
+          console.error("[send-targeted-notification] ❌ Push error from OneSignal:", JSON.stringify(pushResult));
           results.errors.push(`Push: ${JSON.stringify(pushResult)}`);
         }
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : String(e);
+        console.error("[send-targeted-notification] Push exception:", msg);
         results.errors.push(`Push error: ${msg}`);
       }
     }
