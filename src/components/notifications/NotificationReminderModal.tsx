@@ -17,14 +17,29 @@ export function NotificationReminderModal() {
   useEffect(() => {
     if (!user) return;
 
+    // Don't show if permission already granted or denied
+    if (!("Notification" in window)) return;
+    const perm = window.Notification.permission;
+
+    // If already granted → silently re-sync tags to OneSignal (covers existing users of all roles)
+    if (perm === "granted") {
+      (async () => {
+        try {
+          const tags = await buildUserTags(user.id);
+          await oneSignalLogin(user.id, user.email || "", tags);
+          console.log("[NotificationReminderModal] Re-synced existing user to OneSignal");
+        } catch (err) {
+          console.error("[NotificationReminderModal] Re-sync error:", err);
+        }
+      })();
+      return;
+    }
+
+    if (perm === "denied") return;
+
     // Only show if the user has already completed onboarding (not first time)
     const onboardingDone = localStorage.getItem(`${ONBOARDING_KEY}_${user.id}`);
     if (!onboardingDone) return;
-
-    // Don't show if already granted or denied (guard for browsers without Notification API)
-    if (!("Notification" in window)) return;
-    const perm = window.Notification.permission;
-    if (perm === "granted" || perm === "denied") return;
 
     // Check if we already showed it today
     const lastShown = localStorage.getItem(`${LAST_SHOWN_KEY}_${user.id}`);

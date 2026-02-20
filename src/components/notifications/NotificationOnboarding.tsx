@@ -19,9 +19,26 @@ export function NotificationOnboarding() {
     const done = localStorage.getItem(`${STORAGE_KEY}_${user.id}`);
     if (done) return;
 
-    // If permission already granted or denied, mark as done
+    // If permission already granted → silently login to OneSignal and mark done
     const perm = getOneSignalPermission();
-    if (perm === "granted" || perm === "denied") {
+    if (perm === "granted") {
+      // Permission already granted but external_id may not be set yet — sync now
+      (async () => {
+        try {
+          await initOneSignal();
+          const tags = await buildUserTags(user.id);
+          await oneSignalLogin(user.id, user.email || "", tags);
+          console.log("[NotificationOnboarding] Auto-synced existing user to OneSignal");
+        } catch (err) {
+          console.error("[NotificationOnboarding] Auto-sync error:", err);
+        }
+      })();
+      localStorage.setItem(`${STORAGE_KEY}_${user.id}`, "done");
+      return;
+    }
+
+    // If denied, just mark done — can't re-prompt
+    if (perm === "denied") {
       localStorage.setItem(`${STORAGE_KEY}_${user.id}`, "done");
       return;
     }

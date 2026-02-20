@@ -47,10 +47,13 @@ function loadOfflineSession(): { user: User | null; isOfflineSession: boolean } 
 }
 
 // Handle OneSignal user sync (non-blocking, fully silent)
+// Works for ALL roles: joueur, admin, coach, staff, etc.
 async function syncOneSignalUser(user: User) {
   try {
     await initOneSignal();
     const tags = await buildUserTags(user.id);
+    // Always call login — it's idempotent and works for every role.
+    // For new users it creates the OneSignal profile; for existing users it refreshes tags.
     await oneSignalLogin(user.id, user.email || "", tags);
   } catch {
     // Silently ignore — OneSignal failures must never affect the app
