@@ -44,35 +44,23 @@ serve(async (req: Request) => {
 
     const userEmail = profile?.email || "";
 
-    // ── 2. Build tags ─────────────────────────────────────────────────────────
+    // ── 2. Build tags (limités au strict minimum pour le plan gratuit) ────────
     const tags: Record<string, string> = {};
 
-    // Club data
+    // Club IDs (pour ciblage par club)
     const allClubIds = new Set<string>();
-    const clubNames = new Set<string>();
     clubMemberships?.forEach((m: any) => allClubIds.add(m.club_id));
-    ownedClubs?.forEach((c: any) => {
-      allClubIds.add(c.id);
-      clubNames.add(c.name);
-    });
+    ownedClubs?.forEach((c: any) => allClubIds.add(c.id));
     tags.club_ids = Array.from(allClubIds).join(",");
-    tags.club_names = Array.from(clubNames).join(",");
 
-    // Category data
+    // Category IDs (pour ciblage par équipe)
     if (categoryMemberships && categoryMemberships.length > 0) {
       tags.category_ids = categoryMemberships.map((m: any) => m.category_id).join(",");
-      const catNames = categoryMemberships
-        .map((m: any) => m.categories?.name)
-        .filter(Boolean);
-      tags.category_names = catNames.join(",");
-      if (catNames.length > 0) tags.team = catNames[0];
     } else {
       tags.category_ids = "";
-      tags.category_names = "";
-      tags.team = "";
     }
 
-    // Role hierarchy
+    // Rôle (hiérarchie)
     const roles = new Set<string>();
     clubMemberships?.forEach((m: any) => roles.add(m.role));
     categoryMemberships?.forEach((m: any) => roles.add(m.role));
@@ -84,15 +72,11 @@ serve(async (req: Request) => {
     }
 
     if (superAdminData && superAdminData.length > 0) {
-      tags.is_super_admin = "true";
       tags.role = "super_admin";
     }
 
+    // Type (player vs staff) — pour ciblage global
     tags.user_type = roles.has("athlete") && roles.size === 1 ? "player" : "staff";
-    tags.wellness_notifications = "true";
-    tags.rpe_notifications = "true";
-    if (userEmail) tags.email = userEmail;
-    if (profile?.full_name) tags.full_name = profile.full_name;
 
     const baseHeaders = {
       "Content-Type": "application/json",
