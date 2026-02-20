@@ -255,12 +255,22 @@ serve(async (req: Request) => {
           });
           const json = await res.json();
           console.log("[send-targeted-notification] OneSignal response (external_id):", json);
-          if (res.ok) {
-            results.pushSent = json.recipients ?? targetUserIds.length;
-            console.log(`[send-targeted-notification] ✅ Push sent to ${results.pushSent} device(s). ID: ${json.id}`);
+
+          // Check for OneSignal "not subscribed" soft error (status 200 but 0 recipients)
+          const notSubscribed = json.errors?.some?.((e: string) =>
+            typeof e === "string" && e.toLowerCase().includes("not subscribed")
+          );
+
+          if (!res.ok || notSubscribed) {
+            const errMsg = notSubscribed
+              ? `Push: aucun joueur subscribed sur OneSignal (external_ids: ${targetUserIds.join(", ")}). Le(s) joueur(s) doivent ouvrir l'app depuis ${new URL(Deno.env.get("SUPABASE_URL") || "").hostname || "le domaine publié"} pour activer le push.`
+              : `Push: ${JSON.stringify(json)}`;
+            console.warn("[send-targeted-notification] ⚠️ Push not delivered:", errMsg);
+            results.errors.push(errMsg);
+            results.pushSent = 0;
           } else {
-            console.error("[send-targeted-notification] ❌ Push error:", JSON.stringify(json));
-            results.errors.push(`Push: ${JSON.stringify(json)}`);
+            results.pushSent = json.recipients ?? 0;
+            console.log(`[send-targeted-notification] ✅ Push delivered to ${results.pushSent} device(s). ID: ${json.id}`);
           }
         }
       } catch (e: unknown) {
