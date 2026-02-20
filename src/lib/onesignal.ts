@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 declare global {
   interface Window {
     OneSignal?: any;
+    OneSignalDeferred?: any[];
   }
 }
 
@@ -18,78 +19,60 @@ const hasNotificationAPI = () =>
   typeof window !== "undefined" && "Notification" in window;
 
 /**
- * Initialize OneSignal SDK (already loaded via index.html)
- * Does NOT auto-prompt — permission is requested explicitly via UI components.
+ * Initialize OneSignal SDK v16 (chargé via index.html avec OneSignalDeferred).
+ * Attend que le SDK soit prêt avant de résoudre.
  */
 export async function initOneSignal(): Promise<void> {
-  if (isInitialized) return;
-  if (typeof window === "undefined" || !window.OneSignal) return;
-  isInitialized = true;
-  console.log("[OneSignal] SDK ready");
+  if (isInitialized && window.OneSignal) return;
+  if (typeof window === "undefined") return;
+
+  // Attendre que window.OneSignal soit peuplé par OneSignalDeferred
+  await new Promise<void>((resolve) => {
+    const check = () => {
+      if (window.OneSignal && typeof window.OneSignal.login === "function") {
+        isInitialized = true;
+        console.log("[OneSignal] SDK v16 ready");
+        resolve();
+      } else {
+        setTimeout(check, 200);
+      }
+    };
+    check();
+    // Timeout de sécurité : 10s max
+    setTimeout(() => resolve(), 10000);
+  });
 }
 
 /**
- * Trigger the OneSignal native push permission prompt.
+ * Trigger the OneSignal native push permission prompt (SDK v16).
  * Returns true if granted, false otherwise.
- * Has a 10s timeout to avoid infinite loading.
  */
 export async function requestOneSignalPermission(): Promise<boolean> {
   if (typeof window === "undefined") return false;
-
-  // If browser doesn't support notifications at all (e.g. iOS Safari < 16.4)
   if (!hasNotificationAPI()) {
     console.warn("[OneSignal] Notifications not supported in this browser");
     return false;
   }
-
-  // If already granted, return immediately
   if (window.Notification.permission === "granted") return true;
-  // If already denied, can't re-prompt
   if (window.Notification.permission === "denied") return false;
 
-  return new Promise((resolve) => {
-    // Safety timeout: resolve after 10s to avoid infinite loading
-    const timeout = setTimeout(() => {
-      console.warn("[OneSignal] Permission request timed out");
-      resolve(hasNotificationAPI() && window.Notification.permission === "granted");
-    }, 10000);
-
-    const doRequest = async () => {
-      try {
-        if (window.OneSignal) {
-          await window.OneSignal.showNativePrompt();
-        } else {
-          // Fallback: use native browser API
-          const result = await window.Notification.requestPermission();
-          clearTimeout(timeout);
-          resolve(result === "granted");
-          return;
-        }
-        clearTimeout(timeout);
-        resolve(hasNotificationAPI() && window.Notification.permission === "granted");
-      } catch (err) {
-        console.error("[OneSignal] Permission request error:", err);
-        clearTimeout(timeout);
-        // Try native fallback
-        try {
-          if (hasNotificationAPI()) {
-            const result = await window.Notification.requestPermission();
-            resolve(result === "granted");
-          } else {
-            resolve(false);
-          }
-        } catch {
-          resolve(false);
-        }
-      }
-    };
-
-    if (window.OneSignal) {
-      window.OneSignal.push(doRequest);
+  try {
+    await initOneSignal();
+    if (window.OneSignal?.Notifications?.requestPermission) {
+      await window.OneSignal.Notifications.requestPermission();
+    } else if (window.OneSignal?.showNativePrompt) {
+      await window.OneSignal.showNativePrompt();
     } else {
-      doRequest();
+      await window.Notification.requestPermission();
     }
-  });
+  } catch (err) {
+    console.error("[OneSignal] Permission request error:", err);
+    try {
+      await window.Notification.requestPermission();
+    } catch { /* ignore */ }
+  }
+
+  return hasNotificationAPI() && (window.Notification.permission as string) === "granted";
 }
 
 /**
@@ -210,29 +193,16 @@ export async function oneSignalLogout(): Promise<void> {
 }
 
 /**
- * Update OneSignal tags (supports both SDK v16+ and legacy v1)
+ * Update OneSignal tags (SDK v16)
  */
 export async function updateOneSignalTags(
   tags: Record<string, string>
 ): Promise<void> {
   if (typeof window === "undefined" || !window.OneSignal) return;
-
   try {
-    const OneSignal = window.OneSignal;
-    if (OneSignal.User?.addTags) {
-      OneSignal.User.addTags(tags);
+    if (window.OneSignal.User?.addTags) {
+      window.OneSignal.User.addTags(tags);
       console.log("[OneSignal] User.addTags() updated:", tags);
-    } else if (OneSignal.User?.addTag) {
-      for (const [key, value] of Object.entries(tags)) {
-        OneSignal.User.addTag(key, value);
-      }
-      console.log("[OneSignal] User.addTag() updated:", tags);
-    } else {
-      // Legacy fallback
-      OneSignal.push(function () {
-        OneSignal.sendTags(tags);
-        console.log("[OneSignal] sendTags() updated (legacy):", tags);
-      });
     }
   } catch (err) {
     console.error("[OneSignal] Tag update error:", err);
@@ -240,29 +210,27 @@ export async function updateOneSignalTags(
 }
 
 /**
- * Remove specific OneSignal tags
+ * Remove specific OneSignal tags (SDK v16)
  */
 export async function removeOneSignalTags(tagKeys: string[]): Promise<void> {
   if (typeof window === "undefined" || !window.OneSignal) return;
-
   try {
-    window.OneSignal.push(function () {
-      window.OneSignal!.deleteTags(tagKeys);
+    if (window.OneSignal.User?.removeTags) {
+      window.OneSignal.User.removeTags(tagKeys);
       console.log("[OneSignal] Tags removed:", tagKeys);
-    });
+    }
   } catch (err) {
     console.error("[OneSignal] Tag removal error:", err);
   }
 }
 
 /**
- * Fetch user's club and category memberships and build tags
+ * Fetch user's club and category memberships and build tags (4 max pour plan gratuit)
  */
 export async function buildUserTags(userId: string): Promise<Record<string, string>> {
   const tags: Record<string, string> = {};
 
   try {
-    // Run all DB queries in parallel
     const [
       { data: clubMemberships },
       { data: ownedClubs },
@@ -270,36 +238,21 @@ export async function buildUserTags(userId: string): Promise<Record<string, stri
       { data: isSuperAdmin },
     ] = await Promise.all([
       supabase.from("club_members").select("club_id, role").eq("user_id", userId),
-      supabase.from("clubs").select("id, name").eq("user_id", userId),
-      supabase.from("category_members").select("category_id, role, categories(name)").eq("user_id", userId),
+      supabase.from("clubs").select("id").eq("user_id", userId),
+      supabase.from("category_members").select("category_id, role").eq("user_id", userId),
       supabase.rpc("is_super_admin", { _user_id: userId }),
     ]);
 
-    // Build club_ids tag (comma-separated)
+    // club_ids
     const allClubIds = new Set<string>();
-    const clubNames = new Set<string>();
     clubMemberships?.forEach((m) => allClubIds.add(m.club_id));
-    ownedClubs?.forEach((c) => {
-      allClubIds.add(c.id);
-      clubNames.add(c.name);
-    });
+    ownedClubs?.forEach((c) => allClubIds.add(c.id));
+    tags.club_ids = Array.from(allClubIds).join(",");
 
-    if (allClubIds.size > 0) tags.club_ids = Array.from(allClubIds).join(",");
-    if (clubNames.size > 0) tags.club_names = Array.from(clubNames).join(",");
+    // category_ids
+    tags.category_ids = categoryMemberships?.map((m) => m.category_id).join(",") ?? "";
 
-    // Build category_ids and category_names tags
-    if (categoryMemberships && categoryMemberships.length > 0) {
-      tags.category_ids = categoryMemberships.map((m) => m.category_id).join(",");
-      const catNames = categoryMemberships
-        .map((m: any) => m.categories?.name)
-        .filter(Boolean);
-      if (catNames.length > 0) {
-        tags.category_names = catNames.join(",");
-        tags.team = catNames[0];
-      }
-    }
-
-    // Determine primary role (highest privilege)
+    // role
     const roles = new Set<string>();
     clubMemberships?.forEach((m) => roles.add(m.role));
     categoryMemberships?.forEach((m) => roles.add(m.role));
@@ -307,20 +260,13 @@ export async function buildUserTags(userId: string): Promise<Record<string, stri
 
     const roleHierarchy = ["admin", "coach", "physio", "doctor", "viewer", "athlete"];
     for (const r of roleHierarchy) {
-      if (roles.has(r)) {
-        tags.role = r;
-        break;
-      }
+      if (roles.has(r)) { tags.role = r; break; }
     }
 
+    if (isSuperAdmin) tags.role = "super_admin";
+
+    // user_type
     tags.user_type = roles.has("athlete") && roles.size === 1 ? "player" : "staff";
-    tags.wellness_notifications = "true";
-    tags.rpe_notifications = "true";
-
-    if (isSuperAdmin) {
-      tags.is_super_admin = "true";
-      tags.role = "super_admin";
-    }
   } catch (err) {
     console.error("[OneSignal] Error building user tags:", err);
   }
