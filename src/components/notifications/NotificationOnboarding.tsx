@@ -33,12 +33,6 @@ export function NotificationOnboarding() {
   useEffect(() => {
     if (!user) return;
 
-    // Reset flag if permission still "default" so we always re-ask
-    resetOnboardingIfNeeded(user.id);
-
-    const done = localStorage.getItem(`${STORAGE_KEY}_${user.id}`);
-    if (done) return;
-
     const perm = getOneSignalPermission();
 
     // If already granted → silently sync to OneSignal and mark done
@@ -57,13 +51,15 @@ export function NotificationOnboarding() {
       return;
     }
 
-    // If denied → do NOT mark done, just don't show the popup
-    // (the ReminderModal settings page still allows them to try again)
-    if (perm === "denied") return;
+    // If permission is "default" (not yet decided), ALWAYS clear the flag and show popup
+    if (perm === "default") {
+      localStorage.removeItem(`${STORAGE_KEY}_${user.id}`);
+      const t = setTimeout(() => setShow(true), 800);
+      return () => clearTimeout(t);
+    }
 
-    // Permission is "default" — show the popup
-    const t = setTimeout(() => setShow(true), 800);
-    return () => clearTimeout(t);
+    // perm === "denied" → browser blocked notifications, nothing we can do
+    // Don't show the popup
   }, [user]);
 
   const markDone = () => {
