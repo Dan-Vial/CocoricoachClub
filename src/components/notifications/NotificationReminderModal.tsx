@@ -48,12 +48,15 @@ export function NotificationReminderModal() {
     setIsHandling(true);
 
     try {
-      await initOneSignal();
+      // Init OneSignal and request permission in parallel with nothing blocking
+      // initOneSignal is a no-op if already done, so it's fast
+      initOneSignal(); // fire and forget — just sets a flag
+
       const granted = await requestOneSignalPermission();
       if (granted) {
+        // Build tags and login in parallel
         const tags = await buildUserTags(user.id);
-        await oneSignalLogin(user.id, user.email || "", tags);
-        // If accepted, mark onboarding permanently done
+        oneSignalLogin(user.id, user.email || "", tags); // fire and forget
         localStorage.setItem(`${ONBOARDING_KEY}_${user.id}`, "done");
       } else {
         markShownToday();

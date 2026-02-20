@@ -186,23 +186,18 @@ export async function buildUserTags(userId: string): Promise<Record<string, stri
   const tags: Record<string, string> = {};
 
   try {
-    // Get club memberships
-    const { data: clubMemberships } = await supabase
-      .from("club_members")
-      .select("club_id, role")
-      .eq("user_id", userId);
-
-    // Get owned clubs with names
-    const { data: ownedClubs } = await supabase
-      .from("clubs")
-      .select("id, name")
-      .eq("user_id", userId);
-
-    // Get category memberships with category names
-    const { data: categoryMemberships } = await supabase
-      .from("category_members")
-      .select("category_id, role, categories(name)")
-      .eq("user_id", userId);
+    // Run all DB queries in parallel
+    const [
+      { data: clubMemberships },
+      { data: ownedClubs },
+      { data: categoryMemberships },
+      { data: isSuperAdmin },
+    ] = await Promise.all([
+      supabase.from("club_members").select("club_id, role").eq("user_id", userId),
+      supabase.from("clubs").select("id, name").eq("user_id", userId),
+      supabase.from("category_members").select("category_id, role, categories(name)").eq("user_id", userId),
+      supabase.rpc("is_super_admin", { _user_id: userId }),
+    ]);
 
     // Build club_ids tag (comma-separated)
     const allClubIds = new Set<string>();
@@ -213,12 +208,8 @@ export async function buildUserTags(userId: string): Promise<Record<string, stri
       clubNames.add(c.name);
     });
 
-    if (allClubIds.size > 0) {
-      tags.club_ids = Array.from(allClubIds).join(",");
-    }
-    if (clubNames.size > 0) {
-      tags.club_names = Array.from(clubNames).join(",");
-    }
+    if (allClubIds.size > 0) tags.club_ids = Array.from(allClubIds).join(",");
+    if (clubNames.size > 0) tags.club_names = Array.from(clubNames).join(",");
 
     // Build category_ids and category_names tags
     if (categoryMemberships && categoryMemberships.length > 0) {
@@ -228,7 +219,6 @@ export async function buildUserTags(userId: string): Promise<Record<string, stri
         .filter(Boolean);
       if (catNames.length > 0) {
         tags.category_names = catNames.join(",");
-        // Also set "team" tag for the first category (for simple filtering)
         tags.team = catNames[0];
       }
     }
@@ -247,16 +237,10 @@ export async function buildUserTags(userId: string): Promise<Record<string, stri
       }
     }
 
-    // Determine user_type (player vs staff)
     tags.user_type = roles.has("athlete") && roles.size === 1 ? "player" : "staff";
-
-    // All users receive wellness & RPE daily notifications
     tags.wellness_notifications = "true";
     tags.rpe_notifications = "true";
 
-    // Check super admin
-    const { data: isSuperAdmin } = await supabase
-      .rpc("is_super_admin", { _user_id: userId });
     if (isSuperAdmin) {
       tags.is_super_admin = "true";
       tags.role = "super_admin";
