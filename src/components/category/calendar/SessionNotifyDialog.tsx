@@ -71,46 +71,58 @@ export function SessionNotifyDialog({
   const [sendEmail, setSendEmail] = useState(true);
   const [sendPush, setSendPush] = useState(true);
 
-  // Fetch players associated with this session (from awcr_tracking)
+  // Fetch players associated with this session (from training_attendance, fallback to category)
   const { data: sessionPlayers, isLoading: loadingPlayers } = useQuery({
     queryKey: ["session-players-notify", session.id],
     queryFn: async () => {
-      // Get player IDs from awcr_tracking for this session
-      const { data: tracking, error: trackingError } = await supabase
-        .from("awcr_tracking")
-        .select("player_id")
-        .eq("training_session_id", session.id);
-      
-      if (trackingError) throw trackingError;
-      
-      if (!tracking || tracking.length === 0) {
-        // If no players in tracking, get all players from category as fallback
-        const { data: allPlayers, error: playersError } = await supabase
+      console.log(`[SessionNotification] Step 1 — Fetching participants for session ${session.id}`);
+
+      // Primary source: training_attendance (non-absent players)
+      const { data: attendance, error: attendanceError } = await supabase
+        .from("training_attendance")
+        .select("player_id, status")
+        .eq("training_session_id", session.id)
+        .neq("status", "absent");
+
+      if (attendanceError) {
+        console.warn("[SessionNotification] training_attendance error:", attendanceError.message);
+      }
+
+      if (attendance && attendance.length > 0) {
+        const playerIds = attendance.map(a => a.player_id).filter(Boolean);
+        console.log(`[SessionNotification] Step 1 — Retrieved ${playerIds.length} participant(s) from training_attendance`);
+
+        const { data: players, error: playersError } = await supabase
           .from("players")
           .select("id, name, email, phone, user_id")
-          .eq("category_id", categoryId);
-        
+          .in("id", playerIds);
+
         if (playersError) throw playersError;
-        return { players: allPlayers || [], fromSession: false };
+
+        const withAccount = (players || []).filter(p => p.user_id);
+        console.log(`[SessionNotification] Step 1 — ${withAccount.length}/${(players || []).length} player(s) have an app account (user_id)`);
+
+        return { players: players || [], fromSession: true };
       }
-      
-      const playerIds = tracking.map(t => t.player_id);
-      
-      // Get player details including user_id for push targeting
-      const { data: players, error: playersError } = await supabase
+
+      // Fallback: all category players
+      console.log("[SessionNotification] Step 1 — No attendance records found, falling back to all category players");
+      const { data: allPlayers, error: playersError } = await supabase
         .from("players")
         .select("id, name, email, phone, user_id")
-        .in("id", playerIds);
-      
+        .eq("category_id", categoryId);
+
       if (playersError) throw playersError;
-      return { players: players || [], fromSession: true };
+      console.log(`[SessionNotification] Step 1 — Retrieved ${(allPlayers || []).length} player(s) from category (fallback)`);
+      return { players: allPlayers || [], fromSession: false };
     },
     enabled: open,
   });
 
   const athletes = sessionPlayers?.players || [];
-  const athletesWithEmail = athletes.filter((a) => a.email).length;
-  const athletesWithPhone = athletes.filter((a) => a.phone).length;
+  const athletesWithEmail = athletes.filter((a: any) => a.email).length;
+  const athletesWithPhone = athletes.filter((a: any) => a.phone).length;
+  const athletesWithPush = athletes.filter((a: any) => a.user_id).length;
 
   const selectedType = NOTIFICATION_TYPES.find(t => t.value === notificationType);
   const finalMessage = message || selectedType?.defaultMessage || "";
@@ -127,12 +139,15 @@ export function SessionNotifyDialog({
         time: session.session_start_time ? session.session_start_time.substring(0, 5) : undefined,
       };
 
-      // Send push via targeted notification — by user_id (P1: precise targeting, no tags needed)
+      // ── Step 2: Send push via include_external_user_ids (P1 — precise targeting) ──
       if (sendPush) {
         // Collect user_ids of players with an app account
         const targetUserIds = athletes
           .map((a: any) => a.user_id)
           .filter(Boolean) as string[];
+
+        console.log(`[SessionNotification] Step 2 — ${targetUserIds.length} player(s) with app account (external_id targets)`);
+        console.log(`[SessionNotification] Step 2 — Session: ${session.id} | Type: ${notificationType}`);
 
         const pushBody: Record<string, unknown> = {
           title: selectedType?.label || "Notification",
@@ -144,18 +159,31 @@ export function SessionNotifyDialog({
         };
 
         if (targetUserIds.length > 0) {
-          // Precise: only notify players with an app account
+          // P1 — precise: include_external_user_ids via target_user_ids
           pushBody.target_user_ids = targetUserIds;
+          console.log(`[SessionNotification] Step 2 — Mode P1: include_external_user_ids → [${targetUserIds.join(", ")}]`);
         } else {
-          // Fallback broadcast: all players of the category
+          // P2 fallback broadcast: category broadcast
           pushBody.category_ids = [categoryId];
           pushBody.roles = ["player"];
+          console.warn("[SessionNotification] Step 2 — No user_id found → fallback P2 category broadcast");
         }
 
         const { data: pushData, error: pushError } = await supabase.functions.invoke("send-targeted-notification", {
           body: pushBody,
         });
-        if (!pushError && pushData) results.pushSent = pushData.pushSent || 0;
+
+        if (pushError) {
+          console.error("[SessionNotification] Step 2 — ❌ Push error:", pushError.message);
+        } else if (pushData) {
+          results.pushSent = pushData.pushSent || 0;
+          console.log(`[SessionNotification] Step 2 — ✅ Push sent to ${results.pushSent} device(s). Mode: ${pushData.mode}`);
+          if (pushData.errors?.length > 0) {
+            console.warn(`[SessionNotification] Step 3 — Errors: ${pushData.errors.length}`, pushData.errors);
+          } else {
+            console.log(`[SessionNotification] Step 3 — Errors: 0`);
+          }
+        }
       }
 
       // Send email via individual notification
@@ -224,9 +252,11 @@ export function SessionNotifyDialog({
           <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
             <Users className="h-4 w-4 text-muted-foreground" />
             <span className="text-sm">
-              <strong>{athletes.length}</strong> athlète(s) 
-              {sessionPlayers?.fromSession ? " (inscrits à la séance)" : " (tous)"} • 
-              <span className="text-muted-foreground"> {athletesWithEmail} avec email</span>
+              <strong>{athletes.length}</strong> athlète(s)
+              {sessionPlayers?.fromSession ? " (inscrits à la séance)" : " (tous)"} •{" "}
+              <span className="text-muted-foreground">{athletesWithEmail} avec email</span>
+              {" • "}
+              <span className="text-muted-foreground">{athletesWithPush} avec push</span>
             </span>
           </div>
 
@@ -289,6 +319,9 @@ export function SessionNotifyDialog({
                 >
                   <Bell className="h-4 w-4" />
                   Push
+                  <Badge variant="secondary" className="text-xs">
+                    {athletesWithPush}
+                  </Badge>
                 </label>
               </div>
             </div>
