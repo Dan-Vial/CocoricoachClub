@@ -152,10 +152,11 @@ export function SessionNotifyDialog({
         const pushBody: Record<string, unknown> = {
           title: selectedType?.label || "Notification",
           message: finalMessage,
-          channels: ["push"],
+          channels: sendEmail ? ["push", "email"] : ["push"],
           event_type: "session",
           session_id: session.id,
           event_details: eventDetails,
+          url: `https://cocoricoachclub.com/categories/${categoryId}`,
         };
 
         if (targetUserIds.length > 0) {
@@ -177,7 +178,8 @@ export function SessionNotifyDialog({
           console.error("[SessionNotification] Step 2 — ❌ Push error:", pushError.message);
         } else if (pushData) {
           results.pushSent = pushData.pushSent || 0;
-          console.log(`[SessionNotification] Step 2 — ✅ Push sent to ${results.pushSent} device(s). Mode: ${pushData.mode}`);
+          results.emailsSent = pushData.emailsSent || 0;
+          console.log(`[SessionNotification] Step 2 — ✅ Push: ${results.pushSent} device(s), Email: ${results.emailsSent}. Mode: ${pushData.mode}`);
           if (pushData.errors?.length > 0) {
             console.warn(`[SessionNotification] Step 3 — Errors: ${pushData.errors.length}`, pushData.errors);
           } else {
@@ -185,31 +187,8 @@ export function SessionNotifyDialog({
           }
         }
       }
-
-      // Send email via individual notification
-      if (sendEmail) {
-        const athletesToNotify = athletes.filter((a) => a.email);
-
-        if (athletesToNotify.length > 0) {
-          const { data, error } = await supabase.functions.invoke("notify-athletes", {
-            body: {
-              athletes: athletesToNotify.map((a) => ({
-                name: a.name,
-                email: a.email,
-              })),
-              subject: selectedType?.label || "Notification",
-              message: finalMessage,
-              channels: ["email"],
-              eventType: "session",
-              eventDetails,
-            },
-          });
-
-          if (!error && data) {
-            results.emailsSent = data.emailsSent || 0;
-          }
-        }
-      }
+      // Email is now included in the push notification channels above
+      // via send-targeted-notification edge function (channels: ["push", "email"])
 
       return results;
     },

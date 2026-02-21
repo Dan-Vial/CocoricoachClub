@@ -5,18 +5,39 @@ import { useAuth } from "@/contexts/AuthContext";
 import { initOneSignal, oneSignalLogin, buildUserTags, requestOneSignalPermission, getOneSignalPermission } from "@/lib/onesignal";
 
 const STORAGE_KEY = "notification_onboarding_done";
+/** Tracks that the user actively clicked "Accepter" and the browser prompt was shown */
+const PERMISSION_GRANTED_KEY = "notification_permission_granted";
 
 /**
- * Resets the onboarding flag if push permission is still "default".
- * Called at app startup to ensure users who dismissed without deciding
- * are re-prompted on next login.
+ * Check if we've already confirmed permission was granted (survives browser quirks).
+ * Some browsers (iOS Safari PWA) don't reliably persist window.Notification.permission.
+ */
+function wasPermissionGranted(userId: string): boolean {
+  try {
+    return localStorage.getItem(`${PERMISSION_GRANTED_KEY}_${userId}`) === "true";
+  } catch {
+    return false;
+  }
+}
+
+function markPermissionGranted(userId: string) {
+  try {
+    localStorage.setItem(`${PERMISSION_GRANTED_KEY}_${userId}`, "true");
+  } catch {}
+}
+
+/**
+ * Resets the onboarding flag if push permission is genuinely still "default"
+ * AND we never recorded a successful grant.
  */
 export function resetOnboardingIfNeeded(userId: string) {
   try {
+    // If we previously recorded that permission was granted, don't reset
+    if (wasPermissionGranted(userId)) return;
+    
     if (!("Notification" in window)) return;
     const perm = window.Notification.permission;
     if (perm === "default") {
-      // Permission still undecided — clear the flag so the popup shows again
       localStorage.removeItem(`${STORAGE_KEY}_${userId}`);
     }
   } catch {
@@ -33,10 +54,25 @@ export function NotificationOnboarding() {
   useEffect(() => {
     if (!user) return;
 
+    // If we've already confirmed permission was granted, never show again
+    if (wasPermissionGranted(user.id)) {
+      // Silently sync in background
+      (async () => {
+        try {
+          await initOneSignal();
+          const tags = await buildUserTags(user.id);
+          await oneSignalLogin(user.id, user.email || "", tags);
+        } catch {}
+      })();
+      localStorage.setItem(`${STORAGE_KEY}_${user.id}`, "done");
+      return;
+    }
+
     const perm = getOneSignalPermission();
 
-    // If already granted → silently sync to OneSignal and mark done
+    // If browser reports "granted" → record it, sync, and never show again
     if (perm === "granted") {
+      markPermissionGranted(user.id);
       (async () => {
         try {
           await initOneSignal();
@@ -51,15 +87,16 @@ export function NotificationOnboarding() {
       return;
     }
 
-    // If permission is "default" (not yet decided), ALWAYS clear the flag and show popup
-    if (perm === "default") {
-      localStorage.removeItem(`${STORAGE_KEY}_${user.id}`);
-      const t = setTimeout(() => setShow(true), 800);
-      return () => clearTimeout(t);
-    }
+    // If "denied" → browser blocked, don't show popup
+    if (perm === "denied") return;
 
-    // perm === "denied" → browser blocked notifications, nothing we can do
-    // Don't show the popup
+    // "default" → check if onboarding was previously completed
+    const done = localStorage.getItem(`${STORAGE_KEY}_${user.id}`);
+    if (done) return;
+
+    // Show the popup
+    const t = setTimeout(() => setShow(true), 800);
+    return () => clearTimeout(t);
   }, [user]);
 
   const markDone = () => {
@@ -77,6 +114,8 @@ export function NotificationOnboarding() {
       await initOneSignal();
       const granted = await requestOneSignalPermission();
       if (granted) {
+        // Record permission in our own storage (survives browser quirks)
+        markPermissionGranted(user.id);
         const tags = await buildUserTags(user.id);
         await oneSignalLogin(user.id, user.email || "", tags);
         console.log("[NotificationOnboarding] Push permission granted & synced");
@@ -92,8 +131,11 @@ export function NotificationOnboarding() {
 
   const handleDecline = () => {
     setDeclined(true);
-    // Do NOT mark done — we'll re-ask next session via resetOnboardingIfNeeded
-    setTimeout(() => setShow(false), 2500);
+    // Mark done so it doesn't re-appear on every page load
+    // The ReminderModal will handle re-asking after 24h
+    setTimeout(() => {
+      markDone();
+    }, 2500);
   };
 
   if (!show) return null;
@@ -117,7 +159,7 @@ export function NotificationOnboarding() {
         {/* Text */}
         <div className="space-y-3">
           <h1 className="text-2xl font-bold tracking-tight">
-            Active les notifications push
+            Active les notifications
           </h1>
           <p className="text-muted-foreground text-base leading-relaxed">
             Reçois les convocations, entraînements et rappels importants directement sur ton appareil — même quand l'app est fermée
@@ -127,7 +169,8 @@ export function NotificationOnboarding() {
         {/* Benefits */}
         <div className="space-y-3 text-left">
           {[
-            { emoji: "📣", label: "Convocations instantanées" },
+            { emoji: "📣", label: "Notifications push instantanées" },
+            { emoji: "📧", label: "Alertes par email" },
             { emoji: "🏋️", label: "Rappels d'entraînements" },
             { emoji: "⚕️", label: "Alertes médicales importantes" },
           ].map((item) => (

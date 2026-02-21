@@ -280,37 +280,61 @@ serve(async (req: Request) => {
       }
     }
 
-    // ── EMAIL (only when we have explicit user IDs — tag filters can't resolve emails) ──
-    if (channels.includes("email") && targetUserIds.length > 0) {
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("id, email, full_name")
-        .in("id", targetUserIds);
-
-      const emails = profiles?.filter((p) => p.email).map((p) => p.email!) || [];
-
-      if (emails.length > 0) {
+    // ── EMAIL ──────────────────────────────────────────────────────────────────
+    if (channels.includes("email")) {
+      // Collect target user IDs for email: from explicit list OR from category members
+      let emailTargetIds = [...targetUserIds];
+      
+      // If using tag filters (no explicit user IDs), resolve category members
+      if (emailTargetIds.length === 0 && (category_ids?.length || club_id)) {
         try {
-          const emailHtml = buildEmailHtml(title, message, event_details);
-          const res = await fetch("https://api.onesignal.com/notifications", {
-            method: "POST",
-            headers: { "Content-Type": "application/json", Authorization: `Key ${ONESIGNAL_REST_API_KEY}` },
-            body: JSON.stringify({
-              app_id: ONESIGNAL_APP_ID,
-              include_email_tokens: emails,
-              email_subject: title,
-              email_body: emailHtml,
-              email_from_name: "CocoriCoach",
-            }),
-          });
-          if (res.ok) {
-            results.emailsSent = emails.length;
-          } else {
-            const err = await res.json();
-            results.errors.push(`Email: ${JSON.stringify(err)}`);
+          let query = supabase.from("category_members").select("user_id");
+          if (category_ids?.length) {
+            query = query.in("category_id", category_ids);
           }
-        } catch (e: unknown) {
-          results.errors.push(`Email error: ${e instanceof Error ? e.message : String(e)}`);
+          if (expandedRoles.length > 0) {
+            query = query.in("role", expandedRoles);
+          }
+          const { data: members } = await query;
+          emailTargetIds = members?.map((m: any) => m.user_id).filter(Boolean) || [];
+        } catch (e) {
+          console.warn("[send-targeted-notification] Error resolving category members for email:", e);
+        }
+      }
+
+      if (emailTargetIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, email, full_name")
+          .in("id", emailTargetIds);
+
+        const emails = profiles?.filter((p) => p.email).map((p) => p.email!) || [];
+
+        if (emails.length > 0) {
+          try {
+            const emailHtml = buildEmailHtml(title, message, event_details);
+            const res = await fetch("https://api.onesignal.com/notifications", {
+              method: "POST",
+              headers: { "Content-Type": "application/json", Authorization: `Key ${ONESIGNAL_REST_API_KEY}` },
+              body: JSON.stringify({
+                app_id: ONESIGNAL_APP_ID,
+                include_email_tokens: emails,
+                email_subject: title,
+                email_body: emailHtml,
+                email_from_name: "CocoriCoach",
+              }),
+            });
+            if (res.ok) {
+              results.emailsSent = emails.length;
+              console.log(`[send-targeted-notification] ✅ Emails sent to ${emails.length} recipient(s)`);
+            } else {
+              const err = await res.json();
+              console.error("[send-targeted-notification] ❌ Email error:", err);
+              results.errors.push(`Email: ${JSON.stringify(err)}`);
+            }
+          } catch (e: unknown) {
+            results.errors.push(`Email error: ${e instanceof Error ? e.message : String(e)}`);
+          }
         }
       }
     }

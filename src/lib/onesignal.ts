@@ -28,18 +28,22 @@ export async function initOneSignal(): Promise<void> {
 
   // Attendre que window.OneSignal soit peuplé par OneSignalDeferred
   await new Promise<void>((resolve) => {
+    let attempts = 0;
+    const maxAttempts = 25; // 5s max (200ms * 25)
     const check = () => {
+      attempts++;
       if (window.OneSignal && typeof window.OneSignal.login === "function") {
         isInitialized = true;
         console.log("[OneSignal] SDK v16 ready");
+        resolve();
+      } else if (attempts >= maxAttempts) {
+        console.warn("[OneSignal] SDK not available after timeout — continuing without SDK");
         resolve();
       } else {
         setTimeout(check, 200);
       }
     };
     check();
-    // Timeout de sécurité : 10s max
-    setTimeout(() => resolve(), 10000);
   });
 }
 
@@ -93,23 +97,23 @@ export async function oneSignalLogin(
   email: string,
   userTags: Record<string, string>
 ): Promise<void> {
-  // ── Always sync server-side first (most reliable) ────────────────────────
+  // ── Always sync server-side first (most reliable — works on any domain) ──
   try {
     const { supabase } = await import("@/integrations/supabase/client");
-    supabase.functions.invoke("sync-onesignal-tags", {
+    const res = await supabase.functions.invoke("sync-onesignal-tags", {
       body: { user_id: userId },
-    }).then((res) => {
-      if (res.error) {
-        console.warn("[OneSignal] Server sync error:", res.error);
-      } else {
-        console.log("[OneSignal] Server sync OK:", res.data);
-      }
-    }).catch(() => {});
-  } catch {
-    // Non-blocking
+    });
+    if (res.error) {
+      console.warn("[OneSignal] Server sync error:", res.error);
+    } else {
+      console.log("[OneSignal] Server sync OK:", res.data);
+    }
+  } catch (err) {
+    console.warn("[OneSignal] Server sync failed:", err);
   }
 
   // ── SDK-side: link external_id and set tags in the browser ───────────────
+  // This only works on the production domain (cocoricoachclub.com)
   if (typeof window === "undefined" || !window.OneSignal) return;
 
   const tags: Record<string, string> = {
@@ -139,28 +143,16 @@ export async function oneSignalLogin(
         for (const [key, value] of Object.entries(tags)) {
           OneSignal.User.addTag(key, value);
         }
-        console.log("[OneSignal] User.addTag() sent:", tags);
       }
     } else {
       // ── Legacy SDK v1 API (fallback) ──────────────────────────────────────
       OneSignal.push(function () {
         OneSignal.setExternalUserId(userId);
-        console.log("[OneSignal] setExternalUserId() — external_id set:", userId);
         OneSignal.sendTags(tags);
-        console.log("[OneSignal] sendTags() sent:", tags);
       });
     }
   } catch (err) {
-    console.error("[OneSignal] Login error:", err);
-    // Last-resort fallback: try legacy push queue
-    try {
-      window.OneSignal!.push(function () {
-        window.OneSignal!.setExternalUserId(userId);
-        window.OneSignal!.sendTags(tags);
-      });
-    } catch {
-      // Silently ignore
-    }
+    console.warn("[OneSignal] SDK login error (expected on non-production domains):", err);
   }
 }
 
