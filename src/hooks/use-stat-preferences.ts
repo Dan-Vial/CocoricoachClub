@@ -92,7 +92,8 @@ export function useStatPreferences({
 
   // Determine which stats to show
   // Priority: match overrides > category preferences > all stats
-  const enabledStatKeys = matchOverrides ?? categoryPrefs ?? allAvailableStats.map(s => s.key);
+  const rawKeys = matchOverrides ?? categoryPrefs ?? allAvailableStats.map(s => s.key);
+  const enabledStatKeys = Array.isArray(rawKeys) ? rawKeys : allAvailableStats.map(s => s.key);
 
   // Filter stats based on enabled keys
   const filteredStats: StatField[] = allAvailableStats.filter(stat => 
