@@ -2736,8 +2736,7 @@ export function SessionFormDialog({
                             >
                               <Checkbox
                                 checked={selectedPlayers.includes(player.id)}
-                                onCheckedChange={() => togglePlayer(player.id)}
-                                onClick={(e) => e.stopPropagation()}
+                                className="pointer-events-none"
                               />
                               <Avatar className="h-6 w-6 pointer-events-none">
                                 <AvatarImage src={player.avatar_url || undefined} />
