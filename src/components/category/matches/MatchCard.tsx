@@ -537,6 +537,7 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
           open={isAggregatedStatsOpen}
           onOpenChange={setIsAggregatedStatsOpen}
           matchId={match.id}
+          categoryId={categoryId}
           sportType={sportType}
           competitionName={match.competition || match.opponent || "Compétition"}
           competitionDate={match.match_date}

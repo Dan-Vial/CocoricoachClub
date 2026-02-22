@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart3, Trophy, Target, Percent, Circle, Swords, Ship, Printer, FileDown } from "lucide-react";
 import { getAggregatedStatsForSport } from "@/lib/constants/sportStats";
+import { useStatPreferences } from "@/hooks/use-stat-preferences";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
 import { format } from "date-fns";
@@ -21,6 +22,7 @@ interface AggregatedRoundStatsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   matchId: string;
+  categoryId: string;
   sportType: string;
   competitionName: string;
   competitionDate?: string;
@@ -58,6 +60,7 @@ export function AggregatedRoundStatsDialog({
   open,
   onOpenChange,
   matchId,
+  categoryId,
   sportType,
   competitionName,
   competitionDate,
@@ -67,7 +70,13 @@ export function AggregatedRoundStatsDialog({
   const isAviron = sportType.toLowerCase().includes("aviron");
 
   const roundLabel = isJudo ? "Combats" : isAviron ? "Courses" : isBowling ? "Parties" : "Rounds";
-  const aggregatedStats = getAggregatedStatsForSport(sportType);
+  const allAggregatedStats = getAggregatedStatsForSport(sportType);
+  const { enabledStatKeys, hasCustomPreferences } = useStatPreferences({ categoryId, sportType });
+  
+  // Filter aggregated stats: only show those whose base key is enabled in preferences
+  const aggregatedStats = hasCustomPreferences
+    ? allAggregatedStats.filter(stat => enabledStatKeys.includes(stat.key))
+    : allAggregatedStats;
 
   // Fetch all rounds with their stats for this match
   const { data: roundsData, isLoading } = useQuery({

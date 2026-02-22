@@ -70,15 +70,15 @@ export function SportMatchStatsDialog({
   const selectedPlayer = statsData.find(p => p.playerId === selectedPlayerId);
   
   // Get stats from preferences (filtered based on category settings)
-  const { stats: filteredStats, allStats: allSportStats } = useStatPreferences({
+  const { stats: filteredStats, hasCustomPreferences } = useStatPreferences({
     categoryId,
     sportType,
     matchId,
     isGoalkeeper: selectedPlayer?.isGoalkeeper ?? false,
   });
   
-  // Use filtered stats if preferences exist, otherwise use all stats
-  const sportStats = filteredStats.length > 0 ? filteredStats : getStatsForSport(sportType, selectedPlayer?.isGoalkeeper ?? false);
+  // Use filtered stats from preferences; only fall back to all stats if NO preferences configured AND filtered is empty
+  const sportStats = hasCustomPreferences ? filteredStats : (filteredStats.length > 0 ? filteredStats : getStatsForSport(sportType, selectedPlayer?.isGoalkeeper ?? false));
   const statCategories = getStatCategories(sportType);
 
   // Set default stat category

@@ -24,6 +24,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Plus, Trash2, Trophy, Target, BarChart3, Swords, Circle, Ship, Users, Droplet, CheckCircle, Lock } from "lucide-react";
 import { getStatsForSport, getStatCategories, getAggregatedStatsForSport, type StatField } from "@/lib/constants/sportStats";
+import { useStatPreferences } from "@/hooks/use-stat-preferences";
 import { BowlingOilPatternSection } from "./BowlingOilPatternSection";
 import { BowlingScoreSheet, FrameData, BowlingStats } from "@/components/athlete-portal/BowlingScoreSheet";
 
@@ -132,7 +133,8 @@ export function CompetitionRoundsDialog({
   const [isDataInitialized, setIsDataInitialized] = useState(false);
   const queryClient = useQueryClient();
 
-  const sportStats = getStatsForSport(sportType);
+  const { stats: filteredSportStats } = useStatPreferences({ categoryId, sportType });
+  const sportStats = filteredSportStats.length > 0 ? filteredSportStats : getStatsForSport(sportType);
   const statCategories = getStatCategories(sportType);
   const aggregatedStats = getAggregatedStatsForSport(sportType);
   const isJudo = sportType.toLowerCase().includes("judo");
