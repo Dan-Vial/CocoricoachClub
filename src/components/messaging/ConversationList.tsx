@@ -230,11 +230,61 @@ export function ConversationList({ categoryId, selectedId, onSelect, isAthlete =
             .single();
             
           if (conv) {
+            // Add creator as admin participant
             await supabase.from("conversation_participants").insert({
               conversation_id: conv.id,
               user_id: user.id,
               is_admin: true,
             });
+
+            // Auto-add ALL existing athletes with user accounts to the group
+            const { data: athleteMembers } = await supabase
+              .from("category_members")
+              .select("user_id")
+              .eq("category_id", categoryId)
+              .eq("role", "athlete");
+
+            if (athleteMembers && athleteMembers.length > 0) {
+              const participantRows = athleteMembers
+                .filter(m => m.user_id !== user.id)
+                .map(m => ({
+                  conversation_id: conv.id,
+                  user_id: m.user_id,
+                  is_admin: false,
+                }));
+              if (participantRows.length > 0) {
+                await supabase.from("conversation_participants").insert(participantRows);
+              }
+            }
+
+            // Also add all staff members to this group
+            const { data: category } = await supabase
+              .from("categories")
+              .select("club_id")
+              .eq("id", categoryId)
+              .single();
+
+            if (category) {
+              const { data: staffMembersData } = await supabase
+                .from("club_members")
+                .select("user_id")
+                .eq("club_id", category.club_id);
+
+              if (staffMembersData && staffMembersData.length > 0) {
+                const staffRows = staffMembersData
+                  .filter(m => m.user_id !== user.id)
+                  .map(m => ({
+                    conversation_id: conv.id,
+                    user_id: m.user_id,
+                    is_admin: false,
+                  }));
+                if (staffRows.length > 0) {
+                  await supabase
+                    .from("conversation_participants")
+                    .upsert(staffRows, { onConflict: "conversation_id,user_id" });
+                }
+              }
+            }
           }
         }
         
@@ -245,24 +295,29 @@ export function ConversationList({ categoryId, selectedId, onSelect, isAthlete =
 
       // Auto-join athlete to "Staff + Joueurs" if not already a participant
       if (isAthlete) {
-        const allGroupConv = conversations?.find(c => c.name === allGroupName);
-        if (allGroupConv) {
-          // Check if already a participant
-          const { data: existing } = await supabase
+        // Search directly in DB, not just in filtered conversations list
+        const { data: allGroupConvData } = await supabase
+          .from("conversations")
+          .select("id")
+          .eq("category_id", categoryId)
+          .eq("name", allGroupName)
+          .eq("conversation_type", "group")
+          .maybeSingle();
+
+        if (allGroupConvData) {
+          // Upsert to avoid race conditions
+          await supabase
             .from("conversation_participants")
-            .select("id")
-            .eq("conversation_id", allGroupConv.id)
-            .eq("user_id", user.id)
-            .maybeSingle();
-          
-          if (!existing) {
-            await supabase.from("conversation_participants").insert({
-              conversation_id: allGroupConv.id,
-              user_id: user.id,
-              is_admin: false,
-            });
-            queryClient.invalidateQueries({ queryKey: ["conversations", categoryId] });
-          }
+            .upsert(
+              {
+                conversation_id: allGroupConvData.id,
+                user_id: user.id,
+                is_admin: false,
+              },
+              { onConflict: "conversation_id,user_id" }
+            );
+          // Refresh conversations to ensure messages are accessible
+          queryClient.invalidateQueries({ queryKey: ["conversations", categoryId] });
         }
       }
       
