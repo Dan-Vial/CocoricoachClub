@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Bell } from "lucide-react";
+import { Bell, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { isIndividualSport } from "@/lib/constants/sportTypes";
 
@@ -18,6 +18,7 @@ interface MatchVignetteProps {
   isViewer: boolean;
   onClick: () => void;
   onNotify?: () => void;
+  onDelete?: () => void;
 }
 
 export function MatchVignette({
@@ -26,6 +27,7 @@ export function MatchVignette({
   isViewer,
   onClick,
   onNotify,
+  onDelete,
 }: MatchVignetteProps) {
   const [isHovered, setIsHovered] = useState(false);
 
@@ -38,6 +40,14 @@ export function MatchVignette({
     e.stopPropagation();
     e.preventDefault();
     onNotify?.();
+  };
+
+  const handleDeleteClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (confirm("Supprimer ce match ?")) {
+      onDelete?.();
+    }
   };
 
   return (
@@ -57,10 +67,10 @@ export function MatchVignette({
         className="bg-rose-500 text-white text-[11px] px-2 py-1.5 rounded-lg truncate font-medium cursor-pointer hover:bg-rose-600 transition-colors relative overflow-hidden"
         title={`${match.match_time ? formatTime(match.match_time) + " - " : ""}${match.opponent}`}
       >
-        {/* Match content - hidden when hovered to show notify button */}
+        {/* Match content - hidden when hovered to show action buttons */}
         <div className={cn(
           "flex items-center gap-1 transition-opacity",
-          isHovered && !isViewer && onNotify && "opacity-0"
+          isHovered && !isViewer && (onNotify || onDelete) && "opacity-0"
         )}>
           {match.match_time && (
             <>
@@ -73,17 +83,28 @@ export function MatchVignette({
           </span>
         </div>
 
-        {/* Hover Actions Overlay - Notify button */}
-        {isHovered && !isViewer && onNotify && (
-          <div className="absolute inset-0 flex items-center justify-center bg-rose-600 rounded-lg z-[100] animate-fade-in">
-            <button
-              onClick={handleNotifyClick}
-              className="p-1.5 rounded-md hover:bg-rose-500 transition-colors group/btn flex items-center gap-1.5"
-              title="Notifier les athlètes convoqués"
-            >
-              <Bell className="h-4 w-4" />
-              <span className="text-xs font-medium">Convoquer</span>
-            </button>
+        {/* Hover Actions Overlay - Notify + Delete buttons */}
+        {isHovered && !isViewer && (onNotify || onDelete) && (
+          <div className="absolute inset-0 flex items-center justify-center gap-2 bg-rose-600 rounded-lg z-[100] animate-fade-in">
+            {onNotify && (
+              <button
+                onClick={handleNotifyClick}
+                className="p-1.5 rounded-md hover:bg-rose-500 transition-colors flex items-center gap-1"
+                title="Notifier les athlètes"
+              >
+                <Bell className="h-4 w-4" />
+                <span className="text-xs font-medium">Notifier</span>
+              </button>
+            )}
+            {onDelete && (
+              <button
+                onClick={handleDeleteClick}
+                className="p-1.5 rounded-md hover:bg-rose-500 transition-colors flex items-center gap-1"
+                title="Supprimer le match"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            )}
           </div>
         )}
       </div>

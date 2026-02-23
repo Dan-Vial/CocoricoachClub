@@ -480,6 +480,8 @@ export function ImprovedCalendarView({
                       onDeleteSession={(sessionId) => setDeleteSessionId(sessionId)}
                       onNotifySession={(session) => setNotifySession(session)}
                       onNotifyMatch={(match) => setNotifyMatch(match)}
+                      onViewMatch={(match) => onViewMatch?.(match)}
+                      onDeleteMatch={(matchId) => onDeleteMatch?.(matchId)}
                     />
                   ))}
                 </div>

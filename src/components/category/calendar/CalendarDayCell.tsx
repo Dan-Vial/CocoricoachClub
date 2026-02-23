@@ -47,6 +47,8 @@ interface CalendarDayCellProps {
   onDeleteSession: (sessionId: string) => void;
   onNotifySession?: (session: Session) => void;
   onNotifyMatch?: (match: Match) => void;
+  onViewMatch?: (match: Match) => void;
+  onDeleteMatch?: (matchId: string) => void;
 }
 
 export function CalendarDayCell({
@@ -63,6 +65,8 @@ export function CalendarDayCell({
   onDeleteSession,
   onNotifySession,
   onNotifyMatch,
+  onViewMatch,
+  onDeleteMatch,
 }: CalendarDayCellProps) {
   const dateStr = format(day, "yyyy-MM-dd");
   const { setNodeRef, isOver } = useDroppable({
@@ -142,8 +146,9 @@ export function CalendarDayCell({
             match={match}
             sportType={sportType}
             isViewer={isViewer}
-            onClick={() => onDayClick(day)}
+            onClick={() => onViewMatch ? onViewMatch(match) : onDayClick(day)}
             onNotify={onNotifyMatch ? () => onNotifyMatch(match) : undefined}
+            onDelete={onDeleteMatch ? () => onDeleteMatch(match.id) : undefined}
           />
         ))}
 
