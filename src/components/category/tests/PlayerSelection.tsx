@@ -209,25 +209,33 @@ export function PlayerSelection({
                 return (
                   <div
                     key={player.id}
-                    className={`flex items-center gap-2 p-2 rounded-md cursor-pointer transition-colors ${
+                    role="button"
+                    tabIndex={0}
+                    className={`flex items-center gap-2 p-2 rounded-md cursor-pointer transition-colors select-none ${
                       isSelected
                         ? "bg-primary/10 border border-primary/30"
                         : "hover:bg-muted border border-transparent"
                     }`}
                     onClick={() => togglePlayer(player.id)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        togglePlayer(player.id);
+                      }
+                    }}
                   >
                     <Checkbox
                       checked={isSelected}
-                      onCheckedChange={() => togglePlayer(player.id)}
+                      className="pointer-events-none"
                     />
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-0 pointer-events-none">
                       <p className="text-sm font-medium truncate">{player.name}</p>
                       {player.position && (
                         <p className="text-xs text-muted-foreground">{player.position}</p>
                       )}
                     </div>
                     {isInjured && (
-                      <Badge variant="outline" className="text-amber-600 border-amber-300 text-xs shrink-0">
+                      <Badge variant="outline" className="text-amber-600 border-amber-300 text-xs shrink-0 pointer-events-none">
                         Blessé
                       </Badge>
                     )}
