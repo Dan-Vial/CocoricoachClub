@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -34,6 +34,7 @@ interface CreateEventDialogProps {
   categoryId: string;
   onAddSession: () => void;
   onAddMatch: () => void;
+  onSelectExternalType?: (type: "session" | "match") => void;
 }
 
 const EVENT_TYPES = [
@@ -112,6 +113,7 @@ export function CreateEventDialog({
   categoryId,
   onAddSession,
   onAddMatch,
+  onSelectExternalType,
 }: CreateEventDialogProps) {
   const [step, setStep] = useState<"type" | "details">("type");
   const [selectedType, setSelectedType] = useState<string | null>(null);
@@ -161,9 +163,14 @@ export function CreateEventDialog({
   const handleTypeSelect = (typeId: string) => {
     const eventType = EVENT_TYPES.find(t => t.id === typeId);
     
-    if (eventType?.useExistingDialog) {
-      // Just call the callbacks - parent handles the timing/deferral
+    if (eventType?.useExistingDialog && onSelectExternalType) {
+      const action: "session" | "match" = (typeId === "session" || typeId === "test") ? "session" : "match";
       resetForm();
+      onSelectExternalType(action);
+    } else if (eventType?.useExistingDialog) {
+      // Fallback if no onSelectExternalType
+      resetForm();
+      onOpenChange(false);
       if (typeId === "session" || typeId === "test") {
         onAddSession();
       } else if (typeId === "match") {
