@@ -105,6 +105,8 @@ export function ImprovedCalendarView({
   const [feedbackSession, setFeedbackSession] = useState<Session | null>(null);
   const [deleteSessionId, setDeleteSessionId] = useState<string | null>(null);
   const [addEventDate, setAddEventDate] = useState<Date | null>(null);
+  const [pendingExternalType, setPendingExternalType] = useState<"session" | "match" | null>(null);
+  const addEventDateRef = useRef<Date | null>(null);
   const [notifySession, setNotifySession] = useState<Session | null>(null);
   const [notifyMatch, setNotifyMatch] = useState<Match | null>(null);
   
@@ -289,8 +291,23 @@ export function ImprovedCalendarView({
     }
   };
 
+  // Handle deferred dialog transition: when CreateEventDialog closes and there's a pending type
+  useEffect(() => {
+    if (pendingExternalType && !addEventDate) {
+      const dateToUse = addEventDateRef.current;
+      addEventDateRef.current = null;
+      const type = pendingExternalType;
+      setPendingExternalType(null);
+      if (dateToUse) {
+        if (type === "session") onAddSession(dateToUse);
+        else if (type === "match") onAddMatch(dateToUse);
+      }
+    }
+  }, [pendingExternalType, addEventDate, onAddSession, onAddMatch]);
+
   const handleDayClickWithAdd = (day: Date) => {
     if (!isViewer) {
+      addEventDateRef.current = day;
       setAddEventDate(day);
     } else {
       onDayClick(day);
@@ -636,19 +653,17 @@ export function ImprovedCalendarView({
         date={addEventDate || new Date()}
         categoryId={categoryId}
         onAddSession={() => {
-          const dateToUse = addEventDate;
-          setAddEventDate(null);
-          // Defer callback to allow dialog to close properly
+          const dateToUse = addEventDateRef.current;
+          addEventDateRef.current = null;
           if (dateToUse) {
-            setTimeout(() => onAddSession(dateToUse), 0);
+            onAddSession(dateToUse);
           }
         }}
         onAddMatch={() => {
-          const dateToUse = addEventDate;
-          setAddEventDate(null);
-          // Defer callback to allow dialog to close properly
+          const dateToUse = addEventDateRef.current;
+          addEventDateRef.current = null;
           if (dateToUse) {
-            setTimeout(() => onAddMatch(dateToUse), 0);
+            onAddMatch(dateToUse);
           }
         }}
       />
