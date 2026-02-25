@@ -1624,6 +1624,42 @@ export type Database = {
           },
         ]
       }
+      event_participants: {
+        Row: {
+          created_at: string
+          id: string
+          player_id: string
+          training_session_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          player_id: string
+          training_session_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          player_id?: string
+          training_session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_participants_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_participants_training_session_id_fkey"
+            columns: ["training_session_id"]
+            isOneToOne: false
+            referencedRelation: "training_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       exercise_library: {
         Row: {
           category: string

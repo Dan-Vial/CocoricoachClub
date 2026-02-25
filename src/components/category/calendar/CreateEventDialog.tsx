@@ -208,9 +208,7 @@ export function CreateEventDialog({
   // Create event mutation (for custom events not using existing dialogs)
   const createEvent = useMutation({
     mutationFn: async () => {
-      // For now, we'll create these as training sessions with a special type
-      // In the future, you might want a dedicated calendar_events table
-      const { error } = await supabase
+      const { data: session, error } = await supabase
         .from("training_sessions")
         .insert({
           category_id: categoryId,
@@ -220,10 +218,25 @@ export function CreateEventDialog({
           training_type: selectedType === "medical" ? "medical" : 
                          selectedType === "video" ? "video_analyse" :
                          selectedType === "team_meeting" ? "reunion" : "autre",
-          notes: `${title}${location ? ` - ${location}` : ""}${notes ? `\n${notes}` : ""}${selectedPlayers.length > 0 ? `\nParticipants: ${selectedPlayers.length} athlète(s)` : ""}`,
+          notes: `${title}${location ? ` - ${location}` : ""}${notes ? `\n${notes}` : ""}`,
           intensity: 1,
-        });
+        })
+        .select("id")
+        .single();
       if (error) throw error;
+
+      // Save participants
+      if (selectedPlayers.length > 0 && session) {
+        const { error: partError } = await supabase
+          .from("event_participants")
+          .insert(
+            selectedPlayers.map(playerId => ({
+              training_session_id: session.id,
+              player_id: playerId,
+            }))
+          );
+        if (partError) console.error("Error saving participants:", partError);
+      }
     },
     onSuccess: () => {
       // Invalidate all session-related queries for immediate refresh

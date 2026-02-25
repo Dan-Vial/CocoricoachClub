@@ -390,6 +390,22 @@ export function SessionFormDialog({
     enabled: open && !!editSession?.id,
   });
 
+  // Fetch event participants for non-training events (medical, video, reunion)
+  const isCustomEventType = editSession?.training_type && ["medical", "video_analyse", "reunion"].includes(editSession.training_type);
+  const { data: existingEventParticipants } = useQuery({
+    queryKey: ["event-participants-edit", editSession?.id],
+    queryFn: async () => {
+      if (!editSession?.id) return [];
+      const { data, error } = await supabase
+        .from("event_participants")
+        .select("player_id")
+        .eq("training_session_id", editSession.id);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: open && !!editSession?.id && !!isCustomEventType,
+  });
+
   // Fetch existing tests linked to this session if editing
   const { data: existingSessionTests } = useQuery({
     queryKey: ["session-tests-edit", editSession?.id],
@@ -511,6 +527,14 @@ export function SessionFormDialog({
 
   // Load existing player attendance when editing
   useEffect(() => {
+    // For custom event types, load from event_participants
+    if (isCustomEventType && existingEventParticipants && existingEventParticipants.length > 0 && editSession && players) {
+      const participantIds = existingEventParticipants.map(p => p.player_id);
+      setPlayerSelectionMode("specific");
+      setSelectedPlayers(participantIds);
+      return;
+    }
+    
     if (existingAttendance && existingAttendance.length > 0 && editSession && players) {
       const attendedPlayerIds = existingAttendance.map(a => a.player_id);
       const totalPlayers = players.length;
@@ -527,7 +551,7 @@ export function SessionFormDialog({
       setPlayerSelectionMode("all");
       setSelectedPlayers([]);
     }
-  }, [existingAttendance, editSession, players]);
+  }, [existingAttendance, existingEventParticipants, isCustomEventType, editSession, players]);
 
   // Load existing tests when editing - from generic_tests OR from session notes config
   useEffect(() => {
@@ -697,6 +721,32 @@ export function SessionFormDialog({
         }
       }
 
+      // Sync event_participants for custom event types
+      const customTypes = ["medical", "video_analyse", "reunion"];
+      const currentType = mainType || "autre";
+      if (customTypes.includes(currentType)) {
+        // Delete existing participants
+        await supabase
+          .from("event_participants")
+          .delete()
+          .eq("training_session_id", sessionId!);
+
+        // Insert selected participants
+        const participantsToSave =
+          playerSelectionMode === "specific" && selectedPlayers.length > 0
+            ? selectedPlayers
+            : [];
+
+        if (participantsToSave.length > 0) {
+          await supabase.from("event_participants").insert(
+            participantsToSave.map(playerId => ({
+              training_session_id: sessionId!,
+              player_id: playerId,
+            }))
+          );
+        }
+      }
+
       // If session blocks exist, create them
       if (sessionBlocks.length > 0) {
         const blockRecords = sessionBlocks
@@ -794,6 +844,7 @@ export function SessionFormDialog({
       queryClient.invalidateQueries({ queryKey: ["session-attendance-edit"] });
       queryClient.invalidateQueries({ queryKey: ["gym-exercises"] });
       queryClient.invalidateQueries({ queryKey: ["gps-sessions", categoryId] });
+      queryClient.invalidateQueries({ queryKey: ["event-participants-edit"] });
       queryClient.invalidateQueries({ queryKey: ["generic_tests", categoryId] });
       queryClient.invalidateQueries({ queryKey: ["generic_tests_discovery", categoryId] });
       queryClient.invalidateQueries({ queryKey: ["session-blocks"] });
