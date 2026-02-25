@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { getDisplayNotes } from "@/lib/utils/sessionNotes";
 import { DndContext, DragEndEvent, DragOverlay, pointerWithin } from "@dnd-kit/core";
 import { useQuery } from "@tanstack/react-query";
@@ -665,6 +665,10 @@ export function ImprovedCalendarView({
           if (dateToUse) {
             onAddMatch(dateToUse);
           }
+        }}
+        onSelectExternalType={(type) => {
+          setPendingExternalType(type);
+          setAddEventDate(null);
         }}
       />
 
