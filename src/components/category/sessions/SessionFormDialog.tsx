@@ -198,6 +198,12 @@ interface ExerciseGroup {
   blockConfig?: BlockConfig;
 }
 
+const normalizePlayerIds = (ids: Array<string | null | undefined>): string[] =>
+  ids.filter((id): id is string => typeof id === "string" && id.length > 0);
+
+const areSameIds = (left: string[], right: string[]) =>
+  left.length === right.length && left.every((id, index) => id === right[index]);
+
 // Droppable zone component for exercises
 function DroppableExerciseZone({ children, id = "exercise-drop-zone" }: { children: React.ReactNode; id?: string }) {
   const { setNodeRef, isOver } = useDroppable({
@@ -456,26 +462,30 @@ export function SessionFormDialog({
 
   // Initialize form when editing or opening
   useEffect(() => {
-    if (open) {
-      setActiveTab("details"); // Always start on details tab
-      if (editSession) {
-        setDate(editSession.session_date || "");
-        setStartTime(editSession.session_start_time || "");
-        setEndTime(editSession.session_end_time || "");
-        setType(editSession.training_type || "");
-        setIntensity(editSession.intensity?.toString() || "");
-        // Strip <!--TESTS:...--> from visible notes
-        const rawNotes = editSession.notes || "";
-        setNotes(rawNotes.replace(/\n?<!--TESTS:.*?-->/g, "").trim());
-        setPlayerSelectionMode("all");
-        setSelectedPlayers([]);
-      } else {
-        resetForm();
-        // If a default date is provided, use it
-        if (defaultDate) {
-          setDate(defaultDate);
-        }
-      }
+    if (!open) return;
+
+    setActiveTab("details"); // Always start on details tab
+
+    if (editSession) {
+      setDate(editSession.session_date || "");
+      setStartTime(editSession.session_start_time || "");
+      setEndTime(editSession.session_end_time || "");
+      setType(editSession.training_type || "");
+      setIntensity(editSession.intensity?.toString() || "");
+
+      // Strip <!--TESTS:...--> from visible notes
+      const rawNotes = editSession.notes || "";
+      setNotes(rawNotes.replace(/\n?<!--TESTS:.*?-->/g, "").trim());
+      setPlayerSelectionMode((prev) => (prev === "all" ? prev : "all"));
+      setSelectedPlayers((prev) => (prev.length === 0 ? prev : []));
+      return;
+    }
+
+    resetForm();
+
+    // If a default date is provided, use it
+    if (defaultDate) {
+      setDate(defaultDate);
     }
   }, [open, editSession, defaultDate]);
 
@@ -527,47 +537,70 @@ export function SessionFormDialog({
 
   // Load existing player attendance when editing
   useEffect(() => {
+    if (!open) return;
+
     // For custom event types, load from event_participants
-    if (isCustomEventType && existingEventParticipants && existingEventParticipants.length > 0 && editSession && players) {
-      const participantIds = existingEventParticipants.map(p => p.player_id);
-      setPlayerSelectionMode("specific");
-      setSelectedPlayers(participantIds);
+    if (isCustomEventType && editSession && players) {
+      const participantIds = normalizePlayerIds(
+        (existingEventParticipants || []).map((participant) => participant.player_id)
+      );
+
+      if (participantIds.length > 0) {
+        setPlayerSelectionMode((prev) => (prev === "specific" ? prev : "specific"));
+        setSelectedPlayers((prev) => (areSameIds(prev, participantIds) ? prev : participantIds));
+        return;
+      }
+    }
+
+    if (editSession && players) {
+      const attendedPlayerIds = normalizePlayerIds(
+        (existingAttendance || []).map((attendance) => attendance.player_id)
+      );
+      const totalPlayers = players.length;
+
+      // If all (or no) players are present, keep mode "all"
+      if (attendedPlayerIds.length === 0 || attendedPlayerIds.length === totalPlayers) {
+        setPlayerSelectionMode((prev) => (prev === "all" ? prev : "all"));
+        setSelectedPlayers((prev) => (prev.length === 0 ? prev : []));
+      } else {
+        setPlayerSelectionMode((prev) => (prev === "specific" ? prev : "specific"));
+        setSelectedPlayers((prev) => (areSameIds(prev, attendedPlayerIds) ? prev : attendedPlayerIds));
+      }
       return;
     }
-    
-    if (existingAttendance && existingAttendance.length > 0 && editSession && players) {
-      const attendedPlayerIds = existingAttendance.map(a => a.player_id);
-      const totalPlayers = players.length;
-      
-      // If all players attended, keep mode "all", otherwise switch to "specific"
-      if (attendedPlayerIds.length === totalPlayers) {
-        setPlayerSelectionMode("all");
-        setSelectedPlayers([]);
-      } else {
-        setPlayerSelectionMode("specific");
-        setSelectedPlayers(attendedPlayerIds);
-      }
-    } else if (!editSession) {
-      setPlayerSelectionMode("all");
-      setSelectedPlayers([]);
+
+    if (!editSession) {
+      setPlayerSelectionMode((prev) => (prev === "all" ? prev : "all"));
+      setSelectedPlayers((prev) => (prev.length === 0 ? prev : []));
     }
-  }, [existingAttendance, existingEventParticipants, isCustomEventType, editSession, players]);
+  }, [open, existingAttendance, existingEventParticipants, isCustomEventType, editSession, players]);
 
   // Load existing tests when editing - from generic_tests OR from session notes config
   useEffect(() => {
     if (!editSession) {
-      setSessionTests([]);
+      setSessionTests((prev) => (prev.length === 0 ? prev : []));
       return;
     }
-    
+
+    const shouldKeepExistingTests = (currentTests: SessionTest[], nextTests: SessionTest[]) => {
+      return (
+        currentTests.length === nextTests.length &&
+        currentTests.every(
+          (existing, index) =>
+            existing.test_category === nextTests[index]?.test_category &&
+            existing.test_type === nextTests[index]?.test_type
+        )
+      );
+    };
+
     // If we have saved results in generic_tests, load them
     if (existingSessionTests && existingSessionTests.length > 0) {
       const testGroups = new Map<string, SessionTest>();
-      existingSessionTests.forEach(t => {
+      existingSessionTests.forEach((t) => {
         const key = `${t.test_category}__${t.test_type}`;
         if (!testGroups.has(key)) {
           testGroups.set(key, {
-            id: crypto.randomUUID(),
+            id: key,
             test_category: t.test_category,
             test_type: t.test_type,
             result_unit: t.result_unit || "",
@@ -579,10 +612,12 @@ export function SessionFormDialog({
           group.player_results[t.player_id] = t.result_value.toString();
         }
       });
-      setSessionTests(Array.from(testGroups.values()));
+
+      const nextTests = Array.from(testGroups.values());
+      setSessionTests((prev) => (shouldKeepExistingTests(prev, nextTests) ? prev : nextTests));
       return;
     }
-    
+
     // Fallback: parse test config from session notes (<!--TESTS:[...]-->)
     const rawNotes = editSession.notes || "";
     const match = rawNotes.match(/<!--TESTS:(.*?)-->/);
@@ -590,19 +625,23 @@ export function SessionFormDialog({
       try {
         const config = JSON.parse(match[1]) as { test_category: string; test_type: string; result_unit: string }[];
         if (config.length > 0) {
-          setSessionTests(config.map(t => ({
-            id: crypto.randomUUID(),
-            test_category: t.test_category,
-            test_type: t.test_type,
-            result_unit: t.result_unit || "",
+          const nextTests = config.map((testConfig) => ({
+            id: `${testConfig.test_category}__${testConfig.test_type}`,
+            test_category: testConfig.test_category,
+            test_type: testConfig.test_type,
+            result_unit: testConfig.result_unit || "",
             player_results: {},
-          })));
+          }));
+
+          setSessionTests((prev) => (shouldKeepExistingTests(prev, nextTests) ? prev : nextTests));
           return;
         }
-      } catch {}
+      } catch {
+        // Invalid notes format, fallback to empty
+      }
     }
-    
-    setSessionTests([]);
+
+    setSessionTests((prev) => (prev.length === 0 ? prev : []));
   }, [existingSessionTests, editSession]);
 
   const injuredPlayers = players?.filter((p) => p.isInjured) || [];
