@@ -281,12 +281,12 @@ export function InviteMemberDialog({ open, onOpenChange, clubId }: InviteMemberD
             <div>
               <Label htmlFor="role">Rôle</Label>
               <Select
+                value={form.watch("role")}
                 onValueChange={(value) => form.setValue("role", value as any)}
-                defaultValue="coach"
                 disabled={isStaffFull}
               >
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="Sélectionner un rôle" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="admin">
