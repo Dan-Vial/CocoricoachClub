@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Bell, Trash2 } from "lucide-react";
+import { Bell, Trash2, BarChart3 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { isIndividualSport } from "@/lib/constants/sportTypes";
 
@@ -18,6 +18,7 @@ interface MatchVignetteProps {
   isViewer: boolean;
   onClick: () => void;
   onNotify?: () => void;
+  onStats?: () => void;
   onDelete?: () => void;
 }
 
@@ -27,6 +28,7 @@ export function MatchVignette({
   isViewer,
   onClick,
   onNotify,
+  onStats,
   onDelete,
 }: MatchVignetteProps) {
   const [isHovered, setIsHovered] = useState(false);
@@ -40,6 +42,12 @@ export function MatchVignette({
     e.stopPropagation();
     e.preventDefault();
     onNotify?.();
+  };
+
+  const handleStatsClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    onStats?.();
   };
 
   const handleDeleteClick = (e: React.MouseEvent) => {
@@ -70,7 +78,7 @@ export function MatchVignette({
         {/* Match content - hidden when hovered to show action buttons */}
         <div className={cn(
           "flex items-center gap-1 transition-opacity",
-          isHovered && !isViewer && (onNotify || onDelete) && "opacity-0"
+          isHovered && !isViewer && (onNotify || onStats || onDelete) && "opacity-0"
         )}>
           {match.match_time && (
             <>
@@ -84,7 +92,7 @@ export function MatchVignette({
         </div>
 
         {/* Hover Actions Overlay - Notify + Delete buttons */}
-        {isHovered && !isViewer && (onNotify || onDelete) && (
+        {isHovered && !isViewer && (onNotify || onStats || onDelete) && (
           <div className="absolute inset-0 flex items-center justify-center gap-2 bg-rose-600 rounded-lg z-[100] animate-fade-in">
             {onNotify && (
               <button
@@ -94,6 +102,16 @@ export function MatchVignette({
               >
                 <Bell className="h-4 w-4" />
                 <span className="text-xs font-medium">Notifier</span>
+              </button>
+            )}
+            {onStats && (
+              <button
+                onClick={handleStatsClick}
+                className="p-1.5 rounded-md hover:bg-rose-500 transition-colors flex items-center gap-1"
+                title="Statistiques du match"
+              >
+                <BarChart3 className="h-4 w-4" />
+                <span className="text-xs font-medium">Stats</span>
               </button>
             )}
             {onDelete && (

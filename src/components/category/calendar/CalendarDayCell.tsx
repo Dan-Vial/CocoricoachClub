@@ -148,6 +148,7 @@ export function CalendarDayCell({
             isViewer={isViewer}
             onClick={() => onViewMatch ? onViewMatch(match) : onDayClick(day)}
             onNotify={onNotifyMatch ? () => onNotifyMatch(match) : undefined}
+            onStats={onViewMatch ? () => onViewMatch(match) : undefined}
             onDelete={onDeleteMatch ? () => onDeleteMatch(match.id) : undefined}
           />
         ))}
