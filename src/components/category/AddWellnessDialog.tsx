@@ -57,6 +57,7 @@ export function AddWellnessDialog({ open, onOpenChange, categoryId }: AddWellnes
         .from("players")
         .select("*")
         .eq("category_id", categoryId)
+        .order("first_name")
         .order("name");
       if (error) throw error;
       return data;
@@ -204,7 +205,7 @@ export function AddWellnessDialog({ open, onOpenChange, categoryId }: AddWellnes
                 <SelectContent>
                 {availablePlayers?.map((player) => (
                     <SelectItem key={player.id} value={player.id}>
-                      {player.name}
+                      {player.first_name ? `${player.first_name} ${player.name}` : player.name}
                     </SelectItem>
                   ))}
                   {availablePlayers?.length === 0 && (
