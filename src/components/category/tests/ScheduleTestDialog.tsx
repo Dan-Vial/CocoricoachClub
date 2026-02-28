@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { CalendarPlus } from "lucide-react";
+import { useSessionNotifications } from "@/lib/hooks/useSessionNotifications";
 
 interface ScheduleTestDialogProps {
   open: boolean;
@@ -39,6 +40,7 @@ export function ScheduleTestDialog({
   const [startTime, setStartTime] = useState("09:00");
   const [endTime, setEndTime] = useState("09:30");
   const queryClient = useQueryClient();
+  const { notify } = useSessionNotifications();
 
   const scheduleTest = useMutation({
     mutationFn: async () => {
@@ -50,20 +52,34 @@ export function ScheduleTestDialog({
         },
       ]);
 
-      const { error } = await supabase.from("training_sessions").insert({
+      const { data, error } = await supabase.from("training_sessions").insert({
         category_id: categoryId,
         session_date: date,
         session_start_time: startTime,
         session_end_time: endTime,
         training_type: "test",
         notes: `<!--TESTS:${testMeta}-->`,
-      });
+      }).select("id").single();
       if (error) throw error;
+      return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["training_sessions", categoryId] });
       queryClient.invalidateQueries({ queryKey: ["today_sessions", categoryId] });
       toast.success(`Test "${testTypeLabel}" planifié au calendrier`);
+
+      // 🔔 Notify all category athletes about the scheduled test
+      if (data?.id) {
+        notify({
+          action: "created",
+          sessionId: data.id,
+          categoryId,
+          sessionDate: date,
+          sessionStartTime: startTime || null,
+          sessionType: "test",
+        });
+      }
+
       onOpenChange(false);
     },
     onError: () => {

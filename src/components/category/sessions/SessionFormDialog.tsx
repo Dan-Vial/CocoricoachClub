@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSessionNotifications } from "@/lib/hooks/useSessionNotifications";
 import {
   Dialog,
   DialogContent,
@@ -252,6 +253,8 @@ export function SessionFormDialog({
 }: SessionFormDialogProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+
+  const { notify } = useSessionNotifications();
 
   // Form state
   const [date, setDate] = useState("");
@@ -873,7 +876,7 @@ export function SessionFormDialog({
 
       return sessionId;
     },
-    onSuccess: () => {
+    onSuccess: (returnedSessionId) => {
       queryClient.invalidateQueries({ queryKey: ["training_sessions", categoryId] });
       queryClient.invalidateQueries({ queryKey: ["today_sessions", categoryId] });
       queryClient.invalidateQueries({ queryKey: ["today_session_exercises"] });
@@ -906,6 +909,25 @@ export function SessionFormDialog({
       if (gpsCount > 0) successMessage += ` + ${gpsCount} données GPS`;
       
       toast.success(successMessage);
+
+      // 🔔 Send push notifications to participants (creation only)
+      if (!editSession && returnedSessionId) {
+        const mainType = sessionBlocks.length > 0 ? sessionBlocks[0].training_type : type;
+        const participantIds = playerSelectionMode === "specific" && selectedPlayers.length > 0
+          ? selectedPlayers
+          : undefined;
+        
+        notify({
+          action: "created",
+          sessionId: returnedSessionId,
+          categoryId,
+          sessionDate: date,
+          sessionStartTime: startTime || null,
+          sessionType: mainType,
+          participantPlayerIds: participantIds,
+        });
+      }
+
       onOpenChange(false);
     },
     onError: () => {
