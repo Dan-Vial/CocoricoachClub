@@ -236,10 +236,47 @@ export function CreateEventDialog({
             }))
           );
         if (partError) console.error("Error saving participants:", partError);
+
+        // Auto-notify participants via OneSignal
+        try {
+          // Get user_ids of selected players
+          const { data: playerUsers } = await supabase
+            .from("players")
+            .select("user_id")
+            .in("id", selectedPlayers)
+            .not("user_id", "is", null);
+
+          const targetUserIds = (playerUsers || []).map(p => p.user_id).filter(Boolean) as string[];
+
+          if (targetUserIds.length > 0) {
+            const eventDetails = {
+              date: format(date, "EEEE d MMMM yyyy", { locale: fr }),
+              time: startTime || undefined,
+            };
+
+            await supabase.functions.invoke("send-targeted-notification", {
+              body: {
+                title: "Événement ajouté au calendrier",
+                message: `${title} — ${format(date, "EEEE d MMMM", { locale: fr })}${startTime ? ` à ${startTime}` : ""}`,
+                channels: ["push"],
+                event_type: "session",
+                session_id: session.id,
+                event_details: eventDetails,
+                target_user_ids: targetUserIds,
+                url: `https://cocoricoachclub.com/categories/${categoryId}?session=${session.id}`,
+              },
+            });
+            console.log(`[CreateEvent] Auto-notification sent to ${targetUserIds.length} user(s) for session ${session.id}`);
+          }
+        } catch (notifError) {
+          console.warn("[CreateEvent] Auto-notification failed:", notifError);
+          // Don't block event creation if notification fails
+        }
       }
+
+      return session;
     },
     onSuccess: () => {
-      // Invalidate all session-related queries for immediate refresh
       queryClient.invalidateQueries({ queryKey: ["training_sessions", categoryId] });
       queryClient.invalidateQueries({ queryKey: ["sessions", categoryId] });
       queryClient.invalidateQueries({ queryKey: ["today_sessions", categoryId] });
