@@ -220,7 +220,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
       let yPos = drawPdfHeaderCustom(
         pdf,
         `FICHE JOUEUR`,
-        `${player.name} - ${player.position || 'Position non définie'}`,
+        `${[player.first_name, player.name].filter(Boolean).join(" ")} - ${player.position || 'Position non définie'}`,
         `${category?.clubs?.name} - ${category?.name} | ${format(new Date(), "d MMMM yyyy", { locale: fr })}${dateRange ? ` | ${dateRange}` : ""}`,
         pdfSettings,
         logoBase64
@@ -487,7 +487,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
         });
       }
 
-      pdf.save(`fiche_${player.name.replace(/\s+/g, '_')}_${format(new Date(), "yyyy-MM-dd")}.pdf`);
+      pdf.save(`fiche_${[player.first_name, player.name].filter(Boolean).join('_').replace(/\s+/g, '_')}_${format(new Date(), "yyyy-MM-dd")}.pdf`);
       toast.success("Rapport généré avec succès");
     } catch (error) {
       console.error(error);
@@ -1227,7 +1227,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
         const playerMatches = matchesByPlayer[player.id];
         
         const values = [
-          player.name,
+          [player.first_name, player.name].filter(Boolean).join(" "),
           player.position || '-',
           String(playerInjuries),
           playerAwcr ? playerAwcr.toFixed(2) : '-',
@@ -1387,7 +1387,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
         const totalMinutes = playerLineups.reduce((sum, l) => sum + (l.minutes_played || 0), 0);
         
         return [
-          player.name,
+          [player.first_name, player.name].filter(Boolean).join(" "),
           player.position || "",
           playerInjuries,
           playerWellness?.general_fatigue?.toString() || "-",
@@ -1438,7 +1438,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
       ]);
 
       const csv = generateCsv(wellnessHeaders, wellnessRows);
-      downloadCsv(`joueur_${player.name.replace(/\s+/g, '_')}_${format(new Date(), "yyyy-MM-dd")}.csv`, csv);
+      downloadCsv(`joueur_${[player.first_name, player.name].filter(Boolean).join('_').replace(/\s+/g, '_')}_${format(new Date(), "yyyy-MM-dd")}.csv`, csv);
       toast.success("Export CSV généré");
     } catch (error) {
       console.error(error);
@@ -1615,7 +1615,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
         yPos = drawTableRowPdf(
           pdf,
           [
-            player.name,
+            [player.first_name, player.name].filter(Boolean).join(" "),
             String(player.present),
             String(player.late),
             String(player.excused),
@@ -1660,7 +1660,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
         const rate = total > 0 ? Math.round(((present + late) / total) * 100) : 0;
 
         return {
-          name: player.name,
+          name: [player.first_name, player.name].filter(Boolean).join(" "),
           position: player.position || "",
           present, late, lateJustified,
           lateUnjustified: late - lateJustified,
@@ -1769,7 +1769,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
               <SelectContent>
                 {players.map((player) => (
                   <SelectItem key={player.id} value={player.id}>
-                    {player.name}
+                    {[player.first_name, player.name].filter(Boolean).join(" ")}
                   </SelectItem>
                 ))}
               </SelectContent>
