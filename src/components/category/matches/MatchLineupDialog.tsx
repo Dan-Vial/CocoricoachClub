@@ -67,7 +67,7 @@ export function MatchLineupDialog({
     queryFn: async () => {
       const { data, error } = await supabase
         .from("players")
-        .select("id, name, position")
+        .select("id, name, first_name, position")
         .eq("category_id", categoryId)
         .order("name");
       if (error) throw error;
@@ -92,9 +92,10 @@ export function MatchLineupDialog({
     if (players && players.length > 0) {
       const lineup = players.map((player) => {
         const existing = existingLineup?.find((l) => l.player_id === player.id);
+        const fullName = [player.first_name, player.name].filter(Boolean).join(" ") || "Athlète inconnu";
         return {
           playerId: player.id,
-          playerName: player.name || "Athlète inconnu",
+          playerName: fullName,
           isStarter: existing?.is_starter ?? false,
           position: existing?.position ?? "",
           minutesPlayed: existing?.minutes_played ?? 0,

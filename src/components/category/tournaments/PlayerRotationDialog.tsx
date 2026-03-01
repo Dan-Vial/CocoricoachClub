@@ -35,7 +35,7 @@ export function PlayerRotationDialog({
     queryFn: async () => {
       const { data, error } = await supabase
         .from("players")
-        .select("*")
+        .select("*, first_name")
         .eq("category_id", categoryId)
         .order("name");
       if (error) throw error;
@@ -48,7 +48,7 @@ export function PlayerRotationDialog({
     queryFn: async () => {
       const { data, error } = await supabase
         .from("tournament_player_rotation")
-        .select("*, players(name)")
+        .select("*, players(name, first_name)")
         .eq("tournament_match_id", matchId);
       if (error) throw error;
       return data;
@@ -122,7 +122,7 @@ export function PlayerRotationDialog({
                       key={rotation.id}
                       className="flex items-center gap-2 p-2 bg-muted rounded"
                     >
-                      <span className="flex-1">{rotation.players?.name}</span>
+                      <span className="flex-1">{[rotation.players?.first_name, rotation.players?.name].filter(Boolean).join(" ")}</span>
                       <Input
                         type="number"
                         min="0"
@@ -174,7 +174,7 @@ export function PlayerRotationDialog({
                         })
                       }
                     >
-                      {player.name}
+                      {[player.first_name, player.name].filter(Boolean).join(" ")}
                     </Button>
                   ))}
                 </div>
