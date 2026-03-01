@@ -70,6 +70,12 @@ export const NAV_COLORS = {
     bg: "bg-[hsl(210_80%_55%)]",
     hover: "hover:bg-[hsl(210_80%_55%)/10]",
   },
+  academy: {
+    base: "hsl(210 75% 55%)",
+    text: "text-[hsl(210_75%_55%)]",
+    bg: "bg-[hsl(210_75%_55%)]",
+    hover: "hover:bg-[hsl(210_75%_55%)/10]",
+  },
   settings: {
     base: "hsl(220 15% 50%)",
     text: "text-[hsl(220_15%_50%)]",

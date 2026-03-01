@@ -6,7 +6,8 @@ import { AddMatchCalendarDialog } from "./matches/AddMatchCalendarDialog";
 import { MatchCard } from "./matches/MatchCard";
 import { PlayerCumulativeStats } from "./matches/PlayerCumulativeStats";
 import { isFuture, isPast } from "date-fns";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { ColoredSubTabsList, ColoredSubTabsTrigger } from "@/components/ui/colored-subtabs";
 import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 import { isIndividualSport } from "@/lib/constants/sportTypes";
 import { useViewerMatches } from "@/hooks/use-viewer-data";
@@ -46,16 +47,16 @@ export function MatchesTab({ categoryId, sportType }: MatchesTabProps) {
   return (
     <div className="space-y-6">
       <Tabs defaultValue="matches" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 mb-6">
-          <TabsTrigger value="matches" className="gap-2">
-            <Calendar className="h-4 w-4" />
-            {itemLabelPluralCapital}
-          </TabsTrigger>
-          <TabsTrigger value="stats" className="gap-2">
-            <BarChart3 className="h-4 w-4" />
-            Stats cumulées
-          </TabsTrigger>
-        </TabsList>
+        <div className="flex justify-center overflow-x-auto -mx-4 px-4 pb-2">
+          <ColoredSubTabsList colorKey="competition" className="inline-flex w-max">
+            <ColoredSubTabsTrigger value="matches" colorKey="competition" icon={<Calendar className="h-4 w-4" />}>
+              {itemLabelPluralCapital}
+            </ColoredSubTabsTrigger>
+            <ColoredSubTabsTrigger value="stats" colorKey="competition" icon={<BarChart3 className="h-4 w-4" />}>
+              Stats cumulées
+            </ColoredSubTabsTrigger>
+          </ColoredSubTabsList>
+        </div>
 
         <TabsContent value="matches">
           <Card className="bg-gradient-card shadow-md">
