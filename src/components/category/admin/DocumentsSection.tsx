@@ -29,7 +29,7 @@ interface AdminDocument {
   status: string;
   notes: string | null;
   created_at: string;
-  players?: { name: string } | null;
+  players?: { name: string; first_name?: string | null } | null;
 }
 
 const DOCUMENT_TYPES = [
@@ -80,7 +80,7 @@ export function DocumentsSection({ categoryId }: DocumentsSectionProps) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("players")
-        .select("id, name")
+        .select("id, name, first_name")
         .eq("category_id", categoryId)
         .order("name");
       if (error) throw error;
@@ -93,7 +93,7 @@ export function DocumentsSection({ categoryId }: DocumentsSectionProps) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("admin_documents" as any)
-        .select("*, players(name)")
+        .select("*, players(name, first_name)")
         .eq("category_id", categoryId)
         .order("expiry_date", { ascending: true, nullsFirst: false });
       if (error) throw error;
@@ -184,7 +184,7 @@ export function DocumentsSection({ categoryId }: DocumentsSectionProps) {
                 <ul className="space-y-1">
                   {expiredDocs.slice(0, 5).map((doc) => (
                     <li key={doc.id} className="text-red-600">
-                      {doc.players?.name ? `${doc.players.name} - ` : ""}{doc.title}
+                      {doc.players?.name ? `${[doc.players.first_name, doc.players.name].filter(Boolean).join(" ")} - ` : ""}{doc.title}
                     </li>
                   ))}
                   {expiredDocs.length > 5 && (
@@ -206,7 +206,7 @@ export function DocumentsSection({ categoryId }: DocumentsSectionProps) {
                 <ul className="space-y-1">
                   {expiringSoonDocs.slice(0, 5).map((doc) => (
                     <li key={doc.id} className="text-amber-600">
-                      {doc.players?.name ? `${doc.players.name} - ` : ""}{doc.title}
+                      {doc.players?.name ? `${[doc.players.first_name, doc.players.name].filter(Boolean).join(" ")} - ` : ""}{doc.title}
                       {doc.expiry_date && (
                         <span className="ml-1 text-xs">
                           ({differenceInDays(new Date(doc.expiry_date), new Date())} jours)
@@ -270,7 +270,7 @@ export function DocumentsSection({ categoryId }: DocumentsSectionProps) {
                   <SelectContent>
                     <SelectItem value="none">Aucun (document équipe)</SelectItem>
                     {players?.map((player) => (
-                      <SelectItem key={player.id} value={player.id}>{player.name}</SelectItem>
+                      <SelectItem key={player.id} value={player.id}>{[player.first_name, player.name].filter(Boolean).join(" ")}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -359,7 +359,7 @@ export function DocumentsSection({ categoryId }: DocumentsSectionProps) {
                       {doc.players?.name && (
                         <span className="flex items-center gap-1">
                           <User className="h-3 w-3" />
-                          {doc.players.name}
+                          {[doc.players.first_name, doc.players.name].filter(Boolean).join(" ")}
                         </span>
                       )}
                       {doc.expiry_date && (
