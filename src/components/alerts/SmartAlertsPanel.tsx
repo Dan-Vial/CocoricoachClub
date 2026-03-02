@@ -21,7 +21,7 @@ interface SmartAlert {
   is_dismissed: boolean;
   created_at: string;
   expires_at: string | null;
-  player?: { name: string };
+  player?: { first_name: string | null; name: string };
 }
 
 interface SmartAlertsPanelProps {
@@ -54,7 +54,7 @@ export function SmartAlertsPanel({ categoryId }: SmartAlertsPanelProps) {
         .from("smart_alerts")
         .select(`
           *,
-          player:players(name)
+          player:players(first_name, name)
         `)
         .eq("category_id", categoryId)
         .eq("is_dismissed", false)
@@ -162,7 +162,7 @@ export function SmartAlertsPanel({ categoryId }: SmartAlertsPanelProps) {
                           </div>
                           <p className="text-sm text-muted-foreground mt-1">
                             {alert.player?.name && (
-                              <span className="font-medium">{alert.player.name}: </span>
+                              <span className="font-medium">{[alert.player.first_name, alert.player.name].filter(Boolean).join(" ")}: </span>
                             )}
                             {alert.message}
                           </p>
