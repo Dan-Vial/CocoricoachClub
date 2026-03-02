@@ -685,6 +685,7 @@ export function SessionFormDialog({
         session_end_time: endTime || null,
         training_type: mainType || "autre" as any,
         intensity: mainIntensity,
+        planned_intensity: mainIntensity,
         notes: finalNotes || null,
       };
 

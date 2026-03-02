@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { calculateWeightedRpe } from "@/lib/weightedRpeCalculations";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -61,15 +62,26 @@ export function RpePlanVsActual({ categoryId, onPlayerClick }: RpePlanVsActualPr
     queryFn: async () => {
       const startDate = format(subDays(new Date(), periodDays), "yyyy-MM-dd");
       
-      // Fetch training sessions with planned intensity
+      // Fetch training sessions with intensity (= planned RPE)
       const { data: sessions, error: sessionsError } = await supabase
         .from("training_sessions")
-        .select("id, session_date, training_type, notes, planned_intensity")
+        .select("id, session_date, training_type, notes, intensity, planned_intensity")
         .eq("category_id", categoryId)
         .gte("session_date", startDate)
         .order("session_date", { ascending: false }) as { data: any[] | null, error: any };
 
       if (sessionsError) throw sessionsError;
+
+      // Fetch session blocks for weighted RPE calculation
+      const sessionIds = sessions?.map(s => s.id) || [];
+      let blocksData: any[] = [];
+      if (sessionIds.length > 0) {
+        const { data: blocks } = await supabase
+          .from("training_session_blocks")
+          .select("*")
+          .in("training_session_id", sessionIds);
+        blocksData = blocks || [];
+      }
 
       // Fetch AWCR data (actual RPE)
       const { data: awcrData, error: awcrError } = await supabase
@@ -80,14 +92,14 @@ export function RpePlanVsActual({ categoryId, onPlayerClick }: RpePlanVsActualPr
           session_date,
           rpe,
           training_session_id,
-          players(id, name, position)
+          players(id, name, first_name, position)
         `)
         .eq("category_id", categoryId)
         .gte("session_date", startDate);
 
       if (awcrError) throw awcrError;
 
-      return { sessions, awcrData };
+      return { sessions, awcrData, blocksData };
     },
   });
 
@@ -95,8 +107,16 @@ export function RpePlanVsActual({ categoryId, onPlayerClick }: RpePlanVsActualPr
   const comparisonData = useMemo(() => {
     if (!sessionsData) return { comparisons: [], alert: null, summary: null };
 
-    const { sessions, awcrData } = sessionsData;
+    const { sessions, awcrData, blocksData } = sessionsData;
     const comparisons: PlayerRpeComparison[] = [];
+
+    // Group blocks by session
+    const blocksBySession = new Map<string, any[]>();
+    blocksData?.forEach((block: any) => {
+      const sessionId = block.training_session_id;
+      if (!blocksBySession.has(sessionId)) blocksBySession.set(sessionId, []);
+      blocksBySession.get(sessionId)!.push(block);
+    });
 
     // Group AWCR by session
     const awcrBySession = new Map<string, typeof awcrData>();
@@ -112,22 +132,41 @@ export function RpePlanVsActual({ categoryId, onPlayerClick }: RpePlanVsActualPr
 
     // Compare each session with planned intensity
     sessions?.forEach(session => {
-      const plannedRpe = session.planned_intensity || 0;
-      if (plannedRpe === 0) return; // Skip sessions without planned intensity
+      // Priority: planned_intensity > weighted RPE from blocks > intensity
+      let plannedRpe = session.planned_intensity || 0;
+      
+      if (plannedRpe === 0) {
+        // Try weighted RPE from blocks
+        const sessionBlocks = blocksBySession.get(session.id) || [];
+        if (sessionBlocks.length > 0) {
+          const weighted = calculateWeightedRpe(sessionBlocks);
+          if (weighted.hasValidData) {
+            plannedRpe = Math.round(weighted.weightedRpe * 10) / 10;
+          }
+        }
+      }
+      
+      if (plannedRpe === 0) {
+        // Fall back to session intensity
+        plannedRpe = session.intensity || 0;
+      }
+      
+      if (plannedRpe === 0) return; // Skip sessions without any intensity data
 
       const sessionAwcr = awcrBySession.get(session.id) || [];
       
       sessionAwcr.forEach(entry => {
         const actualRpe = entry.rpe;
         const difference = actualRpe - plannedRpe;
+        const playerData = entry.players as any;
 
         comparisons.push({
           playerId: entry.player_id,
-          playerName: (entry.players as any)?.name || "Inconnu",
-          position: (entry.players as any)?.position,
+          playerName: [playerData?.first_name, playerData?.name].filter(Boolean).join(" ") || "Inconnu",
+          position: playerData?.position,
           plannedRpe,
           actualRpe,
-          difference,
+          difference: Math.round(difference * 10) / 10,
           sessionDate: session.session_date,
           sessionName: session.training_type,
         });
