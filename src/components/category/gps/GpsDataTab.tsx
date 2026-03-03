@@ -3,11 +3,12 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Upload, MapPin, Activity, Zap, Timer, TrendingUp, Target } from "lucide-react";
+import { Upload, MapPin, Activity, Zap, Timer, TrendingUp, Target, BookTemplate } from "lucide-react";
 import { GpsImportDialog } from "./GpsImportDialog";
 import { GpsSessionsList } from "./GpsSessionsList";
 import { GpsAnalyticsDashboard } from "./GpsAnalyticsDashboard";
 import { GpsObjectivesDashboard } from "./GpsObjectivesDashboard";
+import { GpsTemplatesManager } from "./GpsTemplatesManager";
 import { WeeklyGpsRecommendations } from "./WeeklyGpsRecommendations";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { ColoredSubTabsList, ColoredSubTabsTrigger } from "@/components/ui/colored-subtabs";
@@ -220,6 +221,13 @@ export function GpsDataTab({ categoryId }: GpsDataTabProps) {
             >
               Analyse
             </ColoredSubTabsTrigger>
+            <ColoredSubTabsTrigger 
+              value="objectives" 
+              colorKey="gps"
+              icon={<Target className="h-4 w-4" />}
+            >
+              Objectifs & Templates
+            </ColoredSubTabsTrigger>
           </ColoredSubTabsList>
         </div>
 
@@ -236,6 +244,13 @@ export function GpsDataTab({ categoryId }: GpsDataTabProps) {
           <GpsAnalyticsDashboard 
             sessions={gpsSessions || []} 
             categoryId={categoryId}
+          />
+        </TabsContent>
+
+        <TabsContent value="objectives">
+          <GpsTemplatesManager
+            categoryId={categoryId}
+            sportType={sportType}
           />
         </TabsContent>
       </Tabs>
