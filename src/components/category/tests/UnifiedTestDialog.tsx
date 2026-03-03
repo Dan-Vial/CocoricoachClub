@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -12,11 +12,12 @@ import {
 } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { PlayerSelection } from "./PlayerSelection";
 import { getTestCategoriesForSport, TestOption } from "@/lib/constants/testCategories";
 import { HierarchicalTestSelector, resolveTestCategory, resolveGroupAndZone } from "./HierarchicalTestSelector";
-import { useEffect } from "react";
+import { Gauge } from "lucide-react";
 
 interface UnifiedTestDialogProps {
   open: boolean;
@@ -42,7 +43,25 @@ export function UnifiedTestDialog({
   const [customTestName, setCustomTestName] = useState("");
   const [customTestUnit, setCustomTestUnit] = useState("");
   const [isCustom, setIsCustom] = useState(false);
+  const [saveAsGpsVmax, setSaveAsGpsVmax] = useState(false);
   const queryClient = useQueryClient();
+
+  // Map sprint test types to their distances in meters
+  const SPRINT_DISTANCE_MAP: Record<string, number> = {
+    sprint_10m: 10, sprint_20m: 20, sprint_30m: 30, sprint_40m: 40,
+    sprint_50m: 50, sprint_100m: 100,
+    rugby_prone_30m: 30,
+    basketball_sprint_3_4: 21, // ~3/4 of 28m court
+    basketball_sprint_full: 28,
+    football_sprint_30m: 30, football_sprint_40m: 40,
+  };
+
+  const isSprintTest = !isCustom && selectedTest && (
+    selectedTest in SPRINT_DISTANCE_MAP ||
+    selectedTest.startsWith("sprint_")
+  );
+
+  const sprintDistance = isSprintTest ? (SPRINT_DISTANCE_MAP[selectedTest] || null) : null;
 
   // Pre-select group/zone/test when dialog opens with a default filter
   useEffect(() => {
@@ -130,10 +149,54 @@ export function UnifiedTestDialog({
       if (inserts.length === 0) throw new Error("Aucun résultat saisi");
       const { error } = await supabase.from("generic_tests").insert(inserts);
       if (error) throw error;
+
+      // Save Vmax references for GPS if checkbox is checked
+      if (saveAsGpsVmax && sprintDistance) {
+        const vmaxInserts = inserts
+          .filter(i => i.result_value > 0)
+          .map(i => {
+            const timeSeconds = i.result_value;
+            const vmaxMs = sprintDistance / timeSeconds;
+            const vmaxKmh = vmaxMs * 3.6;
+            return {
+              player_id: i.player_id,
+              category_id: categoryId,
+              test_date: date,
+              source_type: "speed_test" as const,
+              ref_vmax_ms: Math.round(vmaxMs * 100) / 100,
+              ref_vmax_kmh: Math.round(vmaxKmh * 100) / 100,
+              ref_sprint_distance_m: sprintDistance,
+              ref_time_40m_seconds: sprintDistance === 40 ? timeSeconds : null,
+              is_active: true,
+              notes: `Auto from ${testLabel} (${timeSeconds}s sur ${sprintDistance}m)`,
+            };
+          });
+
+        if (vmaxInserts.length > 0) {
+          // Deactivate old references
+          const playerIds = vmaxInserts.map(v => v.player_id);
+          await supabase
+            .from("player_performance_references")
+            .update({ is_active: false })
+            .eq("category_id", categoryId)
+            .in("player_id", playerIds)
+            .eq("is_active", true);
+
+          const { error: refError } = await supabase
+            .from("player_performance_references")
+            .insert(vmaxInserts);
+          if (refError) console.error("Erreur sauvegarde Vmax GPS:", refError);
+          else toast.success(`Vmax GPS mis à jour pour ${vmaxInserts.length} joueur(s)`);
+        }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["generic_tests", categoryId] });
       queryClient.invalidateQueries({ queryKey: ["training_sessions", categoryId] });
+      if (saveAsGpsVmax) {
+        queryClient.invalidateQueries({ queryKey: ["player_performance_references", categoryId] });
+        queryClient.invalidateQueries({ queryKey: ["player_active_reference"] });
+      }
       toast.success("Tests ajoutés avec succès");
       resetForm();
       onOpenChange(false);
@@ -146,7 +209,7 @@ export function UnifiedTestDialog({
   const resetForm = () => {
     setSelectedPlayers([]); setSelectionMode("all"); setSelectedGroup(""); setSelectedZone("");
     setSelectedTest(""); setPlayerResults({}); setNotes(""); setCustomTestName(""); setCustomTestUnit("");
-    setIsCustom(false);
+    setIsCustom(false); setSaveAsGpsVmax(false);
   };
 
   const updatePlayerResult = (playerId: string, value: string) => {
@@ -231,6 +294,25 @@ export function UnifiedTestDialog({
                     </div>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {isSprintTest && sprintDistance && (
+              <div className="flex items-center gap-3 p-3 rounded-lg border border-primary/30 bg-primary/5">
+                <Checkbox
+                  id="save-gps-vmax"
+                  checked={saveAsGpsVmax}
+                  onCheckedChange={(checked) => setSaveAsGpsVmax(!!checked)}
+                />
+                <label htmlFor="save-gps-vmax" className="flex items-center gap-2 text-sm cursor-pointer">
+                  <Gauge className="h-4 w-4 text-primary" />
+                  <span>
+                    <strong>Sauvegarder comme Vmax GPS</strong>
+                    <span className="text-muted-foreground ml-1">
+                      — Calcul automatique de la vitesse max ({sprintDistance}m) pour la Data GPS
+                    </span>
+                  </span>
+                </label>
               </div>
             )}
 
