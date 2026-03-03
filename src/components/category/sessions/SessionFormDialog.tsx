@@ -2594,18 +2594,6 @@ export function SessionFormDialog({
                       </div>
                     )}
 
-                    <div className="space-y-2">
-                      <Label htmlFor="intensity">Intensité (1-10)</Label>
-                      <Input
-                        id="intensity"
-                        type="number"
-                        min="1"
-                        max="10"
-                        value={intensity}
-                        onChange={(e) => setIntensity(e.target.value)}
-                        placeholder="De 1 à 10"
-                      />
-                    </div>
 
                     <div className="space-y-2">
                       <Label htmlFor="notes">Notes</Label>

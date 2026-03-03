@@ -246,6 +246,9 @@ export const ALL_TRAINING_TYPES: TrainingTypeOption[] = [
   { value: "athle_ppg", label: "PPG (Prépa Physique Générale)", hasExercises: true, forSports: ["athletisme"], category: "athle_general" },
   
   // Common to all sports (with category)
+  { value: "tactique_general", label: "Tactique", hasExercises: false, forTeamSports: true, forIndividualSports: true, category: "common" },
+  { value: "collectif_general", label: "Collectif", hasExercises: false, forTeamSports: true, forIndividualSports: false, category: "common" },
+  { value: "separe", label: "Séparé (par groupes)", hasExercises: false, forTeamSports: true, forIndividualSports: false, category: "common" },
   { value: "video", label: "Analyse Vidéo", hasExercises: false, forTeamSports: true, forIndividualSports: true, category: "common" },
   { value: "individuel", label: "Entraînement Individuel", hasExercises: false, forTeamSports: true, forIndividualSports: true, category: "common" },
   { value: "competition_training", label: "Simulation Compétition", hasExercises: false, forTeamSports: true, forIndividualSports: true, category: "common" },
@@ -253,6 +256,9 @@ export const ALL_TRAINING_TYPES: TrainingTypeOption[] = [
   { value: "physique", label: "Physique", hasExercises: true, forTeamSports: true, forIndividualSports: true, category: "common" },
   { value: "musculation", label: "Musculation", hasExercises: true, forTeamSports: true, forIndividualSports: true, category: "common" },
   { value: "reathlétisation", label: "Réathlétisation", hasExercises: true, forTeamSports: true, forIndividualSports: true, category: "common" },
+  { value: "vitesse_general", label: "Vitesse / Explosivité", hasExercises: false, forTeamSports: true, forIndividualSports: true, category: "common" },
+  { value: "endurance_general", label: "Endurance", hasExercises: false, forTeamSports: true, forIndividualSports: true, category: "common" },
+  { value: "souplesse_mobilite", label: "Souplesse / Mobilité", hasExercises: true, forTeamSports: true, forIndividualSports: true, category: "common" },
   { value: "repos", label: "Repos", hasExercises: false, forTeamSports: true, forIndividualSports: true, category: "common" },
   { value: "test", label: "Test", hasExercises: false, forTeamSports: true, forIndividualSports: true, category: "common" },
   { value: "echauffement", label: "Échauffement", hasExercises: false, forTeamSports: true, forIndividualSports: true, category: "common" },

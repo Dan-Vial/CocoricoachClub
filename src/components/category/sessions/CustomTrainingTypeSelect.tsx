@@ -203,15 +203,19 @@ export function CustomTrainingTypeSelect({
         )}
 
         {/* Add custom option */}
-        <div className="p-2 border-t">
+        <div className="p-2 border-t" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
           {isAddingCustom ? (
             <div className="flex gap-2">
               <Input
                 placeholder="Nom du thème..."
                 value={customTypeName}
-                onChange={(e) => setCustomTypeName(e.target.value)}
+                onChange={(e) => {
+                  e.stopPropagation();
+                  setCustomTypeName(e.target.value);
+                }}
                 className="h-8 text-sm"
                 onKeyDown={(e) => {
+                  e.stopPropagation();
                   if (e.key === "Enter") {
                     e.preventDefault();
                     handleAddCustomType();
