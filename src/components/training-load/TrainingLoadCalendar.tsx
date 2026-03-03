@@ -98,18 +98,30 @@ export function TrainingLoadCalendar({ categoryId }: TrainingLoadCalendarProps) 
 
     days.forEach(day => {
       const dateStr = format(day, "yyyy-MM-dd");
-      const daySessions = sessionsData.sessions.filter(s => s.session_date === dateStr);
+      const daySessions = sessionsData.sessions.filter(s => s.session_date?.startsWith(dateStr));
       const dayBlocks = daySessions.flatMap(s =>
         sessionsData.blocks.filter(b => b.training_session_id === s.id)
       );
 
-      const sessionTypes = [...new Set(dayBlocks.filter(b => b.session_type).map(b => b.session_type))];
+      // Get types from blocks first, fallback to session-level training_type
+      const blockSessionTypes = [...new Set(dayBlocks.filter(b => b.session_type).map(b => b.session_type))];
+      const blockTrainingTypes = [...new Set(dayBlocks.filter(b => b.training_type).map(b => b.training_type))];
+      const sessionTrainingTypes = [...new Set(daySessions.filter(s => s.training_type).map(s => s.training_type))];
+      const sessionTypes = blockSessionTypes.length > 0 
+        ? blockSessionTypes 
+        : blockTrainingTypes.length > 0 
+          ? blockTrainingTypes 
+          : sessionTrainingTypes;
+
       const objectives = [...new Set(dayBlocks.filter(b => b.objective).map(b => b.objective))];
       const intensities = dayBlocks.filter(b => b.target_intensity).map(b => b.target_intensity);
       const volumes = dayBlocks.filter(b => b.volume).map(b => b.volume);
       const contactCharges = dayBlocks.filter(b => b.contact_charge && b.contact_charge !== "aucun").map(b => b.contact_charge);
 
-      const rpeValues = dayBlocks.filter(b => b.intensity != null).map(b => b.intensity);
+      // RPE: from blocks first, fallback to session-level intensity
+      const blockRpeValues = dayBlocks.filter(b => b.intensity != null).map(b => b.intensity);
+      const sessionRpeValues = daySessions.filter(s => s.intensity != null).map(s => s.intensity);
+      const rpeValues = blockRpeValues.length > 0 ? blockRpeValues : sessionRpeValues;
       const avgRpe = rpeValues.length > 0 ? Math.round((rpeValues.reduce((a: number, b: number) => a + b, 0) / rpeValues.length) * 10) / 10 : null;
 
       if (daySessions.length > 0) {
@@ -217,7 +229,15 @@ export function TrainingLoadCalendar({ categoryId }: TrainingLoadCalendarProps) 
                                   Contact: {getContactChargeLabel(data.summary.contactCharges[0])}
                                 </Badge>
                               )}
+                              {data.summary.sessionTypes.length === 0 && data.summary.avgRpe === null && (
+                                <Badge variant="secondary" className="text-[10px] px-1 py-0">
+                                  {data.sessions.length} séance(s)
+                                </Badge>
+                              )}
                             </>
+                          )}
+                          {viewMode === "month" && data.summary.sessionTypes.length === 0 && data.summary.avgRpe === null && (
+                            <div className="w-2 h-2 rounded-full bg-primary mx-auto" />
                           )}
                         </div>
                       )}
