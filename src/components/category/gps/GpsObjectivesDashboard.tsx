@@ -137,6 +137,12 @@ export function GpsObjectivesDashboard({
       const tGreen = Number(objective.tolerance_green) || 15;
       const tOrange = Number(objective.tolerance_orange) || 30;
 
+      // Use sprint_count if available, otherwise fall back to sprint_distance_m
+      const actualSprint = gps.sprint_count != null 
+        ? Number(gps.sprint_count) 
+        : (gps.sprint_distance_m != null ? Number(gps.sprint_distance_m) : null);
+      const targetSprint = objective.target_sprint_count;
+
       const statuses = {
         distance: getObjectiveStatus(
           gps.total_distance_m ? Number(gps.total_distance_m) : null,
@@ -149,8 +155,8 @@ export function GpsObjectivesDashboard({
           tGreen, tOrange
         ),
         sprints: getObjectiveStatus(
-          gps.sprint_count,
-          objective.target_sprint_count,
+          actualSprint,
+          targetSprint,
           tGreen, tOrange
         ),
       };
@@ -167,13 +173,13 @@ export function GpsObjectivesDashboard({
           tGreen
         ),
         sprints: getLoadDirection(
-          gps.sprint_count,
-          objective.target_sprint_count,
+          actualSprint,
+          targetSprint,
           tGreen
         ),
       };
 
-      return { gps, player, objective, statuses, directions };
+      return { gps, player, objective, statuses, directions, actualSprint };
     });
   }, [gpsData, objectives, positionGroups]);
 
@@ -347,7 +353,7 @@ export function GpsObjectivesDashboard({
                     <TableHead>Poste</TableHead>
                     <TableHead className="text-center">Distance</TableHead>
                     <TableHead className="text-center">Dist. HI</TableHead>
-                    <TableHead className="text-center">Sprints</TableHead>
+                    <TableHead className="text-center">Sprint (dist/nb)</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -383,10 +389,11 @@ export function GpsObjectivesDashboard({
                         </TableCell>
                         <TableCell className="text-center">
                           <MetricCell
-                            actual={p.gps.sprint_count}
+                            actual={p.actualSprint ?? null}
                             target={p.objective?.target_sprint_count}
                             toleranceGreen={tGreen}
                             toleranceOrange={tOrange}
+                            unit={p.gps.sprint_count != null ? "" : "m"}
                           />
                         </TableCell>
                       </TableRow>
