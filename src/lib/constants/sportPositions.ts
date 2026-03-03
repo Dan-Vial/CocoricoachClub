@@ -116,7 +116,7 @@ export const RUGBY_7S_POSITIONS: Position[] = [
   { id: "7", name: "Arrière", x: 50, y: 20 },
 ];
 
-// Rugby XIII positions (13 players)
+// Rugby XIII positions (13 players) - Rugby League
 export const RUGBY_XIII_POSITIONS: Position[] = [
   { id: "1", name: "Arrière", x: 50, y: 15 },
   { id: "2", name: "Ailier droit", x: 90, y: 25 },
@@ -130,7 +130,7 @@ export const RUGBY_XIII_POSITIONS: Position[] = [
   { id: "10", name: "Pilier droit", x: 75, y: 75 },
   { id: "11", name: "2ème ligne gauche", x: 35, y: 85 },
   { id: "12", name: "2ème ligne droit", x: 65, y: 85 },
-  { id: "13", name: "Numéro 13", x: 50, y: 90 },
+  { id: "13", name: "Troisième ligne centre", x: 50, y: 90 },
 ];
 
 // Football (soccer) positions - 4-3-3 formation (11 players)

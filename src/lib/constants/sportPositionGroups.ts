@@ -43,6 +43,29 @@ export const RUGBY_7S_POSITION_GROUPS: PositionGroup[] = [
   },
 ];
 
+// Rugby XIII (Rugby League) position groups
+export const RUGBY_XIII_POSITION_GROUPS: PositionGroup[] = [
+  {
+    id: "avants",
+    label: "Avants",
+    positions: [
+      "Pilier gauche", "Talonneur", "Pilier droit",
+      "2ème ligne gauche", "2ème ligne droit", "Troisième ligne centre",
+      "pilier", "talonneur", "deuxième ligne", "troisième ligne"
+    ],
+  },
+  {
+    id: "arrieres",
+    label: "Arrières",
+    positions: [
+      "Arrière", "Ailier droit", "Ailier gauche",
+      "Centre droit", "Centre gauche",
+      "Demi d'ouverture", "Demi de mêlée",
+      "arrière", "ailier", "centre", "demi"
+    ],
+  },
+];
+
 // Football position groups
 export const FOOTBALL_POSITION_GROUPS: PositionGroup[] = [
   {
@@ -153,7 +176,7 @@ export function getPositionGroupsForSport(sportType: string | undefined): Positi
     case "7":
       return RUGBY_7S_POSITION_GROUPS;
     case "xiii":
-      return RUGBY_XV_POSITION_GROUPS; // Similar to XV
+      return RUGBY_XIII_POSITION_GROUPS;
     case "football":
       return FOOTBALL_POSITION_GROUPS;
     case "handball":
