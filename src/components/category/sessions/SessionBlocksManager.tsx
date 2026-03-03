@@ -5,9 +5,24 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Trash2, GripVertical, Clock, ChevronUp, ChevronDown } from "lucide-react";
 import { CustomTrainingTypeSelect } from "./CustomTrainingTypeSelect";
 import { cn } from "@/lib/utils";
+import { isRugbyType } from "@/lib/constants/sportTypes";
+import {
+  SESSION_TYPES,
+  SESSION_OBJECTIVES,
+  TARGET_INTENSITIES,
+  VOLUME_OPTIONS,
+  CONTACT_CHARGE_OPTIONS,
+  getSessionTypeLabel,
+  getIntensityLabel,
+  getContactChargeLabel,
+  calculateBlocksSummary,
+  getObjectiveLabel,
+  getVolumeLabel,
+} from "@/lib/constants/sessionBlockOptions";
 
 export interface SessionBlock {
   id?: string;
@@ -17,6 +32,11 @@ export interface SessionBlock {
   training_type: string;
   intensity?: number | null;
   notes?: string;
+  session_type?: string;
+  objective?: string;
+  target_intensity?: string;
+  volume?: string;
+  contact_charge?: string;
 }
 
 interface SessionBlocksManagerProps {
@@ -49,6 +69,8 @@ export function SessionBlocksManager({
   sessionStartTime,
   sessionEndTime,
 }: SessionBlocksManagerProps) {
+  const isRugby = isRugbyType(sportType || "");
+
   const addBlock = () => {
     const lastBlock = blocks[blocks.length - 1];
     const newStartTime = lastBlock?.end_time || sessionStartTime || undefined;
@@ -60,6 +82,11 @@ export function SessionBlocksManager({
       training_type: "",
       intensity: null,
       notes: undefined,
+      session_type: undefined,
+      objective: undefined,
+      target_intensity: undefined,
+      volume: undefined,
+      contact_charge: undefined,
     };
     
     onBlocksChange([...blocks, newBlock]);
@@ -255,7 +282,7 @@ export function SessionBlocksManager({
                           />
                         </div>
                         <div className="space-y-1">
-                          <Label className="text-xs text-muted-foreground">Intensité</Label>
+                          <Label className="text-xs text-muted-foreground">RPE cible</Label>
                           <Input
                             type="number"
                             min="1"
@@ -266,6 +293,80 @@ export function SessionBlocksManager({
                             className="h-9"
                           />
                         </div>
+                      </div>
+
+                      {/* New enrichment fields */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <Label className="text-xs text-muted-foreground">Type de séance</Label>
+                          <Select value={block.session_type || ""} onValueChange={(val) => updateBlock(index, "session_type", val || undefined)}>
+                            <SelectTrigger className="h-9">
+                              <SelectValue placeholder="Sélectionner..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {SESSION_TYPES.map(t => (
+                                <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs text-muted-foreground">Objectif principal</Label>
+                          <Select value={block.objective || ""} onValueChange={(val) => updateBlock(index, "objective", val || undefined)}>
+                            <SelectTrigger className="h-9">
+                              <SelectValue placeholder="Sélectionner..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {SESSION_OBJECTIVES.map(o => (
+                                <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
+                      <div className={cn("grid gap-3", isRugby ? "grid-cols-3" : "grid-cols-2")}>
+                        <div className="space-y-1">
+                          <Label className="text-xs text-muted-foreground">Intensité cible</Label>
+                          <Select value={block.target_intensity || ""} onValueChange={(val) => updateBlock(index, "target_intensity", val || undefined)}>
+                            <SelectTrigger className="h-9">
+                              <SelectValue placeholder="Sélectionner..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {TARGET_INTENSITIES.map(i => (
+                                <SelectItem key={i.value} value={i.value}>{i.label}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs text-muted-foreground">Volume</Label>
+                          <Select value={block.volume || ""} onValueChange={(val) => updateBlock(index, "volume", val || undefined)}>
+                            <SelectTrigger className="h-9">
+                              <SelectValue placeholder="Sélectionner..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {VOLUME_OPTIONS.map(v => (
+                                <SelectItem key={v.value} value={v.value}>{v.label}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        {isRugby && (
+                          <div className="space-y-1">
+                            <Label className="text-xs text-muted-foreground">Charge contact</Label>
+                            <Select value={block.contact_charge || ""} onValueChange={(val) => updateBlock(index, "contact_charge", val || undefined)}>
+                              <SelectTrigger className="h-9">
+                                <SelectValue placeholder="Sélectionner..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {CONTACT_CHARGE_OPTIONS.map(c => (
+                                  <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
                       </div>
 
                       {/* Notes */}
@@ -289,16 +390,74 @@ export function SessionBlocksManager({
       )}
 
       {blocks.length > 0 && (
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={addBlock}
-          className="w-full border-dashed"
-        >
-          <Plus className="h-4 w-4 mr-1" />
-          Ajouter un autre bloc
-        </Button>
+        <>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={addBlock}
+            className="w-full border-dashed"
+          >
+            <Plus className="h-4 w-4 mr-1" />
+            Ajouter un autre bloc
+          </Button>
+
+          {/* Summary */}
+          {(() => {
+            const summary = calculateBlocksSummary(blocks);
+            const hasData = summary.mainSessionType || summary.avgIntensity || summary.dominantObjectives.length > 0;
+            if (!hasData) return null;
+            return (
+              <Card className="bg-muted/30 border-dashed">
+                <CardContent className="p-3">
+                  <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Résumé séance</Label>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {summary.mainSessionType && (
+                      <Badge variant="default" className="text-xs">
+                        {getSessionTypeLabel(summary.mainSessionType)}
+                      </Badge>
+                    )}
+                    {summary.secondarySessionTypes.length > 0 && summary.secondarySessionTypes.map(t => (
+                      <Badge key={t} variant="outline" className="text-xs">
+                        {getSessionTypeLabel(t)}
+                      </Badge>
+                    ))}
+                    {summary.avgIntensity && (
+                      <Badge variant="secondary" className="text-xs">
+                        Intensité: {getIntensityLabel(summary.avgIntensity)}
+                      </Badge>
+                    )}
+                    {summary.avgVolume && (
+                      <Badge variant="secondary" className="text-xs">
+                        Volume: {getVolumeLabel(summary.avgVolume)}
+                      </Badge>
+                    )}
+                    {summary.avgContactCharge && (
+                      <Badge variant="secondary" className="text-xs">
+                        Contact: {getContactChargeLabel(summary.avgContactCharge)}
+                      </Badge>
+                    )}
+                    {summary.avgRpeIntensity !== null && (
+                      <Badge variant="secondary" className="text-xs">
+                        RPE moy: {summary.avgRpeIntensity}
+                      </Badge>
+                    )}
+                  </div>
+                  {summary.dominantObjectives.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      <span className="text-xs text-muted-foreground">Filières:</span>
+                      {summary.dominantObjectives.map(obj => (
+                        <Badge key={obj} variant="outline" className="text-xs">
+                          {getObjectiveLabel(obj)}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })()}
+        </>
       )}
     </div>
   );

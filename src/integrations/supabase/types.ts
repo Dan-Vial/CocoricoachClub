@@ -6840,36 +6840,51 @@ export type Database = {
       training_session_blocks: {
         Row: {
           block_order: number
+          contact_charge: string | null
           created_at: string
           end_time: string | null
           id: string
           intensity: number | null
           notes: string | null
+          objective: string | null
+          session_type: string | null
           start_time: string | null
+          target_intensity: string | null
           training_session_id: string
           training_type: string
+          volume: string | null
         }
         Insert: {
           block_order?: number
+          contact_charge?: string | null
           created_at?: string
           end_time?: string | null
           id?: string
           intensity?: number | null
           notes?: string | null
+          objective?: string | null
+          session_type?: string | null
           start_time?: string | null
+          target_intensity?: string | null
           training_session_id: string
           training_type: string
+          volume?: string | null
         }
         Update: {
           block_order?: number
+          contact_charge?: string | null
           created_at?: string
           end_time?: string | null
           id?: string
           intensity?: number | null
           notes?: string | null
+          objective?: string | null
+          session_type?: string | null
           start_time?: string | null
+          target_intensity?: string | null
           training_session_id?: string
           training_type?: string
+          volume?: string | null
         }
         Relationships: [
           {

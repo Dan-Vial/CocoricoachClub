@@ -496,7 +496,7 @@ export function SessionDetailsDialog({
                     }}
                   >
                     <div className="flex-1">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <Badge variant="outline" className="font-mono text-xs">
                           {block.start_time || "?"} - {block.end_time || "?"}
                         </Badge>
@@ -506,6 +506,33 @@ export function SessionDetailsDialog({
                         {block.intensity && (
                           <Badge variant="secondary" className="text-xs">
                             RPE {block.intensity}
+                          </Badge>
+                        )}
+                        {block.session_type && (
+                          <Badge variant="outline" className="text-xs">
+                            {block.session_type === "technique" ? "Technique" : block.session_type === "physique" ? "Physique" : block.session_type === "mixte" ? "Mixte" : block.session_type === "vitesse" ? "Vitesse" : block.session_type === "contact" ? "Contact" : block.session_type === "jeu_reduit" ? "Jeu réduit" : block.session_type === "simulation_match" ? "Simulation match" : block.session_type}
+                          </Badge>
+                        )}
+                        {block.objective && (
+                          <Badge variant="outline" className="text-xs bg-primary/5">
+                            {block.objective === "aerobie" ? "Aérobie" : block.objective === "anaerobie" ? "Anaérobie" : block.objective === "vitesse_explosivite" ? "Vitesse/Explosivité" : block.objective === "force_contact" ? "Force/Contact" : block.objective === "tactique" ? "Tactique" : block.objective === "technique" ? "Technique" : block.objective}
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 mt-1 flex-wrap">
+                        {block.target_intensity && (
+                          <Badge variant="secondary" className="text-xs">
+                            Intensité: {block.target_intensity === "faible" ? "Faible" : block.target_intensity === "moderee" ? "Modérée" : block.target_intensity === "elevee" ? "Élevée" : "Très élevée"}
+                          </Badge>
+                        )}
+                        {block.volume && (
+                          <Badge variant="secondary" className="text-xs">
+                            Vol: {block.volume === "court" ? "Court" : block.volume === "moyen" ? "Moyen" : "Long"}
+                          </Badge>
+                        )}
+                        {block.contact_charge && block.contact_charge !== "aucun" && (
+                          <Badge variant="secondary" className="text-xs">
+                            Contact: {block.contact_charge === "faible" ? "Faible" : block.contact_charge === "modere" ? "Modéré" : "Élevé"}
                           </Badge>
                         )}
                       </div>

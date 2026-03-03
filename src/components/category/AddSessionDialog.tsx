@@ -211,6 +211,11 @@ export function AddSessionDialog({
             training_type: block.training_type,
             intensity: block.intensity,
             notes: block.notes || null,
+            session_type: block.session_type || null,
+            objective: block.objective || null,
+            target_intensity: block.target_intensity || null,
+            volume: block.volume || null,
+            contact_charge: block.contact_charge || null,
           }));
 
         if (blockRecords.length > 0) {

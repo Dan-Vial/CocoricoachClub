@@ -11,6 +11,7 @@ import { TrainingLoadKPIs } from "./TrainingLoadKPIs";
 import { TrainingLoadAlerts } from "./TrainingLoadAlerts";
 import { TeamLoadComparison } from "./TeamLoadComparison";
 import { RpePlanVsActual } from "./RpePlanVsActual";
+import { TrainingLoadCalendar } from "./TrainingLoadCalendar";
 import { useTrainingLoad, useTeamTrainingLoad } from "@/hooks/use-training-load";
 import { MetricType, METRICS_CONFIG } from "@/lib/trainingLoadCalculations";
 import { AddAwcrDialog } from "@/components/category/AddAwcrDialog";
@@ -168,8 +169,12 @@ export function TrainingLoadTab({ categoryId }: TrainingLoadTabProps) {
 
       {/* Main content based on view mode */}
       <Tabs defaultValue="chart" className="space-y-4">
-        <TabsList>
+        <TabsList className="flex flex-wrap h-auto gap-1">
           <TabsTrigger value="chart">Graphique</TabsTrigger>
+          <TabsTrigger value="calendar" className="gap-1">
+            <Calendar className="h-3 w-3" />
+            Calendrier
+          </TabsTrigger>
           <TabsTrigger value="rpe" className="gap-1">
             <TrendingUp className="h-3 w-3" />
             RPE Prévu/Réel
@@ -187,6 +192,10 @@ export function TrainingLoadTab({ categoryId }: TrainingLoadTabProps) {
             hasGpsData={hasGpsData}
             isLoading={isLoading}
           />
+        </TabsContent>
+
+        <TabsContent value="calendar">
+          <TrainingLoadCalendar categoryId={categoryId} />
         </TabsContent>
 
         <TabsContent value="rpe">
