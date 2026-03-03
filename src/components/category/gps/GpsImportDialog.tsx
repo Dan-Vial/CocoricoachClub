@@ -634,6 +634,7 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
                   categoryId={categoryId}
                   trainingSessionId={selectedSessionId}
                   sportType={sportType}
+                  trainingType={trainingSessions?.find(s => s.id === selectedSessionId)?.training_type}
                 />
               )}
 

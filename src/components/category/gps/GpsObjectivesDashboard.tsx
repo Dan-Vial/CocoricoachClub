@@ -6,13 +6,15 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Target, Users, User, AlertTriangle, TrendingDown, TrendingUp } from "lucide-react";
+import { Target, Users, User, AlertTriangle, TrendingDown, TrendingUp, Minus, ArrowUp, ArrowDown } from "lucide-react";
 import {
   getGpsPositionGroups,
   getPlayerPositionGroup,
   getObjectiveStatus,
   getDeviationPercent,
+  getLoadDirection,
   type ObjectiveStatus,
+  type LoadDirection,
 } from "@/lib/constants/gpsPositionGroups";
 
 interface GpsObjectivesDashboardProps {
@@ -22,18 +24,29 @@ interface GpsObjectivesDashboardProps {
   sessionDate: string;
 }
 
+function LoadArrow({ direction }: { direction: LoadDirection }) {
+  switch (direction) {
+    case "over":
+      return <ArrowUp className="h-3.5 w-3.5 text-red-500" />;
+    case "under":
+      return <ArrowDown className="h-3.5 w-3.5 text-blue-500" />;
+    default:
+      return <Minus className="h-3.5 w-3.5 text-emerald-500" />;
+  }
+}
+
 function StatusBadge({ status, deviation }: { status: ObjectiveStatus; deviation: number | null }) {
   if (status === "none") return <span className="text-muted-foreground text-xs">—</span>;
-  
+
   const colors: Record<ObjectiveStatus, string> = {
-    green: "bg-emerald-500/20 text-emerald-700 border-emerald-300",
-    orange: "bg-amber-500/20 text-amber-700 border-amber-300",
-    red: "bg-red-500/20 text-red-700 border-red-300",
+    green: "bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border-emerald-300",
+    orange: "bg-amber-500/20 text-amber-700 dark:text-amber-400 border-amber-300",
+    red: "bg-red-500/20 text-red-700 dark:text-red-400 border-red-300",
     none: "",
   };
 
   const sign = deviation != null && deviation > 0 ? "+" : "";
-  
+
   return (
     <Badge variant="outline" className={`text-xs font-mono ${colors[status]}`}>
       {deviation != null ? `${sign}${deviation}%` : "—"}
@@ -56,12 +69,16 @@ function MetricCell({
 }) {
   const status = getObjectiveStatus(actual, target, toleranceGreen, toleranceOrange);
   const deviation = getDeviationPercent(actual, target);
+  const direction = getLoadDirection(actual, target, toleranceGreen);
 
   return (
     <div className="flex flex-col items-center gap-0.5">
-      <span className="text-sm font-medium">
-        {actual != null ? `${Math.round(actual)}${unit}` : "—"}
-      </span>
+      <div className="flex items-center gap-1">
+        <span className="text-sm font-medium">
+          {actual != null ? `${Math.round(actual)}${unit}` : "—"}
+        </span>
+        {actual != null && target != null && <LoadArrow direction={direction} />}
+      </div>
       <StatusBadge status={status} deviation={deviation} />
     </div>
   );
@@ -75,7 +92,6 @@ export function GpsObjectivesDashboard({
 }: GpsObjectivesDashboardProps) {
   const positionGroups = getGpsPositionGroups(sportType);
 
-  // Fetch objectives
   const { data: objectives } = useQuery({
     queryKey: ["gps-objectives", trainingSessionId],
     queryFn: async () => {
@@ -88,7 +104,6 @@ export function GpsObjectivesDashboard({
     },
   });
 
-  // Fetch GPS session data for this training session
   const { data: gpsData } = useQuery({
     queryKey: ["gps-sessions-for-objectives", trainingSessionId, sessionDate],
     queryFn: async () => {
@@ -109,14 +124,13 @@ export function GpsObjectivesDashboard({
     return gpsData.map(gps => {
       const player = gps.players as { id: string; name: string; position: string | null } | null;
       const playerGroup = getPlayerPositionGroup(player?.position, positionGroups);
-      
-      // Find matching objective
-      const objective = objectives.find(o => 
-        o.position_group === "Global" || 
+
+      const objective = objectives.find(o =>
+        o.position_group === "Global" ||
         o.position_group === playerGroup?.label
       );
 
-      if (!objective) return { gps, player, objective: null, statuses: {} };
+      if (!objective) return { gps, player, objective: null, statuses: {}, directions: {} };
 
       const tGreen = Number(objective.tolerance_green) || 15;
       const tOrange = Number(objective.tolerance_orange) || 30;
@@ -139,11 +153,28 @@ export function GpsObjectivesDashboard({
         ),
       };
 
-      return { gps, player, objective, statuses };
+      const directions = {
+        distance: getLoadDirection(
+          gps.total_distance_m ? Number(gps.total_distance_m) : null,
+          objective.target_total_distance_m ? Number(objective.target_total_distance_m) : null,
+          tGreen
+        ),
+        hsr: getLoadDirection(
+          gps.high_speed_distance_m ? Number(gps.high_speed_distance_m) : null,
+          objective.target_high_speed_distance_m ? Number(objective.target_high_speed_distance_m) : null,
+          tGreen
+        ),
+        sprints: getLoadDirection(
+          gps.sprint_count,
+          objective.target_sprint_count,
+          tGreen
+        ),
+      };
+
+      return { gps, player, objective, statuses, directions };
     });
   }, [gpsData, objectives, positionGroups]);
 
-  // Team overview stats
   const teamStats = useMemo(() => {
     if (playerAnalysis.length === 0) return null;
 
@@ -157,7 +188,6 @@ export function GpsObjectivesDashboard({
     const redCount = validStatuses.filter(s => s === "red").length;
     const total = validStatuses.length;
 
-    // Under/over exposed players
     const underExposed = withObjectives.filter(p => {
       const deviations = [
         getDeviationPercent(
@@ -188,7 +218,6 @@ export function GpsObjectivesDashboard({
     };
   }, [playerAnalysis]);
 
-  // Group by position
   const positionGroupAnalysis = useMemo(() => {
     if (!objectives || objectives.length === 0) return [];
 
@@ -224,9 +253,7 @@ export function GpsObjectivesDashboard({
       });
   }, [objectives, playerAnalysis, positionGroups]);
 
-  if (!objectives || objectives.length === 0) {
-    return null; // No objectives set for this session
-  }
+  if (!objectives || objectives.length === 0) return null;
 
   if (!gpsData || gpsData.length === 0) {
     return (
@@ -325,7 +352,7 @@ export function GpsObjectivesDashboard({
                   {playerAnalysis.map((p, i) => {
                     const tGreen = p.objective ? Number(p.objective.tolerance_green) || 15 : 15;
                     const tOrange = p.objective ? Number(p.objective.tolerance_orange) || 30 : 30;
-                    
+
                     return (
                       <TableRow key={i}>
                         <TableCell className="font-medium text-sm">{p.player?.name || "—"}</TableCell>

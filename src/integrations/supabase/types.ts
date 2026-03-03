@@ -2044,32 +2044,38 @@ export type Database = {
       }
       gps_objective_templates: {
         Row: {
+          calendar_context: string | null
           category_id: string | null
           created_at: string | null
           created_by: string | null
           id: string
           is_system: boolean | null
           name: string
+          session_type: string | null
           sport_type: string
           template_data: Json
         }
         Insert: {
+          calendar_context?: string | null
           category_id?: string | null
           created_at?: string | null
           created_by?: string | null
           id?: string
           is_system?: boolean | null
           name: string
+          session_type?: string | null
           sport_type?: string
           template_data?: Json
         }
         Update: {
+          calendar_context?: string | null
           category_id?: string | null
           created_at?: string | null
           created_by?: string | null
           id?: string
           is_system?: boolean | null
           name?: string
+          session_type?: string | null
           sport_type?: string
           template_data?: Json
         }
