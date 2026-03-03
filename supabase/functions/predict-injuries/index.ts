@@ -121,6 +121,18 @@ serve(async (req) => {
     if (injuriesError) throw injuriesError;
     console.log(`Found ${injuries?.length || 0} injury records`);
 
+    // Fetch training session blocks (session_type, objective, intensity, volume, contact)
+    const sessionIds = (awcrData || []).map(a => a.training_session_id).filter(Boolean);
+    let blocksData: any[] = [];
+    if (sessionIds.length > 0) {
+      const { data: blocks, error: blocksError } = await supabase
+        .from('training_session_blocks')
+        .select('training_session_id, session_type, objective, target_intensity, volume, contact_charge, intensity')
+        .in('training_session_id', sessionIds);
+      if (!blocksError && blocks) blocksData = blocks;
+    }
+    console.log(`Found ${blocksData.length} block records`);
+
     // Calculate EWMA for each player
     const LAMBDA_ACUTE = 2 / (7 + 1);
     const LAMBDA_CHRONIC = 2 / (28 + 1);
@@ -150,6 +162,10 @@ serve(async (req) => {
       const playerWellness = wellnessData?.filter(w => w.player_id === player.id) || [];
       const playerInjuries = injuries?.filter(i => i.player_id === player.id) || [];
 
+      // Get blocks for this player's sessions
+      const playerSessionIds = playerAwcr.map(a => a.training_session_id).filter(Boolean);
+      const playerBlocks = blocksData.filter(b => playerSessionIds.includes(b.training_session_id));
+
       const latestAwcr = playerAwcr.length > 0 ? playerAwcr[playerAwcr.length - 1] : null;
       const latestWellness = playerWellness[0];
 
@@ -161,6 +177,22 @@ serve(async (req) => {
         : null;
 
       const ewma = calculatePlayerEWMA(playerAwcr);
+
+      // Aggregate block metrics
+      const intensityMap: Record<string, number> = { faible: 1, moderee: 2, elevee: 3, tres_elevee: 4 };
+      const contactMap: Record<string, number> = { aucun: 0, faible: 1, modere: 2, eleve: 3 };
+      const volumeMap: Record<string, number> = { court: 1, moyen: 2, long: 3 };
+
+      const blockIntensities = playerBlocks.filter(b => b.target_intensity).map(b => intensityMap[b.target_intensity] || 0);
+      const blockContacts = playerBlocks.filter(b => b.contact_charge).map(b => contactMap[b.contact_charge] || 0);
+      const blockVolumes = playerBlocks.filter(b => b.volume).map(b => volumeMap[b.volume] || 0);
+
+      const sessionTypeCounts: Record<string, number> = {};
+      const objectiveCounts: Record<string, number> = {};
+      playerBlocks.forEach(b => {
+        if (b.session_type) sessionTypeCounts[b.session_type] = (sessionTypeCounts[b.session_type] || 0) + 1;
+        if (b.objective) objectiveCounts[b.objective] = (objectiveCounts[b.objective] || 0) + 1;
+      });
 
       return {
         name: player.name,
@@ -177,6 +209,16 @@ serve(async (req) => {
           acute_load: latestAwcr?.acute_load,
           chronic_load: latestAwcr?.chronic_load,
           training_load_avg: avgTrainingLoad?.toFixed(0)
+        },
+        training_profile: {
+          avg_intensity: blockIntensities.length > 0 ? (blockIntensities.reduce((a,b) => a+b, 0) / blockIntensities.length).toFixed(1) : null,
+          avg_contact_charge: blockContacts.length > 0 ? (blockContacts.reduce((a,b) => a+b, 0) / blockContacts.length).toFixed(1) : null,
+          avg_volume: blockVolumes.length > 0 ? (blockVolumes.reduce((a,b) => a+b, 0) / blockVolumes.length).toFixed(1) : null,
+          dominant_session_types: Object.entries(sessionTypeCounts).sort((a,b) => b[1]-a[1]).map(([t]) => t),
+          dominant_objectives: Object.entries(objectiveCounts).sort((a,b) => b[1]-a[1]).map(([o]) => o),
+          total_blocks: playerBlocks.length,
+          high_contact_sessions: blockContacts.filter(c => c >= 2).length,
+          high_intensity_sessions: blockIntensities.filter(i => i >= 3).length,
         },
         wellness: latestWellness ? {
           sleep_quality: latestWellness.sleep_quality,
@@ -226,6 +268,12 @@ Critères d'évaluation:
 - Fatigue élevée (>4/5) + douleurs (>3/5) = risque modéré à élevé
 - Mauvais sommeil (<6h ou qualité <3/5) = facteur aggravant
 - Historique de blessures récentes = facteur aggravant
+- PROFIL D'ENTRAÎNEMENT (training_profile):
+  - Intensité moyenne élevée (>3/4) combinée à charge aiguë élevée = risque accru
+  - Charge contact élevée (>2/3) + douleurs musculaires = risque de blessure de contact
+  - Volume moyen élevé (>2/3) + fatigue élevée = surcharge potentielle
+  - Nombreuses séances haute intensité (high_intensity_sessions) = usure progressive
+  - Nombreuses séances contact (high_contact_sessions) + blessure récente = risque de rechute
 
 Réponds UNIQUEMENT en JSON valide avec cette structure exacte:
 {
