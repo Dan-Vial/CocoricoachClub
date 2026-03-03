@@ -206,6 +206,14 @@ export function useTeamTrainingLoad({
     ewmaRatio: validSummaries.reduce((sum, p) => sum + (p.summary?.ewmaRatio || 0), 0) / validSummaries.length,
     ewmaAcute: validSummaries.reduce((sum, p) => sum + (p.summary?.ewmaAcute || 0), 0) / validSummaries.length,
     ewmaChronic: validSummaries.reduce((sum, p) => sum + (p.summary?.ewmaChronic || 0), 0) / validSummaries.length,
+    currentLoad: validSummaries.reduce((sum, p) => sum + (p.summary?.currentLoad || 0), 0) / validSummaries.length,
+    weeklyChange: validSummaries.reduce((sum, p) => sum + (p.summary?.weeklyChange || 0), 0) / validSummaries.length,
+    trend: (() => {
+      const avgChange = validSummaries.reduce((sum, p) => sum + (p.summary?.weeklyChange || 0), 0) / validSummaries.length;
+      if (avgChange > 10) return "increasing" as const;
+      if (avgChange < -10) return "decreasing" as const;
+      return "stable" as const;
+    })(),
   } : null;
 
   // Players at risk

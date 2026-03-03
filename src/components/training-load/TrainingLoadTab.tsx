@@ -5,13 +5,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, ChevronDown, Filter, Plus, Users, TrendingUp, AlertTriangle } from "lucide-react";
+import { Calendar, ChevronDown, Filter, Plus, Users, TrendingUp, AlertTriangle, BarChart3 } from "lucide-react";
 import { TrainingLoadChart } from "./TrainingLoadChart";
 import { TrainingLoadKPIs } from "./TrainingLoadKPIs";
 import { TrainingLoadAlerts } from "./TrainingLoadAlerts";
 import { TeamLoadComparison } from "./TeamLoadComparison";
 import { RpePlanVsActual } from "./RpePlanVsActual";
 import { TrainingLoadCalendar } from "./TrainingLoadCalendar";
+import { TrainingDistribution } from "./TrainingDistribution";
 import { useTrainingLoad, useTeamTrainingLoad } from "@/hooks/use-training-load";
 import { MetricType, METRICS_CONFIG } from "@/lib/trainingLoadCalculations";
 import { AddAwcrDialog } from "@/components/category/AddAwcrDialog";
@@ -155,14 +156,14 @@ export function TrainingLoadTab({ categoryId }: TrainingLoadTabProps) {
       {/* KPI Cards */}
       <TrainingLoadKPIs 
         summary={selectedPlayerId ? summary : (teamAverage ? {
-          currentLoad: 0,
+          currentLoad: teamAverage.currentLoad ?? 0,
           ewmaAcute: teamAverage.ewmaAcute,
           ewmaChronic: teamAverage.ewmaChronic,
           ewmaRatio: teamAverage.ewmaRatio,
-          weeklyChange: 0,
+          weeklyChange: teamAverage.weeklyChange ?? 0,
           riskLevel: teamAverage.ewmaRatio >= 0.85 && teamAverage.ewmaRatio <= 1.3 ? "optimal" :
                     teamAverage.ewmaRatio >= 0.8 && teamAverage.ewmaRatio <= 1.5 ? "warning" : "danger",
-          trend: "stable",
+          trend: teamAverage.trend ?? "stable",
         } : null)}
         isLoading={isLoading || teamLoading}
       />
@@ -180,6 +181,10 @@ export function TrainingLoadTab({ categoryId }: TrainingLoadTabProps) {
             RPE Prévu/Réel
           </TabsTrigger>
           <TabsTrigger value="team">Comparaison</TabsTrigger>
+          <TabsTrigger value="distribution" className="gap-1">
+            <BarChart3 className="h-3 w-3" />
+            Répartition
+          </TabsTrigger>
           <TabsTrigger value="alerts">Alertes</TabsTrigger>
         </TabsList>
 
@@ -213,6 +218,10 @@ export function TrainingLoadTab({ categoryId }: TrainingLoadTabProps) {
             isLoading={teamLoading}
             sportType={sportType}
           />
+        </TabsContent>
+
+        <TabsContent value="distribution">
+          <TrainingDistribution categoryId={categoryId} />
         </TabsContent>
 
         <TabsContent value="alerts">

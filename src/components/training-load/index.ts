@@ -6,3 +6,4 @@ export { TeamLoadComparison } from "./TeamLoadComparison";
 export { RpePlanVsActual } from "./RpePlanVsActual";
 export { MetricExplanation } from "./MetricExplanation";
 export { TrainingLoadCalendar } from "./TrainingLoadCalendar";
+export { TrainingDistribution } from "./TrainingDistribution";
