@@ -125,10 +125,12 @@ export function GpsObjectivesDashboard({
       const player = gps.players as { id: string; name: string; first_name: string | null; position: string | null } | null;
       const playerGroup = getPlayerPositionGroup(player?.position, positionGroups);
 
-      const objective = objectives.find(o =>
-        o.position_group === "Global" ||
-        o.position_group === playerGroup?.label
-      );
+      // Priority: specific position group objective > Global fallback
+      const specificObjective = playerGroup 
+        ? objectives.find(o => o.position_group === playerGroup.label)
+        : null;
+      const globalObjective = objectives.find(o => o.position_group === "Global");
+      const objective = specificObjective || globalObjective || null;
 
       if (!objective) return { gps, player, objective: null, statuses: {}, directions: {} };
 
