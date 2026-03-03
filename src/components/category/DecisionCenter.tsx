@@ -53,13 +53,16 @@ import { isIndividualSport } from "@/lib/constants/sportTypes";
    categoryName?: string;
  }
  
- interface GroupStatus {
-   total: number;
-   available: number;
-   atRisk: number;
-   injured: number;
-   uncertain: number;
- }
+  interface GroupStatus {
+    total: number;
+    available: number;
+    atRisk: number;
+    injured: number;
+    uncertain: number;
+    atRiskPlayers: { id: string; name: string; reason: string }[];
+    injuredPlayers: { id: string; name: string }[];
+    uncertainPlayers: { id: string; name: string }[];
+  }
  
  interface PriorityAlert {
    id: string;
@@ -98,12 +101,15 @@ import { isIndividualSport } from "@/lib/constants/sportTypes";
       queryFn: async () => {
         const { data, error } = await supabase
           .from("players")
-          .select("id, name, position")
+          .select("id, name, first_name, position")
           .eq("category_id", categoryId);
         if (error) throw error;
         return data;
       },
     });
+
+    const getFullName = (player: { first_name?: string | null; name: string }) =>
+      [player.first_name, player.name].filter(Boolean).join(" ");
 
     // Fetch category sport type for test labels
     const { data: categoryData } = useQuery({
@@ -279,38 +285,58 @@ import { isIndividualSport } from "@/lib/constants/sportTypes";
     });
  
    // Calculate group status
-   const calculateGroupStatus = (): GroupStatus => {
-     const total = players.length;
-     const injuredPlayerIds = new Set(injuries.filter(i => i.status === "active").map(i => i.player_id));
-     const uncertainPlayerIds = new Set(injuries.filter(i => i.status === "recovering").map(i => i.player_id));
-     
-     // At risk from AWCR or wellness
-     const atRiskPlayerIds = new Set<string>();
-     
-     players.forEach(player => {
-       const playerAwcr = awcrData.find(a => a.player_id === player.id);
-       const playerWellness = wellnessData.find(w => w.player_id === player.id);
-       
-       if (playerAwcr?.awcr && (playerAwcr.awcr > 1.5 || playerAwcr.awcr < 0.8)) {
-         atRiskPlayerIds.add(player.id);
-       }
-       
-       if (playerWellness) {
-         const score = calculateWeightedWellnessScore(playerWellness as WellnessEntry);
-         const risk = getWellnessRiskLevel(score, playerWellness.has_specific_pain);
-         if (risk === "critical" || risk === "high") {
-           atRiskPlayerIds.add(player.id);
-         }
-       }
-     });
- 
-     const injured = injuredPlayerIds.size;
-     const uncertain = uncertainPlayerIds.size;
-     const atRisk = [...atRiskPlayerIds].filter(id => !injuredPlayerIds.has(id) && !uncertainPlayerIds.has(id)).length;
-     const available = total - injured - uncertain;
- 
-     return { total, available, atRisk, injured, uncertain };
-   };
+    const calculateGroupStatus = (): GroupStatus => {
+      const total = players.length;
+      const injuredPlayerIds = new Set(injuries.filter(i => i.status === "active").map(i => i.player_id));
+      const uncertainPlayerIds = new Set(injuries.filter(i => i.status === "recovering").map(i => i.player_id));
+      
+      const atRiskPlayersList: { id: string; name: string; reason: string }[] = [];
+      
+      players.forEach(player => {
+        if (injuredPlayerIds.has(player.id) || uncertainPlayerIds.has(player.id)) return;
+        
+        const playerAwcr = awcrData.find(a => a.player_id === player.id);
+        const playerWellness = wellnessData.find(w => w.player_id === player.id);
+        
+        let reason = "";
+        if (playerAwcr?.awcr && (playerAwcr.awcr > 1.5 || playerAwcr.awcr < 0.8)) {
+          reason = `EWMA ${playerAwcr.awcr.toFixed(2)}`;
+        }
+        
+        if (playerWellness) {
+          const score = calculateWeightedWellnessScore(playerWellness as WellnessEntry);
+          const risk = getWellnessRiskLevel(score, playerWellness.has_specific_pain);
+          if (risk === "critical" || risk === "high") {
+            reason = reason ? `${reason} + Wellness ${score.toFixed(1)}` : `Wellness ${score.toFixed(1)}/5`;
+          }
+        }
+        
+        if (reason) {
+          atRiskPlayersList.push({ id: player.id, name: getFullName(player), reason });
+        }
+      });
+
+      const injuredPlayers = injuries
+        .filter(i => i.status === "active")
+        .map(i => {
+          const p = players.find(pl => pl.id === i.player_id);
+          return { id: i.player_id, name: p ? getFullName(p) : "Inconnu" };
+        });
+
+      const uncertainPlayers = injuries
+        .filter(i => i.status === "recovering")
+        .map(i => {
+          const p = players.find(pl => pl.id === i.player_id);
+          return { id: i.player_id, name: p ? getFullName(p) : "Inconnu" };
+        });
+
+      const injured = injuredPlayerIds.size;
+      const uncertain = uncertainPlayerIds.size;
+      const atRisk = atRiskPlayersList.length;
+      const available = total - injured - uncertain;
+  
+      return { total, available, atRisk, injured, uncertain, atRiskPlayers: atRiskPlayersList, injuredPlayers, uncertainPlayers };
+    };
  
    // Calculate priority alerts
    const calculatePriorityAlerts = (): PriorityAlert[] => {
@@ -320,15 +346,15 @@ import { isIndividualSport } from "@/lib/constants/sportTypes";
        // Overload alerts (AWCR > 1.5)
        const playerAwcr = awcrData.find(a => a.player_id === player.id);
        if (playerAwcr?.awcr && playerAwcr.awcr > 1.5) {
-         alerts.push({
-           id: `overload-${player.id}`,
-           type: "overload",
-           severity: playerAwcr.awcr > 1.8 ? "critical" : "high",
-           playerId: player.id,
-           playerName: player.name,
-           message: `Ratio EWMA à ${playerAwcr.awcr.toFixed(2)} - Réduire la charge`,
-           action: "Adapter charge",
-         });
+          alerts.push({
+            id: `overload-${player.id}`,
+            type: "overload",
+            severity: playerAwcr.awcr > 1.8 ? "critical" : "high",
+            playerId: player.id,
+            playerName: getFullName(player),
+            message: `Ratio EWMA à ${playerAwcr.awcr.toFixed(2)} - Réduire la charge`,
+            action: "Adapter charge",
+          });
        }
  
        // Mental fatigue (wellness > 3.5 = bad state, scale: 1=excellent, 5=very bad)
@@ -341,7 +367,7 @@ import { isIndividualSport } from "@/lib/constants/sportTypes";
              type: "fatigue",
              severity: score > 4.2 ? "critical" : "high",
              playerId: player.id,
-             playerName: player.name,
+              playerName: getFullName(player),
              message: `Fatigue détectée (${score.toFixed(1)}/5)`,
              action: "Voir fiche",
            });
@@ -359,7 +385,7 @@ import { isIndividualSport } from "@/lib/constants/sportTypes";
              type: "injury_return",
              severity: "medium",
              playerId: player.id,
-             playerName: player.name,
+             playerName: getFullName(player),
              message: `Retour prévu ${daysUntil === 0 ? "aujourd'hui" : `dans ${daysUntil}j`}`,
              action: "Valider reprise",
            });
@@ -396,18 +422,18 @@ import { isIndividualSport } from "@/lib/constants/sportTypes";
        const playerWellness = wellnessData.find(w => w.player_id === player.id);
        
        if (playerAwcr?.awcr && playerAwcr.awcr > 1.3) {
-         toAdapt.push({
-           id: player.id,
-           name: player.name,
-           reason: `EWMA ${playerAwcr.awcr.toFixed(2)}`,
+          toAdapt.push({
+            id: player.id,
+            name: getFullName(player),
+            reason: `EWMA ${playerAwcr.awcr.toFixed(2)}`,
          });
        } else if (playerWellness) {
          const score = calculateWeightedWellnessScore(playerWellness as WellnessEntry);
          if (score > 3) {
-           toAdapt.push({
-             id: player.id,
-             name: player.name,
-             reason: `Wellness ${score.toFixed(1)}/5`,
+            toAdapt.push({
+              id: player.id,
+              name: getFullName(player),
+              reason: `Wellness ${score.toFixed(1)}/5`,
            });
          }
        }
@@ -428,8 +454,8 @@ import { isIndividualSport } from "@/lib/constants/sportTypes";
       const filledCount = filledPlayerIds.size;
       const filledPercent = players.length > 0 ? Math.round((filledCount / players.length) * 100) : 0;
       
-      const filledPlayers = players.filter(p => filledPlayerIds.has(p.id)).map(p => p.name);
-      const missingPlayers = players.filter(p => !filledPlayerIds.has(p.id)).map(p => p.name);
+       const filledPlayers = players.filter(p => filledPlayerIds.has(p.id)).map(p => getFullName(p));
+       const missingPlayers = players.filter(p => !filledPlayerIds.has(p.id)).map(p => getFullName(p));
       
       return { filledCount, filledPercent, filledPlayers, missingPlayers };
     };
@@ -470,88 +496,146 @@ import { isIndividualSport } from "@/lib/constants/sportTypes";
          </div>
        </div>
  
-       {/* 1️⃣ ÉTAT DU GROUPE - Top priority */}
-       <Card className="border-2 border-primary/20 bg-gradient-to-r from-primary/5 to-transparent">
-         <CardHeader className="pb-2">
-           <CardTitle className="text-base flex items-center gap-2">
-             <Users className="h-5 w-5 text-primary" />
-             État du groupe
-           </CardTitle>
-         </CardHeader>
-         <CardContent>
-           <div className="flex items-center gap-6 flex-wrap">
-             {/* Availability percentage */}
-             <div className="flex-1 min-w-[200px]">
-               <div className="flex items-center justify-between mb-1">
-                 <span className="text-sm font-medium">Disponibilité</span>
-                 <span className={cn(
-                   "text-2xl font-bold",
-                   availabilityPercent >= 80 ? "text-green-600" : 
-                   availabilityPercent >= 60 ? "text-yellow-600" : "text-red-600"
-                 )}>
-                   {availabilityPercent}%
-                 </span>
-               </div>
-               <Progress 
-                 value={availabilityPercent} 
-                 className={cn(
-                   "h-3",
-                   availabilityPercent >= 80 ? "[&>div]:bg-green-500" : 
-                   availabilityPercent >= 60 ? "[&>div]:bg-yellow-500" : "[&>div]:bg-red-500"
-                 )}
-               />
-               <p className="text-xs text-muted-foreground mt-1">
-                 {groupStatus.available} / {groupStatus.total} athlètes
-               </p>
-             </div>
- 
-             {/* Status badges */}
-             <div className="flex gap-3 flex-wrap">
-               {groupStatus.atRisk > 0 && (
-                 <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-orange-100 dark:bg-orange-900/30">
-                   <AlertTriangle className="h-4 w-4 text-orange-600" />
-                   <span className="font-semibold text-orange-700 dark:text-orange-400">
-                     {groupStatus.atRisk} à risque
-                   </span>
-                 </div>
-               )}
-                {groupStatus.injured > 0 && (() => {
-                  const injuredNames = injuries
-                    .filter(i => i.status === "active")
-                    .map(i => players.find(p => p.id === i.player_id)?.name)
-                    .filter(Boolean);
-                  return (
-                    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-100 dark:bg-red-900/30">
-                      <XCircle className="h-4 w-4 text-red-600 shrink-0" />
-                      <span className="font-semibold text-red-700 dark:text-red-400">
-                        {groupStatus.injured} blessé{groupStatus.injured > 1 ? "s" : ""}
-                      </span>
-                      <span className="text-xs text-red-600 dark:text-red-400 truncate">
-                        ({injuredNames.join(", ")})
-                      </span>
-                    </div>
-                  );
-                })()}
-               {groupStatus.uncertain > 0 && (
-                 <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-yellow-100 dark:bg-yellow-900/30">
-                   <Clock className="h-4 w-4 text-yellow-600" />
-                   <span className="font-semibold text-yellow-700 dark:text-yellow-400">
-                     {groupStatus.uncertain} incertain{groupStatus.uncertain > 1 ? "s" : ""}
-                   </span>
-                 </div>
-               )}
-               {groupStatus.atRisk === 0 && groupStatus.injured === 0 && groupStatus.uncertain === 0 && (
-                 <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-green-100 dark:bg-green-900/30">
-                   <CheckCircle className="h-4 w-4 text-green-600" />
-                   <span className="font-semibold text-green-700 dark:text-green-400">
-                     Groupe au complet
-                   </span>
-                 </div>
-               )}
-             </div>
-           </div>
-         </CardContent>
-        </Card>
+        {/* 1️⃣ ÉTAT DU GROUPE - 3 colonnes */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Col 1: État du groupe */}
+          <Card className="border-2 border-primary/20 bg-gradient-to-r from-primary/5 to-transparent">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Users className="h-4 w-4 text-primary" />
+                État du groupe
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">Disponibilité</span>
+                  <span className={cn(
+                    "text-2xl font-bold",
+                    availabilityPercent >= 80 ? "text-green-600" : 
+                    availabilityPercent >= 60 ? "text-yellow-600" : "text-red-600"
+                  )}>
+                    {availabilityPercent}%
+                  </span>
+                </div>
+                <Progress 
+                  value={availabilityPercent} 
+                  className={cn(
+                    "h-3",
+                    availabilityPercent >= 80 ? "[&>div]:bg-green-500" : 
+                    availabilityPercent >= 60 ? "[&>div]:bg-yellow-500" : "[&>div]:bg-red-500"
+                  )}
+                />
+                <p className="text-xs text-muted-foreground">
+                  {groupStatus.available} / {groupStatus.total} athlètes disponibles
+                </p>
+                {groupStatus.atRisk === 0 && groupStatus.injured === 0 && groupStatus.uncertain === 0 && (
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-green-100 dark:bg-green-900/30">
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                    <span className="font-semibold text-green-700 dark:text-green-400 text-sm">
+                      Groupe au complet
+                    </span>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Col 2: Joueurs à risque */}
+          <Card className="border-2 border-orange-500/20 bg-gradient-to-r from-orange-500/5 to-transparent">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-orange-500" />
+                À risque
+                {groupStatus.atRisk > 0 && (
+                  <Badge variant="secondary" className="ml-auto bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">
+                    {groupStatus.atRisk}
+                  </Badge>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {groupStatus.atRiskPlayers.length === 0 ? (
+                <div className="text-center py-4">
+                  <CheckCircle className="h-6 w-6 text-green-500 mx-auto mb-1" />
+                  <p className="text-xs text-muted-foreground">Aucun joueur à risque</p>
+                </div>
+              ) : (
+                <ScrollArea className={groupStatus.atRiskPlayers.length > 4 ? "h-[180px]" : ""}>
+                  <div className="space-y-1.5">
+                    {groupStatus.atRiskPlayers.map(p => (
+                      <div
+                        key={p.id}
+                        className="flex items-center justify-between p-2 rounded-lg bg-orange-50 dark:bg-orange-900/10 cursor-pointer hover:bg-orange-100 dark:hover:bg-orange-900/20 transition-colors"
+                        onClick={() => navigate(`/players/${p.id}`)}
+                      >
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium truncate">{p.name}</p>
+                          <p className="text-[11px] text-orange-600 dark:text-orange-400">{p.reason}</p>
+                        </div>
+                        <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Col 3: Blessés */}
+          <Card className="border-2 border-red-500/20 bg-gradient-to-r from-red-500/5 to-transparent">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <XCircle className="h-4 w-4 text-red-500" />
+                Blessés / Incertains
+                {(groupStatus.injured + groupStatus.uncertain) > 0 && (
+                  <Badge variant="secondary" className="ml-auto bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
+                    {groupStatus.injured + groupStatus.uncertain}
+                  </Badge>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {groupStatus.injuredPlayers.length === 0 && groupStatus.uncertainPlayers.length === 0 ? (
+                <div className="text-center py-4">
+                  <CheckCircle className="h-6 w-6 text-green-500 mx-auto mb-1" />
+                  <p className="text-xs text-muted-foreground">Aucun blessé</p>
+                </div>
+              ) : (
+                <ScrollArea className={(groupStatus.injuredPlayers.length + groupStatus.uncertainPlayers.length) > 4 ? "h-[180px]" : ""}>
+                  <div className="space-y-1.5">
+                    {groupStatus.injuredPlayers.map(p => (
+                      <div
+                        key={p.id}
+                        className="flex items-center justify-between p-2 rounded-lg bg-red-50 dark:bg-red-900/10 cursor-pointer hover:bg-red-100 dark:hover:bg-red-900/20 transition-colors"
+                        onClick={() => navigate(`/players/${p.id}`)}
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <XCircle className="h-3.5 w-3.5 text-red-500 shrink-0" />
+                          <p className="text-sm font-medium truncate">{p.name}</p>
+                        </div>
+                        <Badge className="text-[10px] bg-red-500 text-white shrink-0">Blessé</Badge>
+                      </div>
+                    ))}
+                    {groupStatus.uncertainPlayers.map(p => (
+                      <div
+                        key={p.id}
+                        className="flex items-center justify-between p-2 rounded-lg bg-yellow-50 dark:bg-yellow-900/10 cursor-pointer hover:bg-yellow-100 dark:hover:bg-yellow-900/20 transition-colors"
+                        onClick={() => navigate(`/players/${p.id}`)}
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <Clock className="h-3.5 w-3.5 text-yellow-500 shrink-0" />
+                          <p className="text-sm font-medium truncate">{p.name}</p>
+                        </div>
+                        <Badge className="text-[10px] bg-yellow-500 text-white shrink-0">Réathléti.</Badge>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              )}
+            </CardContent>
+          </Card>
+        </div>
 
         {/* 1.5️⃣ WELLNESS DU JOUR */}
         <Card className="border-2 border-green-500/20 bg-gradient-to-r from-green-500/5 to-transparent">
