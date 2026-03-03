@@ -33,6 +33,7 @@ interface GpsSession {
   players: {
     id: string;
     name: string;
+    first_name: string | null;
     position: string | null;
   } | null;
 }
@@ -49,8 +50,13 @@ export function GpsSessionsList({ sessions, isLoading, onRefresh, categoryId }: 
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [detailSession, setDetailSession] = useState<GpsSession | null>(null);
 
+  const getPlayerFullName = (player: GpsSession['players']) => {
+    if (!player) return 'Joueur inconnu';
+    return player.first_name ? `${player.first_name} ${player.name}` : player.name;
+  };
+
   const filteredSessions = sessions.filter(session => {
-    const playerName = session.players?.name?.toLowerCase() || '';
+    const playerName = getPlayerFullName(session.players).toLowerCase();
     const sessionName = session.session_name?.toLowerCase() || '';
     const search = searchQuery.toLowerCase();
     
@@ -240,7 +246,7 @@ export function GpsSessionsList({ sessions, isLoading, onRefresh, categoryId }: 
                         <TableCell className="font-medium">
                           <div className="flex items-center gap-2">
                             <User className="h-4 w-4 text-muted-foreground" />
-                            {session.players?.name || 'Joueur inconnu'}
+                            {getPlayerFullName(session.players)}
                           </div>
                         </TableCell>
                         <TableCell className="text-right">
@@ -330,7 +336,7 @@ export function GpsSessionsList({ sessions, isLoading, onRefresh, categoryId }: 
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <User className="h-5 w-5" />
-              {detailSession?.players?.name || 'Joueur inconnu'} - Données complètes
+              {detailSession ? getPlayerFullName(detailSession.players) : 'Joueur inconnu'} - Données complètes
             </DialogTitle>
           </DialogHeader>
           <ScrollArea className="h-[60vh] pr-4">

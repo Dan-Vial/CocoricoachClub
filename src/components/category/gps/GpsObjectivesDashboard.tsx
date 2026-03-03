@@ -109,7 +109,7 @@ export function GpsObjectivesDashboard({
     queryFn: async () => {
       const { data, error } = await supabase
         .from("gps_sessions")
-        .select("*, players(id, name, position)")
+        .select("*, players(id, name, first_name, position)")
         .eq("category_id", categoryId)
         .or(`training_session_id.eq.${trainingSessionId},session_date.eq.${sessionDate}`);
       if (error) throw error;
@@ -122,7 +122,7 @@ export function GpsObjectivesDashboard({
     if (!gpsData || !objectives || objectives.length === 0) return [];
 
     return gpsData.map(gps => {
-      const player = gps.players as { id: string; name: string; position: string | null } | null;
+      const player = gps.players as { id: string; name: string; first_name: string | null; position: string | null } | null;
       const playerGroup = getPlayerPositionGroup(player?.position, positionGroups);
 
       const objective = objectives.find(o =>
@@ -307,13 +307,13 @@ export function GpsObjectivesDashboard({
             {teamStats.underExposed.length > 0 && (
               <div className="flex items-center gap-1 text-xs text-blue-600 bg-blue-50 dark:bg-blue-950/30 px-2 py-1 rounded">
                 <TrendingDown className="h-3 w-3" />
-                Sous-exposés: {teamStats.underExposed.map(p => p.player?.name).join(", ")}
+                Sous-exposés: {teamStats.underExposed.map(p => p.player ? (p.player.first_name ? `${p.player.first_name} ${p.player.name}` : p.player.name) : '').join(", ")}
               </div>
             )}
             {teamStats.overExposed.length > 0 && (
               <div className="flex items-center gap-1 text-xs text-red-600 bg-red-50 dark:bg-red-950/30 px-2 py-1 rounded">
                 <TrendingUp className="h-3 w-3" />
-                Sur-exposés: {teamStats.overExposed.map(p => p.player?.name).join(", ")}
+                Sur-exposés: {teamStats.overExposed.map(p => p.player ? (p.player.first_name ? `${p.player.first_name} ${p.player.name}` : p.player.name) : '').join(", ")}
               </div>
             )}
           </div>
@@ -355,7 +355,7 @@ export function GpsObjectivesDashboard({
 
                     return (
                       <TableRow key={i}>
-                        <TableCell className="font-medium text-sm">{p.player?.name || "—"}</TableCell>
+                        <TableCell className="font-medium text-sm">{p.player ? (p.player.first_name ? `${p.player.first_name} ${p.player.name}` : p.player.name) : "—"}</TableCell>
                         <TableCell>
                           <Badge variant="outline" className="text-xs">
                             {getPlayerPositionGroup(p.player?.position, positionGroups)?.label || "—"}

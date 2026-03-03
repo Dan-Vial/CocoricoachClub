@@ -12,6 +12,7 @@ import { toast } from "sonner";
 interface Player {
   id: string;
   name: string;
+  first_name?: string | null;
   position: string | null;
 }
 
@@ -75,9 +76,23 @@ export function SessionGpsImport({ players, onGpsDataChange, gpsData }: SessionG
     if (!name) return null;
     const searchName = name.toLowerCase().trim();
     
-    let match = players.find(p => p.name.toLowerCase() === searchName);
+    const getFullName = (p: Player) => p.first_name ? `${p.first_name} ${p.name}` : p.name;
+    
+    // Full name exact
+    let match = players.find(p => getFullName(p).toLowerCase() === searchName);
     if (match) return match;
     
+    // Name only exact
+    match = players.find(p => p.name.toLowerCase() === searchName);
+    if (match) return match;
+    
+    // Partial with full name
+    match = players.find(p => {
+      const fn = getFullName(p).toLowerCase();
+      return fn.includes(searchName) || searchName.includes(fn);
+    });
+    if (match) return match;
+
     match = players.find(p =>
       p.name.toLowerCase().includes(searchName) ||
       searchName.includes(p.name.toLowerCase())
