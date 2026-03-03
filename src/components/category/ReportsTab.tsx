@@ -470,12 +470,14 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
         pdf.text("WELLNESS (dernières entrées)", margin, yPos);
         yPos += 8;
 
-        const wHeaders = ["Date", "Sommeil", "Fatigue", "Stress", "Haut", "Bas"];
-        const wColWidths = [35, 28, 28, 28, 28, 28];
+        const wHeaders = ["Date", "Sommeil", "Fatigue", "Stress", "Haut", "Bas", "Moy."];
+        const wColWidths = [32, 24, 24, 24, 24, 24, 24];
         yPos = drawTableHeaderPdf(pdf, wHeaders, wColWidths, yPos, margin, contentWidth);
 
         wellnessData.slice(0, 10).forEach((w, index) => {
           yPos = localCheckPageBreak(pdf, yPos, 10);
+          const wValues = [w.sleep_quality, w.general_fatigue, w.stress_level, w.soreness_upper_body, w.soreness_lower_body].filter(v => v != null) as number[];
+          const wAvg = wValues.length > 0 ? (wValues.reduce((a, b) => a + b, 0) / wValues.length).toFixed(1) : '-';
           yPos = drawTableRowPdf(pdf, [
             format(new Date(w.tracking_date), "dd/MM/yy"),
             `${w.sleep_quality || '-'}/5`,
@@ -483,6 +485,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
             `${w.stress_level || '-'}/5`,
             `${w.soreness_upper_body || '-'}/5`,
             `${w.soreness_lower_body || '-'}/5`,
+            wAvg,
           ], wColWidths, yPos, index % 2 === 1, margin, contentWidth);
         });
       }
@@ -1426,16 +1429,21 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
         supabase.from("awcr_tracking").select("*").eq("player_id", selectedPlayer).order("session_date", { ascending: false }),
       ]);
 
-      const wellnessHeaders = ["Date", "Fatigue", "Sommeil (h)", "Qualité sommeil", "Stress", "Douleurs haut", "Douleurs bas"];
-      const wellnessRows = (wellnessRes.data || []).map(w => [
-        format(new Date(w.tracking_date), "dd/MM/yyyy"),
-        w.general_fatigue || "-",
-        w.sleep_duration || "-",
-        w.sleep_quality || "-",
-        w.stress_level || "-",
-        w.soreness_upper_body || "-",
-        w.soreness_lower_body || "-",
-      ]);
+      const wellnessHeaders = ["Date", "Fatigue", "Sommeil (h)", "Qualité sommeil", "Stress", "Douleurs haut", "Douleurs bas", "Moyenne"];
+      const wellnessRows = (wellnessRes.data || []).map(w => {
+        const values = [w.general_fatigue, w.sleep_quality, w.stress_level, w.soreness_upper_body, w.soreness_lower_body].filter(v => v != null && v !== undefined) as number[];
+        const avg = values.length > 0 ? (values.reduce((a, b) => a + b, 0) / values.length).toFixed(1) : "-";
+        return [
+          format(new Date(w.tracking_date), "dd/MM/yyyy"),
+          w.general_fatigue || "-",
+          w.sleep_duration || "-",
+          w.sleep_quality || "-",
+          w.stress_level || "-",
+          w.soreness_upper_body || "-",
+          w.soreness_lower_body || "-",
+          avg,
+        ];
+      });
 
       const csv = generateCsv(wellnessHeaders, wellnessRows);
       downloadCsv(`joueur_${[player.first_name, player.name].filter(Boolean).join('_').replace(/\s+/g, '_')}_${format(new Date(), "yyyy-MM-dd")}.csv`, csv);
