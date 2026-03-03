@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Target, Users, User, AlertTriangle, TrendingDown, TrendingUp, Minus, ArrowUp, ArrowDown } from "lucide-react";
+import { Target, Users, User, AlertTriangle, TrendingDown, TrendingUp, Minus, ArrowUp, ArrowDown, Zap } from "lucide-react";
 import {
   getGpsPositionGroups,
   getPlayerPositionGroup,
@@ -118,8 +118,27 @@ export function GpsObjectivesDashboard({
     enabled: !!sessionDate,
   });
 
+  // Fetch Vmax references for all players in this category
+  const { data: vmaxRefs } = useQuery({
+    queryKey: ["vmax-refs-for-objectives", categoryId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("player_performance_references")
+        .select("player_id, ref_vmax_ms")
+        .eq("category_id", categoryId)
+        .eq("is_active", true);
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const playerAnalysis = useMemo(() => {
     if (!gpsData || !objectives || objectives.length === 0) return [];
+
+    const vmaxMap = new Map<string, number>();
+    vmaxRefs?.forEach(r => {
+      if (r.ref_vmax_ms) vmaxMap.set(r.player_id, Number(r.ref_vmax_ms));
+    });
 
     return gpsData.map(gps => {
       const player = gps.players as { id: string; name: string; first_name: string | null; position: string | null } | null;
@@ -132,15 +151,21 @@ export function GpsObjectivesDashboard({
       const globalObjective = objectives.find(o => o.position_group === "Global");
       const objective = specificObjective || globalObjective || null;
 
-      if (!objective) return { gps, player, objective: null, statuses: {}, directions: {} };
+      if (!objective) return { gps, player, objective: null, statuses: {}, directions: {}, actualSprint: null, actualVmaxPercent: null };
 
       const tGreen = Number(objective.tolerance_green) || 15;
       const tOrange = Number(objective.tolerance_orange) || 30;
 
       // Only compare sprint_count to target_sprint_count (same unit)
-      // sprint_distance_m is in meters and cannot be compared to a count target
       const actualSprint = gps.sprint_count != null ? Number(gps.sprint_count) : null;
       const targetSprint = objective.target_sprint_count;
+
+      // Compute actual Vmax% = (max_speed_ms / ref_vmax_ms) * 100
+      const refVmax = player ? vmaxMap.get(player.id) : undefined;
+      const actualVmaxPercent = (gps.max_speed_ms != null && refVmax)
+        ? (Number(gps.max_speed_ms) / refVmax) * 100
+        : null;
+      const targetVmax = objective.target_vmax_percentage ? Number(objective.target_vmax_percentage) : null;
 
       const statuses = {
         distance: getObjectiveStatus(
@@ -156,6 +181,11 @@ export function GpsObjectivesDashboard({
         sprints: getObjectiveStatus(
           actualSprint,
           targetSprint,
+          tGreen, tOrange
+        ),
+        vmax: getObjectiveStatus(
+          actualVmaxPercent,
+          targetVmax,
           tGreen, tOrange
         ),
       };
@@ -176,11 +206,16 @@ export function GpsObjectivesDashboard({
           targetSprint,
           tGreen
         ),
+        vmax: getLoadDirection(
+          actualVmaxPercent,
+          targetVmax,
+          tGreen
+        ),
       };
 
-      return { gps, player, objective, statuses, directions, actualSprint };
+      return { gps, player, objective, statuses, directions, actualSprint, actualVmaxPercent };
     });
-  }, [gpsData, objectives, positionGroups]);
+  }, [gpsData, objectives, positionGroups, vmaxRefs]);
 
   const teamStats = useMemo(() => {
     if (playerAnalysis.length === 0) return null;
@@ -243,6 +278,10 @@ export function GpsObjectivesDashboard({
         const avgHsr = withData.length > 0
           ? withData.reduce((acc, p) => acc + (Number(p.gps.high_speed_distance_m) || 0), 0) / withData.length
           : null;
+        const vmaxPlayers = players.filter(p => p.actualVmaxPercent != null);
+        const avgVmax = vmaxPlayers.length > 0
+          ? vmaxPlayers.reduce((acc, p) => acc + (p.actualVmaxPercent || 0), 0) / vmaxPlayers.length
+          : null;
 
         const inTarget = withData.filter(p => {
           const allGreen = Object.values(p.statuses).every(s => s === "green" || s === "none");
@@ -255,6 +294,7 @@ export function GpsObjectivesDashboard({
           playerCount: players.length,
           avgDistance,
           avgHsr,
+          avgVmax,
           inTargetPercent: withData.length > 0 ? Math.round((inTarget / withData.length) * 100) : 0,
         };
       });
@@ -353,6 +393,7 @@ export function GpsObjectivesDashboard({
                     <TableHead className="text-center">Distance</TableHead>
                     <TableHead className="text-center">Dist. HI</TableHead>
                     <TableHead className="text-center">Sprint (dist/nb)</TableHead>
+                    <TableHead className="text-center">% Vmax</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -400,6 +441,15 @@ export function GpsObjectivesDashboard({
                             </span>
                           )}
                         </TableCell>
+                        <TableCell className="text-center">
+                          <MetricCell
+                            actual={p.actualVmaxPercent}
+                            target={p.objective?.target_vmax_percentage ? Number(p.objective.target_vmax_percentage) : null}
+                            toleranceGreen={tGreen}
+                            toleranceOrange={tOrange}
+                            unit="%"
+                          />
+                        </TableCell>
                       </TableRow>
                     );
                   })}
@@ -428,7 +478,7 @@ export function GpsObjectivesDashboard({
                       {group.inTargetPercent}% dans la cible
                     </Badge>
                   </div>
-                  <div className="grid grid-cols-3 gap-4 text-sm">
+                  <div className="grid grid-cols-4 gap-4 text-sm">
                     <div>
                       <span className="text-muted-foreground text-xs">Distance moy.</span>
                       <p className="font-medium">{group.avgDistance ? `${Math.round(group.avgDistance)}m` : "—"}</p>
@@ -441,6 +491,13 @@ export function GpsObjectivesDashboard({
                       <p className="font-medium">{group.avgHsr ? `${Math.round(group.avgHsr)}m` : "—"}</p>
                       <span className="text-xs text-muted-foreground">
                         Cible: {group.objective.target_high_speed_distance_m ? `${Number(group.objective.target_high_speed_distance_m)}m` : "—"}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground text-xs">% Vmax moy.</span>
+                      <p className="font-medium">{group.avgVmax ? `${Math.round(group.avgVmax)}%` : "—"}</p>
+                      <span className="text-xs text-muted-foreground">
+                        Cible: {group.objective.target_vmax_percentage ? `${Number(group.objective.target_vmax_percentage)}%` : "—"}
                       </span>
                     </div>
                     <div>
