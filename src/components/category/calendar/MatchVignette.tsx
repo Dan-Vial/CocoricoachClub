@@ -97,21 +97,19 @@ export function MatchVignette({
             {onNotify && (
               <button
                 onClick={handleNotifyClick}
-                className="p-1.5 rounded-md hover:bg-rose-500 transition-colors flex items-center gap-1"
+                className="p-1.5 rounded-md hover:bg-rose-500 transition-colors"
                 title="Notifier les athlètes"
               >
                 <Bell className="h-4 w-4" />
-                <span className="text-xs font-medium">Notifier</span>
               </button>
             )}
             {onStats && (
               <button
                 onClick={handleStatsClick}
-                className="p-1.5 rounded-md hover:bg-rose-500 transition-colors flex items-center gap-1"
+                className="p-1.5 rounded-md hover:bg-rose-500 transition-colors"
                 title="Statistiques du match"
               >
                 <BarChart3 className="h-4 w-4" />
-                <span className="text-xs font-medium">Stats</span>
               </button>
             )}
             {onDelete && (

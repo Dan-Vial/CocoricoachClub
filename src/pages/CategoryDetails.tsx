@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -122,6 +122,16 @@ const hasVideoAnalysis = (sportType: string | undefined) => {
 function CategoryDetailsContent() {
   const { categoryId } = useParams();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get("tab") || "overview";
+  const handleTabChange = (value: string) => {
+    if (value === "overview") {
+      searchParams.delete("tab");
+    } else {
+      searchParams.set("tab", value);
+    }
+    setSearchParams(searchParams, { replace: true });
+  };
   const { isViewer } = useViewerModeContext();
   const { isPublicAccess, token, clubName: publicClubName, categoryName: publicCategoryName } = usePublicAccess();
   const { total: unreadMessagesCount } = useUnreadMessages(categoryId || "");
@@ -273,7 +283,7 @@ function CategoryDetailsContent() {
       </div>
 
       <div className="container mx-auto max-w-7xl px-4 py-8">
-        <Tabs defaultValue="overview" className="space-y-6">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
           <div className="overflow-x-auto -mx-4 px-4 pb-2">
             <ColoredNavTabsList className="inline-flex w-max min-w-full gap-1 p-3">
               <ColoredTabTrigger 

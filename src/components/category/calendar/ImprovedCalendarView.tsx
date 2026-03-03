@@ -69,6 +69,7 @@ interface ImprovedCalendarViewProps {
   onEditSession?: (session: Session) => void;
   onViewSession?: (session: Session) => void;
   onViewMatch?: (match: Match) => void;
+  onStatsMatch?: (match: Match) => void;
   onDeleteSession?: (sessionId: string) => void;
   onRescheduleSession?: (sessionId: string, newDate: Date) => void;
   onDeleteMatch?: (matchId: string) => void;
@@ -94,6 +95,7 @@ export function ImprovedCalendarView({
   onEditSession,
   onViewSession,
   onViewMatch,
+  onStatsMatch,
   onDeleteSession,
   onRescheduleSession,
   onDeleteMatch,
@@ -498,6 +500,7 @@ export function ImprovedCalendarView({
                       onNotifySession={(session) => setNotifySession(session)}
                       onNotifyMatch={(match) => setNotifyMatch(match)}
                       onViewMatch={(match) => onViewMatch?.(match)}
+                      onStatsMatch={(match) => onStatsMatch?.(match)}
                       onDeleteMatch={(matchId) => onDeleteMatch?.(matchId)}
                     />
                   ))}

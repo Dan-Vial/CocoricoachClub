@@ -48,6 +48,7 @@ interface CalendarDayCellProps {
   onNotifySession?: (session: Session) => void;
   onNotifyMatch?: (match: Match) => void;
   onViewMatch?: (match: Match) => void;
+  onStatsMatch?: (match: Match) => void;
   onDeleteMatch?: (matchId: string) => void;
 }
 
@@ -66,6 +67,7 @@ export function CalendarDayCell({
   onNotifySession,
   onNotifyMatch,
   onViewMatch,
+  onStatsMatch,
   onDeleteMatch,
 }: CalendarDayCellProps) {
   const dateStr = format(day, "yyyy-MM-dd");
@@ -148,7 +150,7 @@ export function CalendarDayCell({
             isViewer={isViewer}
             onClick={() => onViewMatch ? onViewMatch(match) : onDayClick(day)}
             onNotify={onNotifyMatch ? () => onNotifyMatch(match) : undefined}
-            onStats={onViewMatch ? () => onViewMatch(match) : undefined}
+            onStats={onStatsMatch ? () => onStatsMatch(match) : undefined}
             onDelete={onDeleteMatch ? () => onDeleteMatch(match.id) : undefined}
           />
         ))}

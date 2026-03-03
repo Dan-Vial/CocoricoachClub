@@ -315,6 +315,9 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
               rescheduleSession.mutate({ sessionId, newDate });
             }}
             onDeleteMatch={(matchId) => deleteMatch.mutate(matchId)}
+            onStatsMatch={(match) => {
+              navigate(`/category/${categoryId}?tab=competition`);
+            }}
             onLineupMatch={(matchId) => setLineupMatchId(matchId)}
           />
         </TabsContent>
