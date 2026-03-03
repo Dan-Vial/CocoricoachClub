@@ -27,11 +27,20 @@ interface TrainingLoadTabProps {
 export function TrainingLoadTab({ categoryId }: TrainingLoadTabProps) {
   const navigate = useNavigate();
   const { isViewer } = useViewerModeContext();
+  const [loadModel, setLoadModel] = useState<"ewma" | "awcr">("ewma");
   const [selectedMetric, setSelectedMetric] = useState<MetricType>("ewma_srpe");
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | undefined>();
   const [periodDays, setPeriodDays] = useState<number>(56);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isTeamDialogOpen, setIsTeamDialogOpen] = useState(false);
+
+  // Sync metric when model changes
+  const handleModelChange = (model: "ewma" | "awcr") => {
+    setLoadModel(model);
+    // Switch to equivalent metric in the new model
+    const currentBase = selectedMetric.replace(/^(ewma|awcr)_/, "");
+    setSelectedMetric(`${model}_${currentBase}` as MetricType);
+  };
 
   // Realtime sync for training data
   useRealtimeSync({
@@ -98,11 +107,35 @@ export function TrainingLoadTab({ categoryId }: TrainingLoadTabProps) {
         <div>
           <h2 className="text-2xl font-bold">Charge d'entraînement</h2>
           <p className="text-muted-foreground">
-            Monitoring EWMA - Charge interne et externe
+            Monitoring {loadModel === "ewma" ? "EWMA" : "AWCR (Gabbett)"} - Charge interne et externe
           </p>
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
+          {/* Model toggle EWMA / AWCR */}
+          <div className="flex items-center border rounded-lg overflow-hidden">
+            <button
+              className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                loadModel === "ewma" 
+                  ? "bg-primary text-primary-foreground" 
+                  : "bg-muted/50 text-muted-foreground hover:bg-muted"
+              }`}
+              onClick={() => handleModelChange("ewma")}
+            >
+              EWMA
+            </button>
+            <button
+              className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                loadModel === "awcr" 
+                  ? "bg-primary text-primary-foreground" 
+                  : "bg-muted/50 text-muted-foreground hover:bg-muted"
+              }`}
+              onClick={() => handleModelChange("awcr")}
+            >
+              AWCR
+            </button>
+          </div>
+
           {/* Period filter */}
           <Select value={periodDays.toString()} onValueChange={(v) => setPeriodDays(Number(v))}>
             <SelectTrigger className="w-[130px]">
@@ -187,6 +220,7 @@ export function TrainingLoadTab({ categoryId }: TrainingLoadTabProps) {
           trend: teamAverage.trend ?? "stable",
         } : null)}
         isLoading={isLoading || teamLoading}
+        loadModel={loadModel}
       />
 
       {/* Main content based on view mode */}

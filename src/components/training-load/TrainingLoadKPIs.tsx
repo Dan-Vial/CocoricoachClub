@@ -7,9 +7,10 @@ import { MetricTooltip } from "@/components/ui/metric-tooltip";
 interface TrainingLoadKPIsProps {
   summary: LoadSummary | null;
   isLoading?: boolean;
+  loadModel?: "ewma" | "awcr";
 }
 
-export function TrainingLoadKPIs({ summary, isLoading }: TrainingLoadKPIsProps) {
+export function TrainingLoadKPIs({ summary, isLoading, loadModel = "ewma" }: TrainingLoadKPIsProps) {
   if (isLoading) {
     return (
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -67,15 +68,17 @@ export function TrainingLoadKPIs({ summary, isLoading }: TrainingLoadKPIsProps) 
         </CardContent>
       </Card>
 
-      {/* EWMA Acute */}
+      {/* Acute */}
       <Card className="bg-gradient-card shadow-md">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">
             <MetricTooltip
-              title="EWMA Aiguë"
-              description="Moyenne exponentielle pondérée sur 7 jours. Les données récentes ont plus de poids."
+              title={loadModel === "ewma" ? "EWMA Aiguë" : "Charge Aiguë (7j)"}
+              description={loadModel === "ewma" 
+                ? "Moyenne exponentielle pondérée sur 7 jours. Les données récentes ont plus de poids."
+                : "Moyenne simple de la charge sur les 7 derniers jours (méthode Gabbett)."}
             >
-              EWMA Aiguë
+              {loadModel === "ewma" ? "EWMA Aiguë" : "Aiguë (7j)"}
             </MetricTooltip>
           </CardTitle>
           <Activity className="h-4 w-4 text-muted-foreground" />
@@ -91,15 +94,17 @@ export function TrainingLoadKPIs({ summary, isLoading }: TrainingLoadKPIsProps) 
         </CardContent>
       </Card>
 
-      {/* EWMA Chronic */}
+      {/* Chronic */}
       <Card className="bg-gradient-card shadow-md">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">
             <MetricTooltip
-              title="EWMA Chronique"
-              description="Moyenne exponentielle pondérée sur 28 jours. Représente la capacité d'entraînement de base."
+              title={loadModel === "ewma" ? "EWMA Chronique" : "Charge Chronique (28j)"}
+              description={loadModel === "ewma"
+                ? "Moyenne exponentielle pondérée sur 28 jours. Représente la capacité d'entraînement de base."
+                : "Moyenne simple de la charge sur les 28 derniers jours (méthode Gabbett)."}
             >
-              EWMA Chronique
+              {loadModel === "ewma" ? "EWMA Chronique" : "Chronique (28j)"}
             </MetricTooltip>
           </CardTitle>
           <Target className="h-4 w-4 text-muted-foreground" />
@@ -115,12 +120,14 @@ export function TrainingLoadKPIs({ summary, isLoading }: TrainingLoadKPIsProps) 
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">
             <MetricTooltip
-              title="Ratio EWMA"
-              description="Rapport charge aiguë / chronique. Zone optimale: 0.85 - 1.30"
+              title={loadModel === "ewma" ? "Ratio EWMA" : "Ratio AWCR"}
+              description={loadModel === "ewma"
+                ? "Rapport charge aiguë / chronique (EWMA). Zone optimale: 0.85 - 1.30"
+                : "Rapport charge aiguë / chronique (Gabbett). Zone optimale: 0.85 - 1.30"}
               optimalRange="0.85 - 1.30"
               warningText="> 1.5 risque blessure | < 0.8 désentraînement"
             >
-              Ratio EWMA
+              {loadModel === "ewma" ? "Ratio EWMA" : "Ratio AWCR"}
             </MetricTooltip>
           </CardTitle>
           {summary.riskLevel !== "optimal" ? (
