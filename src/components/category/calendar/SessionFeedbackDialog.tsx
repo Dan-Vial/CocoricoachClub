@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ScrollArea } from "@/components/ui/scroll-area";
+
 import { Badge } from "@/components/ui/badge";
 import { Activity, ClipboardCheck, Plus, X } from "lucide-react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
@@ -477,12 +477,12 @@ export function SessionFeedbackDialog({
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="rpe" className="flex-1 flex flex-col min-h-0 mt-4 overflow-hidden">
+          <TabsContent value="rpe" className="flex-1 flex flex-col min-h-0 mt-4">
             <p className="text-sm text-muted-foreground mb-3">
               RPE: Rate of Perceived Exertion (0-10). La durée est pré-remplie depuis les horaires de la séance.
             </p>
 
-            <ScrollArea className="flex-1 min-h-0" style={{ maxHeight: "calc(90vh - 220px)" }}>
+            <div className="flex-1 min-h-0 overflow-y-auto pr-2" style={{ maxHeight: "calc(90vh - 240px)" }}>
               <div className="space-y-2">
                 {playersToShow.map((player) => {
                   const existing = existingRpe?.find((r) => r.player_id === player.id);
@@ -535,7 +535,7 @@ export function SessionFeedbackDialog({
                   );
                 })}
               </div>
-            </ScrollArea>
+            </div>
           </TabsContent>
 
           <TabsContent value="tests" className="flex-1 flex flex-col min-h-0 mt-4">
@@ -555,7 +555,7 @@ export function SessionFeedbackDialog({
               </Button>
             </div>
 
-            <ScrollArea className="flex-1 min-h-0" style={{ maxHeight: "calc(90vh - 220px)" }}>
+            <div className="flex-1 min-h-0 overflow-y-auto pr-2" style={{ maxHeight: "calc(90vh - 240px)" }}>
               {sessionTests.length === 0 ? (
                 <div className="border-2 border-dashed border-emerald-500/30 rounded-xl p-6 bg-emerald-500/5 text-center">
                   <ClipboardCheck className="h-8 w-8 text-emerald-600 mx-auto mb-2" />
@@ -667,7 +667,7 @@ export function SessionFeedbackDialog({
                   })}
                 </div>
               )}
-            </ScrollArea>
+            </div>
           </TabsContent>
         </Tabs>
 
