@@ -33,6 +33,7 @@ import { GpsObjectivesDashboard } from "./GpsObjectivesDashboard";
 interface Player {
   id: string;
   name: string;
+  first_name: string | null;
   position: string | null;
 }
 
@@ -72,6 +73,21 @@ const TEST_TYPES = [
   { value: "1600m_run", label: "Course 1600m", distance: 1600 },
 ];
 
+const SESSION_THEMES = [
+  { value: "vitesse", label: "Vitesse" },
+  { value: "contact", label: "Contact" },
+  { value: "match_simulation", label: "Match simulation" },
+  { value: "jeu_reduit", label: "Jeu réduit" },
+  { value: "recuperation", label: "Récupération" },
+  { value: "activation", label: "Activation" },
+  { value: "prepa_physique", label: "Prépa physique" },
+  { value: "tactique", label: "Tactique" },
+  { value: "technique", label: "Technique" },
+  { value: "match", label: "Match" },
+  { value: "tournoi", label: "Tournoi" },
+  { value: "autre", label: "Autre" },
+];
+
 export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuccess }: GpsImportDialogProps) {
   const [step, setStep] = useState<'upload' | 'columns' | 'preview' | 'importing'>('upload');
   const [csvData, setCsvData] = useState<string[][]>([]);
@@ -82,6 +98,7 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
   const [selectedSessionId, setSelectedSessionId] = useState<string>('');
   const [source, setSource] = useState<'catapult' | 'statsports' | 'manual'>('manual');
   const [isImporting, setIsImporting] = useState(false);
+  const [sessionTheme, setSessionTheme] = useState<string>('');
   
   // New state for session type selection
   const [sessionType, setSessionType] = useState<SessionType>('training');
@@ -134,6 +151,7 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
     setParsedRows([]);
     setSessionDate(format(new Date(), 'yyyy-MM-dd'));
     setSessionName('');
+    setSessionTheme('');
     setSelectedSessionId('');
     setSource('manual');
     setIsImporting(false);
@@ -192,20 +210,39 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
     reader.readAsText(file);
   }, []);
 
+  const getFullName = useCallback((player: Player): string => {
+    return player.first_name 
+      ? `${player.first_name} ${player.name}` 
+      : player.name;
+  }, []);
+
   const matchPlayerByName = useCallback((name: string): Player | null => {
     if (!name) return null;
     const searchName = name.toLowerCase().trim();
     
-    let match = validPlayers.find(p => p.name.toLowerCase() === searchName);
+    // Try exact match with full name (first_name + name)
+    let match = validPlayers.find(p => getFullName(p).toLowerCase() === searchName);
+    if (match) return match;
+
+    // Try exact match with name only
+    match = validPlayers.find(p => p.name.toLowerCase() === searchName);
+    if (match) return match;
+
+    // Try partial match with full name
+    match = validPlayers.find(p => {
+      const fullName = getFullName(p).toLowerCase();
+      return fullName.includes(searchName) || searchName.includes(fullName);
+    });
     if (match) return match;
     
+    // Try partial match with name only
     match = validPlayers.find(p =>
       p.name.toLowerCase().includes(searchName) ||
       searchName.includes(p.name.toLowerCase())
     );
     
     return match || null;
-  }, [validPlayers]);
+  }, [validPlayers, getFullName]);
 
   const toggleColumnVisibility = (index: number) => {
     setColumns(prev => prev.map(col => 
@@ -219,12 +256,17 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
 
   const setColumnMapping = (index: number, mappedTo: MetricKey | null) => {
     setColumns(prev => {
-      // First, clear any existing mapping to this metric
-      const cleared = prev.map(col => 
-        col.mappedTo === mappedTo ? { ...col, mappedTo: null } : col
-      );
-      // Then set the new mapping
-      return cleared.map(col => 
+      // For player_name, keep exclusive mapping (only one player name column)
+      if (mappedTo === 'player_name') {
+        const cleared = prev.map(col => 
+          col.mappedTo === 'player_name' ? { ...col, mappedTo: null } : col
+        );
+        return cleared.map(col => 
+          col.index === index ? { ...col, mappedTo } : col
+        );
+      }
+      // For other metrics, allow multiple columns to map to the same metric
+      return prev.map(col => 
         col.index === index ? { ...col, mappedTo } : col
       );
     });
@@ -263,9 +305,26 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
   }, [playerNameColumnIndex, csvData, columns, matchPlayerByName]);
 
   const getColumnValue = useCallback((rawData: Record<string, string | number>, metricKey: MetricKey): string | number | null => {
-    const col = columns.find(c => c.mappedTo === metricKey);
-    if (!col) return null;
-    return rawData[col.header] ?? null;
+    // Find all columns mapped to this metric
+    const mappedCols = columns.filter(c => c.mappedTo === metricKey);
+    if (mappedCols.length === 0) return null;
+    
+    // If only one column, return its value directly
+    if (mappedCols.length === 1) {
+      return rawData[mappedCols[0].header] ?? null;
+    }
+    
+    // If multiple columns, sum the numeric values
+    let sum = 0;
+    let hasValue = false;
+    for (const col of mappedCols) {
+      const val = parseNumberLoose(rawData[col.header]);
+      if (val !== null) {
+        sum += val;
+        hasValue = true;
+      }
+    }
+    return hasValue ? sum : null;
   }, [columns]);
 
   const handleImport = async () => {
@@ -294,13 +353,16 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
           return toMetersPerSecond(row.rawData[col.header], col.header);
         })();
         
+        const themeLabel = sessionTheme ? SESSION_THEMES.find(t => t.value === sessionTheme)?.label : null;
+        const fullSessionName = sessionType === 'test' 
+          ? `Test ${selectedTest?.label || selectedTestType}` 
+          : [sessionName, themeLabel].filter(Boolean).join(' — ') || null;
+        
         return {
           category_id: categoryId,
           player_id: row.matchedPlayerId!,
           session_date: sessionDate,
-          session_name: sessionType === 'test' 
-            ? `Test ${selectedTest?.label || selectedTestType}` 
-            : (sessionName || null),
+          session_name: fullSessionName,
           training_session_id: sessionType === 'training' ? (selectedSessionId || null) : null,
           source,
           total_distance_m: parseNumberLoose(getColumnValue(row.rawData, 'total_distance_m')),
@@ -551,7 +613,7 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
               </div>
 
               {/* Session settings */}
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div>
                   <Label>Date de la session *</Label>
                   <Input
@@ -561,14 +623,32 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
                   />
                 </div>
                 {sessionType === 'training' ? (
-                  <div>
-                    <Label>Nom de la session</Label>
-                    <Input
-                      placeholder="Ex: Entraînement du mardi"
-                      value={sessionName}
-                      onChange={(e) => setSessionName(e.target.value)}
-                    />
-                  </div>
+                  <>
+                    <div>
+                      <Label>Nom de la session</Label>
+                      <Input
+                        placeholder="Ex: Entraînement du mardi"
+                        value={sessionName}
+                        onChange={(e) => setSessionName(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <Label>Thème de la séance</Label>
+                      <Select value={sessionTheme || "__none__"} onValueChange={(v) => setSessionTheme(v === "__none__" ? "" : v)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Choisir un thème..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__none__">Aucun thème</SelectItem>
+                          {SESSION_THEMES.map((theme) => (
+                            <SelectItem key={theme.value} value={theme.value}>
+                              {theme.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </>
                 ) : (
                   <div>
                     <Label>Type de test *</Label>
@@ -848,7 +928,7 @@ export function GpsImportDialog({ open, onOpenChange, categoryId, players, onSuc
                               <SelectItem value="__none__">Non associé</SelectItem>
                               {validPlayers.map((p) => (
                                 <SelectItem key={p.id} value={p.id}>
-                                  {p.name}
+                                  {getFullName(p)}
                                 </SelectItem>
                               ))}
                             </SelectContent>

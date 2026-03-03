@@ -33,6 +33,7 @@ export function GpsDataTab({ categoryId }: GpsDataTabProps) {
           players (
             id,
             name,
+            first_name,
             position
           )
         `)
@@ -49,7 +50,7 @@ export function GpsDataTab({ categoryId }: GpsDataTabProps) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('players')
-        .select('id, name, position')
+        .select('id, name, first_name, position')
         .eq('category_id', categoryId)
         .order('name');
 

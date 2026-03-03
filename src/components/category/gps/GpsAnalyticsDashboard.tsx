@@ -23,9 +23,15 @@ interface GpsSession {
   players: {
     id: string;
     name: string;
+    first_name: string | null;
     position: string | null;
   } | null;
 }
+
+const getFullName = (player: GpsSession['players']) => {
+  if (!player) return '';
+  return player.first_name ? `${player.first_name} ${player.name}` : player.name;
+};
 
 interface GpsAnalyticsDashboardProps {
   sessions: GpsSession[];
@@ -62,7 +68,7 @@ export function GpsAnalyticsDashboard({ sessions, categoryId }: GpsAnalyticsDash
       if (s.players) {
         playerMap.set(s.players.id, {
           id: s.players.id,
-          name: s.players.name
+          name: getFullName(s.players)
         });
       }
     });
@@ -107,8 +113,11 @@ export function GpsAnalyticsDashboard({ sessions, categoryId }: GpsAnalyticsDash
     filteredSessions.forEach(s => {
       if (!s.players) return;
       const key = s.players.id;
+      const fullName = getFullName(s.players);
       const existing = byPlayer.get(key) || { 
-        name: s.players.name.split(' ').map((n, i) => i === 0 ? n : n.charAt(0) + '.').join(' '),
+        name: fullName.split(' ').length > 2 
+          ? fullName.split(' ').map((n, i) => i === 0 ? n : n.charAt(0) + '.').join(' ')
+          : fullName,
         distance: 0, 
         load: 0, 
         speed: 0,
@@ -187,7 +196,7 @@ export function GpsAnalyticsDashboard({ sessions, categoryId }: GpsAnalyticsDash
 
     byPlayer.forEach((sessions, playerId) => {
       const player = sessions[0].players!;
-      const name = player.name;
+      const name = getFullName(player);
       
       const avgDistance = sessions.reduce((acc, s) => acc + (Number(s.total_distance_m) || 0), 0) / sessions.length;
       const maxSpeed = Math.max(...sessions.map(s => Number(s.max_speed_ms) || 0));
