@@ -45,13 +45,16 @@ export function AwcrTab({ categoryId }: AwcrTabProps) {
   const { isOnline } = useOnlineStatus();
   const { isViewer } = useViewerModeContext();
 
-  // Realtime sync for AWCR data
+  // Realtime sync for AWCR/EWMA data
   useRealtimeSync({
     tables: ["awcr_tracking", "training_sessions"],
     categoryId,
     queryKeys: [
       ["awcr_tracking", categoryId],
       ["awcr-data", categoryId],
+      ["awcr-risk", categoryId],
+      ["ewma_summary", categoryId],
+      ["training-load-awcr", categoryId],
       ["training_sessions", categoryId],
     ],
     channelName: `awcr-sync-${categoryId}`,

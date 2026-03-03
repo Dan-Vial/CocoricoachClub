@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useRealtimeSync } from "@/hooks/useRealtimeSync";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -37,6 +38,18 @@ interface CoachDashboardProps {
 }
 
 export function CoachDashboard({ categoryId }: CoachDashboardProps) {
+  // Realtime sync for EWMA, wellness, and AWCR
+  useRealtimeSync({
+    tables: ["awcr_tracking", "wellness_tracking"],
+    categoryId,
+    queryKeys: [
+      ["ewma_summary", categoryId],
+      ["awcr-risk", categoryId],
+      ["wellness_tracking", categoryId],
+    ],
+    channelName: `coach-dashboard-sync-${categoryId}`,
+  });
+
   // Fetch players
   const { data: players } = useQuery({
     queryKey: ["players", categoryId],

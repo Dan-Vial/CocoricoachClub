@@ -253,6 +253,9 @@ import { isIndividualSport } from "@/lib/constants/sportTypes";
           () => {
             queryClient.invalidateQueries({ queryKey: ["awcr_decision", categoryId] });
             queryClient.invalidateQueries({ queryKey: ["priority_alerts_decision", categoryId] });
+            queryClient.invalidateQueries({ queryKey: ["ewma_summary", categoryId] });
+            queryClient.invalidateQueries({ queryKey: ["awcr-risk", categoryId] });
+            queryClient.invalidateQueries({ queryKey: ["training-load-awcr", categoryId] });
           }
         )
         .subscribe();
