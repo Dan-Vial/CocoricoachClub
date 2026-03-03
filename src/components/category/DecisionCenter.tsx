@@ -331,15 +331,15 @@ import { isIndividualSport } from "@/lib/constants/sportTypes";
          });
        }
  
-       // Mental fatigue (wellness < 2.5)
+       // Mental fatigue (wellness > 3.5 = bad state, scale: 1=excellent, 5=very bad)
        const playerWellness = wellnessData.find(w => w.player_id === player.id);
        if (playerWellness) {
          const score = calculateWeightedWellnessScore(playerWellness as WellnessEntry);
-         if (score < 2.5) {
+         if (score > 3.5) {
            alerts.push({
              id: `fatigue-${player.id}`,
              type: "fatigue",
-             severity: score < 2 ? "critical" : "high",
+             severity: score > 4.2 ? "critical" : "high",
              playerId: player.id,
              playerName: player.name,
              message: `Fatigue détectée (${score.toFixed(1)}/5)`,
@@ -403,7 +403,7 @@ import { isIndividualSport } from "@/lib/constants/sportTypes";
          });
        } else if (playerWellness) {
          const score = calculateWeightedWellnessScore(playerWellness as WellnessEntry);
-         if (score < 3) {
+         if (score > 3) {
            toAdapt.push({
              id: player.id,
              name: player.name,
