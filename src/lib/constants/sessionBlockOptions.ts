@@ -42,7 +42,7 @@ export const CONTACT_CHARGE_OPTIONS = [
 ] as const;
 
 export function getSessionTypeLabel(value: string): string {
-  return SESSION_TYPES.find(t => t.value === value)?.label || value;
+  return SESSION_TYPES.find(t => t.value === value)?.label || value.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
 }
 
 export function getObjectiveLabel(value: string): string {
