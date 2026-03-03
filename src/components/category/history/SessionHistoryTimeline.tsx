@@ -11,11 +11,15 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { 
   Calendar, Clock, Dumbbell, Activity, Brain, Heart, 
   ChevronDown, ChevronRight, Filter, Search,
-  MapPin, TestTube, Zap, TrendingUp, Moon, AlertTriangle
+  MapPin, TestTube, Zap, TrendingUp, Moon, AlertTriangle, Target
 } from "lucide-react";
 import { format, subDays, startOfMonth, endOfMonth } from "date-fns";
 import { fr } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { 
+  calculateBlocksSummary, getSessionTypeLabel, getObjectiveLabel, 
+  getIntensityLabel, getVolumeLabel, getContactChargeLabel 
+} from "@/lib/constants/sessionBlockOptions";
 
 interface SessionHistoryTimelineProps {
   categoryId: string;
@@ -35,6 +39,7 @@ interface TimelineEvent {
   awcr?: any;
   attendance?: any;
   gymExercises?: any[];
+  blocks?: any[];
 }
 
 export function SessionHistoryTimeline({ categoryId, playerId }: SessionHistoryTimelineProps) {
@@ -112,6 +117,23 @@ export function SessionHistoryTimeline({ categoryId, playerId }: SessionHistoryT
       if (error) throw error;
       return data;
     },
+  });
+
+  // Fetch session blocks
+  const { data: sessionBlocks } = useQuery({
+    queryKey: ["session-history-blocks", categoryId, startDate],
+    queryFn: async () => {
+      if (!sessions || sessions.length === 0) return [];
+      const sessionIds = sessions.map(s => s.id);
+      const { data, error } = await supabase
+        .from("training_session_blocks")
+        .select("*")
+        .in("training_session_id", sessionIds)
+        .order("block_order");
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!sessions && sessions.length > 0,
   });
 
   // Fetch gym exercises
@@ -212,6 +234,7 @@ export function SessionHistoryTimeline({ categoryId, playerId }: SessionHistoryT
       const sessionWellness = wellness?.filter((w) => w.tracking_date === session.session_date);
       const sessionAwcr = awcrData?.filter((a) => a.session_date === session.session_date);
       const sessionGym = gymExercises?.filter((g) => g.training_session_id === session.id);
+      const sessionBlocksData = sessionBlocks?.filter((b) => b.training_session_id === session.id) || [];
 
       let type: "training" | "gym" | "reathletisation" = "training";
       let icon = <MapPin className="h-4 w-4" />;
@@ -250,6 +273,7 @@ export function SessionHistoryTimeline({ categoryId, playerId }: SessionHistoryT
         awcr: sessionAwcr,
         attendance: sessionAttendance,
         gymExercises: sessionGym,
+        blocks: sessionBlocksData,
       });
     });
 
@@ -518,6 +542,51 @@ export function SessionHistoryTimeline({ categoryId, playerId }: SessionHistoryT
                           {/* Expanded content */}
                           <CollapsibleContent>
                             <div className="ml-4 mt-2 p-4 rounded-lg bg-muted/30 border space-y-4">
+                              {/* Block summary */}
+                              {event.blocks && event.blocks.length > 0 && (() => {
+                                const summary = calculateBlocksSummary(event.blocks);
+                                return (
+                                  <div>
+                                    <h4 className="text-sm font-medium flex items-center gap-2 mb-2">
+                                      <Target className="h-4 w-4" />
+                                      Paramètres de séance
+                                    </h4>
+                                    <div className="flex flex-wrap gap-2">
+                                      {summary.mainSessionType && (
+                                        <Badge variant="secondary">
+                                          Type: {getSessionTypeLabel(summary.mainSessionType)}
+                                        </Badge>
+                                      )}
+                                      {summary.secondarySessionTypes.length > 0 && (
+                                        <Badge variant="outline" className="text-xs">
+                                          ({summary.secondarySessionTypes.map(t => getSessionTypeLabel(t)).join(", ")})
+                                        </Badge>
+                                      )}
+                                      {summary.avgIntensity && (
+                                        <Badge variant="outline">
+                                          Intensité: {getIntensityLabel(summary.avgIntensity)}
+                                        </Badge>
+                                      )}
+                                      {summary.avgVolume && (
+                                        <Badge variant="outline">
+                                          Volume: {getVolumeLabel(summary.avgVolume)}
+                                        </Badge>
+                                      )}
+                                      {summary.avgContactCharge && (
+                                        <Badge variant="outline">
+                                          Contact: {getContactChargeLabel(summary.avgContactCharge)}
+                                        </Badge>
+                                      )}
+                                      {summary.dominantObjectives.length > 0 && (
+                                        <Badge variant="outline">
+                                          Objectifs: {summary.dominantObjectives.map(o => getObjectiveLabel(o)).join(", ")}
+                                        </Badge>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })()}
+
                               {/* Session details */}
                               {event.data.notes && (
                                 <p className="text-sm text-muted-foreground">{event.data.notes}</p>

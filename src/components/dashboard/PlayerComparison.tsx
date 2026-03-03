@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getIntensityLabel, getContactChargeLabel, getIntensityNumeric, getContactChargeNumeric, TARGET_INTENSITIES, CONTACT_CHARGE_OPTIONS } from "@/lib/constants/sessionBlockOptions";
 import {
   Table,
   TableBody,
@@ -148,16 +149,20 @@ const getSportMetrics = (sportType: string) => {
   
   // Default (Rugby and others)
   return {
-    metrics: ["ewmaRatio", "load", "sprint40m", "vma"],
+    metrics: ["ewmaRatio", "load", "avgIntensity", "avgContactCharge", "sprint40m", "vma"],
     labels: {
       ewmaRatio: "Ratio EWMA",
       load: "Charge Moy.",
+      avgIntensity: "Intensité Moy.",
+      avgContactCharge: "Contact Moy.",
       sprint40m: "Meilleur 40m",
       vma: "VMA Moy.",
     },
     units: {
       ewmaRatio: "",
       load: "",
+      avgIntensity: "",
+      avgContactCharge: "",
       sprint40m: "s",
       vma: " km/h",
     },
@@ -202,7 +207,7 @@ export function PlayerComparison({ categoryIds }: PlayerComparisonProps) {
       // Fetch AWCR data (universal)
       const { data: awcrData } = await supabase
         .from("awcr_tracking")
-        .select("player_id, awcr, training_load, session_date, acute_load, chronic_load")
+        .select("player_id, awcr, training_load, session_date, acute_load, chronic_load, training_session_id")
         .in("player_id", playerIds)
         .not("awcr", "is", null)
         .order("session_date", { ascending: false })
@@ -231,6 +236,24 @@ export function PlayerComparison({ categoryIds }: PlayerComparisonProps) {
         .in("player_id", playerIds)
         .order("test_date", { ascending: false })
         .limit(200);
+
+      // Fetch training session blocks for intensity/contact metrics
+      const { data: blocksData } = await supabase
+        .from("training_session_blocks")
+        .select("training_session_id, session_type, objective, target_intensity, volume, contact_charge")
+        .in("training_session_id", 
+          (awcrData || []).map(a => a.training_session_id).filter(Boolean) as string[]
+        );
+
+      // Map blocks by player via awcr_tracking's training_session_id
+      const blocksByPlayer = new Map<string, any[]>();
+      playerIds.forEach(pid => {
+        const playerSessionIds = (awcrData || [])
+          .filter(a => a.player_id === pid && a.training_session_id)
+          .map(a => a.training_session_id);
+        const playerBlocks = (blocksData || []).filter(b => playerSessionIds.includes(b.training_session_id));
+        blocksByPlayer.set(pid, playerBlocks);
+      });
 
       return players.map((player) => {
         const playerAwcr = awcrData?.filter((a) => a.player_id === player.id) || [];
@@ -319,10 +342,22 @@ export function PlayerComparison({ categoryIds }: PlayerComparisonProps) {
           ? Math.max(...playerGeneric.filter(g => g.test_type?.toLowerCase().includes("puissance") || g.test_type?.toLowerCase().includes("power")).map(g => Number(g.result_value)))
           : null;
 
+        // Block-based metrics (intensity, contact charge)
+        const pBlocks = blocksByPlayer.get(player.id) || [];
+        const intensityValues = pBlocks.filter(b => b.target_intensity).map(b => getIntensityNumeric(b.target_intensity));
+        const avgIntensityNum = intensityValues.length > 0 ? Math.round(intensityValues.reduce((a, b) => a + b, 0) / intensityValues.length) : null;
+        const avgIntensityLabel = avgIntensityNum !== null ? (TARGET_INTENSITIES.find(i => i.numericValue === avgIntensityNum)?.label || null) : null;
+
+        const contactValues = pBlocks.filter(b => b.contact_charge).map(b => getContactChargeNumeric(b.contact_charge));
+        const avgContactNum = contactValues.length > 0 ? Math.round(contactValues.reduce((a, b) => a + b, 0) / contactValues.length) : null;
+        const avgContactLabel = avgContactNum !== null ? (CONTACT_CHARGE_OPTIONS.find(c => c.numericValue === avgContactNum)?.label || null) : null;
+
         return {
           name: player.name,
           ewmaRatio,
           load: avgLoad ? Math.round(avgLoad) : null,
+          avgIntensity: avgIntensityLabel,
+          avgContactCharge: avgContactLabel,
           sprint40m: sprint40 ? Number(sprint40.toFixed(2)) : null,
           sprint30: sprint30 ? Number(sprint30.toFixed(2)) : null,
           sprint20: sprint20 ? Number(sprint20.toFixed(2)) : null,
