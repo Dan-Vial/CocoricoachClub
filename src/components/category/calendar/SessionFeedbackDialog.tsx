@@ -124,13 +124,13 @@ export function SessionFeedbackDialog({
     enabled: open && !!sessionId,
   });
 
-  // Fetch attendance
+  // Fetch attendance - only players marked as present or late
   const { data: attendance } = useQuery({
     queryKey: ["session-attendance", sessionId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("training_attendance")
-        .select("player_id")
+        .select("player_id, status")
         .eq("training_session_id", sessionId);
       if (error) throw error;
       return data;
@@ -420,15 +420,18 @@ export function SessionFeedbackDialog({
     }));
   };
 
-  const attendedPlayerIds = new Set(attendance?.map((a) => a.player_id) || []);
+  const presentPlayerIds = new Set(
+    attendance?.filter((a) => a.status === "present" || a.status === "late").map((a) => a.player_id) || []
+  );
+  const attendedPlayerIds = presentPlayerIds;
   const playersWithRpe = new Set(existingRpe?.map((r) => r.player_id) || []);
   
-  // Filter to only show players who attended (or all if no attendance recorded)
+  // Filter to only show players who attended (present/late), or all if no attendance recorded
   const playersToShow = useMemo(() => {
     if (!players) return [];
     if (!attendance || attendance.length === 0) return players;
-    return players.filter((p) => attendedPlayerIds.has(p.id));
-  }, [players, attendance, attendedPlayerIds]);
+    return players.filter((p) => presentPlayerIds.has(p.id));
+  }, [players, attendance, presentPlayerIds]);
 
   const hasNewRpeValues = Object.entries(rpeValues).some(
     ([id, val]) => val.rpe && val.duration && !playersWithRpe.has(id)
