@@ -34,15 +34,19 @@ serve(async (req: Request) => {
       { data: ownedClubs },
       { data: categoryMemberships },
       { data: superAdminData },
+      { data: playerData },
     ] = await Promise.all([
       supabase.from("profiles").select("email, full_name").eq("id", user_id).single(),
       supabase.from("club_members").select("club_id, role").eq("user_id", user_id),
       supabase.from("clubs").select("id, name").eq("user_id", user_id),
       supabase.from("category_members").select("category_id, role, categories(id, club_id)").eq("user_id", user_id),
       supabase.from("super_admin_users").select("id").eq("user_id", user_id).limit(1),
+      // Fetch phone number from players table (linked via user_id)
+      supabase.from("players").select("phone").eq("user_id", user_id).limit(1),
     ]);
 
     const userEmail = profile?.email || "";
+    const userPhone = playerData?.[0]?.phone || "";
 
     // ── 2. Build tags — FREE PLAN: max 2 tags ────────────────────────────────
     // Tag 1: role (hiérarchie)
@@ -53,7 +57,11 @@ serve(async (req: Request) => {
     if (superAdminData && superAdminData.length > 0) roles.add("super_admin");
 
     let role = "viewer";
-    const roleHierarchy = ["super_admin", "admin", "coach", "physio", "doctor", "athlete", "viewer"];
+    // Include ALL app roles in hierarchy
+    const roleHierarchy = [
+      "super_admin", "admin", "coach", "prepa_physique",
+      "physio", "doctor", "administratif", "athlete", "viewer",
+    ];
     for (const r of roleHierarchy) {
       if (roles.has(r)) { role = r; break; }
     }
@@ -71,6 +79,8 @@ serve(async (req: Request) => {
       role,
       club_ids: Array.from(allClubIds).join(","),
     };
+
+    console.log(`[sync-onesignal-tags] User ${user_id} — role: ${role}, clubs: ${tags.club_ids}, email: ${userEmail ? "yes" : "no"}, phone: ${userPhone ? "yes" : "no"}`);
 
     const baseHeaders = {
       "Content-Type": "application/json",
@@ -102,10 +112,19 @@ serve(async (req: Request) => {
     if (notFound) {
       console.log(`[sync-onesignal-tags] User ${user_id} not found — creating via POST`);
 
-      // Build subscriptions array if email is available
+      // Build subscriptions array for email and phone
       const subscriptions: any[] = [];
       if (userEmail) {
         subscriptions.push({ type: "Email", token: userEmail });
+      }
+      if (userPhone) {
+        let formattedPhone = userPhone.replace(/\s/g, "");
+        if (!formattedPhone.startsWith("+")) {
+          formattedPhone = formattedPhone.startsWith("0")
+            ? "+33" + formattedPhone.substring(1)
+            : "+" + formattedPhone;
+        }
+        subscriptions.push({ type: "SMS", token: formattedPhone });
       }
 
       const createBody: any = {
@@ -131,23 +150,33 @@ serve(async (req: Request) => {
       );
     }
 
-    // ── 4. Also sync email subscription if not already linked ─────────────────
-    if (userEmail) {
+    // ── 4. Sync email + phone subscriptions for existing users ──────────────
+    const syncSubscriptions: any[] = [];
+    if (userEmail) syncSubscriptions.push({ type: "Email", token: userEmail });
+    if (userPhone) {
+      let formattedPhone = userPhone.replace(/\s/g, "");
+      if (!formattedPhone.startsWith("+")) {
+        formattedPhone = formattedPhone.startsWith("0")
+          ? "+33" + formattedPhone.substring(1)
+          : "+" + formattedPhone;
+      }
+      syncSubscriptions.push({ type: "SMS", token: formattedPhone });
+    }
+
+    if (syncSubscriptions.length > 0) {
       try {
-        const emailSyncResponse = await fetch(
+        const syncResponse = await fetch(
           `https://api.onesignal.com/apps/${ONESIGNAL_APP_ID}/users/by/external_id/${user_id}`,
           {
             method: "PATCH",
             headers: baseHeaders,
-            body: JSON.stringify({
-              subscriptions: [{ type: "Email", token: userEmail }],
-            }),
+            body: JSON.stringify({ subscriptions: syncSubscriptions }),
           }
         );
-        const emailSyncResult = await emailSyncResponse.text();
-        console.log(`[sync-onesignal-tags] Email sync (${emailSyncResponse.status}):`, emailSyncResult);
-      } catch (emailErr) {
-        console.warn("[sync-onesignal-tags] Email sync warning:", emailErr);
+        const syncResult = await syncResponse.text();
+        console.log(`[sync-onesignal-tags] Subscription sync (${syncResponse.status}):`, syncResult);
+      } catch (syncErr) {
+        console.warn("[sync-onesignal-tags] Subscription sync warning:", syncErr);
       }
     }
 

@@ -250,7 +250,7 @@ export async function buildUserTags(userId: string): Promise<Record<string, stri
     categoryMemberships?.forEach((m) => roles.add(m.role));
     if (ownedClubs && ownedClubs.length > 0) roles.add("admin");
 
-    const roleHierarchy = ["admin", "coach", "physio", "doctor", "viewer", "athlete"];
+    const roleHierarchy = ["admin", "coach", "prepa_physique", "physio", "doctor", "administratif", "viewer", "athlete"];
     for (const r of roleHierarchy) {
       if (roles.has(r)) { tags.role = r; break; }
     }
