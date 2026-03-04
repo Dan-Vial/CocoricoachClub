@@ -3,7 +3,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 serve(async (req) => {
@@ -17,17 +18,21 @@ serve(async (req) => {
     const oneSignalAppId = Deno.env.get("ONESIGNAL_APP_ID");
     const oneSignalApiKey = Deno.env.get("ONESIGNAL_REST_API_KEY");
 
+    if (!oneSignalAppId || !oneSignalApiKey) {
+      throw new Error("OneSignal credentials not configured");
+    }
+
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    const baseHeaders = {
+      "Content-Type": "application/json",
+      Authorization: `Key ${oneSignalApiKey}`,
+    };
 
     // Get all active categories with their players
     const { data: categories, error: catError } = await supabase
       .from("categories")
-      .select(`
-        id,
-        name,
-        club_id,
-        clubs!inner(name)
-      `);
+      .select(`id, name, club_id, clubs!inner(name)`);
 
     if (catError) throw catError;
 
@@ -38,14 +43,15 @@ serve(async (req) => {
       );
     }
 
-    let totalNotifications = 0;
+    let totalEmailsSent = 0;
+    let totalPushSent = 0;
     const results: any[] = [];
 
     for (const category of categories) {
-      // Get all players with email or phone in this category
+      // Get players with email OR with a user account (for push)
       const { data: players, error: playersError } = await supabase
         .from("players")
-        .select("id, name, email, phone")
+        .select("id, name, email, phone, user_id")
         .eq("category_id", category.id);
 
       if (playersError) {
@@ -55,63 +61,99 @@ serve(async (req) => {
 
       if (!players || players.length === 0) continue;
 
-      const athletesWithContact = players.filter(p => p.email || p.phone);
-      if (athletesWithContact.length === 0) continue;
+      // ── EMAIL via OneSignal ────────────────────────────────────────────────
+      const emailRecipients = players.filter((p) => p.email).map((p) => p.email!);
 
-      // Send notification via OneSignal
-      if (oneSignalAppId && oneSignalApiKey) {
-        const emailRecipients = athletesWithContact
-          .filter(a => a.email)
-          .map(a => a.email);
+      if (emailRecipients.length > 0) {
+        try {
+          const response = await fetch("https://api.onesignal.com/notifications", {
+            method: "POST",
+            headers: baseHeaders,
+            body: JSON.stringify({
+              app_id: oneSignalAppId,
+              include_email_tokens: emailRecipients,
+              email_subject: "🌅 Wellness du jour - Comment te sens-tu ?",
+              email_body: `
+                <html>
+                  <body style="font-family: Arial, sans-serif; padding: 20px;">
+                    <h2>Bonjour !</h2>
+                    <p>N'oublie pas de renseigner ton Wellness du jour pour aider ton staff à suivre ta récupération.</p>
+                    <p><strong>Catégorie:</strong> ${category.name}</p>
+                    <p>Évalue ton niveau de fatigue, qualité de sommeil, stress et douleurs musculaires.</p>
+                    <br>
+                    <p>À bientôt sur le terrain ! 💪</p>
+                  </body>
+                </html>
+              `,
+            }),
+          });
 
-        if (emailRecipients.length > 0) {
-          try {
-            const response = await fetch("https://onesignal.com/api/v1/notifications", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Basic ${oneSignalApiKey}`,
-              },
-              body: JSON.stringify({
-                app_id: oneSignalAppId,
-                include_email_tokens: emailRecipients,
-                email_subject: "🌅 Wellness du jour - Comment te sens-tu ?",
-                email_body: `
-                  <html>
-                    <body style="font-family: Arial, sans-serif; padding: 20px;">
-                      <h2>Bonjour !</h2>
-                      <p>N'oublie pas de renseigner ton Wellness du jour pour aider ton staff à suivre ta récupération.</p>
-                      <p><strong>Catégorie:</strong> ${category.name}</p>
-                      <p>Évalue ton niveau de fatigue, qualité de sommeil, stress et douleurs musculaires.</p>
-                      <br>
-                      <p>À bientôt sur le terrain ! 💪</p>
-                    </body>
-                  </html>
-                `,
-              }),
-            });
-
-            if (response.ok) {
-              totalNotifications += emailRecipients.length;
-              results.push({
-                category: category.name,
-                sent: emailRecipients.length,
-                type: "wellness_reminder",
-              });
-            }
-          } catch (error) {
-            console.error("OneSignal error:", error);
+          if (response.ok) {
+            totalEmailsSent += emailRecipients.length;
+          } else {
+            const err = await response.json();
+            console.error(`[wellness] Email error for ${category.name}:`, err);
           }
+        } catch (error) {
+          console.error("[wellness] Email send error:", error);
         }
       }
+
+      // ── PUSH via OneSignal (external_id targeting) ─────────────────────────
+      const pushUserIds = players
+        .filter((p) => p.user_id)
+        .map((p) => p.user_id!);
+
+      if (pushUserIds.length > 0) {
+        try {
+          const response = await fetch("https://api.onesignal.com/notifications", {
+            method: "POST",
+            headers: baseHeaders,
+            body: JSON.stringify({
+              app_id: oneSignalAppId,
+              include_aliases: { external_id: pushUserIds },
+              target_channel: "push",
+              headings: { fr: "Comment tu te sens ce matin ? 🌅", en: "Comment tu te sens ce matin ? 🌅" },
+              contents: {
+                fr: `Prends 30 secondes pour remplir ton Wellness du jour (${category.name}).`,
+                en: `Prends 30 secondes pour remplir ton Wellness du jour (${category.name}).`,
+              },
+              ttl: 3600,
+              data: {
+                type: "wellness_reminder",
+                category_id: category.id,
+              },
+            }),
+          });
+
+          const json = await response.json();
+          if (response.ok) {
+            totalPushSent += json.recipients ?? pushUserIds.length;
+            console.log(`[wellness] Push sent to ${json.recipients ?? pushUserIds.length} device(s) for ${category.name}`);
+          } else {
+            console.error(`[wellness] Push error for ${category.name}:`, json);
+          }
+        } catch (error) {
+          console.error("[wellness] Push send error:", error);
+        }
+      }
+
+      results.push({
+        category: category.name,
+        emailsSent: emailRecipients.length,
+        pushTargeted: pushUserIds.length,
+        type: "wellness_reminder",
+      });
     }
 
-    console.log(`Wellness reminders sent: ${totalNotifications}`);
+    console.log(`[wellness] Total: ${totalEmailsSent} emails, ${totalPushSent} push sent`);
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: `${totalNotifications} wellness reminder(s) sent`,
+        message: `${totalEmailsSent} email(s) + ${totalPushSent} push sent`,
+        emailsSent: totalEmailsSent,
+        pushSent: totalPushSent,
         results,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }

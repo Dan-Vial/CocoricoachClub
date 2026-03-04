@@ -3,7 +3,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 serve(async (req) => {
@@ -17,7 +18,16 @@ serve(async (req) => {
     const oneSignalAppId = Deno.env.get("ONESIGNAL_APP_ID");
     const oneSignalApiKey = Deno.env.get("ONESIGNAL_REST_API_KEY");
 
+    if (!oneSignalAppId || !oneSignalApiKey) {
+      throw new Error("OneSignal credentials not configured");
+    }
+
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    const baseHeaders = {
+      "Content-Type": "application/json",
+      Authorization: `Key ${oneSignalApiKey}`,
+    };
 
     // Get current time and check for sessions that ended in the last 30 minutes
     const now = new Date();
@@ -26,7 +36,7 @@ serve(async (req) => {
     const currentTime = now.toTimeString().split(" ")[0].substring(0, 5);
     const thirtyMinAgoTime = thirtyMinutesAgo.toTimeString().split(" ")[0].substring(0, 5);
 
-    console.log(`Checking for sessions ending between ${thirtyMinAgoTime} and ${currentTime} on ${today}`);
+    console.log(`[rpe] Checking sessions ending between ${thirtyMinAgoTime} and ${currentTime} on ${today}`);
 
     // Get sessions that ended in the last 30 minutes
     const { data: sessions, error: sessionsError } = await supabase
@@ -58,24 +68,11 @@ serve(async (req) => {
       );
     }
 
-    let totalNotifications = 0;
+    let totalEmailsSent = 0;
+    let totalPushSent = 0;
     const results: any[] = [];
 
     for (const session of sessions) {
-      // Check if we already sent notifications for this session
-      // by checking if there's already RPE data for most players
-      const { data: existingRpe, error: rpeError } = await supabase
-        .from("awcr_tracking")
-        .select("id")
-        .eq("training_session_id", session.id)
-        .limit(1);
-
-      // If RPE already exists, skip (we assume notification was sent)
-      if (existingRpe && existingRpe.length > 0) {
-        console.log(`Session ${session.id} already has RPE data, skipping`);
-        continue;
-      }
-
       // Get players who participated (from attendance or all players if no attendance)
       const { data: attendance } = await supabase
         .from("training_attendance")
@@ -84,95 +81,156 @@ serve(async (req) => {
         .eq("status", "present");
 
       let playerIds: string[] = [];
-      
+
       if (attendance && attendance.length > 0) {
-        playerIds = attendance.map(a => a.player_id);
+        playerIds = attendance.map((a) => a.player_id);
       } else {
         // Fallback: get all players from category
         const { data: allPlayers } = await supabase
           .from("players")
           .select("id")
           .eq("category_id", session.category_id);
-        
+
         if (allPlayers) {
-          playerIds = allPlayers.map(p => p.id);
+          playerIds = allPlayers.map((p) => p.id);
         }
       }
 
       if (playerIds.length === 0) continue;
 
-      // Get player contact info
+      // Check which players already submitted RPE for this session
+      const { data: existingRpe } = await supabase
+        .from("awcr_tracking")
+        .select("player_id")
+        .eq("training_session_id", session.id)
+        .in("player_id", playerIds);
+
+      const submittedPlayerIds = new Set(existingRpe?.map((r) => r.player_id) || []);
+      const pendingPlayerIds = playerIds.filter((pid) => !submittedPlayerIds.has(pid));
+
+      if (pendingPlayerIds.length === 0) {
+        console.log(`[rpe] Session ${session.id}: all ${playerIds.length} players already submitted RPE, skipping`);
+        continue;
+      }
+
+      console.log(
+        `[rpe] Session ${session.id}: ${pendingPlayerIds.length}/${playerIds.length} players pending RPE`
+      );
+
+      // Get player contact info for pending players
       const { data: players, error: playersError } = await supabase
         .from("players")
-        .select("id, name, email, phone")
-        .in("id", playerIds);
+        .select("id, name, email, phone, user_id")
+        .in("id", pendingPlayerIds);
 
       if (playersError || !players) continue;
 
-      const athletesWithContact = players.filter(p => p.email || p.phone);
-      if (athletesWithContact.length === 0) continue;
+      const category = session.categories as any;
+      const trainingTypeLabel = getTrainingTypeLabel(session.training_type);
 
-      // Send notification via OneSignal
-      if (oneSignalAppId && oneSignalApiKey) {
-        const emailRecipients = athletesWithContact
-          .filter(a => a.email)
-          .map(a => a.email);
+      // ── EMAIL via OneSignal ──────────────────────────────────────────────
+      const emailRecipients = players.filter((p) => p.email).map((p) => p.email!);
 
-        if (emailRecipients.length > 0) {
-          try {
-            const category = session.categories as any;
-            const trainingTypeLabel = getTrainingTypeLabel(session.training_type);
-            
-            const response = await fetch("https://onesignal.com/api/v1/notifications", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Basic ${oneSignalApiKey}`,
-              },
-              body: JSON.stringify({
-                app_id: oneSignalAppId,
-                include_email_tokens: emailRecipients,
-                email_subject: `📊 RPE - Comment as-tu ressenti la séance ?`,
-                email_body: `
-                  <html>
-                    <body style="font-family: Arial, sans-serif; padding: 20px;">
-                      <h2>Séance terminée ! 🏋️</h2>
-                      <p>La séance de <strong>${trainingTypeLabel}</strong> est terminée.</p>
-                      <p><strong>Catégorie:</strong> ${category.name}</p>
-                      <p>N'oublie pas de renseigner ton RPE (perception de l'effort) pour aider ton staff à optimiser ta charge d'entraînement.</p>
-                      <br>
-                      <p>Échelle RPE : 1 (très facile) à 10 (effort maximal)</p>
-                      <br>
-                      <p>Bravo pour l'entraînement ! 💪</p>
-                    </body>
-                  </html>
-                `,
-              }),
-            });
+      if (emailRecipients.length > 0) {
+        try {
+          const response = await fetch("https://api.onesignal.com/notifications", {
+            method: "POST",
+            headers: baseHeaders,
+            body: JSON.stringify({
+              app_id: oneSignalAppId,
+              include_email_tokens: emailRecipients,
+              email_subject: `📊 RPE - Comment as-tu ressenti la séance ?`,
+              email_body: `
+                <html>
+                  <body style="font-family: Arial, sans-serif; padding: 20px;">
+                    <h2>Séance terminée ! 🏋️</h2>
+                    <p>La séance de <strong>${trainingTypeLabel}</strong> est terminée.</p>
+                    <p><strong>Catégorie:</strong> ${category.name}</p>
+                    <p>N'oublie pas de renseigner ton RPE (perception de l'effort) pour aider ton staff à optimiser ta charge d'entraînement.</p>
+                    <br>
+                    <p>Échelle RPE : 1 (très facile) à 10 (effort maximal)</p>
+                    <br>
+                    <p>Bravo pour l'entraînement ! 💪</p>
+                  </body>
+                </html>
+              `,
+            }),
+          });
 
-            if (response.ok) {
-              totalNotifications += emailRecipients.length;
-              results.push({
-                session_id: session.id,
-                category: category.name,
-                training_type: trainingTypeLabel,
-                sent: emailRecipients.length,
-                type: "rpe_reminder",
-              });
-            }
-          } catch (error) {
-            console.error("OneSignal error:", error);
+          if (response.ok) {
+            totalEmailsSent += emailRecipients.length;
+          } else {
+            const err = await response.json();
+            console.error(`[rpe] Email error for session ${session.id}:`, err);
           }
+        } catch (error) {
+          console.error("[rpe] Email send error:", error);
         }
       }
+
+      // ── PUSH via OneSignal (external_id targeting) ─────────────────────
+      const pushUserIds = players
+        .filter((p) => p.user_id)
+        .map((p) => p.user_id!);
+
+      if (pushUserIds.length > 0) {
+        try {
+          const response = await fetch("https://api.onesignal.com/notifications", {
+            method: "POST",
+            headers: baseHeaders,
+            body: JSON.stringify({
+              app_id: oneSignalAppId,
+              include_aliases: { external_id: pushUserIds },
+              target_channel: "push",
+              headings: {
+                fr: "Comment s'est passée la séance ? 💪",
+                en: "Comment s'est passée la séance ? 💪",
+              },
+              contents: {
+                fr: `"${trainingTypeLabel}" (${category.name}) est terminée. Donne ton RPE en 10 secondes !`,
+                en: `"${trainingTypeLabel}" (${category.name}) est terminée. Donne ton RPE en 10 secondes !`,
+              },
+              ttl: 7200,
+              data: {
+                type: "rpe_reminder",
+                session_id: session.id,
+                category_id: session.category_id,
+              },
+            }),
+          });
+
+          const json = await response.json();
+          if (response.ok) {
+            totalPushSent += json.recipients ?? pushUserIds.length;
+            console.log(`[rpe] Push sent to ${json.recipients ?? pushUserIds.length} device(s) for session ${session.id}`);
+          } else {
+            console.error(`[rpe] Push error for session ${session.id}:`, json);
+          }
+        } catch (error) {
+          console.error("[rpe] Push send error:", error);
+        }
+      }
+
+      results.push({
+        session_id: session.id,
+        category: category.name,
+        training_type: trainingTypeLabel,
+        totalPlayers: playerIds.length,
+        alreadySubmitted: submittedPlayerIds.size,
+        emailsSent: emailRecipients.length,
+        pushTargeted: pushUserIds.length,
+        type: "rpe_reminder",
+      });
     }
 
-    console.log(`RPE reminders sent: ${totalNotifications}`);
+    console.log(`[rpe] Total: ${totalEmailsSent} emails, ${totalPushSent} push sent`);
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: `${totalNotifications} RPE reminder(s) sent`,
+        message: `${totalEmailsSent} email(s) + ${totalPushSent} push sent`,
+        emailsSent: totalEmailsSent,
+        pushSent: totalPushSent,
         results,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
