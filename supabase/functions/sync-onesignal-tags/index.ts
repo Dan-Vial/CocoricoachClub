@@ -112,10 +112,19 @@ serve(async (req: Request) => {
     if (notFound) {
       console.log(`[sync-onesignal-tags] User ${user_id} not found — creating via POST`);
 
-      // Build subscriptions array if email is available
+      // Build subscriptions array for email and phone
       const subscriptions: any[] = [];
       if (userEmail) {
         subscriptions.push({ type: "Email", token: userEmail });
+      }
+      if (userPhone) {
+        let formattedPhone = userPhone.replace(/\s/g, "");
+        if (!formattedPhone.startsWith("+")) {
+          formattedPhone = formattedPhone.startsWith("0")
+            ? "+33" + formattedPhone.substring(1)
+            : "+" + formattedPhone;
+        }
+        subscriptions.push({ type: "SMS", token: formattedPhone });
       }
 
       const createBody: any = {
