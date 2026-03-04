@@ -150,23 +150,33 @@ serve(async (req: Request) => {
       );
     }
 
-    // ── 4. Also sync email subscription if not already linked ─────────────────
-    if (userEmail) {
+    // ── 4. Sync email + phone subscriptions for existing users ──────────────
+    const syncSubscriptions: any[] = [];
+    if (userEmail) syncSubscriptions.push({ type: "Email", token: userEmail });
+    if (userPhone) {
+      let formattedPhone = userPhone.replace(/\s/g, "");
+      if (!formattedPhone.startsWith("+")) {
+        formattedPhone = formattedPhone.startsWith("0")
+          ? "+33" + formattedPhone.substring(1)
+          : "+" + formattedPhone;
+      }
+      syncSubscriptions.push({ type: "SMS", token: formattedPhone });
+    }
+
+    if (syncSubscriptions.length > 0) {
       try {
-        const emailSyncResponse = await fetch(
+        const syncResponse = await fetch(
           `https://api.onesignal.com/apps/${ONESIGNAL_APP_ID}/users/by/external_id/${user_id}`,
           {
             method: "PATCH",
             headers: baseHeaders,
-            body: JSON.stringify({
-              subscriptions: [{ type: "Email", token: userEmail }],
-            }),
+            body: JSON.stringify({ subscriptions: syncSubscriptions }),
           }
         );
-        const emailSyncResult = await emailSyncResponse.text();
-        console.log(`[sync-onesignal-tags] Email sync (${emailSyncResponse.status}):`, emailSyncResult);
-      } catch (emailErr) {
-        console.warn("[sync-onesignal-tags] Email sync warning:", emailErr);
+        const syncResult = await syncResponse.text();
+        console.log(`[sync-onesignal-tags] Subscription sync (${syncResponse.status}):`, syncResult);
+      } catch (syncErr) {
+        console.warn("[sync-onesignal-tags] Subscription sync warning:", syncErr);
       }
     }
 
