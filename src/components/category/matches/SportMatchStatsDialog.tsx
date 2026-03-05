@@ -287,7 +287,24 @@ export function SportMatchStatsDialog({
 
   const updateStat = (playerId: string, stat: string, value: number) => {
     setStatsData((prev) =>
-      prev.map((p) => (p.playerId === playerId ? { ...p, [stat]: value } : p))
+      prev.map((p) => {
+        if (p.playerId !== playerId) return p;
+        const updated = { ...p, [stat]: value };
+        // Auto-compute any percentage stats that depend on this stat
+        sportStats.forEach(s => {
+          if (s.computedFrom) {
+            const { successKey, totalKey, failureKey } = s.computedFrom;
+            if (stat === successKey || stat === totalKey || stat === failureKey) {
+              const success = Number(updated[successKey]) || 0;
+              const total = totalKey 
+                ? (Number(updated[totalKey]) || 0)
+                : success + (Number(updated[failureKey!]) || 0);
+              updated[s.key] = total > 0 ? Math.round((success / total) * 100) : 0;
+            }
+          }
+        });
+        return updated;
+      })
     );
   };
 
@@ -304,6 +321,19 @@ export function SportMatchStatsDialog({
   const playerHasStats = (player: PlayerStats) => {
     const stats = getStatsForSport(sportType, player.isGoalkeeper);
     return stats.some(stat => (player[stat.key] as number) > 0);
+  };
+
+  // Navigate to next/previous player
+  const currentPlayerIndex = statsData.findIndex(p => p.playerId === selectedPlayerId);
+  const goToNextPlayer = () => {
+    if (currentPlayerIndex < statsData.length - 1) {
+      setSelectedPlayerId(statsData[currentPlayerIndex + 1].playerId);
+    }
+  };
+  const goToPrevPlayer = () => {
+    if (currentPlayerIndex > 0) {
+      setSelectedPlayerId(statsData[currentPlayerIndex - 1].playerId);
+    }
   };
 
   if (!hasLineup) {
