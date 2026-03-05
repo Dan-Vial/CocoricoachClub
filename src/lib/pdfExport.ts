@@ -29,15 +29,33 @@ export interface PdfCustomSettings {
   footer_text?: string | null;
 }
 
-// Fetch PDF settings for a category
+// Fetch PDF settings for a category (falls back to club-level settings)
 export const fetchPdfSettings = async (categoryId: string): Promise<PdfCustomSettings | null> => {
   try {
+    // First try category-level settings
     const { data } = await supabase
       .from("pdf_settings")
       .select("*")
       .eq("category_id", categoryId)
       .maybeSingle();
-    return data;
+    if (data) return data;
+
+    // Fall back to club-level settings
+    const { data: catData } = await supabase
+      .from("categories")
+      .select("club_id")
+      .eq("id", categoryId)
+      .single();
+    if (catData?.club_id) {
+      const { data: clubSettings } = await (supabase
+        .from("pdf_settings")
+        .select("*") as any)
+        .eq("club_id", catData.club_id)
+        .is("category_id", null)
+        .maybeSingle();
+      return clubSettings || null;
+    }
+    return null;
   } catch {
     return null;
   }
