@@ -521,7 +521,7 @@ export default function AthleteSpace() {
                {!isSuperAdminView && (
                   <TabsTrigger 
                     value="messaging"
-                    className="athlete-tab shrink-0 relative gap-1.5 px-3 py-2 rounded-xl font-semibold transition-all duration-200 data-[state=active]:shadow-lg"
+                    className="athlete-tab shrink-0 relative gap-1 px-2 py-1.5 rounded-xl font-semibold text-xs transition-all duration-200 data-[state=active]:shadow-lg"
                     style={{
                       color: NAV_COLORS.communication.base,
                       backgroundColor: `${NAV_COLORS.communication.base}15`,
