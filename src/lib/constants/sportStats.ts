@@ -126,7 +126,7 @@ export const FOOTBALL_GOALKEEPER_STATS: StatField[] = [
   { key: "yellowCards", label: "Cartons jaunes", shortLabel: "Jaunes", category: "general", type: "number" },
   { key: "redCards", label: "Cartons rouges", shortLabel: "Rouges", category: "general", type: "number" },
   { key: "saves", label: "Arrêts", shortLabel: "Arrêts", category: "scoring", type: "number" },
-  { key: "savePercentage", label: "% Arrêts", shortLabel: "% Arrêts", category: "scoring", type: "number", max: 100 },
+  { key: "savePercentage", label: "% Arrêts", shortLabel: "% Arrêts", category: "scoring", type: "percentage", max: 100, computedFrom: { successKey: "saves", failureKey: "goalsAgainst" } },
   { key: "goalsAgainst", label: "Buts encaissés", shortLabel: "Buts enc.", category: "scoring", type: "number" },
   { key: "cleanSheets", label: "Clean sheets", shortLabel: "CS", category: "scoring", type: "number" },
   { key: "penaltiesSaved", label: "Pénaltys arrêtés", shortLabel: "Pén. arrêtés", category: "defense", type: "number" },
