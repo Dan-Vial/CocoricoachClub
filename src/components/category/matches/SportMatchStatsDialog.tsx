@@ -11,16 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-
 import { toast } from "sonner";
-import { BarChart3, Check, UserCircle, Satellite, ChevronLeft, ChevronRight, CheckCircle } from "lucide-react";
+import { BarChart3, Satellite, ChevronLeft, ChevronRight, Check } from "lucide-react";
 import { getStatsForSport, getStatCategories, hasGoalkeeperStats, type StatField } from "@/lib/constants/sportStats";
 import { getSportFieldConfig } from "@/lib/constants/sportPositions";
 import { isIndividualSport, isRugbyType } from "@/lib/constants/sportTypes";
@@ -28,6 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { useStatPreferences } from "@/hooks/use-stat-preferences";
 import { MatchGpsImport } from "./MatchGpsImport";
+import { PlayerStatsGrid } from "./PlayerStatsGrid";
 
 // Convert seconds to minutes display format (e.g., 185 => "3'05")
 function formatSecondsToMinutes(totalSeconds: number): string {
@@ -74,44 +67,36 @@ export function SportMatchStatsDialog({
   sportType,
 }: SportMatchStatsDialogProps) {
   const [statsData, setStatsData] = useState<PlayerStats[]>([]);
-  const [selectedPlayerId, setSelectedPlayerId] = useState<string>("");
   const [effectivePlayTime, setEffectivePlayTime] = useState<number>(0);
   const [longestPlaySequence, setLongestPlaySequence] = useState<number>(0);
   const [averagePlaySequence, setAveragePlaySequence] = useState<number>(0);
   const [showGpsImport, setShowGpsImport] = useState(false);
-  const [selectedStatCategory, setSelectedStatCategory] = useState<string>("");
+  const [activeCategoryIndex, setActiveCategoryIndex] = useState(0);
   const queryClient = useQueryClient();
 
   const fieldConfig = getSportFieldConfig(sportType);
   const isIndividual = isIndividualSport(sportType);
   const supportsGoalkeeper = hasGoalkeeperStats(sportType);
   const supportsGps = isRugbyType(sportType) || sportType.toLowerCase().includes("football");
-  
-  // Get the currently selected player
-  const selectedPlayer = statsData.find(p => p.playerId === selectedPlayerId);
-  
-  // Get stats from preferences (filtered based on category settings)
+
+  // Get stats from preferences - use a non-goalkeeper default for category-level filtering
   const { stats: filteredStats, hasCustomPreferences } = useStatPreferences({
     categoryId,
     sportType,
     matchId,
-    isGoalkeeper: selectedPlayer?.isGoalkeeper ?? false,
+    isGoalkeeper: false,
   });
-  
-  // Use filtered stats from preferences; only fall back to all stats if NO preferences configured AND filtered is empty
-  const sportStats = hasCustomPreferences ? filteredStats : (filteredStats.length > 0 ? filteredStats : getStatsForSport(sportType, selectedPlayer?.isGoalkeeper ?? false));
-  const allStatCategories = getStatCategories(sportType);
-  // Only show categories that have at least one enabled stat
-  const statCategories = allStatCategories.filter(cat => 
-    sportStats.some(s => s.category === cat.key)
-  );
 
-  // Set default stat category
-  useEffect(() => {
-    if (statCategories.length > 0 && !selectedStatCategory) {
-      setSelectedStatCategory(statCategories[0].key);
-    }
-  }, [statCategories, selectedStatCategory]);
+  const sportStats = hasCustomPreferences
+    ? filteredStats
+    : filteredStats.length > 0
+    ? filteredStats
+    : getStatsForSport(sportType, false);
+
+  const allStatCategories = getStatCategories(sportType);
+  const statCategories = allStatCategories.filter((cat) =>
+    sportStats.some((s) => s.category === cat.key)
+  );
 
   // Get match data
   const { data: matchData } = useQuery({
@@ -142,7 +127,7 @@ export function SportMatchStatsDialog({
     queryFn: async () => {
       const { data, error } = await supabase
         .from("match_lineups")
-        .select("player_id, position, players(id, name)")
+        .select("player_id, position, is_starter, players(id, name, first_name)")
         .eq("match_id", matchId);
       if (error) throw error;
       return data;
@@ -165,90 +150,108 @@ export function SportMatchStatsDialog({
 
   useEffect(() => {
     if (lineup && lineup.length > 0) {
-      // Determine all stats needed for initialization
       const allStats = [
         ...getStatsForSport(sportType, false),
-        ...getStatsForSport(sportType, true)
+        ...getStatsForSport(sportType, true),
       ];
-      
+
       const stats = lineup.map((l) => {
         const existing = existingStats?.find((s) => s.player_id === l.player_id);
-        const player = l.players as { id: string; name: string } | null;
+        const player = l.players as { id: string; name: string; first_name?: string } | null;
         const position = l.position || "";
-        
-        // Check if player is goalkeeper based on position
-        const isGk = position === "1" || position === "GK" || position.toLowerCase().includes("gardien");
-        
-        // Check if existing stats have goalkeeper marker
-        const existingSportData = (existing as { sport_data?: Record<string, number | boolean> })?.sport_data || {};
+        const fullName = [player?.first_name, player?.name].filter(Boolean).join(" ") || "Athlète";
+
+        const isGk =
+          position === "1" || position === "GK" || position.toLowerCase().includes("gardien");
+
+        const existingSportData =
+          (existing as { sport_data?: Record<string, number | boolean> })?.sport_data || {};
         const wasGoalkeeper = existingSportData.isGoalkeeper === true;
-        
+
         const playerStats: PlayerStats = {
           playerId: l.player_id,
-          playerName: player?.name || "Athlète",
+          playerName: fullName,
           position: position,
           isGoalkeeper: wasGoalkeeper || (supportsGoalkeeper && isGk),
         };
 
-        // Get stats for this player (use all possible stats to not lose data)
-        allStats.forEach(stat => {
-          const snakeKey = stat.key.replace(/([A-Z])/g, '_$1').toLowerCase();
-          const value = existingSportData[stat.key] ?? 
-                       existing?.[stat.key as keyof typeof existing] ?? 
-                       existing?.[snakeKey as keyof typeof existing] ?? 
-                       0;
-          playerStats[stat.key] = typeof value === 'number' ? value : 0;
+        allStats.forEach((stat) => {
+          const snakeKey = stat.key.replace(/([A-Z])/g, "_$1").toLowerCase();
+          const value =
+            existingSportData[stat.key] ??
+            existing?.[stat.key as keyof typeof existing] ??
+            existing?.[snakeKey as keyof typeof existing] ??
+            0;
+          playerStats[stat.key] = typeof value === "number" ? value : 0;
         });
 
         return playerStats;
       });
       setStatsData(stats);
-      
-      // Auto-select first player if none selected
-      if (!selectedPlayerId && stats.length > 0) {
-        setSelectedPlayerId(stats[0].playerId);
-      }
     }
-  }, [lineup, existingStats, sportType, selectedPlayerId, supportsGoalkeeper]);
+  }, [lineup, existingStats, sportType, supportsGoalkeeper]);
+
+  // Auto-compute percentages when any stat changes
+  const updateStat = (playerId: string, statKey: string, value: number) => {
+    setStatsData((prev) =>
+      prev.map((p) => {
+        if (p.playerId !== playerId) return p;
+        const updated = { ...p, [statKey]: value };
+        // Re-compute all computed stats
+        const allComputedStats = [
+          ...getStatsForSport(sportType, p.isGoalkeeper),
+        ];
+        allComputedStats.forEach((s) => {
+          if (s.computedFrom) {
+            const { successKey, totalKey, failureKey } = s.computedFrom;
+            if (statKey === successKey || statKey === totalKey || statKey === failureKey) {
+              const success = Number(updated[successKey]) || 0;
+              const total = totalKey
+                ? Number(updated[totalKey]) || 0
+                : success + (Number(updated[failureKey!]) || 0);
+              updated[s.key] = total > 0 ? Math.round((success / total) * 100) : 0;
+            }
+          }
+        });
+        return updated;
+      })
+    );
+  };
 
   const saveStats = useMutation({
     mutationFn: async () => {
       // Update match general stats
       await supabase
         .from("matches")
-        .update({ 
+        .update({
           effective_play_time: effectivePlayTime,
           longest_play_sequence: longestPlaySequence,
-          average_play_sequence: averagePlaySequence
+          average_play_sequence: averagePlaySequence,
         })
         .eq("id", matchId);
 
       // Delete existing stats
       await supabase.from("player_match_stats").delete().eq("match_id", matchId);
 
-      // Insert new stats for all sports
+      // Insert new stats
       if (statsData.length > 0) {
-        // Build sport-specific data object for each player
         const statsToInsert = statsData.map((s) => {
-          // Build sport_data JSON with ALL stats (not just filtered) to avoid data loss
           const allStats = [
             ...getStatsForSport(sportType, false),
-            ...getStatsForSport(sportType, true)
+            ...getStatsForSport(sportType, true),
           ];
           const sportData: Record<string, number> = {};
-          allStats.forEach(stat => {
+          allStats.forEach((stat) => {
             const val = Number(s[stat.key]) || 0;
             if (val !== 0) sportData[stat.key] = val;
           });
-          // Also include filtered stats
-          sportStats.forEach(stat => {
+          sportStats.forEach((stat) => {
             sportData[stat.key] = Number(s[stat.key]) || 0;
           });
 
           return {
             match_id: matchId,
             player_id: s.playerId,
-            // Keep rugby stats for backwards compatibility
             tries: Number(s.tries) || 0,
             conversions: Number(s.conversions) || 0,
             penalties_scored: Number(s.penaltiesScored) || 0,
@@ -264,7 +267,6 @@ export function SportMatchStatsDialog({
             total_contacts: Number(s.totalContacts) || 0,
             yellow_cards: Number(s.yellowCards) || 0,
             red_cards: Number(s.redCards) || 0,
-            // Store all sport-specific stats in the JSONB column
             sport_data: sportData,
           };
         });
@@ -273,13 +275,12 @@ export function SportMatchStatsDialog({
         if (error) throw error;
       }
 
-      // Auto-inject RPE 10/10 for each player based on minutes played
+      // Auto-inject RPE 10/10
       if (matchData && statsData.length > 0) {
-        const matchDate = matchData.match_date?.split("T")[0] || new Date().toISOString().split("T")[0];
-        
-        // Delete any existing match RPE entries for this match date + these players
-        // to avoid duplicates on re-save
-        const playerIds = statsData.map(s => s.playerId);
+        const matchDate =
+          matchData.match_date?.split("T")[0] || new Date().toISOString().split("T")[0];
+
+        const playerIds = statsData.map((s) => s.playerId);
         for (const playerId of playerIds) {
           await supabase
             .from("awcr_tracking")
@@ -288,31 +289,25 @@ export function SportMatchStatsDialog({
             .eq("category_id", categoryId)
             .eq("session_date", matchDate)
             .is("training_session_id", null)
-            .gte("rpe", 10); // Only delete match RPE entries (RPE=10)
+            .gte("rpe", 10);
         }
 
-        // Build RPE entries - use minutesPlayed or playingTime from sport_data
-        const rpeEntries = statsData
-          .map(s => {
-            const minutes = Number(s.minutesPlayed) || Number(s.playingTime) || Number(s.setsPlayed) || 80;
-            const rpe = 10;
-            const trainingLoad = rpe * minutes;
-            return {
-              player_id: s.playerId,
-              category_id: categoryId,
-              session_date: matchDate,
-              rpe,
-              duration_minutes: minutes,
-              training_load: trainingLoad,
-            };
-          });
+        const rpeEntries = statsData.map((s) => {
+          const minutes =
+            Number(s.minutesPlayed) || Number(s.playingTime) || Number(s.setsPlayed) || 80;
+          return {
+            player_id: s.playerId,
+            category_id: categoryId,
+            session_date: matchDate,
+            rpe: 10,
+            duration_minutes: minutes,
+            training_load: 10 * minutes,
+          };
+        });
 
         if (rpeEntries.length > 0) {
           const { error: rpeError } = await supabase.from("awcr_tracking").insert(rpeEntries);
-          if (rpeError) {
-            console.error("Error inserting match RPE:", rpeError);
-            // Don't throw - stats were saved successfully
-          }
+          if (rpeError) console.error("Error inserting match RPE:", rpeError);
         }
       }
     },
@@ -330,54 +325,22 @@ export function SportMatchStatsDialog({
     },
   });
 
-  const updateStat = (playerId: string, stat: string, value: number) => {
-    setStatsData((prev) =>
-      prev.map((p) => {
-        if (p.playerId !== playerId) return p;
-        const updated = { ...p, [stat]: value };
-        // Auto-compute any percentage stats that depend on this stat
-        sportStats.forEach(s => {
-          if (s.computedFrom) {
-            const { successKey, totalKey, failureKey } = s.computedFrom;
-            if (stat === successKey || stat === totalKey || stat === failureKey) {
-              const success = Number(updated[successKey]) || 0;
-              const total = totalKey 
-                ? (Number(updated[totalKey]) || 0)
-                : success + (Number(updated[failureKey!]) || 0);
-              updated[s.key] = total > 0 ? Math.round((success / total) * 100) : 0;
-            }
-          }
-        });
-        return updated;
-      })
-    );
-  };
-
   const hasLineup = lineup && lineup.length > 0;
 
-  // Toggle goalkeeper status for selected player
-  const toggleGoalkeeper = (playerId: string, isGk: boolean) => {
-    setStatsData((prev) =>
-      prev.map((p) => (p.playerId === playerId ? { ...p, isGoalkeeper: isGk } : p))
-    );
-  };
+  // Current active category
+  const activeCategory = statCategories[activeCategoryIndex];
+  const activeCategoryStats = activeCategory
+    ? sportStats.filter((s) => s.category === activeCategory.key)
+    : [];
 
-  // Check if a player has any stats entered
-  const playerHasStats = (player: PlayerStats) => {
-    const stats = getStatsForSport(sportType, player.isGoalkeeper);
-    return stats.some(stat => (player[stat.key] as number) > 0);
-  };
-
-  // Navigate to next/previous player
-  const currentPlayerIndex = statsData.findIndex(p => p.playerId === selectedPlayerId);
-  const goToNextPlayer = () => {
-    if (currentPlayerIndex < statsData.length - 1) {
-      setSelectedPlayerId(statsData[currentPlayerIndex + 1].playerId);
+  const goNextCategory = () => {
+    if (activeCategoryIndex < statCategories.length - 1) {
+      setActiveCategoryIndex(activeCategoryIndex + 1);
     }
   };
-  const goToPrevPlayer = () => {
-    if (currentPlayerIndex > 0) {
-      setSelectedPlayerId(statsData[currentPlayerIndex - 1].playerId);
+  const goPrevCategory = () => {
+    if (activeCategoryIndex > 0) {
+      setActiveCategoryIndex(activeCategoryIndex - 1);
     }
   };
 
@@ -389,10 +352,9 @@ export function SportMatchStatsDialog({
             <DialogTitle>Statistiques - {fieldConfig.label}</DialogTitle>
           </DialogHeader>
           <p className="text-muted-foreground text-center py-8">
-            {isIndividual 
+            {isIndividual
               ? "Ajoutez d'abord des participants pour saisir leurs statistiques."
-              : "Ajoutez d'abord des athlètes à la composition pour saisir leurs statistiques."
-            }
+              : "Ajoutez d'abord des athlètes à la composition pour saisir leurs statistiques."}
           </p>
           <Button onClick={() => onOpenChange(false)}>Fermer</Button>
         </DialogContent>
@@ -400,42 +362,9 @@ export function SportMatchStatsDialog({
     );
   }
 
-  const renderStatInput = (player: PlayerStats, stat: StatField) => {
-    const rawValue = player[stat.key] as number;
-    
-    // Auto-computed percentage stats are read-only
-    if (stat.computedFrom) {
-      return (
-        <div key={stat.key}>
-          <Label className="text-xs">{stat.shortLabel}</Label>
-          <div className="h-8 flex items-center justify-center rounded-md border bg-muted/50 text-sm font-semibold text-primary">
-            {rawValue || 0}%
-          </div>
-        </div>
-      );
-    }
-    
-    const displayValue = rawValue === 0 ? "" : String(rawValue);
-    
-    return (
-      <div key={stat.key}>
-        <Label className="text-xs">{stat.shortLabel}</Label>
-        <Input
-          type="number"
-          value={displayValue}
-          onChange={(e) => updateStat(player.playerId, stat.key, parseFloat(e.target.value) || 0)}
-          min={stat.min ?? 0}
-          max={stat.max}
-          className="h-8"
-          placeholder="0"
-        />
-      </div>
-    );
-  };
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[700px] max-h-[90vh] flex flex-col">
+      <DialogContent className="sm:max-w-[900px] max-h-[92vh] flex flex-col overflow-hidden">
         <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <BarChart3 className="h-5 w-5" />
@@ -443,191 +372,181 @@ export function SportMatchStatsDialog({
           </DialogTitle>
         </DialogHeader>
 
-        {/* Player selector with navigation */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <Label className="text-sm font-medium flex items-center gap-2">
-              <UserCircle className="h-4 w-4" />
-              {isIndividual ? "Participant" : "Athlète"} ({currentPlayerIndex + 1}/{statsData.length})
-            </Label>
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-              {statsData.filter(p => playerHasStats(p)).length}/{statsData.length} complété(s)
-            </div>
+        {/* Category navigation */}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-8 w-8 shrink-0"
+            onClick={goPrevCategory}
+            disabled={activeCategoryIndex <= 0}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+
+          <div className="flex-1 flex gap-1 overflow-x-auto pb-1">
+            {statCategories.map((cat, idx) => (
+              <Button
+                key={cat.key}
+                variant={idx === activeCategoryIndex ? "default" : "outline"}
+                size="sm"
+                className="shrink-0 text-xs h-8 gap-1"
+                onClick={() => setActiveCategoryIndex(idx)}
+              >
+                {cat.label}
+                {idx < activeCategoryIndex && (
+                  <Check className="h-3 w-3 text-green-400" />
+                )}
+              </Button>
+            ))}
           </div>
-          <div className="flex items-center gap-2">
-            <Button 
-              variant="outline" 
-              size="icon" 
-              className="h-9 w-9 shrink-0"
-              onClick={goToPrevPlayer}
-              disabled={currentPlayerIndex <= 0}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Select value={selectedPlayerId} onValueChange={setSelectedPlayerId}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder={isIndividual ? "Choisir un participant..." : "Choisir un athlète..."} />
-              </SelectTrigger>
-              <SelectContent className="z-[200] bg-popover">
-                {statsData
-                  .filter((player) => player.playerId && player.playerId.trim() !== "")
-                  .map((player) => (
-                    <SelectItem 
-                      key={player.playerId} 
-                      value={player.playerId}
-                    >
-                      <span className="flex items-center gap-2">
-                        {playerHasStats(player) && <CheckCircle className="h-3.5 w-3.5 text-green-500" />}
-                        {player.playerName}
-                      </span>
-                    </SelectItem>
-                  ))}
-              </SelectContent>
-            </Select>
-            <Button 
-              variant="outline" 
-              size="icon"
-              className="h-9 w-9 shrink-0"
-              onClick={goToNextPlayer}
-              disabled={currentPlayerIndex >= statsData.length - 1}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-          {/* Quick validate + next button */}
-          {selectedPlayer && currentPlayerIndex < statsData.length - 1 && (
-            <Button 
-              variant="secondary" 
-              size="sm"
-              className="w-full gap-2"
-              onClick={goToNextPlayer}
-            >
-              <CheckCircle className="h-4 w-4" />
-              Valider et passer au suivant
-            </Button>
-          )}
+
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-8 w-8 shrink-0"
+            onClick={goNextCategory}
+            disabled={activeCategoryIndex >= statCategories.length - 1}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
         </div>
 
-        {/* Goalkeeper toggle for sports that support it */}
-        {selectedPlayer && supportsGoalkeeper && (
-          <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
-            <div className="flex items-center gap-2">
-              <Label htmlFor="goalkeeper-toggle" className="text-sm font-medium">
-                Mode Gardien / Goal
-              </Label>
-            <Badge variant={selectedPlayer.isGoalkeeper ? "default" : "outline"} className="text-xs">
-                {selectedPlayer.isGoalkeeper ? "Gardien" : "Athlète de champ"}
-              </Badge>
+        <div className="text-xs text-muted-foreground flex items-center justify-between flex-shrink-0">
+          <span>
+            {activeCategoryIndex + 1}/{statCategories.length} — {activeCategory?.label}
+          </span>
+          <span>{statsData.length} joueurs</span>
+        </div>
+
+        {/* Match-level general stats (only on "general" category) */}
+        {activeCategory?.key === "general" && !isIndividual && (
+          <div className="p-3 rounded-lg border bg-card flex-shrink-0">
+            <h4 className="font-semibold mb-2 text-sm text-primary">Infos match</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <Label className="text-xs">Temps effectif (min)</Label>
+                <Input
+                  type="number"
+                  value={effectivePlayTime || ""}
+                  onChange={(e) => setEffectivePlayTime(parseInt(e.target.value) || 0)}
+                  min={0}
+                  max={120}
+                  className="h-8 mt-1"
+                  placeholder="80"
+                />
+              </div>
+              <div>
+                <Label className="text-xs">Séquence max</Label>
+                <Input
+                  type="text"
+                  value={longestPlaySequence ? formatSecondsToMinutes(longestPlaySequence) : ""}
+                  onChange={(e) => setLongestPlaySequence(parseMinutesToSeconds(e.target.value))}
+                  className="h-8 mt-1"
+                  placeholder="3'00"
+                />
+              </div>
+              <div>
+                <Label className="text-xs">Séquence moyenne</Label>
+                <Input
+                  type="text"
+                  value={averagePlaySequence ? formatSecondsToMinutes(averagePlaySequence) : ""}
+                  onChange={(e) => setAveragePlaySequence(parseMinutesToSeconds(e.target.value))}
+                  className="h-8 mt-1"
+                  placeholder="0'45"
+                />
+              </div>
             </div>
-            <Switch
-              id="goalkeeper-toggle"
-              checked={selectedPlayer.isGoalkeeper}
-              onCheckedChange={(checked) => toggleGoalkeeper(selectedPlayer.playerId, checked)}
+          </div>
+        )}
+
+        {/* Goalkeeper toggles if sport supports it */}
+        {supportsGoalkeeper && activeCategory?.key === "general" && (
+          <div className="flex flex-wrap gap-2 flex-shrink-0">
+            {statsData
+              .filter((p) => p.isGoalkeeper)
+              .map((p) => (
+                <Badge key={p.playerId} variant="secondary" className="text-xs gap-1">
+                  🧤 {p.playerName}
+                  <button
+                    className="ml-1 text-destructive hover:text-destructive/80"
+                    onClick={() =>
+                      setStatsData((prev) =>
+                        prev.map((pl) =>
+                          pl.playerId === p.playerId ? { ...pl, isGoalkeeper: false } : pl
+                        )
+                      )
+                    }
+                  >
+                    ✕
+                  </button>
+                </Badge>
+              ))}
+            {statsData.some((p) => !p.isGoalkeeper) && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <span>Marquer comme gardien :</span>
+                {statsData
+                  .filter((p) => !p.isGoalkeeper)
+                  .slice(0, 3)
+                  .map((p) => (
+                    <button
+                      key={p.playerId}
+                      className="underline hover:text-foreground"
+                      onClick={() =>
+                        setStatsData((prev) =>
+                          prev.map((pl) =>
+                            pl.playerId === p.playerId ? { ...pl, isGoalkeeper: true } : pl
+                          )
+                        )
+                      }
+                    >
+                      #{p.position || "?"} {p.playerName.split(" ")[0]}
+                    </button>
+                  ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Player stats grid */}
+        <ScrollArea className="flex-1 min-h-0">
+          <div className="pr-2">
+            <PlayerStatsGrid
+              players={statsData}
+              stats={activeCategoryStats}
+              onUpdateStat={updateStat}
+              supportsGoalkeeper={supportsGoalkeeper}
             />
           </div>
-        )}
+        </ScrollArea>
 
-        {selectedPlayer && (
-          <div className="flex-1 min-h-0 flex flex-col space-y-4">
-            {/* Category dropdown */}
-            <div className="flex items-center gap-3">
-              <Label className="text-sm font-medium whitespace-nowrap">Catégorie :</Label>
-              <Select value={selectedStatCategory} onValueChange={setSelectedStatCategory}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Sélectionner une catégorie" />
-                </SelectTrigger>
-                <SelectContent className="z-[200] bg-popover">
-                  {statCategories.map(cat => (
-                    <SelectItem key={cat.key} value={cat.key}>
-                      {cat.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <ScrollArea className="flex-1 min-h-[250px] max-h-[45vh] pr-4" style={{ overflow: 'auto' }}>
-              {statCategories.map(cat => {
-                if (cat.key !== selectedStatCategory) return null;
-                
-                return (
-                  <div key={cat.key} className="space-y-4">
-                    {cat.key === "general" && !isIndividual && (
-                      <div className="p-4 rounded-lg border bg-card">
-                        <h4 className="font-semibold mb-3 text-base text-primary">
-                          Informations du match
-                        </h4>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          <div>
-                            <Label className="text-sm">Temps de jeu effectif (min)</Label>
-                            <Input
-                              type="number"
-                              value={effectivePlayTime || ""}
-                              onChange={(e) => setEffectivePlayTime(parseInt(e.target.value) || 0)}
-                              min={0}
-                              max={120}
-                              className="h-9 mt-1"
-                              placeholder="Ex: 80"
-                            />
-                          </div>
-                          <div>
-                            <Label className="text-sm">Séquence la plus longue (min)</Label>
-                            <Input
-                              type="text"
-                              value={longestPlaySequence ? formatSecondsToMinutes(longestPlaySequence) : ""}
-                              onChange={(e) => setLongestPlaySequence(parseMinutesToSeconds(e.target.value))}
-                              className="h-9 mt-1"
-                              placeholder="Ex: 3'00 ou 3.00"
-                            />
-                          </div>
-                          <div>
-                            <Label className="text-sm">Séquence moyenne (min)</Label>
-                            <Input
-                              type="text"
-                              value={averagePlaySequence ? formatSecondsToMinutes(averagePlaySequence) : ""}
-                              onChange={(e) => setAveragePlaySequence(parseMinutesToSeconds(e.target.value))}
-                              className="h-9 mt-1"
-                              placeholder="Ex: 0'45 ou 0.45"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                    
-                    <div className="p-4 rounded-lg border bg-card">
-                      <h4 className="font-semibold mb-3 text-base text-primary flex items-center gap-2">
-                        {selectedPlayer.playerName}
-                        {selectedPlayer.isGoalkeeper && supportsGoalkeeper && (
-                          <Badge variant="secondary" className="text-xs">Gardien</Badge>
-                        )}
-                        <span className="text-muted-foreground">- {cat.label}</span>
-                      </h4>
-                      <div className={`grid ${cat.key === "scoring" ? "grid-cols-4" : "grid-cols-3"} gap-3`}>
-                        {sportStats.filter(s => s.category === cat.key).map(stat => renderStatInput(selectedPlayer, stat))}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </ScrollArea>
-          </div>
-        )}
-
-        <div className="flex justify-between gap-2 pt-4 border-t flex-shrink-0">
-          <div>
+        {/* Footer */}
+        <div className="flex justify-between gap-2 pt-3 border-t flex-shrink-0">
+          <div className="flex gap-2">
             {supportsGps && hasLineup && (
-              <Button variant="outline" onClick={() => setShowGpsImport(true)}>
-                <Satellite className="h-4 w-4 mr-2" />
-                Importer GPS
+              <Button variant="outline" size="sm" onClick={() => setShowGpsImport(true)}>
+                <Satellite className="h-4 w-4 mr-1" />
+                GPS
               </Button>
             )}
           </div>
           <div className="flex gap-2">
+            {activeCategoryIndex < statCategories.length - 1 ? (
+              <Button onClick={goNextCategory} className="gap-1">
+                <Check className="h-4 w-4" />
+                Valider → {statCategories[activeCategoryIndex + 1]?.label}
+              </Button>
+            ) : (
+              <Button
+                onClick={() => saveStats.mutate()}
+                disabled={saveStats.isPending}
+                className="gap-1"
+              >
+                {saveStats.isPending ? "Enregistrement..." : "Enregistrer tout"}
+              </Button>
+            )}
             <Button variant="outline" onClick={() => onOpenChange(false)}>
               Annuler
-            </Button>
-            <Button onClick={() => saveStats.mutate()} disabled={saveStats.isPending}>
-              {saveStats.isPending ? "Enregistrement..." : "Enregistrer"}
             </Button>
           </div>
         </div>
@@ -640,7 +559,11 @@ export function SportMatchStatsDialog({
             matchId={matchId}
             categoryId={categoryId}
             matchDate={matchData.match_date}
-            players={statsData.map(p => ({ id: p.playerId, name: p.playerName, position: p.position }))}
+            players={statsData.map((p) => ({
+              id: p.playerId,
+              name: p.playerName,
+              position: p.position,
+            }))}
           />
         )}
       </DialogContent>
