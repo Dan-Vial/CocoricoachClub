@@ -387,9 +387,9 @@ export const BOWLING_STATS: StatField[] = [
   { key: "splitOnLastThrow", label: "Splits sur 11e/12e lancer (non comptés)", shortLabel: "Splits excl.", category: "scoring", type: "number" },
   
   // Precision statistics (calculés automatiquement)
-  { key: "strikePercentage", label: "% de strikes", shortLabel: "% Strikes", category: "attack", type: "number", max: 100 },
-  { key: "sparePercentage", label: "% de spares (hors splits)", shortLabel: "% Spares", category: "attack", type: "number", max: 100 },
-  { key: "splitConversionRate", label: "% conversion splits", shortLabel: "% Split Conv.", category: "attack", type: "number", max: 100 },
+  { key: "strikePercentage", label: "% de strikes", shortLabel: "% Strikes", category: "attack", type: "percentage", max: 100 },
+  { key: "sparePercentage", label: "% de spares (hors splits)", shortLabel: "% Spares", category: "attack", type: "percentage", max: 100, computedFrom: { successKey: "spares", totalKey: "spareOpportunities" } },
+  { key: "splitConversionRate", label: "% conversion splits", shortLabel: "% Split Conv.", category: "attack", type: "percentage", max: 100, computedFrom: { successKey: "splitConverted", totalKey: "splitCount" } },
   { key: "spareOpportunities", label: "Opportunités de spare", shortLabel: "Opp. Spare", category: "attack", type: "number" },
   { key: "pinsPerFrame", label: "Pins par frame", shortLabel: "Pins/Frame", category: "attack", type: "number" },
   { key: "targetHitRate", label: "Taux de touche de la cible", shortLabel: "% Cible", category: "attack", type: "number", max: 100 },
