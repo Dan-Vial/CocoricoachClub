@@ -924,7 +924,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
     setGeneratingReport("squad");
     
     try {
-      const { settings: pdfSettings, logoBase64 } = await preparePdfWithSettings(categoryId);
+      const { settings: pdfSettings, logoBase64, seasonName: sn3 } = await preparePdfWithSettings(categoryId);
 
       const { data: categoryMatches } = await supabase
         .from("matches")
