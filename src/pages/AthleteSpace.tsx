@@ -481,7 +481,7 @@ export default function AthleteSpace() {
               </TabsTrigger>
               <TabsTrigger 
                 value="objectives"
-                className="athlete-tab gap-1.5 px-3 py-2 rounded-xl font-semibold transition-all duration-200 data-[state=active]:shadow-lg"
+                className="athlete-tab shrink-0 gap-1.5 px-3 py-2 rounded-xl font-semibold transition-all duration-200 data-[state=active]:shadow-lg"
                 style={{
                   color: NAV_COLORS.planification.base,
                   backgroundColor: `${NAV_COLORS.planification.base}15`,
