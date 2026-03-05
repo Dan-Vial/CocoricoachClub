@@ -101,7 +101,6 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
           }
         });
       });
-      });
 
       return Object.values(aggregated);
     },
