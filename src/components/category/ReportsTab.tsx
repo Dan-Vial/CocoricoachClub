@@ -1527,7 +1527,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
     setGeneratingReport("attendance");
     
     try {
-      const { settings: pdfSettings, logoBase64 } = await preparePdfWithSettings(categoryId);
+      const { settings: pdfSettings, logoBase64, seasonName: sn4 } = await preparePdfWithSettings(categoryId);
 
       // Fetch attendance data with date filtering
       const [sessionsRes, attendanceRes] = await Promise.all([
