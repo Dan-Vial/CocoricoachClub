@@ -633,6 +633,9 @@ export const exportSessionToPdf = async (
   if (customSettings?.show_category_name !== false) {
     subtitleParts.push(categoryName);
   }
+  if ((options as any)?.seasonName) {
+    subtitleParts.push((options as any).seasonName);
+  }
   if (subtitleParts.length > 0) {
     pdf.text(subtitleParts.join(" • "), xOffset, 25);
   }
