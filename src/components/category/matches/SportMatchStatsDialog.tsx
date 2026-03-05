@@ -29,6 +29,27 @@ import { Switch } from "@/components/ui/switch";
 import { useStatPreferences } from "@/hooks/use-stat-preferences";
 import { MatchGpsImport } from "./MatchGpsImport";
 
+// Convert seconds to minutes display format (e.g., 185 => "3'05")
+function formatSecondsToMinutes(totalSeconds: number): string {
+  const mins = Math.floor(totalSeconds / 60);
+  const secs = Math.round(totalSeconds % 60);
+  return `${mins}'${secs.toString().padStart(2, '0')}`;
+}
+
+// Parse minutes input (accepts "2'45", "2.45", or raw number as seconds)
+function parseMinutesToSeconds(input: string): number {
+  if (!input || input.trim() === "") return 0;
+  if (input.includes("'")) {
+    const [mins, secs] = input.split("'");
+    return (parseInt(mins) || 0) * 60 + (parseInt(secs) || 0);
+  }
+  if (input.includes(".")) {
+    const [mins, secs] = input.split(".");
+    return (parseInt(mins) || 0) * 60 + (parseInt(secs) || 0);
+  }
+  return parseInt(input) || 0;
+}
+
 interface SportMatchStatsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -79,7 +100,11 @@ export function SportMatchStatsDialog({
   
   // Use filtered stats from preferences; only fall back to all stats if NO preferences configured AND filtered is empty
   const sportStats = hasCustomPreferences ? filteredStats : (filteredStats.length > 0 ? filteredStats : getStatsForSport(sportType, selectedPlayer?.isGoalkeeper ?? false));
-  const statCategories = getStatCategories(sportType);
+  const allStatCategories = getStatCategories(sportType);
+  // Only show categories that have at least one enabled stat
+  const statCategories = allStatCategories.filter(cat => 
+    sportStats.some(s => s.category === cat.key)
+  );
 
   // Set default stat category
   useEffect(() => {
@@ -205,8 +230,17 @@ export function SportMatchStatsDialog({
       if (statsData.length > 0) {
         // Build sport-specific data object for each player
         const statsToInsert = statsData.map((s) => {
-          // Build sport_data JSON with all sport-specific stats
+          // Build sport_data JSON with ALL stats (not just filtered) to avoid data loss
+          const allStats = [
+            ...getStatsForSport(sportType, false),
+            ...getStatsForSport(sportType, true)
+          ];
           const sportData: Record<string, number> = {};
+          allStats.forEach(stat => {
+            const val = Number(s[stat.key]) || 0;
+            if (val !== 0) sportData[stat.key] = val;
+          });
+          // Also include filtered stats
           sportStats.forEach(stat => {
             sportData[stat.key] = Number(s[stat.key]) || 0;
           });
@@ -291,19 +325,25 @@ export function SportMatchStatsDialog({
     );
   }
 
-  const renderStatInput = (player: PlayerStats, stat: StatField) => (
-    <div key={stat.key}>
-      <Label className="text-xs">{stat.shortLabel}</Label>
-      <Input
-        type="number"
-        value={(player[stat.key] as number) || 0}
-        onChange={(e) => updateStat(player.playerId, stat.key, parseFloat(e.target.value) || 0)}
-        min={stat.min ?? 0}
-        max={stat.max}
-        className="h-8"
-      />
-    </div>
-  );
+  const renderStatInput = (player: PlayerStats, stat: StatField) => {
+    const rawValue = player[stat.key] as number;
+    const displayValue = rawValue === 0 ? "" : String(rawValue);
+    
+    return (
+      <div key={stat.key}>
+        <Label className="text-xs">{stat.shortLabel}</Label>
+        <Input
+          type="number"
+          value={displayValue}
+          onChange={(e) => updateStat(player.playerId, stat.key, parseFloat(e.target.value) || 0)}
+          min={stat.min ?? 0}
+          max={stat.max}
+          className="h-8"
+          placeholder="0"
+        />
+      </div>
+    );
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -395,7 +435,7 @@ export function SportMatchStatsDialog({
                             <Label className="text-sm">Temps de jeu effectif (min)</Label>
                             <Input
                               type="number"
-                              value={effectivePlayTime}
+                              value={effectivePlayTime || ""}
                               onChange={(e) => setEffectivePlayTime(parseInt(e.target.value) || 0)}
                               min={0}
                               max={120}
@@ -404,26 +444,23 @@ export function SportMatchStatsDialog({
                             />
                           </div>
                           <div>
-                            <Label className="text-sm">Séquence la plus longue (sec)</Label>
+                            <Label className="text-sm">Séquence la plus longue (min)</Label>
                             <Input
-                              type="number"
-                              value={longestPlaySequence}
-                              onChange={(e) => setLongestPlaySequence(parseInt(e.target.value) || 0)}
-                              min={0}
+                              type="text"
+                              value={longestPlaySequence ? formatSecondsToMinutes(longestPlaySequence) : ""}
+                              onChange={(e) => setLongestPlaySequence(parseMinutesToSeconds(e.target.value))}
                               className="h-9 mt-1"
-                              placeholder="Ex: 180"
+                              placeholder="Ex: 3'00 ou 3.00"
                             />
                           </div>
                           <div>
-                            <Label className="text-sm">Séquence moyenne (sec)</Label>
+                            <Label className="text-sm">Séquence moyenne (min)</Label>
                             <Input
-                              type="number"
-                              step="0.1"
-                              value={averagePlaySequence}
-                              onChange={(e) => setAveragePlaySequence(parseFloat(e.target.value) || 0)}
-                              min={0}
+                              type="text"
+                              value={averagePlaySequence ? formatSecondsToMinutes(averagePlaySequence) : ""}
+                              onChange={(e) => setAveragePlaySequence(parseMinutesToSeconds(e.target.value))}
                               className="h-9 mt-1"
-                              placeholder="Ex: 45.5"
+                              placeholder="Ex: 0'45 ou 0.45"
                             />
                           </div>
                         </div>
