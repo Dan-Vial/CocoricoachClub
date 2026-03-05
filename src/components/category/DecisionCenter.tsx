@@ -539,7 +539,50 @@ import { isIndividualSport } from "@/lib/constants/sportTypes";
     };
     
     const wellnessStatus = getTodayWellnessStatus();
- 
+
+    // Calculate today's RPE status per session
+    const getTodayRpeStatus = () => {
+      if (todaySessions.length === 0) return [];
+      
+      return todaySessions.map(session => {
+        // Get participants for this session (from attendance or all players)
+        const sessionAttendance = todayAttendance.filter(
+          a => a.training_session_id === session.id && (a.status === "present" || a.status === "late")
+        );
+        const participantIds = sessionAttendance.length > 0 
+          ? sessionAttendance.map(a => a.player_id)
+          : players.map(p => p.id);
+        
+        const totalParticipants = participantIds.length;
+        const sessionRpe = todayRpeData.filter(r => r.training_session_id === session.id);
+        const filledIds = new Set(sessionRpe.map(r => r.player_id));
+        const filledCount = participantIds.filter(id => filledIds.has(id)).length;
+        const filledPercent = totalParticipants > 0 ? Math.round((filledCount / totalParticipants) * 100) : 0;
+        
+        const missingPlayers = players
+          .filter(p => participantIds.includes(p.id) && !filledIds.has(p.id))
+          .map(p => getFullName(p));
+        const filledPlayers = players
+          .filter(p => participantIds.includes(p.id) && filledIds.has(p.id))
+          .map(p => getFullName(p));
+        
+        return {
+          sessionId: session.id,
+          sessionName: session.training_type,
+          sessionTime: session.session_start_time?.slice(0, 5) || "",
+          plannedIntensity: session.planned_intensity || 5,
+          totalParticipants,
+          filledCount,
+          filledPercent,
+          filledPlayers,
+          missingPlayers,
+        };
+      });
+    };
+
+    const rpeStatus = getTodayRpeStatus();
+
+
    const getAlertIcon = (type: PriorityAlert["type"]) => {
      switch (type) {
        case "overload": return <TrendingUp className="h-4 w-4" />;
