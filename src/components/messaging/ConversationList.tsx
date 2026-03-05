@@ -594,7 +594,7 @@ export function ConversationList({ categoryId, selectedId, onSelect, isAthlete =
                           </SelectTrigger>
                           <SelectContent>
                             {selectedRecipientType === "player" ? (
-                              players?.map((player) => (
+                              players?.filter(p => p.user_id).map((player) => (
                                 <SelectItem key={player.id} value={player.id}>
                                   <div className="flex items-center gap-2">
                                     <Avatar className="h-6 w-6">
