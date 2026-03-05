@@ -446,8 +446,9 @@ export function SportMatchStatsDialog({
                 <Label className="text-xs">Séquence max</Label>
                 <Input
                   type="text"
-                  value={longestPlaySequence ? formatSecondsToMinutes(longestPlaySequence) : ""}
-                  onChange={(e) => setLongestPlaySequence(parseMinutesToSeconds(e.target.value))}
+                  value={longestPlaySequenceText}
+                  onChange={(e) => setLongestPlaySequenceText(e.target.value)}
+                  onBlur={() => setLongestPlaySequence(parseMinutesToSeconds(longestPlaySequenceText))}
                   className="h-8 mt-1"
                   placeholder="3'00"
                 />
@@ -456,8 +457,9 @@ export function SportMatchStatsDialog({
                 <Label className="text-xs">Séquence moyenne</Label>
                 <Input
                   type="text"
-                  value={averagePlaySequence ? formatSecondsToMinutes(averagePlaySequence) : ""}
-                  onChange={(e) => setAveragePlaySequence(parseMinutesToSeconds(e.target.value))}
+                  value={averagePlaySequenceText}
+                  onChange={(e) => setAveragePlaySequenceText(e.target.value)}
+                  onBlur={() => setAveragePlaySequence(parseMinutesToSeconds(averagePlaySequenceText))}
                   className="h-8 mt-1"
                   placeholder="0'45"
                 />
