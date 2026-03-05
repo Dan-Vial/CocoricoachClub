@@ -34,7 +34,10 @@
  import { cn } from "@/lib/utils";
  import { AddCategoryDialog } from "@/components/categories/AddCategoryDialog";
  import { InviteMemberDialog } from "@/components/collaboration/InviteMemberDialog";
- import { TutorialVideosSection } from "@/components/category/settings/TutorialVideosSection";
+import { TutorialVideosSection } from "@/components/category/settings/TutorialVideosSection";
+import { ClubPdfSettingsSection } from "@/components/club/ClubPdfSettingsSection";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { FileText, ChevronDown } from "lucide-react";
  import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
  import { Input } from "@/components/ui/input";
  import { Label } from "@/components/ui/label";
