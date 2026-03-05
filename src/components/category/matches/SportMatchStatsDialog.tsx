@@ -398,30 +398,69 @@ export function SportMatchStatsDialog({
           </DialogTitle>
         </DialogHeader>
 
-        {/* Player selector dropdown */}
+        {/* Player selector with navigation */}
         <div className="space-y-2">
-          <Label className="text-sm font-medium flex items-center gap-2">
-            <UserCircle className="h-4 w-4" />
-            {isIndividual ? "Sélectionner un participant" : "Sélectionner un athlète"}
-          </Label>
-          <Select value={selectedPlayerId} onValueChange={setSelectedPlayerId}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder={isIndividual ? "Choisir un participant..." : "Choisir un athlète..."} />
-            </SelectTrigger>
-            <SelectContent className="z-[200] bg-popover">
-              {statsData
-                .filter((player) => player.playerId && player.playerId.trim() !== "")
-                .map((player) => (
-                  <SelectItem 
-                    key={player.playerId} 
-                    value={player.playerId}
-                  >
-                    {player.playerName}
-                    {playerHasStats(player) ? " ✓" : ""}
-                  </SelectItem>
-                ))}
-            </SelectContent>
-          </Select>
+          <div className="flex items-center justify-between">
+            <Label className="text-sm font-medium flex items-center gap-2">
+              <UserCircle className="h-4 w-4" />
+              {isIndividual ? "Participant" : "Athlète"} ({currentPlayerIndex + 1}/{statsData.length})
+            </Label>
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              {statsData.filter(p => playerHasStats(p)).length}/{statsData.length} complété(s)
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              size="icon" 
+              className="h-9 w-9 shrink-0"
+              onClick={goToPrevPlayer}
+              disabled={currentPlayerIndex <= 0}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Select value={selectedPlayerId} onValueChange={setSelectedPlayerId}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder={isIndividual ? "Choisir un participant..." : "Choisir un athlète..."} />
+              </SelectTrigger>
+              <SelectContent className="z-[200] bg-popover">
+                {statsData
+                  .filter((player) => player.playerId && player.playerId.trim() !== "")
+                  .map((player) => (
+                    <SelectItem 
+                      key={player.playerId} 
+                      value={player.playerId}
+                    >
+                      <span className="flex items-center gap-2">
+                        {playerHasStats(player) && <CheckCircle className="h-3.5 w-3.5 text-green-500" />}
+                        {player.playerName}
+                      </span>
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+            <Button 
+              variant="outline" 
+              size="icon"
+              className="h-9 w-9 shrink-0"
+              onClick={goToNextPlayer}
+              disabled={currentPlayerIndex >= statsData.length - 1}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+          {/* Quick validate + next button */}
+          {selectedPlayer && currentPlayerIndex < statsData.length - 1 && (
+            <Button 
+              variant="secondary" 
+              size="sm"
+              className="w-full gap-2"
+              onClick={goToNextPlayer}
+            >
+              <CheckCircle className="h-4 w-4" />
+              Valider et passer au suivant
+            </Button>
+          )}
         </div>
 
         {/* Goalkeeper toggle for sports that support it */}
