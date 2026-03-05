@@ -425,7 +425,7 @@ export default function AthleteSpace() {
       {/* Content */}
       <main className="max-w-5xl mx-auto px-4 py-6">
        <Tabs defaultValue="dashboard" className="w-full">
-            <TabsList className="w-full flex overflow-x-auto gap-1.5 h-auto flex-wrap justify-start bg-transparent p-0 mb-6">
+            <TabsList className="w-full flex overflow-x-auto gap-1.5 h-auto flex-nowrap justify-start bg-transparent p-0 mb-6 scrollbar-none pb-1">
               <TabsTrigger 
                 value="dashboard" 
                 className="athlete-tab gap-1.5 px-3 py-2 rounded-xl font-semibold transition-all duration-200 data-[state=active]:shadow-lg"
