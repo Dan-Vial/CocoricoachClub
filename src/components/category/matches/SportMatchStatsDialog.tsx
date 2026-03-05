@@ -272,11 +272,56 @@ export function SportMatchStatsDialog({
         const { error } = await supabase.from("player_match_stats").insert(statsToInsert);
         if (error) throw error;
       }
+
+      // Auto-inject RPE 10/10 for each player based on minutes played
+      if (matchData && statsData.length > 0) {
+        const matchDate = matchData.match_date?.split("T")[0] || new Date().toISOString().split("T")[0];
+        
+        // Delete any existing match RPE entries for this match date + these players
+        // to avoid duplicates on re-save
+        const playerIds = statsData.map(s => s.playerId);
+        for (const playerId of playerIds) {
+          await supabase
+            .from("awcr_tracking")
+            .delete()
+            .eq("player_id", playerId)
+            .eq("category_id", categoryId)
+            .eq("session_date", matchDate)
+            .is("training_session_id", null)
+            .gte("rpe", 10); // Only delete match RPE entries (RPE=10)
+        }
+
+        // Build RPE entries - use minutesPlayed or playingTime from sport_data
+        const rpeEntries = statsData
+          .map(s => {
+            const minutes = Number(s.minutesPlayed) || Number(s.playingTime) || Number(s.setsPlayed) || 80;
+            const rpe = 10;
+            const trainingLoad = rpe * minutes;
+            return {
+              player_id: s.playerId,
+              category_id: categoryId,
+              session_date: matchDate,
+              rpe,
+              duration_minutes: minutes,
+              training_load: trainingLoad,
+            };
+          });
+
+        if (rpeEntries.length > 0) {
+          const { error: rpeError } = await supabase.from("awcr_tracking").insert(rpeEntries);
+          if (rpeError) {
+            console.error("Error inserting match RPE:", rpeError);
+            // Don't throw - stats were saved successfully
+          }
+        }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["player_match_stats", matchId] });
       queryClient.invalidateQueries({ queryKey: ["match", matchId] });
-      toast.success("Statistiques enregistrées");
+      queryClient.invalidateQueries({ queryKey: ["awcr_tracking"] });
+      queryClient.invalidateQueries({ queryKey: ["today_rpe_decision", categoryId] });
+      toast.success("Statistiques et charge match enregistrées");
       onOpenChange(false);
     },
     onError: (error) => {
