@@ -119,12 +119,13 @@ export function ChatWindow({ conversationId, categoryId }: ChatWindowProps) {
       try {
         const otherParticipants = participants?.filter(p => p.user_id !== user.id) || [];
         if (otherParticipants.length > 0) {
-          const externalIds = otherParticipants.map(p => p.user_id);
+          const target_user_ids = otherParticipants.map(p => p.user_id);
           await supabase.functions.invoke("send-targeted-notification", {
             body: {
               title: isAnnouncement ? "📢 Nouvelle annonce" : "💬 Nouveau message",
               message: messageContent.length > 100 ? messageContent.substring(0, 100) + "..." : messageContent,
-              externalIds,
+              target_user_ids,
+              channels: ["push"],
               data: { conversationId, type: "chat_message" },
             },
           });
