@@ -1582,7 +1582,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
       let yPos = drawPdfHeaderCustom(
         pdf,
         "RAPPORT DE PRÉSENCES",
-        `${category?.clubs?.name} - ${category?.name}`,
+        `${category?.clubs?.name} - ${category?.name}${sn4 ? ` • ${sn4}` : ''}`,
         `Généré le ${format(new Date(), "d MMMM yyyy", { locale: fr })}${dateRange}`,
         pdfSettings,
         logoBase64
