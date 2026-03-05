@@ -423,26 +423,23 @@ export function SportMatchStatsDialog({
                             />
                           </div>
                           <div>
-                            <Label className="text-sm">Séquence la plus longue (sec)</Label>
+                            <Label className="text-sm">Séquence la plus longue (min)</Label>
                             <Input
-                              type="number"
-                              value={longestPlaySequence}
-                              onChange={(e) => setLongestPlaySequence(parseInt(e.target.value) || 0)}
-                              min={0}
+                              type="text"
+                              value={longestPlaySequence ? formatSecondsToMinutes(longestPlaySequence) : ""}
+                              onChange={(e) => setLongestPlaySequence(parseMinutesToSeconds(e.target.value))}
                               className="h-9 mt-1"
-                              placeholder="Ex: 180"
+                              placeholder="Ex: 3'00 ou 3.00"
                             />
                           </div>
                           <div>
-                            <Label className="text-sm">Séquence moyenne (sec)</Label>
+                            <Label className="text-sm">Séquence moyenne (min)</Label>
                             <Input
-                              type="number"
-                              step="0.1"
-                              value={averagePlaySequence}
-                              onChange={(e) => setAveragePlaySequence(parseFloat(e.target.value) || 0)}
-                              min={0}
+                              type="text"
+                              value={averagePlaySequence ? formatSecondsToMinutes(averagePlaySequence) : ""}
+                              onChange={(e) => setAveragePlaySequence(parseMinutesToSeconds(e.target.value))}
                               className="h-9 mt-1"
-                              placeholder="Ex: 45.5"
+                              placeholder="Ex: 0'45 ou 0.45"
                             />
                           </div>
                         </div>
