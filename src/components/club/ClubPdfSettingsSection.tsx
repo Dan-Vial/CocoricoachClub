@@ -72,6 +72,20 @@ export function ClubPdfSettingsSection({ clubId }: ClubPdfSettingsProps) {
     },
   });
 
+  // Fetch active season
+  const { data: activeSeason } = useQuery({
+    queryKey: ["active-season-pdf", clubId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("seasons")
+        .select("name")
+        .eq("club_id", clubId)
+        .eq("is_active", true)
+        .maybeSingle();
+      return data;
+    },
+  });
+
   useEffect(() => {
     if (savedSettings) {
       setSettings({
