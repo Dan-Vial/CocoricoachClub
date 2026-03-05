@@ -98,7 +98,7 @@ export function ConversationList({ categoryId, selectedId, onSelect, isAthlete =
     queryFn: async () => {
       const { data, error } = await supabase
         .from("players")
-        .select("id, name")
+        .select("id, name, user_id")
         .eq("category_id", categoryId)
         .order("name");
       if (error) throw error;
