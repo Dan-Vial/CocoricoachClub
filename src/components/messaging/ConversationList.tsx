@@ -61,6 +61,7 @@ interface ConversationListProps {
 interface Player {
   id: string;
   name: string;
+  user_id: string | null;
 }
 
 interface StaffMember {
@@ -97,7 +98,7 @@ export function ConversationList({ categoryId, selectedId, onSelect, isAthlete =
     queryFn: async () => {
       const { data, error } = await supabase
         .from("players")
-        .select("id, name")
+        .select("id, name, user_id")
         .eq("category_id", categoryId)
         .order("name");
       if (error) throw error;
@@ -158,7 +159,7 @@ export function ConversationList({ categoryId, selectedId, onSelect, isAthlete =
       
       const participantConvIds = (participantData || []).map(p => p.conversation_id);
       
-      // Fetch all category conversations
+      // Fetch conversations for this category where user is a participant
       const { data, error } = await supabase
         .from("conversations")
         .select("*")
@@ -166,17 +167,12 @@ export function ConversationList({ categoryId, selectedId, onSelect, isAthlete =
         .order("updated_at", { ascending: false });
       if (error) throw error;
       
-      // Filter: show group/channel conversations + only DMs where user is participant
-      // Athletes should NOT see the "Staff" group
+      // Only show conversations where user is a participant
+      // Hide "Staff" group from athletes
       return (data as Conversation[]).filter(conv => {
-        if (conv.conversation_type === "direct") {
-          return participantConvIds.includes(conv.id);
-        }
-        // Hide "Staff" group from athletes
-        if (isAthlete && conv.name === "Staff") {
-          return false;
-        }
-        return true; // Show all other groups/channels
+        if (!participantConvIds.includes(conv.id)) return false;
+        if (isAthlete && conv.name === "Staff") return false;
+        return true;
       });
     },
     enabled: !!user,
@@ -336,15 +332,73 @@ export function ConversationList({ categoryId, selectedId, onSelect, isAthlete =
           throw new Error("Veuillez sélectionner un destinataire");
         }
 
-        const recipientName = selectedRecipientType === "player" 
-          ? players?.find(p => p.id === selectedRecipientId)?.name
-          : staffMembers?.find(s => s.user_id === selectedRecipientId)?.profile?.full_name || "Staff";
+        let recipientUserId: string | null = null;
+        let recipientName: string = "";
+
+        if (selectedRecipientType === "player") {
+          const player = players?.find(p => p.id === selectedRecipientId);
+          recipientName = player?.name || "Joueur";
+          // Lookup the player's user_id
+          const { data: playerData } = await supabase
+            .from("players")
+            .select("user_id")
+            .eq("id", selectedRecipientId)
+            .single();
+          recipientUserId = playerData?.user_id || null;
+          if (!recipientUserId) {
+            throw new Error("Ce joueur n'a pas encore de compte utilisateur");
+          }
+        } else {
+          recipientUserId = selectedRecipientId;
+          recipientName = staffMembers?.find(s => s.user_id === selectedRecipientId)?.profile?.full_name || "Staff";
+        }
+
+        // Check if a DM already exists between these two users
+        const { data: existingParticipations } = await supabase
+          .from("conversation_participants")
+          .select("conversation_id")
+          .eq("user_id", user.id);
+
+        const myConvIds = (existingParticipations || []).map(p => p.conversation_id);
+
+        if (myConvIds.length > 0) {
+          const { data: recipientParticipations } = await supabase
+            .from("conversation_participants")
+            .select("conversation_id")
+            .eq("user_id", recipientUserId)
+            .in("conversation_id", myConvIds);
+
+          const sharedConvIds = (recipientParticipations || []).map(p => p.conversation_id);
+
+          if (sharedConvIds.length > 0) {
+            // Check if any of the shared conversations is a direct message
+            const { data: existingDM } = await supabase
+              .from("conversations")
+              .select("id")
+              .in("id", sharedConvIds)
+              .eq("conversation_type", "direct")
+              .maybeSingle();
+
+            if (existingDM) {
+              // DM already exists, just select it
+              return existingDM;
+            }
+          }
+        }
+
+        // Get current user's display name for the conversation name
+        const { data: myProfile } = await supabase
+          .from("profiles")
+          .select("full_name")
+          .eq("id", user.id)
+          .single();
+        const myName = myProfile?.full_name || "Moi";
 
         const { data: conv, error: convError } = await supabase
           .from("conversations")
           .insert({
             category_id: categoryId,
-            name: `Message privé - ${recipientName}`,
+            name: `${myName} ↔ ${recipientName}`,
             conversation_type: "direct",
             created_by: user.id,
           })
@@ -353,21 +407,11 @@ export function ConversationList({ categoryId, selectedId, onSelect, isAthlete =
         
         if (convError) throw convError;
 
-        // Add creator as participant
-        await supabase.from("conversation_participants").insert({
-          conversation_id: conv.id,
-          user_id: user.id,
-          is_admin: true,
-        });
-
-        // For staff, add them directly as participant
-        if (selectedRecipientType === "staff") {
-          await supabase.from("conversation_participants").insert({
-            conversation_id: conv.id,
-            user_id: selectedRecipientId,
-            is_admin: false,
-          });
-        }
+        // Add both users as participants
+        await supabase.from("conversation_participants").insert([
+          { conversation_id: conv.id, user_id: user.id, is_admin: true },
+          { conversation_id: conv.id, user_id: recipientUserId, is_admin: false },
+        ]);
 
         return conv;
       }
@@ -550,7 +594,7 @@ export function ConversationList({ categoryId, selectedId, onSelect, isAthlete =
                           </SelectTrigger>
                           <SelectContent>
                             {selectedRecipientType === "player" ? (
-                              players?.map((player) => (
+                              players?.filter(p => p.user_id).map((player) => (
                                 <SelectItem key={player.id} value={player.id}>
                                   <div className="flex items-center gap-2">
                                     <Avatar className="h-6 w-6">
