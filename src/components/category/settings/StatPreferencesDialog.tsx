@@ -433,14 +433,17 @@ export function StatPreferencesDialog({
           </ScrollArea>
 
           <DialogFooter className="mt-4">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground mr-auto">
+              {isSaving && <span>Enregistrement...</span>}
+              {lastSaved && !isSaving && (
+                <span className="flex items-center gap-1 text-green-600">
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  Sauvegardé
+                </span>
+              )}
+            </div>
             <Button variant="outline" onClick={() => onOpenChange(false)}>
-              Annuler
-            </Button>
-            <Button 
-              onClick={() => savePrefs.mutate()} 
-              disabled={savePrefs.isPending || enabledStats.length === 0}
-            >
-              {savePrefs.isPending ? "Enregistrement..." : "Enregistrer"}
+              Fermer
             </Button>
           </DialogFooter>
         </DialogContent>
