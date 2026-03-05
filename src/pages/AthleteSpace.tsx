@@ -425,10 +425,10 @@ export default function AthleteSpace() {
       {/* Content */}
       <main className="max-w-5xl mx-auto px-4 py-6">
        <Tabs defaultValue="dashboard" className="w-full">
-            <TabsList className="w-full flex overflow-x-auto gap-1.5 h-auto flex-nowrap justify-start bg-transparent p-0 mb-6 scrollbar-none pb-1">
-             <TabsTrigger 
-                value="dashboard" 
-                className="athlete-tab shrink-0 gap-1.5 px-3 py-2 rounded-xl font-semibold transition-all duration-200 data-[state=active]:shadow-lg"
+             <TabsList className="w-full flex overflow-x-auto gap-1 h-auto flex-nowrap justify-start bg-transparent p-0 mb-6 pb-2" style={{ WebkitOverflowScrolling: 'touch' }}>
+              <TabsTrigger 
+                 value="dashboard" 
+                 className="athlete-tab shrink-0 gap-1 px-2 py-1.5 rounded-xl font-semibold text-xs transition-all duration-200 data-[state=active]:shadow-lg"
                 style={{
                   color: NAV_COLORS.sante.base,
                   backgroundColor: `${NAV_COLORS.sante.base}15`,
@@ -442,9 +442,9 @@ export default function AthleteSpace() {
               </TabsTrigger>
               <TabsTrigger 
                 value="rpe"
-                className="athlete-tab shrink-0 gap-1.5 px-3 py-2 rounded-xl font-semibold transition-all duration-200 data-[state=active]:shadow-lg"
-                style={{
-                  color: NAV_COLORS.performance.base,
+                 className="athlete-tab shrink-0 gap-1 px-2 py-1.5 rounded-xl font-semibold text-xs transition-all duration-200 data-[state=active]:shadow-lg"
+                 style={{
+                   color: NAV_COLORS.performance.base,
                   backgroundColor: `${NAV_COLORS.performance.base}15`,
                   borderBottom: `3px solid ${NAV_COLORS.performance.base}`,
                   ["--tab-color" as string]: NAV_COLORS.performance.base,
@@ -455,22 +455,22 @@ export default function AthleteSpace() {
               </TabsTrigger>
               <TabsTrigger 
                 value="wellness"
-                className="athlete-tab shrink-0 gap-1.5 px-3 py-2 rounded-xl font-semibold transition-all duration-200 data-[state=active]:shadow-lg"
-                style={{
-                  color: NAV_COLORS.sante.base,
-                  backgroundColor: `${NAV_COLORS.sante.base}15`,
-                  borderBottom: `3px solid ${NAV_COLORS.sante.base}`,
-                  ["--tab-color" as string]: NAV_COLORS.sante.base,
-                }}
-              >
-                <Heart className="h-3.5 w-3.5" />
-                Wellness
+                 className="athlete-tab shrink-0 gap-1 px-2 py-1.5 rounded-xl font-semibold text-xs transition-all duration-200 data-[state=active]:shadow-lg"
+                 style={{
+                   color: NAV_COLORS.sante.base,
+                   backgroundColor: `${NAV_COLORS.sante.base}15`,
+                   borderBottom: `3px solid ${NAV_COLORS.sante.base}`,
+                   ["--tab-color" as string]: NAV_COLORS.sante.base,
+                 }}
+               >
+                 <Heart className="h-3.5 w-3.5" />
+                 Wellness
               </TabsTrigger>
               <TabsTrigger 
                 value="progression"
-                className="athlete-tab shrink-0 gap-1.5 px-3 py-2 rounded-xl font-semibold transition-all duration-200 data-[state=active]:shadow-lg"
-                style={{
-                  color: NAV_COLORS.programmation.base,
+                 className="athlete-tab shrink-0 gap-1 px-2 py-1.5 rounded-xl font-semibold text-xs transition-all duration-200 data-[state=active]:shadow-lg"
+                 style={{
+                   color: NAV_COLORS.programmation.base,
                   backgroundColor: `${NAV_COLORS.programmation.base}15`,
                   borderBottom: `3px solid ${NAV_COLORS.programmation.base}`,
                   ["--tab-color" as string]: NAV_COLORS.programmation.base,
@@ -481,9 +481,9 @@ export default function AthleteSpace() {
               </TabsTrigger>
               <TabsTrigger 
                 value="objectives"
-                className="athlete-tab shrink-0 gap-1.5 px-3 py-2 rounded-xl font-semibold transition-all duration-200 data-[state=active]:shadow-lg"
-                style={{
-                  color: NAV_COLORS.planification.base,
+                 className="athlete-tab shrink-0 gap-1 px-2 py-1.5 rounded-xl font-semibold text-xs transition-all duration-200 data-[state=active]:shadow-lg"
+                 style={{
+                   color: NAV_COLORS.planification.base,
                   backgroundColor: `${NAV_COLORS.planification.base}15`,
                   borderBottom: `3px solid ${NAV_COLORS.planification.base}`,
                   ["--tab-color" as string]: NAV_COLORS.planification.base,
@@ -494,34 +494,34 @@ export default function AthleteSpace() {
               </TabsTrigger>
               <TabsTrigger 
                 value="health"
-                className="athlete-tab shrink-0 gap-1.5 px-3 py-2 rounded-xl font-semibold transition-all duration-200 data-[state=active]:shadow-lg"
-                style={{
-                  color: NAV_COLORS.sante.base,
-                  backgroundColor: `${NAV_COLORS.sante.base}15`,
-                  borderBottom: `3px solid ${NAV_COLORS.sante.base}`,
-                  ["--tab-color" as string]: NAV_COLORS.sante.base,
-                }}
-              >
-                <Shield className="h-3.5 w-3.5" />
-                Santé
+                 className="athlete-tab shrink-0 gap-1 px-2 py-1.5 rounded-xl font-semibold text-xs transition-all duration-200 data-[state=active]:shadow-lg"
+                 style={{
+                   color: NAV_COLORS.sante.base,
+                   backgroundColor: `${NAV_COLORS.sante.base}15`,
+                   borderBottom: `3px solid ${NAV_COLORS.sante.base}`,
+                   ["--tab-color" as string]: NAV_COLORS.sante.base,
+                 }}
+               >
+                 <Shield className="h-3.5 w-3.5" />
+                 Santé
               </TabsTrigger>
               <TabsTrigger 
                 value="education"
-                className="athlete-tab shrink-0 gap-1.5 px-3 py-2 rounded-xl font-semibold transition-all duration-200 data-[state=active]:shadow-lg"
-                style={{
-                  color: NAV_COLORS.effectif.base,
-                  backgroundColor: `${NAV_COLORS.effectif.base}15`,
-                  borderBottom: `3px solid ${NAV_COLORS.effectif.base}`,
-                  ["--tab-color" as string]: NAV_COLORS.effectif.base,
-                }}
-              >
-               <BookOpen className="h-3.5 w-3.5" />
-                 Conseils
-                </TabsTrigger>
+                 className="athlete-tab shrink-0 gap-1 px-2 py-1.5 rounded-xl font-semibold text-xs transition-all duration-200 data-[state=active]:shadow-lg"
+                 style={{
+                   color: NAV_COLORS.effectif.base,
+                   backgroundColor: `${NAV_COLORS.effectif.base}15`,
+                   borderBottom: `3px solid ${NAV_COLORS.effectif.base}`,
+                   ["--tab-color" as string]: NAV_COLORS.effectif.base,
+                 }}
+               >
+                <BookOpen className="h-3.5 w-3.5" />
+                  Conseils
+                 </TabsTrigger>
                {!isSuperAdminView && (
                   <TabsTrigger 
                     value="messaging"
-                    className="athlete-tab shrink-0 relative gap-1.5 px-3 py-2 rounded-xl font-semibold transition-all duration-200 data-[state=active]:shadow-lg"
+                    className="athlete-tab shrink-0 relative gap-1 px-2 py-1.5 rounded-xl font-semibold text-xs transition-all duration-200 data-[state=active]:shadow-lg"
                     style={{
                       color: NAV_COLORS.communication.base,
                       backgroundColor: `${NAV_COLORS.communication.base}15`,
@@ -541,12 +541,12 @@ export default function AthleteSpace() {
                {!isSuperAdminView && (
                   <TabsTrigger 
                     value="settings"
-                    className="athlete-tab shrink-0 gap-1.5 px-3 py-2 rounded-xl font-semibold transition-all duration-200 data-[state=active]:shadow-lg"
-                    style={{
-                      color: NAV_COLORS.effectif.base,
-                      backgroundColor: `${NAV_COLORS.effectif.base}15`,
-                      borderBottom: `3px solid ${NAV_COLORS.effectif.base}`,
-                      ["--tab-color" as string]: NAV_COLORS.effectif.base,
+                     className="athlete-tab shrink-0 gap-1 px-2 py-1.5 rounded-xl font-semibold text-xs transition-all duration-200 data-[state=active]:shadow-lg"
+                     style={{
+                       color: NAV_COLORS.settings.base,
+                       backgroundColor: `${NAV_COLORS.settings.base}15`,
+                       borderBottom: `3px solid ${NAV_COLORS.settings.base}`,
+                       ["--tab-color" as string]: NAV_COLORS.settings.base,
                     }}
                   >
                     <Settings className="h-3.5 w-3.5" />
