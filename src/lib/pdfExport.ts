@@ -204,11 +204,14 @@ export const preparePdfWithSettings = async (categoryId: string) => {
   const logoUrl = settings?.logo_url;
   let clubLogoUrl: string | null = null;
   let clubName: string | null = null;
+  let categoryName: string | null = null;
+  let seasonName: string | null = null;
+  let clubId: string | null = null;
 
   try {
     const { data: catInfo } = await supabase
       .from("categories")
-      .select("name, clubs(name, logo_url)")
+      .select("name, club_id, clubs(name, logo_url)")
       .eq("id", categoryId)
       .single();
     
@@ -216,9 +219,28 @@ export const preparePdfWithSettings = async (categoryId: string) => {
       const club = catInfo.clubs as any;
       clubLogoUrl = club?.logo_url || null;
       clubName = club?.name || null;
+      categoryName = catInfo.name || null;
+      clubId = catInfo.club_id || null;
     }
   } catch {
     // ignore
+  }
+
+  // Fetch active season for the club
+  if (clubId) {
+    try {
+      const { data: season } = await supabase
+        .from("seasons")
+        .select("name")
+        .eq("club_id", clubId)
+        .eq("is_active", true)
+        .maybeSingle();
+      if (season) {
+        seasonName = season.name;
+      }
+    } catch {
+      // ignore
+    }
   }
 
   const finalLogoUrl = logoUrl || clubLogoUrl;
@@ -239,7 +261,7 @@ export const preparePdfWithSettings = async (categoryId: string) => {
     effectiveSettings = { ...effectiveSettings, club_name_override: clubName };
   }
 
-  return { settings: effectiveSettings, logoBase64 };
+  return { settings: effectiveSettings, logoBase64, clubName, categoryName, seasonName };
 };
 
 // Draw section title
@@ -563,6 +585,7 @@ export const exportSessionToPdf = async (
     logoBase64?: string | null;
     blocks?: any[];
     testCategories?: any[];
+    seasonName?: string | null;
   }
 ): Promise<void> => {
   const pdf = new jsPDF({
@@ -610,6 +633,9 @@ export const exportSessionToPdf = async (
   }
   if (customSettings?.show_category_name !== false) {
     subtitleParts.push(categoryName);
+  }
+  if ((options as any)?.seasonName) {
+    subtitleParts.push((options as any).seasonName);
   }
   if (subtitleParts.length > 0) {
     pdf.text(subtitleParts.join(" • "), xOffset, 25);

@@ -84,12 +84,13 @@ export function SessionDetailsDialog({
   const handlePrint = async () => {
     if (!session) return;
     try {
-      const { settings: pdfSettings, logoBase64 } = await preparePdfWithSettings(categoryId);
+      const { settings: pdfSettings, logoBase64, seasonName } = await preparePdfWithSettings(categoryId);
       await exportSessionToPdf(session, exercises || [], session.training_type || "Séance", {
         customSettings: pdfSettings,
         logoBase64,
         blocks: sessionBlocks || [],
         testCategories: TEST_CATEGORIES,
+        seasonName,
       });
     } catch {
       if (printRef.current) {

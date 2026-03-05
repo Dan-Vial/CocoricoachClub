@@ -72,6 +72,20 @@ export function ClubPdfSettingsSection({ clubId }: ClubPdfSettingsProps) {
     },
   });
 
+  // Fetch active season
+  const { data: activeSeason } = useQuery({
+    queryKey: ["active-season-pdf", clubId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("seasons")
+        .select("name")
+        .eq("club_id", clubId)
+        .eq("is_active", true)
+        .maybeSingle();
+      return data;
+    },
+  });
+
   useEffect(() => {
     if (savedSettings) {
       setSettings({
@@ -285,7 +299,11 @@ export function ClubPdfSettingsSection({ clubId }: ClubPdfSettingsProps) {
             )}
             <div className="text-white">
               {settings.show_club_name && <p className="font-bold text-sm">{displayClubName}</p>}
-              {settings.show_category_name && <p className="text-xs opacity-80">Nom de la catégorie</p>}
+              {settings.show_category_name && (
+                <p className="text-xs opacity-80">
+                  Nom de la catégorie{activeSeason?.name ? ` • ${activeSeason.name}` : ''}
+                </p>
+              )}
               {settings.show_date && <p className="text-xs opacity-60 mt-0.5">05/03/2026</p>}
             </div>
           </div>

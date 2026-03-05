@@ -159,7 +159,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
       if (!player) throw new Error("Joueur non trouvé");
 
       // Prepare custom PDF settings
-      const { settings: pdfSettings, logoBase64 } = await preparePdfWithSettings(categoryId);
+      const { settings: pdfSettings, logoBase64, seasonName } = await preparePdfWithSettings(categoryId);
 
       // Build date filters
       const dateFilters = (query: any) => {
@@ -221,7 +221,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
         pdf,
         `FICHE JOUEUR`,
         `${[player.first_name, player.name].filter(Boolean).join(" ")} - ${player.position || 'Position non définie'}`,
-        `${category?.clubs?.name} - ${category?.name} | ${format(new Date(), "d MMMM yyyy", { locale: fr })}${dateRange ? ` | ${dateRange}` : ""}`,
+        `${category?.clubs?.name} - ${category?.name}${seasonName ? ` • ${seasonName}` : ''} | ${format(new Date(), "d MMMM yyyy", { locale: fr })}${dateRange ? ` | ${dateRange}` : ""}`,
         pdfSettings,
         logoBase64
       );
@@ -505,7 +505,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
     setGeneratingReport("season");
     
     try {
-      const { settings: pdfSettings, logoBase64 } = await preparePdfWithSettings(categoryId);
+      const { settings: pdfSettings, logoBase64, seasonName: sName } = await preparePdfWithSettings(categoryId);
 
       const [matchesRes, injuriesRes, goalsRes, awcrRes] = await Promise.all([
         supabase.from("matches").select("*").eq("category_id", categoryId).order("match_date"),
@@ -534,7 +534,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
 
       let yPos = drawPdfHeaderCustom(
         pdf,
-        `BILAN DE SAISON ${new Date().getFullYear()}/${new Date().getFullYear() + 1}`,
+        `BILAN DE SAISON${sName ? ` - ${sName}` : ` ${new Date().getFullYear()}/${new Date().getFullYear() + 1}`}`,
         `${category?.clubs?.name} - ${category?.name}`,
         `Généré le ${format(new Date(), "d MMMM yyyy", { locale: fr })}`,
         pdfSettings,
@@ -708,7 +708,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
       const match = matches.find(m => m.id === selectedMatch);
       if (!match) throw new Error("Match non trouvé");
 
-      const { settings: pdfSettings, logoBase64 } = await preparePdfWithSettings(categoryId);
+      const { settings: pdfSettings, logoBase64, seasonName: sn2 } = await preparePdfWithSettings(categoryId);
 
       // Fetch match data + stat preferences
       const [lineupsRes, statsRes, statPrefsRes, customStatsRes] = await Promise.all([
@@ -924,7 +924,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
     setGeneratingReport("squad");
     
     try {
-      const { settings: pdfSettings, logoBase64 } = await preparePdfWithSettings(categoryId);
+      const { settings: pdfSettings, logoBase64, seasonName: sn3 } = await preparePdfWithSettings(categoryId);
 
       const { data: categoryMatches } = await supabase
         .from("matches")
@@ -1036,7 +1036,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
       yPos = drawPdfHeaderCustom(
         pdf,
         "VUE D'ENSEMBLE DE L'EFFECTIF",
-        `${category?.clubs?.name} - ${category?.name}`,
+        `${category?.clubs?.name} - ${category?.name}${sn3 ? ` • ${sn3}` : ''}`,
         `Généré le ${format(new Date(), "d MMMM yyyy", { locale: fr })}${dateRange ? ` | ${dateRange.trim()}` : ""}`,
         pdfSettings,
         logoBase64
@@ -1527,7 +1527,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
     setGeneratingReport("attendance");
     
     try {
-      const { settings: pdfSettings, logoBase64 } = await preparePdfWithSettings(categoryId);
+      const { settings: pdfSettings, logoBase64, seasonName: sn4 } = await preparePdfWithSettings(categoryId);
 
       // Fetch attendance data with date filtering
       const [sessionsRes, attendanceRes] = await Promise.all([
@@ -1582,7 +1582,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
       let yPos = drawPdfHeaderCustom(
         pdf,
         "RAPPORT DE PRÉSENCES",
-        `${category?.clubs?.name} - ${category?.name}`,
+        `${category?.clubs?.name} - ${category?.name}${sn4 ? ` • ${sn4}` : ''}`,
         `Généré le ${format(new Date(), "d MMMM yyyy", { locale: fr })}${dateRange}`,
         pdfSettings,
         logoBase64

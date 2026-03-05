@@ -94,7 +94,7 @@ export function DailySessionView({ categoryId, categoryName = "Catégorie" }: Da
 
   const handlePrintSession = async (session: any, exercises: any[]) => {
     try {
-      const { settings: pdfSettings, logoBase64 } = await preparePdfWithSettings(categoryId);
+      const { settings: pdfSettings, logoBase64, seasonName } = await preparePdfWithSettings(categoryId);
       // Fetch blocks for this session
       const { data: blocks } = await supabase
         .from("training_session_blocks")
@@ -107,6 +107,7 @@ export function DailySessionView({ categoryId, categoryName = "Catégorie" }: Da
         logoBase64,
         blocks: blocks || [],
         testCategories: TEST_CATEGORIES,
+        seasonName,
       });
     } catch {
       exportSessionToPdf(session, exercises, categoryName);
