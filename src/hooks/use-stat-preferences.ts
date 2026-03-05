@@ -33,11 +33,16 @@ export function useStatPreferences({
     queryFn: async () => {
       const { data, error } = await supabase
         .from("category_stat_preferences")
-        .select("enabled_stats")
+        .select("enabled_stats, enabled_custom_stats")
         .eq("category_id", categoryId)
         .maybeSingle();
       if (error) throw error;
-      return data?.enabled_stats as string[] | null;
+      if (!data) return null;
+      const allEnabled = [
+        ...(data.enabled_stats ?? []),
+        ...(data.enabled_custom_stats ?? []),
+      ];
+      return allEnabled.length > 0 ? allEnabled : null;
     },
     enabled: !!categoryId,
   });

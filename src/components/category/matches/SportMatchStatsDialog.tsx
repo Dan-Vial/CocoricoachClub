@@ -70,6 +70,8 @@ export function SportMatchStatsDialog({
   const [effectivePlayTime, setEffectivePlayTime] = useState<number>(0);
   const [longestPlaySequence, setLongestPlaySequence] = useState<number>(0);
   const [averagePlaySequence, setAveragePlaySequence] = useState<number>(0);
+  const [longestPlaySequenceText, setLongestPlaySequenceText] = useState<string>("");
+  const [averagePlaySequenceText, setAveragePlaySequenceText] = useState<string>("");
   const [showGpsImport, setShowGpsImport] = useState(false);
   const [activeCategoryIndex, setActiveCategoryIndex] = useState(0);
   const queryClient = useQueryClient();
@@ -116,8 +118,12 @@ export function SportMatchStatsDialog({
   useEffect(() => {
     if (matchData) {
       setEffectivePlayTime(matchData.effective_play_time ?? 0);
-      setLongestPlaySequence(matchData.longest_play_sequence ?? 0);
-      setAveragePlaySequence(matchData.average_play_sequence ?? 0);
+      const lps = matchData.longest_play_sequence ?? 0;
+      const aps = matchData.average_play_sequence ?? 0;
+      setLongestPlaySequence(lps);
+      setAveragePlaySequence(aps);
+      setLongestPlaySequenceText(lps ? formatSecondsToMinutes(lps) : "");
+      setAveragePlaySequenceText(aps ? formatSecondsToMinutes(aps) : "");
     }
   }, [matchData]);
 
@@ -440,8 +446,9 @@ export function SportMatchStatsDialog({
                 <Label className="text-xs">Séquence max</Label>
                 <Input
                   type="text"
-                  value={longestPlaySequence ? formatSecondsToMinutes(longestPlaySequence) : ""}
-                  onChange={(e) => setLongestPlaySequence(parseMinutesToSeconds(e.target.value))}
+                  value={longestPlaySequenceText}
+                  onChange={(e) => setLongestPlaySequenceText(e.target.value)}
+                  onBlur={() => setLongestPlaySequence(parseMinutesToSeconds(longestPlaySequenceText))}
                   className="h-8 mt-1"
                   placeholder="3'00"
                 />
@@ -450,8 +457,9 @@ export function SportMatchStatsDialog({
                 <Label className="text-xs">Séquence moyenne</Label>
                 <Input
                   type="text"
-                  value={averagePlaySequence ? formatSecondsToMinutes(averagePlaySequence) : ""}
-                  onChange={(e) => setAveragePlaySequence(parseMinutesToSeconds(e.target.value))}
+                  value={averagePlaySequenceText}
+                  onChange={(e) => setAveragePlaySequenceText(e.target.value)}
+                  onBlur={() => setAveragePlaySequence(parseMinutesToSeconds(averagePlaySequenceText))}
                   className="h-8 mt-1"
                   placeholder="0'45"
                 />
