@@ -211,7 +211,7 @@ export const VOLLEYBALL_STATS: StatField[] = [
   { key: "setErrors", label: "Erreurs de passe", shortLabel: "Err. passe", category: "attack", type: "number" },
   { key: "serviceErrors", label: "Erreurs au service", shortLabel: "Err. serv.", category: "attack", type: "number" },
   { key: "serviceAttempts", label: "Services tentés", shortLabel: "Serv. tent.", category: "attack", type: "number" },
-  { key: "serviceAcePercentage", label: "% Ace service", shortLabel: "% Ace", category: "attack", type: "number", max: 100 },
+  { key: "serviceAcePercentage", label: "% Ace service", shortLabel: "% Ace", category: "attack", type: "percentage", max: 100, computedFrom: { successKey: "aces", totalKey: "serviceAttempts" } },
   // Individual Stats - Defense
   { key: "blocks", label: "Contres", shortLabel: "Contres", category: "defense", type: "number" },
   { key: "blockSolos", label: "Contres solo", shortLabel: "C. solo", category: "defense", type: "number" },
