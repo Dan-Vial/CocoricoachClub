@@ -604,17 +604,13 @@ export default function AthleteSpace() {
             <AthleteSpaceEducation sportType={athleteInfo.sport_type} />
           </TabsContent>
 
-          {!isSuperAdminView && (
-            <TabsContent value="messaging">
+          <TabsContent value="messaging">
               <MessagingTab categoryId={athleteInfo.category_id} isAthlete={true} />
             </TabsContent>
-          )}
 
-          {!isSuperAdminView && (
             <TabsContent value="settings">
               <AthleteSpaceSettings />
             </TabsContent>
-          )}
         </Tabs>
       </main>
     </div>
