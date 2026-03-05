@@ -13,6 +13,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
   import { 
     Users, 
     AlertTriangle, 
@@ -841,88 +843,149 @@ import { isIndividualSport } from "@/lib/constants/sportTypes";
         </Card>
 
         {/* 1.55️⃣ RPE DU JOUR */}
-        {rpeStatus.length > 0 && (
-          <Card className="border-2 border-indigo-500/20 bg-gradient-to-r from-indigo-500/5 to-transparent">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Activity className="h-5 w-5 text-indigo-600" />
-                RPE post-séance du jour
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {rpeStatus.map(session => (
-                <div key={session.sessionId} className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium">{session.sessionName}</span>
-                      {session.sessionTime && (
-                        <Badge variant="outline" className="text-xs">{session.sessionTime}</Badge>
-                      )}
-                      <span className="text-xs text-muted-foreground">
-                        RPE cible: {session.plannedIntensity}/10
+        {rpeStatus.length > 0 && (() => {
+          const completedSessions = rpeStatus.filter(s => s.filledPercent === 100).length;
+          const totalSessions = rpeStatus.length;
+          const globalPercent = totalSessions > 0
+            ? Math.round(rpeStatus.reduce((sum, s) => sum + s.filledPercent, 0) / totalSessions)
+            : 0;
+          
+          return (
+            <Card className="border-2 border-indigo-500/20 bg-gradient-to-r from-indigo-500/5 to-transparent">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Activity className="h-5 w-5 text-indigo-600" />
+                  RPE post-séance du jour
+                  <Badge variant="secondary" className="ml-auto text-xs">
+                    {completedSessions}/{totalSessions} séance{totalSessions > 1 ? "s" : ""} complétée{completedSessions > 1 ? "s" : ""}
+                  </Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {/* Global summary when multiple sessions */}
+                {totalSessions > 1 && (
+                  <div className="p-3 rounded-lg bg-indigo-50/50 dark:bg-indigo-900/10 border border-indigo-200/50 dark:border-indigo-800/30 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-indigo-700 dark:text-indigo-300">Progression globale</span>
+                      <span className={cn(
+                        "text-lg font-bold",
+                        globalPercent >= 80 ? "text-green-600" : 
+                        globalPercent >= 50 ? "text-yellow-600" : "text-red-600"
+                      )}>
+                        {globalPercent}%
                       </span>
                     </div>
-                    <span className={cn(
-                      "text-xl font-bold",
-                      session.filledPercent >= 80 ? "text-green-600" : 
-                      session.filledPercent >= 50 ? "text-yellow-600" : "text-red-600"
-                    )}>
-                      {session.filledPercent}%
-                    </span>
+                    <Progress 
+                      value={globalPercent} 
+                      className={cn(
+                        "h-2",
+                        globalPercent >= 80 ? "[&>div]:bg-green-500" : 
+                        globalPercent >= 50 ? "[&>div]:bg-yellow-500" : "[&>div]:bg-red-500"
+                      )}
+                    />
                   </div>
-                  <Progress 
-                    value={session.filledPercent} 
-                    className={cn(
-                      "h-3",
-                      session.filledPercent >= 80 ? "[&>div]:bg-green-500" : 
-                      session.filledPercent >= 50 ? "[&>div]:bg-yellow-500" : "[&>div]:bg-red-500"
-                    )}
-                  />
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs text-muted-foreground">
-                      {session.filledCount} / {session.totalParticipants} ont rempli leur RPE
-                    </p>
-                    <div className="flex items-center gap-2">
-                      {session.filledPercent === 100 ? (
-                        <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-green-100 dark:bg-green-900/30">
-                          <CheckCircle className="h-3.5 w-3.5 text-green-600" />
-                          <span className="text-xs font-semibold text-green-700 dark:text-green-400">Complété</span>
+                )}
+
+                {/* Per-session details */}
+                <Accordion type="multiple" defaultValue={rpeStatus.filter(s => s.filledPercent < 100).map(s => s.sessionId)} className="space-y-2">
+                  {rpeStatus.map(session => (
+                    <AccordionItem key={session.sessionId} value={session.sessionId} className="border rounded-lg px-3 data-[state=open]:bg-muted/30">
+                      <AccordionTrigger className="py-2.5 hover:no-underline gap-3">
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          {session.filledPercent === 100 ? (
+                            <CheckCircle className="h-4 w-4 text-green-600 shrink-0" />
+                          ) : (
+                            <div className={cn(
+                              "h-4 w-4 rounded-full border-2 shrink-0",
+                              session.filledPercent >= 50 ? "border-yellow-500 bg-yellow-100" : "border-red-400 bg-red-50"
+                            )} />
+                          )}
+                          <span className="text-sm font-medium truncate">{session.sessionName}</span>
+                          {session.sessionTime && (
+                            <Badge variant="outline" className="text-[10px] shrink-0">{session.sessionTime}</Badge>
+                          )}
+                          <span className="text-[10px] text-muted-foreground shrink-0">
+                            Cible: {session.plannedIntensity}/10
+                          </span>
+                          <span className={cn(
+                            "ml-auto text-sm font-bold shrink-0",
+                            session.filledPercent >= 80 ? "text-green-600" : 
+                            session.filledPercent >= 50 ? "text-yellow-600" : "text-red-600"
+                          )}>
+                            {session.filledCount}/{session.totalParticipants}
+                          </span>
                         </div>
-                      ) : (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-7 text-xs"
-                          onClick={() => {
-                            setRpeDialogSessionId(session.sessionId);
-                            setRpeDialogOpen(true);
-                          }}
-                        >
-                          <Pencil className="h-3 w-3 mr-1" />
-                          Saisir RPE
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                  {session.missingPlayers.length > 0 && session.missingPlayers.length <= 8 && (
-                    <div className="flex flex-wrap gap-1">
-                      {session.missingPlayers.map((name, idx) => (
-                        <Badge key={idx} variant="outline" className="text-xs text-muted-foreground">
-                          {name}
-                        </Badge>
-                      ))}
-                      {session.missingPlayers.length > 8 && (
-                        <Badge variant="outline" className="text-xs">
-                          +{session.missingPlayers.length - 8}
-                        </Badge>
-                      )}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        )}
+                      </AccordionTrigger>
+                      <AccordionContent className="pb-3 space-y-2">
+                        <Progress 
+                          value={session.filledPercent} 
+                          className={cn(
+                            "h-2.5",
+                            session.filledPercent >= 80 ? "[&>div]:bg-green-500" : 
+                            session.filledPercent >= 50 ? "[&>div]:bg-yellow-500" : "[&>div]:bg-red-500"
+                          )}
+                        />
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs text-muted-foreground">
+                            {session.filledCount} / {session.totalParticipants} ont rempli leur RPE
+                          </p>
+                          {session.filledPercent < 100 && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 text-xs"
+                              onClick={() => {
+                                setRpeDialogSessionId(session.sessionId);
+                                setRpeDialogOpen(true);
+                              }}
+                            >
+                              <Pencil className="h-3 w-3 mr-1" />
+                              Saisir RPE
+                            </Button>
+                          )}
+                        </div>
+                        {session.missingPlayers.length > 0 && (
+                          <div>
+                            <p className="text-[11px] font-medium text-muted-foreground mb-1">Non rempli :</p>
+                            <div className="flex flex-wrap gap-1">
+                              {session.missingPlayers.slice(0, 10).map((name, idx) => (
+                                <Badge key={idx} variant="outline" className="text-[10px] text-orange-600 border-orange-200 dark:border-orange-800">
+                                  {name}
+                                </Badge>
+                              ))}
+                              {session.missingPlayers.length > 10 && (
+                                <Badge variant="outline" className="text-[10px]">
+                                  +{session.missingPlayers.length - 10}
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                        {session.filledPlayers.length > 0 && (
+                          <Collapsible>
+                            <CollapsibleTrigger className="text-[11px] text-muted-foreground hover:text-foreground flex items-center gap-1">
+                              <ChevronRight className="h-3 w-3" />
+                              Voir les {session.filledPlayers.length} complétés
+                            </CollapsibleTrigger>
+                            <CollapsibleContent className="pt-1">
+                              <div className="flex flex-wrap gap-1">
+                                {session.filledPlayers.map((name, idx) => (
+                                  <Badge key={idx} variant="secondary" className="text-[10px]">
+                                    {name}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </CollapsibleContent>
+                          </Collapsible>
+                        )}
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
+              </CardContent>
+            </Card>
+          );
+        })()}
 
         {/* 1.6️⃣ PRÉSENCES DU JOUR */}
           <Card className="border-2 border-blue-500/20 bg-gradient-to-r from-blue-500/5 to-transparent">
