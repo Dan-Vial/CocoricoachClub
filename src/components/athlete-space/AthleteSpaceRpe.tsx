@@ -319,13 +319,27 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
                     </div>
                     <div>
                       <Label className="text-sm">Durée (minutes)</Label>
-                      <Input
-                        type="number"
-                        value={duration}
-                        onChange={e => setDuration(e.target.value)}
-                        placeholder="Ex: 90"
-                        className="mt-1"
-                      />
+                      {durationLocked ? (
+                        <div className="mt-1 flex items-center gap-2">
+                          <Input
+                            type="number"
+                            value={duration}
+                            readOnly
+                            className="bg-muted/50 cursor-not-allowed"
+                          />
+                          <Badge variant="secondary" className="text-xs whitespace-nowrap shrink-0">
+                            {duration}'
+                          </Badge>
+                        </div>
+                      ) : (
+                        <Input
+                          type="number"
+                          value={duration}
+                          onChange={e => setDuration(e.target.value)}
+                          placeholder="Ex: 90"
+                          className="mt-1"
+                        />
+                      )}
                     </div>
                     <Button
                       onClick={() => submitRpe.mutate()}
