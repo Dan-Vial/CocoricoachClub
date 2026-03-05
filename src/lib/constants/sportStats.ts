@@ -301,7 +301,7 @@ export const JUDO_STATS: StatField[] = [
   { key: "attacksReceived", label: "Attaques subies", shortLabel: "Att. subies", category: "defense", type: "number" },
   { key: "scoresConceded", label: "Scores concédés", shortLabel: "Sc. concédés", category: "defense", type: "number" },
   { key: "attacksNeutralized", label: "Attaques neutralisées", shortLabel: "Neutralisées", category: "defense", type: "number" },
-  { key: "defensiveQuality", label: "% qualité défensive", shortLabel: "% Déf.", category: "defense", type: "number", max: 100 },
+  { key: "defensiveQuality", label: "% qualité défensive", shortLabel: "% Déf.", category: "defense", type: "percentage", max: 100, computedFrom: { successKey: "attacksNeutralized", totalKey: "attacksReceived" } },
   
   // === PÉNALITÉS ===
   { key: "shidoReceived", label: "Shido reçus", shortLabel: "Shido reçus", category: "general", type: "number", max: 3 },
