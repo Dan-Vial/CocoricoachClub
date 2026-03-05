@@ -609,7 +609,7 @@ export default function AthleteSpace() {
             </TabsContent>
 
             <TabsContent value="settings">
-              <AthleteSpaceSettings />
+              <AthleteSpaceSettings playerId={athleteInfo.player_id} />
             </TabsContent>
         </Tabs>
       </main>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,8 +11,13 @@ import { toast } from "sonner";
 import { NAV_COLORS } from "@/components/ui/colored-nav-tabs";
 import { requestOneSignalPermission, getOneSignalPermission } from "@/lib/onesignal";
 import { usePushNotifications } from "@/hooks/use-push-notifications";
+import { useQuery } from "@tanstack/react-query";
 
-export function AthleteSpaceSettings() {
+interface AthleteSpaceSettingsProps {
+  playerId?: string;
+}
+
+export function AthleteSpaceSettings({ playerId }: AthleteSpaceSettingsProps) {
   const { user } = useAuth();
   const { isSupported, subscribe } = usePushNotifications();
   const [permission, setPermission] = useState<NotificationPermission>(getOneSignalPermission());
@@ -24,6 +29,67 @@ export function AthleteSpaceSettings() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
+
+  // Refresh permission on mount and when tab becomes visible
+  useEffect(() => {
+    const refresh = () => setPermission(getOneSignalPermission());
+    refresh();
+    document.addEventListener("visibilitychange", refresh);
+    return () => document.removeEventListener("visibilitychange", refresh);
+  }, []);
+
+  // Fetch the athlete's email from player profile
+  const { data: playerData } = useQuery({
+    queryKey: ["player-settings-email", playerId],
+    queryFn: async () => {
+      if (!playerId) return null;
+      const { data } = await supabase
+        .from("players")
+        .select("email, name, first_name, user_id")
+        .eq("id", playerId)
+        .single();
+      return data;
+    },
+    enabled: !!playerId,
+  });
+
+  // Fetch the athlete's auth email if they have a user account
+  const { data: athleteProfile } = useQuery({
+    queryKey: ["athlete-profile-email", playerData?.user_id],
+    queryFn: async () => {
+      if (!playerData?.user_id) return null;
+      const { data } = await supabase
+        .from("profiles")
+        .select("email, full_name")
+        .eq("id", playerData.user_id)
+        .single();
+      return data;
+    },
+    enabled: !!playerData?.user_id,
+  });
+
+  // Check if email is registered in OneSignal (via tags sync)
+  const { data: emailNotifStatus } = useQuery({
+    queryKey: ["email-notif-status", playerData?.user_id || user?.id],
+    queryFn: async () => {
+      // If there's a push subscription or OneSignal sync, email notifications are active
+      const targetUserId = playerData?.user_id || user?.id;
+      if (!targetUserId) return false;
+      const { data } = await supabase
+        .from("push_subscriptions")
+        .select("id")
+        .eq("user_id", targetUserId)
+        .limit(1);
+      return (data?.length || 0) > 0;
+    },
+    enabled: !!(playerData?.user_id || user?.id),
+  });
+
+  // Determine the email to display:
+  // 1. Athlete's profile email (from profiles table via user_id)
+  // 2. Player's email (from players table)
+  // 3. Current user's email (fallback)
+  const displayEmail = athleteProfile?.email || playerData?.email || user?.email || "—";
 
   const handleActivateNotifications = async () => {
     setIsActivating(true);
@@ -69,9 +135,14 @@ export function AthleteSpaceSettings() {
     }
   };
 
+  // Determine push status: use OneSignal SDK permission + subscription
+  const pushIsGranted = permission === "granted";
+  const pushIsDenied = permission === "denied";
+  const pushIsDefault = !pushIsGranted && !pushIsDenied;
+
   return (
     <div className="space-y-6">
-      {/* Notifications */}
+      {/* Push Notifications */}
       <Card className="shadow-md border-2" style={{ borderColor: `${NAV_COLORS.communication.base}30` }}>
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
@@ -90,7 +161,7 @@ export function AthleteSpaceSettings() {
                 </p>
               </div>
             </div>
-          ) : permission === "granted" ? (
+          ) : pushIsGranted ? (
             <div className="flex items-center gap-3 p-3 rounded-lg" style={{ backgroundColor: `${NAV_COLORS.communication.base}10` }}>
               <CheckCircle2 className="h-5 w-5 text-status-optimal" />
               <div>
@@ -100,7 +171,7 @@ export function AthleteSpaceSettings() {
                 </p>
               </div>
             </div>
-          ) : permission === "denied" ? (
+          ) : pushIsDenied ? (
             <div className="flex items-center gap-3 p-3 rounded-lg bg-destructive/10">
               <AlertCircle className="h-5 w-5 text-destructive" />
               <div>
@@ -136,6 +207,44 @@ export function AthleteSpaceSettings() {
         </CardContent>
       </Card>
 
+      {/* Email Notifications Status */}
+      <Card className="shadow-md border-2" style={{ borderColor: `${NAV_COLORS.planification.base}30` }}>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Mail className="h-4 w-4" style={{ color: NAV_COLORS.planification.base }} />
+            Notifications Email
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-3 p-3 rounded-lg" style={{ backgroundColor: emailNotifStatus ? `${NAV_COLORS.sante.base}10` : `${NAV_COLORS.performance.base}10` }}>
+            {emailNotifStatus ? (
+              <CheckCircle2 className="h-5 w-5" style={{ color: NAV_COLORS.sante.base }} />
+            ) : (
+              <AlertCircle className="h-5 w-5" style={{ color: NAV_COLORS.performance.base }} />
+            )}
+            <div>
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-medium">
+                  {emailNotifStatus ? "Actif" : "Inactif"}
+                </p>
+                <Badge 
+                  variant={emailNotifStatus ? "default" : "secondary"}
+                  className="text-[10px] h-5"
+                  style={emailNotifStatus ? { backgroundColor: NAV_COLORS.sante.base } : {}}
+                >
+                  {emailNotifStatus ? "Actif" : "Inactif"}
+                </Badge>
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {emailNotifStatus 
+                  ? "Tu recevras les notifications importantes par email."
+                  : "Les notifications email ne sont pas encore activées. Active les notifications push pour les activer."}
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Account info */}
       <Card className="shadow-md border-2" style={{ borderColor: `${NAV_COLORS.effectif.base}30` }}>
         <CardHeader className="pb-3">
@@ -148,7 +257,7 @@ export function AthleteSpaceSettings() {
           <div className="p-3 rounded-lg bg-muted/30 space-y-2">
             <div className="flex items-center justify-between">
               <Label className="text-sm text-muted-foreground">Email / Identifiant</Label>
-              <Badge variant="outline" className="text-xs">{user?.email || "—"}</Badge>
+              <Badge variant="outline" className="text-xs max-w-[200px] truncate">{displayEmail}</Badge>
             </div>
           </div>
 
