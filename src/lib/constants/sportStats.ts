@@ -221,7 +221,7 @@ export const VOLLEYBALL_STATS: StatField[] = [
   { key: "digErrors", label: "Erreurs de réception déf.", shortLabel: "Err. dig", category: "defense", type: "number" },
   { key: "receptionErrors", label: "Erreurs de réception", shortLabel: "Err. réc.", category: "defense", type: "number" },
   { key: "receptionAttempts", label: "Réceptions tentées", shortLabel: "Réc. tent.", category: "defense", type: "number" },
-  { key: "receptionPercentage", label: "% Réception", shortLabel: "% Réc.", category: "defense", type: "number", max: 100 },
+  { key: "receptionPercentage", label: "% Réception", shortLabel: "% Réc.", category: "defense", type: "percentage", max: 100, computedFrom: { successKey: "digs", totalKey: "receptionAttempts" } },
   { key: "perfectReceptions", label: "Réceptions parfaites", shortLabel: "Réc. parf.", category: "defense", type: "number" },
 ];
 
