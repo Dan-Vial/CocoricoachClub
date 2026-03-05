@@ -609,6 +609,12 @@ export default function AthleteSpace() {
               <MessagingTab categoryId={athleteInfo.category_id} isAthlete={true} />
             </TabsContent>
           )}
+
+          {!isSuperAdminView && (
+            <TabsContent value="settings">
+              <AthleteSpaceSettings />
+            </TabsContent>
+          )}
         </Tabs>
       </main>
     </div>
