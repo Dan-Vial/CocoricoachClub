@@ -149,7 +149,7 @@ export const HANDBALL_STATS: StatField[] = [
   // Individual Stats - Scoring
   { key: "goals", label: "Buts", shortLabel: "Buts", category: "scoring", type: "number" },
   { key: "shots", label: "Tirs", shortLabel: "Tirs", category: "scoring", type: "number" },
-  { key: "shootingPercentage", label: "% Réussite tirs", shortLabel: "% Tir", category: "scoring", type: "number", max: 100 },
+  { key: "shootingPercentage", label: "% Réussite tirs", shortLabel: "% Tir", category: "scoring", type: "percentage", max: 100, computedFrom: { successKey: "goals", totalKey: "shots" } },
   { key: "goalsFromWing", label: "Buts ailier", shortLabel: "B. ailier", category: "scoring", type: "number" },
   { key: "goalsFromPivot", label: "Buts pivot", shortLabel: "B. pivot", category: "scoring", type: "number" },
   { key: "goalsFromBackcourt", label: "Buts arrière", shortLabel: "B. arrière", category: "scoring", type: "number" },
