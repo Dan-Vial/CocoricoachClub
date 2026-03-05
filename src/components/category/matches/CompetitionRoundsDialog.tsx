@@ -226,6 +226,17 @@ export function CompetitionRoundsDialog({
     toast.success(`Partie ${roundNumber} enregistrée et verrouillée`);
   };
 
+  // Get match data for date
+  const { data: matchData } = useQuery({
+    queryKey: ["match", matchId],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("matches").select("match_date").eq("id", matchId).single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!matchId,
+  });
+
   // Get players in the lineup for this match
   const { data: lineup } = useQuery({
     queryKey: ["match_lineup", matchId],
