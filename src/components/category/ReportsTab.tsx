@@ -1036,7 +1036,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
       yPos = drawPdfHeaderCustom(
         pdf,
         "VUE D'ENSEMBLE DE L'EFFECTIF",
-        `${category?.clubs?.name} - ${category?.name}`,
+        `${category?.clubs?.name} - ${category?.name}${sn3 ? ` • ${sn3}` : ''}`,
         `Généré le ${format(new Date(), "d MMMM yyyy", { locale: fr })}${dateRange ? ` | ${dateRange.trim()}` : ""}`,
         pdfSettings,
         logoBase64
