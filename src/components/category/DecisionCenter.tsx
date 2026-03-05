@@ -1619,6 +1619,20 @@ import { isIndividualSport } from "@/lib/constants/sportTypes";
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* RPE Feedback Dialog */}
+        {rpeDialogSessionId && (
+          <SessionFeedbackDialog
+            open={rpeDialogOpen}
+            onOpenChange={(open) => {
+              setRpeDialogOpen(open);
+              if (!open) setRpeDialogSessionId(null);
+            }}
+            sessionId={rpeDialogSessionId}
+            sessionType={todaySessions.find(s => s.id === rpeDialogSessionId)?.training_type || "Séance"}
+            categoryId={categoryId}
+          />
+        )}
       </div>
     );
   }
