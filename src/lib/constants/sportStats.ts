@@ -94,7 +94,7 @@ export const FOOTBALL_STATS: StatField[] = [
   // Individual Stats - Attack
   { key: "passes", label: "Passes réussies", shortLabel: "Passes", category: "attack", type: "number" },
   { key: "passesAttempted", label: "Passes tentées", shortLabel: "P. tent.", category: "attack", type: "number" },
-  { key: "passAccuracy", label: "% Passes réussies", shortLabel: "% Passes", category: "attack", type: "number", max: 100 },
+  { key: "passAccuracy", label: "% Passes réussies", shortLabel: "% Passes", category: "attack", type: "percentage", max: 100, computedFrom: { successKey: "passes", totalKey: "passesAttempted" } },
   { key: "longBalls", label: "Longs ballons réussis", shortLabel: "Longs B.", category: "attack", type: "number" },
   { key: "throughBalls", label: "Passes en profondeur", shortLabel: "Profondeur", category: "attack", type: "number" },
   { key: "duelsWon", label: "Duels gagnés", shortLabel: "Duels", category: "attack", type: "number" },
