@@ -397,11 +397,50 @@ export function CompetitionRoundsDialog({
           }
         }
       }
+
+      // Auto-inject RPE 10/10 for each participant based on total competition time
+      if (matchData && playerRoundsData.length > 0) {
+        const matchDate = matchData.match_date?.split("T")[0] || new Date().toISOString().split("T")[0];
+        
+        const playerIds = playerRoundsData.map(p => p.playerId);
+        for (const playerId of playerIds) {
+          await supabase
+            .from("awcr_tracking")
+            .delete()
+            .eq("player_id", playerId)
+            .eq("category_id", categoryId)
+            .eq("session_date", matchDate)
+            .is("training_session_id", null)
+            .gte("rpe", 10);
+        }
+
+        const rpeEntries = playerRoundsData.map(p => {
+          // Estimate duration from rounds (sum of combat durations or default 60min for competition)
+          const totalDuration = p.rounds.reduce((sum, r) => {
+            const combatTime = r.stats?.combatDuration || r.stats?.final_time_seconds || 0;
+            return sum + (combatTime > 0 ? Math.ceil(combatTime / 60) : 5); // 5 min per round default
+          }, 0) || 60;
+          
+          return {
+            player_id: p.playerId,
+            category_id: categoryId,
+            session_date: matchDate,
+            rpe: 10,
+            duration_minutes: Math.max(totalDuration, 1),
+            training_load: 10 * Math.max(totalDuration, 1),
+          };
+        });
+
+        if (rpeEntries.length > 0) {
+          await supabase.from("awcr_tracking").insert(rpeEntries);
+        }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["competition_rounds", matchId] });
       queryClient.invalidateQueries({ queryKey: ["match_lineup", matchId] });
-      toast.success("Données enregistrées");
+      queryClient.invalidateQueries({ queryKey: ["awcr_tracking"] });
+      toast.success("Données et charge match enregistrées");
       onOpenChange(false);
     },
     onError: (error) => {
