@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/select";
 
 import { toast } from "sonner";
-import { BarChart3, Check, UserCircle, Satellite } from "lucide-react";
+import { BarChart3, Check, UserCircle, Satellite, ChevronLeft, ChevronRight, CheckCircle } from "lucide-react";
 import { getStatsForSport, getStatCategories, hasGoalkeeperStats, type StatField } from "@/lib/constants/sportStats";
 import { getSportFieldConfig } from "@/lib/constants/sportPositions";
 import { isIndividualSport, isRugbyType } from "@/lib/constants/sportTypes";
