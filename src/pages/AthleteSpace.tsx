@@ -538,7 +538,7 @@ export default function AthleteSpace() {
                     )}
                   </TabsTrigger>
                 )}
-               {!isSuperAdminView && (
+               {(
                   <TabsTrigger 
                     value="settings"
                      className="athlete-tab shrink-0 gap-1 px-2 py-1.5 rounded-xl font-semibold text-xs transition-all duration-200 data-[state=active]:shadow-lg"
