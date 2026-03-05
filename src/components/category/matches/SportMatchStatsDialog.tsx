@@ -295,19 +295,25 @@ export function SportMatchStatsDialog({
     );
   }
 
-  const renderStatInput = (player: PlayerStats, stat: StatField) => (
-    <div key={stat.key}>
-      <Label className="text-xs">{stat.shortLabel}</Label>
-      <Input
-        type="number"
-        value={(player[stat.key] as number) || 0}
-        onChange={(e) => updateStat(player.playerId, stat.key, parseFloat(e.target.value) || 0)}
-        min={stat.min ?? 0}
-        max={stat.max}
-        className="h-8"
-      />
-    </div>
-  );
+  const renderStatInput = (player: PlayerStats, stat: StatField) => {
+    const rawValue = player[stat.key] as number;
+    const displayValue = rawValue === 0 ? "" : String(rawValue);
+    
+    return (
+      <div key={stat.key}>
+        <Label className="text-xs">{stat.shortLabel}</Label>
+        <Input
+          type="number"
+          value={displayValue}
+          onChange={(e) => updateStat(player.playerId, stat.key, parseFloat(e.target.value) || 0)}
+          min={stat.min ?? 0}
+          max={stat.max}
+          className="h-8"
+          placeholder="0"
+        />
+      </div>
+    );
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
