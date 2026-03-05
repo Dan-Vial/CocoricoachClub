@@ -280,7 +280,10 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
                               <TableCell className="text-center">{p.matchesPlayed}</TableCell>
                               {categoryStats.slice(0, 6).map(stat => (
                                 <TableCell key={stat.key} className="text-center">
-                                  {p.sportData[stat.key] || 0}
+                                  {stat.computedFrom 
+                                    ? `${p.sportData[stat.key] || 0}%`
+                                    : (p.sportData[stat.key] || 0)
+                                  }
                                 </TableCell>
                               ))}
                             </TableRow>
