@@ -585,6 +585,7 @@ export const exportSessionToPdf = async (
     logoBase64?: string | null;
     blocks?: any[];
     testCategories?: any[];
+    seasonName?: string | null;
   }
 ): Promise<void> => {
   const pdf = new jsPDF({
