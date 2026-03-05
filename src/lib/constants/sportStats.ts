@@ -5,10 +5,13 @@ export interface StatField {
   label: string;
   shortLabel: string;
   category: "scoring" | "attack" | "defense" | "general" | "individual";
-  type: "number" | "time";
+  type: "number" | "time" | "percentage";
   min?: number;
   max?: number;
-  isMatchLevel?: boolean; // If true, this stat is for the whole match, not per player
+  isMatchLevel?: boolean;
+  // For auto-computed percentage stats: defines source keys
+  // successKey = numerator, totalKey = denominator (if explicit), failureKey = if set, total = successKey + failureKey
+  computedFrom?: { successKey: string; totalKey?: string; failureKey?: string };
 }
 
 // Rugby stats (XV, 7s, XIII) - Enriched
