@@ -133,9 +133,10 @@ export function CompetitionRoundsDialog({
   const [isDataInitialized, setIsDataInitialized] = useState(false);
   const queryClient = useQueryClient();
 
-  const { stats: filteredSportStats } = useStatPreferences({ categoryId, sportType });
-  const sportStats = filteredSportStats.length > 0 ? filteredSportStats : getStatsForSport(sportType);
-  const statCategories = getStatCategories(sportType);
+  const { stats: filteredSportStats, hasCustomPreferences } = useStatPreferences({ categoryId, sportType });
+  const sportStats = hasCustomPreferences ? filteredSportStats : (filteredSportStats.length > 0 ? filteredSportStats : getStatsForSport(sportType));
+  const allStatCategories = getStatCategories(sportType);
+  const statCategories = allStatCategories.filter(cat => sportStats.some(s => s.category === cat.key));
   const aggregatedStats = getAggregatedStatsForSport(sportType);
   const isJudo = sportType.toLowerCase().includes("judo");
   const isBowling = sportType.toLowerCase().includes("bowling");
