@@ -94,6 +94,8 @@ export function TrainingLoadTab({ categoryId }: TrainingLoadTabProps) {
   };
 
   const periodOptions = [
+    { value: 3, label: "3 jours" },
+    { value: 7, label: "7 jours" },
     { value: 14, label: "14 jours" },
     { value: 28, label: "28 jours" },
     { value: 56, label: "8 semaines" },
