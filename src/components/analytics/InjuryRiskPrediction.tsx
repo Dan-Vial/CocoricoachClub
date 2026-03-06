@@ -27,7 +27,7 @@ export function InjuryRiskPrediction({ categoryId }: InjuryRiskPredictionProps) 
     queryFn: async () => {
       const { data, error } = await supabase
         .from("players")
-        .select("*")
+        .select("id, name, first_name, category_id")
         .eq("category_id", categoryId)
         .order("name");
       if (error) throw error;
