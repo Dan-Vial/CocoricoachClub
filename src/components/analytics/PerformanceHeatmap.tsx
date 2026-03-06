@@ -223,7 +223,7 @@ export function PerformanceHeatmap({ categoryId }: PerformanceHeatmapProps) {
           <div className="min-w-max">
             <div className="grid gap-1" style={{ gridTemplateColumns: `150px repeat(${daysInMonth.length}, 30px)` }}>
               {/* Header row with dates */}
-              <div className="font-medium text-sm p-2 sticky left-0 bg-background z-10">Joueur</div>
+              <div className="font-medium text-sm p-2 sticky left-0 bg-background z-10">Athlète</div>
               {daysInMonth.map((day) => (
                 <div key={day.toISOString()} className="text-xs text-center p-1 font-medium">
                   {format(day, "d")}
