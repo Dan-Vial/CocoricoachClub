@@ -354,6 +354,8 @@ export function IntensityComparisonDashboard({ categoryId }: IntensityComparison
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="0">Aujourd'hui</SelectItem>
+                  <SelectItem value="1">Hier</SelectItem>
                   <SelectItem value="7">7 derniers jours</SelectItem>
                   <SelectItem value="14">14 derniers jours</SelectItem>
                   <SelectItem value="30">30 derniers jours</SelectItem>
