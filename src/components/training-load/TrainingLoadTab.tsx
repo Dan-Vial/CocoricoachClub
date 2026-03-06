@@ -4,9 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, ChevronDown, Filter, Plus, Users, TrendingUp, AlertTriangle, BarChart3 } from "lucide-react";
+import { Calendar, Users, TrendingUp, BarChart3 } from "lucide-react";
 import { TrainingLoadChart } from "./TrainingLoadChart";
 import { TrainingLoadKPIs } from "./TrainingLoadKPIs";
 import { TrainingLoadAlerts } from "./TrainingLoadAlerts";
@@ -16,8 +15,6 @@ import { TrainingLoadCalendar } from "./TrainingLoadCalendar";
 import { TrainingDistribution } from "./TrainingDistribution";
 import { useTrainingLoad, useTeamTrainingLoad } from "@/hooks/use-training-load";
 import { MetricType, METRICS_CONFIG } from "@/lib/trainingLoadCalculations";
-import { AddAwcrDialog } from "@/components/category/AddAwcrDialog";
-import { QuickTeamRpeDialog } from "@/components/category/QuickTeamRpeDialog";
 import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 
 interface TrainingLoadTabProps {
@@ -31,8 +28,7 @@ export function TrainingLoadTab({ categoryId }: TrainingLoadTabProps) {
   const [selectedMetric, setSelectedMetric] = useState<MetricType>("ewma_srpe");
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | undefined>();
   const [periodDays, setPeriodDays] = useState<number>(56);
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isTeamDialogOpen, setIsTeamDialogOpen] = useState(false);
+
 
   // Sync metric when model changes
   const handleModelChange = (model: "ewma" | "awcr") => {
@@ -94,6 +90,8 @@ export function TrainingLoadTab({ categoryId }: TrainingLoadTabProps) {
   };
 
   const periodOptions = [
+    { value: 3, label: "3 jours" },
+    { value: 7, label: "7 jours" },
     { value: 14, label: "14 jours" },
     { value: 28, label: "28 jours" },
     { value: 56, label: "8 semaines" },
@@ -175,23 +173,6 @@ export function TrainingLoadTab({ categoryId }: TrainingLoadTabProps) {
             </SelectContent>
           </Select>
 
-          {/* Add buttons */}
-          {!isViewer && (
-            <div className="flex gap-2">
-              <Button 
-                variant="outline" 
-                onClick={() => setIsTeamDialogOpen(true)}
-                className="gap-1"
-              >
-                <Users className="h-4 w-4" />
-                Saisie équipe
-              </Button>
-              <Button onClick={() => setIsAddDialogOpen(true)} className="gap-1">
-                <Plus className="h-4 w-4" />
-                Ajouter RPE
-              </Button>
-            </div>
-          )}
         </div>
       </div>
 
@@ -318,18 +299,6 @@ export function TrainingLoadTab({ categoryId }: TrainingLoadTabProps) {
         </Card>
       )}
 
-      {/* Dialogs */}
-      <AddAwcrDialog
-        open={isAddDialogOpen}
-        onOpenChange={setIsAddDialogOpen}
-        categoryId={categoryId}
-      />
-
-      <QuickTeamRpeDialog
-        open={isTeamDialogOpen}
-        onOpenChange={setIsTeamDialogOpen}
-        categoryId={categoryId}
-      />
     </div>
   );
 }
