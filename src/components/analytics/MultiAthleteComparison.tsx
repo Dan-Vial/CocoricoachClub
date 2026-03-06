@@ -400,7 +400,7 @@ export function MultiAthleteComparison({ categoryId, sportType = "XV" }: MultiAt
       const value = getAthleteMetricValue(athleteId, selectedMetric);
       
       return {
-        name: player?.name || "Inconnu",
+        name: player?.fullName || "Inconnu",
         valeur: value,
         fill: ATHLETE_COLORS[index % ATHLETE_COLORS.length],
       };
