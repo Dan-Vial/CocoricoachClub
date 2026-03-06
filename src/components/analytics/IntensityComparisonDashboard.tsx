@@ -41,11 +41,11 @@ export function IntensityComparisonDashboard({ categoryId }: IntensityComparison
     queryFn: async () => {
       const { data, error } = await supabase
         .from("players")
-        .select("id, name, position")
+        .select("id, name, first_name, position")
         .eq("category_id", categoryId)
         .order("name");
       if (error) throw error;
-      return data;
+      return data?.map(p => ({ ...p, fullName: [p.first_name, p.name].filter(Boolean).join(" ") }));
     },
   });
 
@@ -233,7 +233,7 @@ export function IntensityComparisonDashboard({ categoryId }: IntensityComparison
       
       return {
         id: player.id,
-        name: player.name,
+        name: player.fullName,
         position: player.position,
         avgDiff: parseFloat(avgDiff.toFixed(1)),
         sessionsCount: count,
@@ -387,7 +387,7 @@ export function IntensityComparisonDashboard({ categoryId }: IntensityComparison
                 <SelectContent>
                   <SelectItem value="all">Tous les athlètes</SelectItem>
                   {filteredPlayers.map(player => (
-                    <SelectItem key={player.id} value={player.id}>{player.name}</SelectItem>
+                    <SelectItem key={player.id} value={player.id}>{player.fullName}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>

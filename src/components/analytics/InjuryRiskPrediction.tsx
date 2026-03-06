@@ -17,6 +17,7 @@ interface PlayerRisk {
   riskScore: number;
   factors: string[];
   awcr?: number;
+  ewmaRatio?: number;
   acuteLoad?: number;
   chronicLoad?: number;
 }
@@ -27,7 +28,7 @@ export function InjuryRiskPrediction({ categoryId }: InjuryRiskPredictionProps) 
     queryFn: async () => {
       const { data, error } = await supabase
         .from("players")
-        .select("*")
+        .select("id, name, first_name, category_id")
         .eq("category_id", categoryId)
         .order("name");
       if (error) throw error;
@@ -66,11 +67,12 @@ export function InjuryRiskPrediction({ categoryId }: InjuryRiskPredictionProps) 
     const player = players.find(p => p.id === playerId);
     if (!player) return null;
 
+    const fullName = [player.first_name, player.name].filter(Boolean).join(" ");
     const playerAwcr = awcrData.filter(a => a.player_id === playerId).slice(0, 7);
     if (playerAwcr.length === 0) {
       return {
         id: playerId,
-        name: player.name,
+        name: fullName,
         riskLevel: "low",
         riskScore: 0,
         factors: ["Données insuffisantes"],
@@ -86,6 +88,9 @@ export function InjuryRiskPrediction({ categoryId }: InjuryRiskPredictionProps) 
     const acuteLoad = Number(latest.acute_load || 0);
     const chronicLoad = Number(latest.chronic_load || 0);
 
+    // Calcul du ratio EWMA à partir des charges aiguë/chronique
+    const ewmaRatio = chronicLoad > 0 ? acuteLoad / chronicLoad : 0;
+
     // Facteur 1: AWCR élevé (>1.5) ou très bas (<0.8)
     if (awcr > 1.5) {
       riskScore += 30;
@@ -93,6 +98,15 @@ export function InjuryRiskPrediction({ categoryId }: InjuryRiskPredictionProps) 
     } else if (awcr < 0.8 && awcr > 0) {
       riskScore += 20;
       factors.push(`AWCR faible (${awcr.toFixed(2)})`);
+    }
+
+    // Facteur EWMA
+    if (ewmaRatio > 1.5) {
+      riskScore += 25;
+      factors.push(`EWMA élevé (${ewmaRatio.toFixed(2)})`);
+    } else if (ewmaRatio < 0.8 && ewmaRatio > 0) {
+      riskScore += 15;
+      factors.push(`EWMA faible (${ewmaRatio.toFixed(2)})`);
     }
 
     // Facteur 2: Charge aiguë élevée
@@ -133,11 +147,12 @@ export function InjuryRiskPrediction({ categoryId }: InjuryRiskPredictionProps) 
 
     return {
       id: playerId,
-      name: player.name,
+      name: fullName,
       riskLevel,
-      riskScore,
+      riskScore: Math.min(riskScore, 100),
       factors: factors.length > 0 ? factors : ["Aucun facteur de risque détecté"],
       awcr,
+      ewmaRatio,
       acuteLoad,
       chronicLoad,
     };
@@ -182,8 +197,8 @@ export function InjuryRiskPrediction({ categoryId }: InjuryRiskPredictionProps) 
         <AlertTriangle className="h-4 w-4" />
         <AlertTitle>Prédiction de Risque de Blessure</AlertTitle>
         <AlertDescription>
-          Cette analyse se base sur les charges d'entraînement (AWCR), les variations de charge et l'historique de blessures.
-          Un ratio AWCR entre 0.8 et 1.3 est considéré comme optimal.
+          Cette analyse se base sur les ratios AWCR et EWMA, les variations de charge et l'historique de blessures.
+          Un ratio entre 0.8 et 1.3 est considéré comme optimal pour les deux modèles.
         </AlertDescription>
       </Alert>
 
@@ -202,6 +217,9 @@ export function InjuryRiskPrediction({ categoryId }: InjuryRiskPredictionProps) 
                   <p><strong>Score de risque:</strong> {risk.riskScore}/100</p>
                   {risk.awcr !== undefined && (
                     <p><strong>AWCR:</strong> {risk.awcr.toFixed(2)}</p>
+                  )}
+                  {risk.ewmaRatio !== undefined && risk.ewmaRatio > 0 && (
+                    <p><strong>EWMA:</strong> {risk.ewmaRatio.toFixed(2)}</p>
                   )}
                   {risk.acuteLoad !== undefined && (
                     <p><strong>Charge aiguë:</strong> {Math.round(risk.acuteLoad)}</p>

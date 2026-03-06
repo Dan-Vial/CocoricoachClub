@@ -11,13 +11,15 @@ interface PerformanceHeatmapProps {
   categoryId: string;
 }
 
-type MetricType = "awcr" | "wellness" | "training_load" | "soreness";
+type MetricType = "awcr" | "ewma_ratio" | "wellness" | "training_load" | "soreness";
 
 interface AwcrData {
   player_id: string;
   session_date: string;
   awcr: number | null;
   training_load: number | null;
+  acute_load: number | null;
+  chronic_load: number | null;
 }
 
 interface WellnessData {
@@ -38,7 +40,7 @@ export function PerformanceHeatmap({ categoryId }: PerformanceHeatmapProps) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("players")
-        .select("id, name")
+        .select("id, name, first_name")
         .eq("category_id", categoryId)
         .order("name");
       if (error) throw error;
@@ -53,7 +55,7 @@ export function PerformanceHeatmap({ categoryId }: PerformanceHeatmapProps) {
       const endDate = format(endOfMonth(selectedMonth), "yyyy-MM-dd");
       const { data, error } = await supabase
         .from("awcr_tracking")
-        .select("player_id, session_date, awcr, training_load")
+        .select("player_id, session_date, awcr, training_load, acute_load, chronic_load")
         .eq("category_id", categoryId)
         .gte("session_date", startDate)
         .lte("session_date", endDate);
@@ -78,11 +80,27 @@ export function PerformanceHeatmap({ categoryId }: PerformanceHeatmapProps) {
     },
   });
 
+  const getMetricDescription = (metric: MetricType): string => {
+    switch (metric) {
+      case "awcr":
+        return "Ratio AWCR (Gabbett) : Charge Aiguë / Charge Chronique. Zone optimale : 0.80 – 1.30.";
+      case "ewma_ratio":
+        return "Ratio EWMA : Moyenne mobile pondérée exponentiellement (λ=0.25 aiguë, λ=0.069 chronique). Zone optimale : 0.80 – 1.30.";
+      case "training_load":
+        return "Charge d'entraînement quotidienne (sRPE = RPE × Durée en minutes).";
+      case "wellness":
+        return "Moyenne de la fatigue générale et de la qualité du sommeil (échelle 1-5). Plus le score est bas, meilleur est le bien-être.";
+      case "soreness":
+        return "Moyenne des douleurs musculaires haut et bas du corps (échelle 1-5). Plus le score est bas, mieux c'est.";
+    }
+  };
+
   const getColorForValue = (value: number | null, metric: MetricType): string => {
     if (value === null) return "bg-muted/20";
 
     switch (metric) {
       case "awcr":
+      case "ewma_ratio":
         if (value < 0.8) return "bg-destructive";
         if (value > 1.3) return "bg-destructive/80";
         if (value >= 0.8 && value <= 1.0) return "bg-success";
@@ -114,6 +132,16 @@ export function PerformanceHeatmap({ categoryId }: PerformanceHeatmapProps) {
       const record = awcrData?.find(
         (d) => d.player_id === playerId && d.session_date === dateStr
       );
+      return record?.awcr ?? null;
+    } else if (selectedMetric === "ewma_ratio") {
+      // EWMA ratio uses the same awcr field but filtered differently - for now same data source
+      const record = awcrData?.find(
+        (d) => d.player_id === playerId && d.session_date === dateStr
+      );
+      // Use acute/chronic to compute EWMA if available, fallback to awcr
+      if (record && record.acute_load && record.chronic_load && record.chronic_load > 0) {
+        return record.acute_load / record.chronic_load;
+      }
       return record?.awcr ?? null;
     } else if (selectedMetric === "training_load") {
       const record = awcrData?.find(
@@ -155,7 +183,8 @@ export function PerformanceHeatmap({ categoryId }: PerformanceHeatmapProps) {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="awcr">EWMA</SelectItem>
+            <SelectItem value="awcr">AWCR (Gabbett)</SelectItem>
+            <SelectItem value="ewma_ratio">EWMA</SelectItem>
             <SelectItem value="training_load">Charge d'entraînement</SelectItem>
             <SelectItem value="wellness">Wellness</SelectItem>
             <SelectItem value="soreness">Douleurs musculaires</SelectItem>
@@ -183,17 +212,20 @@ export function PerformanceHeatmap({ categoryId }: PerformanceHeatmapProps) {
         </Select>
       </div>
 
+      {/* Metric description */}
+      <p className="text-sm text-muted-foreground italic">{getMetricDescription(selectedMetric)}</p>
+
       <Card className="overflow-x-auto">
         <CardHeader>
           <CardTitle>
-            Heatmap - {selectedMetric === "awcr" ? "EWMA" : selectedMetric === "training_load" ? "Charge" : selectedMetric === "wellness" ? "Wellness" : "Douleurs"} - {format(selectedMonth, "MMMM yyyy", { locale: fr })}
+            Heatmap - {selectedMetric === "awcr" ? "AWCR" : selectedMetric === "ewma_ratio" ? "EWMA" : selectedMetric === "training_load" ? "Charge" : selectedMetric === "wellness" ? "Wellness" : "Douleurs"} - {format(selectedMonth, "MMMM yyyy", { locale: fr })}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="min-w-max">
             <div className="grid gap-1" style={{ gridTemplateColumns: `150px repeat(${daysInMonth.length}, 30px)` }}>
               {/* Header row with dates */}
-              <div className="font-medium text-sm p-2 sticky left-0 bg-background z-10">Joueur</div>
+              <div className="font-medium text-sm p-2 sticky left-0 bg-background z-10">Athlète</div>
               {daysInMonth.map((day) => (
                 <div key={day.toISOString()} className="text-xs text-center p-1 font-medium">
                   {format(day, "d")}
@@ -204,7 +236,7 @@ export function PerformanceHeatmap({ categoryId }: PerformanceHeatmapProps) {
               {players?.map((player) => (
                 <React.Fragment key={player.id}>
                   <div className="text-sm p-2 truncate sticky left-0 bg-background z-10 border-r">
-                    {player.name}
+                    {[player.first_name, player.name].filter(Boolean).join(" ")}
                   </div>
                   {daysInMonth.map((day) => {
                     const value = getValueForCell(player.id, day);

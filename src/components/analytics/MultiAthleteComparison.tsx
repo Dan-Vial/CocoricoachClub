@@ -105,11 +105,11 @@ export function MultiAthleteComparison({ categoryId, sportType = "XV" }: MultiAt
     queryFn: async () => {
       const { data, error } = await supabase
         .from("players")
-        .select("id, name, discipline")
+        .select("id, name, first_name, discipline")
         .eq("category_id", categoryId)
         .order("name");
       if (error) throw error;
-      return data;
+      return data?.map(p => ({ ...p, fullName: [p.first_name, p.name].filter(Boolean).join(" ") }));
     },
   });
 
@@ -400,7 +400,7 @@ export function MultiAthleteComparison({ categoryId, sportType = "XV" }: MultiAt
       const value = getAthleteMetricValue(athleteId, selectedMetric);
       
       return {
-        name: player?.name || "Inconnu",
+        name: player?.fullName || "Inconnu",
         valeur: value,
         fill: ATHLETE_COLORS[index % ATHLETE_COLORS.length],
       };
@@ -431,7 +431,7 @@ export function MultiAthleteComparison({ categoryId, sportType = "XV" }: MultiAt
         const maxVal = Math.max(...allValues, 1);
         const normalizedValue = value ? (value / maxVal) * 100 : 0;
         
-        dataPoint[player?.name || `Athlete ${index + 1}`] = Math.round(normalizedValue);
+        dataPoint[player?.fullName || `Athlete ${index + 1}`] = Math.round(normalizedValue);
       });
 
       return dataPoint;
@@ -575,7 +575,7 @@ export function MultiAthleteComparison({ categoryId, sportType = "XV" }: MultiAt
                     style={{ backgroundColor: ATHLETE_COLORS[index % ATHLETE_COLORS.length] }}
                   />
                   <span>
-                    {player?.name}
+                    {player?.fullName}
                     {hasDisciplineFilter && player?.discipline && (
                       <span className="text-xs opacity-70 ml-1">
                         ({getDisciplineLabel(player.discipline)})
@@ -602,7 +602,7 @@ export function MultiAthleteComparison({ categoryId, sportType = "XV" }: MultiAt
               <SelectContent>
                 {availableAthletes.map(player => (
                   <SelectItem key={player.id} value={player.id}>
-                    {player.name}
+                    {player.fullName}
                     {hasDisciplineFilter && player.discipline && (
                       <span className="text-xs text-muted-foreground ml-2">
                         ({getDisciplineLabel(player.discipline)})
@@ -799,8 +799,8 @@ export function MultiAthleteComparison({ categoryId, sportType = "XV" }: MultiAt
                           return (
                             <Radar
                               key={athleteId}
-                              name={player?.name || `Athlete ${index + 1}`}
-                              dataKey={player?.name || `Athlete ${index + 1}`}
+                              name={player?.fullName || `Athlete ${index + 1}`}
+                              dataKey={player?.fullName || `Athlete ${index + 1}`}
                               stroke={ATHLETE_COLORS[index % ATHLETE_COLORS.length]}
                               fill={ATHLETE_COLORS[index % ATHLETE_COLORS.length]}
                               fillOpacity={0.25}
