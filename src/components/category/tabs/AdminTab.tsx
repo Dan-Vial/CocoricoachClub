@@ -53,6 +53,13 @@ export function AdminTab({ categoryId }: AdminTabProps) {
             <span className="sm:hidden">Docs</span>
           </ColoredSubTabsTrigger>
           <ColoredSubTabsTrigger 
+            value="logistics" 
+            colorKey="admin"
+            icon={<Truck className="h-4 w-4" />}
+          >
+            <span className="hidden sm:inline">Logistique</span>
+            <span className="sm:hidden">Logi</span>
+          <ColoredSubTabsTrigger 
             value="reports" 
             colorKey="admin"
             icon={<BarChart3 className="h-4 w-4" />}
