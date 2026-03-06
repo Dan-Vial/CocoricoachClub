@@ -28,8 +28,7 @@ export function TrainingLoadTab({ categoryId }: TrainingLoadTabProps) {
   const [selectedMetric, setSelectedMetric] = useState<MetricType>("ewma_srpe");
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | undefined>();
   const [periodDays, setPeriodDays] = useState<number>(56);
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isTeamDialogOpen, setIsTeamDialogOpen] = useState(false);
+
 
   // Sync metric when model changes
   const handleModelChange = (model: "ewma" | "awcr") => {
