@@ -181,7 +181,8 @@ export function PerformanceHeatmap({ categoryId }: PerformanceHeatmapProps) {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="awcr">EWMA</SelectItem>
+            <SelectItem value="awcr">AWCR (Gabbett)</SelectItem>
+            <SelectItem value="ewma_ratio">EWMA</SelectItem>
             <SelectItem value="training_load">Charge d'entraînement</SelectItem>
             <SelectItem value="wellness">Wellness</SelectItem>
             <SelectItem value="soreness">Douleurs musculaires</SelectItem>
