@@ -66,11 +66,12 @@ export function InjuryRiskPrediction({ categoryId }: InjuryRiskPredictionProps) 
     const player = players.find(p => p.id === playerId);
     if (!player) return null;
 
+    const fullName = [player.first_name, player.name].filter(Boolean).join(" ");
     const playerAwcr = awcrData.filter(a => a.player_id === playerId).slice(0, 7);
     if (playerAwcr.length === 0) {
       return {
         id: playerId,
-        name: player.name,
+        name: fullName,
         riskLevel: "low",
         riskScore: 0,
         factors: ["Données insuffisantes"],
