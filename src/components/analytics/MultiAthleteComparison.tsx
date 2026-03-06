@@ -602,7 +602,7 @@ export function MultiAthleteComparison({ categoryId, sportType = "XV" }: MultiAt
               <SelectContent>
                 {availableAthletes.map(player => (
                   <SelectItem key={player.id} value={player.id}>
-                    {player.name}
+                    {player.fullName}
                     {hasDisciplineFilter && player.discipline && (
                       <span className="text-xs text-muted-foreground ml-2">
                         ({getDisciplineLabel(player.discipline)})
