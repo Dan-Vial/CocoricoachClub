@@ -146,11 +146,12 @@ export function InjuryRiskPrediction({ categoryId }: InjuryRiskPredictionProps) 
 
     return {
       id: playerId,
-      name: player.name,
+      name: fullName,
       riskLevel,
-      riskScore,
+      riskScore: Math.min(riskScore, 100),
       factors: factors.length > 0 ? factors : ["Aucun facteur de risque détecté"],
       awcr,
+      ewmaRatio,
       acuteLoad,
       chronicLoad,
     };
