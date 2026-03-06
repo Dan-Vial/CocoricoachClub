@@ -444,7 +444,18 @@ export function StatPreferencesDialog({
               )}
             </div>
             <Button variant="outline" onClick={() => onOpenChange(false)}>
-              Fermer
+              Annuler
+            </Button>
+            <Button 
+              onClick={async () => {
+                if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+                await doSave(enabledStats);
+                onOpenChange(false);
+              }}
+              disabled={isSaving}
+            >
+              <CheckCircle2 className="h-4 w-4 mr-1" />
+              Sauvegarder
             </Button>
           </DialogFooter>
         </DialogContent>
