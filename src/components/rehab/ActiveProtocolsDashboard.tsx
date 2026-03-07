@@ -329,7 +329,7 @@ export function ActiveProtocolsDashboard({ categoryId }: ActiveProtocolsDashboar
                             </Badge>
                           </div>
                           <p className="text-sm text-muted-foreground truncate">
-                            {injury.injury_type} {injury.body_part ? `(${injury.body_part})` : ""}
+                            {injury.injury_type}
                           </p>
                           <p className="text-xs text-muted-foreground mt-1">
                             Blessure depuis le {format(parseISO(injury.injury_date), "d MMM yyyy", { locale: fr })}
