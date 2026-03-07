@@ -65,6 +65,8 @@ export function InjuriesTab({ categoryId }: InjuriesTabProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["injuries", categoryId] });
+      queryClient.invalidateQueries({ queryKey: ["recovering-injuries-no-protocol", categoryId] });
+      queryClient.invalidateQueries({ queryKey: ["active-rehab-protocols", categoryId] });
       toast.success("Statut mis à jour");
     },
     onError: (error: any) => {
