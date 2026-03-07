@@ -2,7 +2,6 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -13,7 +12,6 @@ import {
   CheckCircle2, 
   Clock, 
   Dumbbell,
-  TrendingDown,
   TrendingUp,
   User
 } from "lucide-react";
@@ -29,7 +27,7 @@ export function ActiveProtocolsDashboard({ categoryId }: ActiveProtocolsDashboar
   const navigate = useNavigate();
 
   // Fetch all active player rehab protocols for this category
-  const { data: activeProtocols, isLoading } = useQuery({
+  const { data: activeProtocols, isLoading: protocolsLoading } = useQuery({
     queryKey: ["active-rehab-protocols", categoryId],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -61,6 +59,34 @@ export function ActiveProtocolsDashboard({ categoryId }: ActiveProtocolsDashboar
       if (error) throw error;
       return data;
     },
+  });
+
+  // Fetch recovering injuries that may NOT have a rehab protocol yet
+  const { data: recoveringInjuries, isLoading: injuriesLoading } = useQuery({
+    queryKey: ["recovering-injuries-no-protocol", categoryId],
+    queryFn: async () => {
+      const { data: injuries, error } = await supabase
+        .from("injuries")
+        .select(`
+          *,
+          players (
+            id,
+            name,
+            avatar_url,
+            position
+          )
+        `)
+        .eq("category_id", categoryId)
+        .eq("status", "recovering")
+        .order("injury_date", { ascending: false });
+
+      if (error) throw error;
+
+      // Filter out injuries that already have an active protocol
+      const protocolInjuryIds = new Set(activeProtocols?.map(p => p.injury_id) || []);
+      return (injuries || []).filter(inj => !protocolInjuryIds.has(inj.id));
+    },
+    enabled: !protocolsLoading,
   });
 
   // Fetch calendar events for progress calculation
@@ -106,6 +132,8 @@ export function ActiveProtocolsDashboard({ categoryId }: ActiveProtocolsDashboar
     },
   });
 
+  const isLoading = protocolsLoading || injuriesLoading;
+
   const getProtocolProgress = (protocolId: string) => {
     const events = allRehabEvents?.filter(e => e.player_rehab_protocol_id === protocolId) || [];
     const total = events.length;
@@ -138,11 +166,14 @@ export function ActiveProtocolsDashboard({ categoryId }: ActiveProtocolsDashboar
     );
   }
 
-  const totalPlayers = activeProtocols?.length || 0;
+  const totalWithProtocol = activeProtocols?.length || 0;
+  const totalWithoutProtocol = recoveringInjuries?.length || 0;
+  const totalPlayers = totalWithProtocol + totalWithoutProtocol;
+
   const averageProgress = activeProtocols?.reduce((acc, p) => {
     return acc + getProtocolProgress(p.id).percent;
   }, 0) || 0;
-  const avgProgressPercent = totalPlayers > 0 ? averageProgress / totalPlayers : 0;
+  const avgProgressPercent = totalWithProtocol > 0 ? averageProgress / totalWithProtocol : 0;
 
   return (
     <div className="space-y-6">
@@ -198,11 +229,14 @@ export function ActiveProtocolsDashboard({ categoryId }: ActiveProtocolsDashboar
               </div>
               <div>
                 <p className="text-2xl font-bold">
-                  {activeProtocols?.filter(p => {
+                  {(activeProtocols?.filter(p => {
                     const injury = p.injuries as any;
                     if (!injury?.estimated_return_date) return false;
                     return differenceInDays(parseISO(injury.estimated_return_date), new Date()) < 0;
-                  }).length || 0}
+                  }).length || 0) + (recoveringInjuries?.filter(inj => {
+                    if (!inj.estimated_return_date) return false;
+                    return differenceInDays(parseISO(inj.estimated_return_date), new Date()) < 0;
+                  }).length || 0)}
                 </p>
                 <p className="text-sm text-muted-foreground">En retard</p>
               </div>
@@ -212,18 +246,19 @@ export function ActiveProtocolsDashboard({ categoryId }: ActiveProtocolsDashboar
       </div>
 
       <div className="grid md:grid-cols-2 gap-6">
-        {/* Active Protocols List */}
+        {/* Active Protocols + Recovering Injuries List */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Activity className="h-5 w-5" />
-              Protocoles actifs
+              Joueurs en réhabilitation
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {activeProtocols && activeProtocols.length > 0 ? (
+            {totalPlayers > 0 ? (
               <div className="space-y-4">
-                {activeProtocols.map((protocol) => {
+                {/* Players with formal protocols */}
+                {activeProtocols?.map((protocol) => {
                   const player = protocol.players as any;
                   const injuryProtocol = protocol.injury_protocols as any;
                   const injury = protocol.injuries as any;
@@ -268,11 +303,56 @@ export function ActiveProtocolsDashboard({ categoryId }: ActiveProtocolsDashboar
                     </div>
                   );
                 })}
+
+                {/* Players recovering WITHOUT a formal protocol */}
+                {recoveringInjuries?.map((injury) => {
+                  const player = injury.players as any;
+
+                  return (
+                    <div
+                      key={injury.id}
+                      className="p-4 border border-dashed border-amber-300 rounded-lg hover:bg-accent/5 transition-colors cursor-pointer"
+                      onClick={() => navigate(`/player/${player?.id}`)}
+                    >
+                      <div className="flex items-start gap-3">
+                        <Avatar className="h-10 w-10">
+                          <AvatarImage src={player?.avatar_url} />
+                          <AvatarFallback>
+                            <User className="h-5 w-5" />
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="font-medium truncate">{player?.name}</p>
+                            <Badge variant="outline" className="text-amber-600 border-amber-300">
+                              En réhabilitation
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground truncate">
+                            {injury.injury_type} {injury.body_part ? `(${injury.body_part})` : ""}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Blessure depuis le {format(parseISO(injury.injury_date), "d MMM yyyy", { locale: fr })}
+                          </p>
+                          {injury.estimated_return_date && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              <Clock className="h-3 w-3 inline mr-1" />
+                              Retour estimé: {format(parseISO(injury.estimated_return_date), "d MMM yyyy", { locale: fr })}
+                            </p>
+                          )}
+                          <p className="text-xs text-amber-600 mt-2 italic">
+                            Aucun protocole assigné — Assignez un protocole depuis la fiche joueur
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             ) : (
               <div className="text-center py-8 text-muted-foreground">
                 <Dumbbell className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                <p>Aucun protocole actif</p>
+                <p>Aucun joueur en réhabilitation</p>
               </div>
             )}
           </CardContent>
