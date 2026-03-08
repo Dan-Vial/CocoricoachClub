@@ -1396,7 +1396,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
           return q;
         })(),
         (() => {
-          let q = supabase.from("training_attendance").select("*, training_sessions!inner(session_date, session_type, duration_minutes, intensity)").eq("category_id", categoryId);
+          let q = supabase.from("training_attendance").select("*, training_sessions!inner(session_date, training_type, intensity, session_start_time, session_end_time)").eq("category_id", categoryId);
           if (attendanceDateFrom) q = q.gte("training_sessions.session_date", attendanceDateFrom);
           if (attendanceDateTo) q = q.lte("training_sessions.session_date", attendanceDateTo);
           return q;
