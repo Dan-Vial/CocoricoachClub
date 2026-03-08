@@ -18,6 +18,7 @@ export const RUGBY_COMPETITIONS: CompetitionCategory[] = [
       "Crabos A",
       "Crabos B",
       "Espoirs",
+      "Reichel/Espoirs",
       "Sevens jeunes",
     ],
   },
