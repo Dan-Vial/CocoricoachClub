@@ -43,6 +43,7 @@ import {
   getWellnessRiskLevel,
   type WellnessEntry 
 } from "@/lib/wellnessCalculations";
+import { calculateEWMASeries, transformToDailyLoadData } from "@/lib/trainingLoadCalculations";
 import { SessionFormDialog } from "./sessions/SessionFormDialog";
 import { NotifyAthletesDialog } from "@/components/notifications/NotifyAthletesDialog";
 import { parseTestsFromNotes } from "@/lib/utils/sessionNotes";
@@ -176,21 +177,44 @@ import { isIndividualSport } from "@/lib/constants/sportTypes";
      },
    });
  
-   // Fetch AWCR data
-   const { data: awcrData = [] } = useQuery({
-     queryKey: ["awcr_decision", categoryId],
+   // Fetch AWCR data for EWMA calculation (need 90 days for proper chronic load)
+   const { data: awcrDataFull = [] } = useQuery({
+     queryKey: ["awcr_decision_full", categoryId],
      queryFn: async () => {
-       const weekAgo = subDays(new Date(), 7).toISOString().split("T")[0];
+       const ninetyDaysAgo = subDays(new Date(), 90).toISOString().split("T")[0];
        const { data, error } = await supabase
          .from("awcr_tracking")
-         .select("player_id, awcr, session_date")
+         .select("player_id, training_load, rpe, duration_minutes, session_date")
          .eq("category_id", categoryId)
-         .gte("session_date", weekAgo)
-         .order("session_date", { ascending: false });
+         .gte("session_date", ninetyDaysAgo)
+         .order("session_date", { ascending: true });
        if (error) throw error;
        return data;
      },
    });
+
+   // Calculate per-player EWMA ratios
+   const playerEwmaMap = useMemo(() => {
+     const map = new Map<string, number>();
+     if (awcrDataFull.length === 0) return map;
+     
+     // Group by player
+     const byPlayer = new Map<string, typeof awcrDataFull>();
+     awcrDataFull.forEach(entry => {
+       if (!byPlayer.has(entry.player_id)) byPlayer.set(entry.player_id, []);
+       byPlayer.get(entry.player_id)!.push(entry);
+     });
+     
+     byPlayer.forEach((entries, playerId) => {
+       const dailyData = transformToDailyLoadData(entries, []);
+       const ewmaResults = calculateEWMASeries(dailyData, "sRPE");
+       if (ewmaResults.length > 0) {
+         map.set(playerId, ewmaResults[ewmaResults.length - 1].ratio);
+       }
+     });
+     
+     return map;
+   }, [awcrDataFull]);
  
   // Fetch wellness data
     const { data: wellnessData = [], refetch: refetchWellness } = useQuery({
@@ -256,7 +280,7 @@ import { isIndividualSport } from "@/lib/constants/sportTypes";
             filter: `category_id=eq.${categoryId}`,
           },
           () => {
-            queryClient.invalidateQueries({ queryKey: ["awcr_decision", categoryId] });
+            queryClient.invalidateQueries({ queryKey: ["awcr_decision_full", categoryId] });
             queryClient.invalidateQueries({ queryKey: ["priority_alerts_decision", categoryId] });
             queryClient.invalidateQueries({ queryKey: ["ewma_summary", categoryId] });
             queryClient.invalidateQueries({ queryKey: ["awcr-risk", categoryId] });
@@ -306,7 +330,7 @@ import { isIndividualSport } from "@/lib/constants/sportTypes";
       queryFn: async () => {
         const { data, error } = await supabase
           .from("training_attendance")
-          .select("*, players(name), training_sessions(id, training_type, session_start_time)")
+          .select("*, players(name, first_name), training_sessions(id, training_type, session_start_time)")
           .eq("category_id", categoryId)
           .eq("attendance_date", today);
         if (error) throw error;
@@ -355,7 +379,7 @@ import { isIndividualSport } from "@/lib/constants/sportTypes";
       queryFn: async () => {
         const { data, error } = await supabase
           .from("admin_documents")
-          .select("*, players(name)")
+          .select("*, players(name, first_name)")
           .eq("category_id", categoryId)
           .lte("expiry_date", today)
           .eq("status", "pending");
@@ -375,12 +399,12 @@ import { isIndividualSport } from "@/lib/constants/sportTypes";
       players.forEach(player => {
         if (injuredPlayerIds.has(player.id) || uncertainPlayerIds.has(player.id)) return;
         
-        const playerAwcr = awcrData.find(a => a.player_id === player.id);
+        const ewmaRatio = playerEwmaMap.get(player.id);
         const playerWellness = wellnessData.find(w => w.player_id === player.id);
         
         let reason = "";
-        if (playerAwcr?.awcr && (playerAwcr.awcr > 1.5 || playerAwcr.awcr < 0.8)) {
-          reason = `EWMA ${playerAwcr.awcr.toFixed(2)}`;
+        if (ewmaRatio != null && (ewmaRatio > 1.5 || ewmaRatio < 0.8)) {
+          reason = `EWMA ${ewmaRatio.toFixed(2)}`;
         }
         
         if (playerWellness) {
@@ -423,16 +447,16 @@ import { isIndividualSport } from "@/lib/constants/sportTypes";
      const alerts: PriorityAlert[] = [];
  
      players.forEach(player => {
-       // Overload alerts (AWCR > 1.5)
-       const playerAwcr = awcrData.find(a => a.player_id === player.id);
-       if (playerAwcr?.awcr && playerAwcr.awcr > 1.5) {
+       // Overload alerts (EWMA > 1.5)
+       const ewmaRatio = playerEwmaMap.get(player.id);
+       if (ewmaRatio != null && ewmaRatio > 1.5) {
           alerts.push({
             id: `overload-${player.id}`,
             type: "overload",
-            severity: playerAwcr.awcr > 1.8 ? "critical" : "high",
+            severity: ewmaRatio > 1.8 ? "critical" : "high",
             playerId: player.id,
             playerName: getFullName(player),
-            message: `Ratio EWMA à ${playerAwcr.awcr.toFixed(2)} - Réduire la charge`,
+            message: `Ratio EWMA à ${ewmaRatio.toFixed(2)} - Réduire la charge`,
             action: "Adapter charge",
           });
        }
@@ -480,7 +504,7 @@ import { isIndividualSport } from "@/lib/constants/sportTypes";
          type: "admin",
          severity: "medium",
          playerId: doc.player_id || "",
-         playerName: doc.players?.name || "Équipe",
+         playerName: doc.players ? [doc.players.first_name, doc.players.name].filter(Boolean).join(" ") : "Équipe",
          message: `${doc.title} - Document expiré`,
          action: "Régulariser",
        });
@@ -497,15 +521,15 @@ import { isIndividualSport } from "@/lib/constants/sportTypes";
    const getPlayersToAdapt = (): { id: string; name: string; reason: string }[] => {
      const toAdapt: { id: string; name: string; reason: string }[] = [];
      
-     players.forEach(player => {
-       const playerAwcr = awcrData.find(a => a.player_id === player.id);
-       const playerWellness = wellnessData.find(w => w.player_id === player.id);
-       
-       if (playerAwcr?.awcr && playerAwcr.awcr > 1.3) {
+      players.forEach(player => {
+        const ewmaRatio = playerEwmaMap.get(player.id);
+        const playerWellness = wellnessData.find(w => w.player_id === player.id);
+        
+        if (ewmaRatio != null && ewmaRatio > 1.3) {
           toAdapt.push({
             id: player.id,
             name: getFullName(player),
-            reason: `EWMA ${playerAwcr.awcr.toFixed(2)}`,
+            reason: `EWMA ${ewmaRatio.toFixed(2)}`,
          });
        } else if (playerWellness) {
          const score = calculateWeightedWellnessScore(playerWellness as WellnessEntry);
@@ -1066,7 +1090,7 @@ import { isIndividualSport } from "@/lib/constants/sportTypes";
                               {entry.status === "late" && <Clock className="h-4 w-4 text-orange-500 shrink-0" />}
                               {entry.status === "excused" && <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />}
                               <div className="min-w-0">
-                                <span className="font-medium truncate block">{entry.players?.name}</span>
+                                <span className="font-medium truncate block">{entry.players ? [entry.players.first_name, entry.players.name].filter(Boolean).join(" ") : "Inconnu"}</span>
                                 {entry.status === "late" && entry.late_minutes && (
                                   <span className="text-xs text-orange-600 dark:text-orange-400">+{entry.late_minutes} min</span>
                                 )}
@@ -1324,7 +1348,7 @@ import { isIndividualSport } from "@/lib/constants/sportTypes";
                        className="text-xs cursor-pointer hover:bg-muted"
                        onClick={() => navigate(`/players/${p.id}`)}
                      >
-                       {p.name.split(" ")[0]} • {p.reason}
+                       {p.name} • {p.reason}
                      </Badge>
                    ))}
                  </div>
@@ -1449,7 +1473,7 @@ import { isIndividualSport } from "@/lib/constants/sportTypes";
         <NotifyAthletesDialog
           open={notifyDialogOpen}
           onOpenChange={setNotifyDialogOpen}
-          athletes={players.map(p => ({ id: p.id, name: p.name }))}
+          athletes={players.map(p => ({ id: p.id, name: getFullName(p) }))}
           eventType="custom"
           defaultSubject="Message de l'équipe"
         />
@@ -1477,7 +1501,7 @@ import { isIndividualSport } from "@/lib/constants/sportTypes";
                   >
                     <div className="flex items-center gap-3">
                       <User className="h-4 w-4 text-muted-foreground" />
-                      <span>{player.name}</span>
+                      <span>{getFullName(player)}</span>
                     </div>
                     <ChevronRight className="h-4 w-4 text-muted-foreground" />
                   </Button>
@@ -1523,7 +1547,7 @@ import { isIndividualSport } from "@/lib/constants/sportTypes";
                     <div className="flex items-center gap-3">
                       <User className="h-4 w-4 text-orange-500" />
                       <div className="text-left">
-                        <p className="font-medium">{player.name}</p>
+                         <p className="font-medium">{player.name}</p>
                         <p className="text-xs text-muted-foreground">{player.reason}</p>
                       </div>
                     </div>
@@ -1619,7 +1643,7 @@ import { isIndividualSport } from "@/lib/constants/sportTypes";
                                     {entry.status === "late" && <Clock className="h-4 w-4 text-orange-500 shrink-0 mt-0.5" />}
                                     {entry.status === "excused" && <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />}
                                     <div>
-                                      <span className="font-medium text-sm">{entry.players?.name}</span>
+                                      <span className="font-medium text-sm">{entry.players ? [entry.players.first_name, entry.players.name].filter(Boolean).join(" ") : "Inconnu"}</span>
                                       {entry.status === "late" && (
                                         <div className="flex flex-col gap-0.5 mt-0.5">
                                           {entry.late_minutes && (
@@ -1654,7 +1678,7 @@ import { isIndividualSport } from "@/lib/constants/sportTypes";
                               {entries.filter(a => a.status === "present").map(entry => (
                                 <Badge key={entry.id} variant="outline" className="text-xs bg-green-50 dark:bg-green-900/20">
                                   <CheckCircle className="h-3 w-3 mr-1 text-green-600" />
-                                  {entry.players?.name}
+                                  {entry.players ? [entry.players.first_name, entry.players.name].filter(Boolean).join(" ") : "Inconnu"}
                                 </Badge>
                               ))}
                             </div>
@@ -1668,7 +1692,7 @@ import { isIndividualSport } from "@/lib/constants/sportTypes";
                             <div className="flex flex-wrap gap-1.5">
                               {notMarked.map(p => (
                                 <Badge key={p.id} variant="outline" className="text-xs text-muted-foreground">
-                                  {p.name}
+                                  {getFullName(p)}
                                 </Badge>
                               ))}
                             </div>
