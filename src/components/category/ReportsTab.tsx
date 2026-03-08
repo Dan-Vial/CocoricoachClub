@@ -246,7 +246,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
       let yPos = drawPdfHeaderCustom(
         pdf,
         `SUIVI TEMPS DE JEU${seasonName ? ` - ${seasonName}` : ""}`,
-        `${category?.clubs?.name} - ${category?.name}`,
+        `${cn1 || category?.clubs?.name || ''} - ${catName1 || category?.name || ''}`,
         `${matchesData.length} matchs | ${format(new Date(), "d MMMM yyyy", { locale: fr })}${dateRange ? ` | ${dateRange}` : ""}`,
         pdfSettings,
         logoBase64
