@@ -7115,6 +7115,69 @@ export type Database = {
         }
         Relationships: []
       }
+      user_notification_preferences: {
+        Row: {
+          created_at: string
+          email_convocations: boolean
+          email_enabled: boolean
+          email_matches: boolean
+          email_rpe_reminder: boolean
+          email_sessions: boolean
+          email_wellness_reminder: boolean
+          id: string
+          push_convocations: boolean
+          push_enabled: boolean
+          push_injuries: boolean
+          push_matches: boolean
+          push_messages: boolean
+          push_rpe_reminder: boolean
+          push_sessions: boolean
+          push_wellness_reminder: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email_convocations?: boolean
+          email_enabled?: boolean
+          email_matches?: boolean
+          email_rpe_reminder?: boolean
+          email_sessions?: boolean
+          email_wellness_reminder?: boolean
+          id?: string
+          push_convocations?: boolean
+          push_enabled?: boolean
+          push_injuries?: boolean
+          push_matches?: boolean
+          push_messages?: boolean
+          push_rpe_reminder?: boolean
+          push_sessions?: boolean
+          push_wellness_reminder?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email_convocations?: boolean
+          email_enabled?: boolean
+          email_matches?: boolean
+          email_rpe_reminder?: boolean
+          email_sessions?: boolean
+          email_wellness_reminder?: boolean
+          id?: string
+          push_convocations?: boolean
+          push_enabled?: boolean
+          push_injuries?: boolean
+          push_matches?: boolean
+          push_messages?: boolean
+          push_rpe_reminder?: boolean
+          push_sessions?: boolean
+          push_wellness_reminder?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_notification_status: {
         Row: {
           created_at: string
