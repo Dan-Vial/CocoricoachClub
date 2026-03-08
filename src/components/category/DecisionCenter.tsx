@@ -447,16 +447,16 @@ import { isIndividualSport } from "@/lib/constants/sportTypes";
      const alerts: PriorityAlert[] = [];
  
      players.forEach(player => {
-       // Overload alerts (AWCR > 1.5)
-       const playerAwcr = awcrData.find(a => a.player_id === player.id);
-       if (playerAwcr?.awcr && playerAwcr.awcr > 1.5) {
+       // Overload alerts (EWMA > 1.5)
+       const ewmaRatio = playerEwmaMap.get(player.id);
+       if (ewmaRatio != null && ewmaRatio > 1.5) {
           alerts.push({
             id: `overload-${player.id}`,
             type: "overload",
-            severity: playerAwcr.awcr > 1.8 ? "critical" : "high",
+            severity: ewmaRatio > 1.8 ? "critical" : "high",
             playerId: player.id,
             playerName: getFullName(player),
-            message: `Ratio EWMA à ${playerAwcr.awcr.toFixed(2)} - Réduire la charge`,
+            message: `Ratio EWMA à ${ewmaRatio.toFixed(2)} - Réduire la charge`,
             action: "Adapter charge",
           });
        }
