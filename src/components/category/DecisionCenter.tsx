@@ -1501,7 +1501,7 @@ import { isIndividualSport } from "@/lib/constants/sportTypes";
                   >
                     <div className="flex items-center gap-3">
                       <User className="h-4 w-4 text-muted-foreground" />
-                      <span>{player.name}</span>
+                      <span>{getFullName(player)}</span>
                     </div>
                     <ChevronRight className="h-4 w-4 text-muted-foreground" />
                   </Button>
