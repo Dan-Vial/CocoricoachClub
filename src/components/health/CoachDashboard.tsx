@@ -90,7 +90,7 @@ export function CoachDashboard({ categoryId }: CoachDashboardProps) {
       const sixtyDaysAgo = format(addDays(new Date(), -60), "yyyy-MM-dd");
       const { data, error } = await supabase
         .from("awcr_tracking")
-        .select("player_id, awcr, acute_load, chronic_load, players(name)")
+        .select("player_id, awcr, acute_load, chronic_load, players(name, first_name)")
         .eq("category_id", categoryId)
         .gte("session_date", sixtyDaysAgo)
         .order("session_date", { ascending: false });
@@ -99,16 +99,16 @@ export function CoachDashboard({ categoryId }: CoachDashboardProps) {
         return {};
       }
 
-      // Get latest EWMA per player (using existing data structure)
+      // Get latest EWMA per player - use the stored awcr field (correct EWMA ratio)
       const latestByPlayer: Record<string, { ewmaRatio: number; acute: number; chronic: number; name: string }> = {};
       data?.forEach((entry: any) => {
-        if (!latestByPlayer[entry.player_id] && entry.acute_load && entry.chronic_load) {
-          const ratio = entry.chronic_load > 0 ? entry.acute_load / entry.chronic_load : 0;
+        if (!latestByPlayer[entry.player_id] && entry.awcr != null) {
+          const playerName = [entry.players?.first_name, entry.players?.name].filter(Boolean).join(" ");
           latestByPlayer[entry.player_id] = {
-            ewmaRatio: ratio,
-            acute: entry.acute_load,
-            chronic: entry.chronic_load,
-            name: entry.players?.name || "Unknown",
+            ewmaRatio: entry.awcr,
+            acute: entry.acute_load || 0,
+            chronic: entry.chronic_load || 0,
+            name: playerName || "Unknown",
           };
         }
       });
