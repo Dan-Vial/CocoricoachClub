@@ -5,6 +5,33 @@ import { Eye, Pencil, MessageSquare, Trash2, Bell } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getTrainingTypeColor, getTrainingTypeLabel } from "@/lib/constants/trainingTypes";
 
+// Map Tailwind bg-color classes to actual CSS colors
+const TAILWIND_COLOR_MAP: Record<string, string> = {
+  "bg-blue-500": "#3b82f6", "bg-blue-400": "#60a5fa", "bg-blue-600": "#2563eb",
+  "bg-green-500": "#22c55e", "bg-green-600": "#16a34a", "bg-green-400": "#4ade80",
+  "bg-red-500": "#ef4444", "bg-red-600": "#dc2626", "bg-red-400": "#f87171", "bg-red-700": "#b91c1c",
+  "bg-orange-500": "#f97316", "bg-orange-600": "#ea580c", "bg-orange-400": "#fb923c",
+  "bg-yellow-500": "#eab308", "bg-yellow-600": "#ca8a04", "bg-yellow-400": "#facc15",
+  "bg-purple-500": "#a855f7", "bg-purple-600": "#9333ea",
+  "bg-pink-500": "#ec4899", "bg-pink-400": "#f472b6",
+  "bg-indigo-500": "#6366f1", "bg-indigo-600": "#4f46e5",
+  "bg-teal-500": "#14b8a6", "bg-teal-600": "#0d9488",
+  "bg-cyan-500": "#06b6d4",
+  "bg-emerald-500": "#10b981",
+  "bg-amber-500": "#f59e0b", "bg-amber-400": "#fbbf24",
+  "bg-rose-500": "#f43f5e", "bg-rose-600": "#e11d48",
+  "bg-violet-500": "#8b5cf6",
+  "bg-fuchsia-500": "#d946ef",
+  "bg-lime-500": "#84cc16",
+  "bg-sky-500": "#0ea5e9",
+  "bg-slate-500": "#64748b",
+  "bg-gray-400": "#9ca3af", "bg-gray-500": "#6b7280",
+  "bg-primary": "#6366f1",
+};
+
+function tailwindColorToHsl(colorClass: string): string {
+  return TAILWIND_COLOR_MAP[colorClass] || "#6b7280";
+}
 interface SessionBlock {
   id: string;
   training_type: string;
@@ -94,21 +121,21 @@ export function SessionVignette({
           !hasBlocks && bgColor,
           isDragging && "shadow-lg ring-2 ring-primary/50"
         )}
-        style={hasBlocks ? { backgroundColor: "hsl(var(--muted))" } : undefined}
+        style={hasBlocks ? (() => {
+          const uniqueBlocks = blocks.slice(0, 3);
+          const colors = uniqueBlocks.map(b => {
+            const colorClass = getTrainingTypeColor(b.training_type);
+            return tailwindColorToHsl(colorClass);
+          });
+          if (colors.length === 1) return { backgroundColor: colors[0] };
+          const stops = colors.map((c, i) => {
+            const start = (i / colors.length) * 100;
+            const end = ((i + 1) / colors.length) * 100;
+            return `${c} ${start}%, ${c} ${end}%`;
+          }).join(', ');
+          return { background: `linear-gradient(to right, ${stops})` };
+        })() : undefined}
       >
-        {/* Multi-block color indicator */}
-        {hasBlocks && (
-          <div className="absolute left-0 top-0 bottom-0 flex">
-            {blocks.slice(0, 4).map((block, idx) => (
-              <div
-                key={block.id}
-                className={cn("h-full w-1", getTrainingTypeColor(block.training_type))}
-                title={getTrainingTypeLabel(block.training_type)}
-              />
-            ))}
-          </div>
-        )}
-        
         {/* Drag handle - only visible and active when NOT hovered */}
         {!isHovered && !isDragging && isDraggable && !isViewer && (
           <div
@@ -121,7 +148,6 @@ export function SessionVignette({
         {/* Session content - hidden when hovered to show actions */}
         <div className={cn(
           "flex items-center gap-1.5 transition-opacity pointer-events-none",
-          hasBlocks && "pl-5 text-foreground",
           isHovered && !isDragging && "opacity-0"
         )}>
           {startTime && (
