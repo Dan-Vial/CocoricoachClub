@@ -45,6 +45,8 @@ export function useStatPreferences({
       return allEnabled.length > 0 ? allEnabled : null;
     },
     enabled: !!categoryId,
+    staleTime: 0, // Always check for fresh data
+    refetchOnWindowFocus: true,
   });
 
   // Fetch custom stats for the category
