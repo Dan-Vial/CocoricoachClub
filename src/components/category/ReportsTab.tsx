@@ -740,8 +740,8 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
 
       // Fetch match data + stat preferences
       const [lineupsRes, statsRes, statPrefsRes, customStatsRes] = await Promise.all([
-        supabase.from("match_lineups").select("*, players(name, position)").eq("match_id", selectedMatch),
-        supabase.from("player_match_stats").select("*, players(name)").eq("match_id", selectedMatch),
+        supabase.from("match_lineups").select("*, players(name, first_name, position)").eq("match_id", selectedMatch),
+        supabase.from("player_match_stats").select("*, players(name, first_name)").eq("match_id", selectedMatch),
         supabase.from("category_stat_preferences").select("enabled_stats, enabled_custom_stats").eq("category_id", categoryId).maybeSingle(),
         supabase.from("custom_stats").select("*").eq("category_id", categoryId),
       ]);
