@@ -85,6 +85,8 @@ export function StatPreferencesDialog({
       return data;
     },
     enabled: open,
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 
   // Fetch custom stats for this category
