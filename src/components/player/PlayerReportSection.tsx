@@ -1482,7 +1482,7 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
           </Button>
           <Button
             variant="outline"
-            onClick={generateCsvExport}
+            onClick={generateExcelExport}
             disabled={generating !== null || selectedSections.length === 0}
             className="flex-1"
           >
@@ -1491,7 +1491,7 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
             ) : (
               <FileSpreadsheet className="h-4 w-4 mr-2" />
             )}
-            Exporter CSV
+            Exporter Excel
           </Button>
         </div>
       </CardContent>
