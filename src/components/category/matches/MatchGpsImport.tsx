@@ -223,13 +223,17 @@ export function MatchGpsImport({
 
     // Create mappings with auto-match attempt
     const mappings: PlayerMapping[] = Array.from(uniquePlayers.entries()).map(([name, data]) => {
-      // Try to auto-match
+      // Try to auto-match using full name (first_name + name)
       const normalizedName = name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
       const autoMatch = players.find(p => {
-        const pName = p.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        const fullName = [p.first_name, p.name].filter(Boolean).join(" ");
+        const pName = fullName.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        const pLastName = p.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
         return pName === normalizedName || 
                pName.includes(normalizedName) || 
-               normalizedName.includes(pName);
+               normalizedName.includes(pName) ||
+               pLastName === normalizedName ||
+               normalizedName.includes(pLastName);
       });
 
       return {
