@@ -247,7 +247,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
                         </p>
                         <div className="flex items-center gap-1 text-xs text-muted-foreground">
                           <Calendar className="h-3 w-3" />
-                          {format(new Date(match.date), "dd MMM yyyy", { locale: fr })}
+                          {format(new Date(match.match_date), "dd MMM yyyy", { locale: fr })}
                         </div>
                       </div>
                     </button>
