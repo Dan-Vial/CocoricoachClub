@@ -389,7 +389,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
     setGeneratingReport("season");
     
     try {
-      const { settings: pdfSettings, logoBase64, seasonName: sName } = await preparePdfWithSettings(categoryId);
+      const { settings: pdfSettings, logoBase64, seasonName: sName, clubName: cn2, categoryName: catName2 } = await preparePdfWithSettings(categoryId);
 
       const [matchesRes, injuriesRes, goalsRes, awcrRes] = await Promise.all([
         supabase.from("matches").select("*").eq("category_id", categoryId).order("match_date"),
