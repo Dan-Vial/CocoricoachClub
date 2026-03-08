@@ -1829,7 +1829,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold">Rapports</h2>
-        <p className="text-muted-foreground">Générez et exportez des rapports en PDF ou CSV (Excel)</p>
+        <p className="text-muted-foreground">Générez et exportez des rapports en PDF ou Excel</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
