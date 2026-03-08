@@ -57,6 +57,8 @@ const handler = async (req: Request): Promise<Response> => {
       physio: "Kinésithérapeute",
       doctor: "Médecin",
       mental_coach: "Préparateur Mental",
+      prepa_physique: "Préparateur Physique",
+      administratif: "Administratif",
     };
 
     const roleLabel = role ? roleLabels[role] || role : "";
