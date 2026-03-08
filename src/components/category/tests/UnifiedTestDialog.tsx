@@ -193,6 +193,15 @@ export function UnifiedTestDialog({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["generic_tests", categoryId] });
       queryClient.invalidateQueries({ queryKey: ["training_sessions", categoryId] });
+      // Invalidate analytics caches so new tests appear in Evolution/Comparison dropdowns
+      queryClient.invalidateQueries({ queryKey: ["generic-tests-evolution", categoryId] });
+      queryClient.invalidateQueries({ queryKey: ["generic-tests-multi-comparison", categoryId] });
+      queryClient.invalidateQueries({ queryKey: ["speed-tests-evolution", categoryId] });
+      queryClient.invalidateQueries({ queryKey: ["speed-tests-multi-comparison", categoryId] });
+      queryClient.invalidateQueries({ queryKey: ["strength-tests-evolution", categoryId] });
+      queryClient.invalidateQueries({ queryKey: ["strength-tests-multi-comparison", categoryId] });
+      queryClient.invalidateQueries({ queryKey: ["jump-tests-evolution", categoryId] });
+      queryClient.invalidateQueries({ queryKey: ["jump-tests-multi-comparison", categoryId] });
       if (saveAsGpsVmax) {
         queryClient.invalidateQueries({ queryKey: ["player_performance_references", categoryId] });
         queryClient.invalidateQueries({ queryKey: ["player_active_reference"] });

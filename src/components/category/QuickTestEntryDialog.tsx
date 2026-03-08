@@ -310,6 +310,9 @@ export function QuickTestEntryDialog({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["generic_tests"] });
       queryClient.invalidateQueries({ queryKey: ["existing_generic_tests", categoryId, sessionDate] });
+      // Invalidate analytics caches
+      queryClient.invalidateQueries({ queryKey: ["generic-tests-evolution", categoryId] });
+      queryClient.invalidateQueries({ queryKey: ["generic-tests-multi-comparison", categoryId] });
       toast.success("Résultats de tests enregistrés");
     },
     onError: (error: any) => {

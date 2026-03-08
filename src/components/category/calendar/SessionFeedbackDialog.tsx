@@ -333,6 +333,9 @@ export function SessionFeedbackDialog({
       queryClient.invalidateQueries({ queryKey: ["generic_tests", categoryId] });
       queryClient.invalidateQueries({ queryKey: ["generic_tests_discovery", categoryId] });
       queryClient.invalidateQueries({ queryKey: ["today_session_tests"] });
+      // Invalidate analytics caches
+      queryClient.invalidateQueries({ queryKey: ["generic-tests-evolution", categoryId] });
+      queryClient.invalidateQueries({ queryKey: ["generic-tests-multi-comparison", categoryId] });
       
       let message = "";
       if (result.rpeCount > 0) message += `${result.rpeCount} RPE enregistré(s)`;

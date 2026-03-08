@@ -896,6 +896,9 @@ export function SessionFormDialog({
       queryClient.invalidateQueries({ queryKey: ["event-participants-edit"] });
       queryClient.invalidateQueries({ queryKey: ["generic_tests", categoryId] });
       queryClient.invalidateQueries({ queryKey: ["generic_tests_discovery", categoryId] });
+      // Invalidate analytics caches
+      queryClient.invalidateQueries({ queryKey: ["generic-tests-evolution", categoryId] });
+      queryClient.invalidateQueries({ queryKey: ["generic-tests-multi-comparison", categoryId] });
       queryClient.invalidateQueries({ queryKey: ["session-blocks"] });
       queryClient.invalidateQueries({ queryKey: ["session-blocks-calendar"] });
       queryClient.invalidateQueries({ queryKey: ["session-blocks-edit"] });
