@@ -1311,11 +1311,14 @@ export function CompetitionRoundsDialog({
                             )}
 
                             {/* Aggregated stats by category (non-Aviron, non-Bowling) */}
-                            {!isAviron && !isBowling && Object.keys(aggregated).length > 0 && (
+                            {!isAviron && !isBowling && Object.keys(aggregated).length > 0 && (() => {
+                              const pStats = getPlayerStats(selectedPlayer);
+                              const pCats = getPlayerStatCategories(selectedPlayer);
+                              return (
                               <div className="space-y-3">
                                 <h4 className="font-medium">Statistiques cumulées</h4>
-                                {statCategories.map(cat => {
-                                  const categoryStats = sportStats.filter(s => s.category === cat.key && aggregated[s.key] !== undefined);
+                                {pCats.map(cat => {
+                                  const categoryStats = pStats.filter(s => s.category === cat.key && aggregated[s.key] !== undefined);
                                   if (categoryStats.length === 0) return null;
                                   return (
                                     <div key={cat.key}>
