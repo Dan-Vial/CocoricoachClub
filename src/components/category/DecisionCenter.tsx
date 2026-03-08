@@ -1678,7 +1678,7 @@ import { isIndividualSport } from "@/lib/constants/sportTypes";
                               {entries.filter(a => a.status === "present").map(entry => (
                                 <Badge key={entry.id} variant="outline" className="text-xs bg-green-50 dark:bg-green-900/20">
                                   <CheckCircle className="h-3 w-3 mr-1 text-green-600" />
-                                  {entry.players?.name}
+                                  {entry.players ? [entry.players.first_name, entry.players.name].filter(Boolean).join(" ") : "Inconnu"}
                                 </Badge>
                               ))}
                             </div>
