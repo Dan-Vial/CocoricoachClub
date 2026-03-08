@@ -50,12 +50,25 @@ export function SuperAdminUsers() {
         .from("approved_users")
         .select("user_id, is_free_user");
 
+      // Fetch staff members (club_members + category_members) - they are auto-approved via invitation
+      const { data: clubMembers } = await supabase
+        .from("club_members")
+        .select("user_id");
+      const { data: categoryMembers } = await supabase
+        .from("category_members")
+        .select("user_id");
+
       const approvedMap = new Map(approvedData?.map((a) => [a.user_id, a.is_free_user]) || []);
+      const staffUserIds = new Set([
+        ...(clubMembers?.map(m => m.user_id) || []),
+        ...(categoryMembers?.map(m => m.user_id) || []),
+      ]);
 
       return (usersData as AdminUser[]).map((u) => ({
         ...u,
-        is_approved: approvedMap.has(u.id) || u.is_super_admin,
+        is_approved: approvedMap.has(u.id) || u.is_super_admin || staffUserIds.has(u.id),
         is_free_user: approvedMap.get(u.id) === true,
+        is_staff: staffUserIds.has(u.id) && !approvedMap.has(u.id) && !u.is_super_admin,
       }));
     },
   });
