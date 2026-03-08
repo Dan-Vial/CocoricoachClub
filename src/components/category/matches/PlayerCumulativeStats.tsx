@@ -39,15 +39,30 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
   const sportStats = getStatsForSport(sportType);
   const statCategories = getStatCategories(sportType);
 
-  // Fetch all finalized matches for this category
+  // Fetch all matches that have stats data for this category
   const { data: allMatches = [] } = useQuery({
     queryKey: ["matches-list-cumulative", categoryId],
     queryFn: async () => {
+      // Get match IDs that have player stats
+      const { data: statsMatchIds, error: statsError } = await supabase
+        .from("player_match_stats")
+        .select("match_id")
+        .in("match_id", 
+          (await supabase
+            .from("matches")
+            .select("id")
+            .eq("category_id", categoryId)
+          ).data?.map(m => m.id) || []
+        );
+      if (statsError) throw statsError;
+      
+      const uniqueMatchIds = [...new Set((statsMatchIds || []).map(s => s.match_id))];
+      if (uniqueMatchIds.length === 0) return [] as MatchInfo[];
+
       const { data, error } = await supabase
         .from("matches")
         .select("id, match_date, opponent")
-        .eq("category_id", categoryId)
-        .eq("is_finalized", true)
+        .in("id", uniqueMatchIds)
         .order("match_date", { ascending: false });
       if (error) throw error;
       return (data || []) as MatchInfo[];

@@ -154,7 +154,17 @@ export function SportMatchStatsDialog({
     enabled: !!matchId,
   });
 
+  // Track if statsData has been initialized to avoid resetting on preference refetch
+  const [statsInitialized, setStatsInitialized] = useState(false);
+
   useEffect(() => {
+    if (!open) {
+      setStatsInitialized(false);
+    }
+  }, [open]);
+
+  useEffect(() => {
+    if (statsInitialized) return; // Don't re-initialize once loaded
     if (lineup && lineup.length > 0) {
       // Use all standard stats + custom stats from preferences
       const standardStats = [
@@ -204,8 +214,9 @@ export function SportMatchStatsDialog({
         return playerStats;
       });
       setStatsData(stats);
+      setStatsInitialized(true);
     }
-  }, [lineup, existingStats, sportType, supportsGoalkeeper, sportStats]);
+  }, [lineup, existingStats, sportType, supportsGoalkeeper, sportStats, statsInitialized, open]);
 
   // Auto-compute percentages when any stat changes
   const updateStat = (playerId: string, statKey: string, value: number) => {
