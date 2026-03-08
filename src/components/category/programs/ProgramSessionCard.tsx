@@ -1,10 +1,10 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { X, GripVertical, Link2, Unlink, Plus, Minus, FlaskConical, Check, Info, ChevronUp, ChevronDown, Library } from "lucide-react";
+import { X, GripVertical, Unlink, Plus, Minus, FlaskConical, Check, Info, ChevronUp, ChevronDown, Library } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -153,8 +153,6 @@ export function ProgramSessionCard({
   const { setNodeRef, isOver } = useDroppable({
     id: session.id,
   });
-  const [linkingFrom, setLinkingFrom] = useState<{index: number, method: string, maxCount: number} | null>(null);
-  const [selectedForLinking, setSelectedForLinking] = useState<number[]>([]);
   const [showLibraryFor, setShowLibraryFor] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -194,16 +192,6 @@ export function ProgramSessionCard({
     setSearchQuery("");
   };
 
-  // Reset linking state when exercises change
-  useEffect(() => {
-    if (linkingFrom) {
-      const stillValid = session.exercises[linkingFrom.index];
-      if (!stillValid) {
-        setLinkingFrom(null);
-        setSelectedForLinking([]);
-      }
-    }
-  }, [session.exercises]);
 
   // Organize exercises into groups for rendering
   const exerciseGroups = useMemo(() => {
@@ -309,67 +297,57 @@ export function ProgramSessionCard({
     return getMaxExercisesForMethod(method);
   };
 
-  const startLinking = (index: number, method: string) => {
-    const maxCount = getMaxCountForMethod(method);
-    setLinkingFrom({ index, method, maxCount });
-    setSelectedForLinking([index]);
-    // Update the exercise method immediately so the select reflects the chosen method
-    const newExercises = [...session.exercises];
-    newExercises[index] = { ...newExercises[index], method };
-    onUpdate({ ...session, exercises: newExercises });
-  };
+  const createBlockForMethod = (sourceIndex: number, method: string) => {
+    const minExercises = (() => {
+      if (method === "superset" || method === "biset" || method === "bulgarian") return 2;
+      if (method === "triset") return 3;
+      if (method === "giant_set") return 4;
+      return 2;
+    })();
 
-  const toggleExerciseForLinking = (targetIndex: number) => {
-    if (!linkingFrom) return;
-    
-    const exercise = session.exercises[targetIndex];
-    if (exercise.group_id) return;
-    
-    if (selectedForLinking.includes(targetIndex)) {
-      if (targetIndex === linkingFrom.index) return;
-      setSelectedForLinking(prev => prev.filter(i => i !== targetIndex));
-    } else {
-      if (selectedForLinking.length < linkingFrom.maxCount) {
-        setSelectedForLinking(prev => [...prev, targetIndex]);
-      }
-    }
-  };
-
-  const confirmLinking = () => {
-    if (!linkingFrom || selectedForLinking.length < 2) return;
-    
-    const { method } = linkingFrom;
     const groupId = crypto.randomUUID();
-    const sortedIndices = [...selectedForLinking].sort((a, b) => a - b);
-    
-    const newExercises = session.exercises.map((ex, i) => {
-      const groupIndex = sortedIndices.indexOf(i);
-      if (groupIndex !== -1) {
-        return {
-          ...ex,
-          method,
-          group_id: groupId,
-          group_order: groupIndex + 1,
-        };
-      }
-      return ex;
-    });
-    
-    onUpdate({ ...session, exercises: newExercises });
-    setLinkingFrom(null);
-    setSelectedForLinking([]);
-  };
+    const sourceExercise = session.exercises[sourceIndex];
 
-  const cancelLinking = () => {
-    // Reset method back to normal for all selected exercises in a single update
-    if (linkingFrom) {
-      const newExercises = session.exercises.map((ex, i) =>
-        selectedForLinking.includes(i) ? { ...ex, method: "normal" } : ex
-      );
-      onUpdate({ ...session, exercises: newExercises });
+    // Build the block: keep source exercise as first, add empty exercises for the rest
+    const blockExercises: ProgramExercise[] = [
+      {
+        ...sourceExercise,
+        method,
+        group_id: groupId,
+        group_order: 1,
+      },
+    ];
+
+    for (let i = 1; i < minExercises; i++) {
+      blockExercises.push({
+        id: crypto.randomUUID(),
+        exercise_name: "",
+        order_index: 0, // will be recalculated
+        method,
+        sets: sourceExercise.sets || 3,
+        reps: sourceExercise.reps || "10",
+        rest_seconds: sourceExercise.rest_seconds || 90,
+        group_id: groupId,
+        group_order: i + 1,
+      });
     }
-    setLinkingFrom(null);
-    setSelectedForLinking([]);
+
+    // Replace the source exercise with the block exercises
+    const before = session.exercises.slice(0, sourceIndex);
+    const after = session.exercises.slice(sourceIndex + 1);
+    const newExercises = [...before, ...blockExercises, ...after].map((ex, i) => ({
+      ...ex,
+      order_index: i,
+    }));
+
+    onUpdate({ ...session, exercises: newExercises });
+
+    // Open library search for the first empty exercise in the block
+    const firstEmptyIndex = sourceIndex + 1;
+    setTimeout(() => {
+      setSearchQuery("");
+      setShowLibraryFor(firstEmptyIndex);
+    }, 150);
   };
 
   const unlinkGroup = (groupId: string) => {
@@ -543,11 +521,6 @@ export function ProgramSessionCard({
     return getTrainingStyleConfig(method).description || "";
   };
 
-  const isLinkable = (index: number) => {
-    if (!linkingFrom) return false;
-    const exercise = session.exercises[index];
-    return !exercise.group_id;
-  };
 
   const isInDropMode = (method: string) => checkIsDropMethod(method);
   const isInClusterMode = (method: string) => checkIsClusterMethod(method);
@@ -560,19 +533,12 @@ export function ProgramSessionCard({
     isGrouped: boolean,
     exerciseNumber?: number
   ) => {
-    const isSelected = selectedForLinking.includes(index);
     const styleConfig = getTrainingStyleConfig(exercise.method);
     const dropMode = isInDropMode(exercise.method);
     const clusterMode = isInClusterMode(exercise.method);
     const vbtMode = isInVbtMode(exercise.method);
 
     const getExerciseStyle = () => {
-      if (linkingFrom && isLinkable(index)) {
-        const linkStyle = getTrainingStyleConfig(linkingFrom.method);
-        return isSelected
-          ? cn("border-2", linkStyle.borderColor, linkStyle.bgColor)
-          : cn("border-2 border-dashed", linkStyle.borderColor, "hover:opacity-80");
-      }
       if (exercise.is_rm_test) {
         return "border-amber-500/50 bg-amber-50 dark:bg-amber-950/20";
       }
@@ -585,38 +551,10 @@ export function ProgramSessionCard({
     return (
       <div
         className={cn(
-          "flex flex-col gap-2 p-3 rounded-lg border transition-all relative",
+          "flex flex-col gap-2 p-3 rounded-lg border transition-all",
           getExerciseStyle(),
-          linkingFrom && isLinkable(index) && "cursor-pointer"
         )}
-        onClick={() => {
-          if (linkingFrom && isLinkable(index)) {
-            toggleExerciseForLinking(index);
-          }
-        }}
       >
-        {/* Linking mode selection overlay */}
-        {linkingFrom && isLinkable(index) && (
-          <div
-            className={cn(
-              "absolute inset-0 z-10 rounded-lg flex items-center justify-center transition-all",
-              isSelected ? "bg-primary/10" : "bg-transparent hover:bg-muted/40"
-            )}
-            onClick={(e) => {
-              e.stopPropagation();
-              toggleExerciseForLinking(index);
-            }}
-          >
-            <div className={cn(
-              "h-8 w-8 rounded-full border-2 flex items-center justify-center transition-all",
-              isSelected 
-                ? cn("border-transparent text-white", getTrainingStyleConfig(linkingFrom.method).color)
-                : "border-muted-foreground/40 bg-background"
-            )}>
-              {isSelected && <Check className="h-5 w-5" />}
-            </div>
-          </div>
-        )}
         {/* Exercise header */}
         <div className="flex items-center gap-2">
           <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab" />
@@ -1202,7 +1140,7 @@ export function ProgramSessionCard({
                        value={exercise.method}
                        onValueChange={(value) => {
                          if (LINKABLE_METHODS.includes(value)) {
-                           startLinking(index, value);
+                            createBlockForMethod(index, value);
                          } else if (DROP_METHODS.includes(value)) {
                            initDropSets(index, value);
                          } else if (CLUSTER_METHODS.includes(value)) {
@@ -1283,7 +1221,7 @@ export function ProgramSessionCard({
                        value={exercise.method}
                        onValueChange={(value) => {
                          if (LINKABLE_METHODS.includes(value)) {
-                           startLinking(index, value);
+                           createBlockForMethod(index, value);
                          } else if (DROP_METHODS.includes(value)) {
                            initDropSets(index, value);
                          } else if (CLUSTER_METHODS.includes(value)) {
@@ -1811,73 +1749,6 @@ export function ProgramSessionCard({
         )}
       </div>
 
-      {/* Linking mode indicator */}
-      {linkingFrom && (
-        <div className={cn(
-          "p-3 border-b space-y-2",
-          getTrainingStyleConfig(linkingFrom.method).bgColor
-        )}>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Badge className={cn("text-white", getTrainingStyleConfig(linkingFrom.method).color)}>
-                {getMethodLabel(linkingFrom.method)}
-              </Badge>
-              <span className="text-sm font-medium">
-                {selectedForLinking.length}/{linkingFrom.maxCount} exercices
-              </span>
-            </div>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            {session.exercises.filter((ex, i) => !ex.group_id && !selectedForLinking.includes(i)).length === 0 && selectedForLinking.length < 2
-              ? "Ajoutez un exercice ci-dessous pour compléter le bloc"
-              : `Cliquez sur les exercices à lier ensemble (max ${linkingFrom.maxCount})`
-            }
-          </p>
-          <div className="flex gap-2 flex-wrap">
-            <Button
-              size="sm"
-              onClick={confirmLinking}
-              disabled={selectedForLinking.length < 2}
-              className={cn("text-white", getTrainingStyleConfig(linkingFrom.method).color)}
-            >
-              <Link2 className="h-3 w-3 mr-1" />
-              Valider le bloc
-            </Button>
-            {selectedForLinking.length < linkingFrom.maxCount && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  const newExercise: ProgramExercise = {
-                    id: crypto.randomUUID(),
-                    exercise_name: "",
-                    order_index: session.exercises.length,
-                    method: "normal",
-                    sets: 3,
-                    reps: "10",
-                    rest_seconds: 90,
-                  };
-                  const newExercises = [...session.exercises, newExercise];
-                  const newIndex = newExercises.length - 1;
-                  onUpdate({ ...session, exercises: newExercises });
-                  setSelectedForLinking(prev => [...prev, newIndex]);
-                  // Open library search for the new exercise
-                  setTimeout(() => {
-                    setSearchQuery("");
-                    setShowLibraryFor(newIndex);
-                  }, 100);
-                }}
-              >
-                <Plus className="h-3 w-3 mr-1" />
-                Ajouter un exercice
-              </Button>
-            )}
-            <Button variant="outline" size="sm" onClick={cancelLinking}>
-              Annuler
-            </Button>
-          </div>
-        </div>
-      )}
 
       {/* Exercises */}
       <div className="p-3 space-y-3 min-h-[80px]">
