@@ -39,7 +39,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
   const sportStats = getStatsForSport(sportType);
   const statCategories = getStatCategories(sportType);
 
-  // Fetch all matches for this category
+  // Fetch all finalized matches for this category
   const { data: allMatches = [] } = useQuery({
     queryKey: ["matches-list-cumulative", categoryId],
     queryFn: async () => {
@@ -47,6 +47,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
         .from("matches")
         .select("id, match_date, opponent")
         .eq("category_id", categoryId)
+        .eq("is_finalized", true)
         .order("match_date", { ascending: false });
       if (error) throw error;
       return (data || []) as MatchInfo[];
@@ -60,7 +61,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
   }, [selectedMatchIds, allMatches]);
 
   const { data: stats, isLoading } = useQuery({
-    queryKey: ["cumulative_player_stats", categoryId, sportType, activeMatchIds.join(",")],
+    queryKey: ["cumulative_player_stats", categoryId, sportType, activeMatchIds],
     queryFn: async () => {
       if (activeMatchIds.length === 0) return [];
 
@@ -136,8 +137,14 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
 
   const toggleMatch = (matchId: string) => {
     setSelectedMatchIds(prev => {
+      // If currently "all selected" (empty array), switch to "all except this one"
+      if (prev.length === 0) {
+        return allMatches.filter(m => m.id !== matchId).map(m => m.id);
+      }
       if (prev.includes(matchId)) {
-        return prev.filter(id => id !== matchId);
+        const newSelection = prev.filter(id => id !== matchId);
+        // If nothing left selected, go back to "all"
+        return newSelection.length === 0 ? [] : newSelection;
       }
       return [...prev, matchId];
     });
