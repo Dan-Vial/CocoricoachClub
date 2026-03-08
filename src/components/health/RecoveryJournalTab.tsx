@@ -307,6 +307,17 @@ export function RecoveryJournalTab({ categoryId }: RecoveryJournalTabProps) {
 
   return (
     <div className="space-y-6">
+      <Tabs defaultValue="sleep" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="sleep">📊 Analyse Sommeil</TabsTrigger>
+          <TabsTrigger value="journal">📝 Journal Récupération</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="sleep">
+          <SleepAnalytics categoryId={categoryId} />
+        </TabsContent>
+
+        <TabsContent value="journal">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
