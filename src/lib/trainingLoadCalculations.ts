@@ -303,10 +303,10 @@ export const METRICS_CONFIG: Record<MetricType, {
 export function getAvailableMetrics(sportType: string, hasGpsData: boolean): MetricType[] {
   const baseMetrics: MetricType[] = ["ewma_srpe", "awcr_srpe"];
   
-  // GPS metrics only for Football and Rugby
-  const gpsEnabledSports = ["XV", "7s", "XIII", "Football", "rugby"];
+  // GPS metrics for sports that support GPS tracking
+  const gpsEnabledSports = ["XV", "7", "7s", "XIII", "football", "rugby", "handball", "basketball", "academie", "national_team", "football_national"];
   const isGpsSport = gpsEnabledSports.some(s => 
-    sportType.toLowerCase().includes(s.toLowerCase())
+    sportType.toLowerCase().includes(s.toLowerCase()) || s.toLowerCase().includes(sportType.toLowerCase())
   );
 
   if (isGpsSport && hasGpsData) {
