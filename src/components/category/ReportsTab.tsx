@@ -393,7 +393,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
 
       const [matchesRes, injuriesRes, goalsRes, awcrRes] = await Promise.all([
         supabase.from("matches").select("*").eq("category_id", categoryId).order("match_date"),
-        supabase.from("injuries").select("*, players(name)").eq("category_id", categoryId),
+        supabase.from("injuries").select("*, players(name, first_name)").eq("category_id", categoryId),
         supabase.from("season_goals").select("*").eq("category_id", categoryId).eq("season_year", new Date().getFullYear()),
         supabase.from("awcr_tracking").select("*, players(name)").eq("category_id", categoryId).order("session_date", { ascending: false }),
       ]);
