@@ -273,7 +273,7 @@ export function CompetitionRoundsDialog({
     
     if (lineup && lineup.length > 0) {
       const playersData = lineup.map((l) => {
-        const player = l.players as { id: string; name: string } | null;
+        const player = l.players as { id: string; name: string; first_name?: string } | null;
         const playerRounds = existingRounds?.filter(r => r.player_id === l.player_id) || [];
         
         return {

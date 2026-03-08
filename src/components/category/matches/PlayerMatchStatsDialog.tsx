@@ -126,7 +126,7 @@ export function PlayerMatchStatsDialog({
     if (lineup && lineup.length > 0) {
       const stats = lineup.map((l) => {
         const existing = existingStats?.find((s) => s.player_id === l.player_id);
-        const player = l.players as { id: string; name: string } | null;
+        const player = l.players as { id: string; name: string; first_name?: string } | null;
         return {
           playerId: l.player_id,
           playerName: [player?.first_name, player?.name].filter(Boolean).join(" ") || "Joueur",
