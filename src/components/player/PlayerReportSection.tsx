@@ -1010,43 +1010,63 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
         const playerDiscipline = (player as any)?.specialty || (player as any)?.discipline;
         const roundStatsDef = getStatsForSport(sport, false, playerDiscipline);
         const isAthleticsReport = sport.toLowerCase().includes("athletisme") || sport.toLowerCase().includes("athlétisme");
+        const isJudoReport = sport.toLowerCase().includes("judo");
 
-        // Athletics: use Phase + Classement + Résultat; others: Adversaire + Date + Round
-        const roundHeaders = isAthleticsReport
-          ? ["Phase", "Place", "Résultat", ...roundStatsDef.slice(0, 5).map(s => s.shortLabel)]
-          : ["Adversaire", "Date", "Round", ...roundStatsDef.slice(0, 5).map(s => s.shortLabel)];
-        const rColW = Math.max(16, Math.floor((contentWidth - 35 - 20 - 14) / Math.min(roundStatsDef.length, 5)));
-        const rColWidths = [35, 20, 14, ...roundStatsDef.slice(0, 5).map(() => rColW)];
+        // Paginate stats in groups of 6 to fit all stats across multiple tables
+        const STATS_PER_PAGE = 6;
+        const fixedHeaders = isAthleticsReport
+          ? ["Phase", "Place", "Résultat"]
+          : ["Adversaire", "Date", "Round"];
+        const fixedColWidths = [35, 20, 14];
 
-        yPos = drawTableHeaderPdf(pdf, roundHeaders, rColWidths, yPos, margin);
-
-        data.competitionRounds.forEach((round: any, idx: number) => {
-          yPos = localCheckPageBreak(pdf, yPos, 10, pdfSettings);
-          const roundStats = round.competition_round_stats || [];
-          const statData = roundStats.length > 0 ? (roundStats[0].stat_data as Record<string, any> || {}) : {};
+        for (let pageIdx = 0; pageIdx < roundStatsDef.length; pageIdx += STATS_PER_PAGE) {
+          const pageStats = roundStatsDef.slice(pageIdx, pageIdx + STATS_PER_PAGE);
           
-          const rowData = isAthleticsReport
-            ? [
-                round.phase || `Épreuve ${round.round_number || idx + 1}`,
-                round.ranking ? `${round.ranking}e` : '-',
-                round.result === 'qualified' ? 'Q' : round.result === 'eliminated' ? 'Élim.' : round.result === 'dns' ? 'DNS' : round.result === 'dnf' ? 'DNF' : round.result === 'dq' ? 'DQ' : '-',
-                ...roundStatsDef.slice(0, 5).map(s => {
-                  const val = statData[s.key];
-                  return val != null ? String(val) : '-';
-                }),
-              ]
-            : [
-                round.matches?.opponent || '-',
-                round.matches?.match_date ? format(new Date(round.matches.match_date), "dd/MM") : '-',
-                String(round.round_number || idx + 1),
-                ...roundStatsDef.slice(0, 5).map(s => {
-                  const val = statData[s.key];
-                  return val != null ? String(val) : '-';
-                }),
-              ];
+          if (pageIdx > 0) {
+            yPos += 5;
+            yPos = localCheckPageBreak(pdf, yPos, 20, pdfSettings);
+            // Sub-header for continuation
+            pdf.setFontSize(8);
+            pdf.setTextColor(...colors.muted);
+            pdf.text(`(suite des statistiques)`, margin, yPos);
+            pdf.setTextColor(...colors.dark);
+            yPos += 5;
+          }
 
-          yPos = drawTableRowPdf(pdf, rowData, rColWidths, yPos, idx % 2 === 1, margin);
-        });
+          const rColW = Math.max(16, Math.floor((contentWidth - 69) / pageStats.length));
+          const rColWidths = [...fixedColWidths, ...pageStats.map(() => rColW)];
+          const roundHeaders = [...fixedHeaders, ...pageStats.map(s => s.shortLabel)];
+
+          yPos = drawTableHeaderPdf(pdf, roundHeaders, rColWidths, yPos, margin);
+
+          data.competitionRounds.forEach((round: any, idx: number) => {
+            yPos = localCheckPageBreak(pdf, yPos, 10, pdfSettings);
+            const roundStats = round.competition_round_stats || [];
+            const statData = roundStats.length > 0 ? (roundStats[0].stat_data as Record<string, any> || {}) : {};
+            
+            const fixedData = isAthleticsReport
+              ? [
+                  round.phase || `Épreuve ${round.round_number || idx + 1}`,
+                  round.ranking ? `${round.ranking}e` : '-',
+                  round.result === 'qualified' ? 'Q' : round.result === 'eliminated' ? 'Élim.' : round.result === 'dns' ? 'DNS' : round.result === 'dnf' ? 'DNF' : round.result === 'dq' ? 'DQ' : '-',
+                ]
+              : [
+                  round.matches?.opponent || '-',
+                  round.matches?.match_date ? format(new Date(round.matches.match_date), "dd/MM") : '-',
+                  String(round.round_number || idx + 1),
+                ];
+
+            const rowData = [
+              ...fixedData,
+              ...pageStats.map(s => {
+                const val = statData[s.key];
+                return val != null ? String(val) : '-';
+              }),
+            ];
+
+            yPos = drawTableRowPdf(pdf, rowData, rColWidths, yPos, idx % 2 === 1, margin);
+          });
+        }
         yPos += 8;
       }
 
