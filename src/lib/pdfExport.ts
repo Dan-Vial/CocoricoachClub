@@ -3,6 +3,7 @@ import html2canvas from "html2canvas";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
+import { getTrainingTypeLabel } from "@/lib/constants/trainingTypes";
 
 // Color palette for PDF exports
 const colors = {
