@@ -13,6 +13,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { getStatsForSport, getStatCategories, type StatField } from "@/lib/constants/sportStats";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { CumulativeStatsCharts } from "./CumulativeStatsCharts";
 
 interface PlayerCumulativeStatsProps {
   categoryId: string;
