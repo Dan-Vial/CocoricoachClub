@@ -379,10 +379,19 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
 
           tests.forEach((test, index) => {
             yPos = localCheckPageBreak(pdf, yPos, 10);
-            // Try to get a nice label from the library
-            const testLabel = getTestLabel(test.test_type) !== test.test_type 
-              ? getTestLabel(test.test_type).split(' - ').pop() || test.test_type 
-              : test.test_type;
+            // Show full test label without category prefix (e.g. "Clean - 1RM" not just "1RM")
+            const fullLabel = getTestLabel(test.test_type);
+            let testLabel = test.test_type;
+            if (fullLabel !== test.test_type) {
+              const parts = fullLabel.split(' - ');
+              if (parts.length >= 3) {
+                testLabel = parts.slice(1).join(' - ');
+              } else if (parts.length === 2) {
+                testLabel = parts[1];
+              } else {
+                testLabel = fullLabel;
+              }
+            }
             yPos = drawTableRowPdf(pdf, [
               testLabel,
               `${test.result_value}${test.result_unit ? ` ${test.result_unit}` : ''}`,
@@ -415,32 +424,35 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
         pdf.text("STATISTIQUES PAR MATCH", margin, yPos);
         yPos += 8;
 
-        // Get the configured stat preferences
-        const { data: statPrefs } = await supabase
-          .from("category_stat_preferences")
-          .select("enabled_stats")
-          .eq("category_id", categoryId)
-          .maybeSingle();
+        // Get the configured stat preferences + custom stats
+        const [statPrefsResp, customStatsResp] = await Promise.all([
+          supabase.from("category_stat_preferences").select("enabled_stats, enabled_custom_stats").eq("category_id", categoryId).maybeSingle(),
+          supabase.from("custom_stats").select("*").eq("category_id", categoryId),
+        ]);
 
         const sportType = category?.clubs?.sport || "rugby";
         const allStatsDef = getStatsForSport(sportType);
-        const enabledKeys = (statPrefs?.enabled_stats as string[]) || allStatsDef.map(s => s.key);
+        const customStatFields = (customStatsResp.data || []).map((cs: any) => ({
+          key: cs.key, label: cs.label, shortLabel: cs.short_label,
+          category: cs.category_type as StatField["category"],
+          type: "number" as const,
+        }));
+        const allAvailable = [...allStatsDef, ...customStatFields];
         
-        // Map stat keys to DB columns  
-        const statKeyToDbCol: Record<string, string> = {
-          tries: "tries", tackles: "tackles", carries: "carries", breakthroughs: "breakthroughs",
-          offloads: "offloads", conversions: "conversions", penaltiesScored: "penalties_scored",
-          dropGoals: "drop_goals", metersGained: "meters_gained", tacklesMissed: "tackles_missed",
-          turnoversWon: "turnovers_won", totalContacts: "total_contacts", defensiveRecoveries: "defensive_recoveries",
-          yellowCards: "yellow_cards", redCards: "red_cards",
-        };
-
-        // Filter to stats that have DB columns and are enabled
-        const displayStats = allStatsDef.filter(s => enabledKeys.includes(s.key) && (statKeyToDbCol[s.key] || s.key in statKeyToDbCol));
-        const limitedStats = displayStats.slice(0, 5); // max 5 columns
+        const enabledKeys = [
+          ...(statPrefsResp.data?.enabled_stats as string[] || []),
+          ...(statPrefsResp.data?.enabled_custom_stats as string[] || []),
+        ];
+        const displayStats = enabledKeys.length > 0
+          ? allAvailable.filter(s => enabledKeys.includes(s.key))
+          : allAvailable;
+        const limitedStats = displayStats.slice(0, 6);
 
         const matchStatHeaders = ["Match", "Date", ...limitedStats.map(s => s.shortLabel)];
-        const matchStatColWidths = [45, 25, ...limitedStats.map(() => Math.floor((contentWidth - 70) / limitedStats.length))];
+        const nameColW = 40;
+        const dateColW = 22;
+        const statColW = Math.max(15, Math.floor((contentWidth - nameColW - dateColW) / limitedStats.length));
+        const matchStatColWidths = [nameColW, dateColW, ...limitedStats.map(() => statColW)];
         yPos = drawTableHeaderPdf(pdf, matchStatHeaders, matchStatColWidths, yPos, margin, contentWidth);
 
         matchStats.forEach((stat: any, index) => {
@@ -450,8 +462,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
             stat.matches?.opponent || '-',
             stat.matches?.match_date ? format(new Date(stat.matches.match_date), "dd/MM") : '-',
             ...limitedStats.map(s => {
-              const dbCol = statKeyToDbCol[s.key];
-              const val = dbCol ? stat[dbCol] : sportData[s.key];
+              const val = sportData[s.key] ?? stat[s.key] ?? stat[s.key.replace(/([A-Z])/g, '_$1').toLowerCase()];
               return val != null ? String(val) : '-';
             })
           ];
@@ -474,10 +485,18 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
         const wColWidths = [32, 24, 24, 24, 24, 24, 24];
         yPos = drawTableHeaderPdf(pdf, wHeaders, wColWidths, yPos, margin, contentWidth);
 
+        const getWellnessColor = (val: number | null): [number, number, number] | null => {
+          if (val == null) return null;
+          if (val >= 4) return defaultColors.success;
+          if (val >= 3) return defaultColors.warning;
+          return defaultColors.danger;
+        };
+
         wellnessData.slice(0, 10).forEach((w, index) => {
           yPos = localCheckPageBreak(pdf, yPos, 10);
           const wValues = [w.sleep_quality, w.general_fatigue, w.stress_level, w.soreness_upper_body, w.soreness_lower_body].filter(v => v != null) as number[];
           const wAvg = wValues.length > 0 ? (wValues.reduce((a, b) => a + b, 0) / wValues.length).toFixed(1) : '-';
+          const avgNum = parseFloat(wAvg);
           yPos = drawTableRowPdf(pdf, [
             format(new Date(w.tracking_date), "dd/MM/yy"),
             `${w.sleep_quality || '-'}/5`,
@@ -486,7 +505,15 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
             `${w.soreness_upper_body || '-'}/5`,
             `${w.soreness_lower_body || '-'}/5`,
             wAvg,
-          ], wColWidths, yPos, index % 2 === 1, margin, contentWidth);
+          ], wColWidths, yPos, index % 2 === 1, margin, contentWidth, [
+            null,
+            getWellnessColor(w.sleep_quality),
+            getWellnessColor(w.general_fatigue),
+            getWellnessColor(w.stress_level),
+            getWellnessColor(w.soreness_upper_body),
+            getWellnessColor(w.soreness_lower_body),
+            !isNaN(avgNum) ? getWellnessColor(avgNum) : null,
+          ]);
         });
       }
 
@@ -714,7 +741,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
       const [lineupsRes, statsRes, statPrefsRes, customStatsRes] = await Promise.all([
         supabase.from("match_lineups").select("*, players(name, position)").eq("match_id", selectedMatch),
         supabase.from("player_match_stats").select("*, players(name)").eq("match_id", selectedMatch),
-        supabase.from("category_stat_preferences").select("enabled_stats").eq("category_id", categoryId).maybeSingle(),
+        supabase.from("category_stat_preferences").select("enabled_stats, enabled_custom_stats").eq("category_id", categoryId).maybeSingle(),
         supabase.from("custom_stats").select("*").eq("category_id", categoryId),
       ]);
 
@@ -854,29 +881,25 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
         // Get the stats to display based on preferences
         const sportType = category?.clubs?.sport || "rugby";
         const allStatsDef = getStatsForSport(sportType);
-        const customStatFields = (customStatsRes.data || []).map(cs => ({
+        const customStatFields = (customStatsRes.data || []).map((cs: any) => ({
           key: cs.key, label: cs.label, shortLabel: cs.short_label,
           category: cs.category_type as StatField["category"],
           type: "number" as const,
         }));
         const allAvailable = [...allStatsDef, ...customStatFields];
-        const enabledKeys = (statPrefsRes.data?.enabled_stats as string[]) || allAvailable.map(s => s.key);
-
-        const statKeyToDbCol: Record<string, string> = {
-          tries: "tries", tackles: "tackles", carries: "carries", breakthroughs: "breakthroughs",
-          offloads: "offloads", conversions: "conversions", penaltiesScored: "penalties_scored",
-          dropGoals: "drop_goals", metersGained: "meters_gained", tacklesMissed: "tackles_missed",
-          turnoversWon: "turnovers_won", totalContacts: "total_contacts", defensiveRecoveries: "defensive_recoveries",
-          yellowCards: "yellow_cards", redCards: "red_cards",
-        };
-
-        const displayStats = allAvailable.filter(s => enabledKeys.includes(s.key));
+        const enabledKeys = [
+          ...(statPrefsRes.data?.enabled_stats as string[] || []),
+          ...(statPrefsRes.data?.enabled_custom_stats as string[] || []),
+        ];
+        const displayStats = enabledKeys.length > 0
+          ? allAvailable.filter(s => enabledKeys.includes(s.key))
+          : allAvailable;
         // Show up to 6 stat columns in PDF
         const limitedStats = displayStats.slice(0, 6);
 
         const statHeaders = ["Joueur", ...limitedStats.map(s => s.shortLabel)];
         const nameColWidth = 50;
-        const statColWidth = Math.floor((contentWidth - nameColWidth) / limitedStats.length);
+        const statColWidth = Math.max(15, Math.floor((contentWidth - nameColWidth) / limitedStats.length));
         const statColWidths = [nameColWidth, ...limitedStats.map(() => statColWidth)];
         yPos = drawTableHeaderPdf(pdf, statHeaders, statColWidths, yPos, margin, contentWidth);
 
@@ -887,8 +910,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
           const values = [
             stat.players?.name || 'Inconnu',
             ...limitedStats.map(s => {
-              const dbCol = statKeyToDbCol[s.key];
-              const val = dbCol ? stat[dbCol] : sportData[s.key];
+              const val = sportData[s.key] ?? stat[s.key] ?? stat[s.key.replace(/([A-Z])/g, '_$1').toLowerCase()];
               return val != null ? String(val) : '-';
             })
           ];
@@ -896,8 +918,8 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
           const rowColors: ([number, number, number] | null)[] = [
             null,
             ...limitedStats.map(s => {
-              const dbCol = statKeyToDbCol[s.key];
-              const val = dbCol ? stat[dbCol] : sportData[s.key];
+              const sportDataLocal = (stat.sport_data && typeof stat.sport_data === 'object') ? stat.sport_data as Record<string, any> : {};
+              const val = sportDataLocal[s.key] ?? stat[s.key];
               if (s.key === 'tries' && val && val > 0) return defaultColors.success;
               if (s.key === 'yellowCards' && val && val > 0) return defaultColors.warning;
               if (s.key === 'redCards' && val && val > 0) return defaultColors.danger;
@@ -1538,7 +1560,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
           return q;
         })(),
         (() => {
-          let q = supabase.from("training_attendance").select("*, training_sessions!inner(session_date)").eq("category_id", categoryId);
+          let q = supabase.from("training_attendance").select("*, training_sessions!inner(session_date, session_type, duration_minutes, intensity)").eq("category_id", categoryId);
           if (attendanceDateFrom) q = q.gte("training_sessions.session_date", attendanceDateFrom);
           if (attendanceDateTo) q = q.lte("training_sessions.session_date", attendanceDateTo);
           return q;
@@ -1548,9 +1570,11 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
       const sessionsData = sessionsRes.data || [];
       const attendanceData = attendanceRes.data || [];
       const sessionIds = new Set(sessionsData.map(s => s.id));
-
-      // Filter attendance to only sessions in the date range
       const filteredAttendance = attendanceData.filter(a => sessionIds.has(a.training_session_id));
+
+      // Build session lookup for duration/type/intensity
+      const sessionMap: Record<string, any> = {};
+      sessionsData.forEach(s => { sessionMap[s.id] = s; });
 
       const playerStats = players.map((player) => {
         const playerAttendance = filteredAttendance.filter((a) => a.player_id === player.id);
@@ -1562,11 +1586,39 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
         const total = playerAttendance.length;
         const rate = total > 0 ? Math.round(((present + late) / total) * 100) : 0;
 
+        // Calculate training minutes by session type and intensity
+        let totalMinutes = 0;
+        const minutesByType: Record<string, number> = {};
+        const minutesByIntensity: Record<string, number> = {};
+
+        const calcDuration = (session: any): number => {
+          if (session.session_start_time && session.session_end_time) {
+            const [sh, sm] = session.session_start_time.split(':').map(Number);
+            const [eh, em] = session.session_end_time.split(':').map(Number);
+            return (eh * 60 + em) - (sh * 60 + sm);
+          }
+          return 60; // default 60 min
+        };
+
+        playerAttendance.filter(a => a.status === "present" || a.status === "late").forEach(a => {
+          const session = sessionMap[a.training_session_id];
+          if (session) {
+            const dur = calcDuration(session);
+            totalMinutes += dur;
+            const sType = session.training_type || 'Autre';
+            minutesByType[sType] = (minutesByType[sType] || 0) + dur;
+            const intensityVal = session.intensity || session.planned_intensity || 5;
+            const intensityLabel = intensityVal >= 8 ? 'haute' : intensityVal >= 5 ? 'moyenne' : 'basse';
+            minutesByIntensity[intensityLabel] = (minutesByIntensity[intensityLabel] || 0) + dur;
+          }
+        });
+
         return {
           ...player,
           present, late, lateJustified,
           lateUnjustified: late - lateJustified,
           absent, excused, total, rate,
+          totalMinutes, minutesByType, minutesByIntensity,
         };
       }).sort((a, b) => b.rate - a.rate);
 
@@ -1595,26 +1647,28 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
         : 0;
       const totalLate = playerStats.reduce((acc, p) => acc + p.late, 0);
       const totalAbsent = playerStats.reduce((acc, p) => acc + p.absent, 0);
+      const totalTrainMinutes = playerStats.reduce((acc, p) => acc + p.totalMinutes, 0);
 
-      const cardWidth = (contentWidth - 15) / 4;
+      const cardWidth = (contentWidth - 20) / 5;
       const cardHeight = 22;
 
       drawKpiCard(pdf, margin, yPos, cardWidth, cardHeight, String(totalSessions), "SÉANCES", defaultColors.primary);
       drawKpiCard(pdf, margin + cardWidth + 5, yPos, cardWidth, cardHeight, `${avgRate}%`, "TAUX MOYEN", avgRate >= 80 ? defaultColors.success : avgRate >= 60 ? defaultColors.warning : defaultColors.danger);
       drawKpiCard(pdf, margin + (cardWidth + 5) * 2, yPos, cardWidth, cardHeight, String(totalLate), "RETARDS", totalLate > 10 ? defaultColors.warning : defaultColors.success);
       drawKpiCard(pdf, margin + (cardWidth + 5) * 3, yPos, cardWidth, cardHeight, String(totalAbsent), "ABSENCES", totalAbsent > 10 ? defaultColors.danger : defaultColors.success);
+      drawKpiCard(pdf, margin + (cardWidth + 5) * 4, yPos, cardWidth, cardHeight, `${Math.round(totalTrainMinutes / Math.max(players.length, 1))}`, "MIN MOY/JOUEUR", defaultColors.primary);
 
       yPos += cardHeight + 15;
 
-      // Player attendance table
+      // Player attendance table with minutes
       pdf.setFontSize(12);
       pdf.setFont("helvetica", "bold");
       pdf.setTextColor(...defaultColors.dark);
       pdf.text("PRÉSENCES PAR JOUEUR", margin, yPos);
       yPos += 8;
 
-      const attendHeaders = ["Joueur", "Présent", "Retard", "Excusé", "Absent", "Taux"];
-      const attendColWidths = [60, 25, 25, 25, 25, 25];
+      const attendHeaders = ["Joueur", "Prés.", "Retard", "Exc.", "Abs.", "Taux", "Min. total"];
+      const attendColWidths = [48, 22, 22, 22, 22, 22, 26];
       yPos = drawTableHeaderPdf(pdf, attendHeaders, attendColWidths, yPos, margin, contentWidth);
 
       playerStats.forEach((player, index) => {
@@ -1629,15 +1683,100 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
             String(player.excused),
             String(player.absent),
             `${player.rate}%`,
+            `${player.totalMinutes}`,
           ],
           attendColWidths,
           yPos,
           index % 2 === 1,
           margin,
           contentWidth,
-          [null, defaultColors.success, defaultColors.warning, null, defaultColors.danger, rateColor]
+          [null, defaultColors.success, defaultColors.warning, null, defaultColors.danger, rateColor, null]
         );
       });
+
+      // Sessions by type breakdown
+      yPos += 10;
+      yPos = localCheckPageBreak(pdf, yPos, 40);
+      pdf.setFontSize(12);
+      pdf.setFont("helvetica", "bold");
+      pdf.setTextColor(...defaultColors.dark);
+      pdf.text("RÉPARTITION PAR TYPE DE SÉANCE", margin, yPos);
+      yPos += 8;
+
+      const calcSessionDuration = (s: any): number => {
+        if (s.session_start_time && s.session_end_time) {
+          const [sh, sm] = s.session_start_time.split(':').map(Number);
+          const [eh, em] = s.session_end_time.split(':').map(Number);
+          return (eh * 60 + em) - (sh * 60 + sm);
+        }
+        return 60;
+      };
+
+      const sessionsByType: Record<string, { count: number; totalMin: number }> = {};
+      sessionsData.forEach(s => {
+        const t = s.training_type || 'Autre';
+        if (!sessionsByType[t]) sessionsByType[t] = { count: 0, totalMin: 0 };
+        sessionsByType[t].count++;
+        sessionsByType[t].totalMin += calcSessionDuration(s);
+      });
+
+      if (Object.keys(sessionsByType).length > 0) {
+        const typeHeaders = ["Type", "Séances", "Durée totale", "Durée moy."];
+        const typeColWidths = [60, 40, 40, 40];
+        yPos = drawTableHeaderPdf(pdf, typeHeaders, typeColWidths, yPos, margin, contentWidth);
+
+        Object.entries(sessionsByType).sort((a, b) => b[1].count - a[1].count).forEach(([type, data], index) => {
+          yPos = localCheckPageBreak(pdf, yPos, 10);
+          yPos = drawTableRowPdf(pdf, [
+            type,
+            String(data.count),
+            `${data.totalMin} min`,
+            `${data.count > 0 ? Math.round(data.totalMin / data.count) : 0} min`,
+          ], typeColWidths, yPos, index % 2 === 1, margin, contentWidth);
+        });
+      }
+
+      // Sessions by intensity
+      yPos += 10;
+      yPos = localCheckPageBreak(pdf, yPos, 40);
+      pdf.setFontSize(12);
+      pdf.setFont("helvetica", "bold");
+      pdf.setTextColor(...defaultColors.dark);
+      pdf.text("RÉPARTITION PAR INTENSITÉ", margin, yPos);
+      yPos += 8;
+
+      const sessionsByIntensity: Record<string, number> = {};
+      sessionsData.forEach(s => {
+        const intensityVal = s.intensity || s.planned_intensity || 5;
+        const intensityLabel = intensityVal >= 8 ? 'haute' : intensityVal >= 5 ? 'moyenne' : 'basse';
+        sessionsByIntensity[intensityLabel] = (sessionsByIntensity[intensityLabel] || 0) + 1;
+      });
+
+      if (Object.keys(sessionsByIntensity).length > 0) {
+        const intensityLabels: Record<string, string> = { haute: 'Haute', moyenne: 'Moyenne', basse: 'Basse', recovery: 'Récupération' };
+        const intensityColors: Record<string, [number, number, number]> = {
+          haute: defaultColors.danger,
+          moyenne: defaultColors.warning,
+          basse: defaultColors.success,
+          recovery: defaultColors.primary,
+        };
+        
+        const intHeaders = ["Intensité", "Séances", "%"];
+        const intColWidths = [60, 60, 60];
+        yPos = drawTableHeaderPdf(pdf, intHeaders, intColWidths, yPos, margin, contentWidth);
+
+        Object.entries(sessionsByIntensity).sort((a, b) => b[1] - a[1]).forEach(([intensity, count], index) => {
+          yPos = localCheckPageBreak(pdf, yPos, 10);
+          const pct = totalSessions > 0 ? Math.round((count / totalSessions) * 100) : 0;
+          yPos = drawTableRowPdf(pdf, [
+            intensityLabels[intensity] || intensity,
+            String(count),
+            `${pct}%`,
+          ], intColWidths, yPos, index % 2 === 1, margin, contentWidth, [
+            intensityColors[intensity] || null, null, null,
+          ]);
+        });
+      }
 
       pdf.save(`presences_${category?.name?.replace(/\s+/g, '_')}_${format(new Date(), "yyyy-MM-dd")}.pdf`);
       toast.success("Rapport de présences généré");

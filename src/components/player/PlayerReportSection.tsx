@@ -433,9 +433,23 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
                 ? (last.result_value >= first.result_value ? colors.success : colors.danger)
                 : null;
 
-              const label = getTestLabel(testType) !== testType
-                ? getTestLabel(testType).split(' - ').pop() || testType
-                : testType;
+              // Show full test label without category prefix (e.g. "Clean - 1RM" not just "1RM")
+              const fullLabel = getTestLabel(testType);
+              let label = testType;
+              if (fullLabel !== testType) {
+                // Remove top-level category prefix but keep the test detail
+                // fullLabel format: "Category - Test Label" or "Group > Category - Test Label"
+                const parts = fullLabel.split(' - ');
+                if (parts.length >= 3) {
+                  // e.g. "Haltérophilie - Clean - 1RM" → "Clean - 1RM"
+                  label = parts.slice(1).join(' - ');
+                } else if (parts.length === 2) {
+                  // e.g. "Musculation - Squat - 1RM" → "Squat - 1RM"
+                  label = parts[1];
+                } else {
+                  label = fullLabel;
+                }
+              }
 
               yPos = drawTableRowPdf(pdf, [
                 label,
@@ -528,12 +542,18 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
           const wColWidths = [30, 24, 24, 24, 24, 24, 26];
           yPos = drawTableHeaderPdf(pdf, wHeaders, wColWidths, yPos, margin);
 
+          const getWellnessColor = (val: number | null): [number, number, number] | null => {
+            if (val == null) return null;
+            if (val >= 4) return colors.success;
+            if (val >= 3) return colors.warning;
+            return colors.danger;
+          };
+
           data.wellness.slice(0, 15).forEach((w, index) => {
             yPos = localCheckPageBreak(pdf, yPos, 10, pdfSettings);
             const vals = [w.sleep_quality, w.general_fatigue, w.stress_level, w.soreness_upper_body, w.soreness_lower_body].filter(v => v != null) as number[];
             const avg = vals.length > 0 ? (vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1) : '-';
             const avgNum = parseFloat(avg);
-            const avgColor: [number, number, number] | null = !isNaN(avgNum) ? (avgNum >= 4 ? colors.success : avgNum >= 3 ? colors.warning : colors.danger) : null;
             yPos = drawTableRowPdf(pdf, [
               format(new Date(w.tracking_date), "dd/MM/yy"),
               `${w.sleep_quality || '-'}/5`,
@@ -542,7 +562,15 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
               `${w.soreness_upper_body || '-'}/5`,
               `${w.soreness_lower_body || '-'}/5`,
               avg !== '-' ? `${avg}/5` : '-',
-            ], wColWidths, yPos, index % 2 === 1, margin, [null, null, null, null, null, null, avgColor]);
+            ], wColWidths, yPos, index % 2 === 1, margin, [
+              null,
+              getWellnessColor(w.sleep_quality),
+              getWellnessColor(w.general_fatigue),
+              getWellnessColor(w.stress_level),
+              getWellnessColor(w.soreness_upper_body),
+              getWellnessColor(w.soreness_lower_body),
+              !isNaN(avgNum) ? getWellnessColor(avgNum) : null,
+            ]);
           });
           yPos += 5;
         } else {
@@ -568,28 +596,36 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
 
         const matchStats = data.matchStats.filter(s => s.matches != null);
         if (matchStats.length > 0) {
-          // Get stat preferences
-          const { data: statPrefs } = await supabase
-            .from("category_stat_preferences")
-            .select("enabled_stats")
-            .eq("category_id", categoryId)
-            .maybeSingle();
+          // Get stat preferences + custom stats dynamically
+          const [statPrefsRes, customStatsRes] = await Promise.all([
+            supabase.from("category_stat_preferences").select("enabled_stats, enabled_custom_stats").eq("category_id", categoryId).maybeSingle(),
+            supabase.from("custom_stats").select("*").eq("category_id", categoryId),
+          ]);
 
-          const allStatsDef = getStatsForSport(category?.clubs?.sport || "rugby");
-          const enabledKeys = (statPrefs?.enabled_stats as string[]) || allStatsDef.map(s => s.key);
-          const statKeyToDbCol: Record<string, string> = {
-            tries: "tries", tackles: "tackles", carries: "carries", breakthroughs: "breakthroughs",
-            offloads: "offloads", conversions: "conversions", penaltiesScored: "penalties_scored",
-            dropGoals: "drop_goals", metersGained: "meters_gained", tacklesMissed: "tackles_missed",
-            turnoversWon: "turnovers_won", totalContacts: "total_contacts", defensiveRecoveries: "defensive_recoveries",
-            yellowCards: "yellow_cards", redCards: "red_cards",
-          };
+          const sport = category?.clubs?.sport || "rugby";
+          const allStatsDef = getStatsForSport(sport);
+          const customStatFields = (customStatsRes.data || []).map((cs: any) => ({
+            key: cs.key, label: cs.label, shortLabel: cs.short_label,
+            category: cs.category_type, type: "number" as const,
+          }));
+          const allAvailable = [...allStatsDef, ...customStatFields];
+          
+          const enabledKeys = [
+            ...(statPrefsRes.data?.enabled_stats as string[] || []),
+            ...(statPrefsRes.data?.enabled_custom_stats as string[] || []),
+          ];
+          const displayStats = enabledKeys.length > 0
+            ? allAvailable.filter(s => enabledKeys.includes(s.key))
+            : allAvailable;
 
-          const displayStats = allStatsDef.filter(s => enabledKeys.includes(s.key) && statKeyToDbCol[s.key]);
-          const limitedStats = displayStats.slice(0, 5);
+          // Use landscape-style multi-page if many stats, else limit to fit
+          const limitedStats = displayStats.slice(0, 8);
 
           const mHeaders = ["Adversaire", "Date", ...limitedStats.map(s => s.shortLabel)];
-          const mColWidths = [40, 25, ...limitedStats.map(() => Math.floor((contentWidth - 65) / limitedStats.length))];
+          const nameColW = 35;
+          const dateColW = 22;
+          const statColW = Math.max(15, Math.floor((contentWidth - nameColW - dateColW) / limitedStats.length));
+          const mColWidths = [nameColW, dateColW, ...limitedStats.map(() => statColW)];
           yPos = drawTableHeaderPdf(pdf, mHeaders, mColWidths, yPos, margin);
 
           matchStats.forEach((stat: any, index) => {
@@ -599,8 +635,8 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
               stat.matches?.opponent || '-',
               stat.matches?.match_date ? format(new Date(stat.matches.match_date), "dd/MM") : '-',
               ...limitedStats.map(s => {
-                const dbCol = statKeyToDbCol[s.key];
-                const val = dbCol ? stat[dbCol] : sportData[s.key];
+                // First check sport_data JSONB, then fallback to direct columns
+                const val = sportData[s.key] ?? stat[s.key] ?? stat[s.key.replace(/([A-Z])/g, '_$1').toLowerCase()];
                 return val != null ? String(val) : '-';
               })
             ], mColWidths, yPos, index % 2 === 1, margin);
