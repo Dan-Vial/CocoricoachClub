@@ -3,9 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Bell, BellOff, CheckCircle2, AlertCircle, Loader2, HelpCircle, ChevronDown, Smartphone, Globe, Apple } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Bell, BellOff, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
+import { Bell, BellOff, CheckCircle2, AlertCircle, Loader2, HelpCircle, ChevronDown, Smartphone, Globe } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { initOneSignal, oneSignalLogin, buildUserTags, requestOneSignalPermission, getOneSignalPermission, checkOneSignalSubscriptionStatus } from "@/lib/onesignal";
 
