@@ -23,7 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Upload, AlertCircle, User, Satellite, Check, ArrowRight, Link2 } from "lucide-react";
+import { Upload, AlertCircle, User, Satellite, Check, ArrowRight, Link2, Trophy, Calendar } from "lucide-react";
 
 interface Player {
   id: string;
@@ -325,12 +325,28 @@ export function MatchGpsImport({
             Importer données GPS - Match
           </DialogTitle>
           <DialogDescription>
-            {step === 'upload' && "Chargez votre fichier CSV et sélectionnez la colonne contenant les noms des joueurs."}
+            {step === 'upload' && "Importez les données GPS de ce match. Ces données seront liées au match et non à une séance d'entraînement."}
             {step === 'mapping' && "Associez chaque joueur du fichier à un athlète de votre équipe."}
           </DialogDescription>
         </DialogHeader>
 
         <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+          {/* Match info banner */}
+          <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 mb-4 flex items-center gap-3">
+            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+              <Trophy className="h-5 w-5 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-primary">Données GPS de match</p>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Calendar className="h-3 w-3" />
+                <span>{matchDate ? new Date(matchDate).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : 'Date non définie'}</span>
+                <span>•</span>
+                <span>{players.length} joueurs dans la composition</span>
+              </div>
+            </div>
+          </div>
+
           {step === 'upload' && (
             <div className="space-y-4">
               {/* File Upload */}

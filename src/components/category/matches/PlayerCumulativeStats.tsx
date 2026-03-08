@@ -1,15 +1,28 @@
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { BarChart3, Trophy, Target, Shield, Timer, Activity, Dumbbell } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { BarChart3, Trophy, Target, Shield, Activity, Dumbbell, Filter, CheckSquare, Calendar } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { getStatsForSport, getStatCategories, type StatField } from "@/lib/constants/sportStats";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
 
 interface PlayerCumulativeStatsProps {
   categoryId: string;
   sportType?: string;
+}
+
+interface MatchInfo {
+  id: string;
+  match_date: string;
+  opponent: string;
 }
 
 interface CumulativeStats {
@@ -20,31 +33,45 @@ interface CumulativeStats {
 }
 
 export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCumulativeStatsProps) {
+  const [selectedMatchIds, setSelectedMatchIds] = useState<string[]>([]);
+  const [filterOpen, setFilterOpen] = useState(false);
+
   const sportStats = getStatsForSport(sportType);
   const statCategories = getStatCategories(sportType);
 
-  const { data: stats, isLoading } = useQuery({
-    queryKey: ["cumulative_player_stats", categoryId, sportType],
+  // Fetch all matches for this category
+  const { data: allMatches = [] } = useQuery({
+    queryKey: ["matches-list-cumulative", categoryId],
     queryFn: async () => {
-      // Get all matches for this category
-      const { data: matches, error: matchesError } = await supabase
+      const { data, error } = await supabase
         .from("matches")
-        .select("id")
-        .eq("category_id", categoryId);
-      
-      if (matchesError) throw matchesError;
-      if (!matches || matches.length === 0) return [];
+        .select("id, match_date, opponent")
+        .eq("category_id", categoryId)
+        .order("match_date", { ascending: false });
+      if (error) throw error;
+      return (data || []) as MatchInfo[];
+    },
+  });
 
-      const matchIds = matches.map(m => m.id);
+  // Determine which match IDs to use (all or selected)
+  const activeMatchIds = useMemo(() => {
+    if (selectedMatchIds.length === 0) return allMatches.map(m => m.id);
+    return selectedMatchIds;
+  }, [selectedMatchIds, allMatches]);
 
-      // Get all player stats for these matches
+  const { data: stats, isLoading } = useQuery({
+    queryKey: ["cumulative_player_stats", categoryId, sportType, activeMatchIds.join(",")],
+    queryFn: async () => {
+      if (activeMatchIds.length === 0) return [];
+
+      // Get all player stats for selected matches
       const { data: playerStats, error: statsError } = await supabase
         .from("player_match_stats")
         .select(`
           *,
-          players(id, name)
+          players(id, name, first_name)
         `)
-        .in("match_id", matchIds);
+        .in("match_id", activeMatchIds);
 
       if (statsError) throw statsError;
       if (!playerStats) return [];
@@ -53,9 +80,11 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
       const aggregated: Record<string, CumulativeStats> = {};
 
       playerStats.forEach((stat) => {
-        const player = stat.players as { id: string; name: string } | null;
+        const player = stat.players as { id: string; name: string; first_name?: string } | null;
         const playerId = stat.player_id;
-        const playerName = player?.name || "Athlète inconnu";
+        const playerName = player
+          ? [player.first_name, player.name].filter(Boolean).join(" ")
+          : "Athlète inconnu";
 
         if (!aggregated[playerId]) {
           aggregated[playerId] = {
@@ -73,12 +102,10 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
         const sportData = (stat as { sport_data?: Record<string, number> }).sport_data || {};
         
         sportStats.forEach(statField => {
-          // Skip auto-computed percentage stats during aggregation
           if (statField.computedFrom) return;
           
           const value = sportData[statField.key] || 
                        stat[statField.key as keyof typeof stat] || 
-                       stat[statField.key.replace(/([A-Z])/g, '_$1').toLowerCase() as keyof typeof stat] || 
                        0;
           
           if (!p.sportData[statField.key]) {
@@ -88,7 +115,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
         });
       });
 
-      // Now compute percentage stats from aggregated totals
+      // Compute percentage stats from aggregated totals
       Object.values(aggregated).forEach(p => {
         sportStats.forEach(statField => {
           if (statField.computedFrom) {
@@ -104,7 +131,22 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
 
       return Object.values(aggregated);
     },
+    enabled: activeMatchIds.length > 0,
   });
+
+  const toggleMatch = (matchId: string) => {
+    setSelectedMatchIds(prev => {
+      if (prev.includes(matchId)) {
+        return prev.filter(id => id !== matchId);
+      }
+      return [...prev, matchId];
+    });
+  };
+
+  const selectAllMatches = () => setSelectedMatchIds([]);
+  const clearSelection = () => setSelectedMatchIds(allMatches.map(m => m.id));
+
+  const selectedCount = selectedMatchIds.length === 0 ? allMatches.length : selectedMatchIds.length;
 
   if (isLoading) {
     return <p className="text-muted-foreground">Chargement des statistiques...</p>;
@@ -124,7 +166,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
     );
   }
 
-  // Get top performers based on first scoring stat available
+  // Get top performers
   const scoringStats = sportStats.filter(s => s.category === "scoring");
   const attackStats = sportStats.filter(s => s.category === "attack");
   const defenseStats = sportStats.filter(s => s.category === "defense");
@@ -155,6 +197,83 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
 
   return (
     <div className="space-y-6">
+      {/* Match filter */}
+      <div className="flex items-center gap-3 flex-wrap">
+        <Popover open={filterOpen} onOpenChange={setFilterOpen}>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className="gap-2">
+              <Filter className="h-4 w-4" />
+              Filtrer les matchs
+              <Badge variant="secondary" className="ml-1 h-5 min-w-[20px] px-1.5">
+                {selectedCount}/{allMatches.length}
+              </Badge>
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[360px] p-0" align="start">
+            <div className="p-3 border-b">
+              <p className="text-sm font-medium">Sélectionner les matchs</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Choisissez les matchs à inclure dans le cumul
+              </p>
+              <div className="flex gap-2 mt-2">
+                <Button variant="outline" size="sm" className="text-xs h-7" onClick={selectAllMatches}>
+                  <CheckSquare className="h-3 w-3 mr-1" />
+                  Tous
+                </Button>
+                <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setSelectedMatchIds([])}>
+                  Réinitialiser
+                </Button>
+              </div>
+            </div>
+            <ScrollArea className="max-h-[300px]">
+              <div className="p-2 space-y-1">
+                {allMatches.map(match => {
+                  const isSelected = selectedMatchIds.length === 0 || selectedMatchIds.includes(match.id);
+                  return (
+                    <button
+                      key={match.id}
+                      onClick={() => toggleMatch(match.id)}
+                      className={`w-full flex items-center gap-3 p-2 rounded-md text-left transition-colors hover:bg-muted ${
+                        isSelected ? 'bg-primary/5' : 'opacity-50'
+                      }`}
+                    >
+                      <Checkbox
+                        checked={isSelected}
+                        className="pointer-events-none"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">
+                          vs {match.opponent || "Adversaire inconnu"}
+                        </p>
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Calendar className="h-3 w-3" />
+                          {format(new Date(match.match_date), "dd MMM yyyy", { locale: fr })}
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+                {allMatches.length === 0 && (
+                  <p className="text-sm text-muted-foreground text-center py-4">Aucun match</p>
+                )}
+              </div>
+            </ScrollArea>
+          </PopoverContent>
+        </Popover>
+
+        {selectedMatchIds.length > 0 && (
+          <Badge variant="outline" className="gap-1">
+            <Trophy className="h-3 w-3" />
+            {selectedMatchIds.length} match{selectedMatchIds.length > 1 ? 's' : ''} sélectionné{selectedMatchIds.length > 1 ? 's' : ''}
+          </Badge>
+        )}
+        {selectedMatchIds.length === 0 && allMatches.length > 0 && (
+          <Badge variant="secondary" className="gap-1">
+            Tous les matchs ({allMatches.length})
+          </Badge>
+        )}
+      </div>
+
       {/* Top performers cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {topScoringStatKey && scoringStats[0] && (
