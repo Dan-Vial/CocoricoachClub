@@ -424,32 +424,35 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
         pdf.text("STATISTIQUES PAR MATCH", margin, yPos);
         yPos += 8;
 
-        // Get the configured stat preferences
-        const { data: statPrefs } = await supabase
-          .from("category_stat_preferences")
-          .select("enabled_stats")
-          .eq("category_id", categoryId)
-          .maybeSingle();
+        // Get the configured stat preferences + custom stats
+        const [statPrefsResp, customStatsResp] = await Promise.all([
+          supabase.from("category_stat_preferences").select("enabled_stats, enabled_custom_stats").eq("category_id", categoryId).maybeSingle(),
+          supabase.from("custom_stats").select("*").eq("category_id", categoryId),
+        ]);
 
         const sportType = category?.clubs?.sport || "rugby";
         const allStatsDef = getStatsForSport(sportType);
-        const enabledKeys = (statPrefs?.enabled_stats as string[]) || allStatsDef.map(s => s.key);
+        const customStatFields = (customStatsResp.data || []).map((cs: any) => ({
+          key: cs.key, label: cs.label, shortLabel: cs.short_label,
+          category: cs.category_type as StatField["category"],
+          type: "number" as const,
+        }));
+        const allAvailable = [...allStatsDef, ...customStatFields];
         
-        // Map stat keys to DB columns  
-        const statKeyToDbCol: Record<string, string> = {
-          tries: "tries", tackles: "tackles", carries: "carries", breakthroughs: "breakthroughs",
-          offloads: "offloads", conversions: "conversions", penaltiesScored: "penalties_scored",
-          dropGoals: "drop_goals", metersGained: "meters_gained", tacklesMissed: "tackles_missed",
-          turnoversWon: "turnovers_won", totalContacts: "total_contacts", defensiveRecoveries: "defensive_recoveries",
-          yellowCards: "yellow_cards", redCards: "red_cards",
-        };
-
-        // Filter to stats that have DB columns and are enabled
-        const displayStats = allStatsDef.filter(s => enabledKeys.includes(s.key) && (statKeyToDbCol[s.key] || s.key in statKeyToDbCol));
-        const limitedStats = displayStats.slice(0, 5); // max 5 columns
+        const enabledKeys = [
+          ...(statPrefsResp.data?.enabled_stats as string[] || []),
+          ...(statPrefsResp.data?.enabled_custom_stats as string[] || []),
+        ];
+        const displayStats = enabledKeys.length > 0
+          ? allAvailable.filter(s => enabledKeys.includes(s.key))
+          : allAvailable;
+        const limitedStats = displayStats.slice(0, 6);
 
         const matchStatHeaders = ["Match", "Date", ...limitedStats.map(s => s.shortLabel)];
-        const matchStatColWidths = [45, 25, ...limitedStats.map(() => Math.floor((contentWidth - 70) / limitedStats.length))];
+        const nameColW = 40;
+        const dateColW = 22;
+        const statColW = Math.max(15, Math.floor((contentWidth - nameColW - dateColW) / limitedStats.length));
+        const matchStatColWidths = [nameColW, dateColW, ...limitedStats.map(() => statColW)];
         yPos = drawTableHeaderPdf(pdf, matchStatHeaders, matchStatColWidths, yPos, margin, contentWidth);
 
         matchStats.forEach((stat: any, index) => {
@@ -459,8 +462,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
             stat.matches?.opponent || '-',
             stat.matches?.match_date ? format(new Date(stat.matches.match_date), "dd/MM") : '-',
             ...limitedStats.map(s => {
-              const dbCol = statKeyToDbCol[s.key];
-              const val = dbCol ? stat[dbCol] : sportData[s.key];
+              const val = sportData[s.key] ?? stat[s.key] ?? stat[s.key.replace(/([A-Z])/g, '_$1').toLowerCase()];
               return val != null ? String(val) : '-';
             })
           ];
