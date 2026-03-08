@@ -1167,9 +1167,9 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
           const sheet = workbook.addWorksheet('Tests');
           let rowIdx = addSheetHeader(sheet, 'TESTS DE PERFORMANCE');
 
-          const headers = ['Thème', 'Test', '1er résultat', 'Date', 'Dernier résultat', 'Date', 'Progression'];
+          const headers = ['Thème', 'Test', 'Date', 'Résultat', 'Unité', 'Rang'];
           sheet.columns = [
-            { width: 18 }, { width: 25 }, { width: 16 }, { width: 14 }, { width: 16 }, { width: 14 }, { width: 14 },
+            { width: 18 }, { width: 25 }, { width: 14 }, { width: 16 }, { width: 10 }, { width: 10 },
           ];
           const hRow = sheet.getRow(rowIdx);
           headers.forEach((h, i) => { hRow.getCell(i + 1).value = h; });
@@ -1185,36 +1185,42 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
 
             Object.entries(testsByType).forEach(([testType, results]) => {
               results.sort((a, b) => new Date(a.test_date).getTime() - new Date(b.test_date).getTime());
-              const first = results[0];
-              const last = results[results.length - 1];
-              const prog = results.length > 1
-                ? ((last.result_value - first.result_value) / first.result_value * 100).toFixed(1) + '%'
-                : '-';
-
               const fullLabel = getTestLabel(testType);
               const parts = fullLabel.split(' - ');
               const label = parts.length >= 3 ? parts.slice(1).join(' - ') : parts.length === 2 ? parts[1] : fullLabel;
 
-              const row = sheet.getRow(rowIdx);
-              row.getCell(1).value = getCategoryLabel(catKey);
-              row.getCell(2).value = label;
-              row.getCell(3).value = `${first.result_value}${first.result_unit ? ` ${first.result_unit}` : ''}`;
-              row.getCell(4).value = format(new Date(first.test_date), "dd/MM/yyyy");
-              row.getCell(5).value = results.length > 1 ? `${last.result_value}${last.result_unit ? ` ${last.result_unit}` : ''}` : '-';
-              row.getCell(6).value = results.length > 1 ? format(new Date(last.test_date), "dd/MM/yyyy") : '-';
-              row.getCell(7).value = prog;
-              if (prog !== '-') {
-                row.getCell(7).font = {
-                  color: { argb: parseFloat(prog) >= 0 ? 'FF27AE60' : 'FFEF4444' },
-                  bold: true,
-                };
-              }
-              if (rowIdx % 2 === 0) {
-                for (let i = 1; i <= headers.length; i++) {
-                  row.getCell(i).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
+              // Show ALL results for this test, not just first/last
+              results.forEach((t, tIdx) => {
+                const row = sheet.getRow(rowIdx);
+                row.getCell(1).value = getCategoryLabel(catKey);
+                row.getCell(2).value = label;
+                row.getCell(3).value = format(new Date(t.test_date), "dd/MM/yyyy");
+                row.getCell(4).value = t.result_value;
+                row.getCell(5).value = t.result_unit || '';
+                row.getCell(6).value = tIdx + 1;
+                if (rowIdx % 2 === 0) {
+                  for (let i = 1; i <= headers.length; i++) {
+                    row.getCell(i).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
+                  }
                 }
+                rowIdx++;
+              });
+
+              // Progression summary row
+              if (results.length > 1) {
+                const first = results[0];
+                const last = results[results.length - 1];
+                const prog = ((last.result_value - first.result_value) / first.result_value * 100).toFixed(1);
+                const summaryRow = sheet.getRow(rowIdx);
+                summaryRow.getCell(2).value = `↳ Progression`;
+                summaryRow.getCell(2).font = { italic: true, color: { argb: 'FF64748B' } };
+                summaryRow.getCell(4).value = `${prog}%`;
+                summaryRow.getCell(4).font = {
+                  bold: true,
+                  color: { argb: parseFloat(prog) >= 0 ? 'FF27AE60' : 'FFEF4444' },
+                };
+                rowIdx++;
               }
-              rowIdx++;
             });
           }
         }
