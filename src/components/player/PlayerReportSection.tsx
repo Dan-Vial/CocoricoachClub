@@ -956,7 +956,8 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
         if (data.awcr.length > 0) {
           // Sort chronologically
           const sortedAwcr = [...data.awcr].sort((a, b) => new Date(a.session_date).getTime() - new Date(b.session_date).getTime());
-          const latest = sortedAwcr[sortedAwcr.length - 1];
+          // Use the latest entry with computed EWMA values, not just the last chronological one
+          const latestWithEwma = [...sortedAwcr].reverse().find(e => e.acute_load != null && e.chronic_load != null) || sortedAwcr[sortedAwcr.length - 1];
           
           // EWMA KPI cards
           const ewmaKpis: { label: string; value: string; color: [number, number, number] }[] = [
