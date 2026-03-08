@@ -21,17 +21,16 @@ interface ReportsTabProps {
 }
 
 export function ReportsTab({ categoryId }: ReportsTabProps) {
-  const [selectedPlayer, setSelectedPlayer] = useState<string>("");
   const [selectedMatch, setSelectedMatch] = useState<string>("");
   const [generatingReport, setGeneratingReport] = useState<string | null>(null);
 
   // Date range states
-  const [playerDateFrom, setPlayerDateFrom] = useState("");
-  const [playerDateTo, setPlayerDateTo] = useState("");
   const [overviewDateFrom, setOverviewDateFrom] = useState("");
   const [overviewDateTo, setOverviewDateTo] = useState("");
   const [attendanceDateFrom, setAttendanceDateFrom] = useState("");
   const [attendanceDateTo, setAttendanceDateTo] = useState("");
+  const [tdjDateFrom, setTdjDateFrom] = useState("");
+  const [tdjDateTo, setTdjDateTo] = useState("");
 
   const { data: category } = useQuery({
     queryKey: ["category", categoryId],
