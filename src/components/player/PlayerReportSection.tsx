@@ -299,6 +299,7 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
       matchStatsRes,
       injuriesRes,
       awcrRes,
+      competitionRoundsRes,
     ] = await Promise.all([
       supabase.from("player_measurements").select("*").eq("player_id", playerId).order("measurement_date", { ascending: false }),
       supabase.from("body_composition").select("*").eq("player_id", playerId).order("measurement_date", { ascending: false }),
@@ -351,6 +352,15 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
         if (dateTo) q = q.lte("session_date", dateTo);
         return q.order("session_date", { ascending: false });
       })(),
+      // Competition rounds for individual sports (bowling, athletics, judo, rowing)
+      (() => {
+        let q = supabase.from("competition_rounds")
+          .select("*, competition_round_stats(stat_data), matches!inner(match_date, opponent)")
+          .eq("player_id", playerId);
+        if (dateFrom) q = q.gte("matches.match_date", dateFrom);
+        if (dateTo) q = q.lte("matches.match_date", dateTo);
+        return q.order("created_at", { ascending: false });
+      })(),
     ]);
 
     return {
@@ -364,6 +374,7 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
       matchStats: matchStatsRes.data || [],
       injuries: injuriesRes.data || [],
       awcr: awcrRes.data || [],
+      competitionRounds: competitionRoundsRes.data || [],
     };
   };
 
@@ -982,6 +993,48 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
         }
       }
 
+      // ===== COMPETITION ROUNDS (individual sports: bowling, athletics, judo, rowing) =====
+      if (selectedSections.includes("matches") && data.competitionRounds.length > 0) {
+        yPos = localCheckPageBreak(pdf, yPos, 30, pdfSettings);
+        pdf.setFillColor(...colors.light);
+        pdf.rect(margin, yPos, contentWidth, 8, 'F');
+        pdf.setTextColor(...colors.primary);
+        pdf.setFontSize(11);
+        pdf.setFont("helvetica", "bold");
+        pdf.text("STATISTIQUES COMPÉTITIONS (ROUNDS)", margin + 3, yPos + 5.5);
+        pdf.setFont("helvetica", "normal");
+        pdf.setTextColor(...colors.dark);
+        yPos += 12;
+
+        const sport = category?.clubs?.sport || "rugby";
+        const playerDiscipline = (player as any)?.specialty || (player as any)?.discipline;
+        const roundStatsDef = getStatsForSport(sport, false, playerDiscipline);
+
+        // Build table: one row per round
+        const roundHeaders = ["Adversaire", "Date", "Round", ...roundStatsDef.slice(0, 5).map(s => s.shortLabel)];
+        const rColW = Math.max(16, Math.floor((contentWidth - 35 - 20 - 14) / Math.min(roundStatsDef.length, 5)));
+        const rColWidths = [35, 20, 14, ...roundStatsDef.slice(0, 5).map(() => rColW)];
+
+        yPos = drawTableHeaderPdf(pdf, roundHeaders, rColWidths, yPos, margin);
+
+        data.competitionRounds.forEach((round: any, idx: number) => {
+          yPos = localCheckPageBreak(pdf, yPos, 10, pdfSettings);
+          const roundStats = round.competition_round_stats || [];
+          const statData = roundStats.length > 0 ? (roundStats[0].stat_data as Record<string, any> || {}) : {};
+          
+          yPos = drawTableRowPdf(pdf, [
+            round.matches?.opponent || '-',
+            round.matches?.match_date ? format(new Date(round.matches.match_date), "dd/MM") : '-',
+            String(round.round_number || idx + 1),
+            ...roundStatsDef.slice(0, 5).map(s => {
+              const val = statData[s.key];
+              return val != null ? String(val) : '-';
+            }),
+          ], rColWidths, yPos, idx % 2 === 1, margin);
+        });
+        yPos += 8;
+      }
+
       // ===== EWMA / CHARGE SECTION =====
       if (selectedSections.includes("ewma")) {
         yPos = localCheckPageBreak(pdf, yPos, 50, pdfSettings);
@@ -1408,6 +1461,45 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
             avgRow2.getCell(i).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDBEAFE' } };
           }
         }
+      }
+
+      // ===== FEUILLE COMPÉTITIONS (rounds individuels) =====
+      if (selectedSections.includes("matches") && data.competitionRounds.length > 0) {
+        const sport = (category?.clubs as any)?.sport || "rugby";
+        const playerDiscipline = (player as any)?.specialty || (player as any)?.discipline;
+        const roundStatsDef = getStatsForSport(sport, false, playerDiscipline);
+
+        const sheet = workbook.addWorksheet('Compétitions (Rounds)');
+        let rowIdx = addSheetHeader(sheet, 'STATISTIQUES COMPÉTITIONS');
+
+        const headers = ['Adversaire', 'Date', 'Round', ...roundStatsDef.map(s => s.shortLabel || s.label)];
+        sheet.columns = [
+          { width: 22 }, { width: 14 }, { width: 10 },
+          ...roundStatsDef.map(() => ({ width: 14 })),
+        ];
+        const hRow = sheet.getRow(rowIdx);
+        headers.forEach((h, i) => { hRow.getCell(i + 1).value = h; });
+        styleHeaderRow(sheet, rowIdx, headers.length);
+        rowIdx++;
+
+        data.competitionRounds.forEach((round: any, idx: number) => {
+          const roundStats = round.competition_round_stats || [];
+          const statData = roundStats.length > 0 ? (roundStats[0].stat_data as Record<string, any> || {}) : {};
+          const row = sheet.getRow(rowIdx);
+          row.getCell(1).value = round.matches?.opponent || '-';
+          row.getCell(2).value = round.matches?.match_date ? format(new Date(round.matches.match_date), "dd/MM/yyyy") : '-';
+          row.getCell(3).value = round.round_number || idx + 1;
+          roundStatsDef.forEach((s, i) => {
+            const val = statData[s.key];
+            row.getCell(i + 4).value = val != null ? Number(val) : null;
+          });
+          if (rowIdx % 2 === 0) {
+            for (let i = 1; i <= headers.length; i++) {
+              row.getCell(i).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
+            }
+          }
+          rowIdx++;
+        });
       }
 
       // ===== FEUILLE BLESSURES =====
