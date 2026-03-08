@@ -1,7 +1,10 @@
 import { useState, useEffect, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { X, GripVertical, Link2, Unlink, Plus, Minus, FlaskConical, Check, Info, ChevronUp, ChevronDown } from "lucide-react";
+import { X, GripVertical, Link2, Unlink, Plus, Minus, FlaskConical, Check, Info, ChevronUp, ChevronDown, Library } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -16,13 +19,18 @@ import { useDroppable } from "@dnd-kit/core";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { TEST_CATEGORIES } from "@/lib/constants/testCategories";
-import { isErgCategory, isSledCategory, isRunningCategory, isBodyweightCategory } from "@/lib/constants/exerciseCategories";
+import { isErgCategory, isSledCategory, isRunningCategory, isBodyweightCategory, getCategoryLabel } from "@/lib/constants/exerciseCategories";
 import { cn } from "@/lib/utils";
 import { TrainingMethodSelect } from "@/components/category/sessions/TrainingMethodSelect";
 import {
@@ -141,11 +149,50 @@ export function ProgramSessionCard({
   onDelete,
   canDelete,
 }: ProgramSessionCardProps) {
+  const { user } = useAuth();
   const { setNodeRef, isOver } = useDroppable({
     id: session.id,
   });
   const [linkingFrom, setLinkingFrom] = useState<{index: number, method: string, maxCount: number} | null>(null);
   const [selectedForLinking, setSelectedForLinking] = useState<number[]>([]);
+  const [showLibraryFor, setShowLibraryFor] = useState<number | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Fetch exercise library for inline search
+  const { data: libraryExercises } = useQuery({
+    queryKey: ["exercise-library", user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data, error } = await supabase
+        .from("exercise_library")
+        .select("*")
+        .or(`user_id.eq.${user.id},is_system.eq.true`)
+        .order("name");
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  const filteredLibrary = useMemo(() => {
+    return libraryExercises?.filter((ex) =>
+      ex.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      ex.category.toLowerCase().includes(searchQuery.toLowerCase())
+    ) || [];
+  }, [libraryExercises, searchQuery]);
+
+  const selectFromLibrary = (index: number, libExercise: any) => {
+    const newExercises = [...session.exercises];
+    newExercises[index] = {
+      ...newExercises[index],
+      exercise_name: libExercise.name,
+      exercise_category: libExercise.category,
+      library_exercise_id: libExercise.id,
+    };
+    onUpdate({ ...session, exercises: newExercises });
+    setShowLibraryFor(null);
+    setSearchQuery("");
+  };
 
   // Reset linking state when exercises change
   useEffect(() => {
@@ -314,11 +361,12 @@ export function ProgramSessionCard({
   };
 
   const cancelLinking = () => {
-    // Reset method back to normal for all selected exercises
+    // Reset method back to normal for all selected exercises in a single update
     if (linkingFrom) {
-      selectedForLinking.forEach(i => {
-        updateExercise(i, "method", "normal");
-      });
+      const newExercises = session.exercises.map((ex, i) =>
+        selectedForLinking.includes(i) ? { ...ex, method: "normal" } : ex
+      );
+      onUpdate({ ...session, exercises: newExercises });
     }
     setLinkingFrom(null);
     setSelectedForLinking([]);
@@ -557,7 +605,62 @@ export function ProgramSessionCard({
             </Badge>
           )}
           
-          <span className="font-medium flex-1">{exercise.exercise_name}</span>
+          <div className="flex-1 relative">
+            <Popover
+              open={showLibraryFor === index}
+              onOpenChange={(isOpen) => {
+                setShowLibraryFor(isOpen ? index : null);
+                if (isOpen) setSearchQuery(exercise.exercise_name || "");
+              }}
+            >
+              <PopoverTrigger asChild>
+                <div className="relative">
+                  <Input
+                    placeholder="Nom de l'exercice..."
+                    value={exercise.exercise_name}
+                    onChange={(e) => {
+                      updateExercise(index, "exercise_name", e.target.value);
+                      setSearchQuery(e.target.value);
+                      setShowLibraryFor(index);
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                    className="h-8 text-sm font-medium"
+                  />
+                  {exercise.library_exercise_id && (
+                    <Library className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-primary" />
+                  )}
+                </div>
+              </PopoverTrigger>
+              <PopoverContent
+                align="start"
+                className="p-1 w-[--radix-popover-trigger-width] max-h-64 overflow-y-auto z-[9999]"
+                onOpenAutoFocus={(e) => e.preventDefault()}
+              >
+                {filteredLibrary.length === 0 ? (
+                  <div className="px-2 py-2 text-xs text-muted-foreground">
+                    Aucun exercice trouvé
+                  </div>
+                ) : (
+                  filteredLibrary.slice(0, 12).map((libEx) => (
+                    <button
+                      key={libEx.id}
+                      type="button"
+                      className="w-full text-left px-2 py-2 hover:bg-muted rounded-sm text-sm flex justify-between items-center"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        selectFromLibrary(index, libEx);
+                      }}
+                    >
+                      <span className="truncate pr-2">{libEx.name}</span>
+                      <Badge variant="outline" className="text-xs shrink-0">
+                        {getCategoryLabel(libEx.category)}
+                      </Badge>
+                    </button>
+                  ))
+                )}
+              </PopoverContent>
+            </Popover>
+          </div>
 
           {exercise.is_rm_test && (
             <Badge className="bg-amber-500 text-white text-xs">
@@ -1725,7 +1828,7 @@ export function ProgramSessionCard({
                 onClick={() => {
                   const newExercise: ProgramExercise = {
                     id: crypto.randomUUID(),
-                    exercise_name: "Nouvel exercice",
+                    exercise_name: "",
                     order_index: session.exercises.length,
                     method: "normal",
                     sets: 3,
@@ -1736,6 +1839,11 @@ export function ProgramSessionCard({
                   const newIndex = newExercises.length - 1;
                   onUpdate({ ...session, exercises: newExercises });
                   setSelectedForLinking(prev => [...prev, newIndex]);
+                  // Open library search for the new exercise
+                  setTimeout(() => {
+                    setSearchQuery("");
+                    setShowLibraryFor(newIndex);
+                  }, 100);
                 }}
               >
                 <Plus className="h-3 w-3 mr-1" />
