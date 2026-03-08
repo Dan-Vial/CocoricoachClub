@@ -24,19 +24,20 @@ interface PlayerReportSectionProps {
   sportType?: string;
 }
 
-type ReportSection = "tests" | "biometrics" | "wellness" | "matches";
+type ReportSection = "tests" | "biometrics" | "wellness" | "matches" | "ewma";
 
 const SECTION_LABELS: Record<ReportSection, string> = {
   tests: "Tests de performance",
   biometrics: "Données biométriques",
   wellness: "Wellness",
   matches: "Statistiques matchs",
+  ewma: "Charge d'entraînement (EWMA)",
 };
 
 export function PlayerReportSection({ playerId, categoryId, playerName, sportType }: PlayerReportSectionProps) {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
-  const [selectedSections, setSelectedSections] = useState<ReportSection[]>(["tests", "biometrics", "wellness", "matches"]);
+  const [selectedSections, setSelectedSections] = useState<ReportSection[]>(["tests", "biometrics", "wellness", "matches", "ewma"]);
   const [generating, setGenerating] = useState<"pdf" | "csv" | null>(null);
 
   const { data: player } = useQuery({
@@ -337,7 +338,7 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
         if (dateTo) q = q.lte("injury_date", dateTo);
         return q.order("injury_date", { ascending: false });
       })(),
-      supabase.from("awcr_tracking").select("*").eq("player_id", playerId).order("session_date", { ascending: false }).limit(1),
+      supabase.from("awcr_tracking").select("*").eq("player_id", playerId).order("session_date", { ascending: false }).limit(90),
     ]);
 
     return {
@@ -481,9 +482,17 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
 
       // ===== KPI CARDS =====
       const matchCount = data.matchLineups.length;
-      const totalMinutes = data.matchLineups.reduce((sum, m) => sum + (m.minutes_played || 0), 0);
+      // Sum minutes from lineups, fallback to sport_data.minutes_played from match stats
+      let totalMinutes = data.matchLineups.reduce((sum, m) => sum + (m.minutes_played || 0), 0);
+      if (totalMinutes === 0 && data.matchStats.length > 0) {
+        totalMinutes = data.matchStats.reduce((sum, s: any) => {
+          const sd = s.sport_data as Record<string, any> | null;
+          return sum + (sd?.minutes_played || 0);
+        }, 0);
+      }
       const activeInjuries = data.injuries.filter(i => i.status !== 'healed').length;
-      const latestAwcr = data.awcr[0]?.awcr;
+      // Use EWMA ratio from latest awcr_tracking entry
+      const latestAwcr = data.awcr.length > 0 ? data.awcr[0]?.awcr : null;
 
       const cardWidth = (contentWidth - 15) / 4;
       const cardHeight = 20;
@@ -638,10 +647,6 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
 
         // Weight tracking table
         if (data.bodyComps.length > 0 || data.measurements.length > 0) {
-          const bioHeaders = ["Date", "Poids (kg)", "Taille (cm)", "% Graisse", "Masse musc. (kg)", "IMC"];
-          const bioColWidths = [28, 27, 27, 27, 33, 28];
-          yPos = drawTableHeaderPdf(pdf, bioHeaders, bioColWidths, yPos, margin);
-
           // Merge measurements + body comp by date
           const allBioData = [
             ...data.measurements.map(m => ({
@@ -661,6 +666,44 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
               bmi: b.bmi,
             })),
           ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 12);
+
+          // Summary KPI cards for latest available bio data
+          const latestWithFat = allBioData.find(b => b.fat != null);
+          const latestWithBmi = allBioData.find(b => b.bmi != null);
+          const latestWithMuscle = allBioData.find(b => b.muscle != null);
+          const latestWithWeight = allBioData.find(b => b.weight != null);
+          const latestWithHeight = allBioData.find(b => b.height != null);
+          
+          const bioKpis: { label: string; value: string; color: [number, number, number] }[] = [];
+          if (latestWithWeight?.weight) bioKpis.push({ label: "Poids", value: `${latestWithWeight.weight} kg`, color: colors.primary });
+          if (latestWithHeight?.height) bioKpis.push({ label: "Taille", value: `${latestWithHeight.height} cm`, color: colors.primary });
+          if (latestWithFat?.fat != null) bioKpis.push({ label: "MG%", value: `${latestWithFat.fat}%`, color: colors.secondary });
+          if (latestWithBmi?.bmi != null) bioKpis.push({ label: "IMC", value: latestWithBmi.bmi.toFixed(1), color: colors.warning });
+          if (latestWithMuscle?.muscle != null) bioKpis.push({ label: "Masse musc.", value: `${latestWithMuscle.muscle} kg`, color: colors.success });
+
+          if (bioKpis.length > 0) {
+            const bioCardW = (contentWidth - (bioKpis.length - 1) * 4) / bioKpis.length;
+            bioKpis.forEach((kpi, i) => {
+              const kx = margin + i * (bioCardW + 4);
+              pdf.setFillColor(...kpi.color);
+              pdf.roundedRect(kx, yPos, bioCardW, 18, 2, 2, 'F');
+              pdf.setTextColor(...colors.white);
+              pdf.setFontSize(12);
+              pdf.setFont("helvetica", "bold");
+              const vw = pdf.getTextWidth(kpi.value);
+              pdf.text(kpi.value, kx + (bioCardW - vw) / 2, yPos + 8);
+              pdf.setFontSize(6);
+              pdf.setFont("helvetica", "normal");
+              const lw = pdf.getTextWidth(kpi.label);
+              pdf.text(kpi.label, kx + (bioCardW - lw) / 2, yPos + 14);
+            });
+            pdf.setTextColor(...colors.dark);
+            yPos += 24;
+          }
+
+          const bioHeaders = ["Date", "Poids (kg)", "Taille (cm)", "% Graisse", "Masse musc. (kg)", "IMC"];
+          const bioColWidths = [28, 27, 27, 27, 33, 28];
+          yPos = drawTableHeaderPdf(pdf, bioHeaders, bioColWidths, yPos, margin);
 
           allBioData.forEach((bio, index) => {
             yPos = localCheckPageBreak(pdf, yPos, 10, pdfSettings);
@@ -834,6 +877,90 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
           pdf.setFontSize(9);
           pdf.setTextColor(...colors.muted);
           pdf.text("Aucune statistique de match enregistrée", margin, yPos);
+          yPos += 10;
+        }
+      }
+
+      // ===== EWMA / CHARGE SECTION =====
+      if (selectedSections.includes("ewma")) {
+        yPos = localCheckPageBreak(pdf, yPos, 50, pdfSettings);
+        pdf.setFillColor(...colors.light);
+        pdf.rect(margin, yPos, contentWidth, 8, 'F');
+        pdf.setTextColor(...colors.primary);
+        pdf.setFontSize(11);
+        pdf.setFont("helvetica", "bold");
+        pdf.text("CHARGE D'ENTRAÎNEMENT (EWMA)", margin + 3, yPos + 5.5);
+        pdf.setFont("helvetica", "normal");
+        pdf.setTextColor(...colors.dark);
+        yPos += 12;
+
+        if (data.awcr.length > 0) {
+          // Sort chronologically
+          const sortedAwcr = [...data.awcr].sort((a, b) => new Date(a.session_date).getTime() - new Date(b.session_date).getTime());
+          const latest = sortedAwcr[sortedAwcr.length - 1];
+          
+          // EWMA KPI cards
+          const ewmaKpis: { label: string; value: string; color: [number, number, number] }[] = [
+            { label: "Charge aiguë", value: latest.acute_load != null ? latest.acute_load.toFixed(0) : '-', color: colors.danger },
+            { label: "Charge chronique", value: latest.chronic_load != null ? latest.chronic_load.toFixed(0) : '-', color: colors.primary },
+            { label: "Ratio EWMA", value: latest.awcr != null ? latest.awcr.toFixed(2) : '-', color: latest.awcr != null ? (latest.awcr > 1.5 ? colors.danger : latest.awcr > 1.3 ? colors.warning : latest.awcr >= 0.8 ? colors.success : colors.warning) : colors.muted },
+            { label: "Séances (période)", value: String(sortedAwcr.length), color: colors.secondary },
+          ];
+
+          const ewmaCardW = (contentWidth - 12) / 4;
+          ewmaKpis.forEach((kpi, i) => {
+            const kx = margin + i * (ewmaCardW + 4);
+            pdf.setFillColor(...kpi.color);
+            pdf.roundedRect(kx, yPos, ewmaCardW, 18, 2, 2, 'F');
+            pdf.setTextColor(...colors.white);
+            pdf.setFontSize(12);
+            pdf.setFont("helvetica", "bold");
+            const vw = pdf.getTextWidth(kpi.value);
+            pdf.text(kpi.value, kx + (ewmaCardW - vw) / 2, yPos + 8);
+            pdf.setFontSize(6);
+            pdf.setFont("helvetica", "normal");
+            const lw = pdf.getTextWidth(kpi.label);
+            pdf.text(kpi.label, kx + (ewmaCardW - lw) / 2, yPos + 14);
+          });
+          pdf.setTextColor(...colors.dark);
+          yPos += 24;
+
+          // EWMA history table (last 15 entries)
+          const ewmaHeaders = ["Date", "RPE", "Durée (min)", "Charge", "Aiguë", "Chronique", "Ratio"];
+          const ewmaColWidths = [26, 18, 26, 24, 26, 26, 24];
+          yPos = drawTableHeaderPdf(pdf, ewmaHeaders, ewmaColWidths, yPos, margin);
+
+          sortedAwcr.slice(-15).reverse().forEach((entry, index) => {
+            yPos = localCheckPageBreak(pdf, yPos, 10, pdfSettings);
+            const ratio = entry.awcr;
+            const ratioColor: [number, number, number] | null = ratio != null
+              ? (ratio > 1.5 ? colors.danger : ratio > 1.3 ? colors.warning : ratio >= 0.8 ? colors.success : colors.warning)
+              : null;
+            yPos = drawTableRowPdf(pdf, [
+              format(new Date(entry.session_date), "dd/MM/yy"),
+              String(entry.rpe),
+              String(entry.duration_minutes),
+              entry.training_load != null ? String(entry.training_load) : '-',
+              entry.acute_load != null ? entry.acute_load.toFixed(0) : '-',
+              entry.chronic_load != null ? entry.chronic_load.toFixed(0) : '-',
+              ratio != null ? ratio.toFixed(2) : '-',
+            ], ewmaColWidths, yPos, index % 2 === 1, margin, [null, null, null, null, null, null, ratioColor]);
+          });
+          yPos += 5;
+
+          // EWMA ratio line chart
+          const ewmaChartData = sortedAwcr
+            .filter(e => e.awcr != null)
+            .slice(-20)
+            .map(e => ({ label: format(new Date(e.session_date), "dd/MM"), value: e.awcr! }));
+          if (ewmaChartData.length >= 2) {
+            yPos = localCheckPageBreak(pdf, yPos, 55, pdfSettings);
+            yPos = drawLineChart(pdf, ewmaChartData, margin, yPos, contentWidth / 2, 35, "Évolution ratio EWMA", colors.primary);
+          }
+        } else {
+          pdf.setFontSize(9);
+          pdf.setTextColor(...colors.muted);
+          pdf.text("Aucune donnée de charge d'entraînement", margin, yPos);
           yPos += 10;
         }
       }
