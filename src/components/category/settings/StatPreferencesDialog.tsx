@@ -74,7 +74,7 @@ export function StatPreferencesDialog({
 
   // Fetch existing preferences
   const { data: existingPrefs, isLoading } = useQuery({
-    queryKey: ["stat-preferences", categoryId],
+    queryKey: ["stat-preferences-raw", categoryId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("category_stat_preferences")
