@@ -1140,7 +1140,7 @@ export function ProgramSessionCard({
                        value={exercise.method}
                        onValueChange={(value) => {
                          if (LINKABLE_METHODS.includes(value)) {
-                           startLinking(index, value);
+                            createBlockForMethod(index, value);
                          } else if (DROP_METHODS.includes(value)) {
                            initDropSets(index, value);
                          } else if (CLUSTER_METHODS.includes(value)) {
