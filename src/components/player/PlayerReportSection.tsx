@@ -606,8 +606,7 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
                 progression,
               ], testColWidths, yPos, index % 2 === 1, margin, [null, null, null, null, null, progColor]);
             });
-            yPos += 4;
-          }
+            yPos += 8; // More space between test categories for visual separation
 
           // === TESTS PROGRESSION CHART ===
           // Build chart data: last result per test type
