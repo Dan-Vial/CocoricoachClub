@@ -149,7 +149,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
   const generateTdjReport = async () => {
     setGeneratingReport("tdj");
     try {
-      const { settings: pdfSettings, logoBase64, seasonName } = await preparePdfWithSettings(categoryId);
+      const { settings: pdfSettings, logoBase64, seasonName, clubName: cn1, categoryName: catName1 } = await preparePdfWithSettings(categoryId);
 
       // Fetch all matches with lineups, stats and injuries
       let matchQuery = supabase.from("matches").select("id, match_date, opponent, is_home").eq("category_id", categoryId).order("match_date");
