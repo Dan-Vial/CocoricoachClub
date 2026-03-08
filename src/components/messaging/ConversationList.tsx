@@ -178,7 +178,7 @@ export function ConversationList({ categoryId, selectedId, onSelect, isAthlete =
     enabled: !!user,
   });
 
-  // Auto-create default conversations if missing AND auto-join athlete to "Staff + Joueurs"
+  // Auto-create default conversations if missing AND auto-join to default groups
   const { data: defaultGroupsCreated } = useQuery({
     queryKey: ["default-conversations-check", categoryId, isAthlete, user?.id],
     queryFn: async () => {
@@ -187,12 +187,22 @@ export function ConversationList({ categoryId, selectedId, onSelect, isAthlete =
       const staffGroupName = "Staff";
       const allGroupName = "Staff + Joueurs";
       
-      const hasStaffGroup = conversations?.some(c => c.name === staffGroupName);
-      const hasAllGroup = conversations?.some(c => c.name === allGroupName);
+      // Always check DB directly to avoid creating duplicates
+      const { data: existingGroups } = await supabase
+        .from("conversations")
+        .select("id, name")
+        .eq("category_id", categoryId)
+        .eq("conversation_type", "group")
+        .in("name", [staffGroupName, allGroupName]);
+
+      const staffGroupConv = existingGroups?.find(c => c.name === staffGroupName);
+      const allGroupConv = existingGroups?.find(c => c.name === allGroupName);
       
-      // Only staff creates default groups
+      // Staff logic: create missing groups + auto-join existing ones
       if (!isAthlete) {
-        if (!hasStaffGroup) {
+        // Create "Staff" group if it doesn't exist at all
+        let staffConvId = staffGroupConv?.id;
+        if (!staffConvId) {
           const { data: conv } = await supabase
             .from("conversations")
             .insert({
@@ -205,15 +215,26 @@ export function ConversationList({ categoryId, selectedId, onSelect, isAthlete =
             .single();
             
           if (conv) {
+            staffConvId = conv.id;
             await supabase.from("conversation_participants").insert({
               conversation_id: conv.id,
               user_id: user.id,
               is_admin: true,
             });
           }
+        } else {
+          // Group exists, ensure current staff user is a participant
+          await supabase
+            .from("conversation_participants")
+            .upsert(
+              { conversation_id: staffConvId, user_id: user.id, is_admin: false },
+              { onConflict: "conversation_id,user_id" }
+            );
         }
         
-        if (!hasAllGroup) {
+        // Create "Staff + Joueurs" group if it doesn't exist at all
+        let allConvId = allGroupConv?.id;
+        if (!allConvId) {
           const { data: conv } = await supabase
             .from("conversations")
             .insert({
@@ -226,6 +247,7 @@ export function ConversationList({ categoryId, selectedId, onSelect, isAthlete =
             .single();
             
           if (conv) {
+            allConvId = conv.id;
             // Add creator as admin participant
             await supabase.from("conversation_participants").insert({
               conversation_id: conv.id,
@@ -282,37 +304,33 @@ export function ConversationList({ categoryId, selectedId, onSelect, isAthlete =
               }
             }
           }
+        } else {
+          // Group exists, ensure current staff user is a participant
+          await supabase
+            .from("conversation_participants")
+            .upsert(
+              { conversation_id: allConvId, user_id: user.id, is_admin: false },
+              { onConflict: "conversation_id,user_id" }
+            );
         }
         
-        if (!hasStaffGroup || !hasAllGroup) {
-          queryClient.invalidateQueries({ queryKey: ["conversations", categoryId] });
-        }
+        // Refresh conversations list
+        queryClient.invalidateQueries({ queryKey: ["conversations", categoryId] });
       }
 
       // Auto-join athlete to "Staff + Joueurs" if not already a participant
       if (isAthlete) {
-        // Search directly in DB, not just in filtered conversations list
-        const { data: allGroupConvData } = await supabase
-          .from("conversations")
-          .select("id")
-          .eq("category_id", categoryId)
-          .eq("name", allGroupName)
-          .eq("conversation_type", "group")
-          .maybeSingle();
-
-        if (allGroupConvData) {
-          // Upsert to avoid race conditions
+        if (allGroupConv) {
           await supabase
             .from("conversation_participants")
             .upsert(
               {
-                conversation_id: allGroupConvData.id,
+                conversation_id: allGroupConv.id,
                 user_id: user.id,
                 is_admin: false,
               },
               { onConflict: "conversation_id,user_id" }
             );
-          // Refresh conversations to ensure messages are accessible
           queryClient.invalidateQueries({ queryKey: ["conversations", categoryId] });
         }
       }
