@@ -28,6 +28,7 @@ import { Upload, AlertCircle, User, Satellite, Check, ArrowRight, Link2 } from "
 interface Player {
   id: string;
   name: string;
+  first_name?: string;
   position?: string;
 }
 
