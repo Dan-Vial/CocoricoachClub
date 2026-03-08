@@ -1692,7 +1692,7 @@ import { isIndividualSport } from "@/lib/constants/sportTypes";
                             <div className="flex flex-wrap gap-1.5">
                               {notMarked.map(p => (
                                 <Badge key={p.id} variant="outline" className="text-xs text-muted-foreground">
-                                  {p.name}
+                                  {getFullName(p)}
                                 </Badge>
                               ))}
                             </div>
