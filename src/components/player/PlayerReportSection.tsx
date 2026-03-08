@@ -1483,11 +1483,14 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
         const sport = (category?.clubs as any)?.sport || "rugby";
         const playerDiscipline = (player as any)?.specialty || (player as any)?.discipline;
         const roundStatsDef = getStatsForSport(sport, false, playerDiscipline);
+        const isAthleticsExcel = sport.toLowerCase().includes("athletisme") || sport.toLowerCase().includes("athlétisme");
 
-        const sheet = workbook.addWorksheet('Compétitions (Rounds)');
+        const sheet = workbook.addWorksheet('Compétitions');
         let rowIdx = addSheetHeader(sheet, 'STATISTIQUES COMPÉTITIONS');
 
-        const headers = ['Adversaire', 'Date', 'Round', ...roundStatsDef.map(s => s.shortLabel || s.label)];
+        const headers = isAthleticsExcel
+          ? ['Phase', 'Classement', 'Résultat', ...roundStatsDef.map(s => s.shortLabel || s.label)]
+          : ['Adversaire', 'Date', 'Round', ...roundStatsDef.map(s => s.shortLabel || s.label)];
         sheet.columns = [
           { width: 22 }, { width: 14 }, { width: 10 },
           ...roundStatsDef.map(() => ({ width: 14 })),
@@ -1501,9 +1504,16 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
           const roundStats = round.competition_round_stats || [];
           const statData = roundStats.length > 0 ? (roundStats[0].stat_data as Record<string, any> || {}) : {};
           const row = sheet.getRow(rowIdx);
-          row.getCell(1).value = round.matches?.opponent || '-';
-          row.getCell(2).value = round.matches?.match_date ? format(new Date(round.matches.match_date), "dd/MM/yyyy") : '-';
-          row.getCell(3).value = round.round_number || idx + 1;
+          if (isAthleticsExcel) {
+            row.getCell(1).value = round.phase || `Épreuve ${round.round_number || idx + 1}`;
+            row.getCell(2).value = round.ranking ? `${round.ranking}e` : '-';
+            const resultMap: Record<string, string> = { qualified: 'Qualifié', eliminated: 'Éliminé', dns: 'DNS', dnf: 'DNF', dq: 'DQ' };
+            row.getCell(3).value = resultMap[round.result] || round.result || '-';
+          } else {
+            row.getCell(1).value = round.matches?.opponent || '-';
+            row.getCell(2).value = round.matches?.match_date ? format(new Date(round.matches.match_date), "dd/MM/yyyy") : '-';
+            row.getCell(3).value = round.round_number || idx + 1;
+          }
           roundStatsDef.forEach((s, i) => {
             const val = statData[s.key];
             row.getCell(i + 4).value = val != null ? Number(val) : null;
