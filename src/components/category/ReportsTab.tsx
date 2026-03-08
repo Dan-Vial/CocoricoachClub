@@ -14,7 +14,7 @@ import jsPDF from "jspdf";
 import ExcelJS from "exceljs";
 import { getExcelBranding, addBrandedHeader, styleDataHeaderRow, addZebraRows, addFooter, downloadWorkbook } from "@/lib/excelExport";
 import { preparePdfWithSettings, drawPdfHeader as drawPdfHeaderCustom, drawSectionTitle, drawTableHeader as drawTableHeaderLib, drawTableRow as drawTableRowLib, checkPageBreak as checkPageBreakLib, type PdfCustomSettings } from "@/lib/pdfExport";
-import { getStatsForSport, type StatField } from "@/lib/constants/sportStats";
+import { getStatsForSport, supportsCompetitionRounds, type StatField } from "@/lib/constants/sportStats";
 import { TEST_CATEGORIES, getTestLabel } from "@/lib/constants/testCategories";
 
 interface ReportsTabProps {
@@ -700,12 +700,18 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
 
       const { settings: pdfSettings, logoBase64, seasonName: sn2 } = await preparePdfWithSettings(categoryId);
 
-      // Fetch match data + stat preferences
-      const [lineupsRes, statsRes, statPrefsRes, customStatsRes] = await Promise.all([
+      const sportType = category?.clubs?.sport || "rugby";
+      const isIndividualSport = supportsCompetitionRounds(sportType);
+
+      // Fetch match data + stat preferences + competition rounds for individual sports
+      const [lineupsRes, statsRes, statPrefsRes, customStatsRes, competitionRoundsRes] = await Promise.all([
         supabase.from("match_lineups").select("*, players(name, first_name, position)").eq("match_id", selectedMatch),
         supabase.from("player_match_stats").select("*, players(name, first_name)").eq("match_id", selectedMatch),
         supabase.from("category_stat_preferences").select("enabled_stats, enabled_custom_stats").eq("category_id", categoryId).maybeSingle(),
         supabase.from("custom_stats").select("*").eq("category_id", categoryId),
+        isIndividualSport
+          ? supabase.from("competition_rounds").select("*, competition_round_stats(stat_data), players!inner(name, first_name, specialty, discipline)").eq("match_id", selectedMatch).order("round_number")
+          : Promise.resolve({ data: [] }),
       ]);
 
       const pdf = new jsPDF();
@@ -908,6 +914,103 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
             yPos = drawTableRowPdf(pdf, values, statColWidths, yPos, index % 2 === 1, margin, contentWidth, rowColors);
           });
         }
+      }
+
+      // ===== COMPETITION ROUNDS for individual sports (Judo, Bowling, Athletics, Aviron) =====
+      const competitionRounds = competitionRoundsRes.data || [];
+      if (isIndividualSport && competitionRounds.length > 0) {
+        yPos += 10;
+        yPos = localCheckPageBreak(pdf, yPos, 30);
+
+        pdf.setFontSize(12);
+        pdf.setFont("helvetica", "bold");
+        pdf.setTextColor(...defaultColors.dark);
+        pdf.text("ROUNDS / COMBATS DE COMPÉTITION", margin, yPos);
+        yPos += 8;
+
+        // Group rounds by player
+        const roundsByPlayer = new Map<string, { name: string; discipline?: string; rounds: any[] }>();
+        competitionRounds.forEach((r: any) => {
+          const pid = r.player_id;
+          const pName = [r.players?.first_name, r.players?.name].filter(Boolean).join(" ") || "Inconnu";
+          const disc = r.players?.specialty || r.players?.discipline;
+          if (!roundsByPlayer.has(pid)) roundsByPlayer.set(pid, { name: pName, discipline: disc, rounds: [] });
+          roundsByPlayer.get(pid)!.rounds.push(r);
+        });
+
+        const isAthleticsReport = sportType.toLowerCase().includes("athletisme") || sportType.toLowerCase().includes("athlétisme");
+        const isJudoReport = sportType.toLowerCase().includes("judo");
+
+        roundsByPlayer.forEach((playerData) => {
+          yPos = localCheckPageBreak(pdf, yPos, 25);
+          
+          // Player sub-header
+          pdf.setFontSize(10);
+          pdf.setFont("helvetica", "bold");
+          pdf.setTextColor(...defaultColors.primary);
+          pdf.text(`${playerData.name}${playerData.discipline ? ` (${playerData.discipline})` : ''}`, margin, yPos);
+          yPos += 6;
+
+          const roundStatsDef = getStatsForSport(sportType, false, playerData.discipline);
+          const fixedHeaders = isAthleticsReport
+            ? ["Phase", "Place", "Résultat"]
+            : isJudoReport
+            ? ["Round", "Adversaire", "Résultat"]
+            : ["Round", "Adversaire", "Résultat"];
+          const fixedColWidths = [28, 28, 20];
+
+          // Paginate stats in groups of 6
+          const STATS_PER_PAGE = 6;
+          for (let pageIdx = 0; pageIdx < roundStatsDef.length; pageIdx += STATS_PER_PAGE) {
+            const pageStats = roundStatsDef.slice(pageIdx, pageIdx + STATS_PER_PAGE);
+
+            if (pageIdx > 0) {
+              yPos += 3;
+              yPos = localCheckPageBreak(pdf, yPos, 20);
+            }
+
+            const sColW = Math.max(14, Math.floor((contentWidth - 76) / pageStats.length));
+            const colWidths = [...fixedColWidths, ...pageStats.map(() => sColW)];
+            const headers = [...fixedHeaders, ...pageStats.map(s => s.shortLabel)];
+
+            yPos = drawTableHeaderPdf(pdf, headers, colWidths, yPos, margin, contentWidth);
+
+            playerData.rounds.forEach((round: any, idx: number) => {
+              yPos = localCheckPageBreak(pdf, yPos, 10);
+              const roundStats = round.competition_round_stats || [];
+              const statData = roundStats.length > 0 ? (roundStats[0].stat_data as Record<string, any> || {}) : {};
+
+              const resultLabel = isJudoReport
+                ? (statData.combatResult === 1 ? 'V' : statData.combatResult === 0 ? 'D' : round.result || '-')
+                : isAthleticsReport
+                ? (round.result === 'qualified' ? 'Q' : round.result === 'eliminated' ? 'Élim.' : round.result || '-')
+                : (round.result || '-');
+
+              const fixedData = isAthleticsReport
+                ? [
+                    round.phase || `Épreuve ${round.round_number || idx + 1}`,
+                    round.ranking ? `${round.ranking}e` : '-',
+                    resultLabel,
+                  ]
+                : [
+                    String(round.round_number || idx + 1),
+                    round.opponent_name || '-',
+                    resultLabel,
+                  ];
+
+              const rowData = [
+                ...fixedData,
+                ...pageStats.map(s => {
+                  const val = statData[s.key];
+                  return val != null ? String(val) : '-';
+                }),
+              ];
+
+              yPos = drawTableRowPdf(pdf, rowData, colWidths, yPos, idx % 2 === 1, margin, contentWidth);
+            });
+          }
+          yPos += 5;
+        });
       }
 
       pdf.save(`match_${match.opponent.replace(/\s+/g, '_')}_${format(new Date(match.match_date), "yyyy-MM-dd")}.pdf`);
