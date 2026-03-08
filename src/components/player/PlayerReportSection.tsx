@@ -501,8 +501,8 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
         }, 0);
       }
       const activeInjuries = data.injuries.filter(i => i.status !== 'healed').length;
-      // Use EWMA ratio from latest awcr_tracking entry
-      const latestAwcr = data.awcr.length > 0 ? data.awcr[0]?.awcr : null;
+      // Use EWMA ratio from latest non-null awcr_tracking entry
+      const latestAwcr = data.awcr.find(e => e.awcr != null)?.awcr ?? null;
 
       const cardWidth = (contentWidth - 15) / 4;
       const cardHeight = 20;
@@ -606,7 +606,7 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
                 progression,
               ], testColWidths, yPos, index % 2 === 1, margin, [null, null, null, null, null, progColor]);
             });
-            yPos += 4;
+            yPos += 8; // More space between test categories for visual separation
           }
 
           // === TESTS PROGRESSION CHART ===
