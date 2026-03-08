@@ -164,6 +164,16 @@ export function AggregatedRoundStatsDialog({
           pStats.stats[key] = (pStats.stats[key] || 0) + value;
         }
       });
+
+      // Track individual rounds for athletics detail
+      pStats.rounds.push({
+        phase: round.phase || undefined,
+        ranking: round.ranking || undefined,
+        result: round.result || undefined,
+        stats: Object.fromEntries(
+          Object.entries(statData).filter(([, v]) => typeof v === "number")
+        ) as Record<string, number>,
+      });
     });
 
     // Compute Judo-specific aggregated stats
