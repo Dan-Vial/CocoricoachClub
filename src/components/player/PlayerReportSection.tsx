@@ -13,6 +13,7 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import jsPDF from "jspdf";
 import { generateCsv, downloadCsv } from "@/lib/csv";
+import ExcelJS from "exceljs";
 import { preparePdfWithSettings, drawPdfHeader as drawPdfHeaderCustom, type PdfCustomSettings } from "@/lib/pdfExport";
 import { TEST_CATEGORIES, getTestLabel } from "@/lib/constants/testCategories";
 import { getStatsForSport } from "@/lib/constants/sportStats";
@@ -1056,8 +1057,8 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
     }
   };
 
-  // ===================== CSV GENERATION =====================
-  const generateCsvExport = async () => {
+  // ===================== EXCEL GENERATION =====================
+  const generateExcelExport = async () => {
     if (selectedSections.length === 0) {
       toast.error("Sélectionnez au moins une section");
       return;
@@ -1066,60 +1067,332 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
     setGenerating("csv");
     try {
       const data = await fetchAllData();
+      const { settings: pdfSettings, seasonName } = await preparePdfWithSettings(categoryId);
       const fullName = [player?.first_name, player?.name].filter(Boolean).join(" ") || playerName;
+      const clubName = (category?.clubs as any)?.name || "";
+      const categoryName = category?.name || "";
 
+      const workbook = new ExcelJS.Workbook();
+      workbook.creator = clubName;
+      workbook.created = new Date();
+
+      // === Helper: add header info to a sheet ===
+      const addSheetHeader = (sheet: ExcelJS.Worksheet, title: string) => {
+        sheet.mergeCells('A1:F1');
+        const titleCell = sheet.getCell('A1');
+        titleCell.value = title;
+        titleCell.font = { size: 16, bold: true, color: { argb: 'FF224378' } };
+        titleCell.alignment = { horizontal: 'left' };
+
+        const infoRows = [
+          ['Club', clubName],
+          ['Joueur', fullName],
+          ['Catégorie', categoryName],
+          ['Saison', seasonName || '-'],
+          ['Période', dateFrom || dateTo
+            ? `${dateFrom ? format(new Date(dateFrom), "dd/MM/yyyy") : "début"} - ${dateTo ? format(new Date(dateTo), "dd/MM/yyyy") : "aujourd'hui"}`
+            : 'Toutes les données'],
+        ];
+
+        infoRows.forEach((row, i) => {
+          const r = sheet.getRow(i + 3);
+          r.getCell(1).value = row[0];
+          r.getCell(1).font = { bold: true, size: 10, color: { argb: 'FF64748B' } };
+          r.getCell(2).value = row[1];
+          r.getCell(2).font = { size: 10 };
+        });
+
+        return 9; // next data row
+      };
+
+      // === Helper: style header row ===
+      const styleHeaderRow = (sheet: ExcelJS.Worksheet, rowNum: number, colCount: number) => {
+        const row = sheet.getRow(rowNum);
+        row.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 10 };
+        row.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E293B' } };
+        row.alignment = { horizontal: 'center' };
+        for (let i = 1; i <= colCount; i++) {
+          row.getCell(i).border = {
+            bottom: { style: 'thin', color: { argb: 'FF334155' } },
+          };
+        }
+      };
+
+      // ===== FEUILLE TESTS =====
       if (selectedSections.includes("tests")) {
-        const { allTests } = buildTestGroups(data);
-        if (allTests.length > 0) {
-          const headers = ["Joueur", "Catégorie", "Test", "Résultat", "Unité", "Date"];
-          const rows = allTests.map(t => [
-            fullName,
-            getCategoryLabel(t.test_category),
-            getTestLabel(t.test_type) !== t.test_type ? getTestLabel(t.test_type) : t.test_type,
-            t.result_value,
-            t.result_unit || '',
-            format(new Date(t.test_date), "dd/MM/yyyy"),
-          ]);
-          downloadCsv(`tests_${fullName.replace(/\s+/g, '_')}_${format(new Date(), "yyyy-MM-dd")}.csv`, generateCsv(headers, rows));
+        const { grouped } = buildTestGroups(data);
+        const orderedCategories = Object.keys(grouped).sort((a, b) => getCategoryLabel(a).localeCompare(getCategoryLabel(b)));
+
+        if (orderedCategories.length > 0) {
+          const sheet = workbook.addWorksheet('Tests');
+          let rowIdx = addSheetHeader(sheet, 'TESTS DE PERFORMANCE');
+
+          const headers = ['Thème', 'Test', '1er résultat', 'Date', 'Dernier résultat', 'Date', 'Progression'];
+          sheet.columns = [
+            { width: 18 }, { width: 25 }, { width: 16 }, { width: 14 }, { width: 16 }, { width: 14 }, { width: 14 },
+          ];
+          const hRow = sheet.getRow(rowIdx);
+          headers.forEach((h, i) => { hRow.getCell(i + 1).value = h; });
+          styleHeaderRow(sheet, rowIdx, headers.length);
+          rowIdx++;
+
+          for (const catKey of orderedCategories) {
+            const testsByType: Record<string, typeof grouped[string]> = {};
+            grouped[catKey].forEach(t => {
+              if (!testsByType[t.test_type]) testsByType[t.test_type] = [];
+              testsByType[t.test_type].push(t);
+            });
+
+            Object.entries(testsByType).forEach(([testType, results]) => {
+              results.sort((a, b) => new Date(a.test_date).getTime() - new Date(b.test_date).getTime());
+              const first = results[0];
+              const last = results[results.length - 1];
+              const prog = results.length > 1
+                ? ((last.result_value - first.result_value) / first.result_value * 100).toFixed(1) + '%'
+                : '-';
+
+              const fullLabel = getTestLabel(testType);
+              const parts = fullLabel.split(' - ');
+              const label = parts.length >= 3 ? parts.slice(1).join(' - ') : parts.length === 2 ? parts[1] : fullLabel;
+
+              const row = sheet.getRow(rowIdx);
+              row.getCell(1).value = getCategoryLabel(catKey);
+              row.getCell(2).value = label;
+              row.getCell(3).value = `${first.result_value}${first.result_unit ? ` ${first.result_unit}` : ''}`;
+              row.getCell(4).value = format(new Date(first.test_date), "dd/MM/yyyy");
+              row.getCell(5).value = results.length > 1 ? `${last.result_value}${last.result_unit ? ` ${last.result_unit}` : ''}` : '-';
+              row.getCell(6).value = results.length > 1 ? format(new Date(last.test_date), "dd/MM/yyyy") : '-';
+              row.getCell(7).value = prog;
+              if (prog !== '-') {
+                row.getCell(7).font = {
+                  color: { argb: parseFloat(prog) >= 0 ? 'FF27AE60' : 'FFEF4444' },
+                  bold: true,
+                };
+              }
+              if (rowIdx % 2 === 0) {
+                for (let i = 1; i <= headers.length; i++) {
+                  row.getCell(i).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
+                }
+              }
+              rowIdx++;
+            });
+          }
         }
       }
 
+      // ===== FEUILLE BIOMÉTRIE =====
       if (selectedSections.includes("biometrics")) {
         const allBio = [
-          ...data.measurements.map(m => ({ date: m.measurement_date, weight: m.weight_kg, height: m.height_cm, fat: null, muscle: null, bmi: null })),
+          ...data.measurements.map(m => ({ date: m.measurement_date, weight: m.weight_kg, height: m.height_cm, fat: null as number | null, muscle: null as number | null, bmi: null as number | null })),
           ...data.bodyComps.map(b => ({ date: b.measurement_date, weight: b.weight_kg, height: b.height_cm, fat: b.body_fat_percentage, muscle: b.muscle_mass_kg, bmi: b.bmi })),
         ];
         if (allBio.length > 0) {
-          const headers = ["Joueur", "Date", "Poids (kg)", "Taille (cm)", "% Graisse", "Masse musc. (kg)", "IMC"];
-          const rows = allBio.map(b => [fullName, format(new Date(b.date), "dd/MM/yyyy"), b.weight, b.height, b.fat, b.muscle, b.bmi]);
-          downloadCsv(`biometrie_${fullName.replace(/\s+/g, '_')}_${format(new Date(), "yyyy-MM-dd")}.csv`, generateCsv(headers, rows));
+          const sheet = workbook.addWorksheet('Biométrie');
+          let rowIdx = addSheetHeader(sheet, 'DONNÉES BIOMÉTRIQUES');
+
+          const headers = ['Date', 'Poids (kg)', 'Taille (cm)', '% Graisse', 'Masse musc. (kg)', 'IMC'];
+          sheet.columns = [{ width: 14 }, { width: 14 }, { width: 14 }, { width: 14 }, { width: 18 }, { width: 10 }];
+          const hRow = sheet.getRow(rowIdx);
+          headers.forEach((h, i) => { hRow.getCell(i + 1).value = h; });
+          styleHeaderRow(sheet, rowIdx, headers.length);
+          rowIdx++;
+
+          allBio.forEach((b) => {
+            const row = sheet.getRow(rowIdx);
+            row.getCell(1).value = format(new Date(b.date), "dd/MM/yyyy");
+            row.getCell(2).value = b.weight;
+            row.getCell(3).value = b.height;
+            row.getCell(4).value = b.fat;
+            row.getCell(5).value = b.muscle;
+            row.getCell(6).value = b.bmi;
+            if (rowIdx % 2 === 0) {
+              for (let i = 1; i <= headers.length; i++) {
+                row.getCell(i).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
+              }
+            }
+            rowIdx++;
+          });
         }
       }
 
-      if (selectedSections.includes("wellness")) {
-        if (data.wellness.length > 0) {
-          const headers = ["Joueur", "Date", "Sommeil", "Fatigue", "Stress", "Haut du corps", "Bas du corps"];
-          const rows = data.wellness.map(w => [
-            fullName, format(new Date(w.tracking_date), "dd/MM/yyyy"),
-            w.sleep_quality, w.general_fatigue, w.stress_level, w.soreness_upper_body, w.soreness_lower_body,
-          ]);
-          downloadCsv(`wellness_${fullName.replace(/\s+/g, '_')}_${format(new Date(), "yyyy-MM-dd")}.csv`, generateCsv(headers, rows));
+      // ===== FEUILLE WELLNESS =====
+      if (selectedSections.includes("wellness") && data.wellness.length > 0) {
+        const sheet = workbook.addWorksheet('Wellness');
+        let rowIdx = addSheetHeader(sheet, 'WELLNESS');
+
+        const headers = ['Date', 'Sommeil', 'Fatigue', 'Stress', 'Haut du corps', 'Bas du corps', 'Moyenne'];
+        sheet.columns = [{ width: 14 }, { width: 12 }, { width: 12 }, { width: 12 }, { width: 16 }, { width: 16 }, { width: 12 }];
+        const hRow = sheet.getRow(rowIdx);
+        headers.forEach((h, i) => { hRow.getCell(i + 1).value = h; });
+        styleHeaderRow(sheet, rowIdx, headers.length);
+        rowIdx++;
+
+        data.wellness.forEach((w) => {
+          const vals = [w.sleep_quality, w.general_fatigue, w.stress_level, w.soreness_upper_body, w.soreness_lower_body].filter(v => v != null) as number[];
+          const avg = vals.length > 0 ? Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 10) / 10 : null;
+
+          const row = sheet.getRow(rowIdx);
+          row.getCell(1).value = format(new Date(w.tracking_date), "dd/MM/yyyy");
+          row.getCell(2).value = w.sleep_quality;
+          row.getCell(3).value = w.general_fatigue;
+          row.getCell(4).value = w.stress_level;
+          row.getCell(5).value = w.soreness_upper_body;
+          row.getCell(6).value = w.soreness_lower_body;
+          row.getCell(7).value = avg;
+          if (avg != null) {
+            row.getCell(7).font = { bold: true };
+          }
+          if (rowIdx % 2 === 0) {
+            for (let i = 1; i <= headers.length; i++) {
+              row.getCell(i).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
+            }
+          }
+          rowIdx++;
+        });
+
+        // Moyenne globale
+        rowIdx++;
+        const avgRow = sheet.getRow(rowIdx);
+        avgRow.getCell(1).value = 'MOYENNE GLOBALE';
+        avgRow.getCell(1).font = { bold: true, color: { argb: 'FF224378' } };
+        const allAvgs = data.wellness.map(w => {
+          const vals = [w.sleep_quality, w.general_fatigue, w.stress_level, w.soreness_upper_body, w.soreness_lower_body].filter(v => v != null) as number[];
+          return vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+        }).filter(v => v != null) as number[];
+        if (allAvgs.length > 0) {
+          avgRow.getCell(7).value = Math.round((allAvgs.reduce((a, b) => a + b, 0) / allAvgs.length) * 10) / 10;
+          avgRow.getCell(7).font = { bold: true, size: 12, color: { argb: 'FF224378' } };
         }
       }
 
+      // ===== FEUILLE MATCHS =====
       if (selectedSections.includes("matches")) {
         const matchStats = data.matchStats.filter(s => s.matches != null);
         if (matchStats.length > 0) {
-          const headers = ["Joueur", "Adversaire", "Date"];
-          const rows = matchStats.map((s: any) => [fullName, s.matches?.opponent || '-', s.matches?.match_date ? format(new Date(s.matches.match_date), "dd/MM/yyyy") : '-']);
-          downloadCsv(`matchs_${fullName.replace(/\s+/g, '_')}_${format(new Date(), "yyyy-MM-dd")}.csv`, generateCsv(headers, rows));
+          const [statPrefsRes, customStatsRes] = await Promise.all([
+            supabase.from("category_stat_preferences").select("enabled_stats, enabled_custom_stats").eq("category_id", categoryId).maybeSingle(),
+            supabase.from("custom_stats").select("*").eq("category_id", categoryId),
+          ]);
+          const sport = (category?.clubs as any)?.sport || "rugby";
+          const allStatsDef = getStatsForSport(sport);
+          const customStatFields = (customStatsRes.data || []).map((cs: any) => ({
+            key: cs.key, label: cs.label, shortLabel: cs.short_label,
+            category: cs.category_type, type: "number" as const,
+          }));
+          const allAvailable = [...allStatsDef, ...customStatFields];
+          const enabledKeys = [
+            ...(statPrefsRes.data?.enabled_stats as string[] || []),
+            ...(statPrefsRes.data?.enabled_custom_stats as string[] || []),
+          ];
+          const displayStats = enabledKeys.length > 0
+            ? allAvailable.filter(s => enabledKeys.includes(s.key))
+            : allAvailable;
+
+          const sheet = workbook.addWorksheet('Statistiques Matchs');
+          let rowIdx = addSheetHeader(sheet, 'STATISTIQUES MATCHS');
+
+          const headers = ['Adversaire', 'Date', ...displayStats.map(s => s.shortLabel || s.label)];
+          sheet.columns = [
+            { width: 22 }, { width: 14 },
+            ...displayStats.map(() => ({ width: 14 })),
+          ];
+          const hRow = sheet.getRow(rowIdx);
+          headers.forEach((h, i) => { hRow.getCell(i + 1).value = h; });
+          styleHeaderRow(sheet, rowIdx, headers.length);
+          rowIdx++;
+
+          matchStats.forEach((stat: any) => {
+            const sportData = (stat.sport_data && typeof stat.sport_data === 'object') ? stat.sport_data as Record<string, any> : {};
+            const row = sheet.getRow(rowIdx);
+            row.getCell(1).value = stat.matches?.opponent || '-';
+            row.getCell(2).value = stat.matches?.match_date ? format(new Date(stat.matches.match_date), "dd/MM/yyyy") : '-';
+            displayStats.forEach((s, i) => {
+              const val = sportData[s.key] ?? stat[s.key] ?? stat[s.key.replace(/([A-Z])/g, '_$1').toLowerCase()];
+              row.getCell(i + 3).value = val != null ? Number(val) : null;
+            });
+            if (rowIdx % 2 === 0) {
+              for (let i = 1; i <= headers.length; i++) {
+                row.getCell(i).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
+              }
+            }
+            rowIdx++;
+          });
         }
       }
 
-      toast.success("Export CSV généré");
+      // ===== FEUILLE EWMA =====
+      if (selectedSections.includes("ewma") && data.awcr.length > 0) {
+        const sheet = workbook.addWorksheet('EWMA');
+        let rowIdx = addSheetHeader(sheet, "CHARGE D'ENTRAÎNEMENT (EWMA)");
+
+        const sortedAwcr = [...data.awcr].sort((a, b) => new Date(a.session_date).getTime() - new Date(b.session_date).getTime());
+        const latestWithEwma = [...sortedAwcr].reverse().find(e => e.acute_load != null && e.chronic_load != null);
+
+        // KPI summary
+        if (latestWithEwma) {
+          const kpiRow = sheet.getRow(rowIdx);
+          kpiRow.getCell(1).value = 'Charge aiguë';
+          kpiRow.getCell(2).value = latestWithEwma.acute_load != null ? Number(latestWithEwma.acute_load.toFixed(0)) : null;
+          kpiRow.getCell(3).value = 'Charge chronique';
+          kpiRow.getCell(4).value = latestWithEwma.chronic_load != null ? Number(latestWithEwma.chronic_load.toFixed(0)) : null;
+          kpiRow.getCell(5).value = 'Ratio EWMA';
+          kpiRow.getCell(6).value = latestWithEwma.awcr != null ? Number(latestWithEwma.awcr.toFixed(2)) : null;
+          [1, 3, 5].forEach(i => { kpiRow.getCell(i).font = { bold: true, color: { argb: 'FF64748B' } }; });
+          [2, 4, 6].forEach(i => { kpiRow.getCell(i).font = { bold: true, size: 12 }; });
+          if (latestWithEwma.awcr != null) {
+            kpiRow.getCell(6).font = {
+              bold: true, size: 12,
+              color: { argb: latestWithEwma.awcr > 1.5 ? 'FFEF4444' : latestWithEwma.awcr > 1.3 ? 'FFEAB308' : latestWithEwma.awcr >= 0.8 ? 'FF27AE60' : 'FFEAB308' },
+            };
+          }
+          rowIdx += 2;
+        }
+
+        const headers = ['Date', 'RPE', 'Durée (min)', 'Charge', 'Aiguë', 'Chronique', 'Ratio'];
+        sheet.columns = [{ width: 14 }, { width: 8 }, { width: 14 }, { width: 12 }, { width: 12 }, { width: 14 }, { width: 12 }];
+        const hRow = sheet.getRow(rowIdx);
+        headers.forEach((h, i) => { hRow.getCell(i + 1).value = h; });
+        styleHeaderRow(sheet, rowIdx, headers.length);
+        rowIdx++;
+
+        sortedAwcr.forEach((entry) => {
+          const row = sheet.getRow(rowIdx);
+          row.getCell(1).value = format(new Date(entry.session_date), "dd/MM/yyyy");
+          row.getCell(2).value = entry.rpe;
+          row.getCell(3).value = entry.duration_minutes;
+          row.getCell(4).value = entry.training_load;
+          row.getCell(5).value = entry.acute_load != null ? Number(entry.acute_load.toFixed(0)) : null;
+          row.getCell(6).value = entry.chronic_load != null ? Number(entry.chronic_load.toFixed(0)) : null;
+          row.getCell(7).value = entry.awcr != null ? Number(Number(entry.awcr).toFixed(2)) : null;
+          if (entry.awcr != null) {
+            row.getCell(7).font = {
+              bold: true,
+              color: { argb: entry.awcr > 1.5 ? 'FFEF4444' : entry.awcr > 1.3 ? 'FFEAB308' : entry.awcr >= 0.8 ? 'FF27AE60' : 'FFEAB308' },
+            };
+          }
+          if (rowIdx % 2 === 0) {
+            for (let i = 1; i <= headers.length; i++) {
+              row.getCell(i).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
+            }
+          }
+          rowIdx++;
+        });
+      }
+
+      // === DOWNLOAD ===
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `rapport_${fullName.replace(/\s+/g, '_')}_${format(new Date(), "yyyy-MM-dd")}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+
+      toast.success("Rapport Excel généré");
     } catch (error) {
       console.error(error);
-      toast.error("Erreur lors de l'export CSV");
+      toast.error("Erreur lors de la génération Excel");
     } finally {
       setGenerating(null);
     }
@@ -1209,7 +1482,7 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
           </Button>
           <Button
             variant="outline"
-            onClick={generateCsvExport}
+            onClick={generateExcelExport}
             disabled={generating !== null || selectedSections.length === 0}
             className="flex-1"
           >
@@ -1218,7 +1491,7 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
             ) : (
               <FileSpreadsheet className="h-4 w-4 mr-2" />
             )}
-            Exporter CSV
+            Exporter Excel
           </Button>
         </div>
       </CardContent>
