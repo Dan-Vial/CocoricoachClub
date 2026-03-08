@@ -66,6 +66,7 @@ export const RUGBY_STATS: StatField[] = [
   { key: "yellowCards", label: "Cartons jaunes", shortLabel: "Jaunes", category: "general", type: "number" },
   { key: "redCards", label: "Cartons rouges", shortLabel: "Rouges", category: "general", type: "number" },
   { key: "manOfMatch", label: "Homme du match", shortLabel: "HDM", category: "general", type: "number", max: 1 },
+  { key: "fouls", label: "Fautes", shortLabel: "Fautes", category: "general", type: "number" },
 ];
 
 // Football stats - Enriched
