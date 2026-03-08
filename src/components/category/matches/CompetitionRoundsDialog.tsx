@@ -1335,7 +1335,8 @@ export function CompetitionRoundsDialog({
                                   );
                                 })}
                               </div>
-                            )}
+                              );
+                            })()}
 
                             {/* Aviron: Courses recap */}
                             {isAviron && selectedPlayer.rounds.length > 0 && (
