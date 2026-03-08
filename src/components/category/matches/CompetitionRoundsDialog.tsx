@@ -144,6 +144,23 @@ export function CompetitionRoundsDialog({
   const isJudo = sportType.toLowerCase().includes("judo");
   const isBowling = sportType.toLowerCase().includes("bowling");
   const isAviron = sportType.toLowerCase().includes("aviron");
+  const isAthletics = isAthletismeCategory(sportType);
+
+  // Get discipline-specific stats for a player (athletics: each athlete may have different stats)
+  const getPlayerStats = (player: PlayerRounds): StatField[] => {
+    if (isAthletics && player.discipline) {
+      // Map discipline key to a string the stats function can understand
+      const disc = player.specialty || player.discipline;
+      const disciplineStats = getAthletismeStatsForDiscipline(disc);
+      return disciplineStats;
+    }
+    return sportStats;
+  };
+
+  const getPlayerStatCategories = (player: PlayerRounds) => {
+    const pStats = getPlayerStats(player);
+    return allStatCategories.filter(cat => pStats.some(s => s.category === cat.key));
+  };
   
   // Set default active tab based on sport type
   const getDefaultTab = () => {
