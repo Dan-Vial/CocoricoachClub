@@ -539,12 +539,6 @@ export function ProgramSessionCard({
     const vbtMode = isInVbtMode(exercise.method);
 
     const getExerciseStyle = () => {
-      if (linkingFrom && isLinkable(index)) {
-        const linkStyle = getTrainingStyleConfig(linkingFrom.method);
-        return isSelected
-          ? cn("border-2", linkStyle.borderColor, linkStyle.bgColor)
-          : cn("border-2 border-dashed", linkStyle.borderColor, "hover:opacity-80");
-      }
       if (exercise.is_rm_test) {
         return "border-amber-500/50 bg-amber-50 dark:bg-amber-950/20";
       }
@@ -557,38 +551,10 @@ export function ProgramSessionCard({
     return (
       <div
         className={cn(
-          "flex flex-col gap-2 p-3 rounded-lg border transition-all relative",
+          "flex flex-col gap-2 p-3 rounded-lg border transition-all",
           getExerciseStyle(),
-          linkingFrom && isLinkable(index) && "cursor-pointer"
         )}
-        onClick={() => {
-          if (linkingFrom && isLinkable(index)) {
-            toggleExerciseForLinking(index);
-          }
-        }}
       >
-        {/* Linking mode selection overlay */}
-        {linkingFrom && isLinkable(index) && (
-          <div
-            className={cn(
-              "absolute inset-0 z-10 rounded-lg flex items-center justify-center transition-all",
-              isSelected ? "bg-primary/10" : "bg-transparent hover:bg-muted/40"
-            )}
-            onClick={(e) => {
-              e.stopPropagation();
-              toggleExerciseForLinking(index);
-            }}
-          >
-            <div className={cn(
-              "h-8 w-8 rounded-full border-2 flex items-center justify-center transition-all",
-              isSelected 
-                ? cn("border-transparent text-white", getTrainingStyleConfig(linkingFrom.method).color)
-                : "border-muted-foreground/40 bg-background"
-            )}>
-              {isSelected && <Check className="h-5 w-5" />}
-            </div>
-          </div>
-        )}
         {/* Exercise header */}
         <div className="flex items-center gap-2">
           <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab" />
