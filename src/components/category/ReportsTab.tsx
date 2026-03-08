@@ -549,10 +549,11 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
       pdf.text("BILAN MÉDICAL", margin, yPos);
       yPos += 10;
 
+      const recoveringCount = allInjuries.filter(i => i.status === 'recovering').length;
       const injuryStats = [
         { label: "Blessures totales", value: allInjuries.length, color: defaultColors.primary },
         { label: "Actuellement blessés", value: activeInjuries, color: activeInjuries > 0 ? defaultColors.danger : defaultColors.success },
-        { label: "En réathlétisation", value: allInjuries.filter(i => i.status === 'recovering').length, color: defaultColors.warning },
+        { label: "En réathlétisation", value: recoveringCount, color: defaultColors.warning },
       ];
 
       const statBoxWidth = (contentWidth - 10) / 3;
@@ -568,6 +569,36 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
         const labelWidth = pdf.getTextWidth(stat.label);
         pdf.text(stat.label, margin + (statBoxWidth + 5) * i + (statBoxWidth - labelWidth) / 2, yPos + 15);
       });
+      yPos += 25;
+
+      // Detail table for active injuries and recovering players
+      const injuredOrRecovering = allInjuries.filter(i => i.status === 'active' || i.status === 'recovering');
+      if (injuredOrRecovering.length > 0) {
+        yPos = localCheckPageBreak(pdf, yPos, 20);
+        pdf.setFontSize(10);
+        pdf.setFont("helvetica", "bold");
+        pdf.setTextColor(...defaultColors.dark);
+        pdf.text("Détail des joueurs blessés / en réathlétisation", margin, yPos);
+        yPos += 6;
+
+        const injHeaders = ["Joueur", "Blessure", "Statut", "Date", "Retour estimé"];
+        const injColWidths = [45, 40, 30, 30, 30];
+        yPos = drawTableHeaderPdf(pdf, injHeaders, injColWidths, yPos, margin, contentWidth);
+
+        injuredOrRecovering.forEach((injury: any, index) => {
+          yPos = localCheckPageBreak(pdf, yPos, 10);
+          const playerFullName = [injury.players?.first_name, injury.players?.name].filter(Boolean).join(" ") || 'Inconnu';
+          const statusLabel = injury.status === 'active' ? 'Blessé' : 'Réathlétisation';
+          const statusColor = injury.status === 'active' ? defaultColors.danger : defaultColors.warning;
+          yPos = drawTableRowPdf(pdf, [
+            playerFullName,
+            injury.injury_type || '-',
+            statusLabel,
+            injury.injury_date ? format(new Date(injury.injury_date), "dd/MM/yy") : '-',
+            injury.estimated_return_date ? format(new Date(injury.estimated_return_date), "dd/MM/yy") : '-',
+          ], injColWidths, yPos, index % 2 === 1, margin, contentWidth, [null, null, statusColor, null, null]);
+        });
+      }
 
       pdf.save(`bilan_saison_${(catName2 || category?.name || 'rapport')?.replace(/\s+/g, '_')}_${format(new Date(), "yyyy-MM-dd")}.pdf`);
       toast.success("Rapport de saison généré");
