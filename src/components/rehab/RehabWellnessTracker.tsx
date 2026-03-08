@@ -233,8 +233,8 @@ export function RehabWellnessTracker({ playerId, categoryId }: RehabWellnessTrac
               <Smile className="h-4 w-4 text-green-500" />
               <span className="text-xs font-medium text-muted-foreground">Stress</span>
             </div>
-            <span className={`text-2xl font-bold ${getScoreColor(latestWellness?.stress_level ? 10 - latestWellness.stress_level : null)}`}>
-              {latestWellness?.stress_level || "-"}/10
+            <span className={`text-2xl font-bold ${getScoreColor(latestWellness?.stress_level ? 6 - latestWellness.stress_level : null)}`}>
+              {latestWellness?.stress_level || "-"}/5
             </span>
           </CardContent>
         </Card>
