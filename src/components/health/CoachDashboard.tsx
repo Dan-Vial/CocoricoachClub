@@ -194,8 +194,17 @@ export function CoachDashboard({ categoryId }: CoachDashboardProps) {
   });
   
   const lowWellnessPlayers = Object.values(latestWellness).filter((w: any) => {
-    const avgScore = (w.sleep_quality + w.general_fatigue + w.stress_level + w.soreness_upper_body + w.soreness_lower_body) / 5;
-    return avgScore < 2.5;
+    // Normalize all metrics so that high = good (optimal)
+    // sleep_quality: 1=bad, 5=good → keep as-is
+    // fatigue, stress, soreness: 1=good, 5=bad → invert (6 - value)
+    const normalizedScore = (
+      (w.sleep_quality || 3) + 
+      (6 - (w.general_fatigue || 3)) + 
+      (6 - (w.stress_level || 3)) + 
+      (6 - (w.soreness_upper_body || 3)) + 
+      (6 - (w.soreness_lower_body || 3))
+    ) / 5;
+    return normalizedScore < 2.5;
   });
 
   // Birthdays this month
