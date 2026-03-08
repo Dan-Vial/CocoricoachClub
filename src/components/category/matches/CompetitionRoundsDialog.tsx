@@ -1340,6 +1340,57 @@ export function CompetitionRoundsDialog({
                                   </div>
                                 </div>
                               </>
+                            ) : isAthletics ? (
+                              <div className="space-y-3">
+                                <div className="grid grid-cols-3 gap-3 text-center">
+                                  <div className="p-3 rounded-lg bg-muted">
+                                    <p className="text-2xl font-bold">{total}</p>
+                                    <p className="text-xs text-muted-foreground">{roundLabelPlural}</p>
+                                  </div>
+                                  {(() => {
+                                    const bestRanking = selectedPlayer.rounds.filter(r => r.ranking).map(r => r.ranking!);
+                                    return bestRanking.length > 0 ? (
+                                      <div className="p-3 rounded-lg bg-green-100 dark:bg-green-900/20">
+                                        <p className="text-2xl font-bold text-green-600">{Math.min(...bestRanking)}e</p>
+                                        <p className="text-xs text-muted-foreground">Meilleur classement</p>
+                                      </div>
+                                    ) : null;
+                                  })()}
+                                  {(() => {
+                                    const qualified = selectedPlayer.rounds.filter(r => r.result === "qualified").length;
+                                    return (
+                                      <div className="p-3 rounded-lg bg-blue-100 dark:bg-blue-900/20">
+                                        <p className="text-2xl font-bold text-blue-600">{qualified}/{total}</p>
+                                        <p className="text-xs text-muted-foreground">Qualifications</p>
+                                      </div>
+                                    );
+                                  })()}
+                                </div>
+                                {/* Rounds detail */}
+                                <div className="space-y-1">
+                                  {selectedPlayer.rounds.map(round => (
+                                    <div key={round.round_number} className="flex items-center justify-between p-2 rounded border text-sm">
+                                      <div className="flex items-center gap-2">
+                                        <Badge variant="outline">
+                                          {phases.find(p => p.value === round.phase)?.label || `Épreuve ${round.round_number}`}
+                                        </Badge>
+                                      </div>
+                                      <div className="flex items-center gap-3">
+                                        {round.ranking && (
+                                          <Badge variant={round.ranking <= 3 ? "default" : "secondary"}>
+                                            {round.ranking === 1 ? "🥇" : round.ranking === 2 ? "🥈" : round.ranking === 3 ? "🥉" : `${round.ranking}e`}
+                                          </Badge>
+                                        )}
+                                        {round.result && (
+                                          <Badge variant={round.result === "qualified" ? "default" : "destructive"}>
+                                            {round.result === "qualified" ? "Q" : round.result === "eliminated" ? "Élim." : round.result.toUpperCase()}
+                                          </Badge>
+                                        )}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
                             ) : (
                               <div className="grid grid-cols-4 gap-3 text-center">
                                 <div className="p-3 rounded-lg bg-muted">
