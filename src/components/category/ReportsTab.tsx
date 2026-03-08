@@ -1697,38 +1697,26 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
           </CardContent>
         </Card>
 
-        {/* Player Report */}
-        <Card>
+        {/* Suivi Temps de Jeu (TDJ) */}
+        <Card className="border-primary/20 bg-primary/5">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <User className="h-5 w-5" />
-              Fiche Joueur
+              <Trophy className="h-5 w-5" />
+              Suivi Temps de Jeu
             </CardTitle>
             <CardDescription>
-              Stats, tests, blessures et wellness
+              Minutes, titularisations, remplacements, hors-groupe
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Select value={selectedPlayer} onValueChange={setSelectedPlayer}>
-              <SelectTrigger>
-                <SelectValue placeholder="Sélectionner un joueur" />
-              </SelectTrigger>
-              <SelectContent>
-                {players.map((player) => (
-                  <SelectItem key={player.id} value={player.id}>
-                    {[player.first_name, player.name].filter(Boolean).join(" ")}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {renderDateRange(playerDateFrom, playerDateTo, setPlayerDateFrom, setPlayerDateTo)}
+            {renderDateRange(tdjDateFrom, tdjDateTo, setTdjDateFrom, setTdjDateTo)}
             <div className="flex gap-2">
               <Button 
-                onClick={generatePlayerReport} 
+                onClick={generateTdjReport} 
                 className="flex-1"
-                disabled={!selectedPlayer || generatingReport === "player" || generatingReport === "player-csv"}
+                disabled={generatingReport === "tdj" || generatingReport === "tdj-csv"}
               >
-                {generatingReport === "player" ? (
+                {generatingReport === "tdj" ? (
                   <Loader2 className="h-4 w-4 mr-1 animate-spin" />
                 ) : (
                   <FileText className="h-4 w-4 mr-1" />
@@ -1736,12 +1724,12 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
                 PDF
               </Button>
               <Button 
-                onClick={generatePlayerCsv}
+                onClick={generateTdjCsv}
                 variant="outline"
                 className="flex-1"
-                disabled={!selectedPlayer || generatingReport === "player" || generatingReport === "player-csv"}
+                disabled={generatingReport === "tdj" || generatingReport === "tdj-csv"}
               >
-                {generatingReport === "player-csv" ? (
+                {generatingReport === "tdj-csv" ? (
                   <Loader2 className="h-4 w-4 mr-1 animate-spin" />
                 ) : (
                   <FileSpreadsheet className="h-4 w-4 mr-1" />
