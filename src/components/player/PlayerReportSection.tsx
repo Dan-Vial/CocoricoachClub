@@ -325,9 +325,14 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
         if (dateTo) q = q.lte("tracking_date", dateTo);
         return q.order("tracking_date", { ascending: false });
       })(),
-      supabase.from("match_lineups").select("*, matches(match_date, opponent)").eq("player_id", playerId),
       (() => {
-        let q = supabase.from("player_match_stats").select("*, matches(match_date, opponent)").eq("player_id", playerId);
+        let q = supabase.from("match_lineups").select("*, matches!inner(match_date, opponent)").eq("player_id", playerId);
+        if (dateFrom) q = q.gte("matches.match_date", dateFrom);
+        if (dateTo) q = q.lte("matches.match_date", dateTo);
+        return q;
+      })(),
+      (() => {
+        let q = supabase.from("player_match_stats").select("*, matches!inner(match_date, opponent)").eq("player_id", playerId);
         if (dateFrom) q = q.gte("matches.match_date", dateFrom);
         if (dateTo) q = q.lte("matches.match_date", dateTo);
         return q;
@@ -338,7 +343,12 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
         if (dateTo) q = q.lte("injury_date", dateTo);
         return q.order("injury_date", { ascending: false });
       })(),
-      supabase.from("awcr_tracking").select("*").eq("player_id", playerId).order("session_date", { ascending: false }).limit(90),
+      (() => {
+        let q = supabase.from("awcr_tracking").select("*").eq("player_id", playerId);
+        if (dateFrom) q = q.gte("session_date", dateFrom);
+        if (dateTo) q = q.lte("session_date", dateTo);
+        return q.order("session_date", { ascending: false }).limit(90);
+      })(),
     ]);
 
     return {
