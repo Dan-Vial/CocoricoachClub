@@ -181,7 +181,9 @@ export function CoachDashboard({ categoryId }: CoachDashboardProps) {
   const availabilityRate = totalPlayers > 0 ? (availablePlayers / totalPlayers) * 100 : 0;
 
   // EWMA analysis (replacing AWCR)
-  const ewmaValues = Object.values(ewmaData || {});
+  // Filter out players with insufficient chronic load data (< 50) to avoid misleading ratios
+  const MIN_CHRONIC_LOAD = 50;
+  const ewmaValues = Object.values(ewmaData || {}).filter((p) => p.chronic >= MIN_CHRONIC_LOAD);
   const highEwma = ewmaValues.filter((p) => p.ewmaRatio > 1.3);
   const lowEwma = ewmaValues.filter((p) => p.ewmaRatio < 0.8);
   const optimalEwma = ewmaValues.filter((p) => p.ewmaRatio >= 0.8 && p.ewmaRatio <= 1.3);
