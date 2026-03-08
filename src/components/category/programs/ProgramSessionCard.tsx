@@ -266,6 +266,8 @@ export function ProgramSessionCard({
     const maxCount = getMaxCountForMethod(method);
     setLinkingFrom({ index, method, maxCount });
     setSelectedForLinking([index]);
+    // Update the exercise method immediately so the select reflects the chosen method
+    updateExercise(index, "method", method);
   };
 
   const toggleExerciseForLinking = (targetIndex: number) => {
