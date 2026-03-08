@@ -89,9 +89,7 @@ export function MatchSheetsSection({ categoryId }: MatchSheetsSectionProps) {
         .from("matches")
         .select("*")
         .eq("category_id", categoryId)
-        .gte("match_date", new Date().toISOString().split("T")[0])
-        .order("match_date", { ascending: true })
-        .limit(20);
+        .order("match_date", { ascending: false });
       if (error) throw error;
       return data;
     },
