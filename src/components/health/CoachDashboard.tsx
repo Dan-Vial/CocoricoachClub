@@ -18,6 +18,7 @@ import {
   Syringe,
   HeartPulse,
 } from "lucide-react";
+import { RecoveryDashboard } from "./RecoveryDashboard";
 import { format, differenceInDays, addDays, isSameMonth, parseISO, isValid } from "date-fns";
 
 const safeFormat = (date: Date | string | null | undefined, fmt: string, options?: any): string => {
@@ -540,6 +541,9 @@ export function CoachDashboard({ categoryId }: CoachDashboardProps) {
           )}
         </CardContent>
       </Card>
+
+      {/* Recovery & Sleep Dashboard */}
+      <RecoveryDashboard categoryId={categoryId} />
     </div>
   );
 }
