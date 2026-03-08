@@ -19,13 +19,18 @@ import { useDroppable } from "@dnd-kit/core";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { TEST_CATEGORIES } from "@/lib/constants/testCategories";
-import { isErgCategory, isSledCategory, isRunningCategory, isBodyweightCategory } from "@/lib/constants/exerciseCategories";
+import { isErgCategory, isSledCategory, isRunningCategory, isBodyweightCategory, getCategoryLabel } from "@/lib/constants/exerciseCategories";
 import { cn } from "@/lib/utils";
 import { TrainingMethodSelect } from "@/components/category/sessions/TrainingMethodSelect";
 import {
