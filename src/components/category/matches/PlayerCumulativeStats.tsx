@@ -45,9 +45,9 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
     queryFn: async () => {
       const { data, error } = await supabase
         .from("matches")
-        .select("id, date, opponent")
+        .select("id, match_date, opponent")
         .eq("category_id", categoryId)
-        .order("date", { ascending: false });
+        .order("match_date", { ascending: false });
       if (error) throw error;
       return (data || []) as MatchInfo[];
     },
