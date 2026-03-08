@@ -863,8 +863,11 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
             .slice(0, 15)
             .reverse()
             .map(w => {
-              const vals = [w.sleep_quality, w.general_fatigue, w.stress_level, w.soreness_upper_body, w.soreness_lower_body].filter(v => v != null) as number[];
-              const avg = vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
+              const avgVals = [
+                w.sleep_quality != null ? (6 - w.sleep_quality) : null,
+                w.general_fatigue, w.stress_level, w.soreness_upper_body, w.soreness_lower_body
+              ].filter(v => v != null) as number[];
+              const avg = avgVals.length > 0 ? avgVals.reduce((a, b) => a + b, 0) / avgVals.length : 0;
               return { label: format(new Date(w.tracking_date), "dd/MM"), value: Math.round(avg * 10) / 10 };
             });
           if (wellnessChartData.length >= 2) {
