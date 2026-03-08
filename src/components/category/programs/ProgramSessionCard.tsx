@@ -361,11 +361,12 @@ export function ProgramSessionCard({
   };
 
   const cancelLinking = () => {
-    // Reset method back to normal for all selected exercises
+    // Reset method back to normal for all selected exercises in a single update
     if (linkingFrom) {
-      selectedForLinking.forEach(i => {
-        updateExercise(i, "method", "normal");
-      });
+      const newExercises = session.exercises.map((ex, i) =>
+        selectedForLinking.includes(i) ? { ...ex, method: "normal" } : ex
+      );
+      onUpdate({ ...session, exercises: newExercises });
     }
     setLinkingFrom(null);
     setSelectedForLinking([]);
