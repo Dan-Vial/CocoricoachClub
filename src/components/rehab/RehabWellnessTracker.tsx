@@ -252,7 +252,7 @@ export function RehabWellnessTracker({ playerId, categoryId }: RehabWellnessTrac
                 <LineChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                   <XAxis dataKey="date" className="text-xs" />
-                  <YAxis domain={[0, 10]} className="text-xs" />
+                  <YAxis domain={[0, 5]} className="text-xs" />
                   <Tooltip 
                     contentStyle={{ 
                       backgroundColor: 'hsl(var(--card))', 
