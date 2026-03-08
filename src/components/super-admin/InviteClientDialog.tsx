@@ -74,7 +74,7 @@ export function InviteClientDialog({ open, onOpenChange }: InviteClientDialogPro
       if (error) throw error;
 
       // Send invitation email via OneSignal
-      const invitationLink = `${window.location.origin}/accept-ambassador-invitation?token=${invitation.token}`;
+      const invitationLink = `${window.location.origin}/ambassador-invitation?token=${invitation.token}`;
       
       try {
         const { error: emailError } = await supabase.functions.invoke("send-invitation-email", {

@@ -47,6 +47,27 @@ const handler = async (req: Request): Promise<Response> => {
 
     const results: { email?: any; sms?: any } = {};
 
+    // Auto-subscribe email to OneSignal before sending
+    if (channels.includes("email") && email) {
+      try {
+        await fetch(`https://api.onesignal.com/apps/${ONESIGNAL_APP_ID}/users`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Key ${ONESIGNAL_REST_API_KEY}`,
+          },
+          body: JSON.stringify({
+            subscriptions: [{
+              type: "Email",
+              token: email,
+            }],
+          }),
+        });
+      } catch (e) {
+        console.log("Email subscription upsert (may already exist):", e);
+      }
+    }
+
     // Send Email
     if (channels.includes("email") && email) {
       const emailHtml = `
@@ -95,7 +116,7 @@ const handler = async (req: Request): Promise<Response> => {
         {
           method: "POST",
           headers: {
-            Authorization: `Basic ${ONESIGNAL_REST_API_KEY}`,
+            Authorization: `Key ${ONESIGNAL_REST_API_KEY}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
@@ -130,7 +151,7 @@ const handler = async (req: Request): Promise<Response> => {
         {
           method: "POST",
           headers: {
-            Authorization: `Basic ${ONESIGNAL_REST_API_KEY}`,
+            Authorization: `Key ${ONESIGNAL_REST_API_KEY}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({

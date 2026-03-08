@@ -57,6 +57,8 @@ const handler = async (req: Request): Promise<Response> => {
       physio: "Kinésithérapeute",
       doctor: "Médecin",
       mental_coach: "Préparateur Mental",
+      prepa_physique: "Préparateur Physique",
+      administratif: "Administratif",
     };
 
     const roleLabel = role ? roleLabels[role] || role : "";
@@ -249,6 +251,25 @@ const handler = async (req: Request): Promise<Response> => {
 
       default:
         throw new Error(`Unknown invitation type: ${invitationType}`);
+    }
+
+    // Auto-subscribe email to OneSignal before sending
+    try {
+      await fetch(`https://api.onesignal.com/apps/${ONESIGNAL_APP_ID}/users`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Key ${ONESIGNAL_REST_API_KEY}`,
+        },
+        body: JSON.stringify({
+          subscriptions: [{
+            type: "Email",
+            token: email,
+          }],
+        }),
+      });
+    } catch (e) {
+      console.log("Email subscription upsert (may already exist):", e);
     }
 
     // Send email via OneSignal
