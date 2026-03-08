@@ -330,7 +330,7 @@ import { isIndividualSport } from "@/lib/constants/sportTypes";
       queryFn: async () => {
         const { data, error } = await supabase
           .from("training_attendance")
-          .select("*, players(name), training_sessions(id, training_type, session_start_time)")
+          .select("*, players(name, first_name), training_sessions(id, training_type, session_start_time)")
           .eq("category_id", categoryId)
           .eq("attendance_date", today);
         if (error) throw error;
