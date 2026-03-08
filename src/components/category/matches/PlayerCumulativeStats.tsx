@@ -21,7 +21,7 @@ interface PlayerCumulativeStatsProps {
 
 interface MatchInfo {
   id: string;
-  date: string;
+  match_date: string;
   opponent: string;
 }
 
