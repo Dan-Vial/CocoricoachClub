@@ -167,7 +167,7 @@ export function TrainingLoadTab({ categoryId }: TrainingLoadTabProps) {
               </SelectItem>
               {players.map(p => (
                 <SelectItem key={p.id} value={p.id}>
-                  {p.name}
+                  {[p.first_name, p.name].filter(Boolean).join(" ")}
                 </SelectItem>
               ))}
             </SelectContent>
