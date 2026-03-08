@@ -80,7 +80,7 @@ export function MatchLineupDialog({
     queryFn: async () => {
       const { data, error } = await supabase
         .from("match_lineups")
-        .select("*, players(id, name)")
+        .select("*, players(id, name, first_name)")
         .eq("match_id", matchId);
       if (error) throw error;
       return data;

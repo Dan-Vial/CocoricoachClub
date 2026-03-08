@@ -243,7 +243,7 @@ export function CompetitionRoundsDialog({
     queryFn: async () => {
       const { data, error } = await supabase
         .from("match_lineups")
-        .select("player_id, boat_type, crew_role, seat_position, players(id, name)")
+        .select("player_id, boat_type, crew_role, seat_position, players(id, name, first_name)")
         .eq("match_id", matchId);
       if (error) throw error;
       return data;
