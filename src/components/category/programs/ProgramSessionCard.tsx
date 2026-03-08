@@ -533,7 +533,6 @@ export function ProgramSessionCard({
     isGrouped: boolean,
     exerciseNumber?: number
   ) => {
-    const isSelected = selectedForLinking.includes(index);
     const styleConfig = getTrainingStyleConfig(exercise.method);
     const dropMode = isInDropMode(exercise.method);
     const clusterMode = isInClusterMode(exercise.method);
