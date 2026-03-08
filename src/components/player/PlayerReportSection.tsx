@@ -492,13 +492,19 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
 
       // ===== KPI CARDS =====
       const matchCount = data.matchLineups.length;
-      // Sum minutes from lineups, fallback to sport_data.minutes_played from match stats
+      // Sum minutes from lineups, fallback to sport_data.minutes_played, then awcr_tracking (rpe=10 = match)
       let totalMinutes = data.matchLineups.reduce((sum, m) => sum + (m.minutes_played || 0), 0);
       if (totalMinutes === 0 && data.matchStats.length > 0) {
         totalMinutes = data.matchStats.reduce((sum, s: any) => {
           const sd = s.sport_data as Record<string, any> | null;
           return sum + (sd?.minutes_played || 0);
         }, 0);
+      }
+      // Final fallback: sum duration_minutes from awcr_tracking entries with rpe=10 (match RPE)
+      if (totalMinutes === 0 && data.awcr.length > 0) {
+        totalMinutes = data.awcr
+          .filter(a => a.rpe === 10)
+          .reduce((sum, a) => sum + (a.duration_minutes || 0), 0);
       }
       const activeInjuries = data.injuries.filter(i => i.status !== 'healed').length;
       // Use EWMA ratio from latest non-null awcr_tracking entry
