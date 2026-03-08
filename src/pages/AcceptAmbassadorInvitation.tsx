@@ -88,7 +88,7 @@ export default function AcceptAmbassadorInvitation() {
       toast.success("Bienvenue ! Vous êtes maintenant ambassadeur.");
       
       setTimeout(() => {
-        navigate("/dashboard");
+        navigate("/");
       }, 2000);
     } catch (err: any) {
       console.error("Error accepting invitation:", err);
