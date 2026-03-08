@@ -951,13 +951,15 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
       const activeInjuries = allInjuries.filter(i => i.status === 'active');
       const recoveringInjuries = allInjuries.filter(i => i.status === 'recovering');
 
+      const MIN_CHRONIC_LOAD = 50;
       const latestAwcrByPlayer: Record<string, any> = {};
       (awcrRes.data || []).forEach((a: any) => {
-        if (!latestAwcrByPlayer[a.player_id]) {
+        // Only use entries with non-null awcr (skip auto-completed entries without computed EWMA)
+        if (!latestAwcrByPlayer[a.player_id] && a.awcr != null) {
           latestAwcrByPlayer[a.player_id] = a;
         }
       });
-      const awcrEntries = Object.values(latestAwcrByPlayer);
+      const awcrEntries = Object.values(latestAwcrByPlayer).filter((a: any) => (a.chronic_load || 0) >= MIN_CHRONIC_LOAD);
       // Use EWMA ratio thresholds: optimal 0.85-1.30, high >1.5
       const highEwma = awcrEntries.filter((a: any) => (a.awcr || 0) > 1.5).length;
       const optimalEwma = awcrEntries.filter((a: any) => (a.awcr || 0) >= 0.85 && (a.awcr || 0) <= 1.3).length;
