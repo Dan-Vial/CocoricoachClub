@@ -151,14 +151,17 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
     try {
       const { settings: pdfSettings, logoBase64, seasonName } = await preparePdfWithSettings(categoryId);
 
-      // Fetch all matches with lineups and injuries
+      // Fetch all matches with lineups, stats and injuries
       let matchQuery = supabase.from("matches").select("id, match_date, opponent, is_home").eq("category_id", categoryId).order("match_date");
       if (tdjDateFrom) matchQuery = matchQuery.gte("match_date", tdjDateFrom);
       if (tdjDateTo) matchQuery = matchQuery.lte("match_date", tdjDateTo);
 
-      const [matchesRes, lineupsRes, injuriesRes] = await Promise.all([
-        matchQuery,
-        supabase.from("match_lineups").select("match_id, player_id, is_starter, minutes_played").in("match_id", (await matchQuery).data?.map(m => m.id) || []),
+      const matchesFirst = await matchQuery;
+      const matchIds = matchesFirst.data?.map(m => m.id) || [];
+
+      const [lineupsRes, statsRes, injuriesRes] = await Promise.all([
+        supabase.from("match_lineups").select("match_id, player_id, is_starter, minutes_played").in("match_id", matchIds),
+        supabase.from("player_match_stats").select("match_id, player_id, sport_data").in("match_id", matchIds),
         (() => {
           let q = supabase.from("injuries").select("player_id, injury_date, estimated_return_date, status").eq("category_id", categoryId);
           if (tdjDateFrom) q = q.gte("injury_date", tdjDateFrom);
@@ -167,14 +170,32 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
         })(),
       ]);
 
-      const matchesData = matchesRes.data || [];
+      const matchesData = matchesFirst.data || [];
       const lineups = lineupsRes.data || [];
+      const matchStats = statsRes.data || [];
       const injuries = injuriesRes.data || [];
+
+      // Build a map of playing time from player_match_stats (sport_data.minutesPlayed)
+      const statsMinutesMap = new Map<string, number>();
+      matchStats.forEach((s: any) => {
+        const minutes = s.sport_data?.minutesPlayed || s.sport_data?.playingTime || 0;
+        if (minutes > 0) {
+          const key = `${s.match_id}_${s.player_id}`;
+          statsMinutesMap.set(key, Number(minutes));
+        }
+      });
 
       // Build per-player stats
       const playerTdj = players.map(player => {
         const playerLineups = lineups.filter(l => l.player_id === player.id);
-        const totalMinutes = playerLineups.reduce((sum, l) => sum + (l.minutes_played || 0), 0);
+        // Use match_lineups.minutes_played first, fall back to player_match_stats.sport_data.minutesPlayed
+        const totalMinutes = playerLineups.reduce((sum, l) => {
+          const lineupMin = l.minutes_played || 0;
+          if (lineupMin > 0) return sum + lineupMin;
+          // Fallback to sport_data
+          const statsMin = statsMinutesMap.get(`${l.match_id}_${l.player_id}`) || 0;
+          return sum + statsMin;
+        }, 0);
         const starterCount = playerLineups.filter(l => l.is_starter).length;
         const subCount = playerLineups.filter(l => !l.is_starter).length;
         const matchCount = playerLineups.length;
