@@ -1,9 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
 import { Bell, Mail, Calendar, Dumbbell, Heart, MessageSquare, Trophy, ClipboardList, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -53,24 +52,24 @@ export function PersonalNotificationPreferences() {
     queryFn: async () => {
       if (!user?.id) return DEFAULT_PREFERENCES;
       
-      const { data } = await supabase
-        .from("user_notification_preferences")
+      const { data, error } = await supabase
+        .from("user_notification_preferences" as any)
         .select("*")
         .eq("user_id", user.id)
         .single();
       
-      if (data) {
-        return data as NotificationPreferences;
+      if (data && !error) {
+        return data as unknown as NotificationPreferences;
       }
       
       // Create default preferences if none exist
       const { data: newPrefs } = await supabase
-        .from("user_notification_preferences")
-        .insert({ user_id: user.id, ...DEFAULT_PREFERENCES })
+        .from("user_notification_preferences" as any)
+        .insert({ user_id: user.id, ...DEFAULT_PREFERENCES } as any)
         .select()
         .single();
       
-      return (newPrefs as NotificationPreferences) || DEFAULT_PREFERENCES;
+      return (newPrefs as unknown as NotificationPreferences) || DEFAULT_PREFERENCES;
     },
     enabled: !!user?.id,
   });
@@ -80,8 +79,8 @@ export function PersonalNotificationPreferences() {
       if (!user?.id) throw new Error("Not authenticated");
       
       const { error } = await supabase
-        .from("user_notification_preferences")
-        .update(updates)
+        .from("user_notification_preferences" as any)
+        .update(updates as any)
         .eq("user_id", user.id);
       
       if (error) throw error;
@@ -123,7 +122,7 @@ export function PersonalNotificationPreferences() {
     {
       key: "matches",
       label: "Matchs / Compétitions",
-      description: "Événements sportifs et convocations",
+      description: "Événements sportifs et résultats",
       icon: Trophy,
       pushKey: "push_matches" as const,
       emailKey: "email_matches" as const,
@@ -173,13 +172,11 @@ export function PersonalNotificationPreferences() {
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Bell className="h-5 w-5 text-primary" />
-            <div>
-              <CardTitle>Mes préférences de notifications</CardTitle>
-              <CardDescription>Choisissez les notifications que vous souhaitez recevoir</CardDescription>
-            </div>
+        <div className="flex items-center gap-3">
+          <Bell className="h-5 w-5 text-primary" />
+          <div>
+            <CardTitle>Mes préférences de notifications</CardTitle>
+            <CardDescription>Choisissez les notifications que vous souhaitez recevoir</CardDescription>
           </div>
         </div>
       </CardHeader>
