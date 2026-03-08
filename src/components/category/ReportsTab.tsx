@@ -375,9 +375,11 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
       }).sort((a, b) => (b[1] as number) - (a[1] as number));
 
       const workbook = new ExcelJS.Workbook();
+      // Sheet 1: Summary
       const sheet = workbook.addWorksheet("Suivi Temps de Jeu");
       const extraInfo: [string, string][] = [
         ["Matchs analysés", `${matchesData.length}`],
+        ["Minutes totales", `${rows.reduce((s, r) => s + (r[1] as number), 0)}`],
       ];
       if (tdjDateFrom || tdjDateTo) {
         extraInfo.push(["Période", `${tdjDateFrom || "début"} — ${tdjDateTo || "aujourd'hui"}`]);
@@ -390,11 +392,62 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
       rows.forEach((row, ri) => {
         const r = sheet.getRow(dataStart + 1 + ri);
         row.forEach((val, ci) => { r.getCell(ci + 1).value = val as any; });
+        // Color-code minutes
+        const minCell = r.getCell(2);
+        const minVal = row[1] as number;
+        if (minVal > 500) minCell.font = { color: { argb: 'FF22C55E' }, bold: true };
+        else if (minVal > 200) minCell.font = { color: { argb: 'FFEAB308' }, bold: true };
+        else if (minVal > 0) minCell.font = { color: { argb: 'FFEF4444' }, bold: true };
       });
       addZebraRows(sheet, dataStart + 1, dataStart + rows.length, headers.length);
-      addFooter(sheet, dataStart + rows.length + 1, headers.length, branding.footerText);
 
+      // Totals row
+      const totIdx = dataStart + rows.length + 1;
+      const totRow = sheet.getRow(totIdx);
+      totRow.getCell(1).value = 'TOTAL / MOYENNE';
+      totRow.getCell(1).font = { bold: true };
+      const totalMin = rows.reduce((s, r) => s + (r[1] as number), 0);
+      totRow.getCell(2).value = totalMin;
+      totRow.getCell(2).font = { bold: true };
+      const avgMin = rows.length > 0 ? Math.round(totalMin / rows.length) : 0;
+      totRow.getCell(3).value = `Moy: ${Math.round(rows.reduce((s, r) => s + (r[2] as number), 0) / Math.max(rows.length, 1))}`;
+      totRow.getCell(5).value = `Moy: ${Math.round(rows.reduce((s, r) => s + (r[4] as number), 0) / Math.max(rows.length, 1))}`;
+      for (let i = 1; i <= headers.length; i++) {
+        totRow.getCell(i).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2E8F0' } };
+      }
+
+      addFooter(sheet, totIdx + 1, headers.length, branding.footerText);
       headers.forEach((_, i) => { sheet.getColumn(i + 1).width = i === 0 ? 25 : 18; });
+
+      // Sheet 2: Per-match detail
+      const detailSheet = workbook.addWorksheet("Détail par match");
+      const detailStart = addBrandedHeader(detailSheet, "DÉTAIL PAR MATCH", branding, []);
+      const detailHeaders = ["Match", "Date", "Joueur", "Titulaire", "Minutes"];
+      detailHeaders.forEach((h, i) => { detailSheet.getCell(detailStart, i + 1).value = h; });
+      styleDataHeaderRow(detailSheet, detailStart, detailHeaders.length, branding.headerColor);
+
+      let dRowIdx = detailStart + 1;
+      matchesData.forEach(m => {
+        const matchLineups = lineups.filter(l => l.match_id === m.id);
+        matchLineups.forEach(l => {
+          const p = players.find(pl => pl.id === l.player_id);
+          const pName = p ? [p.first_name, p.name].filter(Boolean).join(" ") : "?";
+          const lineupMin = l.minutes_played || csvStatsMinutesMap.get(`${l.match_id}_${l.player_id}`) || 0;
+          const r = detailSheet.getRow(dRowIdx);
+          r.getCell(1).value = m.opponent;
+          r.getCell(2).value = format(new Date(m.match_date), "dd/MM/yyyy");
+          r.getCell(3).value = pName;
+          r.getCell(4).value = l.is_starter ? "Oui" : "Non";
+          r.getCell(5).value = lineupMin;
+          if (dRowIdx % 2 === 0) {
+            for (let i = 1; i <= detailHeaders.length; i++) {
+              r.getCell(i).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
+            }
+          }
+          dRowIdx++;
+        });
+      });
+      detailHeaders.forEach((_, i) => { detailSheet.getColumn(i + 1).width = i <= 2 ? 22 : 14; });
 
       await downloadWorkbook(workbook, `tdj_${(category?.name || 'rapport')?.replace(/\s+/g, '_')}_${format(new Date(), "yyyy-MM-dd")}.xlsx`);
       toast.success("Export Excel généré");
@@ -1318,33 +1371,60 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
     setGeneratingReport("squad-csv");
     try {
       const branding = await getExcelBranding(categoryId);
-      const [injuriesRes, wellnessRes, awcrRes, speedTestsRes, jumpTestsRes, matchLineupsRes] = await Promise.all([
+      const [injuriesRes, wellnessRes, awcrRes, speedTestsRes, jumpTestsRes, matchLineupsRes, bodyCompRes, genericTestsRes] = await Promise.all([
         supabase.from("injuries").select("*").eq("category_id", categoryId),
         supabase.from("wellness_tracking").select("*").eq("category_id", categoryId).order("tracking_date", { ascending: false }),
         supabase.from("awcr_tracking").select("*").eq("category_id", categoryId).order("session_date", { ascending: false }),
         supabase.from("speed_tests").select("*").eq("category_id", categoryId),
         supabase.from("jump_tests").select("*").eq("category_id", categoryId),
         supabase.from("match_lineups").select("*, matches(match_date)"),
+        supabase.from("body_composition").select("*").eq("category_id", categoryId).order("measurement_date", { ascending: false }),
+        supabase.from("generic_tests").select("*").eq("category_id", categoryId),
       ]);
 
       const categoryMatchIds = matches.map(m => m.id);
       const filteredLineups = (matchLineupsRes.data || []).filter(l => categoryMatchIds.includes(l.match_id));
 
-      const headers = ["Nom", "Position", "Blessures actives", "Fatigue", "Ratio EWMA", "Matchs joués", "Minutes jouées"];
+      const headers = [
+        "Nom", "Prénom", "Position", "Date naissance", "Poids (kg)", "Taille (cm)", "IMC",
+        "Blessures actives", "Sommeil", "Fatigue", "Stress", "Haut corps", "Bas corps", "Wellness moy.",
+        "Ratio EWMA", "Charge aiguë", "Charge chronique",
+        "Matchs joués", "Minutes jouées", "Min moy/match",
+      ];
       const rows = players.map(player => {
         const playerInjuries = (injuriesRes.data || []).filter(i => i.player_id === player.id && i.status !== 'healed').length;
         const playerWellness = (wellnessRes.data || []).find(w => w.player_id === player.id);
         const playerAwcr = (awcrRes.data || []).find(a => a.player_id === player.id);
         const playerLineups = filteredLineups.filter(l => l.player_id === player.id);
         const totalMinutes = playerLineups.reduce((sum, l) => sum + (l.minutes_played || 0), 0);
+        const latestBody = (bodyCompRes.data || []).find(b => b.player_id === player.id);
+
+        // Wellness average
+        const wVals = [playerWellness?.sleep_quality, playerWellness?.general_fatigue, playerWellness?.stress_level,
+          playerWellness?.soreness_upper_body, playerWellness?.soreness_lower_body].filter(v => v != null) as number[];
+        const wellnessAvg = wVals.length > 0 ? Math.round((wVals.reduce((a, b) => a + b, 0) / wVals.length) * 10) / 10 : null;
+
         return [
-          [player.first_name, player.name].filter(Boolean).join(" "),
+          player.name || "",
+          player.first_name || "",
           player.position || "",
+          player.birth_date ? format(new Date(player.birth_date), "dd/MM/yyyy") : "",
+          latestBody?.weight_kg || "",
+          latestBody?.height_cm || "",
+          latestBody?.bmi ? Number(latestBody.bmi.toFixed(1)) : "",
           playerInjuries,
-          playerWellness?.general_fatigue?.toString() || "-",
+          playerWellness?.sleep_quality ?? "-",
+          playerWellness?.general_fatigue ?? "-",
+          playerWellness?.stress_level ?? "-",
+          playerWellness?.soreness_upper_body ?? "-",
+          playerWellness?.soreness_lower_body ?? "-",
+          wellnessAvg ?? "-",
           playerAwcr?.awcr?.toFixed(2) || "-",
+          playerAwcr?.acute_load != null ? Number(playerAwcr.acute_load.toFixed(0)) : "-",
+          playerAwcr?.chronic_load != null ? Number(playerAwcr.chronic_load.toFixed(0)) : "-",
           playerLineups.length,
           totalMinutes,
+          playerLineups.length > 0 ? Math.round(totalMinutes / playerLineups.length) : 0,
         ];
       });
 
@@ -1359,10 +1439,19 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
       rows.forEach((row, ri) => {
         const r = sheet.getRow(dataStart + 1 + ri);
         row.forEach((val, ci) => { r.getCell(ci + 1).value = val as any; });
+        // Color-code EWMA ratio
+        const ewmaCell = r.getCell(15);
+        const ewmaVal = parseFloat(String(row[14]));
+        if (!isNaN(ewmaVal)) {
+          ewmaCell.font = { bold: true, color: { argb: ewmaVal > 1.5 ? 'FFEF4444' : ewmaVal > 1.3 ? 'FFEAB308' : ewmaVal >= 0.8 ? 'FF22C55E' : 'FFEAB308' } };
+        }
+        // Color-code injuries
+        const injCell = r.getCell(8);
+        if ((row[7] as number) > 0) injCell.font = { bold: true, color: { argb: 'FFEF4444' } };
       });
       addZebraRows(sheet, dataStart + 1, dataStart + rows.length, headers.length);
       addFooter(sheet, dataStart + rows.length + 1, headers.length, branding.footerText);
-      headers.forEach((_, i) => { sheet.getColumn(i + 1).width = i === 0 ? 25 : 18; });
+      headers.forEach((_, i) => { sheet.getColumn(i + 1).width = i <= 1 ? 18 : 15; });
 
       await downloadWorkbook(workbook, `effectif_${(category?.name || 'rapport')?.replace(/\s+/g, '_')}_${format(new Date(), "yyyy-MM-dd")}.xlsx`);
       toast.success("Export Excel généré");
@@ -1379,37 +1468,80 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
     try {
       const branding = await getExcelBranding(categoryId);
       const matchesData = matches || [];
-      const headers = ["Date", "Adversaire", "Domicile", "Score", "Résultat", "Lieu"];
+      
+      // Also fetch injuries & player stats for enrichment
+      const [injuriesRes, awcrRes] = await Promise.all([
+        supabase.from("injuries").select("*, players(name, first_name)").eq("category_id", categoryId),
+        supabase.from("awcr_tracking").select("*").eq("category_id", categoryId).order("session_date", { ascending: false }),
+      ]);
+      
+      const headers = ["Date", "Adversaire", "Domicile", "Score Dom.", "Score Ext.", "Écart", "Résultat", "Lieu"];
       const rows = matchesData.map(m => {
         const isWin = (m.is_home && (m.score_home || 0) > (m.score_away || 0)) || (!m.is_home && (m.score_away || 0) > (m.score_home || 0));
         const isLoss = (m.is_home && (m.score_home || 0) < (m.score_away || 0)) || (!m.is_home && (m.score_away || 0) < (m.score_home || 0));
         const result = isWin ? "Victoire" : isLoss ? "Défaite" : "Nul";
+        const diff = (m.score_home || 0) - (m.score_away || 0);
         return [
           format(new Date(m.match_date), "dd/MM/yyyy"), m.opponent,
-          m.is_home ? "Oui" : "Non", `${m.score_home || 0} - ${m.score_away || 0}`,
+          m.is_home ? "Oui" : "Non", m.score_home ?? 0, m.score_away ?? 0,
+          diff > 0 ? `+${diff}` : String(diff),
           result, m.location || "",
         ];
       });
-      const wins = rows.filter(r => r[4] === "Victoire").length;
-      const losses = rows.filter(r => r[4] === "Défaite").length;
-      const draws = rows.filter(r => r[4] === "Nul").length;
+      const wins = rows.filter(r => r[6] === "Victoire").length;
+      const losses = rows.filter(r => r[6] === "Défaite").length;
+      const draws = rows.filter(r => r[6] === "Nul").length;
+      const totalScoreFor = matchesData.reduce((s, m) => s + (m.is_home ? (m.score_home || 0) : (m.score_away || 0)), 0);
+      const totalScoreAgainst = matchesData.reduce((s, m) => s + (m.is_home ? (m.score_away || 0) : (m.score_home || 0)), 0);
 
       const workbook = new ExcelJS.Workbook();
       const sheet = workbook.addWorksheet("Bilan de Saison");
       const dataStart = addBrandedHeader(sheet, "BILAN DE SAISON", branding, [
         ["Matchs joués", `${matchesData.length}`],
         ["Bilan", `${wins}V / ${draws}N / ${losses}D`],
+        ["Points marqués/encaissés", `${totalScoreFor} / ${totalScoreAgainst} (diff: ${totalScoreFor - totalScoreAgainst > 0 ? '+' : ''}${totalScoreFor - totalScoreAgainst})`],
       ]);
       headers.forEach((h, i) => { sheet.getCell(dataStart, i + 1).value = h; });
       styleDataHeaderRow(sheet, dataStart, headers.length, branding.headerColor);
       rows.forEach((row, ri) => {
         const r = sheet.getRow(dataStart + 1 + ri);
         row.forEach((val, ci) => { r.getCell(ci + 1).value = val as any; });
-        const resultCell = r.getCell(5);
-        if (row[4] === "Victoire") resultCell.font = { color: { argb: "FF22C55E" }, bold: true };
-        else if (row[4] === "Défaite") resultCell.font = { color: { argb: "FFEF4444" }, bold: true };
+        const resultCell = r.getCell(7);
+        if (row[6] === "Victoire") resultCell.font = { color: { argb: "FF22C55E" }, bold: true };
+        else if (row[6] === "Défaite") resultCell.font = { color: { argb: "FFEF4444" }, bold: true };
       });
       addZebraRows(sheet, dataStart + 1, dataStart + rows.length, headers.length);
+
+      // Injuries sheet
+      const allInjuries = injuriesRes.data || [];
+      const injuredOrRecovering = allInjuries.filter((i: any) => i.status === 'active' || i.status === 'recovering');
+      if (injuredOrRecovering.length > 0) {
+        const injSheet = workbook.addWorksheet("Blessures");
+        const injStart = addBrandedHeader(injSheet, "BILAN MÉDICAL", branding, [
+          ["Blessures totales", `${allInjuries.length}`],
+          ["Actives", `${allInjuries.filter((i: any) => i.status === 'active').length}`],
+          ["Réathlétisation", `${allInjuries.filter((i: any) => i.status === 'recovering').length}`],
+        ]);
+        const injHeaders = ["Joueur", "Blessure", "Sévérité", "Statut", "Date", "Retour estimé"];
+        injHeaders.forEach((h, i) => { injSheet.getCell(injStart, i + 1).value = h; });
+        styleDataHeaderRow(injSheet, injStart, injHeaders.length, branding.headerColor);
+        injuredOrRecovering.forEach((inj: any, ri) => {
+          const r = injSheet.getRow(injStart + 1 + ri);
+          const playerFullName = [inj.players?.first_name, inj.players?.name].filter(Boolean).join(" ") || 'Inconnu';
+          const statusMap: Record<string, string> = { active: 'Blessé', recovering: 'Réathlétisation' };
+          r.getCell(1).value = playerFullName;
+          r.getCell(2).value = inj.injury_type || '-';
+          r.getCell(3).value = inj.severity || '-';
+          r.getCell(4).value = statusMap[inj.status] || inj.status;
+          if (inj.status === 'active') r.getCell(4).font = { color: { argb: 'FFEF4444' }, bold: true };
+          else r.getCell(4).font = { color: { argb: 'FFEAB308' }, bold: true };
+          r.getCell(5).value = inj.injury_date ? format(new Date(inj.injury_date), "dd/MM/yyyy") : '-';
+          r.getCell(6).value = inj.estimated_return_date ? format(new Date(inj.estimated_return_date), "dd/MM/yyyy") : '-';
+        });
+        addZebraRows(injSheet, injStart + 1, injStart + injuredOrRecovering.length, injHeaders.length);
+        injHeaders.forEach((_, i) => { injSheet.getColumn(i + 1).width = i === 0 ? 25 : 18; });
+      }
+
       addFooter(sheet, dataStart + rows.length + 1, headers.length, branding.footerText);
       headers.forEach((_, i) => { sheet.getColumn(i + 1).width = i === 1 ? 25 : 16; });
 
@@ -1489,7 +1621,45 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
         row.forEach((val, ci) => { r.getCell(ci + 1).value = val as any; });
       });
       addZebraRows(sheet, dataStart + 1, dataStart + dataRows.length, allHeaders.length);
-      addFooter(sheet, dataStart + dataRows.length + 1, allHeaders.length, branding.footerText);
+
+      // TOTALS row
+      const totalsRowIdx = dataStart + dataRows.length + 1;
+      const tRow = sheet.getRow(totalsRowIdx);
+      tRow.getCell(1).value = 'TOTAL';
+      tRow.getCell(1).font = { bold: true, color: { argb: 'FF1E293B' } };
+      tRow.getCell(4).value = dataRows.reduce((sum, r) => sum + (Number(r[3]) || 0), 0);
+      tRow.getCell(4).font = { bold: true };
+      displayStats.forEach((s, i) => {
+        const vals = dataRows.map(r => r[i + 4]).filter(v => v !== '-' && v != null).map(v => Number(v)).filter(v => !isNaN(v));
+        if (vals.length > 0) {
+          tRow.getCell(i + 5).value = vals.reduce((a, b) => a + b, 0);
+          tRow.getCell(i + 5).font = { bold: true };
+        }
+      });
+      for (let i = 1; i <= allHeaders.length; i++) {
+        tRow.getCell(i).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2E8F0' } };
+      }
+
+      // AVERAGES row
+      const avgRowIdx = totalsRowIdx + 1;
+      const aRow = sheet.getRow(avgRowIdx);
+      aRow.getCell(1).value = 'MOYENNE';
+      aRow.getCell(1).font = { bold: true, italic: true, color: { argb: 'FF1E293B' } };
+      const playersWithMinutes = dataRows.filter(r => Number(r[3]) > 0).length || 1;
+      aRow.getCell(4).value = Math.round(dataRows.reduce((sum, r) => sum + (Number(r[3]) || 0), 0) / playersWithMinutes);
+      aRow.getCell(4).font = { bold: true, italic: true };
+      displayStats.forEach((s, i) => {
+        const vals = dataRows.map(r => r[i + 4]).filter(v => v !== '-' && v != null).map(v => Number(v)).filter(v => !isNaN(v));
+        if (vals.length > 0) {
+          aRow.getCell(i + 5).value = Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 100) / 100;
+          aRow.getCell(i + 5).font = { bold: true, italic: true };
+        }
+      });
+      for (let i = 1; i <= allHeaders.length; i++) {
+        aRow.getCell(i).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDBEAFE' } };
+      }
+
+      addFooter(sheet, avgRowIdx + 1, allHeaders.length, branding.footerText);
       allHeaders.forEach((_, i) => { sheet.getColumn(i + 1).width = i === 0 ? 25 : 15; });
 
       await downloadWorkbook(workbook, `match_${match.opponent.replace(/\s+/g, '_')}_${format(new Date(match.match_date), "yyyy-MM-dd")}.xlsx`);
@@ -1750,13 +1920,36 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
     setGeneratingReport("attendance-csv");
     try {
       const branding = await getExcelBranding(categoryId);
-      const { data: attendanceData } = await supabase
-        .from("training_attendance")
-        .select("*")
-        .eq("category_id", categoryId);
+      
+      // Fetch attendance with sessions for detailed data
+      const [sessionsRes, attendanceRes] = await Promise.all([
+        (() => {
+          let q = supabase.from("training_sessions").select("*").eq("category_id", categoryId).order("session_date", { ascending: false });
+          if (attendanceDateFrom) q = q.gte("session_date", attendanceDateFrom);
+          if (attendanceDateTo) q = q.lte("session_date", attendanceDateTo);
+          return q;
+        })(),
+        supabase.from("training_attendance").select("*").eq("category_id", categoryId),
+      ]);
+      
+      const sessionsData = sessionsRes.data || [];
+      const sessionIds = new Set(sessionsData.map(s => s.id));
+      const allAttendance = (attendanceRes.data || []).filter(a => sessionIds.has(a.training_session_id));
+
+      const calcDuration = (s: any): number => {
+        if (s.session_start_time && s.session_end_time) {
+          const [sh, sm] = s.session_start_time.split(':').map(Number);
+          const [eh, em] = s.session_end_time.split(':').map(Number);
+          return (eh * 60 + em) - (sh * 60 + sm);
+        }
+        return 60;
+      };
+
+      const sessionMap: Record<string, any> = {};
+      sessionsData.forEach(s => { sessionMap[s.id] = s; });
 
       const playerStats = players.map((player) => {
-        const playerAttendance = (attendanceData || []).filter((a) => a.player_id === player.id);
+        const playerAttendance = allAttendance.filter((a) => a.player_id === player.id);
         const present = playerAttendance.filter((a) => a.status === "present").length;
         const late = playerAttendance.filter((a) => a.status === "late").length;
         const lateJustified = playerAttendance.filter((a) => a.status === "late" && a.late_justified).length;
@@ -1765,23 +1958,36 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
         const total = playerAttendance.length;
         const rate = total > 0 ? Math.round(((present + late) / total) * 100) : 0;
 
+        let totalMinutes = 0;
+        playerAttendance.filter(a => a.status === "present" || a.status === "late").forEach(a => {
+          const session = sessionMap[a.training_session_id];
+          if (session) totalMinutes += calcDuration(session);
+        });
+
         return {
           name: [player.first_name, player.name].filter(Boolean).join(" "),
           position: player.position || "",
           present, late, lateJustified,
           lateUnjustified: late - lateJustified,
-          absent, excused, total, rate,
+          absent, excused, total, rate, totalMinutes,
         };
       }).sort((a, b) => b.rate - a.rate);
 
-      const headers = ["Joueur", "Position", "Présent", "Retard justifié", "Retard non justifié", "Excusé", "Absent", "Total", "Taux (%)"];
+      const headers = ["Joueur", "Position", "Présent", "Retard justifié", "Retard non just.", "Excusé", "Absent", "Total séances", "Taux (%)", "Min. entraîn."];
 
       const workbook = new ExcelJS.Workbook();
       const sheet = workbook.addWorksheet("Rapport de Présences");
       const avgRate = playerStats.length > 0 ? Math.round(playerStats.reduce((s, p) => s + p.rate, 0) / playerStats.length) : 0;
+      const totalSessions = sessionsData.length;
+      const totalTrainMin = playerStats.reduce((s, p) => s + p.totalMinutes, 0);
+      const dateRangeLabel = attendanceDateFrom || attendanceDateTo
+        ? `${attendanceDateFrom || "début"} — ${attendanceDateTo || "aujourd'hui"}`
+        : "Toute la saison";
       const dataStart = addBrandedHeader(sheet, "RAPPORT DE PRÉSENCES", branding, [
+        ["Séances", `${totalSessions}`],
         ["Joueurs", `${playerStats.length}`],
         ["Taux moyen", `${avgRate}%`],
+        ["Période", dateRangeLabel],
       ]);
 
       headers.forEach((h, i) => { sheet.getCell(dataStart, i + 1).value = h; });
@@ -1789,16 +1995,57 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
 
       playerStats.forEach((p, ri) => {
         const r = sheet.getRow(dataStart + 1 + ri);
-        const vals = [p.name, p.position, p.present, p.lateJustified, p.lateUnjustified, p.excused, p.absent, p.total, p.rate];
+        const vals = [p.name, p.position, p.present, p.lateJustified, p.lateUnjustified, p.excused, p.absent, p.total, p.rate, p.totalMinutes];
         vals.forEach((val, ci) => { r.getCell(ci + 1).value = val as any; });
-        // Color code rate
         const rateCell = r.getCell(9);
         if (p.rate >= 80) rateCell.font = { color: { argb: "FF22C55E" }, bold: true };
         else if (p.rate < 50) rateCell.font = { color: { argb: "FFEF4444" }, bold: true };
       });
       addZebraRows(sheet, dataStart + 1, dataStart + playerStats.length, headers.length);
-      addFooter(sheet, dataStart + playerStats.length + 1, headers.length, branding.footerText);
 
+      // Totals row
+      const totIdx2 = dataStart + playerStats.length + 1;
+      const tRow2 = sheet.getRow(totIdx2);
+      tRow2.getCell(1).value = 'TOTAL / MOYENNE';
+      tRow2.getCell(1).font = { bold: true };
+      tRow2.getCell(3).value = playerStats.reduce((s, p) => s + p.present, 0);
+      tRow2.getCell(7).value = playerStats.reduce((s, p) => s + p.absent, 0);
+      tRow2.getCell(9).value = avgRate;
+      tRow2.getCell(9).font = { bold: true };
+      tRow2.getCell(10).value = Math.round(totalTrainMin / Math.max(playerStats.length, 1));
+      for (let i = 1; i <= headers.length; i++) {
+        tRow2.getCell(i).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2E8F0' } };
+      }
+
+      // Sheet 2: Sessions by type breakdown
+      const sessionsByType: Record<string, { count: number; totalMin: number }> = {};
+      sessionsData.forEach(s => {
+        const t = s.training_type || 'Autre';
+        if (!sessionsByType[t]) sessionsByType[t] = { count: 0, totalMin: 0 };
+        sessionsByType[t].count++;
+        sessionsByType[t].totalMin += calcDuration(s);
+      });
+
+      if (Object.keys(sessionsByType).length > 0) {
+        const typeSheet = workbook.addWorksheet("Répartition séances");
+        const typeStart = addBrandedHeader(typeSheet, "RÉPARTITION PAR TYPE DE SÉANCE", branding, []);
+        const typeHeaders = ["Type", "Séances", "Durée totale (min)", "Durée moy. (min)", "% du total"];
+        typeHeaders.forEach((h, i) => { typeSheet.getCell(typeStart, i + 1).value = h; });
+        styleDataHeaderRow(typeSheet, typeStart, typeHeaders.length, branding.headerColor);
+        
+        Object.entries(sessionsByType).sort((a, b) => b[1].count - a[1].count).forEach(([type, data], ri) => {
+          const r = typeSheet.getRow(typeStart + 1 + ri);
+          r.getCell(1).value = type;
+          r.getCell(2).value = data.count;
+          r.getCell(3).value = data.totalMin;
+          r.getCell(4).value = data.count > 0 ? Math.round(data.totalMin / data.count) : 0;
+          r.getCell(5).value = totalSessions > 0 ? Math.round((data.count / totalSessions) * 100) : 0;
+        });
+        addZebraRows(typeSheet, typeStart + 1, typeStart + Object.keys(sessionsByType).length, typeHeaders.length);
+        typeHeaders.forEach((_, i) => { typeSheet.getColumn(i + 1).width = i === 0 ? 22 : 18; });
+      }
+
+      addFooter(sheet, totIdx2 + 1, headers.length, branding.footerText);
       headers.forEach((_, i) => { sheet.getColumn(i + 1).width = i === 0 ? 25 : 18; });
 
       await downloadWorkbook(workbook, `presences_${(category?.name || 'rapport')?.replace(/\s+/g, '_')}_${format(new Date(), "yyyy-MM-dd")}.xlsx`);
