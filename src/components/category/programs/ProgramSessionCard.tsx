@@ -267,7 +267,9 @@ export function ProgramSessionCard({
     setLinkingFrom({ index, method, maxCount });
     setSelectedForLinking([index]);
     // Update the exercise method immediately so the select reflects the chosen method
-    updateExercise(index, "method", method);
+    const newExercises = [...session.exercises];
+    newExercises[index] = { ...newExercises[index], method };
+    onUpdate({ ...session, exercises: newExercises });
   };
 
   const toggleExerciseForLinking = (targetIndex: number) => {
