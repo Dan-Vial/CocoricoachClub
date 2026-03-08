@@ -993,6 +993,48 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
         }
       }
 
+      // ===== COMPETITION ROUNDS (individual sports: bowling, athletics, judo, rowing) =====
+      if (selectedSections.includes("matches") && data.competitionRounds.length > 0) {
+        yPos = localCheckPageBreak(pdf, yPos, 30, pdfSettings);
+        pdf.setFillColor(...colors.light);
+        pdf.rect(margin, yPos, contentWidth, 8, 'F');
+        pdf.setTextColor(...colors.primary);
+        pdf.setFontSize(11);
+        pdf.setFont("helvetica", "bold");
+        pdf.text("STATISTIQUES COMPÉTITIONS (ROUNDS)", margin + 3, yPos + 5.5);
+        pdf.setFont("helvetica", "normal");
+        pdf.setTextColor(...colors.dark);
+        yPos += 12;
+
+        const sport = category?.clubs?.sport || "rugby";
+        const playerDiscipline = (player as any)?.specialty || (player as any)?.discipline;
+        const roundStatsDef = getStatsForSport(sport, false, playerDiscipline);
+
+        // Build table: one row per round
+        const roundHeaders = ["Adversaire", "Date", "Round", ...roundStatsDef.slice(0, 5).map(s => s.shortLabel)];
+        const rColW = Math.max(16, Math.floor((contentWidth - 35 - 20 - 14) / Math.min(roundStatsDef.length, 5)));
+        const rColWidths = [35, 20, 14, ...roundStatsDef.slice(0, 5).map(() => rColW)];
+
+        yPos = drawTableHeaderPdf(pdf, roundHeaders, rColWidths, yPos, margin);
+
+        data.competitionRounds.forEach((round: any, idx: number) => {
+          yPos = localCheckPageBreak(pdf, yPos, 10, pdfSettings);
+          const roundStats = round.competition_round_stats || [];
+          const statData = roundStats.length > 0 ? (roundStats[0].stat_data as Record<string, any> || {}) : {};
+          
+          yPos = drawTableRowPdf(pdf, [
+            round.matches?.opponent || '-',
+            round.matches?.match_date ? format(new Date(round.matches.match_date), "dd/MM") : '-',
+            String(round.round_number || idx + 1),
+            ...roundStatsDef.slice(0, 5).map(s => {
+              const val = statData[s.key];
+              return val != null ? String(val) : '-';
+            }),
+          ], rColWidths, yPos, idx % 2 === 1, margin);
+        });
+        yPos += 8;
+      }
+
       // ===== EWMA / CHARGE SECTION =====
       if (selectedSections.includes("ewma")) {
         yPos = localCheckPageBreak(pdf, yPos, 50, pdfSettings);
