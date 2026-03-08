@@ -1463,6 +1463,45 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
         }
       }
 
+      // ===== FEUILLE COMPÉTITIONS (rounds individuels) =====
+      if (selectedSections.includes("matches") && data.competitionRounds.length > 0) {
+        const sport = (category?.clubs as any)?.sport || "rugby";
+        const playerDiscipline = (player as any)?.specialty || (player as any)?.discipline;
+        const roundStatsDef = getStatsForSport(sport, false, playerDiscipline);
+
+        const sheet = workbook.addWorksheet('Compétitions (Rounds)');
+        let rowIdx = addSheetHeader(sheet, 'STATISTIQUES COMPÉTITIONS');
+
+        const headers = ['Adversaire', 'Date', 'Round', ...roundStatsDef.map(s => s.shortLabel || s.label)];
+        sheet.columns = [
+          { width: 22 }, { width: 14 }, { width: 10 },
+          ...roundStatsDef.map(() => ({ width: 14 })),
+        ];
+        const hRow = sheet.getRow(rowIdx);
+        headers.forEach((h, i) => { hRow.getCell(i + 1).value = h; });
+        styleHeaderRow(sheet, rowIdx, headers.length);
+        rowIdx++;
+
+        data.competitionRounds.forEach((round: any, idx: number) => {
+          const roundStats = round.competition_round_stats || [];
+          const statData = roundStats.length > 0 ? (roundStats[0].stat_data as Record<string, any> || {}) : {};
+          const row = sheet.getRow(rowIdx);
+          row.getCell(1).value = round.matches?.opponent || '-';
+          row.getCell(2).value = round.matches?.match_date ? format(new Date(round.matches.match_date), "dd/MM/yyyy") : '-';
+          row.getCell(3).value = round.round_number || idx + 1;
+          roundStatsDef.forEach((s, i) => {
+            const val = statData[s.key];
+            row.getCell(i + 4).value = val != null ? Number(val) : null;
+          });
+          if (rowIdx % 2 === 0) {
+            for (let i = 1; i <= headers.length; i++) {
+              row.getCell(i).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
+            }
+          }
+          rowIdx++;
+        });
+      }
+
       // ===== FEUILLE BLESSURES =====
       if (data.injuries.length > 0) {
         const sheet = workbook.addWorksheet('Blessures');
