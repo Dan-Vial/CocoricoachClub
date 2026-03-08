@@ -85,6 +85,8 @@ export function StatPreferencesDialog({
       return data;
     },
     enabled: open,
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 
   // Fetch custom stats for this category
@@ -147,6 +149,11 @@ export function StatPreferencesDialog({
           });
         if (error) throw error;
       }
+      // Directly update the query cache so stale data never persists
+      queryClient.setQueryData(["stat-preferences", categoryId], (old: Record<string, unknown> | null) => {
+        if (old) return { ...old, enabled_stats: stats };
+        return { category_id: categoryId, enabled_stats: stats, sport_type: sportType, enabled_custom_stats: [] };
+      });
       // Invalidate all related queries for immediate updates across the app
       queryClient.invalidateQueries({ queryKey: ["stat-preferences", categoryId] });
       queryClient.invalidateQueries({ queryKey: ["custom-stats", categoryId] });

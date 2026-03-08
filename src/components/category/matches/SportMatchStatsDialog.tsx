@@ -82,7 +82,7 @@ export function SportMatchStatsDialog({
   const supportsGps = isRugbyType(sportType) || sportType.toLowerCase().includes("football");
 
   // Get stats from preferences - use a non-goalkeeper default for category-level filtering
-  const { stats: filteredStats, hasCustomPreferences } = useStatPreferences({
+  const { stats: filteredStats, customStats: customStatFields, hasCustomPreferences, isLoading: loadingPrefs } = useStatPreferences({
     categoryId,
     sportType,
     matchId,
@@ -156,15 +156,24 @@ export function SportMatchStatsDialog({
 
   // Track if statsData has been initialized to avoid resetting on preference refetch
   const [statsInitialized, setStatsInitialized] = useState(false);
+  // Track the number of custom stats at last init to detect new custom stats loading
+  const [lastCustomStatsCount, setLastCustomStatsCount] = useState(0);
 
   useEffect(() => {
     if (!open) {
       setStatsInitialized(false);
+      setLastCustomStatsCount(0);
     }
   }, [open]);
 
   useEffect(() => {
-    if (statsInitialized) return; // Don't re-initialize once loaded
+    // Skip if preferences are still loading (wait for custom stats)
+    if (loadingPrefs) return;
+    
+    // Re-initialize if custom stats count changed (custom stats loaded after init)
+    const customStatsChanged = statsInitialized && customStatFields.length !== lastCustomStatsCount;
+    
+    if (statsInitialized && !customStatsChanged) return; // Don't re-initialize unless custom stats changed
     if (lineup && lineup.length > 0) {
       // Use all standard stats + custom stats from preferences
       const standardStats = [
@@ -181,42 +190,57 @@ export function SportMatchStatsDialog({
         }
       });
 
-      const stats = lineup.map((l) => {
-        const existing = existingStats?.find((s) => s.player_id === l.player_id);
-        const player = l.players as { id: string; name: string; first_name?: string } | null;
-        const position = l.position || "";
-        const fullName = [player?.first_name, player?.name].filter(Boolean).join(" ") || "Athlète";
+      if (customStatsChanged && statsInitialized) {
+        // Only add missing custom stat keys to existing player data
+        setStatsData(prev => prev.map(playerStats => {
+          const updated = { ...playerStats };
+          allStats.forEach(stat => {
+            if (!(stat.key in updated)) {
+              updated[stat.key] = 0;
+            }
+          });
+          return updated;
+        }));
+      } else {
+        // Full initialization
+        const stats = lineup.map((l) => {
+          const existing = existingStats?.find((s) => s.player_id === l.player_id);
+          const player = l.players as { id: string; name: string; first_name?: string } | null;
+          const position = l.position || "";
+          const fullName = [player?.first_name, player?.name].filter(Boolean).join(" ") || "Athlète";
 
-        const isGk =
-          position === "1" || position === "GK" || position.toLowerCase().includes("gardien");
+          const isGk =
+            position === "1" || position === "GK" || position.toLowerCase().includes("gardien");
 
-        const existingSportData =
-          (existing as { sport_data?: Record<string, number | boolean> })?.sport_data || {};
-        const wasGoalkeeper = existingSportData.isGoalkeeper === true;
+          const existingSportData =
+            (existing as { sport_data?: Record<string, number | boolean> })?.sport_data || {};
+          const wasGoalkeeper = existingSportData.isGoalkeeper === true;
 
-        const playerStats: PlayerStats = {
-          playerId: l.player_id,
-          playerName: fullName,
-          position: position,
-          isGoalkeeper: wasGoalkeeper || (supportsGoalkeeper && isGk),
-        };
+          const playerStats: PlayerStats = {
+            playerId: l.player_id,
+            playerName: fullName,
+            position: position,
+            isGoalkeeper: wasGoalkeeper || (supportsGoalkeeper && isGk),
+          };
 
-        allStats.forEach((stat) => {
-          const snakeKey = stat.key.replace(/([A-Z])/g, "_$1").toLowerCase();
-          const value =
-            existingSportData[stat.key] ??
-            existing?.[stat.key as keyof typeof existing] ??
-            existing?.[snakeKey as keyof typeof existing] ??
-            0;
-          playerStats[stat.key] = typeof value === "number" ? value : 0;
+          allStats.forEach((stat) => {
+            const snakeKey = stat.key.replace(/([A-Z])/g, "_$1").toLowerCase();
+            const value =
+              existingSportData[stat.key] ??
+              existing?.[stat.key as keyof typeof existing] ??
+              existing?.[snakeKey as keyof typeof existing] ??
+              0;
+            playerStats[stat.key] = typeof value === "number" ? value : 0;
+          });
+
+          return playerStats;
         });
-
-        return playerStats;
-      });
-      setStatsData(stats);
+        setStatsData(stats);
+      }
       setStatsInitialized(true);
+      setLastCustomStatsCount(customStatFields.length);
     }
-  }, [lineup, existingStats, sportType, supportsGoalkeeper, sportStats, statsInitialized, open]);
+  }, [lineup, existingStats, sportType, supportsGoalkeeper, sportStats, statsInitialized, open, loadingPrefs, customStatFields.length, lastCustomStatsCount]);
 
   // Auto-compute percentages when any stat changes
   const updateStat = (playerId: string, statKey: string, value: number) => {
