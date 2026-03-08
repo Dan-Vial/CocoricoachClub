@@ -13,6 +13,7 @@ interface SettingsTabProps {
 
 export function SettingsTab({ categoryId }: SettingsTabProps) {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [myNotifsOpen, setMyNotifsOpen] = useState(false);
   const [tutorialsOpen, setTutorialsOpen] = useState(false);
 
   return (
