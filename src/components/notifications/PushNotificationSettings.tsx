@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Bell, BellOff, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Bell, BellOff, CheckCircle2, AlertCircle, Loader2, HelpCircle, ChevronDown, Smartphone, Globe } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { initOneSignal, oneSignalLogin, buildUserTags, requestOneSignalPermission, getOneSignalPermission, checkOneSignalSubscriptionStatus } from "@/lib/onesignal";
 
@@ -152,6 +153,90 @@ export function PushNotificationSettings() {
             {isLoading ? "Activation..." : "Activer les notifications"}
           </Button>
         )}
+
+        {/* Browser help guide - always visible */}
+        <Collapsible>
+          <CollapsibleTrigger className="flex items-center gap-2 w-full p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors text-sm font-medium">
+            <HelpCircle className="h-4 w-4 text-primary shrink-0" />
+            <span className="flex-1 text-left">Comment activer / réactiver les notifications ?</span>
+            <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180" />
+          </CollapsibleTrigger>
+          <CollapsibleContent className="pt-3 space-y-4">
+            {/* Chrome / Edge / Brave */}
+            <div className="p-3 rounded-lg border space-y-2">
+              <div className="flex items-center gap-2">
+                <Globe className="h-4 w-4 text-primary" />
+                <p className="text-sm font-semibold">Chrome / Edge / Brave (PC & Android)</p>
+              </div>
+              <ol className="text-xs text-muted-foreground space-y-1 ml-6 list-decimal">
+                <li>Cliquez sur l'icône 🔒 (cadenas) dans la barre d'adresse</li>
+                <li>Sélectionnez <span className="font-medium text-foreground">Paramètres du site</span></li>
+                <li>Trouvez <span className="font-medium text-foreground">Notifications</span></li>
+                <li>Changez en <span className="font-medium text-foreground">Autoriser</span></li>
+                <li>Rechargez la page</li>
+              </ol>
+            </div>
+
+            {/* Safari Mac */}
+            <div className="p-3 rounded-lg border space-y-2">
+              <div className="flex items-center gap-2">
+                <Globe className="h-4 w-4 text-blue-500" />
+                <p className="text-sm font-semibold">Safari (Mac)</p>
+              </div>
+              <ol className="text-xs text-muted-foreground space-y-1 ml-6 list-decimal">
+                <li>Allez dans <span className="font-medium text-foreground">Safari → Réglages → Sites web</span></li>
+                <li>Cliquez sur <span className="font-medium text-foreground">Notifications</span> dans le menu de gauche</li>
+                <li>Trouvez ce site et sélectionnez <span className="font-medium text-foreground">Autoriser</span></li>
+                <li>Rechargez la page</li>
+              </ol>
+            </div>
+
+            {/* iOS / iPhone / iPad */}
+            <div className="p-3 rounded-lg border space-y-2">
+              <div className="flex items-center gap-2">
+                <Smartphone className="h-4 w-4 text-muted-foreground" />
+                <p className="text-sm font-semibold">iPhone / iPad (iOS 16.4+)</p>
+              </div>
+              <ol className="text-xs text-muted-foreground space-y-1 ml-6 list-decimal">
+                <li><span className="font-medium text-foreground">Installez d'abord l'application</span> sur votre écran d'accueil (bouton Partager → Ajouter à l'écran d'accueil)</li>
+                <li>Ouvrez l'application depuis l'écran d'accueil</li>
+                <li>Acceptez la demande de notifications quand elle apparaît</li>
+                <li>Si refusé : <span className="font-medium text-foreground">Réglages → Notifications</span> → trouvez l'app → Activez</li>
+              </ol>
+              <p className="text-[11px] text-amber-600 dark:text-amber-400 italic">
+                ⚠️ Les notifications push sur iOS nécessitent que l'application soit installée en PWA (icône sur l'écran d'accueil).
+              </p>
+            </div>
+
+            {/* Android PWA */}
+            <div className="p-3 rounded-lg border space-y-2">
+              <div className="flex items-center gap-2">
+                <Smartphone className="h-4 w-4 text-green-500" />
+                <p className="text-sm font-semibold">Android (Application installée)</p>
+              </div>
+              <ol className="text-xs text-muted-foreground space-y-1 ml-6 list-decimal">
+                <li>Allez dans <span className="font-medium text-foreground">Paramètres → Applications</span></li>
+                <li>Trouvez l'application dans la liste</li>
+                <li>Appuyez sur <span className="font-medium text-foreground">Notifications</span></li>
+                <li>Activez <span className="font-medium text-foreground">Afficher les notifications</span></li>
+              </ol>
+            </div>
+
+            {/* Firefox */}
+            <div className="p-3 rounded-lg border space-y-2">
+              <div className="flex items-center gap-2">
+                <Globe className="h-4 w-4 text-orange-500" />
+                <p className="text-sm font-semibold">Firefox</p>
+              </div>
+              <ol className="text-xs text-muted-foreground space-y-1 ml-6 list-decimal">
+                <li>Cliquez sur l'icône 🔒 dans la barre d'adresse</li>
+                <li>Cliquez sur <span className="font-medium text-foreground">Autorisations</span></li>
+                <li>À côté de "Notifications", cliquez sur <span className="font-medium text-foreground">×</span> pour supprimer le blocage</li>
+                <li>Rechargez la page et cliquez à nouveau sur "Activer les notifications"</li>
+              </ol>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
       </CardContent>
     </Card>
   );
