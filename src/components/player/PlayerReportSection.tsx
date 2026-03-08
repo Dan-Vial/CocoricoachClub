@@ -433,9 +433,23 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
                 ? (last.result_value >= first.result_value ? colors.success : colors.danger)
                 : null;
 
-              const label = getTestLabel(testType) !== testType
-                ? getTestLabel(testType).split(' - ').pop() || testType
-                : testType;
+              // Show full test label without category prefix (e.g. "Clean - 1RM" not just "1RM")
+              const fullLabel = getTestLabel(testType);
+              let label = testType;
+              if (fullLabel !== testType) {
+                // Remove top-level category prefix but keep the test detail
+                // fullLabel format: "Category - Test Label" or "Group > Category - Test Label"
+                const parts = fullLabel.split(' - ');
+                if (parts.length >= 3) {
+                  // e.g. "Haltérophilie - Clean - 1RM" → "Clean - 1RM"
+                  label = parts.slice(1).join(' - ');
+                } else if (parts.length === 2) {
+                  // e.g. "Musculation - Squat - 1RM" → "Squat - 1RM"
+                  label = parts[1];
+                } else {
+                  label = fullLabel;
+                }
+              }
 
               yPos = drawTableRowPdf(pdf, [
                 label,
