@@ -113,28 +113,40 @@ export function AggregatedRoundStatsDialog({
     const playerMap = new Map<string, PlayerAggregatedStats>();
 
     roundsData.forEach((round) => {
-      const player = round.players as { id: string; name: string } | null;
+      const player = round.players as { id: string; name: string; discipline?: string; specialty?: string } | null;
       if (!player) return;
 
       if (!playerMap.has(round.player_id)) {
         playerMap.set(round.player_id, {
           playerId: round.player_id,
           playerName: player.name,
+          discipline: player.discipline || undefined,
+          specialty: player.specialty || undefined,
           roundCount: 0,
           wins: 0,
           losses: 0,
           draws: 0,
+          qualifications: 0,
           stats: {},
+          rounds: [],
         });
       }
 
       const pStats = playerMap.get(round.player_id)!;
       pStats.roundCount++;
 
-      // Count wins/losses/draws
+      // Count wins/losses/draws + athletics qualifications
       if (round.result === "win") pStats.wins++;
       else if (round.result === "loss") pStats.losses++;
       else if (round.result === "draw") pStats.draws++;
+      else if (round.result === "qualified") pStats.qualifications++;
+
+      // Track best ranking
+      if (round.ranking) {
+        if (!pStats.bestRanking || round.ranking < pStats.bestRanking) {
+          pStats.bestRanking = round.ranking;
+        }
+      }
 
       // Track best time for Aviron
       if (round.final_time_seconds) {
