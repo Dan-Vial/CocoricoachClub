@@ -74,8 +74,9 @@ export function AggregatedRoundStatsDialog({
   const isJudo = sportType.toLowerCase().includes("judo");
   const isBowling = sportType.toLowerCase().includes("bowling");
   const isAviron = sportType.toLowerCase().includes("aviron");
+  const isAthletics = isAthletismeCategory(sportType);
 
-  const roundLabel = isJudo ? "Combats" : isAviron ? "Courses" : isBowling ? "Parties" : "Rounds";
+  const roundLabel = isJudo ? "Combats" : isAviron ? "Courses" : isBowling ? "Parties" : isAthletics ? "Épreuves" : "Rounds";
   const allAggregatedStats = getAggregatedStatsForSport(sportType);
   const { enabledStatKeys, hasCustomPreferences } = useStatPreferences({ categoryId, sportType });
   
