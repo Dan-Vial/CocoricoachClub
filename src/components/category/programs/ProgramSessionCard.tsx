@@ -149,11 +149,50 @@ export function ProgramSessionCard({
   onDelete,
   canDelete,
 }: ProgramSessionCardProps) {
+  const { user } = useAuth();
   const { setNodeRef, isOver } = useDroppable({
     id: session.id,
   });
   const [linkingFrom, setLinkingFrom] = useState<{index: number, method: string, maxCount: number} | null>(null);
   const [selectedForLinking, setSelectedForLinking] = useState<number[]>([]);
+  const [showLibraryFor, setShowLibraryFor] = useState<number | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Fetch exercise library for inline search
+  const { data: libraryExercises } = useQuery({
+    queryKey: ["exercise-library", user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data, error } = await supabase
+        .from("exercise_library")
+        .select("*")
+        .or(`user_id.eq.${user.id},is_system.eq.true`)
+        .order("name");
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  const filteredLibrary = useMemo(() => {
+    return libraryExercises?.filter((ex) =>
+      ex.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      ex.category.toLowerCase().includes(searchQuery.toLowerCase())
+    ) || [];
+  }, [libraryExercises, searchQuery]);
+
+  const selectFromLibrary = (index: number, libExercise: any) => {
+    const newExercises = [...session.exercises];
+    newExercises[index] = {
+      ...newExercises[index],
+      exercise_name: libExercise.name,
+      exercise_category: libExercise.category,
+      library_exercise_id: libExercise.id,
+    };
+    onUpdate({ ...session, exercises: newExercises });
+    setShowLibraryFor(null);
+    setSearchQuery("");
+  };
 
   // Reset linking state when exercises change
   useEffect(() => {
