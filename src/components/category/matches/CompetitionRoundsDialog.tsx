@@ -783,7 +783,7 @@ export function CompetitionRoundsDialog({
                     className="w-full gap-2"
                   >
                     <Plus className="h-4 w-4" />
-                    Ajouter {isAviron ? "une course" : isJudo ? "un combat" : isBowling ? "une partie" : `un ${roundLabel.toLowerCase()}`}
+                    Ajouter {isAviron ? "une course" : isJudo ? "un combat" : isBowling ? "une partie" : isAthletics ? "une épreuve" : `un ${roundLabel.toLowerCase()}`}
                   </Button>
 
                   {selectedPlayer.rounds.length === 0 ? (
