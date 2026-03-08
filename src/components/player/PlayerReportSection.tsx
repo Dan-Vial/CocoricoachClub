@@ -743,6 +743,20 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
             ]);
           });
           yPos += 5;
+
+          // === WELLNESS LINE CHART (Average over time) ===
+          const wellnessChartData = data.wellness
+            .slice(0, 15)
+            .reverse()
+            .map(w => {
+              const vals = [w.sleep_quality, w.general_fatigue, w.stress_level, w.soreness_upper_body, w.soreness_lower_body].filter(v => v != null) as number[];
+              const avg = vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
+              return { label: format(new Date(w.tracking_date), "dd/MM"), value: Math.round(avg * 10) / 10 };
+            });
+          if (wellnessChartData.length >= 2) {
+            yPos = localCheckPageBreak(pdf, yPos, 55, pdfSettings);
+            yPos = drawLineChart(pdf, wellnessChartData, margin, yPos, contentWidth / 2, 35, "Évolution wellness (moyenne /5)", colors.warning);
+          }
         } else {
           pdf.setFontSize(9);
           pdf.setTextColor(...colors.muted);
