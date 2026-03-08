@@ -785,17 +785,8 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
           ? allAvailable.filter(s => enabledKeys.includes(s.key))
           : allAvailable;
 
-        // Filter to only show stats that have at least one non-zero value across all players
-        const statsWithData = displayStats.filter(s => {
-          return playerStats.some((stat: any) => {
-            const sportData = (stat.sport_data && typeof stat.sport_data === 'object') ? stat.sport_data as Record<string, any> : {};
-            const val = sportData[s.key] ?? stat[s.key] ?? 0;
-            return val !== 0 && val !== null && val !== undefined;
-          });
-        });
-
-        // If no stats have data, show first 6 anyway with zeros
-        const statsToShow = statsWithData.length > 0 ? statsWithData : displayStats.slice(0, 6);
+        // Show ALL enabled stats (not just those with data) to match coach's preferences
+        const statsToShow = displayStats;
 
         // Paginate stats in groups of 8 columns
         const COLS_PER_TABLE = 8;
