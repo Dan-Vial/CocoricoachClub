@@ -1348,7 +1348,7 @@ import { isIndividualSport } from "@/lib/constants/sportTypes";
                        className="text-xs cursor-pointer hover:bg-muted"
                        onClick={() => navigate(`/players/${p.id}`)}
                      >
-                       {p.name.split(" ")[0]} • {p.reason}
+                       {p.name} • {p.reason}
                      </Badge>
                    ))}
                  </div>
