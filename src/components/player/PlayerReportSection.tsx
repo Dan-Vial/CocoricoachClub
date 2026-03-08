@@ -1001,7 +1001,7 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
         pdf.setTextColor(...colors.primary);
         pdf.setFontSize(11);
         pdf.setFont("helvetica", "bold");
-        pdf.text("STATISTIQUES COMPÉTITIONS (ROUNDS)", margin + 3, yPos + 5.5);
+        pdf.text("STATISTIQUES COMPÉTITIONS", margin + 3, yPos + 5.5);
         pdf.setFont("helvetica", "normal");
         pdf.setTextColor(...colors.dark);
         yPos += 12;
@@ -1009,9 +1009,12 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
         const sport = category?.clubs?.sport || "rugby";
         const playerDiscipline = (player as any)?.specialty || (player as any)?.discipline;
         const roundStatsDef = getStatsForSport(sport, false, playerDiscipline);
+        const isAthleticsReport = sport.toLowerCase().includes("athletisme") || sport.toLowerCase().includes("athlétisme");
 
-        // Build table: one row per round
-        const roundHeaders = ["Adversaire", "Date", "Round", ...roundStatsDef.slice(0, 5).map(s => s.shortLabel)];
+        // Athletics: use Phase + Classement + Résultat; others: Adversaire + Date + Round
+        const roundHeaders = isAthleticsReport
+          ? ["Phase", "Place", "Résultat", ...roundStatsDef.slice(0, 5).map(s => s.shortLabel)]
+          : ["Adversaire", "Date", "Round", ...roundStatsDef.slice(0, 5).map(s => s.shortLabel)];
         const rColW = Math.max(16, Math.floor((contentWidth - 35 - 20 - 14) / Math.min(roundStatsDef.length, 5)));
         const rColWidths = [35, 20, 14, ...roundStatsDef.slice(0, 5).map(() => rColW)];
 
@@ -1022,15 +1025,27 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
           const roundStats = round.competition_round_stats || [];
           const statData = roundStats.length > 0 ? (roundStats[0].stat_data as Record<string, any> || {}) : {};
           
-          yPos = drawTableRowPdf(pdf, [
-            round.matches?.opponent || '-',
-            round.matches?.match_date ? format(new Date(round.matches.match_date), "dd/MM") : '-',
-            String(round.round_number || idx + 1),
-            ...roundStatsDef.slice(0, 5).map(s => {
-              const val = statData[s.key];
-              return val != null ? String(val) : '-';
-            }),
-          ], rColWidths, yPos, idx % 2 === 1, margin);
+          const rowData = isAthleticsReport
+            ? [
+                round.phase || `Épreuve ${round.round_number || idx + 1}`,
+                round.ranking ? `${round.ranking}e` : '-',
+                round.result === 'qualified' ? 'Q' : round.result === 'eliminated' ? 'Élim.' : round.result === 'dns' ? 'DNS' : round.result === 'dnf' ? 'DNF' : round.result === 'dq' ? 'DQ' : '-',
+                ...roundStatsDef.slice(0, 5).map(s => {
+                  const val = statData[s.key];
+                  return val != null ? String(val) : '-';
+                }),
+              ]
+            : [
+                round.matches?.opponent || '-',
+                round.matches?.match_date ? format(new Date(round.matches.match_date), "dd/MM") : '-',
+                String(round.round_number || idx + 1),
+                ...roundStatsDef.slice(0, 5).map(s => {
+                  const val = statData[s.key];
+                  return val != null ? String(val) : '-';
+                }),
+              ];
+
+          yPos = drawTableRowPdf(pdf, rowData, rColWidths, yPos, idx % 2 === 1, margin);
         });
         yPos += 8;
       }
@@ -1468,11 +1483,14 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
         const sport = (category?.clubs as any)?.sport || "rugby";
         const playerDiscipline = (player as any)?.specialty || (player as any)?.discipline;
         const roundStatsDef = getStatsForSport(sport, false, playerDiscipline);
+        const isAthleticsExcel = sport.toLowerCase().includes("athletisme") || sport.toLowerCase().includes("athlétisme");
 
-        const sheet = workbook.addWorksheet('Compétitions (Rounds)');
+        const sheet = workbook.addWorksheet('Compétitions');
         let rowIdx = addSheetHeader(sheet, 'STATISTIQUES COMPÉTITIONS');
 
-        const headers = ['Adversaire', 'Date', 'Round', ...roundStatsDef.map(s => s.shortLabel || s.label)];
+        const headers = isAthleticsExcel
+          ? ['Phase', 'Classement', 'Résultat', ...roundStatsDef.map(s => s.shortLabel || s.label)]
+          : ['Adversaire', 'Date', 'Round', ...roundStatsDef.map(s => s.shortLabel || s.label)];
         sheet.columns = [
           { width: 22 }, { width: 14 }, { width: 10 },
           ...roundStatsDef.map(() => ({ width: 14 })),
@@ -1486,9 +1504,16 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
           const roundStats = round.competition_round_stats || [];
           const statData = roundStats.length > 0 ? (roundStats[0].stat_data as Record<string, any> || {}) : {};
           const row = sheet.getRow(rowIdx);
-          row.getCell(1).value = round.matches?.opponent || '-';
-          row.getCell(2).value = round.matches?.match_date ? format(new Date(round.matches.match_date), "dd/MM/yyyy") : '-';
-          row.getCell(3).value = round.round_number || idx + 1;
+          if (isAthleticsExcel) {
+            row.getCell(1).value = round.phase || `Épreuve ${round.round_number || idx + 1}`;
+            row.getCell(2).value = round.ranking ? `${round.ranking}e` : '-';
+            const resultMap: Record<string, string> = { qualified: 'Qualifié', eliminated: 'Éliminé', dns: 'DNS', dnf: 'DNF', dq: 'DQ' };
+            row.getCell(3).value = resultMap[round.result] || round.result || '-';
+          } else {
+            row.getCell(1).value = round.matches?.opponent || '-';
+            row.getCell(2).value = round.matches?.match_date ? format(new Date(round.matches.match_date), "dd/MM/yyyy") : '-';
+            row.getCell(3).value = round.round_number || idx + 1;
+          }
           roundStatsDef.forEach((s, i) => {
             const val = statData[s.key];
             row.getCell(i + 4).value = val != null ? Number(val) : null;
