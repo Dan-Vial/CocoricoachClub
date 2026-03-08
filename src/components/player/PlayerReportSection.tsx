@@ -344,11 +344,12 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
         if (dateTo) q = q.lte("injury_date", dateTo);
         return q.order("injury_date", { ascending: false });
       })(),
+      // EWMA: fetch ALL data without date filter (need full history for accurate calculations)
       (() => {
         let q = supabase.from("awcr_tracking").select("*").eq("player_id", playerId);
-        if (dateFrom) q = q.gte("session_date", dateFrom);
+        // Only apply dateTo filter, not dateFrom — we need history for EWMA context
         if (dateTo) q = q.lte("session_date", dateTo);
-        return q.order("session_date", { ascending: false }).limit(90);
+        return q.order("session_date", { ascending: false });
       })(),
     ]);
 
@@ -830,15 +831,20 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
           data.wellness.slice(0, 15).forEach((w, index) => {
             yPos = localCheckPageBreak(pdf, yPos, 10, pdfSettings);
             const vals = [w.sleep_quality, w.general_fatigue, w.stress_level, w.soreness_upper_body, w.soreness_lower_body].filter(v => v != null) as number[];
-            const avg = vals.length > 0 ? (vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1) : '-';
+            // For average: invert sleep (5-sleep) so all metrics share same polarity (lower = better)
+            const avgVals = [
+              w.sleep_quality != null ? (6 - w.sleep_quality) : null,
+              w.general_fatigue, w.stress_level, w.soreness_upper_body, w.soreness_lower_body
+            ].filter(v => v != null) as number[];
+            const avg = avgVals.length > 0 ? (avgVals.reduce((a, b) => a + b, 0) / avgVals.length).toFixed(1) : '-';
             const avgNum = parseFloat(avg);
             yPos = drawTableRowPdf(pdf, [
               format(new Date(w.tracking_date), "dd/MM/yy"),
-              `${w.sleep_quality || '-'}/5`,
-              `${w.general_fatigue || '-'}/5`,
-              `${w.stress_level || '-'}/5`,
-              `${w.soreness_upper_body || '-'}/5`,
-              `${w.soreness_lower_body || '-'}/5`,
+              w.sleep_quality != null ? `${w.sleep_quality}/5` : '-',
+              w.general_fatigue != null ? `${w.general_fatigue}/5` : '-',
+              w.stress_level != null ? `${w.stress_level}/5` : '-',
+              w.soreness_upper_body != null ? `${w.soreness_upper_body}/5` : '-',
+              w.soreness_lower_body != null ? `${w.soreness_lower_body}/5` : '-',
               avg !== '-' ? `${avg}/5` : '-',
             ], wColWidths, yPos, index % 2 === 1, margin, [
               null,
@@ -857,8 +863,11 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
             .slice(0, 15)
             .reverse()
             .map(w => {
-              const vals = [w.sleep_quality, w.general_fatigue, w.stress_level, w.soreness_upper_body, w.soreness_lower_body].filter(v => v != null) as number[];
-              const avg = vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
+              const avgVals = [
+                w.sleep_quality != null ? (6 - w.sleep_quality) : null,
+                w.general_fatigue, w.stress_level, w.soreness_upper_body, w.soreness_lower_body
+              ].filter(v => v != null) as number[];
+              const avg = avgVals.length > 0 ? avgVals.reduce((a, b) => a + b, 0) / avgVals.length : 0;
               return { label: format(new Date(w.tracking_date), "dd/MM"), value: Math.round(avg * 10) / 10 };
             });
           if (wellnessChartData.length >= 2) {
@@ -910,29 +919,60 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
             ? allAvailable.filter(s => enabledKeys.includes(s.key))
             : allAvailable;
 
-          // Use landscape-style multi-page if many stats, else limit to fit
-          const limitedStats = displayStats.slice(0, 8);
+          // Group stats by category for organized display
+          const statCategories: { key: string; label: string }[] = [
+            { key: "scoring", label: "POINTS / SCORE" },
+            { key: "attack", label: "ATTAQUE" },
+            { key: "defense", label: "DÉFENSE" },
+            { key: "general", label: "GÉNÉRAL" },
+            { key: "individual", label: "INDIVIDUEL" },
+          ];
 
-          const mHeaders = ["Adversaire", "Date", ...limitedStats.map(s => s.shortLabel)];
-          const nameColW = 35;
-          const dateColW = 22;
-          const statColW = Math.max(15, Math.floor((contentWidth - nameColW - dateColW) / limitedStats.length));
-          const mColWidths = [nameColW, dateColW, ...limitedStats.map(() => statColW)];
-          yPos = drawTableHeaderPdf(pdf, mHeaders, mColWidths, yPos, margin);
+          for (const statCat of statCategories) {
+            const catStats = displayStats.filter(s => s.category === statCat.key);
+            if (catStats.length === 0) continue;
 
-          matchStats.forEach((stat: any, index) => {
-            yPos = localCheckPageBreak(pdf, yPos, 10, pdfSettings);
-            const sportData = (stat.sport_data && typeof stat.sport_data === 'object') ? stat.sport_data as Record<string, any> : {};
-            yPos = drawTableRowPdf(pdf, [
-              stat.matches?.opponent || '-',
-              stat.matches?.match_date ? format(new Date(stat.matches.match_date), "dd/MM") : '-',
-              ...limitedStats.map(s => {
-                // First check sport_data JSONB, then fallback to direct columns
-                const val = sportData[s.key] ?? stat[s.key] ?? stat[s.key.replace(/([A-Z])/g, '_$1').toLowerCase()];
-                return val != null ? String(val) : '-';
-              })
-            ], mColWidths, yPos, index % 2 === 1, margin);
-          });
+            yPos = localCheckPageBreak(pdf, yPos, 25, pdfSettings);
+            
+            // Category sub-header
+            pdf.setFontSize(9);
+            pdf.setFont("helvetica", "bold");
+            pdf.setTextColor(...colors.secondary);
+            pdf.text(statCat.label, margin + 2, yPos);
+            pdf.setFont("helvetica", "normal");
+            pdf.setTextColor(...colors.dark);
+            yPos += 5;
+
+            // Split stats into chunks of 6 to fit page width
+            const chunkSize = 6;
+            for (let chunk = 0; chunk < catStats.length; chunk += chunkSize) {
+              const chunkStats = catStats.slice(chunk, chunk + chunkSize);
+              
+              const mHeaders = ["Adversaire", "Date", ...chunkStats.map(s => s.shortLabel)];
+              const nameColW = 35;
+              const dateColW = 22;
+              const statColW = Math.max(18, Math.floor((contentWidth - nameColW - dateColW) / chunkStats.length));
+              const mColWidths = [nameColW, dateColW, ...chunkStats.map(() => statColW)];
+              
+              yPos = localCheckPageBreak(pdf, yPos, 15, pdfSettings);
+              yPos = drawTableHeaderPdf(pdf, mHeaders, mColWidths, yPos, margin);
+
+              matchStats.forEach((stat: any, index) => {
+                yPos = localCheckPageBreak(pdf, yPos, 10, pdfSettings);
+                const sportData = (stat.sport_data && typeof stat.sport_data === 'object') ? stat.sport_data as Record<string, any> : {};
+                yPos = drawTableRowPdf(pdf, [
+                  stat.matches?.opponent || '-',
+                  stat.matches?.match_date ? format(new Date(stat.matches.match_date), "dd/MM") : '-',
+                  ...chunkStats.map(s => {
+                    const val = sportData[s.key] ?? stat[s.key] ?? stat[s.key.replace(/([A-Z])/g, '_$1').toLowerCase()];
+                    return val != null ? String(val) : '-';
+                  })
+                ], mColWidths, yPos, index % 2 === 1, margin);
+              });
+              yPos += 4;
+            }
+            yPos += 4;
+          }
         } else {
           pdf.setFontSize(9);
           pdf.setTextColor(...colors.muted);
