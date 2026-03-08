@@ -945,8 +945,8 @@ export function CompetitionRoundsDialog({
                             </div>
                           )}
 
-                          {/* Basic round info for non-Aviron, non-Bowling */}
-                          {!isAviron && !isBowling && (
+                          {/* Basic round info for non-Aviron, non-Bowling, non-Athletics */}
+                          {!isAviron && !isBowling && !isAthletics && (
                             <div className="grid grid-cols-2 gap-3">
                               <div>
                                 <Label className="text-xs">Adversaire</Label>
@@ -980,6 +980,57 @@ export function CompetitionRoundsDialog({
                                     </SelectItem>
                                     <SelectItem value="draw">
                                       <span className="text-muted-foreground">Égalité</span>
+                                    </SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Athletics-specific round info */}
+                          {isAthletics && (
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <Label className="text-xs">Classement</Label>
+                                <Input
+                                  type="number"
+                                  min={1}
+                                  onWheel={blurOnWheel}
+                                  value={round.ranking || ""}
+                                  onChange={(e) => updateRound(selectedPlayer.playerId, round.round_number, { ranking: parseInt(e.target.value) || undefined })}
+                                  placeholder="1"
+                                  className="h-8"
+                                  disabled={round.isLocked}
+                                />
+                              </div>
+                              <div>
+                                <Label className="text-xs">Résultat</Label>
+                                <Select
+                                  value={round.result}
+                                  onValueChange={(value) => updateRound(selectedPlayer.playerId, round.round_number, { result: value })}
+                                  disabled={round.isLocked}
+                                >
+                                  <SelectTrigger className="h-8">
+                                    <SelectValue placeholder="Qualification ?" />
+                                  </SelectTrigger>
+                                  <SelectContent className="z-[200]">
+                                    <SelectItem value="qualified">
+                                      <span className="flex items-center gap-2">
+                                        <CheckCircle className="h-3 w-3 text-green-500" />
+                                        Qualifié(e)
+                                      </span>
+                                    </SelectItem>
+                                    <SelectItem value="eliminated">
+                                      <span className="text-destructive">Éliminé(e)</span>
+                                    </SelectItem>
+                                    <SelectItem value="dns">
+                                      <span className="text-muted-foreground">DNS</span>
+                                    </SelectItem>
+                                    <SelectItem value="dnf">
+                                      <span className="text-muted-foreground">DNF</span>
+                                    </SelectItem>
+                                    <SelectItem value="dq">
+                                      <span className="text-destructive">DQ</span>
                                     </SelectItem>
                                   </SelectContent>
                                 </Select>
