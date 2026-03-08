@@ -70,7 +70,7 @@ export function MentalPerformanceSection({ categoryId }: MentalPerformanceSectio
     queryFn: async () => {
       const { data, error } = await supabase
         .from("players")
-        .select("id, name")
+        .select("id, name, first_name")
         .eq("category_id", categoryId)
         .order("name");
       if (error) throw error;
