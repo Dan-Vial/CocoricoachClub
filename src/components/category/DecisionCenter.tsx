@@ -1547,7 +1547,7 @@ import { isIndividualSport } from "@/lib/constants/sportTypes";
                     <div className="flex items-center gap-3">
                       <User className="h-4 w-4 text-orange-500" />
                       <div className="text-left">
-                        <p className="font-medium">{player.name}</p>
+                         <p className="font-medium">{player.name}</p>
                         <p className="text-xs text-muted-foreground">{player.reason}</p>
                       </div>
                     </div>
