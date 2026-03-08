@@ -107,7 +107,8 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
     
     let xPos = margin + 2;
     headers.forEach((header, i) => {
-      pdf.text(header.substring(0, Math.floor(colWidths[i] / 3)), xPos, y + 5.5);
+      const maxChars = Math.max(3, Math.floor(colWidths[i] / 2.2));
+      pdf.text(header.substring(0, maxChars), xPos, y + 5.5);
       xPos += colWidths[i];
     });
     pdf.setFont("helvetica", "normal");
