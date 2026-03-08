@@ -180,18 +180,14 @@ export function SessionBlocksManager({
         <div className="space-y-3">
           {blocks.map((block, index) => {
             const duration = calculateDuration(block.start_time, block.end_time);
+            const blockColor = getTrainingTypeColor(block.training_type);
             
             return (
-              <Card key={index} className="relative overflow-hidden">
+              <Card key={index} className={cn("relative overflow-hidden border-0", blockColor, "bg-opacity-20 dark:bg-opacity-20")}>
                 <div 
-                  className="absolute left-0 top-0 bottom-0 w-1"
-                  style={{
-                    backgroundColor: block.intensity 
-                      ? `hsl(${Math.max(0, 120 - (block.intensity - 1) * 13)}, 70%, 50%)`
-                      : "hsl(var(--muted))"
-                  }}
+                  className={cn("absolute left-0 top-0 bottom-0 w-1.5 rounded-l-md", blockColor)}
                 />
-                <CardContent className="p-4 pl-5">
+                <CardContent className="p-4 pl-5 bg-background/70 dark:bg-background/60 backdrop-blur-sm rounded-md ml-1.5">
                   <div className="flex items-start gap-3">
                     {/* Reorder buttons */}
                     <div className="flex flex-col gap-1 pt-1">
