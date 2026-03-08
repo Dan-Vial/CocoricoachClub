@@ -991,14 +991,27 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
           });
           yPos += 5;
 
-          // EWMA ratio line chart
-          const ewmaChartData = sortedAwcr
+          // EWMA charts side by side: ratio + acute/chronic loads
+          const chartHalfW = (contentWidth - 6) / 2;
+          const ewmaRatioData = sortedAwcr
             .filter(e => e.awcr != null)
             .slice(-20)
             .map(e => ({ label: format(new Date(e.session_date), "dd/MM"), value: e.awcr! }));
-          if (ewmaChartData.length >= 2) {
+          const ewmaAcuteData = sortedAwcr
+            .filter(e => e.acute_load != null)
+            .slice(-20)
+            .map(e => ({ label: format(new Date(e.session_date), "dd/MM"), value: e.acute_load! }));
+
+          if (ewmaRatioData.length >= 2 || ewmaAcuteData.length >= 2) {
             yPos = localCheckPageBreak(pdf, yPos, 55, pdfSettings);
-            yPos = drawLineChart(pdf, ewmaChartData, margin, yPos, contentWidth / 2, 35, "Évolution ratio EWMA", colors.primary);
+            const chartYEwma = yPos;
+            if (ewmaRatioData.length >= 2) {
+              drawLineChart(pdf, ewmaRatioData, margin, chartYEwma, chartHalfW, 35, "Évolution ratio EWMA", colors.primary);
+            }
+            if (ewmaAcuteData.length >= 2) {
+              drawLineChart(pdf, ewmaAcuteData, margin + chartHalfW + 6, chartYEwma, chartHalfW, 35, "Charge aiguë (EWMA)", colors.danger);
+            }
+            yPos = chartYEwma + 35 + 10;
           }
         } else {
           pdf.setFontSize(9);
