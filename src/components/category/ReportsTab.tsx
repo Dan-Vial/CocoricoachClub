@@ -1277,50 +1277,6 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
     }
   };
 
-  const generatePlayerCsv = async () => {
-    if (!selectedPlayer) {
-      toast.error("Veuillez sélectionner un joueur");
-      return;
-    }
-    setGeneratingReport("player-csv");
-    try {
-      const player = players.find(p => p.id === selectedPlayer);
-      if (!player) throw new Error("Joueur non trouvé");
-
-      const [injuriesRes, wellnessRes, speedTestsRes, jumpTestsRes, awcrRes] = await Promise.all([
-        supabase.from("injuries").select("*").eq("player_id", selectedPlayer).order("injury_date", { ascending: false }),
-        supabase.from("wellness_tracking").select("*").eq("player_id", selectedPlayer).order("tracking_date", { ascending: false }),
-        supabase.from("speed_tests").select("*").eq("player_id", selectedPlayer).order("test_date", { ascending: false }),
-        supabase.from("jump_tests").select("*").eq("player_id", selectedPlayer).order("test_date", { ascending: false }),
-        supabase.from("awcr_tracking").select("*").eq("player_id", selectedPlayer).order("session_date", { ascending: false }),
-      ]);
-
-      const wellnessHeaders = ["Date", "Fatigue", "Sommeil (h)", "Qualité sommeil", "Stress", "Douleurs haut", "Douleurs bas", "Moyenne"];
-      const wellnessRows = (wellnessRes.data || []).map(w => {
-        const values = [w.general_fatigue, w.sleep_quality, w.stress_level, w.soreness_upper_body, w.soreness_lower_body].filter(v => v != null && v !== undefined) as number[];
-        const avg = values.length > 0 ? (values.reduce((a, b) => a + b, 0) / values.length).toFixed(1) : "-";
-        return [
-          format(new Date(w.tracking_date), "dd/MM/yyyy"),
-          w.general_fatigue || "-",
-          w.sleep_duration || "-",
-          w.sleep_quality || "-",
-          w.stress_level || "-",
-          w.soreness_upper_body || "-",
-          w.soreness_lower_body || "-",
-          avg,
-        ];
-      });
-
-      const csv = generateCsv(wellnessHeaders, wellnessRows);
-      downloadCsv(`joueur_${[player.first_name, player.name].filter(Boolean).join('_').replace(/\s+/g, '_')}_${format(new Date(), "yyyy-MM-dd")}.csv`, csv);
-      toast.success("Export CSV généré");
-    } catch (error) {
-      console.error(error);
-      toast.error("Erreur lors de l'export CSV");
-    } finally {
-      setGeneratingReport(null);
-    }
-  };
 
   const generateSeasonCsv = async () => {
     setGeneratingReport("season-csv");
