@@ -226,9 +226,51 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
         .update({ is_finalized: finalized } as any)
         .eq("id", match.id);
       if (error) throw error;
+
+      // When finalizing, auto-inject RPE 10/10 from match lineups (minutes played)
+      if (finalized) {
+        const matchDate = match.match_date?.split("T")[0] || new Date().toISOString().split("T")[0];
+
+        // Check if RPE already exists from stats dialog
+        const { data: existingRpe } = await supabase
+          .from("awcr_tracking")
+          .select("id")
+          .eq("category_id", categoryId)
+          .eq("session_date", matchDate)
+          .is("training_session_id", null)
+          .gte("rpe", 10)
+          .limit(1);
+
+        // Only inject if no match RPE exists yet
+        if (!existingRpe || existingRpe.length === 0) {
+          const { data: lineups } = await supabase
+            .from("match_lineups")
+            .select("player_id, minutes_played")
+            .eq("match_id", match.id);
+
+          if (lineups && lineups.length > 0) {
+            const rpeEntries = lineups
+              .filter(l => l.minutes_played && l.minutes_played > 0)
+              .map(l => ({
+                player_id: l.player_id,
+                category_id: categoryId,
+                session_date: matchDate,
+                rpe: 10,
+                duration_minutes: l.minutes_played!,
+                training_load: 10 * l.minutes_played!,
+              }));
+
+            if (rpeEntries.length > 0) {
+              const { error: rpeError } = await supabase.from("awcr_tracking").insert(rpeEntries);
+              if (rpeError) console.error("Error inserting match RPE from lineups:", rpeError);
+            }
+          }
+        }
+      }
     },
     onSuccess: (_, finalized) => {
       queryClient.invalidateQueries({ queryKey: ["matches", categoryId] });
+      queryClient.invalidateQueries({ queryKey: ["awcr_tracking"] });
       toast.success(finalized ? "Compétition finalisée" : "Compétition réouverte");
     },
     onError: () => {
