@@ -93,7 +93,9 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
     pdf.setFont("helvetica", "bold");
     let xPos = margin + 2;
     headers.forEach((header, i) => {
-      pdf.text(header.substring(0, Math.floor(colWidths[i] / 2.8)), xPos, y + 5.5);
+      const maxChars = Math.max(4, Math.floor(colWidths[i] / 2.2));
+      const text = header.length > maxChars ? header.substring(0, maxChars - 1) + '.' : header;
+      pdf.text(text, xPos, y + 5.5);
       xPos += colWidths[i];
     });
     pdf.setFont("helvetica", "normal");
@@ -117,7 +119,10 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
         pdf.setTextColor(...colors.dark);
         pdf.setFont("helvetica", "normal");
       }
-      pdf.text((value || "-").substring(0, 28), xPos, y + 5);
+      const maxChars = Math.max(4, Math.floor(colWidths[i] / 2.2));
+      const displayVal = (value || "-");
+      const text = displayVal.length > maxChars ? displayVal.substring(0, maxChars - 1) + '.' : displayVal;
+      pdf.text(text, xPos, y + 5);
       xPos += colWidths[i];
     });
     pdf.setFont("helvetica", "normal");
@@ -539,8 +544,8 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
               testsByType[t.test_type].push(t);
             });
 
-            const testHeaders = ["Test", "1er résultat", "Date", "Dernier", "Date", "Progression"];
-            const testColWidths = [42, 25, 25, 25, 25, 28];
+            const testHeaders = ["Test", "1er résultat", "Date", "Dernier résultat", "Date", "Progression"];
+            const testColWidths = [38, 28, 22, 28, 22, 32];
             yPos = drawTableHeaderPdf(pdf, testHeaders, testColWidths, yPos, margin);
 
             Object.entries(testsByType).forEach(([testType, results], index) => {
