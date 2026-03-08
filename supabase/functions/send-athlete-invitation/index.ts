@@ -116,7 +116,7 @@ const handler = async (req: Request): Promise<Response> => {
         {
           method: "POST",
           headers: {
-            Authorization: `Basic ${ONESIGNAL_REST_API_KEY}`,
+            Authorization: `Key ${ONESIGNAL_REST_API_KEY}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
