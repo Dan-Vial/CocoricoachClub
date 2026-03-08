@@ -379,7 +379,7 @@ import { isIndividualSport } from "@/lib/constants/sportTypes";
       queryFn: async () => {
         const { data, error } = await supabase
           .from("admin_documents")
-          .select("*, players(name)")
+          .select("*, players(name, first_name)")
           .eq("category_id", categoryId)
           .lte("expiry_date", today)
           .eq("status", "pending");
