@@ -148,6 +148,7 @@ export const HANDBALL_STATS: StatField[] = [
   { key: "redCards", label: "Cartons rouges", shortLabel: "Rouges", category: "general", type: "number" },
   { key: "twoMinutes", label: "Exclusions 2 min", shortLabel: "2 min", category: "general", type: "number" },
   { key: "manOfMatch", label: "Homme du match", shortLabel: "HDM", category: "general", type: "number", max: 1 },
+  { key: "fouls", label: "Fautes", shortLabel: "Fautes", category: "general", type: "number" },
   // Individual Stats - Scoring
   { key: "goals", label: "Buts", shortLabel: "Buts", category: "scoring", type: "number" },
   { key: "shots", label: "Tirs", shortLabel: "Tirs", category: "scoring", type: "number" },
