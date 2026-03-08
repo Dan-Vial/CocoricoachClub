@@ -1058,10 +1058,13 @@ export function CompetitionRoundsDialog({
                           )}
 
                           {/* Stats for this round - organized by category (non-bowling, non-aviron) */}
-                          {!isAviron && !isBowling && (
+                          {!isAviron && !isBowling && (() => {
+                            const playerStats = getPlayerStats(selectedPlayer);
+                            const playerCats = getPlayerStatCategories(selectedPlayer);
+                            return (
                             <div className="space-y-3">
-                              {statCategories.map(cat => {
-                                const categoryStats = sportStats.filter(s => s.category === cat.key);
+                              {playerCats.map(cat => {
+                                const categoryStats = playerStats.filter(s => s.category === cat.key);
                                 if (categoryStats.length === 0) return null;
                                 return (
                                   <div key={cat.key}>
