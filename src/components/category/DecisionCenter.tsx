@@ -1473,7 +1473,7 @@ import { isIndividualSport } from "@/lib/constants/sportTypes";
         <NotifyAthletesDialog
           open={notifyDialogOpen}
           onOpenChange={setNotifyDialogOpen}
-          athletes={players.map(p => ({ id: p.id, name: p.name }))}
+          athletes={players.map(p => ({ id: p.id, name: getFullName(p) }))}
           eventType="custom"
           defaultSubject="Message de l'équipe"
         />
