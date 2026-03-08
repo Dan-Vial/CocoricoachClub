@@ -541,7 +541,150 @@ export function AggregatedRoundStatsDialog({
             </div>
           ) : (
             <div className="space-y-4">
-              {playerStats.map((player) => (
+              {/* Athletics: Group by discipline */}
+              {isAthletics ? (() => {
+                // Group players by discipline
+                const disciplineGroups = new Map<string, PlayerAggregatedStats[]>();
+                playerStats.forEach(p => {
+                  const disc = p.specialty || p.discipline || "Général";
+                  if (!disciplineGroups.has(disc)) disciplineGroups.set(disc, []);
+                  disciplineGroups.get(disc)!.push(p);
+                });
+
+                return Array.from(disciplineGroups.entries()).map(([discipline, players]) => {
+                  const disciplineStats = getAthletismeStatsForDiscipline(discipline);
+                  return (
+                    <div key={discipline} className="space-y-3">
+                      <div className="flex items-center gap-2 px-1">
+                        <Medal className="h-5 w-5 text-primary" />
+                        <h3 className="text-lg font-semibold">{discipline}</h3>
+                        <Badge variant="secondary">{players.length} athlète{players.length > 1 ? 's' : ''}</Badge>
+                      </div>
+
+                      {players.map(player => (
+                        <Card key={player.playerId}>
+                          <CardHeader className="pb-3">
+                            <CardTitle className="flex items-center justify-between text-base">
+                              <span>{player.playerName}</span>
+                              <div className="flex gap-2">
+                                <Badge variant="secondary">
+                                  {player.roundCount} épreuve{player.roundCount > 1 ? 's' : ''}
+                                </Badge>
+                                {player.bestRanking && (
+                                  <Badge variant="outline" className="gap-1">
+                                    🏅 {player.bestRanking}e
+                                  </Badge>
+                                )}
+                                {player.qualifications > 0 && (
+                                  <Badge className="gap-1 bg-green-600">
+                                    {player.qualifications}Q
+                                  </Badge>
+                                )}
+                              </div>
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent className="space-y-4">
+                            {/* Summary KPIs */}
+                            <div className="grid grid-cols-3 gap-2 text-center">
+                              <div className="p-2 rounded bg-muted/50">
+                                <p className="text-xs text-muted-foreground">Épreuves</p>
+                                <p className="font-bold">{player.roundCount}</p>
+                              </div>
+                              {player.bestRanking && (
+                                <div className="p-2 rounded bg-primary/10">
+                                  <p className="text-xs text-muted-foreground">Meilleur classement</p>
+                                  <p className="font-bold text-primary">{player.bestRanking}e</p>
+                                </div>
+                              )}
+                              <div className="p-2 rounded bg-accent/50">
+                                <p className="text-xs text-muted-foreground">Qualifications</p>
+                                <p className="font-bold">{player.qualifications}/{player.roundCount}</p>
+                              </div>
+                            </div>
+
+                            {/* Rounds detail table */}
+                            {player.rounds.length > 0 && (
+                              <div className="space-y-2">
+                                <h4 className="text-sm font-semibold text-primary flex items-center gap-2">
+                                  <Timer className="h-4 w-4" />
+                                  Détail des épreuves
+                                </h4>
+                                <div className="overflow-x-auto">
+                                  <table className="w-full text-xs border-collapse">
+                                    <thead>
+                                      <tr className="bg-muted/50">
+                                        <th className="text-left px-2 py-1.5 font-medium">Phase</th>
+                                        <th className="px-2 py-1.5 font-medium text-center">Place</th>
+                                        <th className="px-2 py-1.5 font-medium text-center">Résultat</th>
+                                        {disciplineStats.slice(0, 5).map(s => (
+                                          <th key={s.key} className="px-2 py-1.5 font-medium text-center" title={s.label}>
+                                            {s.shortLabel}
+                                          </th>
+                                        ))}
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {player.rounds.map((round, idx) => (
+                                        <tr key={idx} className={idx % 2 === 1 ? "bg-muted/20" : ""}>
+                                          <td className="px-2 py-1.5">
+                                            {ATHLETISME_PHASES.find(p => p.value === round.phase)?.label || round.phase || `Épreuve ${idx + 1}`}
+                                          </td>
+                                          <td className="px-2 py-1.5 text-center font-semibold">
+                                            {round.ranking ? (
+                                              <Badge variant={round.ranking <= 3 ? "default" : "secondary"} className="text-[10px]">
+                                                {round.ranking === 1 ? "🥇" : round.ranking === 2 ? "🥈" : round.ranking === 3 ? "🥉" : `${round.ranking}e`}
+                                              </Badge>
+                                            ) : '-'}
+                                          </td>
+                                          <td className="px-2 py-1.5 text-center">
+                                            {round.result === 'qualified' ? (
+                                              <Badge className="bg-green-600 text-[10px]">Q</Badge>
+                                            ) : round.result === 'eliminated' ? (
+                                              <Badge variant="destructive" className="text-[10px]">Élim.</Badge>
+                                            ) : round.result ? (
+                                              <span className="text-muted-foreground">{round.result.toUpperCase()}</span>
+                                            ) : '-'}
+                                          </td>
+                                          {disciplineStats.slice(0, 5).map(s => (
+                                            <td key={s.key} className="px-2 py-1.5 text-center font-mono">
+                                              {round.stats[s.key] != null ? round.stats[s.key] : '-'}
+                                            </td>
+                                          ))}
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Aggregated discipline stats */}
+                            {Object.keys(player.stats).length > 0 && (
+                              <div>
+                                <h4 className="text-sm font-semibold text-muted-foreground mb-2">Statistiques cumulées</h4>
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                                  {disciplineStats.map(s => {
+                                    const val = player.stats[s.key];
+                                    if (val == null) return null;
+                                    return (
+                                      <div key={s.key} className="flex justify-between items-center p-2 rounded bg-muted/30">
+                                        <span className="text-xs text-muted-foreground">{s.shortLabel}</span>
+                                        <span className="font-medium text-sm">{val}</span>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  );
+                });
+              })() : (
+                /* Non-Athletics: original per-player display */
+                playerStats.map((player) => (
                 <Card key={player.playerId}>
                   <CardHeader className="pb-3">
                     <CardTitle className="flex items-center justify-between text-base">
@@ -739,7 +882,8 @@ export function AggregatedRoundStatsDialog({
                     )}
                   </CardContent>
                 </Card>
-              ))}
+              ))
+              )}
             </div>
           )}
         </ScrollArea>
