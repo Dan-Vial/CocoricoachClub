@@ -881,29 +881,25 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
         // Get the stats to display based on preferences
         const sportType = category?.clubs?.sport || "rugby";
         const allStatsDef = getStatsForSport(sportType);
-        const customStatFields = (customStatsRes.data || []).map(cs => ({
+        const customStatFields = (customStatsRes.data || []).map((cs: any) => ({
           key: cs.key, label: cs.label, shortLabel: cs.short_label,
           category: cs.category_type as StatField["category"],
           type: "number" as const,
         }));
         const allAvailable = [...allStatsDef, ...customStatFields];
-        const enabledKeys = (statPrefsRes.data?.enabled_stats as string[]) || allAvailable.map(s => s.key);
-
-        const statKeyToDbCol: Record<string, string> = {
-          tries: "tries", tackles: "tackles", carries: "carries", breakthroughs: "breakthroughs",
-          offloads: "offloads", conversions: "conversions", penaltiesScored: "penalties_scored",
-          dropGoals: "drop_goals", metersGained: "meters_gained", tacklesMissed: "tackles_missed",
-          turnoversWon: "turnovers_won", totalContacts: "total_contacts", defensiveRecoveries: "defensive_recoveries",
-          yellowCards: "yellow_cards", redCards: "red_cards",
-        };
-
-        const displayStats = allAvailable.filter(s => enabledKeys.includes(s.key));
+        const enabledKeys = [
+          ...(statPrefsRes.data?.enabled_stats as string[] || []),
+          ...(statPrefsRes.data?.enabled_custom_stats as string[] || []),
+        ];
+        const displayStats = enabledKeys.length > 0
+          ? allAvailable.filter(s => enabledKeys.includes(s.key))
+          : allAvailable;
         // Show up to 6 stat columns in PDF
         const limitedStats = displayStats.slice(0, 6);
 
         const statHeaders = ["Joueur", ...limitedStats.map(s => s.shortLabel)];
         const nameColWidth = 50;
-        const statColWidth = Math.floor((contentWidth - nameColWidth) / limitedStats.length);
+        const statColWidth = Math.max(15, Math.floor((contentWidth - nameColWidth) / limitedStats.length));
         const statColWidths = [nameColWidth, ...limitedStats.map(() => statColWidth)];
         yPos = drawTableHeaderPdf(pdf, statHeaders, statColWidths, yPos, margin, contentWidth);
 
@@ -914,8 +910,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
           const values = [
             stat.players?.name || 'Inconnu',
             ...limitedStats.map(s => {
-              const dbCol = statKeyToDbCol[s.key];
-              const val = dbCol ? stat[dbCol] : sportData[s.key];
+              const val = sportData[s.key] ?? stat[s.key] ?? stat[s.key.replace(/([A-Z])/g, '_$1').toLowerCase()];
               return val != null ? String(val) : '-';
             })
           ];
@@ -923,8 +918,8 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
           const rowColors: ([number, number, number] | null)[] = [
             null,
             ...limitedStats.map(s => {
-              const dbCol = statKeyToDbCol[s.key];
-              const val = dbCol ? stat[dbCol] : sportData[s.key];
+              const sportDataLocal = (stat.sport_data && typeof stat.sport_data === 'object') ? stat.sport_data as Record<string, any> : {};
+              const val = sportDataLocal[s.key] ?? stat[s.key];
               if (s.key === 'tries' && val && val > 0) return defaultColors.success;
               if (s.key === 'yellowCards' && val && val > 0) return defaultColors.warning;
               if (s.key === 'redCards' && val && val > 0) return defaultColors.danger;
