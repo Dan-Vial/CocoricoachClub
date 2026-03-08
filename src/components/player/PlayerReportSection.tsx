@@ -961,9 +961,9 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
           
           // EWMA KPI cards
           const ewmaKpis: { label: string; value: string; color: [number, number, number] }[] = [
-            { label: "Charge aiguë", value: latest.acute_load != null ? latest.acute_load.toFixed(0) : '-', color: colors.danger },
-            { label: "Charge chronique", value: latest.chronic_load != null ? latest.chronic_load.toFixed(0) : '-', color: colors.primary },
-            { label: "Ratio EWMA", value: latest.awcr != null ? latest.awcr.toFixed(2) : '-', color: latest.awcr != null ? (latest.awcr > 1.5 ? colors.danger : latest.awcr > 1.3 ? colors.warning : latest.awcr >= 0.8 ? colors.success : colors.warning) : colors.muted },
+            { label: "Charge aiguë", value: latestWithEwma.acute_load != null ? latestWithEwma.acute_load.toFixed(0) : '-', color: colors.danger },
+            { label: "Charge chronique", value: latestWithEwma.chronic_load != null ? latestWithEwma.chronic_load.toFixed(0) : '-', color: colors.primary },
+            { label: "Ratio EWMA", value: latestWithEwma.awcr != null ? latestWithEwma.awcr.toFixed(2) : '-', color: latestWithEwma.awcr != null ? (latestWithEwma.awcr > 1.5 ? colors.danger : latestWithEwma.awcr > 1.3 ? colors.warning : latestWithEwma.awcr >= 0.8 ? colors.success : colors.warning) : colors.muted },
             { label: "Séances (période)", value: String(sortedAwcr.length), color: colors.secondary },
           ];
 
