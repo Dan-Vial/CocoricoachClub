@@ -93,7 +93,9 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
     pdf.setFont("helvetica", "bold");
     let xPos = margin + 2;
     headers.forEach((header, i) => {
-      pdf.text(header.substring(0, Math.floor(colWidths[i] / 2.8)), xPos, y + 5.5);
+      const maxChars = Math.max(4, Math.floor(colWidths[i] / 2.2));
+      const text = header.length > maxChars ? header.substring(0, maxChars - 1) + '.' : header;
+      pdf.text(text, xPos, y + 5.5);
       xPos += colWidths[i];
     });
     pdf.setFont("helvetica", "normal");
