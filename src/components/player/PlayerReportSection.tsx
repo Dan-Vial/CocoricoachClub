@@ -718,14 +718,57 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
           });
           yPos += 5;
 
-          // === BIOMETRICS LINE CHART (Weight evolution) ===
+          // === BIOMETRICS EVOLUTION CHARTS ===
+          const chartHalfWidth = (contentWidth - 6) / 2;
+
+          // Weight evolution
           const weightPoints = allBioData
             .filter(b => b.weight != null)
             .reverse()
             .map(b => ({ label: format(new Date(b.date), "dd/MM"), value: b.weight! }));
-          if (weightPoints.length >= 2) {
+          
+          // MG% evolution
+          const fatPoints = allBioData
+            .filter(b => b.fat != null)
+            .reverse()
+            .map(b => ({ label: format(new Date(b.date), "dd/MM"), value: b.fat! }));
+
+          // Side by side: weight + MG%
+          if (weightPoints.length >= 2 || fatPoints.length >= 2) {
             yPos = localCheckPageBreak(pdf, yPos, 55, pdfSettings);
-            yPos = drawLineChart(pdf, weightPoints.slice(-12), margin, yPos, contentWidth / 2, 35, "Évolution du poids (kg)", colors.secondary);
+            const chartY = yPos;
+            if (weightPoints.length >= 2) {
+              drawLineChart(pdf, weightPoints.slice(-12), margin, chartY, chartHalfWidth, 35, "Évolution poids (kg)", colors.secondary);
+            }
+            if (fatPoints.length >= 2) {
+              drawLineChart(pdf, fatPoints.slice(-12), margin + chartHalfWidth + 6, chartY, chartHalfWidth, 35, "Évolution MG (%)", colors.warning);
+            }
+            yPos = chartY + 35 + 10;
+          }
+
+          // IMC evolution
+          const bmiPoints = allBioData
+            .filter(b => b.bmi != null)
+            .reverse()
+            .map(b => ({ label: format(new Date(b.date), "dd/MM"), value: b.bmi! }));
+          
+          // Muscle mass evolution
+          const musclePoints = allBioData
+            .filter(b => b.muscle != null)
+            .reverse()
+            .map(b => ({ label: format(new Date(b.date), "dd/MM"), value: b.muscle! }));
+
+          // Side by side: IMC + Muscle
+          if (bmiPoints.length >= 2 || musclePoints.length >= 2) {
+            yPos = localCheckPageBreak(pdf, yPos, 55, pdfSettings);
+            const chartY2 = yPos;
+            if (bmiPoints.length >= 2) {
+              drawLineChart(pdf, bmiPoints.slice(-12), margin, chartY2, chartHalfWidth, 35, "Évolution IMC", colors.primary);
+            }
+            if (musclePoints.length >= 2) {
+              drawLineChart(pdf, musclePoints.slice(-12), margin + chartHalfWidth + 6, chartY2, chartHalfWidth, 35, "Évolution masse musc. (kg)", colors.success);
+            }
+            yPos = chartY2 + 35 + 10;
           }
         } else {
           pdf.setFontSize(9);
@@ -948,14 +991,27 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
           });
           yPos += 5;
 
-          // EWMA ratio line chart
-          const ewmaChartData = sortedAwcr
+          // EWMA charts side by side: ratio + acute/chronic loads
+          const chartHalfW = (contentWidth - 6) / 2;
+          const ewmaRatioData = sortedAwcr
             .filter(e => e.awcr != null)
             .slice(-20)
             .map(e => ({ label: format(new Date(e.session_date), "dd/MM"), value: e.awcr! }));
-          if (ewmaChartData.length >= 2) {
+          const ewmaAcuteData = sortedAwcr
+            .filter(e => e.acute_load != null)
+            .slice(-20)
+            .map(e => ({ label: format(new Date(e.session_date), "dd/MM"), value: e.acute_load! }));
+
+          if (ewmaRatioData.length >= 2 || ewmaAcuteData.length >= 2) {
             yPos = localCheckPageBreak(pdf, yPos, 55, pdfSettings);
-            yPos = drawLineChart(pdf, ewmaChartData, margin, yPos, contentWidth / 2, 35, "Évolution ratio EWMA", colors.primary);
+            const chartYEwma = yPos;
+            if (ewmaRatioData.length >= 2) {
+              drawLineChart(pdf, ewmaRatioData, margin, chartYEwma, chartHalfW, 35, "Évolution ratio EWMA", colors.primary);
+            }
+            if (ewmaAcuteData.length >= 2) {
+              drawLineChart(pdf, ewmaAcuteData, margin + chartHalfW + 6, chartYEwma, chartHalfW, 35, "Charge aiguë (EWMA)", colors.danger);
+            }
+            yPos = chartYEwma + 35 + 10;
           }
         } else {
           pdf.setFontSize(9);
