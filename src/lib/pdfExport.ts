@@ -1399,13 +1399,30 @@ export const exportCalendarToPdf = async (
 export const printElement = async (element: HTMLElement, title: string): Promise<void> => {
   const html2canvas = (await import("html2canvas")).default;
   
-  // Temporarily hide interactive elements (hover actions, buttons) for clean capture
-  const nodesWithNoprint = element.querySelectorAll('[data-no-print], .no-print');
-  nodesWithNoprint.forEach(el => (el as HTMLElement).style.display = 'none');
+  // Collect all elements to hide for printing
+  const elementsToHide: { el: HTMLElement; originalDisplay: string; originalVisibility: string }[] = [];
   
-  // Also temporarily hide action buttons inside vignettes  
-  const actionButtons = element.querySelectorAll('[class*="group-hover"], [data-hover-actions]');
-  actionButtons.forEach(el => (el as HTMLElement).style.display = 'none');
+  // Hide no-print elements
+  element.querySelectorAll('[data-no-print], .no-print').forEach(el => {
+    const htmlEl = el as HTMLElement;
+    elementsToHide.push({ 
+      el: htmlEl, 
+      originalDisplay: htmlEl.style.display,
+      originalVisibility: htmlEl.style.visibility 
+    });
+    htmlEl.style.display = 'none';
+  });
+  
+  // Hide hover action buttons and overlays
+  element.querySelectorAll('[data-hover-actions], .group-hover\\:opacity-100, .group-hover\\:flex').forEach(el => {
+    const htmlEl = el as HTMLElement;
+    elementsToHide.push({ 
+      el: htmlEl, 
+      originalDisplay: htmlEl.style.display,
+      originalVisibility: htmlEl.style.visibility 
+    });
+    htmlEl.style.display = 'none';
+  });
 
   try {
     const canvas = await html2canvas(element, {
@@ -1413,10 +1430,29 @@ export const printElement = async (element: HTMLElement, title: string): Promise
       useCORS: true,
       backgroundColor: "#ffffff",
       logging: false,
-      // Ensure we capture inline styles (gradients, colors)
-      onclone: (clonedDoc) => {
-        // Remove hover action overlays from cloned document
-        clonedDoc.querySelectorAll('[data-hover-actions]').forEach(el => el.remove());
+      onclone: (clonedDoc, clonedElement) => {
+        // Remove interactive elements from cloned document
+        clonedElement.querySelectorAll('[data-no-print], .no-print, [data-hover-actions]').forEach(el => el.remove());
+        
+        // Ensure all training type colors are preserved with inline styles
+        clonedElement.querySelectorAll('[class*="bg-"]').forEach(el => {
+          const computedStyle = window.getComputedStyle(el as Element);
+          (el as HTMLElement).style.backgroundColor = computedStyle.backgroundColor;
+        });
+        
+        // Preserve text colors
+        clonedElement.querySelectorAll('[class*="text-"]').forEach(el => {
+          const computedStyle = window.getComputedStyle(el as Element);
+          (el as HTMLElement).style.color = computedStyle.color;
+        });
+        
+        // Preserve borders
+        clonedElement.querySelectorAll('[class*="border"]').forEach(el => {
+          const computedStyle = window.getComputedStyle(el as Element);
+          (el as HTMLElement).style.borderColor = computedStyle.borderColor;
+          (el as HTMLElement).style.borderWidth = computedStyle.borderWidth;
+          (el as HTMLElement).style.borderStyle = computedStyle.borderStyle;
+        });
       }
     });
 
@@ -1436,18 +1472,26 @@ export const printElement = async (element: HTMLElement, title: string): Promise
               display: flex; 
               justify-content: center; 
               align-items: flex-start;
-              padding: 10px;
-              -webkit-print-color-adjust: exact;
-              print-color-adjust: exact;
+              padding: 20px;
+              background: white;
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+              color-adjust: exact !important;
             }
             img { 
               width: 100%; 
               max-width: 100%; 
-              height: auto; 
+              height: auto;
+              border-radius: 12px;
+              box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
             }
             @media print {
-              body { padding: 0; }
-              img { width: 100%; }
+              body { padding: 10mm; }
+              img { 
+                width: 100%; 
+                box-shadow: none;
+                border-radius: 8px;
+              }
             }
           </style>
         </head>
@@ -1464,8 +1508,10 @@ export const printElement = async (element: HTMLElement, title: string): Promise
       printWindow.close();
     }, 500);
   } finally {
-    // Restore hidden elements
-    nodesWithNoprint.forEach(el => (el as HTMLElement).style.display = '');
-    actionButtons.forEach(el => (el as HTMLElement).style.display = '');
+    // Restore all hidden elements
+    elementsToHide.forEach(({ el, originalDisplay, originalVisibility }) => {
+      el.style.display = originalDisplay;
+      el.style.visibility = originalVisibility;
+    });
   }
 };
