@@ -1614,7 +1614,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
         });
       }
 
-      pdf.save(`presences_${category?.name?.replace(/\s+/g, '_')}_${format(new Date(), "yyyy-MM-dd")}.pdf`);
+      pdf.save(`presences_${(catName4 || category?.name || 'rapport')?.replace(/\s+/g, '_')}_${format(new Date(), "yyyy-MM-dd")}.pdf`);
       toast.success("Rapport de présences généré");
     } catch (error) {
       console.error(error);
