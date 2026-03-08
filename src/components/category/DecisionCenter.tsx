@@ -1643,7 +1643,7 @@ import { isIndividualSport } from "@/lib/constants/sportTypes";
                                     {entry.status === "late" && <Clock className="h-4 w-4 text-orange-500 shrink-0 mt-0.5" />}
                                     {entry.status === "excused" && <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />}
                                     <div>
-                                      <span className="font-medium text-sm">{entry.players?.name}</span>
+                                      <span className="font-medium text-sm">{entry.players ? [entry.players.first_name, entry.players.name].filter(Boolean).join(" ") : "Inconnu"}</span>
                                       {entry.status === "late" && (
                                         <div className="flex flex-col gap-0.5 mt-0.5">
                                           {entry.late_minutes && (
