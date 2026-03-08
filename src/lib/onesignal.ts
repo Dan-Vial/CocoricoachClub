@@ -83,8 +83,31 @@ export async function requestOneSignalPermission(): Promise<boolean> {
  * Check current OneSignal push permission status.
  */
 export function getOneSignalPermission(): NotificationPermission {
+  // Try OneSignal SDK first (more reliable across domains)
+  try {
+    if (window.OneSignal?.Notifications?.permission) {
+      return "granted";
+    }
+  } catch { /* ignore */ }
+  
   if (!hasNotificationAPI()) return "default";
   return window.Notification.permission;
+}
+
+/**
+ * Check OneSignal subscription status server-side for a given user.
+ * Returns true if the user has an active push subscription in OneSignal.
+ */
+export async function checkOneSignalSubscriptionStatus(userId: string): Promise<boolean> {
+  try {
+    const { supabase } = await import("@/integrations/supabase/client");
+    const { data } = await supabase.functions.invoke("check-onesignal-subscriptions", {
+      body: { user_ids: [userId] },
+    });
+    return data?.results?.[userId]?.hasPush === true;
+  } catch {
+    return false;
+  }
 }
 
 /**

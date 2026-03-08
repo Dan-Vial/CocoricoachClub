@@ -2,26 +2,32 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Bell, BellOff, CheckCircle2, AlertCircle } from "lucide-react";
+import { Bell, BellOff, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { initOneSignal, oneSignalLogin, buildUserTags, requestOneSignalPermission, getOneSignalPermission } from "@/lib/onesignal";
+import { initOneSignal, oneSignalLogin, buildUserTags, requestOneSignalPermission, getOneSignalPermission, checkOneSignalSubscriptionStatus } from "@/lib/onesignal";
 
 const ONBOARDING_KEY = "notification_onboarding_done";
 
 export function PushNotificationSettings() {
   const { user } = useAuth();
   const [permission, setPermission] = useState<NotificationPermission>("default");
+  const [serverSubscribed, setServerSubscribed] = useState<boolean | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Check browser permission
   useEffect(() => {
     setPermission(getOneSignalPermission());
-
-    // Listen for permission changes
     const interval = setInterval(() => {
       setPermission(getOneSignalPermission());
     }, 2000);
     return () => clearInterval(interval);
   }, []);
+
+  // Check server-side OneSignal subscription status
+  useEffect(() => {
+    if (!user?.id) return;
+    checkOneSignalSubscriptionStatus(user.id).then(setServerSubscribed);
+  }, [user?.id]);
 
   const handleActivate = async () => {
     if (!user) return;
@@ -34,6 +40,7 @@ export function PushNotificationSettings() {
         await oneSignalLogin(user.id, user.email || "", tags);
         localStorage.setItem(`${ONBOARDING_KEY}_${user.id}`, "done");
         setPermission("granted");
+        setServerSubscribed(true);
       } else {
         setPermission(getOneSignalPermission());
       }
@@ -44,8 +51,10 @@ export function PushNotificationSettings() {
     }
   };
 
-  const isGranted = permission === "granted";
-  const isDenied = permission === "denied";
+  // Consider active if either browser says granted OR server confirms push subscription
+  const isGranted = permission === "granted" || serverSubscribed === true;
+  const isDenied = permission === "denied" && serverSubscribed !== true;
+  const isChecking = serverSubscribed === null;
 
   return (
     <Card>
@@ -58,11 +67,18 @@ export function PushNotificationSettings() {
               <CardDescription>Alertes en temps réel sur votre appareil</CardDescription>
             </div>
           </div>
-          <Badge
-            variant={isGranted ? "default" : isDenied ? "destructive" : "secondary"}
-          >
-            {isGranted ? "Activé" : isDenied ? "Refusé" : "Non activé"}
-          </Badge>
+          {isChecking ? (
+            <Badge variant="secondary">
+              <Loader2 className="h-3 w-3 animate-spin mr-1" />
+              Vérification
+            </Badge>
+          ) : (
+            <Badge
+              variant={isGranted ? "default" : isDenied ? "destructive" : "secondary"}
+            >
+              {isGranted ? "Activé" : isDenied ? "Refusé" : "Non activé"}
+            </Badge>
+          )}
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -126,7 +142,7 @@ export function PushNotificationSettings() {
         )}
 
         {/* Activate button */}
-        {!isGranted && !isDenied && (
+        {!isGranted && !isDenied && !isChecking && (
           <Button
             className="w-full"
             onClick={handleActivate}
