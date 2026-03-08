@@ -266,6 +266,8 @@ export function ProgramSessionCard({
     const maxCount = getMaxCountForMethod(method);
     setLinkingFrom({ index, method, maxCount });
     setSelectedForLinking([index]);
+    // Update the exercise method immediately so the select reflects the chosen method
+    updateExercise(index, "method", method);
   };
 
   const toggleExerciseForLinking = (targetIndex: number) => {
@@ -310,6 +312,12 @@ export function ProgramSessionCard({
   };
 
   const cancelLinking = () => {
+    // Reset method back to normal for all selected exercises
+    if (linkingFrom) {
+      selectedForLinking.forEach(i => {
+        updateExercise(i, "method", "normal");
+      });
+    }
     setLinkingFrom(null);
     setSelectedForLinking([]);
   };
