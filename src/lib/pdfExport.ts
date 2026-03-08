@@ -1395,39 +1395,77 @@ export const exportCalendarToPdf = async (
   pdf.save(`calendrier-${categoryName.toLowerCase().replace(/\s+/g, "-")}-${format(currentMonth, "yyyy-MM")}.pdf`);
 };
 
-// Print function
-export const printElement = (element: HTMLElement, title: string): void => {
-  const printWindow = window.open("", "_blank");
-  if (!printWindow) return;
+// Print function - uses html2canvas to capture exact visual appearance
+export const printElement = async (element: HTMLElement, title: string): Promise<void> => {
+  const html2canvas = (await import("html2canvas")).default;
   
-  printWindow.document.write(`
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <title>${title}</title>
-        <style>
-          body { 
-            font-family: Arial, sans-serif; 
-            padding: 20px;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
-          }
-          @media print {
-            body { padding: 0; }
-            .no-print { display: none; }
-          }
-        </style>
-      </head>
-      <body>
-        ${element.innerHTML}
-      </body>
-    </html>
-  `);
+  // Temporarily hide interactive elements (hover actions, buttons) for clean capture
+  const nodesWithNoprint = element.querySelectorAll('[data-no-print], .no-print');
+  nodesWithNoprint.forEach(el => (el as HTMLElement).style.display = 'none');
   
-  printWindow.document.close();
-  printWindow.focus();
-  setTimeout(() => {
-    printWindow.print();
-    printWindow.close();
-  }, 250);
+  // Also temporarily hide action buttons inside vignettes  
+  const actionButtons = element.querySelectorAll('[class*="group-hover"], [data-hover-actions]');
+  actionButtons.forEach(el => (el as HTMLElement).style.display = 'none');
+
+  try {
+    const canvas = await html2canvas(element, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: "#ffffff",
+      logging: false,
+      // Ensure we capture inline styles (gradients, colors)
+      onclone: (clonedDoc) => {
+        // Remove hover action overlays from cloned document
+        clonedDoc.querySelectorAll('[data-hover-actions]').forEach(el => el.remove());
+      }
+    });
+
+    const imgData = canvas.toDataURL("image/png");
+    
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) return;
+    
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>${title}</title>
+          <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { 
+              display: flex; 
+              justify-content: center; 
+              align-items: flex-start;
+              padding: 10px;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+            }
+            img { 
+              width: 100%; 
+              max-width: 100%; 
+              height: auto; 
+            }
+            @media print {
+              body { padding: 0; }
+              img { width: 100%; }
+            }
+          </style>
+        </head>
+        <body>
+          <img src="${imgData}" alt="${title}" />
+        </body>
+      </html>
+    `);
+    
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 500);
+  } finally {
+    // Restore hidden elements
+    nodesWithNoprint.forEach(el => (el as HTMLElement).style.display = '');
+    actionButtons.forEach(el => (el as HTMLElement).style.display = '');
+  }
 };
