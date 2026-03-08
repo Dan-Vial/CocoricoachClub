@@ -540,6 +540,8 @@ export function CoachDashboard({ categoryId }: CoachDashboardProps) {
             </div>
           )}
         </CardContent>
+      </Card>
+
       {/* Recovery & Sleep Dashboard */}
       <RecoveryDashboard categoryId={categoryId} />
     </div>
