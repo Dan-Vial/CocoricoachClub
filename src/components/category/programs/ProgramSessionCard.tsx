@@ -585,7 +585,7 @@ export function ProgramSessionCard({
     return (
       <div
         className={cn(
-          "flex flex-col gap-2 p-3 rounded-lg border transition-all",
+          "flex flex-col gap-2 p-3 rounded-lg border transition-all relative",
           getExerciseStyle(),
           linkingFrom && isLinkable(index) && "cursor-pointer"
         )}
@@ -595,6 +595,28 @@ export function ProgramSessionCard({
           }
         }}
       >
+        {/* Linking mode selection overlay */}
+        {linkingFrom && isLinkable(index) && (
+          <div
+            className={cn(
+              "absolute inset-0 z-10 rounded-lg flex items-center justify-center transition-all",
+              isSelected ? "bg-primary/10" : "bg-transparent hover:bg-muted/40"
+            )}
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleExerciseForLinking(index);
+            }}
+          >
+            <div className={cn(
+              "h-8 w-8 rounded-full border-2 flex items-center justify-center transition-all",
+              isSelected 
+                ? cn("border-transparent text-white", getTrainingStyleConfig(linkingFrom.method).color)
+                : "border-muted-foreground/40 bg-background"
+            )}>
+              {isSelected && <Check className="h-5 w-5" />}
+            </div>
+          </div>
+        )}
         {/* Exercise header */}
         <div className="flex items-center gap-2">
           <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab" />
