@@ -11,7 +11,8 @@ import { FileText, Download, User, Calendar, Trophy, Loader2, Users, FileSpreads
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import jsPDF from "jspdf";
-import { generateCsv, downloadCsv } from "@/lib/csv";
+import ExcelJS from "exceljs";
+import { getExcelBranding, addBrandedHeader, styleDataHeaderRow, addZebraRows, addFooter, downloadWorkbook } from "@/lib/excelExport";
 import { preparePdfWithSettings, drawPdfHeader as drawPdfHeaderCustom, drawSectionTitle, drawTableHeader as drawTableHeaderLib, drawTableRow as drawTableRowLib, checkPageBreak as checkPageBreakLib, type PdfCustomSettings } from "@/lib/pdfExport";
 import { getStatsForSport, type StatField } from "@/lib/constants/sportStats";
 import { TEST_CATEGORIES, getTestLabel } from "@/lib/constants/testCategories";
@@ -320,6 +321,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
   const generateTdjCsv = async () => {
     setGeneratingReport("tdj-csv");
     try {
+      const branding = await getExcelBranding(categoryId);
       let matchQuery = supabase.from("matches").select("id, match_date, opponent").eq("category_id", categoryId).order("match_date");
       if (tdjDateFrom) matchQuery = matchQuery.gte("match_date", tdjDateFrom);
       if (tdjDateTo) matchQuery = matchQuery.lte("match_date", tdjDateTo);
@@ -338,7 +340,6 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
       const csvMatchStats = statsRes.data || [];
       const injuries = injuriesRes.data || [];
 
-      // Build stats minutes map
       const csvStatsMinutesMap = new Map<string, number>();
       csvMatchStats.forEach((s: any) => {
         const minutes = s.sport_data?.minutesPlayed || s.sport_data?.playingTime || 0;
@@ -373,12 +374,33 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
         return [[player.first_name, player.name].filter(Boolean).join(" "), totalMin, starter, sub, pl.length, horsGroupe, blesse];
       }).sort((a, b) => (b[1] as number) - (a[1] as number));
 
-      const csv = generateCsv(headers, rows);
-      downloadCsv(`tdj_${(category?.name || 'rapport')?.replace(/\s+/g, '_')}_${format(new Date(), "yyyy-MM-dd")}.csv`, csv);
-      toast.success("Export CSV généré");
+      const workbook = new ExcelJS.Workbook();
+      const sheet = workbook.addWorksheet("Suivi Temps de Jeu");
+      const extraInfo: [string, string][] = [
+        ["Matchs analysés", `${matchesData.length}`],
+      ];
+      if (tdjDateFrom || tdjDateTo) {
+        extraInfo.push(["Période", `${tdjDateFrom || "début"} — ${tdjDateTo || "aujourd'hui"}`]);
+      }
+      const dataStart = addBrandedHeader(sheet, "SUIVI TEMPS DE JEU", branding, extraInfo);
+
+      headers.forEach((h, i) => { sheet.getCell(dataStart, i + 1).value = h; });
+      styleDataHeaderRow(sheet, dataStart, headers.length, branding.headerColor);
+
+      rows.forEach((row, ri) => {
+        const r = sheet.getRow(dataStart + 1 + ri);
+        row.forEach((val, ci) => { r.getCell(ci + 1).value = val as any; });
+      });
+      addZebraRows(sheet, dataStart + 1, dataStart + rows.length, headers.length);
+      addFooter(sheet, dataStart + rows.length + 1, headers.length, branding.footerText);
+
+      headers.forEach((_, i) => { sheet.getColumn(i + 1).width = i === 0 ? 25 : 18; });
+
+      await downloadWorkbook(workbook, `tdj_${(category?.name || 'rapport')?.replace(/\s+/g, '_')}_${format(new Date(), "yyyy-MM-dd")}.xlsx`);
+      toast.success("Export Excel généré");
     } catch (error) {
       console.error(error);
-      toast.error("Erreur lors de l'export CSV");
+      toast.error("Erreur lors de l'export Excel");
     } finally {
       setGeneratingReport(null);
     }
@@ -1291,10 +1313,11 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
     }
   };
 
-  // ========================== CSV EXPORTS ==========================
+  // ========================== EXCEL EXPORTS ==========================
   const generateSquadCsv = async () => {
     setGeneratingReport("squad-csv");
     try {
+      const branding = await getExcelBranding(categoryId);
       const [injuriesRes, wellnessRes, awcrRes, speedTestsRes, jumpTestsRes, matchLineupsRes] = await Promise.all([
         supabase.from("injuries").select("*").eq("category_id", categoryId),
         supabase.from("wellness_tracking").select("*").eq("category_id", categoryId).order("tracking_date", { ascending: false }),
@@ -1314,7 +1337,6 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
         const playerAwcr = (awcrRes.data || []).find(a => a.player_id === player.id);
         const playerLineups = filteredLineups.filter(l => l.player_id === player.id);
         const totalMinutes = playerLineups.reduce((sum, l) => sum + (l.minutes_played || 0), 0);
-        
         return [
           [player.first_name, player.name].filter(Boolean).join(" "),
           player.position || "",
@@ -1326,45 +1348,76 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
         ];
       });
 
-      const csv = generateCsv(headers, rows);
-      downloadCsv(`effectif_${(category?.name || 'rapport')?.replace(/\s+/g, '_')}_${format(new Date(), "yyyy-MM-dd")}.csv`, csv);
-      toast.success("Export CSV généré");
+      const workbook = new ExcelJS.Workbook();
+      const sheet = workbook.addWorksheet("Vue d'Ensemble Effectif");
+      const dataStart = addBrandedHeader(sheet, "VUE D'ENSEMBLE EFFECTIF", branding, [
+        ["Joueurs", `${players.length}`],
+        ["Matchs", `${matches.length}`],
+      ]);
+      headers.forEach((h, i) => { sheet.getCell(dataStart, i + 1).value = h; });
+      styleDataHeaderRow(sheet, dataStart, headers.length, branding.headerColor);
+      rows.forEach((row, ri) => {
+        const r = sheet.getRow(dataStart + 1 + ri);
+        row.forEach((val, ci) => { r.getCell(ci + 1).value = val as any; });
+      });
+      addZebraRows(sheet, dataStart + 1, dataStart + rows.length, headers.length);
+      addFooter(sheet, dataStart + rows.length + 1, headers.length, branding.footerText);
+      headers.forEach((_, i) => { sheet.getColumn(i + 1).width = i === 0 ? 25 : 18; });
+
+      await downloadWorkbook(workbook, `effectif_${(category?.name || 'rapport')?.replace(/\s+/g, '_')}_${format(new Date(), "yyyy-MM-dd")}.xlsx`);
+      toast.success("Export Excel généré");
     } catch (error) {
       console.error(error);
-      toast.error("Erreur lors de l'export CSV");
+      toast.error("Erreur lors de l'export Excel");
     } finally {
       setGeneratingReport(null);
     }
   };
 
-
   const generateSeasonCsv = async () => {
     setGeneratingReport("season-csv");
     try {
+      const branding = await getExcelBranding(categoryId);
       const matchesData = matches || [];
-      
       const headers = ["Date", "Adversaire", "Domicile", "Score", "Résultat", "Lieu"];
       const rows = matchesData.map(m => {
         const isWin = (m.is_home && (m.score_home || 0) > (m.score_away || 0)) || (!m.is_home && (m.score_away || 0) > (m.score_home || 0));
         const isLoss = (m.is_home && (m.score_home || 0) < (m.score_away || 0)) || (!m.is_home && (m.score_away || 0) < (m.score_home || 0));
         const result = isWin ? "Victoire" : isLoss ? "Défaite" : "Nul";
-        
         return [
-          format(new Date(m.match_date), "dd/MM/yyyy"),
-          m.opponent,
-          m.is_home ? "Oui" : "Non",
-          `${m.score_home || 0} - ${m.score_away || 0}`,
-          result,
-          m.location || "",
+          format(new Date(m.match_date), "dd/MM/yyyy"), m.opponent,
+          m.is_home ? "Oui" : "Non", `${m.score_home || 0} - ${m.score_away || 0}`,
+          result, m.location || "",
         ];
       });
+      const wins = rows.filter(r => r[4] === "Victoire").length;
+      const losses = rows.filter(r => r[4] === "Défaite").length;
+      const draws = rows.filter(r => r[4] === "Nul").length;
 
-      const csv = generateCsv(headers, rows);
-      downloadCsv(`saison_${(category?.name || 'rapport')?.replace(/\s+/g, '_')}_${format(new Date(), "yyyy-MM-dd")}.csv`, csv);
-      toast.success("Export CSV généré");
+      const workbook = new ExcelJS.Workbook();
+      const sheet = workbook.addWorksheet("Bilan de Saison");
+      const dataStart = addBrandedHeader(sheet, "BILAN DE SAISON", branding, [
+        ["Matchs joués", `${matchesData.length}`],
+        ["Bilan", `${wins}V / ${draws}N / ${losses}D`],
+      ]);
+      headers.forEach((h, i) => { sheet.getCell(dataStart, i + 1).value = h; });
+      styleDataHeaderRow(sheet, dataStart, headers.length, branding.headerColor);
+      rows.forEach((row, ri) => {
+        const r = sheet.getRow(dataStart + 1 + ri);
+        row.forEach((val, ci) => { r.getCell(ci + 1).value = val as any; });
+        const resultCell = r.getCell(5);
+        if (row[4] === "Victoire") resultCell.font = { color: { argb: "FF22C55E" }, bold: true };
+        else if (row[4] === "Défaite") resultCell.font = { color: { argb: "FFEF4444" }, bold: true };
+      });
+      addZebraRows(sheet, dataStart + 1, dataStart + rows.length, headers.length);
+      addFooter(sheet, dataStart + rows.length + 1, headers.length, branding.footerText);
+      headers.forEach((_, i) => { sheet.getColumn(i + 1).width = i === 1 ? 25 : 16; });
+
+      await downloadWorkbook(workbook, `saison_${(category?.name || 'rapport')?.replace(/\s+/g, '_')}_${format(new Date(), "yyyy-MM-dd")}.xlsx`);
+      toast.success("Export Excel généré");
     } catch (error) {
       console.error(error);
-      toast.error("Erreur lors de l'export CSV");
+      toast.error("Erreur lors de l'export Excel");
     } finally {
       setGeneratingReport(null);
     }
@@ -1377,28 +1430,73 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
     }
     setGeneratingReport("match-csv");
     try {
+      const branding = await getExcelBranding(categoryId);
       const match = matches.find(m => m.id === selectedMatch);
       if (!match) throw new Error("Match non trouvé");
 
-      const { data: lineups } = await supabase
-        .from("match_lineups")
-        .select("*, players(name, position)")
-        .eq("match_id", selectedMatch);
-
-      const headers = ["Joueur", "Position", "Titulaire", "Minutes jouées"];
-      const rows = (lineups || []).map(l => [
-        l.players?.name || "-",
-        l.position || l.players?.position || "-",
-        l.is_starter ? "Oui" : "Non",
-        l.minutes_played || 0,
+      const [lineupsRes, statsRes, statPrefsRes, customStatsRes] = await Promise.all([
+        supabase.from("match_lineups").select("*, players(name, first_name, position)").eq("match_id", selectedMatch),
+        supabase.from("player_match_stats").select("*").eq("match_id", selectedMatch),
+        supabase.from("category_stat_preferences").select("*").eq("category_id", categoryId).maybeSingle(),
+        supabase.from("custom_stats").select("*").eq("category_id", categoryId),
       ]);
 
-      const csv = generateCsv(headers, rows);
-      downloadCsv(`match_${match.opponent.replace(/\s+/g, '_')}_${format(new Date(match.match_date), "yyyy-MM-dd")}.csv`, csv);
-      toast.success("Export CSV généré");
+      const lineups = lineupsRes.data || [];
+      const matchStatsData = statsRes.data || [];
+
+      const sport = (category?.clubs as any)?.sport || "football";
+      const allFields = getStatsForSport(sport);
+      const customStatFields = (customStatsRes.data || []).map((cs: any) => ({
+        key: cs.key, label: cs.short_label || cs.label, category: cs.category_type,
+      }));
+      const allAvailable = [...allFields, ...customStatFields];
+      const enabledKeys = [
+        ...(statPrefsRes.data?.enabled_stats as string[] || []),
+        ...(statPrefsRes.data?.enabled_custom_stats as string[] || []),
+      ];
+      const displayStats = enabledKeys.length > 0
+        ? allAvailable.filter(s => enabledKeys.includes(s.key))
+        : allFields;
+
+      const baseHeaders = ["Joueur", "Position", "Titulaire", "Minutes jouées"];
+      const statHeaders = displayStats.map(s => s.label);
+      const allHeaders = [...baseHeaders, ...statHeaders];
+
+      const dataRows = lineups.map(l => {
+        const playerStat = matchStatsData.find(s => s.player_id === l.player_id);
+        const sportData = (playerStat?.sport_data || {}) as Record<string, any>;
+        const fullName = [l.players?.first_name, l.players?.name].filter(Boolean).join(" ");
+        return [
+          fullName || "-",
+          l.position || l.players?.position || "-",
+          l.is_starter ? "Oui" : "Non",
+          l.minutes_played || 0,
+          ...displayStats.map(s => sportData[s.key] ?? "-"),
+        ];
+      });
+
+      const workbook = new ExcelJS.Workbook();
+      const sheet = workbook.addWorksheet("Rapport de Match");
+      const dataStart = addBrandedHeader(sheet, `RAPPORT DE MATCH — vs ${match.opponent}`, branding, [
+        ["Date", format(new Date(match.match_date), "dd/MM/yyyy")],
+        ["Score", `${match.score_home ?? "?"} - ${match.score_away ?? "?"}`],
+        ["Lieu", match.location || "-"],
+      ]);
+      allHeaders.forEach((h, i) => { sheet.getCell(dataStart, i + 1).value = h; });
+      styleDataHeaderRow(sheet, dataStart, allHeaders.length, branding.headerColor);
+      dataRows.forEach((row, ri) => {
+        const r = sheet.getRow(dataStart + 1 + ri);
+        row.forEach((val, ci) => { r.getCell(ci + 1).value = val as any; });
+      });
+      addZebraRows(sheet, dataStart + 1, dataStart + dataRows.length, allHeaders.length);
+      addFooter(sheet, dataStart + dataRows.length + 1, allHeaders.length, branding.footerText);
+      allHeaders.forEach((_, i) => { sheet.getColumn(i + 1).width = i === 0 ? 25 : 15; });
+
+      await downloadWorkbook(workbook, `match_${match.opponent.replace(/\s+/g, '_')}_${format(new Date(match.match_date), "yyyy-MM-dd")}.xlsx`);
+      toast.success("Export Excel généré");
     } catch (error) {
       console.error(error);
-      toast.error("Erreur lors de l'export CSV");
+      toast.error("Erreur lors de l'export Excel");
     } finally {
       setGeneratingReport(null);
     }
@@ -1651,6 +1749,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
   const generateAttendanceCsv = async () => {
     setGeneratingReport("attendance-csv");
     try {
+      const branding = await getExcelBranding(categoryId);
       const { data: attendanceData } = await supabase
         .from("training_attendance")
         .select("*")
@@ -1676,17 +1775,37 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
       }).sort((a, b) => b.rate - a.rate);
 
       const headers = ["Joueur", "Position", "Présent", "Retard justifié", "Retard non justifié", "Excusé", "Absent", "Total", "Taux (%)"];
-      const rows = playerStats.map((p) => [
-        p.name, p.position, p.present, p.lateJustified, p.lateUnjustified,
-        p.excused, p.absent, p.total, p.rate,
+
+      const workbook = new ExcelJS.Workbook();
+      const sheet = workbook.addWorksheet("Rapport de Présences");
+      const avgRate = playerStats.length > 0 ? Math.round(playerStats.reduce((s, p) => s + p.rate, 0) / playerStats.length) : 0;
+      const dataStart = addBrandedHeader(sheet, "RAPPORT DE PRÉSENCES", branding, [
+        ["Joueurs", `${playerStats.length}`],
+        ["Taux moyen", `${avgRate}%`],
       ]);
 
-      const csv = generateCsv(headers, rows);
-      downloadCsv(`presences_${(category?.name || 'rapport')?.replace(/\s+/g, '_')}_${format(new Date(), "yyyy-MM-dd")}.csv`, csv);
-      toast.success("Export CSV généré");
+      headers.forEach((h, i) => { sheet.getCell(dataStart, i + 1).value = h; });
+      styleDataHeaderRow(sheet, dataStart, headers.length, branding.headerColor);
+
+      playerStats.forEach((p, ri) => {
+        const r = sheet.getRow(dataStart + 1 + ri);
+        const vals = [p.name, p.position, p.present, p.lateJustified, p.lateUnjustified, p.excused, p.absent, p.total, p.rate];
+        vals.forEach((val, ci) => { r.getCell(ci + 1).value = val as any; });
+        // Color code rate
+        const rateCell = r.getCell(9);
+        if (p.rate >= 80) rateCell.font = { color: { argb: "FF22C55E" }, bold: true };
+        else if (p.rate < 50) rateCell.font = { color: { argb: "FFEF4444" }, bold: true };
+      });
+      addZebraRows(sheet, dataStart + 1, dataStart + playerStats.length, headers.length);
+      addFooter(sheet, dataStart + playerStats.length + 1, headers.length, branding.footerText);
+
+      headers.forEach((_, i) => { sheet.getColumn(i + 1).width = i === 0 ? 25 : 18; });
+
+      await downloadWorkbook(workbook, `presences_${(category?.name || 'rapport')?.replace(/\s+/g, '_')}_${format(new Date(), "yyyy-MM-dd")}.xlsx`);
+      toast.success("Export Excel généré");
     } catch (error) {
       console.error(error);
-      toast.error("Erreur lors de l'export CSV");
+      toast.error("Erreur lors de l'export Excel");
     } finally {
       setGeneratingReport(null);
     }
@@ -1710,7 +1829,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold">Rapports</h2>
-        <p className="text-muted-foreground">Générez et exportez des rapports en PDF ou CSV (Excel)</p>
+        <p className="text-muted-foreground">Générez et exportez des rapports en PDF ou Excel</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -1751,7 +1870,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
                 ) : (
                   <FileSpreadsheet className="h-4 w-4 mr-1" />
                 )}
-                CSV
+                Excel
               </Button>
             </div>
           </CardContent>
@@ -1794,7 +1913,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
                 ) : (
                   <FileSpreadsheet className="h-4 w-4 mr-1" />
                 )}
-                CSV
+                Excel
               </Button>
             </div>
           </CardContent>
@@ -1842,7 +1961,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
                 ) : (
                   <FileSpreadsheet className="h-4 w-4 mr-1" />
                 )}
-                CSV
+                Excel
               </Button>
             </div>
           </CardContent>
@@ -1896,7 +2015,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
                 ) : (
                   <FileSpreadsheet className="h-4 w-4 mr-1" />
                 )}
-                CSV
+                Excel
               </Button>
             </div>
           </CardContent>
@@ -1939,7 +2058,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
                 ) : (
                   <FileSpreadsheet className="h-4 w-4 mr-1" />
                 )}
-                CSV
+                Excel
               </Button>
             </div>
           </CardContent>
