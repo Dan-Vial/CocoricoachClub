@@ -124,7 +124,7 @@ export function PlayerStatsGrid({ players, stats, onUpdateStat, supportsGoalkeep
                     >
                       {isSub ? `R${player.position?.replace("SUB", "")}` : player.position || "?"}
                     </Badge>
-                    <span className="truncate max-w-[110px] text-xs font-medium">{player.playerName}</span>
+                    <span className="truncate max-w-[160px] text-xs font-medium">{player.playerName}</span>
                     {player.isGoalkeeper && supportsGoalkeeper && (
                       <Badge variant="secondary" className="text-[9px] px-1 py-0 h-4">GK</Badge>
                     )}
