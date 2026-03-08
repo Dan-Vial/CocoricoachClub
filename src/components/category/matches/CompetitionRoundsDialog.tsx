@@ -23,10 +23,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Plus, Trash2, Trophy, Target, BarChart3, Swords, Circle, Ship, Users, Droplet, CheckCircle, Lock } from "lucide-react";
-import { getStatsForSport, getStatCategories, getAggregatedStatsForSport, type StatField } from "@/lib/constants/sportStats";
+import { getStatsForSport, getStatCategories, getAggregatedStatsForSport, getAthletismeStatsForDiscipline, type StatField } from "@/lib/constants/sportStats";
 import { useStatPreferences } from "@/hooks/use-stat-preferences";
 import { BowlingOilPatternSection } from "./BowlingOilPatternSection";
 import { BowlingScoreSheet, FrameData, BowlingStats } from "@/components/athlete-portal/BowlingScoreSheet";
+import { isAthletismeCategory } from "@/lib/constants/sportTypes";
 
 const blurOnWheel = (e: React.WheelEvent<HTMLInputElement>) => {
   // Prevent wheel/trackpad from changing number inputs instead of scrolling the dialog
