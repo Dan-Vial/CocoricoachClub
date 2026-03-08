@@ -207,8 +207,8 @@ export function RehabWellnessTracker({ playerId, categoryId }: RehabWellnessTrac
               <Zap className="h-4 w-4 text-amber-500" />
               <span className="text-xs font-medium text-muted-foreground">Fatigue</span>
             </div>
-            <span className={`text-2xl font-bold ${getScoreColor(latestWellness?.general_fatigue ? 10 - latestWellness.general_fatigue : null)}`}>
-              {latestWellness?.general_fatigue || "-"}/10
+            <span className={`text-2xl font-bold ${getScoreColor(latestWellness?.general_fatigue ? 6 - latestWellness.general_fatigue : null)}`}>
+              {latestWellness?.general_fatigue || "-"}/5
             </span>
           </CardContent>
         </Card>
