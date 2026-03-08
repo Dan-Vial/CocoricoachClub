@@ -542,10 +542,17 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
           const wColWidths = [30, 24, 24, 24, 24, 24, 26];
           yPos = drawTableHeaderPdf(pdf, wHeaders, wColWidths, yPos, margin);
 
-          const getWellnessColor = (val: number | null): [number, number, number] | null => {
+          // Sleep: higher = better (5 = top). Fatigue/stress/soreness: lower = better (1 = top).
+          const getWellnessColorPositive = (val: number | null): [number, number, number] | null => {
             if (val == null) return null;
             if (val >= 4) return colors.success;
             if (val >= 3) return colors.warning;
+            return colors.danger;
+          };
+          const getWellnessColorNegative = (val: number | null): [number, number, number] | null => {
+            if (val == null) return null;
+            if (val <= 2) return colors.success;
+            if (val <= 3) return colors.warning;
             return colors.danger;
           };
 
