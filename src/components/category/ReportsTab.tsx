@@ -1703,12 +1703,21 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
       pdf.text("RÉPARTITION PAR TYPE DE SÉANCE", margin, yPos);
       yPos += 8;
 
+      const calcSessionDuration = (s: any): number => {
+        if (s.session_start_time && s.session_end_time) {
+          const [sh, sm] = s.session_start_time.split(':').map(Number);
+          const [eh, em] = s.session_end_time.split(':').map(Number);
+          return (eh * 60 + em) - (sh * 60 + sm);
+        }
+        return 60;
+      };
+
       const sessionsByType: Record<string, { count: number; totalMin: number }> = {};
       sessionsData.forEach(s => {
-        const t = s.session_type || 'Autre';
+        const t = s.training_type || 'Autre';
         if (!sessionsByType[t]) sessionsByType[t] = { count: 0, totalMin: 0 };
         sessionsByType[t].count++;
-        sessionsByType[t].totalMin += s.duration_minutes || 0;
+        sessionsByType[t].totalMin += calcSessionDuration(s);
       });
 
       if (Object.keys(sessionsByType).length > 0) {
