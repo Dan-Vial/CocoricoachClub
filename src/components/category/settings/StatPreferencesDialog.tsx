@@ -149,12 +149,8 @@ export function StatPreferencesDialog({
           });
         if (error) throw error;
       }
-      // Directly update the query cache so stale data never persists
-      queryClient.setQueryData(["stat-preferences", categoryId], (old: Record<string, unknown> | null) => {
-        if (old) return { ...old, enabled_stats: stats };
-        return { category_id: categoryId, enabled_stats: stats, sport_type: sportType, enabled_custom_stats: [] };
-      });
       // Invalidate all related queries for immediate updates across the app
+      queryClient.invalidateQueries({ queryKey: ["stat-preferences-raw", categoryId] });
       queryClient.invalidateQueries({ queryKey: ["stat-preferences", categoryId] });
       queryClient.invalidateQueries({ queryKey: ["custom-stats", categoryId] });
       queryClient.invalidateQueries({ queryKey: ["player_match_stats"] });
