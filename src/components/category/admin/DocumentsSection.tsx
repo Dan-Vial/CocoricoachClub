@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -11,8 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, FileText, Calendar, AlertTriangle, Download, Trash2, Search, User } from "lucide-react";
-import { format, differenceInDays, isPast, addDays } from "date-fns";
+import { Plus, FileText, Calendar, AlertTriangle, Download, Trash2, Search, User, Upload, File, Image, Eye } from "lucide-react";
+import { format, differenceInDays } from "date-fns";
 import { fr } from "date-fns/locale";
 
 interface DocumentsSectionProps {
@@ -45,6 +45,9 @@ const DOCUMENT_TYPES = [
   { value: "other", label: "Autre" },
 ];
 
+const ACCEPTED_FILE_TYPES = ".pdf,.jpg,.jpeg,.png,.webp,.heic,.gif,.bmp,.tiff,.tif";
+const MAX_FILE_SIZE_MB = 10;
+
 const STATUS_COLORS: Record<string, string> = {
   valid: "bg-green-100 text-green-700",
   expiring_soon: "bg-amber-100 text-amber-700",
@@ -59,6 +62,15 @@ const STATUS_LABELS: Record<string, string> = {
   pending: "En attente",
 };
 
+function getFileIcon(url: string | null) {
+  if (!url) return <FileText className="h-5 w-5 text-muted-foreground" />;
+  const ext = url.split(".").pop()?.toLowerCase();
+  if (ext === "pdf") return <File className="h-5 w-5 text-red-500" />;
+  if (["jpg", "jpeg", "png", "webp", "gif", "bmp", "tiff", "tif", "heic"].includes(ext || ""))
+    return <Image className="h-5 w-5 text-blue-500" />;
+  return <FileText className="h-5 w-5 text-muted-foreground" />;
+}
+
 export function DocumentsSection({ categoryId }: DocumentsSectionProps) {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -66,6 +78,9 @@ export function DocumentsSection({ categoryId }: DocumentsSectionProps) {
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
     player_id: "",
@@ -98,7 +113,6 @@ export function DocumentsSection({ categoryId }: DocumentsSectionProps) {
         .order("expiry_date", { ascending: true, nullsFirst: false });
       if (error) throw error;
       
-      // Calculate status based on expiry_date
       return (data as unknown as AdminDocument[]).map((doc) => {
         if (!doc.expiry_date) return { ...doc, status: "valid" };
         const daysUntilExpiry = differenceInDays(new Date(doc.expiry_date), new Date());
@@ -109,14 +123,55 @@ export function DocumentsSection({ categoryId }: DocumentsSectionProps) {
     },
   });
 
+  const uploadFile = async (file: File): Promise<string | null> => {
+    const ext = file.name.split(".").pop()?.toLowerCase() || "bin";
+    const fileName = `${categoryId}/${crypto.randomUUID()}.${ext}`;
+
+    const { error } = await supabase.storage
+      .from("admin-documents")
+      .upload(fileName, file, { upsert: false });
+
+    if (error) throw error;
+
+    const { data: urlData } = supabase.storage
+      .from("admin-documents")
+      .getPublicUrl(fileName);
+
+    // Since bucket is private, use signed URL
+    const { data: signedData, error: signedError } = await supabase.storage
+      .from("admin-documents")
+      .createSignedUrl(fileName, 60 * 60 * 24 * 365 * 10); // 10 years
+
+    if (signedError) throw signedError;
+    
+    // Store the path, not the signed URL (we'll generate signed URLs on demand)
+    return fileName;
+  };
+
+  const getSignedUrl = async (filePath: string): Promise<string | null> => {
+    const { data, error } = await supabase.storage
+      .from("admin-documents")
+      .createSignedUrl(filePath, 60 * 60); // 1 hour
+    if (error) return null;
+    return data.signedUrl;
+  };
+
   const addDocumentMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
+      setIsUploading(true);
+      let fileUrl: string | null = null;
+
+      if (selectedFile) {
+        fileUrl = await uploadFile(selectedFile);
+      }
+
       const { error } = await supabase.from("admin_documents" as any).insert({
         category_id: categoryId,
         created_by: user?.id,
         player_id: data.player_id || null,
         document_type: data.document_type,
         title: data.title,
+        file_url: fileUrl,
         expiry_date: data.expiry_date || null,
         notes: data.notes || null,
         status: "valid",
@@ -127,16 +182,23 @@ export function DocumentsSection({ categoryId }: DocumentsSectionProps) {
       queryClient.invalidateQueries({ queryKey: ["admin-documents", categoryId] });
       setShowAddDialog(false);
       resetForm();
-      toast({ title: "Document ajouté" });
+      toast({ title: "Document ajouté avec succès" });
     },
     onError: (error: any) => {
       toast({ title: "Erreur", description: error.message, variant: "destructive" });
     },
+    onSettled: () => {
+      setIsUploading(false);
+    },
   });
 
   const deleteDocumentMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("admin_documents" as any).delete().eq("id", id);
+    mutationFn: async (doc: AdminDocument) => {
+      // Delete file from storage if exists
+      if (doc.file_url && !doc.file_url.startsWith("http")) {
+        await supabase.storage.from("admin-documents").remove([doc.file_url]);
+      }
+      const { error } = await supabase.from("admin_documents" as any).delete().eq("id", doc.id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -144,6 +206,23 @@ export function DocumentsSection({ categoryId }: DocumentsSectionProps) {
       toast({ title: "Document supprimé" });
     },
   });
+
+  const handleViewFile = async (doc: AdminDocument) => {
+    if (!doc.file_url) return;
+
+    // If it's already a full URL (legacy), open directly
+    if (doc.file_url.startsWith("http")) {
+      window.open(doc.file_url, "_blank");
+      return;
+    }
+
+    const url = await getSignedUrl(doc.file_url);
+    if (url) {
+      window.open(url, "_blank");
+    } else {
+      toast({ title: "Erreur", description: "Impossible d'accéder au fichier", variant: "destructive" });
+    }
+  };
 
   const resetForm = () => {
     setFormData({
@@ -153,6 +232,27 @@ export function DocumentsSection({ categoryId }: DocumentsSectionProps) {
       expiry_date: "",
       notes: "",
     });
+    setSelectedFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+      toast({ title: "Fichier trop volumineux", description: `Maximum ${MAX_FILE_SIZE_MB} Mo`, variant: "destructive" });
+      e.target.value = "";
+      return;
+    }
+
+    setSelectedFile(file);
+
+    // Auto-fill title from filename if empty
+    if (!formData.title) {
+      const nameWithoutExt = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
+      setFormData(prev => ({ ...prev, title: nameWithoutExt }));
+    }
   };
 
   const filteredDocuments = documents?.filter((doc) => {
@@ -163,7 +263,6 @@ export function DocumentsSection({ categoryId }: DocumentsSectionProps) {
     return matchesSearch && matchesType;
   });
 
-  // Group documents by status for alerts
   const expiredDocs = documents?.filter((d) => d.status === "expired") || [];
   const expiringSoonDocs = documents?.filter((d) => d.status === "expiring_soon") || [];
 
@@ -246,7 +345,7 @@ export function DocumentsSection({ categoryId }: DocumentsSectionProps) {
           </Select>
         </div>
 
-        <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+        <Dialog open={showAddDialog} onOpenChange={(open) => { setShowAddDialog(open); if (!open) resetForm(); }}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="h-4 w-4 mr-2" />
@@ -258,7 +357,57 @@ export function DocumentsSection({ categoryId }: DocumentsSectionProps) {
               <DialogTitle>Nouveau Document</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
-            <div>
+              {/* File Upload */}
+              <div>
+                <Label>Fichier (PDF, Image) *</Label>
+                <div
+                  className="mt-1 border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 transition-colors"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept={ACCEPTED_FILE_TYPES}
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
+                  {selectedFile ? (
+                    <div className="flex items-center justify-center gap-3">
+                      {getFileIcon(selectedFile.name)}
+                      <div className="text-left">
+                        <p className="text-sm font-medium truncate max-w-[250px]">{selectedFile.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {(selectedFile.size / (1024 * 1024)).toFixed(2)} Mo
+                        </p>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedFile(null);
+                          if (fileInputRef.current) fileInputRef.current.value = "";
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <Upload className="h-8 w-8 mx-auto text-muted-foreground" />
+                      <p className="text-sm text-muted-foreground">
+                        Cliquez pour sélectionner un fichier
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        PDF, JPG, PNG, WEBP, GIF • Max {MAX_FILE_SIZE_MB} Mo
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div>
                 <Label>Joueur (optionnel)</Label>
                 <Select 
                   value={formData.player_id || "none"} 
@@ -318,10 +467,17 @@ export function DocumentsSection({ categoryId }: DocumentsSectionProps) {
               </div>
               <Button
                 onClick={() => addDocumentMutation.mutate(formData)}
-                disabled={!formData.title || addDocumentMutation.isPending}
+                disabled={!formData.title || !selectedFile || addDocumentMutation.isPending || isUploading}
                 className="w-full"
               >
-                Ajouter
+                {isUploading ? (
+                  <>
+                    <Upload className="h-4 w-4 mr-2 animate-pulse" />
+                    Envoi en cours...
+                  </>
+                ) : (
+                  "Ajouter"
+                )}
               </Button>
             </div>
           </DialogContent>
@@ -343,18 +499,23 @@ export function DocumentsSection({ categoryId }: DocumentsSectionProps) {
           filteredDocuments?.map((doc) => (
             <Card key={doc.id} className={doc.status === "expired" ? "border-red-200" : doc.status === "expiring_soon" ? "border-amber-200" : ""}>
               <CardContent className="p-4 flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
-                    <FileText className="h-5 w-5 text-muted-foreground" />
+                <div className="flex items-center gap-4 flex-1 min-w-0">
+                  <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center shrink-0">
+                    {getFileIcon(doc.file_url)}
                   </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h4 className="font-medium">{doc.title}</h4>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h4 className="font-medium truncate">{doc.title}</h4>
                       <Badge className={STATUS_COLORS[doc.status]}>
                         {STATUS_LABELS[doc.status]}
                       </Badge>
+                      {doc.file_url && (
+                        <Badge variant="outline" className="text-xs">
+                          {doc.file_url.split(".").pop()?.toUpperCase()}
+                        </Badge>
+                      )}
                     </div>
-                    <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-3 text-sm text-muted-foreground flex-wrap">
                       <span>{DOCUMENT_TYPES.find((t) => t.value === doc.document_type)?.label}</span>
                       {doc.players?.name && (
                         <span className="flex items-center gap-1">
@@ -371,14 +532,26 @@ export function DocumentsSection({ categoryId }: DocumentsSectionProps) {
                     </div>
                   </div>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="text-destructive hover:text-destructive"
-                  onClick={() => deleteDocumentMutation.mutate(doc.id)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                <div className="flex items-center gap-1 shrink-0">
+                  {doc.file_url && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      title="Voir le fichier"
+                      onClick={() => handleViewFile(doc)}
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-destructive hover:text-destructive"
+                    onClick={() => deleteDocumentMutation.mutate(doc)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           ))
