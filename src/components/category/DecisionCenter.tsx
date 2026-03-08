@@ -504,7 +504,7 @@ import { isIndividualSport } from "@/lib/constants/sportTypes";
          type: "admin",
          severity: "medium",
          playerId: doc.player_id || "",
-         playerName: doc.players?.name || "Équipe",
+         playerName: doc.players ? [doc.players.first_name, doc.players.name].filter(Boolean).join(" ") : "Équipe",
          message: `${doc.title} - Document expiré`,
          action: "Régulariser",
        });
