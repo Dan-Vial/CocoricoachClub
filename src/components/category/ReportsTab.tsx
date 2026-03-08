@@ -1525,7 +1525,45 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
         row.forEach((val, ci) => { r.getCell(ci + 1).value = val as any; });
       });
       addZebraRows(sheet, dataStart + 1, dataStart + dataRows.length, allHeaders.length);
-      addFooter(sheet, dataStart + dataRows.length + 1, allHeaders.length, branding.footerText);
+
+      // TOTALS row
+      const totalsRowIdx = dataStart + dataRows.length + 1;
+      const tRow = sheet.getRow(totalsRowIdx);
+      tRow.getCell(1).value = 'TOTAL';
+      tRow.getCell(1).font = { bold: true, color: { argb: 'FF1E293B' } };
+      tRow.getCell(4).value = dataRows.reduce((sum, r) => sum + (Number(r[3]) || 0), 0);
+      tRow.getCell(4).font = { bold: true };
+      displayStats.forEach((s, i) => {
+        const vals = dataRows.map(r => r[i + 4]).filter(v => v !== '-' && v != null).map(v => Number(v)).filter(v => !isNaN(v));
+        if (vals.length > 0) {
+          tRow.getCell(i + 5).value = vals.reduce((a, b) => a + b, 0);
+          tRow.getCell(i + 5).font = { bold: true };
+        }
+      });
+      for (let i = 1; i <= allHeaders.length; i++) {
+        tRow.getCell(i).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2E8F0' } };
+      }
+
+      // AVERAGES row
+      const avgRowIdx = totalsRowIdx + 1;
+      const aRow = sheet.getRow(avgRowIdx);
+      aRow.getCell(1).value = 'MOYENNE';
+      aRow.getCell(1).font = { bold: true, italic: true, color: { argb: 'FF1E293B' } };
+      const playersWithMinutes = dataRows.filter(r => Number(r[3]) > 0).length || 1;
+      aRow.getCell(4).value = Math.round(dataRows.reduce((sum, r) => sum + (Number(r[3]) || 0), 0) / playersWithMinutes);
+      aRow.getCell(4).font = { bold: true, italic: true };
+      displayStats.forEach((s, i) => {
+        const vals = dataRows.map(r => r[i + 4]).filter(v => v !== '-' && v != null).map(v => Number(v)).filter(v => !isNaN(v));
+        if (vals.length > 0) {
+          aRow.getCell(i + 5).value = Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 100) / 100;
+          aRow.getCell(i + 5).font = { bold: true, italic: true };
+        }
+      });
+      for (let i = 1; i <= allHeaders.length; i++) {
+        aRow.getCell(i).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDBEAFE' } };
+      }
+
+      addFooter(sheet, avgRowIdx + 1, allHeaders.length, branding.footerText);
       allHeaders.forEach((_, i) => { sheet.getColumn(i + 1).width = i === 0 ? 25 : 15; });
 
       await downloadWorkbook(workbook, `match_${match.opponent.replace(/\s+/g, '_')}_${format(new Date(match.match_date), "yyyy-MM-dd")}.xlsx`);
