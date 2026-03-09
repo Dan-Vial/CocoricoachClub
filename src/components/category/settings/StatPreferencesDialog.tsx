@@ -369,9 +369,9 @@ export function StatPreferencesDialog({
             <DialogDescription>
               Sélectionnez les statistiques à afficher et saisir pour cette catégorie.
               Vous pouvez également créer des statistiques personnalisées.
-              {sportType.startsWith("athletisme") && (
+              {isAthletics && (
                 <span className="block mt-1 text-xs">
-                  ℹ️ En athlétisme, les statistiques affichées dans les rounds de compétition s'adaptent automatiquement à la discipline de chaque athlète (Sprint, Haies, Lancers, etc.).
+                  ℹ️ Les statistiques sont organisées par discipline. Activez uniquement celles correspondant aux disciplines de vos athlètes. Lors de la saisie en compétition, seules les statistiques de la discipline de chaque athlète seront affichées.
                 </span>
               )}
             </DialogDescription>
