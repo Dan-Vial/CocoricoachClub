@@ -68,9 +68,12 @@ export function StatPreferencesDialog({
   const [statToDelete, setStatToDelete] = useState<CustomStat | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   
+  const isAthletics = isAthletismeCategory(sportType);
+  
   // Get all available stats for this sport (memoized to avoid infinite loops)
-  const allStats = useMemo(() => getStatsForSport(sportType, false), [sportType]);
-  const goalkeeperStats = useMemo(() => getStatsForSport(sportType, true), [sportType]);
+  // For athletics: use tagged stats with discipline-based categories
+  const allStats = useMemo(() => isAthletics ? getAllAthletismeStatsTagged() : getStatsForSport(sportType, false), [sportType, isAthletics]);
+  const goalkeeperStats = useMemo(() => isAthletics ? [] : getStatsForSport(sportType, true), [sportType, isAthletics]);
   const statCategories = useMemo(() => getStatCategories(sportType), [sportType]);
 
   // Fetch existing preferences

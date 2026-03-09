@@ -1107,10 +1107,12 @@ export function CompetitionRoundsDialog({
                             </div>
                           )}
 
-                          {/* Warning if athletics player has no discipline set */}
-                          {isAthletics && !selectedPlayer.discipline && (
-                            <div className="p-3 rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-900/20 text-sm text-amber-800 dark:text-amber-200">
-                              ⚠️ Cet athlète n'a pas de discipline définie. Les statistiques affichées sont génériques. Modifiez le profil du joueur pour assigner une discipline (Sprint, Haies, Lancers, etc.) et obtenir les statistiques spécifiques.
+                          {/* Show discipline badge for athletics */}
+                          {isAthletics && selectedPlayer.discipline && (
+                            <div className="flex items-center gap-2">
+                              <Badge variant="secondary" className="text-xs">
+                                {selectedPlayer.specialty || selectedPlayer.discipline}
+                              </Badge>
                             </div>
                           )}
 
