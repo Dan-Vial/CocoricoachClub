@@ -628,10 +628,9 @@ export function CompetitionRoundsDialog({
             {isAviron ? <Ship className="h-5 w-5" /> : isJudo ? <Swords className="h-5 w-5" /> : <Circle className="h-5 w-5" />}
             Gestion des {roundLabelPlural}
           </DialogTitle>
-          {/* Debug hint to quickly validate sport detection in production */}
-          {sportType && (
+          {isAthletics && selectedPlayer?.discipline && (
             <p className="text-xs text-muted-foreground">
-              Debug: sportType="{sportType}" • bowling={String(isBowling)}
+              {selectedPlayer.specialty || selectedPlayer.discipline}
             </p>
           )}
         </DialogHeader>
