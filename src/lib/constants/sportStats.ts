@@ -591,18 +591,39 @@ export function getStatsForSport(sportType: SportType | string, isGoalkeeper: bo
   }
 }
 
-// Get ALL athletics stats across all disciplines (for preferences dialog)
+// Map of discipline category key -> stat arrays for athletics
+const ATHLETISME_DISCIPLINE_MAP: Record<string, StatField[]> = {
+  ath_general: ATHLETISME_GENERAL_STATS,
+  ath_sprint: ATHLETISME_SPRINT_STATS,
+  ath_haies: ATHLETISME_HAIES_STATS,
+  ath_endurance: ATHLETISME_ENDURANCE_STATS,
+  ath_sauts: ATHLETISME_SAUTS_STATS,
+  ath_perche: ATHLETISME_PERCHE_STATS,
+  ath_lancers: ATHLETISME_LANCERS_STATS,
+  ath_combines: ATHLETISME_COMBINES_STATS,
+};
+
+// Get athletics stats tagged with their discipline category key
+export function getAllAthletismeStatsTagged(): StatField[] {
+  const seen = new Set<string>();
+  const merged: StatField[] = [];
+  for (const [discKey, arr] of Object.entries(ATHLETISME_DISCIPLINE_MAP)) {
+    for (const stat of arr) {
+      // Use a composite key to allow same stat key in multiple disciplines
+      const uniqueKey = `${discKey}:${stat.key}`;
+      if (!seen.has(uniqueKey)) {
+        seen.add(uniqueKey);
+        // Tag the stat with discipline category for the preferences dialog
+        merged.push({ ...stat, category: discKey as any });
+      }
+    }
+  }
+  return merged;
+}
+
+// Get ALL athletics stats across all disciplines (flat, deduped by key)
 export function getAllAthletismeStats(): StatField[] {
-  const allArrays = [
-    ATHLETISME_GENERAL_STATS,
-    ATHLETISME_SPRINT_STATS,
-    ATHLETISME_HAIES_STATS,
-    ATHLETISME_ENDURANCE_STATS,
-    ATHLETISME_SAUTS_STATS,
-    ATHLETISME_PERCHE_STATS,
-    ATHLETISME_LANCERS_STATS,
-    ATHLETISME_COMBINES_STATS,
-  ];
+  const allArrays = Object.values(ATHLETISME_DISCIPLINE_MAP);
   const seen = new Set<string>();
   const merged: StatField[] = [];
   for (const arr of allArrays) {
@@ -614,6 +635,11 @@ export function getAllAthletismeStats(): StatField[] {
     }
   }
   return merged;
+}
+
+// Get stats for a specific athletics discipline category key
+export function getAthletismeStatsByDisciplineKey(disciplineKey: string): StatField[] {
+  return ATHLETISME_DISCIPLINE_MAP[disciplineKey] || ATHLETISME_GENERAL_STATS;
 }
 
 // Get athletics stats based on discipline
@@ -767,13 +793,17 @@ export function getStatCategories(sportType: SportType | string): { key: string;
     ];
   }
 
-  // Athlétisme
+  // Athlétisme - discipline-based categories
   if (baseSport === "athletisme" || baseSport === "athlétisme") {
     return [
-      { key: "general", label: "Général" },
-      { key: "scoring", label: "Performance" },
-      { key: "attack", label: "Essais / Splits" },
-      { key: "defense", label: "Technique" },
+      { key: "ath_general", label: "Général" },
+      { key: "ath_sprint", label: "Sprint" },
+      { key: "ath_haies", label: "Haies" },
+      { key: "ath_endurance", label: "Course (demi-fond / fond)" },
+      { key: "ath_sauts", label: "Sauts" },
+      { key: "ath_perche", label: "Perche" },
+      { key: "ath_lancers", label: "Lancers" },
+      { key: "ath_combines", label: "Épreuves combinées" },
     ];
   }
   

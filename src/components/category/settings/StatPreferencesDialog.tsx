@@ -16,7 +16,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Settings2, CheckCircle2, Plus, Trash2 } from "lucide-react";
-import { getStatsForSport, getStatCategories, type StatField } from "@/lib/constants/sportStats";
+import { getStatsForSport, getStatCategories, getAllAthletismeStatsTagged, type StatField } from "@/lib/constants/sportStats";
+import { isAthletismeCategory } from "@/lib/constants/sportTypes";
 import { useAuth } from "@/contexts/AuthContext";
 import { AddCustomStatDialog } from "./AddCustomStatDialog";
 import {
@@ -67,9 +68,12 @@ export function StatPreferencesDialog({
   const [statToDelete, setStatToDelete] = useState<CustomStat | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   
+  const isAthletics = isAthletismeCategory(sportType);
+  
   // Get all available stats for this sport (memoized to avoid infinite loops)
-  const allStats = useMemo(() => getStatsForSport(sportType, false), [sportType]);
-  const goalkeeperStats = useMemo(() => getStatsForSport(sportType, true), [sportType]);
+  // For athletics: use tagged stats with discipline-based categories
+  const allStats = useMemo(() => isAthletics ? getAllAthletismeStatsTagged() : getStatsForSport(sportType, false), [sportType, isAthletics]);
+  const goalkeeperStats = useMemo(() => isAthletics ? [] : getStatsForSport(sportType, true), [sportType, isAthletics]);
   const statCategories = useMemo(() => getStatCategories(sportType), [sportType]);
 
   // Fetch existing preferences
@@ -365,9 +369,9 @@ export function StatPreferencesDialog({
             <DialogDescription>
               Sélectionnez les statistiques à afficher et saisir pour cette catégorie.
               Vous pouvez également créer des statistiques personnalisées.
-              {sportType.startsWith("athletisme") && (
+              {isAthletics && (
                 <span className="block mt-1 text-xs">
-                  ℹ️ En athlétisme, les statistiques affichées dans les rounds de compétition s'adaptent automatiquement à la discipline de chaque athlète (Sprint, Haies, Lancers, etc.).
+                  ℹ️ Les statistiques sont organisées par discipline. Activez uniquement celles correspondant aux disciplines de vos athlètes. Lors de la saisie en compétition, seules les statistiques de la discipline de chaque athlète seront affichées.
                 </span>
               )}
             </DialogDescription>
