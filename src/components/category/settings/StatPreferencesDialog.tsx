@@ -16,7 +16,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Settings2, CheckCircle2, Plus, Trash2 } from "lucide-react";
-import { getStatsForSport, getStatCategories, type StatField } from "@/lib/constants/sportStats";
+import { getStatsForSport, getStatCategories, getAllAthletismeStatsTagged, type StatField } from "@/lib/constants/sportStats";
+import { isAthletismeCategory } from "@/lib/constants/sportTypes";
 import { useAuth } from "@/contexts/AuthContext";
 import { AddCustomStatDialog } from "./AddCustomStatDialog";
 import {
