@@ -591,6 +591,31 @@ export function getStatsForSport(sportType: SportType | string, isGoalkeeper: bo
   }
 }
 
+// Get ALL athletics stats across all disciplines (for preferences dialog)
+export function getAllAthletismeStats(): StatField[] {
+  const allArrays = [
+    ATHLETISME_GENERAL_STATS,
+    ATHLETISME_SPRINT_STATS,
+    ATHLETISME_HAIES_STATS,
+    ATHLETISME_ENDURANCE_STATS,
+    ATHLETISME_SAUTS_STATS,
+    ATHLETISME_PERCHE_STATS,
+    ATHLETISME_LANCERS_STATS,
+    ATHLETISME_COMBINES_STATS,
+  ];
+  const seen = new Set<string>();
+  const merged: StatField[] = [];
+  for (const arr of allArrays) {
+    for (const stat of arr) {
+      if (!seen.has(stat.key)) {
+        seen.add(stat.key);
+        merged.push(stat);
+      }
+    }
+  }
+  return merged;
+}
+
 // Get athletics stats based on discipline
 export function getAthletismeStatsForDiscipline(discipline?: string): StatField[] {
   if (!discipline) return ATHLETISME_GENERAL_STATS;
