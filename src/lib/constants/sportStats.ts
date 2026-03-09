@@ -767,13 +767,17 @@ export function getStatCategories(sportType: SportType | string): { key: string;
     ];
   }
 
-  // Athlétisme
+  // Athlétisme - discipline-based categories
   if (baseSport === "athletisme" || baseSport === "athlétisme") {
     return [
-      { key: "general", label: "Général" },
-      { key: "scoring", label: "Performance" },
-      { key: "attack", label: "Essais / Splits" },
-      { key: "defense", label: "Technique" },
+      { key: "ath_general", label: "Général" },
+      { key: "ath_sprint", label: "Sprint" },
+      { key: "ath_haies", label: "Haies" },
+      { key: "ath_endurance", label: "Course (demi-fond / fond)" },
+      { key: "ath_sauts", label: "Sauts" },
+      { key: "ath_perche", label: "Perche" },
+      { key: "ath_lancers", label: "Lancers" },
+      { key: "ath_combines", label: "Épreuves combinées" },
     ];
   }
   
