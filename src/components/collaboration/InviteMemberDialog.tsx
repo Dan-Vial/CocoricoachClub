@@ -57,14 +57,14 @@ export function InviteMemberDialog({ open, onOpenChange, clubId }: InviteMemberD
     enabled: open,
   });
 
-  // Fetch client limits
+  // Fetch client limits (max_staff_per_category)
   const { data: clientLimits } = useQuery({
     queryKey: ["client-limits", club?.client_id],
     queryFn: async () => {
       if (!club?.client_id) return null;
       const { data, error } = await supabase
         .from("clients")
-        .select("max_staff_users")
+        .select("max_staff_users, max_staff_per_category")
         .eq("id", club.client_id)
         .single();
       if (error) throw error;
@@ -74,7 +74,7 @@ export function InviteMemberDialog({ open, onOpenChange, clubId }: InviteMemberD
     staleTime: 0,
   });
 
-  // Fetch current staff count
+  // Fetch current staff count per club (global)
   const { data: currentStaffCount = 0 } = useQuery({
     queryKey: ["club-staff-count", clubId],
     queryFn: async () => {
@@ -89,7 +89,8 @@ export function InviteMemberDialog({ open, onOpenChange, clubId }: InviteMemberD
     staleTime: 0,
   });
 
-  const maxStaff = clientLimits?.max_staff_users ?? null;
+  // Use max_staff_per_category if set, fallback to max_staff_users
+  const maxStaff = clientLimits?.max_staff_per_category ?? clientLimits?.max_staff_users ?? null;
   const isStaffFull = maxStaff !== null && currentStaffCount >= maxStaff;
 
   const { data: categories = [] } = useQuery({

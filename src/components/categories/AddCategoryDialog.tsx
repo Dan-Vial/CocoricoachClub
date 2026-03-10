@@ -50,13 +50,13 @@ export function AddCategoryDialog({
   const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
   const queryClient = useQueryClient();
 
-  // Fetch club to get the sport
+  // Fetch club to get the sport and client limits
   const { data: club } = useQuery({
-    queryKey: ["club", clubId],
+    queryKey: ["club-with-client", clubId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clubs")
-        .select("id, name, sport")
+        .select("id, name, sport, client_id, clients(max_categories_per_club)")
         .eq("id", clubId)
         .single();
       if (error) throw error;
@@ -64,6 +64,24 @@ export function AddCategoryDialog({
     },
     enabled: open && !!clubId,
   });
+
+  // Fetch current category count
+  const { data: currentCategoryCount = 0 } = useQuery({
+    queryKey: ["category-count", clubId],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("categories")
+        .select("id", { count: "exact", head: true })
+        .eq("club_id", clubId);
+      if (error) throw error;
+      return count || 0;
+    },
+    enabled: open && !!clubId,
+    staleTime: 0,
+  });
+
+  const maxCategories = (club?.clients as any)?.max_categories_per_club ?? null;
+  const isCategoryLimitReached = maxCategories !== null && currentCategoryCount >= maxCategories;
 
   // Fetch club members with profiles
   const { data: clubMembers = [] } = useQuery({
@@ -163,6 +181,11 @@ export function AddCategoryDialog({
     e.preventDefault();
     setValidationError("");
 
+    if (isCategoryLimitReached) {
+      setValidationError(`Limite de catégories atteinte (${currentCategoryCount}/${maxCategories}). Contactez votre administrateur.`);
+      return;
+    }
+
     const result = categorySchema.safeParse({ name: categoryName });
     
     if (!result.success) {
@@ -222,6 +245,19 @@ export function AddCategoryDialog({
             </p>
           )}
         </DialogHeader>
+        {isCategoryLimitReached && (
+          <div className="bg-destructive/10 border border-destructive/30 p-3 rounded-lg">
+            <p className="text-sm text-destructive font-medium">
+              Limite de catégories atteinte ({currentCategoryCount}/{maxCategories})
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">Contactez votre administrateur pour augmenter cette limite.</p>
+          </div>
+        )}
+        {maxCategories !== null && !isCategoryLimitReached && (
+          <p className="text-xs text-muted-foreground">
+            Catégories : {currentCategoryCount}/{maxCategories}
+          </p>
+        )}
         <form onSubmit={handleSubmit}>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
@@ -338,7 +374,7 @@ export function AddCategoryDialog({
             </Button>
             <Button
               type="submit"
-              disabled={!categoryName.trim() || addCategory.isPending}
+              disabled={!categoryName.trim() || addCategory.isPending || isCategoryLimitReached}
             >
               {addCategory.isPending ? "Ajout..." : "Ajouter"}
             </Button>

@@ -185,6 +185,7 @@ export function SuperAdminClients() {
             max_clubs: data.max_clubs,
             max_categories_per_club: data.max_categories_per_club,
             max_staff_users: data.max_staff_users,
+            max_staff_per_category: data.max_staff_users,
             max_athletes: data.max_athletes,
             notes: data.notes || null,
              video_enabled: data.video_enabled,
@@ -322,7 +323,8 @@ export function SuperAdminClients() {
            status: data.status,
            max_clubs: data.max_clubs,
            max_categories_per_club: data.max_categories_per_club,
-           max_staff_users: data.max_staff_users,
+            max_staff_users: data.max_staff_users,
+            max_staff_per_category: data.max_staff_users,
            max_athletes: data.max_athletes,
            notes: data.notes || null,
             video_enabled: data.video_enabled,
@@ -538,13 +540,14 @@ export function SuperAdminClients() {
  
        <div className="grid grid-cols-2 gap-4">
          <div className="space-y-2">
-           <Label>Utilisateurs staff max</Label>
+           <Label>Staff max / catégorie</Label>
            <Input
              type="number"
              min={1}
              value={formData.max_staff_users}
              onChange={(e) => setFormData({ ...formData, max_staff_users: parseInt(e.target.value) || 1 })}
            />
+           <p className="text-xs text-muted-foreground">Nombre max de membres staff par catégorie</p>
          </div>
          <div className="space-y-2">
            <Label>Athlètes max / catégorie</Label>

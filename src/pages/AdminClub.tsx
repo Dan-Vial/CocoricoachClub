@@ -639,9 +639,9 @@ import { SeasonManager } from "@/components/club/SeasonManager";
                        </span>
                      </div>
                      <div className="flex items-center justify-between">
-                       <span className="text-muted-foreground">Utilisateurs</span>
+                       <span className="text-muted-foreground">Staff / catégorie</span>
                        <span>
-                         {totalStaff} / {club?.clients?.max_staff_users || "∞"}
+                         {club?.clients?.max_staff_per_category || club?.clients?.max_staff_users || "∞"}
                        </span>
                      </div>
                    </CardContent>
