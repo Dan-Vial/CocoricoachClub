@@ -148,17 +148,27 @@ export function CompetitionRoundsDialog({
 
   // Get discipline-specific stats for a player (athletics: each athlete may have different stats)
   const getPlayerStats = (player: PlayerRounds): StatField[] => {
-    if (isAthletics && player.discipline) {
-      // Map discipline key to a string the stats function can understand
+    if (isAthletics) {
       const disc = player.specialty || player.discipline;
-      const disciplineStats = getAthletismeStatsForDiscipline(disc);
-      return disciplineStats;
+      return getAthletismeStatsForDiscipline(disc);
     }
     return sportStats;
   };
 
+  // For athletics, derive categories from the actual stats (scoring/general/attack/defense)
+  // rather than the discipline-based keys (ath_sprint etc.) used in preferences
   const getPlayerStatCategories = (player: PlayerRounds) => {
     const pStats = getPlayerStats(player);
+    if (isAthletics) {
+      const uniqueCats = [...new Set(pStats.map(s => s.category))];
+      const catLabels: Record<string, string> = {
+        general: "Général",
+        scoring: "Performance",
+        attack: "Détails",
+        defense: "Technique",
+      };
+      return uniqueCats.map(key => ({ key, label: catLabels[key] || key }));
+    }
     return allStatCategories.filter(cat => pStats.some(s => s.category === cat.key));
   };
   
