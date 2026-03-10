@@ -342,7 +342,8 @@ export function RecoveryDashboard({ categoryId }: RecoveryDashboardProps) {
                 <LineChart data={dailyData}>
                   <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
                   <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-                  <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} />
+                  <YAxis yAxisId="percent" domain={[0, 100]} tick={{ fontSize: 11 }} label={{ value: '%', position: 'insideTopLeft', offset: -5, style: { fontSize: 10 } }} />
+                  <YAxis yAxisId="scale5" orientation="right" domain={[1, 5]} tick={{ fontSize: 11 }} label={{ value: '/5', position: 'insideTopRight', offset: -5, style: { fontSize: 10 } }} />
                   <Tooltip
                     formatter={(value: number, name: string) => {
                       const labels: Record<string, string> = { recovery: "Récupération %", sleep: "Sommeil", fatigue: "Fatigue" };
@@ -353,9 +354,9 @@ export function RecoveryDashboard({ categoryId }: RecoveryDashboardProps) {
                     const labels: Record<string, string> = { recovery: "Récupération", sleep: "Sommeil", fatigue: "Fatigue" };
                     return labels[value] || value;
                   }} />
-                  <Line type="monotone" dataKey="recovery" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
-                  <Line type="monotone" dataKey="sleep" stroke="#6366f1" strokeWidth={1.5} dot={false} strokeDasharray="4 2" yAxisId={0} />
-                  <Line type="monotone" dataKey="fatigue" stroke="#f59e0b" strokeWidth={1.5} dot={false} strokeDasharray="4 2" />
+                  <Line yAxisId="percent" type="monotone" dataKey="recovery" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
+                  <Line yAxisId="scale5" type="monotone" dataKey="sleep" stroke="#6366f1" strokeWidth={1.5} dot={false} strokeDasharray="4 2" />
+                  <Line yAxisId="scale5" type="monotone" dataKey="fatigue" stroke="#f59e0b" strokeWidth={1.5} dot={false} strokeDasharray="4 2" />
                 </LineChart>
               </ResponsiveContainer>
             </CardContent>
@@ -402,7 +403,7 @@ export function RecoveryDashboard({ categoryId }: RecoveryDashboardProps) {
           <CardDescription>Cliquer pour voir les recommandations</CardDescription>
         </CardHeader>
         <CardContent>
-          <ScrollArea className="max-h-[400px]">
+          <ScrollArea className="h-[400px]">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {playerRecoveries.map((player) => (
                 <div
