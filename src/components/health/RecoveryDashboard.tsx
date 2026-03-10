@@ -403,7 +403,7 @@ export function RecoveryDashboard({ categoryId }: RecoveryDashboardProps) {
           <CardDescription>Cliquer pour voir les recommandations</CardDescription>
         </CardHeader>
         <CardContent>
-          <ScrollArea className="max-h-[400px]">
+          <ScrollArea className="h-[400px]">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {playerRecoveries.map((player) => (
                 <div

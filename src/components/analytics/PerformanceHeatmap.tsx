@@ -128,26 +128,32 @@ export function PerformanceHeatmap({ categoryId }: PerformanceHeatmapProps) {
   const getValueForCell = (playerId: string, date: Date): number | null => {
     const dateStr = format(date, "yyyy-MM-dd");
     
-    if (selectedMetric === "awcr") {
-      const record = awcrData?.find(
+    if (selectedMetric === "awcr" || selectedMetric === "ewma_ratio") {
+      // Get all records for this player/date and use the latest one (highest training_load or last entry)
+      const records = awcrData?.filter(
         (d) => d.player_id === playerId && d.session_date === dateStr
-      );
-      return record?.awcr ?? null;
-    } else if (selectedMetric === "ewma_ratio") {
-      // EWMA ratio uses the same awcr field but filtered differently - for now same data source
-      const record = awcrData?.find(
-        (d) => d.player_id === playerId && d.session_date === dateStr
-      );
-      // Use acute/chronic to compute EWMA if available, fallback to awcr
-      if (record && record.acute_load && record.chronic_load && record.chronic_load > 0) {
-        return record.acute_load / record.chronic_load;
+      ) ?? [];
+      if (records.length === 0) return null;
+      
+      // Use the record with the most recent/highest data
+      const best = records.reduce((a, b) => {
+        // Prefer records with actual AWCR values
+        if (a.awcr !== null && b.awcr === null) return a;
+        if (b.awcr !== null && a.awcr === null) return b;
+        return (a.training_load ?? 0) >= (b.training_load ?? 0) ? a : b;
+      });
+      
+      if (selectedMetric === "ewma_ratio" && best.acute_load && best.chronic_load && best.chronic_load > 0) {
+        return Math.round((best.acute_load / best.chronic_load) * 100) / 100;
       }
-      return record?.awcr ?? null;
+      return best.awcr ?? null;
     } else if (selectedMetric === "training_load") {
-      const record = awcrData?.find(
+      // Sum all training loads for the day
+      const records = awcrData?.filter(
         (d) => d.player_id === playerId && d.session_date === dateStr
-      );
-      return record?.training_load ?? null;
+      ) ?? [];
+      if (records.length === 0) return null;
+      return records.reduce((sum, r) => sum + (r.training_load ?? 0), 0);
     } else if (selectedMetric === "wellness") {
       const record = wellnessData?.find(
         (d) => d.player_id === playerId && d.tracking_date === dateStr
