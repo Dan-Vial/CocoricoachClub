@@ -374,7 +374,7 @@ export function AddCategoryDialog({
             </Button>
             <Button
               type="submit"
-              disabled={!categoryName.trim() || addCategory.isPending}
+              disabled={!categoryName.trim() || addCategory.isPending || isCategoryLimitReached}
             >
               {addCategory.isPending ? "Ajout..." : "Ajouter"}
             </Button>
