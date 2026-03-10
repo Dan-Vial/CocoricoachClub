@@ -50,13 +50,13 @@ export function AddCategoryDialog({
   const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
   const queryClient = useQueryClient();
 
-  // Fetch club to get the sport
+  // Fetch club to get the sport and client limits
   const { data: club } = useQuery({
-    queryKey: ["club", clubId],
+    queryKey: ["club-with-client", clubId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clubs")
-        .select("id, name, sport")
+        .select("id, name, sport, client_id, clients(max_categories_per_club)")
         .eq("id", clubId)
         .single();
       if (error) throw error;
@@ -64,6 +64,24 @@ export function AddCategoryDialog({
     },
     enabled: open && !!clubId,
   });
+
+  // Fetch current category count
+  const { data: currentCategoryCount = 0 } = useQuery({
+    queryKey: ["category-count", clubId],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("categories")
+        .select("id", { count: "exact", head: true })
+        .eq("club_id", clubId);
+      if (error) throw error;
+      return count || 0;
+    },
+    enabled: open && !!clubId,
+    staleTime: 0,
+  });
+
+  const maxCategories = (club?.clients as any)?.max_categories_per_club ?? null;
+  const isCategoryLimitReached = maxCategories !== null && currentCategoryCount >= maxCategories;
 
   // Fetch club members with profiles
   const { data: clubMembers = [] } = useQuery({
