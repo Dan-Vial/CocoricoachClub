@@ -185,6 +185,7 @@ export function SuperAdminClients() {
             max_clubs: data.max_clubs,
             max_categories_per_club: data.max_categories_per_club,
             max_staff_users: data.max_staff_users,
+            max_staff_per_category: data.max_staff_users,
             max_athletes: data.max_athletes,
             notes: data.notes || null,
              video_enabled: data.video_enabled,
