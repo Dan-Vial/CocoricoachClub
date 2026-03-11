@@ -11,7 +11,70 @@ import {
   transformToDailyLoadData,
   METRICS_CONFIG,
   getAvailableMetrics,
+  getRiskLevel,
 } from "@/lib/trainingLoadCalculations";
+
+/**
+ * Build EWMA chart data from DB-computed values (acute_load, chronic_load, awcr).
+ * The DB trigger compute_ewma_loads has access to full history, so these values
+ * are more accurate than frontend recalculation from a limited time window.
+ */
+function buildEWMAFromDbData(awcrData: any[], playerId?: string): EWMAResult[] {
+  // If individual player, data is already filtered; for team, aggregate per date
+  const dataByDate = new Map<string, { acute: number; chronic: number; rawValue: number; count: number }>();
+
+  const entries = playerId 
+    ? awcrData.filter(d => d.player_id === playerId)
+    : awcrData;
+
+  // Track unique players per date for team averaging
+  const playersByDate = new Map<string, Set<string>>();
+
+  entries.forEach(entry => {
+    const date = entry.session_date;
+    if (!playersByDate.has(date)) playersByDate.set(date, new Set());
+    playersByDate.get(date)!.add(entry.player_id);
+
+    const existing = dataByDate.get(date);
+    const load = entry.training_load || (entry.rpe * entry.duration_minutes) || 0;
+
+    if (existing) {
+      // For team view: sum loads and use latest EWMA values per player, then average
+      existing.rawValue += load;
+      // Use the entry with the most recent/highest acute_load as representative
+      if (entry.acute_load != null && entry.chronic_load != null) {
+        existing.acute += entry.acute_load;
+        existing.chronic += entry.chronic_load;
+      }
+      existing.count = playersByDate.get(date)!.size;
+    } else {
+      dataByDate.set(date, {
+        acute: entry.acute_load ?? 0,
+        chronic: entry.chronic_load ?? 0,
+        rawValue: load,
+        count: 1,
+      });
+    }
+  });
+
+  // Convert to EWMAResult array, averaging for team
+  return Array.from(dataByDate.entries())
+    .sort(([a], [b]) => new Date(a).getTime() - new Date(b).getTime())
+    .map(([date, data]) => {
+      const n = Math.max(data.count, 1);
+      const acute = Math.round((data.acute / n) * 100) / 100;
+      const chronic = Math.round((data.chronic / n) * 100) / 100;
+      const ratio = chronic > 0 ? Math.round((acute / chronic) * 100) / 100 : 0;
+      return {
+        date,
+        rawValue: Math.round((data.rawValue / n) * 100) / 100,
+        acute,
+        chronic,
+        ratio,
+        riskLevel: getRiskLevel(ratio),
+      };
+    });
+}
 
 interface UseTrainingLoadOptions {
   categoryId: string;
@@ -104,13 +167,42 @@ export function useTrainingLoad({
   const metricConfig = METRICS_CONFIG[metric];
   const isEwma = metric.startsWith("ewma_");
 
-  // Calculate results based on metric type
-  const chartData: EWMAResult[] = isEwma
-    ? calculateEWMASeries(dailyData, metricConfig.dataKey)
-    : calculateAWCR(dailyData, metricConfig.dataKey);
+  // For EWMA sRPE: use DB-computed values (acute_load, chronic_load, awcr)
+  // which have full historical context from the compute_ewma_loads trigger.
+  // Only fall back to frontend recalculation for non-sRPE metrics or AWCR mode.
+  const chartData: EWMAResult[] = (() => {
+    if (isEwma && metric === "ewma_srpe" && awcrData && awcrData.length > 0) {
+      // Use DB-computed EWMA values directly
+      return buildEWMAFromDbData(awcrData, playerId);
+    }
+    return isEwma
+      ? calculateEWMASeries(dailyData, metricConfig.dataKey)
+      : calculateAWCR(dailyData, metricConfig.dataKey);
+  })();
 
-  // Calculate summary
-  const summary: LoadSummary | null = calculateLoadSummary(dailyData, metricConfig.dataKey);
+  // Calculate summary from chart data (use last entry)
+  const summary: LoadSummary | null = (() => {
+    if (isEwma && metric === "ewma_srpe" && chartData.length > 0) {
+      const latest = chartData[chartData.length - 1];
+      const oneWeekAgo = chartData.length >= 7 ? chartData[chartData.length - 7] : chartData[0];
+      const weeklyChange = oneWeekAgo.acute > 0 
+        ? ((latest.acute - oneWeekAgo.acute) / oneWeekAgo.acute) * 100 
+        : 0;
+      let trend: "increasing" | "stable" | "decreasing" = "stable";
+      if (weeklyChange > 10) trend = "increasing";
+      else if (weeklyChange < -10) trend = "decreasing";
+      return {
+        currentLoad: latest.rawValue,
+        ewmaAcute: latest.acute,
+        ewmaChronic: latest.chronic,
+        ewmaRatio: latest.ratio,
+        weeklyChange: Math.round(weeklyChange * 10) / 10,
+        riskLevel: latest.riskLevel,
+        trend,
+      };
+    }
+    return calculateLoadSummary(dailyData, metricConfig.dataKey);
+  })();
 
   return {
     chartData,
@@ -188,11 +280,39 @@ export function useTeamTrainingLoad({
   });
 
   // Calculate per-player summaries
+  const isEwmaSrpe = metric === "ewma_srpe";
   const playerSummaries = players?.map(player => {
     const playerAwcr = allAwcrData?.filter(d => d.player_id === player.id) || [];
     const playerGps = allGpsData?.filter(d => d.player_id === player.id) || [];
-    const dailyData = transformToDailyLoadData(playerAwcr, playerGps);
-    const summary = calculateLoadSummary(dailyData, METRICS_CONFIG[metric].dataKey);
+
+    let summary: LoadSummary | null = null;
+
+    if (isEwmaSrpe && playerAwcr.length > 0) {
+      // Use DB-computed EWMA values for accurate ratio
+      const chartData = buildEWMAFromDbData(playerAwcr, player.id);
+      if (chartData.length > 0) {
+        const latest = chartData[chartData.length - 1];
+        const oneWeekAgo = chartData.length >= 7 ? chartData[chartData.length - 7] : chartData[0];
+        const weeklyChange = oneWeekAgo.acute > 0
+          ? ((latest.acute - oneWeekAgo.acute) / oneWeekAgo.acute) * 100
+          : 0;
+        let trend: "increasing" | "stable" | "decreasing" = "stable";
+        if (weeklyChange > 10) trend = "increasing";
+        else if (weeklyChange < -10) trend = "decreasing";
+        summary = {
+          currentLoad: latest.rawValue,
+          ewmaAcute: latest.acute,
+          ewmaChronic: latest.chronic,
+          ewmaRatio: latest.ratio,
+          weeklyChange: Math.round(weeklyChange * 10) / 10,
+          riskLevel: latest.riskLevel,
+          trend,
+        };
+      }
+    } else {
+      const dailyData = transformToDailyLoadData(playerAwcr, playerGps);
+      summary = calculateLoadSummary(dailyData, METRICS_CONFIG[metric].dataKey);
+    }
 
     return {
       ...player,
