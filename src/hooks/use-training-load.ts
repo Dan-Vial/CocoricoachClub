@@ -280,11 +280,39 @@ export function useTeamTrainingLoad({
   });
 
   // Calculate per-player summaries
+  const isEwmaSrpe = metric === "ewma_srpe";
   const playerSummaries = players?.map(player => {
     const playerAwcr = allAwcrData?.filter(d => d.player_id === player.id) || [];
     const playerGps = allGpsData?.filter(d => d.player_id === player.id) || [];
-    const dailyData = transformToDailyLoadData(playerAwcr, playerGps);
-    const summary = calculateLoadSummary(dailyData, METRICS_CONFIG[metric].dataKey);
+
+    let summary: LoadSummary | null = null;
+
+    if (isEwmaSrpe && playerAwcr.length > 0) {
+      // Use DB-computed EWMA values for accurate ratio
+      const chartData = buildEWMAFromDbData(playerAwcr, player.id);
+      if (chartData.length > 0) {
+        const latest = chartData[chartData.length - 1];
+        const oneWeekAgo = chartData.length >= 7 ? chartData[chartData.length - 7] : chartData[0];
+        const weeklyChange = oneWeekAgo.acute > 0
+          ? ((latest.acute - oneWeekAgo.acute) / oneWeekAgo.acute) * 100
+          : 0;
+        let trend: "increasing" | "stable" | "decreasing" = "stable";
+        if (weeklyChange > 10) trend = "increasing";
+        else if (weeklyChange < -10) trend = "decreasing";
+        summary = {
+          currentLoad: latest.rawValue,
+          ewmaAcute: latest.acute,
+          ewmaChronic: latest.chronic,
+          ewmaRatio: latest.ratio,
+          weeklyChange: Math.round(weeklyChange * 10) / 10,
+          riskLevel: latest.riskLevel,
+          trend,
+        };
+      }
+    } else {
+      const dailyData = transformToDailyLoadData(playerAwcr, playerGps);
+      summary = calculateLoadSummary(dailyData, METRICS_CONFIG[metric].dataKey);
+    }
 
     return {
       ...player,
