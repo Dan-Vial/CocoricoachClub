@@ -1,0 +1,2 @@
+-- Remove overly permissive UPDATE policy - not needed since accept_ambassador_invitation is SECURITY DEFINER
+DROP POLICY IF EXISTS "Authenticated users can update invitation status" ON public.ambassador_invitations;
