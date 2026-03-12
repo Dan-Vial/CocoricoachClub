@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
- import { Plus, LogOut, Shield, User } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Plus, LogOut, Shield, User, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { AddClubDialog } from "@/components/clubs/AddClubDialog";
@@ -11,13 +12,13 @@ import { ClubCard } from "@/components/clubs/ClubCard";
 import { useAuth } from "@/contexts/AuthContext";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { InjuryReturnAlerts } from "@/components/injuries/InjuryReturnAlerts";
-import { ExerciseLibrarySection } from "@/components/library/ExerciseLibrarySection";
 
 export default function Clubs() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user, loading: authLoading, signOut } = useAuth();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [clientClubSearch, setClientClubSearch] = useState("");
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -25,7 +26,6 @@ export default function Clubs() {
     }
   }, [user, authLoading, navigate]);
 
-  // Check if user is an athlete (has category_members with role 'athlete' and no other roles)
   const { data: athleteCategories, isLoading: athleteCheckLoading } = useQuery({
     queryKey: ["athlete-role-check", user?.id],
     queryFn: async () => {
@@ -40,28 +40,22 @@ export default function Clubs() {
     enabled: !!user?.id,
   });
 
-
-  // Fetch clubs owned by user OR where user is a club member
   const { data: clubs, isLoading } = useQuery({
     queryKey: ["my-clubs", user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
-      
-      // Get clubs owned by user
       const { data: ownedClubs, error: ownedError } = await supabase
         .from("clubs")
         .select("*")
         .eq("user_id", user.id);
       if (ownedError) throw ownedError;
 
-      // Get clubs where user is a member
       const { data: memberClubs, error: memberError } = await supabase
         .from("club_members")
         .select("club_id, clubs(*)")
         .eq("user_id", user.id);
       if (memberError) throw memberError;
 
-      // Merge and deduplicate
       const allClubs = [...(ownedClubs || [])];
       const ownedIds = new Set(allClubs.map(c => c.id));
       for (const mc of memberClubs || []) {
@@ -69,141 +63,103 @@ export default function Clubs() {
           allClubs.push(mc.clubs as any);
         }
       }
-      
       return allClubs.sort((a, b) => a.name.localeCompare(b.name));
     },
     enabled: !!user?.id,
   });
 
-  // Fetch categories where user is a direct member (not via club)
-  const { data: directCategories } = useQuery({
-    queryKey: ["direct-category-access"],
-    queryFn: async () => {
-      if (!user) return [];
-      
-      const { data: memberCategories, error } = await supabase
-        .from("category_members")
-        .select(`
-          category_id,
-          role,
-          categories (
-            id,
-            name,
-            club_id,
-            cover_image_url,
-            rugby_type,
-            clubs (id, name)
-          )
-        `)
-        .eq("user_id", user.id);
-      
-      if (error) throw error;
-      return memberCategories || [];
-    },
-    enabled: !!user,
-  });
-
-  // Check if user is super admin
   const { data: isSuperAdmin, isLoading: superAdminLoading } = useQuery({
     queryKey: ["is-super-admin", user?.id],
     queryFn: async () => {
       if (!user?.id) return false;
-
-      const { data, error } = await supabase.rpc("is_super_admin", {
-        _user_id: user.id,
-      });
-
-      if (error) {
-        console.error("Error checking super admin status:", error);
-        return false;
-      }
-
+      const { data, error } = await supabase.rpc("is_super_admin", { _user_id: user.id });
+      if (error) return false;
       return data === true;
     },
     enabled: !!user?.id,
   });
 
-  // Check if user is approved to create clubs
   const { data: isApproved, isLoading: approvedLoading } = useQuery({
     queryKey: ["is-approved", user?.id],
     queryFn: async () => {
       if (!user?.id) return false;
-
-      const { data, error } = await supabase.rpc("is_approved_user", {
-        _user_id: user.id,
-      });
-
-      if (error) {
-        console.error("Error checking approved status:", error);
-        return false;
-      }
-
+      const { data, error } = await supabase.rpc("is_approved_user", { _user_id: user.id });
+      if (error) return false;
       return data === true;
     },
     enabled: !!user?.id,
   });
 
-  // Redirect pure athletes to athlete-space
+  // Super admin: fetch ALL clubs with client info
+  const { data: allClubs } = useQuery({
+    queryKey: ["all-clubs-with-clients"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("clubs")
+        .select("*, clients(id, name, email)")
+        .order("name");
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!isSuperAdmin,
+  });
+
+  const myClubIds = useMemo(() => new Set(clubs?.map(c => c.id) || []), [clubs]);
+
+  const clientClubs = useMemo(() => {
+    if (!isSuperAdmin || !allClubs) return [];
+    return allClubs.filter(c => !myClubIds.has(c.id));
+  }, [isSuperAdmin, allClubs, myClubIds]);
+
+  const filteredClientClubs = useMemo(() => {
+    if (!clientClubSearch.trim()) return clientClubs;
+    const q = clientClubSearch.toLowerCase();
+    return clientClubs.filter(c => {
+      const clientData = c.clients as any;
+      return (
+        c.name.toLowerCase().includes(q) ||
+        (clientData?.name && clientData.name.toLowerCase().includes(q)) ||
+        (clientData?.email && clientData.email.toLowerCase().includes(q))
+      );
+    });
+  }, [clientClubs, clientClubSearch]);
+
   useEffect(() => {
-    if (athleteCheckLoading || !athleteCategories) return;
-    if (isLoading) return;
-    if (superAdminLoading) return; // Wait for super admin check to complete
+    if (athleteCheckLoading || !athleteCategories || isLoading || superAdminLoading) return;
     const hasOnlyAthleteRole = athleteCategories.length > 0 && athleteCategories.every(cm => cm.role === "athlete");
     const hasNoClubs = !clubs || clubs.length === 0;
-    const notSuperAdmin = !isSuperAdmin;
-    if (hasOnlyAthleteRole && hasNoClubs && notSuperAdmin) {
+    if (hasOnlyAthleteRole && hasNoClubs && !isSuperAdmin) {
       navigate("/athlete-space", { replace: true });
     }
   }, [athleteCategories, athleteCheckLoading, clubs, isLoading, isSuperAdmin, superAdminLoading, navigate]);
 
   const deleteClub = useMutation({
     mutationFn: async (clubId: string) => {
-      // Use .select() to get the deleted row - if empty, RLS blocked it
-      const { data, error } = await supabase
-        .from("clubs")
-        .delete()
-        .eq("id", clubId)
-        .select("id");
-      
-      if (error) {
-        console.error("Delete club error:", error);
-        throw error;
-      }
-      
-      // If no rows were deleted, RLS blocked the operation
-      if (!data || data.length === 0) {
-        throw new Error("permission_denied");
-      }
-      
+      const { data, error } = await supabase.from("clubs").delete().eq("id", clubId).select("id");
+      if (error) throw error;
+      if (!data || data.length === 0) throw new Error("permission_denied");
       return clubId;
     },
     onMutate: async (clubId: string) => {
-      // Cancel outgoing refetches
-      await queryClient.cancelQueries({ queryKey: ["clubs"] });
-      
-      // Snapshot previous value
-      const previousClubs = queryClient.getQueryData(["clubs"]);
-      
-      // Optimistically remove the club from the list
-      queryClient.setQueryData(["clubs"], (old: any[] | undefined) => 
+      await queryClient.cancelQueries({ queryKey: ["my-clubs"] });
+      const previousClubs = queryClient.getQueryData(["my-clubs", user?.id]);
+      queryClient.setQueryData(["my-clubs", user?.id], (old: any[] | undefined) =>
         old ? old.filter((club) => club.id !== clubId) : []
       );
-      
       return { previousClubs };
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["clubs"] });
+      queryClient.invalidateQueries({ queryKey: ["my-clubs"] });
+      queryClient.invalidateQueries({ queryKey: ["all-clubs-with-clients"] });
       toast.success("Club supprimé avec succès");
     },
     onError: (error: any, _clubId, context) => {
-      // Rollback on error
       if (context?.previousClubs) {
-        queryClient.setQueryData(["clubs"], context.previousClubs);
+        queryClient.setQueryData(["my-clubs", user?.id], context.previousClubs);
       }
-      console.error("Delete club mutation error:", error);
       if (error.code === "23503") {
-        toast.error("Impossible de supprimer ce club car il contient des catégories. Supprimez d'abord les catégories.");
-      } else if (error.message === "permission_denied" || error.message?.includes("policy")) {
+        toast.error("Impossible de supprimer ce club car il contient des catégories.");
+      } else if (error.message === "permission_denied") {
         toast.error("Vous n'avez pas la permission de supprimer ce club.");
       } else {
         toast.error("Erreur lors de la suppression du club");
@@ -211,8 +167,6 @@ export default function Clubs() {
     },
   });
 
-  // Wait for athlete check to complete before rendering anything
-  // This prevents showing "en attente de validation" to athletes before redirect
   if (authLoading || isLoading || athleteCheckLoading || superAdminLoading || approvedLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -221,15 +175,11 @@ export default function Clubs() {
     );
   }
 
-  if (!user) {
-    return null;
-  }
+  if (!user) return null;
 
-  // If user is a pure athlete, don't render the clubs page (redirect is in progress)
   const hasOnlyAthleteRole = athleteCategories && athleteCategories.length > 0 && athleteCategories.every(cm => cm.role === "athlete");
   const hasNoClubs = !clubs || clubs.length === 0;
-  const notSuperAdmin = isSuperAdmin === false;
-  if (hasOnlyAthleteRole && hasNoClubs && notSuperAdmin) {
+  if (hasOnlyAthleteRole && hasNoClubs && isSuperAdmin === false) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <p className="text-muted-foreground">Redirection vers votre espace athlète...</p>
@@ -254,32 +204,15 @@ export default function Clubs() {
               <NotificationBell />
               {isSuperAdmin && (
                 <>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => navigate("/athlete-space")}
-                    className="text-primary-foreground hover:bg-primary-foreground/10"
-                    title="Espace Athlète"
-                  >
+                  <Button variant="ghost" size="icon" onClick={() => navigate("/athlete-space")} className="text-primary-foreground hover:bg-primary-foreground/10" title="Espace Athlète">
                     <User className="h-5 w-5" />
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                     onClick={() => navigate("/super-admin")}
-                    className="text-primary-foreground hover:bg-primary-foreground/10"
-                     title="Super Admin"
-                  >
+                  <Button variant="ghost" size="icon" onClick={() => navigate("/super-admin")} className="text-primary-foreground hover:bg-primary-foreground/10" title="Super Admin">
                     <Shield className="h-5 w-5" />
                   </Button>
                 </>
               )}
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={signOut}
-                className="text-primary-foreground hover:bg-primary-foreground/10"
-              >
+              <Button variant="ghost" size="icon" onClick={signOut} className="text-primary-foreground hover:bg-primary-foreground/10">
                 <LogOut className="h-5 w-5" />
               </Button>
             </div>
@@ -289,20 +222,16 @@ export default function Clubs() {
 
       <div className="container mx-auto max-w-6xl px-4 py-8">
         <InjuryReturnAlerts />
-        
-        {/* Pending approval message */}
+
         {!isApproved && !isSuperAdmin && (
           <Card className="bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800 mb-8">
             <CardContent className="py-6">
               <div className="flex items-center gap-3">
                 <Shield className="h-6 w-6 text-amber-600" />
                 <div>
-                  <h3 className="font-semibold text-amber-800 dark:text-amber-200">
-                    Compte en attente de validation
-                  </h3>
+                  <h3 className="font-semibold text-amber-800 dark:text-amber-200">Compte en attente de validation</h3>
                   <p className="text-sm text-amber-700 dark:text-amber-300">
                     Votre compte doit être validé par un administrateur avant de pouvoir créer des clubs.
-                    Vous serez notifié une fois votre accès approuvé.
                   </p>
                 </div>
               </div>
@@ -310,6 +239,7 @@ export default function Clubs() {
           </Card>
         )}
 
+        {/* Mes Clubs */}
         <div className="flex justify-between items-center mb-8 mt-8">
           <h2 className="text-2xl font-bold text-foreground">Mes Clubs</h2>
           {(isApproved || isSuperAdmin) && (
@@ -324,9 +254,7 @@ export default function Clubs() {
           <Card className="bg-gradient-card shadow-md">
             <CardContent className="py-12 text-center">
               <p className="text-muted-foreground mb-4">
-                {isApproved || isSuperAdmin 
-                  ? "Aucun club créé pour le moment" 
-                  : "Vous pourrez créer des clubs une fois votre compte validé"}
+                {isApproved || isSuperAdmin ? "Aucun club créé pour le moment" : "Vous pourrez créer des clubs une fois votre compte validé"}
               </p>
               {(isApproved || isSuperAdmin) && (
                 <Button onClick={() => setIsAddDialogOpen(true)} variant="outline" className="gap-2">
@@ -339,15 +267,52 @@ export default function Clubs() {
         ) : (
           <div className="space-y-2">
             {clubs?.map((club) => (
-              <ClubCard 
-                key={club.id} 
-                club={club} 
-                onDelete={(clubId) => deleteClub.mutate(clubId)} 
-              />
+              <ClubCard key={club.id} club={club} onDelete={(clubId) => deleteClub.mutate(clubId)} />
             ))}
           </div>
         )}
 
+        {/* Clubs clients - Super admin only */}
+        {isSuperAdmin && clientClubs.length > 0 && (
+          <div className="mt-12">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+              <h2 className="text-2xl font-bold text-foreground">Clubs clients</h2>
+              <div className="relative w-full sm:w-80">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Rechercher par nom, client, email..."
+                  value={clientClubSearch}
+                  onChange={(e) => setClientClubSearch(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+            </div>
+
+            {filteredClientClubs.length === 0 ? (
+              <Card className="bg-gradient-card shadow-md">
+                <CardContent className="py-8 text-center">
+                  <p className="text-muted-foreground">Aucun club trouvé pour cette recherche</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-2">
+                {filteredClientClubs.map((club) => {
+                  const clientData = club.clients as any;
+                  return (
+                    <div key={club.id} className="relative">
+                      <ClubCard club={club} onDelete={(clubId) => deleteClub.mutate(clubId)} />
+                      {clientData?.name && (
+                        <span className="absolute top-1/2 -translate-y-1/2 right-24 text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full hidden sm:inline-block">
+                          {clientData.name}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       <AddClubDialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen} />
