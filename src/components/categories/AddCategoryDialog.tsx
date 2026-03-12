@@ -343,14 +343,15 @@ export function AddCategoryDialog({
                       <div className="flex items-center gap-2">
                         <Checkbox 
                           checked={selectedMembers.includes(member.id)}
-                          onCheckedChange={() => toggleMember(member.id)}
+                          onCheckedChange={() => {}}
+                          onClick={(e) => e.stopPropagation()}
                         />
                         <div>
                           <p className="text-sm font-medium">
                             {member.profile?.full_name || "Utilisateur"}
                           </p>
                           <p className="text-xs text-muted-foreground">
-                            {member.profile?.email}
+                            {member.profile?.email || ""}
                           </p>
                         </div>
                       </div>
