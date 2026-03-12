@@ -140,17 +140,23 @@ export function SessionFeedbackDialog({
 
   // Initialize RPE values with default duration when players load
   useEffect(() => {
-    if (players && defaultDuration && open) {
-      const initial: Record<string, { rpe: string; duration: string }> = {};
-      players.forEach((player) => {
-        // Don't overwrite existing values
-        if (!rpeValues[player.id]) {
-          initial[player.id] = { rpe: "", duration: defaultDuration.toString() };
-        }
+    if (players && open) {
+      const durationStr = defaultDuration.toString();
+      setRpeValues((prev) => {
+        const updated = { ...prev };
+        let changed = false;
+        players.forEach((player) => {
+          if (!updated[player.id]) {
+            updated[player.id] = { rpe: "", duration: durationStr };
+            changed = true;
+          } else if (updated[player.id].rpe === "" && updated[player.id].duration !== durationStr) {
+            // Update duration if RPE hasn't been filled yet (user hasn't started editing)
+            updated[player.id] = { ...updated[player.id], duration: durationStr };
+            changed = true;
+          }
+        });
+        return changed ? updated : prev;
       });
-      if (Object.keys(initial).length > 0) {
-        setRpeValues((prev) => ({ ...initial, ...prev }));
-      }
     }
   }, [players, defaultDuration, open]);
 
