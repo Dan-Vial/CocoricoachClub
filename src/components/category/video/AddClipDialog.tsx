@@ -292,21 +292,21 @@ export function AddClipDialog({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Clip URL */}
-          <div className="space-y-2">
-            <Label className="flex items-center gap-2">
-              <Link className="h-4 w-4" />
-              URL du clip *
-            </Label>
-            <Input
-              value={clipUrl}
-              onChange={(e) => setClipUrl(e.target.value)}
-              placeholder="https://..."
-            />
-            <p className="text-xs text-muted-foreground">
-              Lien vers le clip pré-découpé (VEO, YouTube, Vimeo...)
-            </p>
-          </div>
+          {/* Clip Video */}
+          <VideoFileUpload
+            label="Vidéo du clip *"
+            compact
+            onFileUploaded={(url, source) => {
+              if (source === "upload") {
+                setClipFileUrl(url);
+                setClipUrl(url); // use same for clip_url
+              } else {
+                setClipUrl(url);
+                setClipFileUrl("");
+              }
+            }}
+            currentUrl={clipUrl || clipFileUrl}
+          />
 
           {/* Action Type - Grouped by category */}
           <div className="space-y-2">
