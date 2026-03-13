@@ -100,6 +100,13 @@ export function PerformanceTab({ categoryId }: PerformanceTabProps) {
             <span className="hidden sm:inline">Performance Mentale</span>
             <span className="sm:hidden">Mental</span>
           </ColoredSubTabsTrigger>
+          <ColoredSubTabsTrigger 
+            value="benchmarks" 
+            colorKey="performance"
+            icon={<Target className="h-4 w-4" />}
+          >
+            Benchmarks
+          </ColoredSubTabsTrigger>
         </ColoredSubTabsList>
       </div>
 
@@ -121,6 +128,10 @@ export function PerformanceTab({ categoryId }: PerformanceTabProps) {
 
       <TabsContent value="mental">
         <MentalPerformanceSection categoryId={categoryId} />
+      </TabsContent>
+
+      <TabsContent value="benchmarks">
+        <BenchmarkTab categoryId={categoryId} sportType={sportType} />
       </TabsContent>
     </Tabs>
   );
