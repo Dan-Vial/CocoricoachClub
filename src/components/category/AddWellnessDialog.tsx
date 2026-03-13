@@ -21,6 +21,7 @@ import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { HrvInputSection, emptyHrvData, type HrvData } from "./hrv/HrvInputSection";
 
 interface AddWellnessDialogProps {
   open: boolean;
@@ -49,6 +50,7 @@ export function AddWellnessDialog({ open, onOpenChange, categoryId }: AddWellnes
   const [hasSpecificPain, setHasSpecificPain] = useState(false);
   const [painLocation, setPainLocation] = useState("");
   const [notes, setNotes] = useState("");
+  const [hrvData, setHrvData] = useState<HrvData>(emptyHrvData);
 
   const { data: players } = useQuery({
     queryKey: ["players", categoryId],
@@ -94,6 +96,7 @@ export function AddWellnessDialog({ open, onOpenChange, categoryId }: AddWellnes
       setHasSpecificPain(false);
       setPainLocation("");
       setNotes("");
+      setHrvData(emptyHrvData);
     }
   }, [playerId]);
 
@@ -115,6 +118,28 @@ export function AddWellnessDialog({ open, onOpenChange, categoryId }: AddWellnes
         notes: notes.trim() || null,
       });
       if (error) throw error;
+
+      // Save HRV data if any provided
+      const hasHrvData = Object.values(hrvData).some((v) => v !== "");
+      if (hasHrvData) {
+        const { error: hrvError } = await supabase.from("hrv_records").insert({
+          player_id: playerId,
+          category_id: categoryId,
+          record_date: date,
+          record_type: "morning",
+          hrv_ms: hrvData.hrv_ms ? parseFloat(hrvData.hrv_ms) : null,
+          resting_hr_bpm: hrvData.resting_hr_bpm ? parseFloat(hrvData.resting_hr_bpm) : null,
+          avg_hr_bpm: hrvData.avg_hr_bpm ? parseFloat(hrvData.avg_hr_bpm) : null,
+          max_hr_bpm: hrvData.max_hr_bpm ? parseFloat(hrvData.max_hr_bpm) : null,
+          zone1_minutes: hrvData.zone1_minutes ? parseFloat(hrvData.zone1_minutes) : null,
+          zone2_minutes: hrvData.zone2_minutes ? parseFloat(hrvData.zone2_minutes) : null,
+          zone3_minutes: hrvData.zone3_minutes ? parseFloat(hrvData.zone3_minutes) : null,
+          zone4_minutes: hrvData.zone4_minutes ? parseFloat(hrvData.zone4_minutes) : null,
+          zone5_minutes: hrvData.zone5_minutes ? parseFloat(hrvData.zone5_minutes) : null,
+        });
+        if (hrvError) console.error("HRV save error:", hrvError);
+      }
+
       return playerName;
     },
     onSuccess: (playerName) => {
@@ -147,6 +172,7 @@ export function AddWellnessDialog({ open, onOpenChange, categoryId }: AddWellnes
     setHasSpecificPain(false);
     setPainLocation("");
     setNotes("");
+    setHrvData(emptyHrvData);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -299,6 +325,9 @@ export function AddWellnessDialog({ open, onOpenChange, categoryId }: AddWellnes
               </div>
             )}
           </div>
+
+          {/* HRV Section (optional) */}
+          <HrvInputSection data={hrvData} onChange={setHrvData} />
 
           {/* Notes / Commentaires section */}
           <div className="space-y-2">

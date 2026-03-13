@@ -597,10 +597,9 @@ export const isCrossfitCategory = (rugbyType: string): boolean => {
   return rugbyType?.startsWith("crossfit") || rugbyType === "crossfit";
 };
 
-// Sports that support HRV and heart rate zone tracking
-export const supportsHrvTracking = (rugbyType: string): boolean => {
-  if (!rugbyType) return false;
-  return isAthletismeCategory(rugbyType) || isTriathlonCategory(rugbyType) || isCrossfitCategory(rugbyType);
+// Sports that support HRV and heart rate zone tracking (all sports)
+export const supportsHrvTracking = (_rugbyType: string): boolean => {
+  return true;
 };
 
 export const isTeamSport = (type: string): boolean => {
