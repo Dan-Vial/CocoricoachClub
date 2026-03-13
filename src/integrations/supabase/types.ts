@@ -7470,6 +7470,7 @@ export type Database = {
           thumbnail_url: string | null
           title: string
           updated_at: string
+          video_file_url: string | null
           video_source: string | null
           video_url: string | null
         }
@@ -7485,6 +7486,7 @@ export type Database = {
           thumbnail_url?: string | null
           title: string
           updated_at?: string
+          video_file_url?: string | null
           video_source?: string | null
           video_url?: string | null
         }
@@ -7500,6 +7502,7 @@ export type Database = {
           thumbnail_url?: string | null
           title?: string
           updated_at?: string
+          video_file_url?: string | null
           video_source?: string | null
           video_url?: string | null
         }
@@ -7538,6 +7541,7 @@ export type Database = {
           title: string
           updated_at: string
           video_analysis_id: string
+          video_file_url: string | null
         }
         Insert: {
           action_category?: string | null
@@ -7556,6 +7560,7 @@ export type Database = {
           title: string
           updated_at?: string
           video_analysis_id: string
+          video_file_url?: string | null
         }
         Update: {
           action_category?: string | null
@@ -7574,6 +7579,7 @@ export type Database = {
           title?: string
           updated_at?: string
           video_analysis_id?: string
+          video_file_url?: string | null
         }
         Relationships: [
           {
