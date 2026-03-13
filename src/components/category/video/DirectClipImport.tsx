@@ -64,6 +64,7 @@ export function DirectClipImport({
   // Current clip being created
   const [currentClip, setCurrentClip] = useState<Partial<ClipToImport>>({
     clipUrl: "",
+    clipFileUrl: "",
     title: "",
     actionType: "",
     matchId: null,
