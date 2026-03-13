@@ -64,7 +64,7 @@ export function WellnessTab({ categoryId }: WellnessTabProps) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("wellness_tracking")
-        .select("*, players(name)")
+        .select("*, players(name, first_name)")
         .eq("category_id", categoryId)
         .order("tracking_date", { ascending: false });
       if (error) throw error;
@@ -99,7 +99,7 @@ export function WellnessTab({ categoryId }: WellnessTabProps) {
         <TabsList>
           <TabsTrigger value="tracking">Suivi Wellness</TabsTrigger>
           <TabsTrigger value="pain-stats">Statistiques Douleurs</TabsTrigger>
-          <TabsTrigger value="risk">Risque Blessure (AWCR + Wellness)</TabsTrigger>
+          <TabsTrigger value="risk">Risque Blessure (EWMA + Wellness)</TabsTrigger>
           {isFeminine && (
             <TabsTrigger value="menstrual">Cycle Menstruel</TabsTrigger>
           )}
@@ -196,7 +196,7 @@ export function WellnessTab({ categoryId }: WellnessTabProps) {
                   {filteredWellnessData.map((entry) => (
                     <TableRow key={entry.id}>
                       <TableCell className="font-medium">
-                        {entry.players?.name}
+                        {[entry.players?.first_name, entry.players?.name].filter(Boolean).join(" ")}
                       </TableCell>
                       <TableCell>
                         {format(new Date(entry.tracking_date), "dd MMM yyyy", { locale: fr })}

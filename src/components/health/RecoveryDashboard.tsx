@@ -259,7 +259,7 @@ export function RecoveryDashboard({ categoryId }: RecoveryDashboardProps) {
 
   // Bar chart data for player recovery scores
   const barData = playerRecoveries.map(p => ({
-    name: p.playerName.split(" ").pop() || p.playerName,
+    name: p.playerName,
     score: p.recoveryScore,
     prediction: p.predictionScore,
   }));
