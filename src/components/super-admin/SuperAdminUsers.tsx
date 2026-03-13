@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/components/ui/sonner";
-import { Users, CheckCircle2, XCircle, Clock, Crown, Gift, UserX, Trash2 } from "lucide-react";
+import { Users, CheckCircle2, XCircle, Clock, Crown, Gift, UserX, Trash2, Phone } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import {
@@ -25,6 +25,7 @@ interface AdminUser {
   id: string;
   email: string | null;
   full_name: string | null;
+  phone: string | null;
   created_at: string | null;
   clubs_owned: number;
   is_super_admin: boolean;
@@ -177,10 +178,11 @@ export function SuperAdminUsers() {
           <p className="text-muted-foreground">Chargement...</p>
         ) : (
           <Table>
-            <TableHeader>
+             <TableHeader>
               <TableRow>
                 <TableHead>Utilisateur</TableHead>
                 <TableHead>Email</TableHead>
+                <TableHead>Téléphone</TableHead>
                 <TableHead>Inscrit le</TableHead>
                 <TableHead>Clubs</TableHead>
                 <TableHead>Statut</TableHead>
@@ -194,6 +196,16 @@ export function SuperAdminUsers() {
                     {u.full_name || "Non renseigné"}
                   </TableCell>
                   <TableCell>{u.email}</TableCell>
+                  <TableCell>
+                    {u.phone ? (
+                      <a href={`tel:${u.phone}`} className="flex items-center gap-1 text-primary hover:underline">
+                        <Phone className="h-3 w-3" />
+                        {u.phone}
+                      </a>
+                    ) : (
+                      <span className="text-muted-foreground text-xs">-</span>
+                    )}
+                  </TableCell>
                   <TableCell>
                     {u.created_at
                       ? format(new Date(u.created_at), "dd MMM yyyy", { locale: fr })

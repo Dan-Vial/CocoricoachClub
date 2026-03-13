@@ -4873,18 +4873,21 @@ export type Database = {
           email: string | null
           full_name: string | null
           id: string
+          phone: string | null
         }
         Insert: {
           created_at?: string | null
           email?: string | null
           full_name?: string | null
           id: string
+          phone?: string | null
         }
         Update: {
           created_at?: string | null
           email?: string | null
           full_name?: string | null
           id?: string
+          phone?: string | null
         }
         Relationships: []
       }
@@ -7558,6 +7561,7 @@ export type Database = {
           id: string | null
           is_approved: boolean | null
           is_super_admin: boolean | null
+          phone: string | null
         }
         Insert: {
           clubs_owned?: never
@@ -7567,6 +7571,7 @@ export type Database = {
           id?: string | null
           is_approved?: never
           is_super_admin?: never
+          phone?: string | null
         }
         Update: {
           clubs_owned?: never
@@ -7576,6 +7581,7 @@ export type Database = {
           id?: string | null
           is_approved?: never
           is_super_admin?: never
+          phone?: string | null
         }
         Relationships: []
       }

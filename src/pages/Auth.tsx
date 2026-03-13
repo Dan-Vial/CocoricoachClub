@@ -54,6 +54,7 @@ export default function Auth() {
   const [signupEmail, setSignupEmail] = useState("");
   const [signupPassword, setSignupPassword] = useState("");
   const [fullName, setFullName] = useState("");
+  const [signupPhone, setSignupPhone] = useState("");
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -169,7 +170,8 @@ export default function Auth() {
       const validated = signUpSchema.parse({ 
         email: signupEmail, 
         password: signupPassword, 
-        fullName 
+        fullName,
+        phone: signupPhone,
       });
 
       const { error } = await supabase.auth.signUp({
@@ -179,6 +181,7 @@ export default function Auth() {
           emailRedirectTo: `${window.location.origin}/`,
           data: {
             full_name: validated.fullName,
+            phone: validated.phone || undefined,
           },
         },
       });
@@ -379,6 +382,18 @@ export default function Auth() {
                     required
                     disabled={isLoading}
                     maxLength={255}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="signup-phone">Téléphone</Label>
+                  <Input
+                    id="signup-phone"
+                    type="tel"
+                    placeholder="+33 6 12 34 56 78"
+                    value={signupPhone}
+                    onChange={(e) => setSignupPhone(e.target.value)}
+                    disabled={isLoading}
+                    maxLength={20}
                   />
                 </div>
                 <div className="space-y-2">

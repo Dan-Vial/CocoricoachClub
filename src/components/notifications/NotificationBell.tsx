@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Bell, Check, Trash2, X } from "lucide-react";
+import { Bell, Check, Trash2, UserPlus, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -13,6 +13,8 @@ import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Notification {
   id: string;
@@ -24,9 +26,30 @@ interface Notification {
   injury_id: string | null;
 }
 
+interface PendingUser {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+  phone: string | null;
+  created_at: string | null;
+}
+
 export function NotificationBell({ variant = "hero" }: { variant?: "hero" | "default" }) {
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const { data: isSuperAdmin } = useQuery({
+    queryKey: ["is-super-admin", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return false;
+      const { data, error } = await supabase.rpc("is_super_admin", { _user_id: user.id });
+      if (error) return false;
+      return data === true;
+    },
+    enabled: !!user?.id,
+  });
 
   const { data: notifications } = useQuery({
     queryKey: ["notifications"],
@@ -40,10 +63,56 @@ export function NotificationBell({ variant = "hero" }: { variant?: "hero" | "def
       if (error) throw error;
       return data as Notification[];
     },
-    refetchInterval: 30000, // Refresh every 30 seconds
+    refetchInterval: 30000,
+  });
+
+  // Fetch pending users (not approved, not staff, not super admin) - only for super admins
+  const { data: pendingUsers } = useQuery({
+    queryKey: ["pending-registrations"],
+    queryFn: async () => {
+      // Get all profiles
+      const { data: allProfiles, error: profilesError } = await supabase
+        .from("profiles")
+        .select("id, full_name, email, phone, created_at")
+        .order("created_at", { ascending: false });
+      if (profilesError) throw profilesError;
+
+      // Get approved users
+      const { data: approved } = await supabase
+        .from("approved_users")
+        .select("user_id");
+
+      // Get super admins
+      const { data: superAdmins } = await supabase
+        .from("super_admin_users")
+        .select("user_id");
+
+      // Get staff (club members + category members)
+      const { data: clubMembers } = await supabase
+        .from("club_members")
+        .select("user_id");
+      const { data: categoryMembers } = await supabase
+        .from("category_members")
+        .select("user_id");
+
+      const approvedIds = new Set(approved?.map(a => a.user_id) || []);
+      const superAdminIds = new Set(superAdmins?.map(s => s.user_id) || []);
+      const staffIds = new Set([
+        ...(clubMembers?.map(m => m.user_id) || []),
+        ...(categoryMembers?.map(m => m.user_id) || []),
+      ]);
+
+      return (allProfiles || []).filter(p => 
+        !approvedIds.has(p.id) && !superAdminIds.has(p.id) && !staffIds.has(p.id)
+      ) as PendingUser[];
+    },
+    enabled: !!isSuperAdmin,
+    refetchInterval: 30000,
   });
 
   const unreadCount = notifications?.filter(n => !n.is_read).length || 0;
+  const pendingCount = pendingUsers?.length || 0;
+  const totalBadge = unreadCount + pendingCount;
 
   const markAsRead = useMutation({
     mutationFn: async (notificationId: string) => {
@@ -111,6 +180,11 @@ export function NotificationBell({ variant = "hero" }: { variant?: "hero" | "def
     }
   };
 
+  const handleGoToPendingUsers = () => {
+    setOpen(false);
+    navigate("/super-admin?tab=users");
+  };
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -124,12 +198,12 @@ export function NotificationBell({ variant = "hero" }: { variant?: "hero" | "def
           }`}
         >
           <Bell className="h-5 w-5" />
-          {unreadCount > 0 && (
+          {totalBadge > 0 && (
             <Badge
               variant="destructive"
               className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
             >
-              {unreadCount > 9 ? "9+" : unreadCount}
+              {totalBadge > 9 ? "9+" : totalBadge}
             </Badge>
           )}
         </Button>
@@ -150,14 +224,51 @@ export function NotificationBell({ variant = "hero" }: { variant?: "hero" | "def
           )}
         </div>
         <ScrollArea className="h-[400px]">
-          {!notifications || notifications.length === 0 ? (
+          {/* Pending registrations section for super admins */}
+          {isSuperAdmin && pendingCount > 0 && (
+            <div className="border-b">
+              <button
+                onClick={handleGoToPendingUsers}
+                className="w-full p-4 hover:bg-accent/50 transition-colors text-left"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="h-10 w-10 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center flex-shrink-0">
+                    <UserPlus className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-semibold text-sm">
+                        {pendingCount} inscription{pendingCount > 1 ? "s" : ""} en attente
+                      </h4>
+                      <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                    <div className="mt-1 space-y-1">
+                      {pendingUsers?.slice(0, 3).map(u => (
+                        <p key={u.id} className="text-xs text-muted-foreground truncate">
+                          {u.full_name || "Sans nom"} — {u.email || "Pas d'email"}
+                          {u.phone && ` — ${u.phone}`}
+                        </p>
+                      ))}
+                      {pendingCount > 3 && (
+                        <p className="text-xs font-medium text-primary">
+                          +{pendingCount - 3} autre{pendingCount - 3 > 1 ? "s" : ""}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </button>
+            </div>
+          )}
+
+          {(!notifications || notifications.length === 0) && pendingCount === 0 ? (
             <div className="p-8 text-center text-muted-foreground">
               <Bell className="h-12 w-12 mx-auto mb-2 opacity-50" />
               <p>Aucune notification</p>
             </div>
           ) : (
             <div className="divide-y">
-              {notifications.map((notification) => (
+              {notifications?.map((notification) => (
                 <div
                   key={notification.id}
                   className={`p-4 hover:bg-accent/50 transition-colors ${

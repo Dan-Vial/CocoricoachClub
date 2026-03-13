@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
@@ -23,7 +23,9 @@ import { RoleMenuPermissions } from "@/components/super-admin/RoleMenuPermission
  
  export default function SuperAdmin() {
    const { user, loading: authLoading } = useAuth();
-   const navigate = useNavigate();
+    const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const defaultTab = searchParams.get("tab") || "dashboard";
  
    // Check if current user is super admin
    const { data: isSuperAdmin, isLoading: checkingAdmin } = useQuery({
@@ -86,7 +88,7 @@ import { RoleMenuPermissions } from "@/components/super-admin/RoleMenuPermission
          </div>
  
          {/* Main Content */}
-         <Tabs defaultValue="dashboard" className="space-y-6">
+         <Tabs defaultValue={defaultTab} className="space-y-6">
            <TabsList className="flex flex-wrap h-auto gap-1">
              <TabsTrigger value="dashboard" className="flex items-center gap-2">
                <LayoutDashboard className="h-4 w-4" />
