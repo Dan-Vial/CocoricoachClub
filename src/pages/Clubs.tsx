@@ -266,7 +266,7 @@ export default function Clubs() {
           )}
         </div>
 
-        {clubs && clubs.length === 0 ? (
+        {myClubs.length === 0 ? (
           <Card className="bg-gradient-card shadow-md">
             <CardContent className="py-12 text-center">
               <p className="text-muted-foreground mb-4">
@@ -282,7 +282,7 @@ export default function Clubs() {
           </Card>
         ) : (
           <div className="space-y-2">
-            {clubs?.map((club) => (
+            {myClubs.map((club) => (
               <ClubCard key={club.id} club={club} onDelete={(clubId) => deleteClub.mutate(clubId)} />
             ))}
           </div>
