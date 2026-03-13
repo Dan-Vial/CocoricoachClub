@@ -241,7 +241,7 @@ export function InjuryRiskAssessment({ categoryId }: InjuryRiskAssessmentProps) 
           Risque de Blessure (EWMA + Wellness)
         </CardTitle>
         <CardDescription>
-          Ratio EWMA (Charge Aiguë / Charge Chronique) combiné avec Score Wellness pondéré
+          Ratio EWMA (Charge Aiguë / Charge Chronique) combiné avec le Score Wellness pondéré. Le ratio EWMA est affiché dans la colonne "EWMA".
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
