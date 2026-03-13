@@ -132,6 +132,7 @@ export function VideoClipViewer({
         id: clip.id,
         title: clip.title,
         clip_url: clip.clip_url,
+        video_file_url: (clip as any).video_file_url || null,
         start_time_seconds: clip.start_time_seconds,
         end_time_seconds: clip.end_time_seconds,
         action_type: clip.action_type,
