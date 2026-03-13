@@ -309,6 +309,7 @@ export const SPORT_TYPES: SportTypeOption[] = [
   { value: "XV", label: "Rugby à XV", category: "rugby" },
   { value: "7", label: "Rugby à 7", category: "rugby" },
   { value: "XIII", label: "Rugby à XIII", category: "rugby" },
+  { value: "touch", label: "Touch Rugby", category: "rugby" },
   { value: "academie", label: "Académie / Pôle Espoir", category: "rugby" },
   { value: "national_team", label: "Équipe Nationale", category: "rugby" },
   // Team sports - Club
