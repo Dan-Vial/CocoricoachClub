@@ -101,6 +101,7 @@ export const RUGBY_SUBTYPES: SportSubTypeOption[] = [
   { value: "XV", label: "Rugby à XV" },
   { value: "7", label: "Rugby à 7" },
   { value: "XIII", label: "Rugby à XIII" },
+  { value: "touch", label: "Touch Rugby" },
   { value: "academie", label: "Académie / Pôle Espoir" },
   { value: "national_team", label: "Équipe Nationale" },
 ];
