@@ -35,6 +35,7 @@ import { EditMatchDialog } from "./EditMatchDialog";
 import { AddSubMatchDialog } from "./AddSubMatchDialog";
 import { NotifyAthletesDialog } from "@/components/notifications/NotifyAthletesDialog";
 import { isIndividualSport } from "@/lib/constants/sportTypes";
+import { getCompetitionStageLabel as getCompetitionStageLabelUtil } from "@/lib/constants/competitions";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -169,19 +170,7 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
     sportType.toLowerCase().includes("aviron");
 
   const getCompetitionStageLabel = (stage: string): string => {
-    const stages: Record<string, string> = {
-      poules: "Phase de poules",
-      poules_1: "Poules - Match 1",
-      poules_2: "Poules - Match 2",
-      poules_3: "Poules - Match 3",
-      seiziemes: "16èmes",
-      huitiemes: "8èmes",
-      quarts: "Quarts",
-      demies: "Demi-finales",
-      petite_finale: "3ème place",
-      finale: "Finale",
-    };
-    return stages[stage] || stage;
+    return getCompetitionStageLabelUtil(stage);
   };
 
   const deleteMatch = useMutation({

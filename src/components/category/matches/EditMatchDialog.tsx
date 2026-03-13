@@ -22,7 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { getCompetitionsBySport } from "@/lib/constants/competitions";
+import { getCompetitionsBySport, getCompetitionStagesBySport } from "@/lib/constants/competitions";
 import { isIndividualSport } from "@/lib/constants/sportTypes";
 
 interface Match {
@@ -68,18 +68,7 @@ const AVIRON_DISTANCES = [
   { value: 6000, label: "6000m (Tête de rivière)" },
 ];
 
-const COMPETITION_STAGES = [
-  { value: "", label: "Aucune" },
-  { value: "poules_1", label: "Phase de poules - Match 1" },
-  { value: "poules_2", label: "Phase de poules - Match 2" },
-  { value: "poules_3", label: "Phase de poules - Match 3" },
-  { value: "seiziemes", label: "Seizièmes de finale" },
-  { value: "huitiemes", label: "Huitièmes de finale" },
-  { value: "quarts", label: "Quarts de finale" },
-  { value: "demies", label: "Demi-finales" },
-  { value: "petite_finale", label: "Petite finale / 3ème place" },
-  { value: "finale", label: "Finale" },
-];
+const getStagesForSport = (sport: string) => getCompetitionStagesBySport(sport);
 
 export function EditMatchDialog({
   open,
@@ -314,7 +303,7 @@ export function EditMatchDialog({
                 <SelectValue placeholder="Sélectionner une phase (optionnel)" />
               </SelectTrigger>
               <SelectContent className="z-[200]">
-                {COMPETITION_STAGES.map((stage) => (
+                {getStagesForSport(sportType).map((stage) => (
                   <SelectItem key={stage.value} value={stage.value || "none"}>
                     {stage.label}
                   </SelectItem>
