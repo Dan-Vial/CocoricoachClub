@@ -564,7 +564,128 @@ export const ATHLETISME_PHASES = [
   { value: "finale", label: "Finale" },
 ];
 
-export type SportType = "XV" | "7" | "XIII" | "football" | "handball" | "volleyball" | "basketball" | "judo" | "aviron" | "bowling" | "academie" | "national_team" | "athletisme";
+// ==================== PADEL STATS ====================
+export const PADEL_STATS: StatField[] = [
+  { key: "setsWon", label: "Sets gagnés", shortLabel: "Sets+", category: "scoring", type: "number" },
+  { key: "setsLost", label: "Sets perdus", shortLabel: "Sets-", category: "scoring", type: "number" },
+  { key: "gamesWon", label: "Jeux gagnés", shortLabel: "Jeux+", category: "scoring", type: "number" },
+  { key: "gamesLost", label: "Jeux perdus", shortLabel: "Jeux-", category: "scoring", type: "number" },
+  { key: "aces", label: "Aces", shortLabel: "Aces", category: "attack", type: "number" },
+  { key: "doubleFaults", label: "Doubles fautes", shortLabel: "DF", category: "attack", type: "number" },
+  { key: "winners", label: "Coups gagnants", shortLabel: "Winners", category: "attack", type: "number" },
+  { key: "unforcedErrors", label: "Fautes directes", shortLabel: "FD", category: "defense", type: "number" },
+  { key: "pointsWon", label: "Points gagnés", shortLabel: "Pts+", category: "scoring", type: "number" },
+  { key: "breakPoints", label: "Balles de break converties", shortLabel: "BP", category: "attack", type: "number" },
+  { key: "smashes", label: "Smashes", shortLabel: "Smash", category: "attack", type: "number" },
+  { key: "bandeja", label: "Bandejas", shortLabel: "Band", category: "attack", type: "number" },
+  { key: "vibora", label: "Víboras", shortLabel: "Víb", category: "attack", type: "number" },
+  { key: "globos", label: "Globos (Lobs)", shortLabel: "Glob", category: "defense", type: "number" },
+  { key: "volleys", label: "Volées gagnantes", shortLabel: "Vol", category: "attack", type: "number" },
+  { key: "matchResult", label: "Résultat (1=V, 0=D)", shortLabel: "Rés", category: "scoring", type: "number", max: 1 },
+];
+
+// ==================== NATATION STATS ====================
+export const NATATION_STATS: StatField[] = [
+  { key: "finalTime", label: "Temps final (sec)", shortLabel: "Temps", category: "scoring", type: "number" },
+  { key: "ranking", label: "Classement", shortLabel: "Place", category: "scoring", type: "number" },
+  { key: "reactionTime", label: "Temps de réaction (ms)", shortLabel: "Réaction", category: "scoring", type: "number" },
+  { key: "split50", label: "Split 50m (sec)", shortLabel: "S50", category: "general", type: "number" },
+  { key: "split100", label: "Split 100m (sec)", shortLabel: "S100", category: "general", type: "number" },
+  { key: "turnTime", label: "Temps virage (sec)", shortLabel: "Virage", category: "general", type: "number" },
+  { key: "underwaterDistance", label: "Distance coulée (m)", shortLabel: "Coulée", category: "general", type: "number" },
+  { key: "strokeRate", label: "Fréquence de nage (c/min)", shortLabel: "Fréq", category: "attack", type: "number" },
+  { key: "strokeCount", label: "Nb coups de bras/longueur", shortLabel: "Coups", category: "attack", type: "number" },
+  { key: "swolf", label: "SWOLF", shortLabel: "SWOLF", category: "attack", type: "number" },
+  { key: "personalBest", label: "Record personnel (1=oui)", shortLabel: "RP", category: "scoring", type: "number", max: 1 },
+];
+
+export const NATATION_EAU_LIBRE_STATS: StatField[] = [
+  { key: "finalTime", label: "Temps final (min)", shortLabel: "Temps", category: "scoring", type: "number" },
+  { key: "ranking", label: "Classement", shortLabel: "Place", category: "scoring", type: "number" },
+  { key: "distance", label: "Distance (m)", shortLabel: "Dist", category: "general", type: "number" },
+  { key: "avgPace", label: "Allure moyenne (min/100m)", shortLabel: "Allure", category: "general", type: "number" },
+  { key: "waterTemp", label: "Température eau (°C)", shortLabel: "Temp", category: "general", type: "number" },
+  { key: "personalBest", label: "Record personnel (1=oui)", shortLabel: "RP", category: "scoring", type: "number", max: 1 },
+];
+
+// ==================== SKI / SPORTS DE GLISSE STATS ====================
+export const SKI_ALPIN_STATS: StatField[] = [
+  { key: "runTime", label: "Temps manche (sec)", shortLabel: "Temps", category: "scoring", type: "number" },
+  { key: "ranking", label: "Classement", shortLabel: "Place", category: "scoring", type: "number" },
+  { key: "gapToFirst", label: "Écart au 1er (sec)", shortLabel: "Écart", category: "scoring", type: "number" },
+  { key: "topSpeed", label: "Vitesse max (km/h)", shortLabel: "V.Max", category: "attack", type: "number" },
+  { key: "avgSpeed", label: "Vitesse moyenne (km/h)", shortLabel: "V.Moy", category: "attack", type: "number" },
+  { key: "gatesFault", label: "Portes manquées", shortLabel: "Portes", category: "defense", type: "number" },
+  { key: "dnf", label: "DNF (1=oui)", shortLabel: "DNF", category: "general", type: "number", max: 1 },
+  { key: "dsq", label: "DSQ (1=oui)", shortLabel: "DSQ", category: "general", type: "number", max: 1 },
+];
+
+export const SKI_FOND_STATS: StatField[] = [
+  { key: "finalTime", label: "Temps final (min)", shortLabel: "Temps", category: "scoring", type: "number" },
+  { key: "ranking", label: "Classement", shortLabel: "Place", category: "scoring", type: "number" },
+  { key: "gapToFirst", label: "Écart au 1er (sec)", shortLabel: "Écart", category: "scoring", type: "number" },
+  { key: "avgHeartRate", label: "FC moyenne (bpm)", shortLabel: "FC Moy", category: "general", type: "number" },
+  { key: "maxHeartRate", label: "FC max (bpm)", shortLabel: "FC Max", category: "general", type: "number" },
+  { key: "distance", label: "Distance (km)", shortLabel: "Dist", category: "general", type: "number" },
+  { key: "elevationGain", label: "Dénivelé positif (m)", shortLabel: "D+", category: "general", type: "number" },
+];
+
+export const SKI_BIATHLON_STATS: StatField[] = [
+  { key: "finalTime", label: "Temps final (min)", shortLabel: "Temps", category: "scoring", type: "number" },
+  { key: "ranking", label: "Classement", shortLabel: "Place", category: "scoring", type: "number" },
+  { key: "shootingAccuracy", label: "Précision tir (%)", shortLabel: "Tir%", category: "attack", type: "percentage" },
+  { key: "proneHits", label: "Tir couché réussis/5", shortLabel: "Couché", category: "attack", type: "number", max: 5 },
+  { key: "standingHits", label: "Tir debout réussis/5", shortLabel: "Debout", category: "attack", type: "number", max: 5 },
+  { key: "penaltyLoops", label: "Tours de pénalité", shortLabel: "Pén", category: "defense", type: "number" },
+  { key: "skiTime", label: "Temps ski (sec)", shortLabel: "T.Ski", category: "general", type: "number" },
+];
+
+export const SKI_FREESTYLE_STATS: StatField[] = [
+  { key: "score", label: "Score total", shortLabel: "Score", category: "scoring", type: "number" },
+  { key: "ranking", label: "Classement", shortLabel: "Place", category: "scoring", type: "number" },
+  { key: "difficultyScore", label: "Score difficulté", shortLabel: "Diff", category: "attack", type: "number" },
+  { key: "executionScore", label: "Score exécution", shortLabel: "Exec", category: "attack", type: "number" },
+  { key: "bestTrickScore", label: "Meilleur trick", shortLabel: "BestT", category: "attack", type: "number" },
+  { key: "falls", label: "Chutes", shortLabel: "Chutes", category: "defense", type: "number" },
+];
+
+export const SNOWBOARD_STATS: StatField[] = [
+  { key: "score", label: "Score total", shortLabel: "Score", category: "scoring", type: "number" },
+  { key: "ranking", label: "Classement", shortLabel: "Place", category: "scoring", type: "number" },
+  { key: "bestRun", label: "Meilleure manche", shortLabel: "BestR", category: "scoring", type: "number" },
+  { key: "difficultyScore", label: "Score difficulté", shortLabel: "Diff", category: "attack", type: "number" },
+  { key: "executionScore", label: "Score exécution", shortLabel: "Exec", category: "attack", type: "number" },
+  { key: "falls", label: "Chutes", shortLabel: "Chutes", category: "defense", type: "number" },
+];
+
+// ==================== TRIATHLON STATS ====================
+export const TRIATHLON_STATS: StatField[] = [
+  { key: "totalTime", label: "Temps total (min)", shortLabel: "Total", category: "scoring", type: "number" },
+  { key: "ranking", label: "Classement", shortLabel: "Place", category: "scoring", type: "number" },
+  { key: "swimTime", label: "Temps natation (min)", shortLabel: "T.Nat", category: "general", type: "number" },
+  { key: "swimPace", label: "Allure natation (min/100m)", shortLabel: "P.Nat", category: "general", type: "number" },
+  { key: "t1Time", label: "Transition 1 (sec)", shortLabel: "T1", category: "general", type: "number" },
+  { key: "bikeTime", label: "Temps vélo (min)", shortLabel: "T.Vélo", category: "general", type: "number" },
+  { key: "bikeAvgSpeed", label: "Vitesse moy vélo (km/h)", shortLabel: "V.Vélo", category: "attack", type: "number" },
+  { key: "bikePower", label: "Puissance moy vélo (W)", shortLabel: "P.Vélo", category: "attack", type: "number" },
+  { key: "t2Time", label: "Transition 2 (sec)", shortLabel: "T2", category: "general", type: "number" },
+  { key: "runTime", label: "Temps course (min)", shortLabel: "T.Run", category: "general", type: "number" },
+  { key: "runPace", label: "Allure course (min/km)", shortLabel: "P.Run", category: "general", type: "number" },
+  { key: "gapToFirst", label: "Écart au 1er (sec)", shortLabel: "Écart", category: "scoring", type: "number" },
+  { key: "avgHeartRate", label: "FC moyenne (bpm)", shortLabel: "FC Moy", category: "defense", type: "number" },
+  { key: "personalBest", label: "Record personnel (1=oui)", shortLabel: "RP", category: "scoring", type: "number", max: 1 },
+];
+
+export const DUATHLON_STATS: StatField[] = [
+  { key: "totalTime", label: "Temps total (min)", shortLabel: "Total", category: "scoring", type: "number" },
+  { key: "ranking", label: "Classement", shortLabel: "Place", category: "scoring", type: "number" },
+  { key: "run1Time", label: "Temps course 1 (min)", shortLabel: "T.Run1", category: "general", type: "number" },
+  { key: "bikeTime", label: "Temps vélo (min)", shortLabel: "T.Vélo", category: "general", type: "number" },
+  { key: "run2Time", label: "Temps course 2 (min)", shortLabel: "T.Run2", category: "general", type: "number" },
+  { key: "gapToFirst", label: "Écart au 1er (sec)", shortLabel: "Écart", category: "scoring", type: "number" },
+];
+
+export type SportType = "XV" | "7" | "XIII" | "football" | "handball" | "volleyball" | "basketball" | "judo" | "aviron" | "bowling" | "academie" | "national_team" | "athletisme" | "padel" | "natation" | "ski" | "triathlon";
 
 // Helper function to extract base sport from subtypes like "aviron_club", "judo_academie"
 function getBaseSport(sportType: string): string {
@@ -579,6 +700,35 @@ function getBaseSport(sportType: string): string {
   }
   
   return sportType.toLowerCase();
+}
+
+function getSkiStatsForDiscipline(discipline?: string): StatField[] {
+  if (!discipline) return SKI_ALPIN_STATS;
+  const d = discipline.toLowerCase();
+  if (d.includes("biathlon")) return SKI_BIATHLON_STATS;
+  if (d.includes("fond") || d.includes("skiathlon") || d.includes("relais") || d.includes("sprint") && d.includes("fond")) return SKI_FOND_STATS;
+  if (d.includes("freestyle") || d.includes("bosses") || d.includes("slopestyle") || d.includes("halfpipe") || d.includes("half-pipe") || d.includes("skicross")) return SKI_FREESTYLE_STATS;
+  if (d.includes("snow") || d.includes("boardercross") || d.includes("big_air")) return SNOWBOARD_STATS;
+  if (d.includes("saut") || d.includes("combine_nordique")) return SKI_FOND_STATS;
+  return SKI_ALPIN_STATS;
+}
+
+function getNatationStatsForDiscipline(discipline?: string): StatField[] {
+  if (!discipline) return NATATION_STATS;
+  const d = discipline.toLowerCase();
+  if (d.includes("eau_libre") || d.includes("eau libre")) return NATATION_EAU_LIBRE_STATS;
+  return NATATION_STATS;
+}
+
+function getTriathlonStatsForDiscipline(discipline?: string): StatField[] {
+  if (!discipline) return TRIATHLON_STATS;
+  const d = discipline.toLowerCase();
+  if (d.includes("duathlon")) return DUATHLON_STATS;
+  if (d.includes("aquathlon")) {
+    // Aquathlon = swim + run, no bike
+    return TRIATHLON_STATS.filter(s => !s.key.includes("bike") && !s.key.includes("t1") && !s.key.includes("t2") && s.key !== "bikePower");
+  }
+  return TRIATHLON_STATS;
 }
 
 export function getStatsForSport(sportType: SportType | string, isGoalkeeper: boolean = false, discipline?: string): StatField[] {
@@ -602,6 +752,15 @@ export function getStatsForSport(sportType: SportType | string, isGoalkeeper: bo
       return BOWLING_STATS;
     case "aviron":
       return AVIRON_STATS;
+    case "padel":
+      return PADEL_STATS;
+    case "natation":
+      return getNatationStatsForDiscipline(discipline);
+    case "ski":
+    case "snow":
+      return getSkiStatsForDiscipline(discipline);
+    case "triathlon":
+      return getTriathlonStatsForDiscipline(discipline);
     case "athletisme":
     case "athlétisme":
       return discipline ? getAthletismeStatsForDiscipline(discipline) : getAllAthletismeStats();
@@ -743,11 +902,7 @@ export function getStatCategories(sportType: SportType | string): { key: string;
     { key: "defense", label: "Défense" },
   ];
   
-  // Judo uses specific subcategories:
-  // - Résultat & score (scoring)
-  // - Attaque (attack)
-  // - Défense (defense)
-  // - Pénalités / Ne-waza / Physique & rythme (general)
+  // Judo
   if (baseSport === "judo") {
     return [
       { key: "scoring", label: "Résultat & Score" },
@@ -757,7 +912,7 @@ export function getStatCategories(sportType: SportType | string): { key: string;
     ];
   }
   
-  // Bowling uses different terminology - no defense category
+  // Bowling
   if (baseSport === "bowling") {
     return [
       { key: "general", label: "Général" },
@@ -766,7 +921,7 @@ export function getStatCategories(sportType: SportType | string): { key: string;
     ];
   }
   
-  // Aviron uses different terminology
+  // Aviron
   if (baseSport === "aviron") {
     return [
       { key: "general", label: "Général" },
@@ -776,6 +931,45 @@ export function getStatCategories(sportType: SportType | string): { key: string;
     ];
   }
   
+  // Padel
+  if (baseSport === "padel") {
+    return [
+      { key: "scoring", label: "Score" },
+      { key: "attack", label: "Attaque" },
+      { key: "defense", label: "Défense" },
+      { key: "general", label: "Général" },
+    ];
+  }
+
+  // Natation
+  if (baseSport === "natation") {
+    return [
+      { key: "scoring", label: "Performance" },
+      { key: "general", label: "Splits & Virages" },
+      { key: "attack", label: "Technique de Nage" },
+    ];
+  }
+
+  // Ski / Sports de Glisse
+  if (baseSport === "ski" || baseSport === "snow") {
+    return [
+      { key: "scoring", label: "Performance" },
+      { key: "attack", label: "Vitesse / Technique" },
+      { key: "defense", label: "Pénalités" },
+      { key: "general", label: "Général" },
+    ];
+  }
+
+  // Triathlon
+  if (baseSport === "triathlon") {
+    return [
+      { key: "scoring", label: "Performance" },
+      { key: "general", label: "Segments & Transitions" },
+      { key: "attack", label: "Puissance / Allure" },
+      { key: "defense", label: "Physiologique" },
+    ];
+  }
+
   // Basketball
   if (baseSport === "basketball") {
     return [
@@ -837,7 +1031,7 @@ export function getStatCategories(sportType: SportType | string): { key: string;
 // Check if sport supports multi-round competition (like Judo, Bowling, Athletics)
 export function supportsCompetitionRounds(sportType: string): boolean {
   const baseSport = getBaseSport(sportType);
-  return ["judo", "bowling", "aviron", "athletisme", "athlétisme"].includes(baseSport);
+  return ["judo", "bowling", "aviron", "athletisme", "athlétisme", "natation", "ski", "snow", "triathlon"].includes(baseSport);
 }
 
 // Get phase options for a sport
@@ -846,6 +1040,31 @@ export function getCompetitionPhasesForSport(sportType: string): { value: string
   
   if (baseSport === "athletisme" || baseSport === "athlétisme") {
     return ATHLETISME_PHASES;
+  }
+
+  if (baseSport === "natation") {
+    return [
+      { value: "series", label: "Séries" },
+      { value: "demi", label: "Demi-finales" },
+      { value: "finale_b", label: "Finale B" },
+      { value: "finale", label: "Finale A" },
+    ];
+  }
+
+  if (baseSport === "ski" || baseSport === "snow") {
+    return [
+      { value: "qualification", label: "Qualification" },
+      { value: "manche_1", label: "Manche 1" },
+      { value: "manche_2", label: "Manche 2" },
+      { value: "finale", label: "Finale" },
+    ];
+  }
+
+  if (baseSport === "triathlon") {
+    return [
+      { value: "course", label: "Course" },
+      { value: "finale", label: "Finale" },
+    ];
   }
   
   // Default phases for other sports

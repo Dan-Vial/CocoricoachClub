@@ -1029,7 +1029,7 @@ export function getTestCategoriesForSport(sportType: string): TestCategory[] {
   const sportPrefixes = [
     "bowling_", "basketball_", "aviron_", "athletisme_", "judo_",
     "rugby_", "football_", "handball_", "natation_", "cyclisme_",
-    "tennis_", "volleyball_",
+    "tennis_", "volleyball_", "padel_", "ski_", "triathlon_",
   ];
   
   const baseCategories = TEST_CATEGORIES.filter(cat => 
@@ -1054,6 +1054,9 @@ export function getTestCategoriesForSport(sportType: string): TestCategory[] {
     cyclisme: "cyclisme_",
     tennis: "tennis_",
     volleyball: "volleyball_",
+    padel: "padel_",
+    ski: "ski_",
+    triathlon: "triathlon_",
   };
 
   const prefix = baseSport ? sportPrefixMap[baseSport] : null;

@@ -15,6 +15,10 @@ export type SportType =
   | "aviron"
   | "athletisme"
   | "crossfit"
+  | "padel"
+  | "natation"
+  | "ski"
+  | "triathlon"
   | "football_club"
   | "football_academie"
   | "football_national"
@@ -42,6 +46,18 @@ export type SportType =
   | "crossfit_box"
   | "crossfit_hyrox"
   | "crossfit_musculation"
+  | "padel_club"
+  | "padel_academie"
+  | "padel_national"
+  | "natation_club"
+  | "natation_academie"
+  | "natation_national"
+  | "ski_club"
+  | "ski_academie"
+  | "ski_national"
+  | "triathlon_club"
+  | "triathlon_academie"
+  | "triathlon_national"
   // Athlétisme disciplines
   | "athletisme_sprints"
   | "athletisme_haies"
@@ -65,7 +81,7 @@ export interface SportTypeOption {
 }
 
 // Main sport categories for the first dropdown
-export type MainSportCategory = "rugby" | "football" | "handball" | "volleyball" | "basketball" | "judo" | "bowling" | "aviron" | "athletisme" | "crossfit";
+export type MainSportCategory = "rugby" | "football" | "handball" | "volleyball" | "basketball" | "judo" | "bowling" | "aviron" | "athletisme" | "crossfit" | "padel" | "natation" | "ski" | "triathlon";
 
 export interface MainSportOption {
   value: MainSportCategory;
@@ -78,6 +94,10 @@ export const MAIN_SPORTS: MainSportOption[] = [
   { value: "handball", label: "Handball" },
   { value: "volleyball", label: "Volleyball" },
   { value: "basketball", label: "Basketball" },
+  { value: "padel", label: "Padel" },
+  { value: "natation", label: "Natation" },
+  { value: "ski", label: "Sports de Glisse (Ski / Snow)" },
+  { value: "triathlon", label: "Triathlon" },
   { value: "judo", label: "Judo" },
   { value: "bowling", label: "Bowling" },
   { value: "aviron", label: "Aviron" },
@@ -254,6 +274,100 @@ export const AVIRON_ROLES: PlayerAttributeOption[] = [
   { value: "nage_8", label: "Nage 8 (Stroke)" },
 ];
 
+// Disciplines for Natation (Swimming)
+export const NATATION_DISCIPLINES: PlayerAttributeOption[] = [
+  { value: "natation_crawl", label: "Nage Libre (Crawl)" },
+  { value: "natation_dos", label: "Dos" },
+  { value: "natation_brasse", label: "Brasse" },
+  { value: "natation_papillon", label: "Papillon" },
+  { value: "natation_4nages", label: "4 Nages" },
+  { value: "natation_eau_libre", label: "Eau libre" },
+];
+
+export const NATATION_SPECIALTIES: Record<string, SpecialtyOption[]> = {
+  natation_crawl: [
+    { value: "50m_nl", label: "50m NL" },
+    { value: "100m_nl", label: "100m NL" },
+    { value: "200m_nl", label: "200m NL" },
+    { value: "400m_nl", label: "400m NL" },
+    { value: "800m_nl", label: "800m NL" },
+    { value: "1500m_nl", label: "1500m NL" },
+  ],
+  natation_dos: [
+    { value: "50m_dos", label: "50m Dos" },
+    { value: "100m_dos", label: "100m Dos" },
+    { value: "200m_dos", label: "200m Dos" },
+  ],
+  natation_brasse: [
+    { value: "50m_brasse", label: "50m Brasse" },
+    { value: "100m_brasse", label: "100m Brasse" },
+    { value: "200m_brasse", label: "200m Brasse" },
+  ],
+  natation_papillon: [
+    { value: "50m_pap", label: "50m Papillon" },
+    { value: "100m_pap", label: "100m Papillon" },
+    { value: "200m_pap", label: "200m Papillon" },
+  ],
+  natation_4nages: [
+    { value: "200m_4n", label: "200m 4 Nages" },
+    { value: "400m_4n", label: "400m 4 Nages" },
+  ],
+  natation_eau_libre: [
+    { value: "5km_el", label: "5km Eau libre" },
+    { value: "10km_el", label: "10km Eau libre" },
+    { value: "25km_el", label: "25km Eau libre" },
+  ],
+};
+
+// Disciplines for Sports de Glisse (Ski/Snow)
+export const SKI_DISCIPLINES: PlayerAttributeOption[] = [
+  // Ski Alpin
+  { value: "ski_descente", label: "Ski Alpin - Descente" },
+  { value: "ski_slalom", label: "Ski Alpin - Slalom" },
+  { value: "ski_geant", label: "Ski Alpin - Géant" },
+  { value: "ski_super_g", label: "Ski Alpin - Super-G" },
+  { value: "ski_combine", label: "Ski Alpin - Combiné" },
+  // Biathlon
+  { value: "ski_biathlon", label: "Biathlon" },
+  // Ski de fond
+  { value: "ski_fond_sprint", label: "Ski de fond - Sprint" },
+  { value: "ski_fond_distance", label: "Ski de fond - Distance" },
+  { value: "ski_fond_relais", label: "Ski de fond - Relais" },
+  { value: "ski_fond_skiathlon", label: "Ski de fond - Skiathlon" },
+  // Freestyle
+  { value: "ski_freestyle_bosses", label: "Freestyle - Bosses" },
+  { value: "ski_freestyle_slopestyle", label: "Freestyle - Slopestyle" },
+  { value: "ski_freestyle_halfpipe", label: "Freestyle - Half-pipe" },
+  { value: "ski_freestyle_skicross", label: "Freestyle - Skicross" },
+  // Snowboard
+  { value: "snow_slopestyle", label: "Snowboard - Slopestyle" },
+  { value: "snow_halfpipe", label: "Snowboard - Half-pipe" },
+  { value: "snow_boardercross", label: "Snowboard - Boardercross" },
+  { value: "snow_geant_parallele", label: "Snowboard - Géant parallèle" },
+  { value: "snow_big_air", label: "Snowboard - Big Air" },
+  // Saut à ski
+  { value: "ski_saut", label: "Saut à ski" },
+  // Combiné nordique
+  { value: "ski_combine_nordique", label: "Combiné nordique" },
+];
+
+// Disciplines for Triathlon
+export const TRIATHLON_DISCIPLINES: PlayerAttributeOption[] = [
+  { value: "triathlon_sprint", label: "Triathlon Sprint" },
+  { value: "triathlon_olympique", label: "Triathlon Olympique (Distance M)" },
+  { value: "triathlon_half", label: "Half Ironman (70.3)" },
+  { value: "triathlon_ironman", label: "Ironman (Distance L)" },
+  { value: "triathlon_duathlon", label: "Duathlon (Course + Vélo)" },
+  { value: "triathlon_aquathlon", label: "Aquathlon (Natation + Course)" },
+];
+
+// Padel roles/positions
+export const PADEL_POSITIONS: PlayerAttributeOption[] = [
+  { value: "padel_drive", label: "Joueur côté Drive" },
+  { value: "padel_reves", label: "Joueur côté Revers" },
+  { value: "padel_polyvalent", label: "Polyvalent" },
+];
+
 // Sub-types for CrossFit/Hyrox/Musculation
 export const CROSSFIT_SUBTYPES: SportSubTypeOption[] = [
   { value: "crossfit_box", label: "CrossFit - Box / Salle" },
@@ -278,19 +392,25 @@ export const getOtherSportSubtypes = (sport: MainSportCategory): SportSubTypeOpt
   if (sport === "crossfit") return CROSSFIT_SUBTYPES;
   if (sport === "basketball") return BASKETBALL_SUBTYPES;
   
-  const sportLabels: Record<Exclude<MainSportCategory, "rugby" | "athletisme" | "crossfit" | "basketball">, string> = {
+  const sportLabels: Record<string, string> = {
     football: "Football",
     handball: "Handball",
     volleyball: "Volleyball",
     judo: "Judo",
     bowling: "Bowling",
     aviron: "Aviron",
+    padel: "Padel",
+    natation: "Natation",
+    ski: "Sports de Glisse",
+    triathlon: "Triathlon",
   };
 
+  const label = sportLabels[sport] || sport;
+
   return [
-    { value: `${sport}_club` as SportType, label: `${sportLabels[sport]} - Club` },
-    { value: `${sport}_academie` as SportType, label: `${sportLabels[sport]} - Académie / Pôle Espoir` },
-    { value: `${sport}_national` as SportType, label: `${sportLabels[sport]} - Équipe Nationale` },
+    { value: `${sport}_club` as SportType, label: `${label} - Club` },
+    { value: `${sport}_academie` as SportType, label: `${label} - Académie / Pôle Espoir` },
+    { value: `${sport}_national` as SportType, label: `${label} - Équipe Nationale` },
   ];
 };
 
@@ -302,6 +422,26 @@ export const isAthletismeCategory = (rugbyType: string): boolean => {
 // Helper to check if a category is a judo category
 export const isJudoCategory = (rugbyType: string): boolean => {
   return rugbyType?.startsWith("judo") || rugbyType === "judo";
+};
+
+// Helper to check if a category is natation
+export const isNatationCategory = (rugbyType: string): boolean => {
+  return rugbyType?.startsWith("natation") || rugbyType === "natation";
+};
+
+// Helper to check if a category is ski/snow
+export const isSkiCategory = (rugbyType: string): boolean => {
+  return rugbyType?.startsWith("ski") || rugbyType?.startsWith("snow") || rugbyType === "ski";
+};
+
+// Helper to check if a category is triathlon
+export const isTriathlonCategory = (rugbyType: string): boolean => {
+  return rugbyType?.startsWith("triathlon") || rugbyType === "triathlon";
+};
+
+// Helper to check if a category is padel
+export const isPadelCategory = (rugbyType: string): boolean => {
+  return rugbyType?.startsWith("padel") || rugbyType === "padel";
 };
 
 export const SPORT_TYPES: SportTypeOption[] = [
@@ -334,14 +474,26 @@ export const SPORT_TYPES: SportTypeOption[] = [
   { value: "judo_club", label: "Judo - Club", category: "individual" },
   { value: "bowling_club", label: "Bowling - Club", category: "individual" },
   { value: "aviron_club", label: "Aviron - Club", category: "individual" },
+  { value: "padel_club", label: "Padel - Club", category: "individual" },
+  { value: "natation_club", label: "Natation - Club", category: "individual" },
+  { value: "ski_club", label: "Sports de Glisse - Club", category: "individual" },
+  { value: "triathlon_club", label: "Triathlon - Club", category: "individual" },
   // Individual sports - Académie
   { value: "judo_academie", label: "Judo - Académie", category: "individual" },
   { value: "bowling_academie", label: "Bowling - Académie", category: "individual" },
   { value: "aviron_academie", label: "Aviron - Académie", category: "individual" },
+  { value: "padel_academie", label: "Padel - Académie", category: "individual" },
+  { value: "natation_academie", label: "Natation - Académie", category: "individual" },
+  { value: "ski_academie", label: "Sports de Glisse - Académie", category: "individual" },
+  { value: "triathlon_academie", label: "Triathlon - Académie", category: "individual" },
   // Individual sports - National
   { value: "judo_national", label: "Judo - Équipe Nationale", category: "individual" },
   { value: "bowling_national", label: "Bowling - Équipe Nationale", category: "individual" },
   { value: "aviron_national", label: "Aviron - Équipe Nationale", category: "individual" },
+  { value: "padel_national", label: "Padel - Équipe Nationale", category: "individual" },
+  { value: "natation_national", label: "Natation - Équipe Nationale", category: "individual" },
+  { value: "ski_national", label: "Sports de Glisse - Équipe Nationale", category: "individual" },
+  { value: "triathlon_national", label: "Triathlon - Équipe Nationale", category: "individual" },
   // CrossFit / Hyrox / Musculation
   { value: "crossfit_box", label: "CrossFit - Box / Salle", category: "individual" },
   { value: "crossfit_hyrox", label: "Hyrox / Fitness Fonctionnel", category: "individual" },
@@ -371,6 +523,10 @@ export const SPORT_TYPES: SportTypeOption[] = [
   { value: "bowling", label: "Bowling", category: "individual" },
   { value: "aviron", label: "Aviron", category: "individual" },
   { value: "athletisme", label: "Athlétisme", category: "individual" },
+  { value: "padel", label: "Padel", category: "individual" },
+  { value: "natation", label: "Natation", category: "individual" },
+  { value: "ski", label: "Sports de Glisse", category: "individual" },
+  { value: "triathlon", label: "Triathlon", category: "individual" },
 ];
 
 export const getSportLabel = (type: string): string => {
@@ -408,16 +564,25 @@ export const getMainSportFromType = (type: string): MainSportCategory => {
   if (type.startsWith("aviron")) return "aviron";
   if (type.startsWith("athletisme")) return "athletisme";
   if (type.startsWith("crossfit")) return "crossfit";
+  if (type.startsWith("padel")) return "padel";
+  if (type.startsWith("natation")) return "natation";
+  if (type.startsWith("ski") || type.startsWith("snow")) return "ski";
+  if (type.startsWith("triathlon")) return "triathlon";
   return "rugby"; // default
 };
 
 export const isIndividualSport = (type: string): boolean => {
   const individualSports = [
     "judo", "bowling", "aviron", "athletisme", "crossfit",
+    "padel", "natation", "ski", "triathlon",
     "judo_club", "judo_academie", "judo_national",
     "bowling_club", "bowling_academie", "bowling_national",
     "aviron_club", "aviron_academie", "aviron_national",
     "crossfit_box", "crossfit_hyrox", "crossfit_musculation",
+    "padel_club", "padel_academie", "padel_national",
+    "natation_club", "natation_academie", "natation_national",
+    "ski_club", "ski_academie", "ski_national",
+    "triathlon_club", "triathlon_academie", "triathlon_national",
     "athletisme_sprints", "athletisme_haies", "athletisme_demi_fond",
     "athletisme_fond", "athletisme_marche", "athletisme_sauts_longueur",
     "athletisme_sauts_hauteur", "athletisme_lancers", "athletisme_combines",

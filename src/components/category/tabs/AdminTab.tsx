@@ -17,7 +17,7 @@ interface AdminTabProps {
   categoryId: string;
 }
 
-const INDIVIDUAL_SPORTS = ["athletisme", "athlétisme", "judo", "aviron", "bowling"];
+const INDIVIDUAL_SPORTS = ["athletisme", "athlétisme", "judo", "aviron", "bowling", "padel", "natation", "ski", "snow", "triathlon"];
 
 export function AdminTab({ categoryId }: AdminTabProps) {
   const { data: category } = useQuery({

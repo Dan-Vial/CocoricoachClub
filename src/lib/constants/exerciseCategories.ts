@@ -547,6 +547,10 @@ export const SPORT_OPTIONS = [
   { value: "handball", label: "Handball" },
   { value: "basketball", label: "Basketball" },
   { value: "volleyball", label: "Volleyball" },
+  { value: "padel", label: "Padel" },
+  { value: "natation", label: "Natation" },
+  { value: "ski", label: "Sports de Glisse" },
+  { value: "triathlon", label: "Triathlon" },
   { value: "judo", label: "Judo" },
   { value: "aviron", label: "Aviron" },
   { value: "bowling", label: "Bowling" },
@@ -567,6 +571,10 @@ export function normalizeToBaseSport(sportType?: string): string | null {
   if (normalizedSport.startsWith('aviron')) return 'aviron';
   if (normalizedSport.startsWith('bowling')) return 'bowling';
   if (normalizedSport.startsWith('athletisme')) return 'athletisme';
+  if (normalizedSport.startsWith('padel')) return 'padel';
+  if (normalizedSport.startsWith('natation')) return 'natation';
+  if (normalizedSport.startsWith('ski') || normalizedSport.startsWith('snow')) return 'ski';
+  if (normalizedSport.startsWith('triathlon')) return 'triathlon';
   
   return normalizedSport;
 }

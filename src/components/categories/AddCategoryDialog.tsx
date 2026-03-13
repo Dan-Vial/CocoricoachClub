@@ -44,7 +44,7 @@ export function AddCategoryDialog({
   clubId,
 }: AddCategoryDialogProps) {
   const [categoryName, setCategoryName] = useState("");
-  const [gender, setGender] = useState<"masculine" | "feminine">("masculine");
+  const [gender, setGender] = useState<"masculine" | "feminine" | "mixed">("masculine");
   const [sportSubType, setSportSubType] = useState<SportType>("XV");
   const [validationError, setValidationError] = useState("");
   const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
@@ -129,7 +129,7 @@ export function AddCategoryDialog({
   }, [availableSubtypes, open]);
 
   const addCategory = useMutation({
-    mutationFn: async (data: { name: string; rugby_type: SportType; gender: "masculine" | "feminine"; memberIds: string[] }) => {
+    mutationFn: async (data: { name: string; rugby_type: SportType; gender: "masculine" | "feminine" | "mixed"; memberIds: string[] }) => {
       const { data: newCategory, error } = await supabase
         .from("categories")
         .insert({ name: data.name, club_id: clubId, rugby_type: data.rugby_type, gender: data.gender })
@@ -279,7 +279,7 @@ export function AddCategoryDialog({
             
             <div className="space-y-2">
               <Label>Genre</Label>
-              <RadioGroup value={gender} onValueChange={(value: "masculine" | "feminine") => setGender(value)}>
+              <RadioGroup value={gender} onValueChange={(value: "masculine" | "feminine" | "mixed") => setGender(value)}>
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="masculine" id="gender-m" />
                   <Label htmlFor="gender-m" className="cursor-pointer font-normal">Masculin</Label>
@@ -287,6 +287,10 @@ export function AddCategoryDialog({
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="feminine" id="gender-f" />
                   <Label htmlFor="gender-f" className="cursor-pointer font-normal">Féminin</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="mixed" id="gender-x" />
+                  <Label htmlFor="gender-x" className="cursor-pointer font-normal">Mixte</Label>
                 </div>
               </RadioGroup>
             </div>

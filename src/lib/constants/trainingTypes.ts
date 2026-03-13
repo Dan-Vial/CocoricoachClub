@@ -36,6 +36,14 @@ export const SPORT_TRAINING_CATEGORIES: TrainingTypeCategory[] = [
   { key: "judo", label: "Judo", forSports: ["judo"] },
   // Bowling
   { key: "bowling", label: "Bowling", forSports: ["bowling"] },
+  // Padel
+  { key: "padel", label: "Padel", forSports: ["padel"] },
+  // Natation
+  { key: "natation", label: "Natation", forSports: ["natation"] },
+  // Ski / Sports de Glisse
+  { key: "ski", label: "Sports de Glisse", forSports: ["ski"] },
+  // Triathlon
+  { key: "triathlon", label: "Triathlon", forSports: ["triathlon"] },
   // CrossFit / Hyrox / Musculation categories
   { key: "crossfit_wod", label: "WOD / CrossFit", forSports: ["crossfit"] },
   { key: "crossfit_hyrox", label: "Hyrox / Fonctionnel", forSports: ["crossfit"] },
@@ -72,6 +80,10 @@ function getBaseSport(sportType: string): string {
   if (normalizedSport.startsWith('aviron')) return 'aviron';
   if (normalizedSport.startsWith('athletisme') || normalizedSport.startsWith('athlétisme')) return 'athletisme';
   if (normalizedSport.startsWith('crossfit')) return 'crossfit';
+  if (normalizedSport.startsWith('padel')) return 'padel';
+  if (normalizedSport.startsWith('natation')) return 'natation';
+  if (normalizedSport.startsWith('ski') || normalizedSport.startsWith('snow')) return 'ski';
+  if (normalizedSport.startsWith('triathlon')) return 'triathlon';
   return normalizedSport;
 }
 
@@ -239,12 +251,45 @@ export const ALL_TRAINING_TYPES: TrainingTypeOption[] = [
   { value: "athle_force_explosive", label: "Force Explosive", hasExercises: true, forSports: ["athletisme"], category: "athle_lancers" },
   { value: "athle_glisse", label: "Technique Glissé (Poids)", hasExercises: false, forSports: ["athletisme"], category: "athle_lancers" },
   
-  // Général / Polyvalent
-  { value: "athle_coordination", label: "Coordination / Gammes", hasExercises: false, forSports: ["athletisme"], category: "athle_general" },
-  { value: "athle_mobilite", label: "Mobilité Spécifique", hasExercises: true, forSports: ["athletisme"], category: "athle_general" },
-  { value: "athle_combines", label: "Épreuves Combinées", hasExercises: false, forSports: ["athletisme"], category: "athle_general" },
-  { value: "athle_ppg", label: "PPG (Prépa Physique Générale)", hasExercises: true, forSports: ["athletisme"], category: "athle_general" },
-  
+  // Padel specific
+  { value: "padel_match", label: "Match d'Entraînement", hasExercises: false, forSports: ["padel"], category: "padel" },
+  { value: "padel_technique", label: "Technique (Bandeja, Víbora...)", hasExercises: false, forSports: ["padel"], category: "padel" },
+  { value: "padel_volley", label: "Travail Volées", hasExercises: false, forSports: ["padel"], category: "padel" },
+  { value: "padel_smash", label: "Travail Smash", hasExercises: false, forSports: ["padel"], category: "padel" },
+  { value: "padel_service", label: "Travail Service", hasExercises: false, forSports: ["padel"], category: "padel" },
+  { value: "padel_tactique", label: "Tactique / Jeu de Position", hasExercises: false, forSports: ["padel"], category: "padel" },
+  { value: "padel_defense", label: "Travail Défensif (Lobs, Murs)", hasExercises: false, forSports: ["padel"], category: "padel" },
+
+  // Natation specific
+  { value: "natation_technique", label: "Technique de Nage", hasExercises: false, forSports: ["natation"], category: "natation" },
+  { value: "natation_endurance", label: "Endurance / Fond", hasExercises: false, forSports: ["natation"], category: "natation" },
+  { value: "natation_vitesse", label: "Vitesse / Sprint", hasExercises: false, forSports: ["natation"], category: "natation" },
+  { value: "natation_fractionne", label: "Fractionné / Intervalles", hasExercises: false, forSports: ["natation"], category: "natation" },
+  { value: "natation_departs", label: "Travail Départs", hasExercises: false, forSports: ["natation"], category: "natation" },
+  { value: "natation_virages", label: "Travail Virages", hasExercises: false, forSports: ["natation"], category: "natation" },
+  { value: "natation_coulees", label: "Coulées / Ondulations", hasExercises: false, forSports: ["natation"], category: "natation" },
+  { value: "natation_eau_libre", label: "Eau Libre (Navigation)", hasExercises: false, forSports: ["natation"], category: "natation" },
+
+  // Ski / Sports de Glisse specific
+  { value: "ski_piste", label: "Entraînement sur Piste", hasExercises: false, forSports: ["ski"], category: "ski" },
+  { value: "ski_slalom", label: "Tracé Slalom / Géant", hasExercises: false, forSports: ["ski"], category: "ski" },
+  { value: "ski_vitesse", label: "Travail de Vitesse", hasExercises: false, forSports: ["ski"], category: "ski" },
+  { value: "ski_technique", label: "Technique Ski / Snow", hasExercises: false, forSports: ["ski"], category: "ski" },
+  { value: "ski_freestyle", label: "Freestyle / Park", hasExercises: false, forSports: ["ski"], category: "ski" },
+  { value: "ski_fond_endurance", label: "Endurance (Ski de fond)", hasExercises: false, forSports: ["ski"], category: "ski" },
+  { value: "ski_tir", label: "Tir (Biathlon)", hasExercises: false, forSports: ["ski"], category: "ski" },
+  { value: "ski_hors_saison", label: "Hors-saison / Roller-ski", hasExercises: false, forSports: ["ski"], category: "ski" },
+
+  // Triathlon specific
+  { value: "triathlon_natation", label: "Entraînement Natation", hasExercises: false, forSports: ["triathlon"], category: "triathlon" },
+  { value: "triathlon_velo", label: "Entraînement Vélo", hasExercises: false, forSports: ["triathlon"], category: "triathlon" },
+  { value: "triathlon_course", label: "Entraînement Course", hasExercises: false, forSports: ["triathlon"], category: "triathlon" },
+  { value: "triathlon_enchainement", label: "Enchaînement (Brique)", hasExercises: false, forSports: ["triathlon"], category: "triathlon" },
+  { value: "triathlon_transitions", label: "Travail Transitions", hasExercises: false, forSports: ["triathlon"], category: "triathlon" },
+  { value: "triathlon_sortie_longue", label: "Sortie Longue", hasExercises: false, forSports: ["triathlon"], category: "triathlon" },
+  { value: "triathlon_fractionne", label: "Fractionné / Intervalles", hasExercises: false, forSports: ["triathlon"], category: "triathlon" },
+  { value: "triathlon_simulation", label: "Simulation Course", hasExercises: false, forSports: ["triathlon"], category: "triathlon" },
+
   // Common to all sports (with category)
   { value: "tactique_general", label: "Tactique", hasExercises: false, forTeamSports: true, forIndividualSports: true, category: "common" },
   { value: "collectif_general", label: "Collectif", hasExercises: false, forTeamSports: true, forIndividualSports: false, category: "common" },
