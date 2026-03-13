@@ -827,6 +827,7 @@ export function getStatCategories(sportType: SportType | string): { key: string;
       { key: "ath_perche", label: "Perche" },
       { key: "ath_lancers", label: "Lancers" },
       { key: "ath_combines", label: "Épreuves combinées" },
+      { key: "ath_trail", label: "Trail / Ultra-Trail" },
     ];
   }
   
