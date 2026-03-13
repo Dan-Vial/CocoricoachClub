@@ -801,10 +801,343 @@ export const ATHLETISME_COMPETITIONS: CompetitionCategory[] = [
   },
 ];
 
+// CrossFit / Hyrox / Musculation competitions
+export const CROSSFIT_COMPETITIONS: CompetitionCategory[] = [
+  {
+    label: "CrossFit",
+    options: [
+      "CrossFit Open",
+      "CrossFit Games",
+      "CrossFit Quarterfinals",
+      "CrossFit Semifinals",
+      "CrossFit Sanctionals",
+      "Compétition locale CrossFit",
+      "Throwdown",
+    ],
+  },
+  {
+    label: "Hyrox",
+    options: [
+      "Hyrox Race",
+      "Hyrox Pro",
+      "Hyrox Doubles",
+      "Hyrox World Championship",
+      "Hyrox Elite 15",
+    ],
+  },
+  {
+    label: "Musculation / Bodybuilding",
+    options: [
+      "Championnat Départemental",
+      "Championnat Régional",
+      "Championnat de France FFBAD",
+      "Championnat de France IFBB",
+      "Mr Olympia",
+      "Arnold Classic",
+      "Compétition locale",
+    ],
+  },
+  {
+    label: "Autres",
+    options: [
+      "Compétition amicale",
+      "Challenge interne",
+      "WOD compétitif",
+    ],
+  },
+];
+
+// Padel competitions
+export const PADEL_COMPETITIONS: CompetitionCategory[] = [
+  {
+    label: "Championnats Nationaux",
+    options: [
+      "Championnat de France P25",
+      "Championnat de France P100",
+      "Championnat de France P250",
+      "Championnat de France P500",
+      "Championnat de France P1000",
+      "Championnat de France P2000",
+      "Championnat de France par équipes",
+      "Coupe de France",
+    ],
+  },
+  {
+    label: "Championnats Régionaux",
+    options: [
+      "Championnat Régional",
+      "Open Régional",
+      "Tournoi P100 Régional",
+      "Tournoi P250 Régional",
+    ],
+  },
+  {
+    label: "Compétitions Internationales",
+    options: [
+      "World Padel Tour",
+      "Premier Padel",
+      "FIP Tour",
+      "Championnat du Monde",
+      "Championnat d'Europe",
+      "Jeux Européens",
+    ],
+  },
+  {
+    label: "Autres",
+    options: [
+      "Tournoi Open",
+      "Matchs amicaux",
+      "Interclubs",
+    ],
+  },
+];
+
+// Natation competitions
+export const NATATION_COMPETITIONS: CompetitionCategory[] = [
+  {
+    label: "Championnats Jeunes",
+    options: [
+      "Championnat Départemental Avenirs",
+      "Championnat Départemental Jeunes",
+      "Championnat Régional Jeunes",
+      "Championnat de France Juniors",
+      "Championnat de France Cadets",
+      "Critérium National Jeunes",
+    ],
+  },
+  {
+    label: "Championnats Nationaux",
+    options: [
+      "Championnat de France en Grand Bassin",
+      "Championnat de France en Petit Bassin",
+      "Championnat de France Elite",
+      "Championnats de France Open",
+      "Meeting National FFN",
+      "Meeting National Tour",
+      "Coupe de France Interclubs",
+    ],
+  },
+  {
+    label: "Championnats Régionaux",
+    options: [
+      "Championnat Régional",
+      "Interrégionaux",
+      "Meeting Régional",
+    ],
+  },
+  {
+    label: "Eau Libre",
+    options: [
+      "Coupe de France Eau Libre",
+      "Championnat de France Eau Libre",
+      "Traversée",
+      "Nage en mer",
+    ],
+  },
+  {
+    label: "Compétitions Internationales",
+    options: [
+      "Jeux Olympiques",
+      "Championnats du Monde",
+      "Championnats du Monde Petit Bassin",
+      "Championnats d'Europe",
+      "Championnats d'Europe Petit Bassin",
+      "Coupe du Monde FINA",
+      "World Aquatics Swimming Cup",
+      "Mare Nostrum",
+      "Jeux Méditerranéens",
+      "Championnats du Monde Juniors",
+      "Championnats d'Europe Juniors",
+    ],
+  },
+  {
+    label: "Autres",
+    options: [
+      "Meeting local",
+      "Interclubs",
+      "Test chronométré",
+    ],
+  },
+];
+
+// Ski / Sports de Glisse competitions
+export const SKI_COMPETITIONS: CompetitionCategory[] = [
+  {
+    label: "Ski Alpin - Coupe du Monde",
+    options: [
+      "Coupe du Monde - Descente",
+      "Coupe du Monde - Super-G",
+      "Coupe du Monde - Géant",
+      "Coupe du Monde - Slalom",
+      "Coupe du Monde - Combiné",
+      "Coupe du Monde - Parallèle",
+    ],
+  },
+  {
+    label: "Ski Alpin - Championnats",
+    options: [
+      "Jeux Olympiques",
+      "Championnats du Monde",
+      "Championnats de France",
+      "Championnat Régional",
+      "Coupe de France",
+      "Championnat FIS",
+      "Course FIS",
+    ],
+  },
+  {
+    label: "Ski Alpin - Jeunes",
+    options: [
+      "Championnat de France Cadets",
+      "Championnat de France Juniors",
+      "Championnat de France U16",
+      "Championnat de France U21",
+      "Coupe d'Europe Juniors",
+      "Championnats du Monde Juniors",
+    ],
+  },
+  {
+    label: "Ski de Fond",
+    options: [
+      "Coupe du Monde",
+      "Tour de Ski",
+      "Championnats du Monde",
+      "Jeux Olympiques",
+      "Coupe de France",
+      "Championnat de France",
+      "La Transjurassienne",
+      "Vasaloppet",
+      "Birkebeinerrennet",
+      "Marathon Ski Tour",
+    ],
+  },
+  {
+    label: "Biathlon",
+    options: [
+      "Coupe du Monde",
+      "Championnats du Monde",
+      "Jeux Olympiques",
+      "IBU Cup",
+      "Championnat de France",
+      "Championnat d'Europe",
+    ],
+  },
+  {
+    label: "Freestyle / Snowboard",
+    options: [
+      "Coupe du Monde Freestyle",
+      "Coupe du Monde Snowboard",
+      "X Games",
+      "Dew Tour",
+      "Laax Open",
+      "US Open",
+      "Jeux Olympiques",
+      "Championnats du Monde Freestyle",
+      "Championnats du Monde Snowboard",
+      "Freeride World Tour",
+      "Championnat de France Freestyle",
+      "Championnat de France Snowboard",
+    ],
+  },
+  {
+    label: "Saut / Combiné Nordique",
+    options: [
+      "Coupe du Monde Saut",
+      "Tournée des 4 Tremplins",
+      "Coupe du Monde Combiné Nordique",
+      "Jeux Olympiques",
+      "Championnats du Monde",
+      "Championnat de France",
+    ],
+  },
+  {
+    label: "Autres",
+    options: [
+      "Compétition locale",
+      "Critérium",
+      "Course club",
+      "Stage compétition",
+    ],
+  },
+];
+
+// Triathlon competitions
+export const TRIATHLON_COMPETITIONS: CompetitionCategory[] = [
+  {
+    label: "Championnats Jeunes",
+    options: [
+      "Championnat Départemental Jeunes",
+      "Championnat Régional Jeunes",
+      "Championnat de France Jeunes",
+      "Championnat de France Cadets",
+      "Championnat de France Juniors",
+      "Championnats d'Europe Juniors",
+      "Championnats du Monde Juniors",
+    ],
+  },
+  {
+    label: "Championnats Nationaux",
+    options: [
+      "Championnat de France Sprint",
+      "Championnat de France Distance M",
+      "Championnat de France Longue Distance",
+      "Championnat de France des Clubs D1",
+      "Championnat de France des Clubs D2",
+      "Championnat de France des Clubs D3",
+      "Grand Prix de Triathlon",
+      "Coupe de France",
+    ],
+  },
+  {
+    label: "Triathlon Longue Distance",
+    options: [
+      "Ironman France (Nice)",
+      "Ironman 70.3",
+      "Challenge Family",
+      "Half Triathlon",
+      "Embrunman",
+      "Altriman",
+      "Natureman",
+      "Ironman World Championship (Kona)",
+      "Ironman 70.3 World Championship",
+    ],
+  },
+  {
+    label: "Compétitions Internationales",
+    options: [
+      "Jeux Olympiques",
+      "Championnats du Monde ITU",
+      "Championnats d'Europe ETU",
+      "World Triathlon Series (WTCS)",
+      "World Triathlon Cup",
+      "Super League Triathlon",
+      "Continental Cup",
+    ],
+  },
+  {
+    label: "Duathlon / Aquathlon",
+    options: [
+      "Championnat de France Duathlon",
+      "Championnat de France Aquathlon",
+      "Championnats du Monde Duathlon",
+      "Championnats d'Europe Duathlon",
+    ],
+  },
+  {
+    label: "Autres",
+    options: [
+      "Triathlon local",
+      "Triathlon amical",
+      "Swimrun",
+      "Raid multisport",
+    ],
+  },
+];
+
 // Get competitions by sport type
 export const getCompetitionsBySport = (sportType: string): CompetitionCategory[] => {
   // Handle exact matches first for rugby types
-  if (["XV", "7", "XIII", "academie", "national_team", "national"].includes(sportType)) {
+  if (["XV", "7", "XIII", "touch", "academie", "national_team", "national"].includes(sportType)) {
     return RUGBY_COMPETITIONS;
   }
   
@@ -828,10 +1161,186 @@ export const getCompetitionsBySport = (sportType: string): CompetitionCategory[]
       return AVIRON_COMPETITIONS;
     case "athletisme":
       return ATHLETISME_COMPETITIONS;
+    case "crossfit":
+      return CROSSFIT_COMPETITIONS;
+    case "padel":
+      return PADEL_COMPETITIONS;
+    case "natation":
+      return NATATION_COMPETITIONS;
+    case "ski":
+    case "snow":
+      return SKI_COMPETITIONS;
+    case "triathlon":
+      return TRIATHLON_COMPETITIONS;
     default:
-      // Check if it looks like a rugby type
       return RUGBY_COMPETITIONS;
   }
+};
+
+// Competition stages by sport category
+export interface CompetitionStage {
+  value: string;
+  label: string;
+}
+
+// Rugby / Team sports stages (traditional knockout format)
+export const TEAM_SPORT_STAGES: CompetitionStage[] = [
+  { value: "", label: "Aucune" },
+  { value: "poules_1", label: "Phase de poules - Match 1" },
+  { value: "poules_2", label: "Phase de poules - Match 2" },
+  { value: "poules_3", label: "Phase de poules - Match 3" },
+  { value: "seiziemes", label: "Seizièmes de finale" },
+  { value: "huitiemes", label: "Huitièmes de finale" },
+  { value: "quarts", label: "Quarts de finale" },
+  { value: "demies", label: "Demi-finales" },
+  { value: "petite_finale", label: "Petite finale / 3ème place" },
+  { value: "finale", label: "Finale" },
+];
+
+// Individual/timed sport stages  
+export const INDIVIDUAL_SPORT_STAGES: CompetitionStage[] = [
+  { value: "", label: "Aucune" },
+  { value: "series", label: "Séries / Qualifications" },
+  { value: "repechages", label: "Repêchages" },
+  { value: "quarts", label: "Quarts de finale" },
+  { value: "demies", label: "Demi-finales" },
+  { value: "finale_b", label: "Finale B" },
+  { value: "finale", label: "Finale" },
+];
+
+// Ski/Snow stages
+export const SKI_STAGES: CompetitionStage[] = [
+  { value: "", label: "Aucune" },
+  { value: "manche_1", label: "Manche 1" },
+  { value: "manche_2", label: "Manche 2" },
+  { value: "qualifications", label: "Qualifications" },
+  { value: "quarts", label: "Quarts de finale" },
+  { value: "demies", label: "Demi-finales" },
+  { value: "petite_finale", label: "Petite finale" },
+  { value: "finale", label: "Finale" },
+  { value: "super_finale", label: "Super Finale" },
+];
+
+// Judo stages
+export const JUDO_STAGES: CompetitionStage[] = [
+  { value: "", label: "Aucune" },
+  { value: "poules", label: "Tour préliminaire / Poules" },
+  { value: "trente_deuxiemes", label: "32èmes de finale" },
+  { value: "seiziemes", label: "16èmes de finale" },
+  { value: "huitiemes", label: "8èmes de finale" },
+  { value: "quarts", label: "Quarts de finale" },
+  { value: "repechage", label: "Repêchage" },
+  { value: "demies", label: "Demi-finales" },
+  { value: "bronze", label: "Combat pour le bronze" },
+  { value: "finale", label: "Finale" },
+];
+
+// CrossFit/Hyrox stages
+export const CROSSFIT_STAGES: CompetitionStage[] = [
+  { value: "", label: "Aucune" },
+  { value: "qualifications", label: "Qualifications / Heat" },
+  { value: "semifinal", label: "Demi-finale" },
+  { value: "finale", label: "Finale" },
+];
+
+// Triathlon stages
+export const TRIATHLON_STAGES: CompetitionStage[] = [
+  { value: "", label: "Aucune" },
+  { value: "natation", label: "Natation" },
+  { value: "transition_1", label: "Transition 1 (T1)" },
+  { value: "velo", label: "Vélo" },
+  { value: "transition_2", label: "Transition 2 (T2)" },
+  { value: "course", label: "Course à pied" },
+  { value: "sprint_finish", label: "Sprint Finish" },
+  { value: "finale", label: "Finale" },
+];
+
+// Padel stages (similar to tennis tournaments)
+export const PADEL_STAGES: CompetitionStage[] = [
+  { value: "", label: "Aucune" },
+  { value: "poules", label: "Phase de poules" },
+  { value: "trente_deuxiemes", label: "32èmes de finale" },
+  { value: "seiziemes", label: "16èmes de finale" },
+  { value: "huitiemes", label: "8èmes de finale" },
+  { value: "quarts", label: "Quarts de finale" },
+  { value: "demies", label: "Demi-finales" },
+  { value: "finale", label: "Finale" },
+];
+
+// Get appropriate stages for a sport
+export const getCompetitionStagesBySport = (sportType: string): CompetitionStage[] => {
+  if (["XV", "7", "XIII", "touch", "academie", "national_team"].includes(sportType)) {
+    return TEAM_SPORT_STAGES;
+  }
+  
+  const baseSport = sportType.split('_')[0].toLowerCase();
+  
+  switch (baseSport) {
+    case "football":
+    case "handball":
+    case "volleyball":
+    case "basketball":
+      return TEAM_SPORT_STAGES;
+    case "judo":
+      return JUDO_STAGES;
+    case "ski":
+    case "snow":
+      return SKI_STAGES;
+    case "crossfit":
+      return CROSSFIT_STAGES;
+    case "triathlon":
+      return TRIATHLON_STAGES;
+    case "padel":
+      return PADEL_STAGES;
+    case "natation":
+    case "aviron":
+    case "athletisme":
+    case "bowling":
+      return INDIVIDUAL_SPORT_STAGES;
+    default:
+      return TEAM_SPORT_STAGES;
+  }
+};
+
+// Get label for any competition stage value (universal)
+export const getCompetitionStageLabel = (stage: string): string => {
+  const allStages: Record<string, string> = {
+    // Team sport
+    poules: "Phase de poules",
+    poules_1: "Poules - Match 1",
+    poules_2: "Poules - Match 2",
+    poules_3: "Poules - Match 3",
+    // Shared
+    seiziemes: "16èmes",
+    huitiemes: "8èmes",
+    quarts: "Quarts",
+    demies: "Demi-finales",
+    petite_finale: "3ème place",
+    finale: "Finale",
+    // Individual
+    series: "Séries / Qualif.",
+    repechages: "Repêchages",
+    finale_b: "Finale B",
+    qualifications: "Qualifications",
+    // Ski
+    manche_1: "Manche 1",
+    manche_2: "Manche 2",
+    super_finale: "Super Finale",
+    // Judo
+    trente_deuxiemes: "32èmes",
+    repechage: "Repêchage",
+    bronze: "Bronze",
+    // CrossFit
+    semifinal: "Demi-finale",
+    // Triathlon
+    natation: "Natation",
+    transition_1: "T1",
+    velo: "Vélo",
+    transition_2: "T2",
+    course: "Course",
+    sprint_finish: "Sprint Finish",
+  };
+  return allStages[stage] || stage;
 };
 
 // Get flat list of all competition names for a sport
