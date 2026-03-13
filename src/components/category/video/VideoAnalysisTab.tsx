@@ -197,6 +197,7 @@ export function VideoAnalysisTab({ categoryId, sportType }: VideoAnalysisTabProp
                   categoryId={categoryId}
                   matchId={analysis.matches?.id}
                   videoUrl={analysis.video_url}
+                  videoFileUrl={(analysis as any).video_file_url}
                   sportType={sportType}
                   onBack={() => setEditingAnalysisId(null)}
                   onClipCreated={() => {
