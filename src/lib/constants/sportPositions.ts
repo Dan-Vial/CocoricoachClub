@@ -83,7 +83,7 @@ export function getPositionGroupLabel(group: RugbyPositionGroup): string {
 export function isRugbySport(sportType: string | undefined): boolean {
   if (!sportType) return false;
   const baseSport = sportType.toLowerCase();
-  return ["xv", "7", "xiii", "rugby", "academie", "national_team"].includes(baseSport);
+  return ["xv", "7", "xiii", "touch", "rugby", "academie", "national_team"].includes(baseSport);
 }
 
 // Rugby XV positions (15 players)
