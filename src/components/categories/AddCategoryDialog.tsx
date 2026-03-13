@@ -129,7 +129,7 @@ export function AddCategoryDialog({
   }, [availableSubtypes, open]);
 
   const addCategory = useMutation({
-    mutationFn: async (data: { name: string; rugby_type: SportType; gender: "masculine" | "feminine"; memberIds: string[] }) => {
+    mutationFn: async (data: { name: string; rugby_type: SportType; gender: "masculine" | "feminine" | "mixed"; memberIds: string[] }) => {
       const { data: newCategory, error } = await supabase
         .from("categories")
         .insert({ name: data.name, club_id: clubId, rugby_type: data.rugby_type, gender: data.gender })
