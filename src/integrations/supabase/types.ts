@@ -1952,6 +1952,8 @@ export type Database = {
           player_id: string
           result_unit: string | null
           result_value: number
+          secondary_unit: string | null
+          secondary_value: number | null
           test_category: string
           test_date: string
           test_type: string
@@ -1964,6 +1966,8 @@ export type Database = {
           player_id: string
           result_unit?: string | null
           result_value: number
+          secondary_unit?: string | null
+          secondary_value?: number | null
           test_category: string
           test_date?: string
           test_type: string
@@ -1976,6 +1980,8 @@ export type Database = {
           player_id?: string
           result_unit?: string | null
           result_value?: number
+          secondary_unit?: string | null
+          secondary_value?: number | null
           test_category?: string
           test_date?: string
           test_type?: string
