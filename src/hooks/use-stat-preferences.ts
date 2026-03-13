@@ -28,6 +28,7 @@ export function useStatPreferences({
   isGoalkeeper = false,
 }: UseStatPreferencesOptions) {
   // Fetch category-level preferences
+  // Returns { exists: boolean, keys: string[] } to distinguish "no row" from "empty selection"
   const { data: categoryPrefs, isLoading: loadingCategory } = useQuery({
     queryKey: ["stat-preferences", categoryId],
     queryFn: async () => {
@@ -37,15 +38,16 @@ export function useStatPreferences({
         .eq("category_id", categoryId)
         .maybeSingle();
       if (error) throw error;
-      if (!data) return null;
+      if (!data) return null; // No row = no preferences configured
+      // Row exists = user has configured preferences, respect the saved selection
       const allEnabled = [
         ...(data.enabled_stats ?? []),
         ...(data.enabled_custom_stats ?? []),
       ];
-      return allEnabled.length > 0 ? allEnabled : null;
+      return allEnabled; // Return array even if empty (user chose to disable all)
     },
     enabled: !!categoryId,
-    staleTime: 5000, // Short cache - invalidation from preferences dialog will force refetch
+    staleTime: 5000,
   });
 
   // Fetch custom stats for the category
@@ -98,9 +100,11 @@ export function useStatPreferences({
   const allAvailableStats = [...allStats, ...customStatFields];
 
   // Determine which stats to show
-  // Priority: match overrides > category preferences > all stats
-  const rawKeys = matchOverrides ?? categoryPrefs ?? allAvailableStats.map(s => s.key);
-  const enabledStatKeys = Array.isArray(rawKeys) ? rawKeys : allAvailableStats.map(s => s.key);
+  // Priority: match overrides > category preferences (even if empty) > all stats
+  // categoryPrefs is null only when no row exists (never configured)
+  // categoryPrefs is [] when user explicitly disabled all stats
+  const enabledStatKeys: string[] = matchOverrides 
+    ?? (categoryPrefs !== null && categoryPrefs !== undefined ? categoryPrefs : allAvailableStats.map(s => s.key));
 
   // Filter stats based on enabled keys
   const filteredStats: StatField[] = allAvailableStats.filter(stat => 

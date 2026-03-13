@@ -864,7 +864,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
           ...(statPrefsRes.data?.enabled_stats as string[] || []),
           ...(statPrefsRes.data?.enabled_custom_stats as string[] || []),
         ];
-        const displayStats = enabledKeys.length > 0
+        const displayStats = statPrefsRes.data
           ? allAvailable.filter(s => enabledKeys.includes(s.key))
           : allAvailable;
 
@@ -1693,7 +1693,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
         ...(statPrefsRes.data?.enabled_stats as string[] || []),
         ...(statPrefsRes.data?.enabled_custom_stats as string[] || []),
       ];
-      const displayStats = enabledKeys.length > 0
+      const displayStats = statPrefsRes.data
         ? allAvailable.filter(s => enabledKeys.includes(s.key))
         : allFields;
 

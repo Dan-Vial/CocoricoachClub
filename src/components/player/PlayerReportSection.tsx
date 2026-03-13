@@ -927,7 +927,9 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
             ...(statPrefsRes.data?.enabled_stats as string[] || []),
             ...(statPrefsRes.data?.enabled_custom_stats as string[] || []),
           ];
-          const displayStats = enabledKeys.length > 0
+          // If preferences row exists, use it (even if empty = user disabled all)
+          // If no row exists (statPrefsRes.data is null), show all stats
+          const displayStats = statPrefsRes.data
             ? allAvailable.filter(s => enabledKeys.includes(s.key))
             : allAvailable;
 
@@ -1420,7 +1422,7 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
             ...(statPrefsRes.data?.enabled_stats as string[] || []),
             ...(statPrefsRes.data?.enabled_custom_stats as string[] || []),
           ];
-          const displayStats = enabledKeys.length > 0
+          const displayStats = statPrefsRes.data
             ? allAvailable.filter(s => enabledKeys.includes(s.key))
             : allAvailable;
 
