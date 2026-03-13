@@ -64,7 +64,7 @@ export function WellnessTab({ categoryId }: WellnessTabProps) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("wellness_tracking")
-        .select("*, players(name)")
+        .select("*, players(name, first_name)")
         .eq("category_id", categoryId)
         .order("tracking_date", { ascending: false });
       if (error) throw error;
