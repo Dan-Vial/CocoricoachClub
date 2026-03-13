@@ -172,6 +172,7 @@ export function AddWellnessDialog({ open, onOpenChange, categoryId }: AddWellnes
     setHasSpecificPain(false);
     setPainLocation("");
     setNotes("");
+    setHrvData(emptyHrvData);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
