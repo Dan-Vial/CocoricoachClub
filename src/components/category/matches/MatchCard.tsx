@@ -279,7 +279,12 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
   });
 
   const matchDate = new Date(match.match_date);
-  const isPast = matchDate < new Date();
+  // Compare dates only (not time) so same-day matches don't appear as "Terminé"
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const matchDay = new Date(matchDate);
+  matchDay.setHours(0, 0, 0, 0);
+  const isPast = matchDay < today;
   const isFinalized = match.is_finalized === true;
 
   return (
