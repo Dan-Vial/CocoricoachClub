@@ -110,15 +110,17 @@ export default function Clubs() {
     enabled: !!isSuperAdmin,
   });
 
-  // For super admin: "Mes Clubs" = only owned clubs. For others: owned + joined.
   const myClubs = useMemo(() => {
     if (!clubs) return [];
-    if (isSuperAdmin) return clubs.owned;
-    return [...clubs.owned, ...clubs.joined];
+    const c = clubs as { owned: any[]; joined: any[] };
+    if (isSuperAdmin) return c.owned;
+    return [...c.owned, ...c.joined];
   }, [clubs, isSuperAdmin]);
 
-  // For super admin: "Clubs clients" = all clubs NOT owned by current user
-  const myOwnedIds = useMemo(() => new Set(clubs?.owned.map(c => c.id) || []), [clubs]);
+  const myOwnedIds = useMemo(() => {
+    if (!clubs) return new Set<string>();
+    return new Set((clubs as { owned: any[]; joined: any[] }).owned.map((c: any) => c.id));
+  }, [clubs]);
 
   const clientClubs = useMemo(() => {
     if (!isSuperAdmin || !allClubs) return [];
