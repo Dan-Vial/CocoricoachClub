@@ -185,7 +185,8 @@ export function DirectClipImport({
 
     const newClip: ClipToImport = {
       id: crypto.randomUUID(),
-      clipUrl: currentClip.clipUrl || "",
+      clipUrl: currentClip.clipUrl || currentClip.clipFileUrl || "",
+      clipFileUrl: currentClip.clipFileUrl || "",
       title: currentClip.title || selectedAction?.label || "",
       actionType: currentClip.actionType || "",
       matchId: currentClip.matchId || null,
