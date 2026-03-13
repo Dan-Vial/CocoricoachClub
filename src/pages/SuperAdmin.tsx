@@ -20,6 +20,7 @@ import { SuperAdminNotifications } from "@/components/super-admin/SuperAdminNoti
 import { SuperAdminSettings } from "@/components/super-admin/SuperAdminSettings";
 import { AuditLogsTab } from "@/components/admin/AuditLogsTab";
 import { RoleMenuPermissions } from "@/components/super-admin/RoleMenuPermissions";
+import { SuperAdminUsage } from "@/components/super-admin/SuperAdminUsage";
  
  export default function SuperAdmin() {
    const { user, loading: authLoading } = useAuth();
