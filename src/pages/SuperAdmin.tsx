@@ -128,14 +128,18 @@ import { SuperAdminUsage } from "@/components/super-admin/SuperAdminUsage";
                Paramètres
              </TabsTrigger>
               <TabsTrigger value="permissions" className="flex items-center gap-2">
-                <Lock className="h-4 w-4" />
-                Permissions
-              </TabsTrigger>
-              <TabsTrigger value="audit" className="flex items-center gap-2">
-                <FileText className="h-4 w-4" />
-                Audit
-              </TabsTrigger>
-            </TabsList>
+                 <Lock className="h-4 w-4" />
+                 Permissions
+               </TabsTrigger>
+               <TabsTrigger value="usage" className="flex items-center gap-2">
+                 <Clock className="h-4 w-4" />
+                 Utilisation
+               </TabsTrigger>
+               <TabsTrigger value="audit" className="flex items-center gap-2">
+                 <FileText className="h-4 w-4" />
+                 Audit
+               </TabsTrigger>
+             </TabsList>
  
            <TabsContent value="dashboard">
              <SuperAdminDashboard />
