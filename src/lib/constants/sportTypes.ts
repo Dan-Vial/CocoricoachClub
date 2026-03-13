@@ -183,6 +183,18 @@ export const ATHLETISME_SPECIALTIES: Record<string, SpecialtyOption[]> = {
     { value: "heptathlon", label: "Heptathlon" },
     { value: "decathlon", label: "Décathlon" },
   ],
+  athletisme_trail: [
+    { value: "trail_court", label: "Trail court (< 42 km)" },
+    { value: "trail_long", label: "Trail long (42-80 km)" },
+    { value: "trail_vertical", label: "Trail vertical / Kilomètre vertical" },
+    { value: "trail_montagne", label: "Course de montagne" },
+  ],
+  athletisme_ultra_trail: [
+    { value: "ultra_80_100", label: "Ultra 80-100 km" },
+    { value: "ultra_100_plus", label: "Ultra 100+ km" },
+    { value: "ultra_24h", label: "24 heures" },
+    { value: "ultra_multi_etapes", label: "Multi-étapes / Raid" },
+  ],
 };
 
 // Weight categories for Judo (used in AddPlayerDialog)
