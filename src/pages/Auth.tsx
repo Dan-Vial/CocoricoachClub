@@ -54,6 +54,7 @@ export default function Auth() {
   const [signupEmail, setSignupEmail] = useState("");
   const [signupPassword, setSignupPassword] = useState("");
   const [fullName, setFullName] = useState("");
+  const [signupPhone, setSignupPhone] = useState("");
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
