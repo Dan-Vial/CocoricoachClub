@@ -17,7 +17,7 @@ import { toast } from "sonner";
 import { PlayerSelection } from "./PlayerSelection";
 import { getTestCategoriesForSport, TestOption } from "@/lib/constants/testCategories";
 import { HierarchicalTestSelector, resolveTestCategory, resolveGroupAndZone } from "./HierarchicalTestSelector";
-import { Gauge } from "lucide-react";
+import { Gauge, Zap, Timer } from "lucide-react";
 
 interface UnifiedTestDialogProps {
   open: boolean;
@@ -29,6 +29,18 @@ interface UnifiedTestDialogProps {
   allowCustomTest?: boolean;
 }
 
+// Detect if test is a musculation/strength RM test
+const isStrengthRMTest = (testValue: string, categoryValue: string) => {
+  return (
+    categoryValue === "musculation" ||
+    categoryValue === "halterophilie" ||
+    categoryValue === "poids_corps" ||
+    testValue.includes("_1rm") ||
+    testValue.includes("_3rm") ||
+    testValue.includes("_5rm")
+  );
+};
+
 export function UnifiedTestDialog({
   open, onOpenChange, categoryId, sportType, defaultFilterCategory, defaultFilterTestType, allowCustomTest = true,
 }: UnifiedTestDialogProps) {
@@ -39,6 +51,7 @@ export function UnifiedTestDialog({
   const [selectedZone, setSelectedZone] = useState("");
   const [selectedTest, setSelectedTest] = useState("");
   const [playerResults, setPlayerResults] = useState<Record<string, string>>({});
+  const [playerSecondaryResults, setPlayerSecondaryResults] = useState<Record<string, string>>({});
   const [notes, setNotes] = useState("");
   const [customTestName, setCustomTestName] = useState("");
   const [customTestUnit, setCustomTestUnit] = useState("");
@@ -51,7 +64,7 @@ export function UnifiedTestDialog({
     sprint_10m: 10, sprint_20m: 20, sprint_30m: 30, sprint_40m: 40,
     sprint_50m: 50, sprint_100m: 100,
     rugby_prone_30m: 30,
-    basketball_sprint_3_4: 21, // ~3/4 of 28m court
+    basketball_sprint_3_4: 21,
     basketball_sprint_full: 28,
     football_sprint_30m: 30, football_sprint_40m: 40,
   };
@@ -62,6 +75,9 @@ export function UnifiedTestDialog({
   );
 
   const sprintDistance = isSprintTest ? (SPRINT_DISTANCE_MAP[selectedTest] || null) : null;
+
+  const resolvedCategory = resolveTestCategory(selectedGroup, selectedZone, sportType || "");
+  const isStrengthTest = !isCustom && selectedTest && isStrengthRMTest(selectedTest, resolvedCategory);
 
   // Pre-select group/zone/test when dialog opens with a default filter
   useEffect(() => {
@@ -75,6 +91,7 @@ export function UnifiedTestDialog({
         setSelectedTest("");
       }
       setPlayerResults({});
+      setPlayerSecondaryResults({});
     }
   }, [open, defaultFilterCategory, defaultFilterTestType, sportType]);
 
@@ -116,12 +133,26 @@ export function UnifiedTestDialog({
 
   const filteredTestCategories = getTestCategoriesForSport(sportType || "");
   
-  const resolvedCategory = resolveTestCategory(selectedGroup, selectedZone, sportType || "");
   const currentCategoryObj = filteredTestCategories.find(c => c.value === resolvedCategory);
   
   const currentTest: TestOption | null = isCustom 
     ? (customTestName && customTestUnit ? { value: `custom_${customTestName.toLowerCase().replace(/\s+/g, '_')}`, label: customTestName, unit: customTestUnit, isTime: ["s", "min.s"].includes(customTestUnit) } as TestOption : null)
     : currentCategoryObj?.tests.find(t => t.value === selectedTest) || null;
+
+  // Compute GPS values for sprint tests
+  const computeSprintGpsValues = (timeStr: string) => {
+    const time = parseFloat(timeStr);
+    if (!time || !sprintDistance || time <= 0) return null;
+    const vmaxMs = sprintDistance / time;
+    const vmaxKmh = vmaxMs * 3.6;
+    // Simplified accel max estimation: v²/(2*d) for uniform acceleration
+    const accelMax = (vmaxMs * vmaxMs) / (2 * (sprintDistance / 2));
+    return {
+      vmaxKmh: Math.round(vmaxKmh * 100) / 100,
+      vmaxMs: Math.round(vmaxMs * 100) / 100,
+      accelMax: Math.round(accelMax * 100) / 100,
+    };
+  };
 
   const addTests = useMutation({
     mutationFn: async () => {
@@ -143,6 +174,8 @@ export function UnifiedTestDialog({
           test_category: testCategory, test_type: testType,
           result_value: parseFloat(playerResults[player.id]),
           result_unit: currentTest?.unit || customTestUnit || "",
+          secondary_value: playerSecondaryResults[player.id] ? parseFloat(playerSecondaryResults[player.id]) : null,
+          secondary_unit: (isStrengthTest && playerSecondaryResults[player.id]) ? "m/s" : null,
           notes: `Session ID: ${sessionData.id}` + (notes ? `\n${notes}` : ""),
         }));
 
@@ -173,7 +206,6 @@ export function UnifiedTestDialog({
           });
 
         if (vmaxInserts.length > 0) {
-          // Deactivate old references
           const playerIds = vmaxInserts.map(v => v.player_id);
           await supabase
             .from("player_performance_references")
@@ -193,7 +225,6 @@ export function UnifiedTestDialog({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["generic_tests", categoryId] });
       queryClient.invalidateQueries({ queryKey: ["training_sessions", categoryId] });
-      // Invalidate analytics caches so new tests appear in Evolution/Comparison dropdowns
       queryClient.invalidateQueries({ queryKey: ["generic-tests-evolution", categoryId] });
       queryClient.invalidateQueries({ queryKey: ["generic-tests-multi-comparison", categoryId] });
       queryClient.invalidateQueries({ queryKey: ["speed-tests-evolution", categoryId] });
@@ -217,7 +248,7 @@ export function UnifiedTestDialog({
 
   const resetForm = () => {
     setSelectedPlayers([]); setSelectionMode("all"); setSelectedGroup(""); setSelectedZone("");
-    setSelectedTest(""); setPlayerResults({}); setNotes(""); setCustomTestName(""); setCustomTestUnit("");
+    setSelectedTest(""); setPlayerResults({}); setPlayerSecondaryResults({}); setNotes(""); setCustomTestName(""); setCustomTestUnit("");
     setIsCustom(false); setSaveAsGpsVmax(false);
   };
 
@@ -225,7 +256,14 @@ export function UnifiedTestDialog({
     setPlayerResults(prev => ({ ...prev, [playerId]: value }));
   };
 
+  const updatePlayerSecondaryResult = (playerId: string, value: string) => {
+    setPlayerSecondaryResults(prev => ({ ...prev, [playerId]: value }));
+  };
+
   const filledResultsCount = effectivePlayers.filter(p => playerResults[p.id]).length;
+
+  const showSecondaryField = isStrengthTest;
+  const showGpsPreview = isSprintTest && sprintDistance;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -246,7 +284,7 @@ export function UnifiedTestDialog({
               <div className="flex items-center gap-2">
                 <Button
                   type="button" size="sm" variant={isCustom ? "default" : "outline"}
-                  onClick={() => { setIsCustom(!isCustom); setSelectedGroup(""); setSelectedZone(""); setSelectedTest(""); setPlayerResults({}); }}
+                  onClick={() => { setIsCustom(!isCustom); setSelectedGroup(""); setSelectedZone(""); setSelectedTest(""); setPlayerResults({}); setPlayerSecondaryResults({}); }}
                 >
                   ✨ Test personnalisé
                 </Button>
@@ -259,8 +297,8 @@ export function UnifiedTestDialog({
                 selectedGroup={selectedGroup}
                 selectedZone={selectedZone}
                 selectedTest={selectedTest}
-                onGroupChange={(g) => { setSelectedGroup(g); setSelectedZone(""); setSelectedTest(""); setPlayerResults({}); }}
-                onZoneChange={(z) => { setSelectedZone(z); setSelectedTest(""); setPlayerResults({}); }}
+                onGroupChange={(g) => { setSelectedGroup(g); setSelectedZone(""); setSelectedTest(""); setPlayerResults({}); setPlayerSecondaryResults({}); }}
+                onZoneChange={(z) => { setSelectedZone(z); setSelectedTest(""); setPlayerResults({}); setPlayerSecondaryResults({}); }}
                 onTestChange={setSelectedTest}
               />
             )}
@@ -293,16 +331,60 @@ export function UnifiedTestDialog({
             {effectivePlayers.length > 0 && ((isCustom && customTestName && customTestUnit) || selectedTest) && currentTest && (
               <div className="space-y-2">
                 <Label>
-                  Résultats {currentTest.unit && `(${currentTest.unit})`} - {filledResultsCount}/{effectivePlayers.length} saisis
+                  Résultats {currentTest.unit && `(${currentTest.unit})`}
+                  {showSecondaryField && " + Vitesse barre (m/s, optionnel)"}
+                  {" "}- {filledResultsCount}/{effectivePlayers.length} saisis
                 </Label>
-                <div className="grid grid-cols-2 gap-2 p-3 border rounded-md bg-muted/30">
-                  {effectivePlayers.map((player) => (
-                    <div key={player.id} className="flex items-center gap-2">
-                      <span className="text-sm flex-1 truncate">{player.name}</span>
-                      <Input type="number" step="0.01" value={playerResults[player.id] || ""} onChange={(e) => updatePlayerResult(player.id, e.target.value)} placeholder={currentTest.unit || "valeur"} className="w-24 h-8 text-sm" />
-                    </div>
-                  ))}
-                </div>
+                <ScrollArea className="max-h-[300px] border rounded-md">
+                  <div className="p-3 space-y-2 bg-muted/30">
+                    {effectivePlayers.map((player) => {
+                      const gpsValues = showGpsPreview && playerResults[player.id] 
+                        ? computeSprintGpsValues(playerResults[player.id]) 
+                        : null;
+                      
+                      return (
+                        <div key={player.id} className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm flex-1 truncate min-w-0">{player.name}</span>
+                            <Input 
+                              type="number" step="0.01" 
+                              value={playerResults[player.id] || ""} 
+                              onChange={(e) => updatePlayerResult(player.id, e.target.value)} 
+                              placeholder={currentTest.unit || "valeur"} 
+                              className="w-24 h-8 text-sm" 
+                            />
+                            {showSecondaryField && (
+                              <Input 
+                                type="number" step="0.01" 
+                                value={playerSecondaryResults[player.id] || ""} 
+                                onChange={(e) => updatePlayerSecondaryResult(player.id, e.target.value)} 
+                                placeholder="m/s" 
+                                className="w-20 h-8 text-sm" 
+                              />
+                            )}
+                          </div>
+                          {/* GPS preview for sprint tests */}
+                          {gpsValues && (
+                            <div className="flex items-center gap-3 ml-4 text-xs text-muted-foreground">
+                              <span className="flex items-center gap-1">
+                                <Gauge className="h-3 w-3 text-primary" />
+                                Vmax: <strong className="text-foreground">{gpsValues.vmaxKmh} km/h</strong>
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Zap className="h-3 w-3 text-amber-500" />
+                                Accel: <strong className="text-foreground">{gpsValues.accelMax} m/s²</strong>
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Timer className="h-3 w-3 text-blue-500" />
+                                {playerResults[player.id]}s
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </ScrollArea>
               </div>
             )}
 
