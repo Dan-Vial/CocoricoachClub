@@ -385,6 +385,18 @@ export default function Auth() {
                   />
                 </div>
                 <div className="space-y-2">
+                  <Label htmlFor="signup-phone">Téléphone</Label>
+                  <Input
+                    id="signup-phone"
+                    type="tel"
+                    placeholder="+33 6 12 34 56 78"
+                    value={signupPhone}
+                    onChange={(e) => setSignupPhone(e.target.value)}
+                    disabled={isLoading}
+                    maxLength={20}
+                  />
+                </div>
+                <div className="space-y-2">
                   <Label htmlFor="signup-password">Mot de passe</Label>
                   <Input
                     id="signup-password"

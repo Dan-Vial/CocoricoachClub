@@ -5,6 +5,7 @@ export const signUpSchema = z.object({
   email: z.string().trim().email("Email invalide").max(255, "Email trop long"),
   password: z.string().min(6, "Le mot de passe doit contenir au moins 6 caractères").max(72, "Mot de passe trop long"),
   fullName: z.string().trim().min(1, "Le nom est requis").max(100, "Nom trop long"),
+  phone: z.string().trim().max(20, "Numéro trop long").optional().or(z.literal("")),
 });
 
 export const loginSchema = z.object({
