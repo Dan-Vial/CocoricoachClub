@@ -31,9 +31,11 @@ import {
   Filter,
   Copy,
   AlertCircle,
+  Play,
 } from "lucide-react";
 import { toast } from "sonner";
 import { ClipStatsPanel } from "./ClipStatsPanel";
+import { InlineVideoPlayer } from "./InlineVideoPlayer";
 import { getActionTypeLabel, getActionCategoryColor, getActionTypesForSport } from "@/lib/constants/videoActionTypes";
 
 interface VideoClipViewerProps {
@@ -49,6 +51,7 @@ interface ClipData {
   id: string;
   title: string;
   clip_url: string;
+  video_file_url?: string | null;
   start_time_seconds: number;
   end_time_seconds: number | null;
   action_type: string;
