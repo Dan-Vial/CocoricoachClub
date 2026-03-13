@@ -354,6 +354,8 @@ export const SPORT_TYPES: SportTypeOption[] = [
   { value: "athletisme_sauts_hauteur", label: "Athlétisme - Sauts verticaux", category: "individual" },
   { value: "athletisme_lancers", label: "Athlétisme - Lancers", category: "individual" },
   { value: "athletisme_combines", label: "Athlétisme - Épreuves combinées", category: "individual" },
+  { value: "athletisme_trail", label: "Athlétisme - Trail", category: "individual" },
+  { value: "athletisme_ultra_trail", label: "Athlétisme - Ultra-Trail", category: "individual" },
   { value: "athletisme_club", label: "Athlétisme - Club", category: "individual" },
   { value: "athletisme_academie", label: "Athlétisme - Académie", category: "individual" },
   { value: "athletisme_national", label: "Athlétisme - Équipe Nationale", category: "individual" },
