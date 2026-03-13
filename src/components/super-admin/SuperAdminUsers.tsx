@@ -197,6 +197,16 @@ export function SuperAdminUsers() {
                   </TableCell>
                   <TableCell>{u.email}</TableCell>
                   <TableCell>
+                    {u.phone ? (
+                      <a href={`tel:${u.phone}`} className="flex items-center gap-1 text-primary hover:underline">
+                        <Phone className="h-3 w-3" />
+                        {u.phone}
+                      </a>
+                    ) : (
+                      <span className="text-muted-foreground text-xs">-</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
                     {u.created_at
                       ? format(new Date(u.created_at), "dd MMM yyyy", { locale: fr })
                       : "-"}
