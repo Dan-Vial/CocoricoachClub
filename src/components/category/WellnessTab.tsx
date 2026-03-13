@@ -196,7 +196,7 @@ export function WellnessTab({ categoryId }: WellnessTabProps) {
                   {filteredWellnessData.map((entry) => (
                     <TableRow key={entry.id}>
                       <TableCell className="font-medium">
-                        {entry.players?.name}
+                        {[entry.players?.first_name, entry.players?.name].filter(Boolean).join(" ")}
                       </TableCell>
                       <TableCell>
                         {format(new Date(entry.tracking_date), "dd MMM yyyy", { locale: fr })}
