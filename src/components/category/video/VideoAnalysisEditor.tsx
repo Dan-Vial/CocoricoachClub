@@ -12,6 +12,7 @@ interface VideoAnalysisEditorProps {
   categoryId: string;
   matchId?: string | null;
   videoUrl?: string | null;
+  videoFileUrl?: string | null;
   sportType?: string;
   onBack: () => void;
   onClipCreated: () => void;
