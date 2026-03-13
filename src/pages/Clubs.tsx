@@ -110,12 +110,20 @@ export default function Clubs() {
     enabled: !!isSuperAdmin,
   });
 
-  const myClubIds = useMemo(() => new Set(clubs?.map(c => c.id) || []), [clubs]);
+  // For super admin: "Mes Clubs" = only owned clubs. For others: owned + joined.
+  const myClubs = useMemo(() => {
+    if (!clubs) return [];
+    if (isSuperAdmin) return clubs.owned;
+    return [...clubs.owned, ...clubs.joined];
+  }, [clubs, isSuperAdmin]);
+
+  // For super admin: "Clubs clients" = all clubs NOT owned by current user
+  const myOwnedIds = useMemo(() => new Set(clubs?.owned.map(c => c.id) || []), [clubs]);
 
   const clientClubs = useMemo(() => {
     if (!isSuperAdmin || !allClubs) return [];
-    return allClubs.filter(c => !myClubIds.has(c.id));
-  }, [isSuperAdmin, allClubs, myClubIds]);
+    return allClubs.filter(c => !myOwnedIds.has(c.id));
+  }, [isSuperAdmin, allClubs, myOwnedIds]);
 
   const filteredClientClubs = useMemo(() => {
     if (!clientClubSearch.trim()) return clientClubs;
@@ -133,11 +141,11 @@ export default function Clubs() {
   useEffect(() => {
     if (athleteCheckLoading || !athleteCategories || isLoading || superAdminLoading) return;
     const hasOnlyAthleteRole = athleteCategories.length > 0 && athleteCategories.every(cm => cm.role === "athlete");
-    const hasNoClubs = !clubs || clubs.length === 0;
+    const hasNoClubs = myClubs.length === 0;
     if (hasOnlyAthleteRole && hasNoClubs && !isSuperAdmin) {
       navigate("/athlete-space", { replace: true });
     }
-  }, [athleteCategories, athleteCheckLoading, clubs, isLoading, isSuperAdmin, superAdminLoading, navigate]);
+  }, [athleteCategories, athleteCheckLoading, myClubs, isLoading, isSuperAdmin, superAdminLoading, navigate]);
 
   const deleteClub = useMutation({
     mutationFn: async (clubId: string) => {
