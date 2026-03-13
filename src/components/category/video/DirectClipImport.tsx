@@ -19,7 +19,6 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import {
-  Link,
   Clock,
   Users,
   Film,
@@ -28,6 +27,7 @@ import {
   Save,
   BarChart3,
 } from "lucide-react";
+import { VideoFileUpload } from "./VideoFileUpload";
 import { getActionTypesForSport, ACTION_CATEGORIES } from "@/lib/constants/videoActionTypes";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
