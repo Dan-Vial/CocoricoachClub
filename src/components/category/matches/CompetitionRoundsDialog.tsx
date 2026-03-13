@@ -181,8 +181,8 @@ export function CompetitionRoundsDialog({
       const catLabels: Record<string, string> = {
         general: "Général",
         scoring: "Performance",
-        attack: "Détails",
-        defense: "Technique",
+        attack: "Classement",
+        defense: "Détails",
       };
       return uniqueCats.map(key => ({ key, label: catLabels[key] || key }));
     }

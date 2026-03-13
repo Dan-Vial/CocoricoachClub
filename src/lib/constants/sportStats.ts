@@ -462,6 +462,25 @@ export const ATHLETISME_ENDURANCE_STATS: StatField[] = [
   { key: "personalBest", label: "Record personnel ?", shortLabel: "RP", category: "general", type: "number", max: 1 },
 ];
 
+// Trail / Ultra-Trail stats
+export const ATHLETISME_TRAIL_STATS: StatField[] = [
+  // Performance
+  { key: "trailTime", label: "Temps total (min)", shortLabel: "Temps", category: "scoring", type: "number" },
+  { key: "trailDistance", label: "Distance (km)", shortLabel: "Distance", category: "scoring", type: "number" },
+  { key: "trailElevationGain", label: "Dénivelé positif (m)", shortLabel: "D+", category: "scoring", type: "number" },
+  { key: "trailElevationLoss", label: "Dénivelé négatif (m)", shortLabel: "D-", category: "scoring", type: "number" },
+  // Classement
+  { key: "finalRanking", label: "Classement général", shortLabel: "Place", category: "attack", type: "number" },
+  { key: "totalFinishers", label: "Nombre de finishers", shortLabel: "Finishers", category: "attack", type: "number" },
+  { key: "categoryRanking", label: "Classement catégorie (H/F, Master…)", shortLabel: "Place cat.", category: "attack", type: "number" },
+  { key: "categoryTotalFinishers", label: "Finishers catégorie", shortLabel: "Fin. cat.", category: "attack", type: "number" },
+  // Détails
+  { key: "avgPace", label: "Allure moyenne (min/km)", shortLabel: "Allure", category: "defense", type: "number" },
+  { key: "avgHeartRate", label: "FC moyenne (bpm)", shortLabel: "FC moy", category: "defense", type: "number" },
+  { key: "maxHeartRate", label: "FC max (bpm)", shortLabel: "FC max", category: "defense", type: "number" },
+  { key: "personalBest", label: "Record personnel ?", shortLabel: "RP", category: "general", type: "number", max: 1 },
+];
+
 // Hurdles stats
 export const ATHLETISME_HAIES_STATS: StatField[] = [
   { key: "time", label: "Temps (sec)", shortLabel: "Temps", category: "scoring", type: "number" },
@@ -601,6 +620,7 @@ const ATHLETISME_DISCIPLINE_MAP: Record<string, StatField[]> = {
   ath_perche: ATHLETISME_PERCHE_STATS,
   ath_lancers: ATHLETISME_LANCERS_STATS,
   ath_combines: ATHLETISME_COMBINES_STATS,
+  ath_trail: ATHLETISME_TRAIL_STATS,
 };
 
 // Get athletics stats tagged with their discipline category key
@@ -686,9 +706,9 @@ export function getAthletismeStatsForDiscipline(discipline?: string): StatField[
     return ATHLETISME_COMBINES_STATS;
   }
   
-  // Trail / Ultra-trail → use endurance stats (distance, D+, time-based)
+  // Trail / Ultra-trail → dedicated trail stats
   if (disc.includes('trail') || disc.includes('ultra')) {
-    return ATHLETISME_ENDURANCE_STATS;
+    return ATHLETISME_TRAIL_STATS;
   }
   
   return ATHLETISME_GENERAL_STATS;
@@ -807,6 +827,7 @@ export function getStatCategories(sportType: SportType | string): { key: string;
       { key: "ath_perche", label: "Perche" },
       { key: "ath_lancers", label: "Lancers" },
       { key: "ath_combines", label: "Épreuves combinées" },
+      { key: "ath_trail", label: "Trail / Ultra-Trail" },
     ];
   }
   
