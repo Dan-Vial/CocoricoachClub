@@ -417,6 +417,7 @@ export const isIndividualSport = (type: string): boolean => {
     "athletisme_sprints", "athletisme_haies", "athletisme_demi_fond",
     "athletisme_fond", "athletisme_marche", "athletisme_sauts_longueur",
     "athletisme_sauts_hauteur", "athletisme_lancers", "athletisme_combines",
+    "athletisme_trail", "athletisme_ultra_trail",
     "athletisme_club", "athletisme_academie", "athletisme_national"
   ];
   return individualSports.includes(type);
