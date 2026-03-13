@@ -286,7 +286,7 @@ export function CompetitionRoundsDialog({
 
   // Get players in the lineup for this match
   const { data: lineup } = useQuery({
-    queryKey: ["match_lineup", matchId],
+    queryKey: ["competition_match_lineup", matchId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("match_lineups")
@@ -295,7 +295,7 @@ export function CompetitionRoundsDialog({
       if (error) throw error;
       return data;
     },
-    enabled: !!matchId,
+    enabled: open && !!matchId,
   });
 
   // Get existing rounds
