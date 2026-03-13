@@ -26,6 +26,9 @@ export type SportType =
   | "basketball_club"
   | "basketball_academie"
   | "basketball_national"
+  | "basketball_3x3"
+  | "basketball_pro"
+  | "basketball_jeunes"
   | "judo_club"
   | "judo_academie"
   | "judo_national"
@@ -240,19 +243,27 @@ export const CROSSFIT_SUBTYPES: SportSubTypeOption[] = [
   { value: "crossfit_musculation", label: "Musculation / Bodybuilding" },
 ];
 
+// Basketball-specific subtypes
+export const BASKETBALL_SUBTYPES: SportSubTypeOption[] = [
+  { value: "basketball_club", label: "Basketball - Club" },
+  { value: "basketball_3x3", label: "Basketball 3x3" },
+  { value: "basketball_pro", label: "Basketball - Pro / Semi-Pro" },
+  { value: "basketball_jeunes", label: "Basketball - Centre de Formation / Jeunes" },
+  { value: "basketball_academie", label: "Basketball - Académie / Pôle Espoir" },
+  { value: "basketball_national", label: "Basketball - Équipe Nationale" },
+];
+
 // Sub-types for other sports (Club, Académie, Équipe Nationale)
 export const getOtherSportSubtypes = (sport: MainSportCategory): SportSubTypeOption[] => {
   if (sport === "rugby") return RUGBY_SUBTYPES;
-  // For athletics category creation, only show Club/Académie/National
   if (sport === "athletisme") return ATHLETISME_CATEGORY_SUBTYPES;
-  // For CrossFit/Hyrox/Musculation
   if (sport === "crossfit") return CROSSFIT_SUBTYPES;
+  if (sport === "basketball") return BASKETBALL_SUBTYPES;
   
-  const sportLabels: Record<Exclude<MainSportCategory, "rugby" | "athletisme" | "crossfit">, string> = {
+  const sportLabels: Record<Exclude<MainSportCategory, "rugby" | "athletisme" | "crossfit" | "basketball">, string> = {
     football: "Football",
     handball: "Handball",
     volleyball: "Volleyball",
-    basketball: "Basketball",
     judo: "Judo",
     bowling: "Bowling",
     aviron: "Aviron",
@@ -287,6 +298,9 @@ export const SPORT_TYPES: SportTypeOption[] = [
   { value: "handball_club", label: "Handball - Club", category: "team" },
   { value: "volleyball_club", label: "Volleyball - Club", category: "team" },
   { value: "basketball_club", label: "Basketball - Club", category: "team" },
+  { value: "basketball_3x3", label: "Basketball 3x3", category: "team" },
+  { value: "basketball_pro", label: "Basketball - Pro / Semi-Pro", category: "team" },
+  { value: "basketball_jeunes", label: "Basketball - Centre de Formation / Jeunes", category: "team" },
   // Team sports - Académie
   { value: "football_academie", label: "Football - Académie", category: "team" },
   { value: "handball_academie", label: "Handball - Académie", category: "team" },
@@ -396,7 +410,7 @@ export const isCrossfitCategory = (rugbyType: string): boolean => {
 };
 
 export const isTeamSport = (type: string): boolean => {
-  return ["XV", "7", "XIII", "15", "academie", "national_team", "football", "handball", "volleyball", "basketball", "football_club", "football_academie", "football_national", "handball_club", "handball_academie", "handball_national", "volleyball_club", "volleyball_academie", "volleyball_national", "basketball_club", "basketball_academie", "basketball_national"].includes(type);
+  return ["XV", "7", "XIII", "15", "academie", "national_team", "football", "handball", "volleyball", "basketball", "football_club", "football_academie", "football_national", "handball_club", "handball_academie", "handball_national", "volleyball_club", "volleyball_academie", "volleyball_national", "basketball_club", "basketball_academie", "basketball_national", "basketball_3x3", "basketball_pro", "basketball_jeunes"].includes(type);
 };
 
 export const getRugbyTypes = (): SportTypeOption[] => {
