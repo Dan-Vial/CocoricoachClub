@@ -113,10 +113,9 @@ const isGpsSportType = (sportType: string | undefined) => {
          sportType?.startsWith("football_");
 };
 
-// Helper to check if Video Analysis is available for sport (exclude CrossFit/Hyrox/Musculation)
-const hasVideoAnalysis = (sportType: string | undefined) => {
-  if (!sportType) return true;
-  return !sportType.startsWith("crossfit");
+// Video Analysis is available for ALL sports
+const hasVideoAnalysis = (_sportType: string | undefined) => {
+  return true;
 };
 
 function CategoryDetailsContent() {
