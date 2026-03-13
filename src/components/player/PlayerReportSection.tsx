@@ -874,8 +874,7 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
             .reverse()
             .map(w => {
               const avgVals = [
-                w.sleep_quality != null ? (6 - w.sleep_quality) : null,
-                w.general_fatigue, w.stress_level, w.soreness_upper_body, w.soreness_lower_body
+                w.sleep_quality, w.general_fatigue, w.stress_level, w.soreness_upper_body, w.soreness_lower_body
               ].filter(v => v != null) as number[];
               const avg = avgVals.length > 0 ? avgVals.reduce((a, b) => a + b, 0) / avgVals.length : 0;
               return { label: format(new Date(w.tracking_date), "dd/MM"), value: Math.round(avg * 10) / 10 };

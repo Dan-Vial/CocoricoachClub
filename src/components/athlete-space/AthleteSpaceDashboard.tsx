@@ -126,7 +126,7 @@ export function AthleteSpaceDashboard({ playerId, categoryId, playerName, sportT
     }
 
     if (todayWellness) {
-      if ((todayWellness.sleep_quality || 0) <= 2) {
+      if ((todayWellness.sleep_quality || 0) >= 4) {
         msgs.push("😴 Ton sommeil était insuffisant. Essaye de dormir 8h+ cette nuit.");
       }
       if ((todayWellness.general_fatigue || 0) >= 4) {

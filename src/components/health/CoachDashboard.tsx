@@ -198,10 +198,9 @@ export function CoachDashboard({ categoryId }: CoachDashboardProps) {
   
   const lowWellnessPlayers = Object.values(latestWellness).filter((w: any) => {
     // Normalize all metrics so that high = good (optimal)
-    // sleep_quality: 1=bad, 5=good → keep as-is
-    // fatigue, stress, soreness: 1=good, 5=bad → invert (6 - value)
+    // All metrics use same polarity: 1=good, 5=bad → invert all (6 - value)
     const normalizedScore = (
-      (w.sleep_quality || 3) + 
+      (6 - (w.sleep_quality || 3)) + 
       (6 - (w.general_fatigue || 3)) + 
       (6 - (w.stress_level || 3)) + 
       (6 - (w.soreness_upper_body || 3)) + 
