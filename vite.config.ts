@@ -57,13 +57,13 @@ export default defineConfig(({ mode }) => ({
             options: {
               cacheName: 'supabase-api-cache',
               expiration: {
-                maxEntries: 100,
-                maxAgeSeconds: 60 * 60 * 24 // 24 hours
+                maxEntries: 500,
+                maxAgeSeconds: 60 * 60 * 24 * 2 // 48 hours
               },
               cacheableResponse: {
                 statuses: [0, 200]
               },
-              networkTimeoutSeconds: 10
+              networkTimeoutSeconds: 15
             }
           },
           {
@@ -72,8 +72,8 @@ export default defineConfig(({ mode }) => ({
             options: {
               cacheName: 'supabase-storage-cache',
               expiration: {
-                maxEntries: 200,
-                maxAgeSeconds: 60 * 60 * 24 * 7 // 7 days
+                maxEntries: 500,
+                maxAgeSeconds: 60 * 60 * 24 * 14 // 14 days
               },
               cacheableResponse: {
                 statuses: [0, 200]
@@ -86,7 +86,7 @@ export default defineConfig(({ mode }) => ({
             options: {
               cacheName: 'google-fonts-cache',
               expiration: {
-                maxEntries: 20,
+                maxEntries: 30,
                 maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
               }
             }
@@ -97,7 +97,7 @@ export default defineConfig(({ mode }) => ({
             options: {
               cacheName: 'gstatic-fonts-cache',
               expiration: {
-                maxEntries: 20,
+                maxEntries: 30,
                 maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
               }
             }
@@ -108,7 +108,7 @@ export default defineConfig(({ mode }) => ({
             options: {
               cacheName: 'images-cache',
               expiration: {
-                maxEntries: 100,
+                maxEntries: 300,
                 maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
               }
             }
