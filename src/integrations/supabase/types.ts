@@ -7124,6 +7124,36 @@ export type Database = {
         }
         Relationships: []
       }
+      user_activity_tracking: {
+        Row: {
+          activity_date: string
+          created_at: string | null
+          duration_seconds: number
+          id: string
+          last_heartbeat: string | null
+          user_id: string
+          user_type: string
+        }
+        Insert: {
+          activity_date?: string
+          created_at?: string | null
+          duration_seconds?: number
+          id?: string
+          last_heartbeat?: string | null
+          user_id: string
+          user_type?: string
+        }
+        Update: {
+          activity_date?: string
+          created_at?: string | null
+          duration_seconds?: number
+          id?: string
+          last_heartbeat?: string | null
+          user_id?: string
+          user_type?: string
+        }
+        Relationships: []
+      }
       user_notification_preferences: {
         Row: {
           created_at: string
