@@ -194,7 +194,7 @@ export default function Clubs() {
   if (!user) return null;
 
   const hasOnlyAthleteRole = athleteCategories && athleteCategories.length > 0 && athleteCategories.every(cm => cm.role === "athlete");
-  const hasNoClubs = !clubs || clubs.length === 0;
+  const hasNoClubs = myClubs.length === 0;
   if (hasOnlyAthleteRole && hasNoClubs && isSuperAdmin === false) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
