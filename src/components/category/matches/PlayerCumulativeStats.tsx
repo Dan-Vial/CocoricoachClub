@@ -231,7 +231,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
 
   const selectedCount = selectedMatchIds.length === 0 ? allMatches.length : selectedMatchIds.length;
 
-  if (isLoading) {
+  if (isLoading || loadingPrefs) {
     return <p className="text-muted-foreground">Chargement des statistiques...</p>;
   }
 
