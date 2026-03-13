@@ -620,6 +620,7 @@ const ATHLETISME_DISCIPLINE_MAP: Record<string, StatField[]> = {
   ath_perche: ATHLETISME_PERCHE_STATS,
   ath_lancers: ATHLETISME_LANCERS_STATS,
   ath_combines: ATHLETISME_COMBINES_STATS,
+  ath_trail: ATHLETISME_TRAIL_STATS,
 };
 
 // Get athletics stats tagged with their discipline category key
