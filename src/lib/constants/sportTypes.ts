@@ -51,6 +51,8 @@ export type SportType =
   | "athletisme_sauts_hauteur"
   | "athletisme_lancers"
   | "athletisme_combines"
+  | "athletisme_trail"
+  | "athletisme_ultra_trail"
   | "athletisme_club"
   | "athletisme_academie"
   | "athletisme_national";
