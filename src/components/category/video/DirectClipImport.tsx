@@ -172,8 +172,8 @@ export function DirectClipImport({
   };
 
   const addClipToList = () => {
-    if (!currentClip.clipUrl?.trim()) {
-      toast.error("Veuillez saisir l'URL du clip");
+    if (!currentClip.clipUrl?.trim() && !currentClip.clipFileUrl?.trim()) {
+      toast.error("Veuillez uploader un fichier ou saisir l'URL du clip");
       return;
     }
     if (!currentClip.actionType) {
