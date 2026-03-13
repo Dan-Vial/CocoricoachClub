@@ -2458,6 +2458,116 @@ export type Database = {
           },
         ]
       }
+      hrv_records: {
+        Row: {
+          avg_hr_bpm: number | null
+          category_id: string
+          created_at: string
+          hrv_ms: number | null
+          id: string
+          match_id: string | null
+          max_hr_bpm: number | null
+          notes: string | null
+          player_id: string
+          record_date: string
+          record_type: string
+          resting_hr_bpm: number | null
+          training_session_id: string | null
+          updated_at: string
+          zone1_max_bpm: number | null
+          zone1_minutes: number | null
+          zone2_max_bpm: number | null
+          zone2_minutes: number | null
+          zone3_max_bpm: number | null
+          zone3_minutes: number | null
+          zone4_max_bpm: number | null
+          zone4_minutes: number | null
+          zone5_max_bpm: number | null
+          zone5_minutes: number | null
+        }
+        Insert: {
+          avg_hr_bpm?: number | null
+          category_id: string
+          created_at?: string
+          hrv_ms?: number | null
+          id?: string
+          match_id?: string | null
+          max_hr_bpm?: number | null
+          notes?: string | null
+          player_id: string
+          record_date?: string
+          record_type?: string
+          resting_hr_bpm?: number | null
+          training_session_id?: string | null
+          updated_at?: string
+          zone1_max_bpm?: number | null
+          zone1_minutes?: number | null
+          zone2_max_bpm?: number | null
+          zone2_minutes?: number | null
+          zone3_max_bpm?: number | null
+          zone3_minutes?: number | null
+          zone4_max_bpm?: number | null
+          zone4_minutes?: number | null
+          zone5_max_bpm?: number | null
+          zone5_minutes?: number | null
+        }
+        Update: {
+          avg_hr_bpm?: number | null
+          category_id?: string
+          created_at?: string
+          hrv_ms?: number | null
+          id?: string
+          match_id?: string | null
+          max_hr_bpm?: number | null
+          notes?: string | null
+          player_id?: string
+          record_date?: string
+          record_type?: string
+          resting_hr_bpm?: number | null
+          training_session_id?: string | null
+          updated_at?: string
+          zone1_max_bpm?: number | null
+          zone1_minutes?: number | null
+          zone2_max_bpm?: number | null
+          zone2_minutes?: number | null
+          zone3_max_bpm?: number | null
+          zone3_minutes?: number | null
+          zone4_max_bpm?: number | null
+          zone4_minutes?: number | null
+          zone5_max_bpm?: number | null
+          zone5_minutes?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hrv_records_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hrv_records_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hrv_records_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hrv_records_training_session_id_fkey"
+            columns: ["training_session_id"]
+            isOneToOne: false
+            referencedRelation: "training_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       injuries: {
         Row: {
           actual_return_date: string | null
