@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/components/ui/sonner";
-import { Shield, ArrowLeft, LayoutDashboard, Users, Building2, CreditCard, Video, Bell, Settings, FileText, Lock } from "lucide-react";
+import { Shield, ArrowLeft, LayoutDashboard, Users, Building2, CreditCard, Video, Bell, Settings, FileText, Lock, Clock } from "lucide-react";
 
 // Import tab components
 import { SuperAdminDashboard } from "@/components/super-admin/SuperAdminDashboard";
@@ -20,6 +20,7 @@ import { SuperAdminNotifications } from "@/components/super-admin/SuperAdminNoti
 import { SuperAdminSettings } from "@/components/super-admin/SuperAdminSettings";
 import { AuditLogsTab } from "@/components/admin/AuditLogsTab";
 import { RoleMenuPermissions } from "@/components/super-admin/RoleMenuPermissions";
+import { SuperAdminUsage } from "@/components/super-admin/SuperAdminUsage";
  
  export default function SuperAdmin() {
    const { user, loading: authLoading } = useAuth();
@@ -127,14 +128,18 @@ import { RoleMenuPermissions } from "@/components/super-admin/RoleMenuPermission
                Paramètres
              </TabsTrigger>
               <TabsTrigger value="permissions" className="flex items-center gap-2">
-                <Lock className="h-4 w-4" />
-                Permissions
-              </TabsTrigger>
-              <TabsTrigger value="audit" className="flex items-center gap-2">
-                <FileText className="h-4 w-4" />
-                Audit
-              </TabsTrigger>
-            </TabsList>
+                 <Lock className="h-4 w-4" />
+                 Permissions
+               </TabsTrigger>
+               <TabsTrigger value="usage" className="flex items-center gap-2">
+                 <Clock className="h-4 w-4" />
+                 Utilisation
+               </TabsTrigger>
+               <TabsTrigger value="audit" className="flex items-center gap-2">
+                 <FileText className="h-4 w-4" />
+                 Audit
+               </TabsTrigger>
+             </TabsList>
  
            <TabsContent value="dashboard">
              <SuperAdminDashboard />
@@ -171,14 +176,18 @@ import { RoleMenuPermissions } from "@/components/super-admin/RoleMenuPermission
            <TabsContent value="settings">
              <SuperAdminSettings />
            </TabsContent>
- 
-            <TabsContent value="permissions">
-              <RoleMenuPermissions />
-            </TabsContent>
 
-            <TabsContent value="audit">
-              <AuditLogsTab />
-            </TabsContent>
+             <TabsContent value="permissions">
+               <RoleMenuPermissions />
+             </TabsContent>
+
+             <TabsContent value="usage">
+               <SuperAdminUsage />
+             </TabsContent>
+
+             <TabsContent value="audit">
+               <AuditLogsTab />
+             </TabsContent>
           </Tabs>
        </div>
      </div>

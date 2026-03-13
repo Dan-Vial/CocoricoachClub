@@ -14,6 +14,7 @@ import { NotificationOnboarding } from "@/components/notifications/NotificationO
 import { NotificationReminderModal } from "@/components/notifications/NotificationReminderModal";
 import { ViewerModeBanner } from "@/components/ViewerModeBanner";
 import { FieldModeToggle } from "@/components/FieldModeToggle";
+import { ActivityTracker } from "@/components/ActivityTracker";
 import Clubs from "./pages/Clubs";
 import ClubDetails from "./pages/ClubDetails";
 import CategoryDetails from "./pages/CategoryDetails";
@@ -101,6 +102,7 @@ const App = () => (
                 <PWAInstallPrompt />
                 <NotificationOnboarding />
                 <NotificationReminderModal />
+                <ActivityTracker />
                 <Routes>
                   <Route path="/auth" element={<Auth />} />
                   <Route path="/" element={<Clubs />} />
