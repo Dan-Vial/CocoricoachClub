@@ -24,7 +24,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { Video, Link, Calendar, Users } from "lucide-react";
+import { Video, Calendar, Users } from "lucide-react";
+import { VideoFileUpload } from "./VideoFileUpload";
 
 interface AddVideoAnalysisDialogProps {
   open: boolean;
@@ -32,15 +33,6 @@ interface AddVideoAnalysisDialogProps {
   categoryId: string;
   onSuccess: () => void;
 }
-
-const VIDEO_SOURCES = [
-  { value: "veo", label: "VEO" },
-  { value: "hudl", label: "Hudl" },
-  { value: "youtube", label: "YouTube" },
-  { value: "vimeo", label: "Vimeo" },
-  { value: "local", label: "Fichier local" },
-  { value: "other", label: "Autre" },
-];
 
 export function AddVideoAnalysisDialog({
   open,
@@ -53,7 +45,8 @@ export function AddVideoAnalysisDialog({
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
-  const [videoSource, setVideoSource] = useState("veo");
+  const [videoFileUrl, setVideoFileUrl] = useState("");
+  const [videoSource, setVideoSource] = useState("upload");
   const [matchId, setMatchId] = useState("");
   const [matchStartTime, setMatchStartTime] = useState("");
   const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
@@ -88,6 +81,17 @@ export function AddVideoAnalysisDialog({
 
   const createMutation = useMutation({
     mutationFn: async () => {
+      const finalVideoUrl = videoUrl || null;
+      const finalVideoFileUrl = videoFileUrl || null;
+
+      // Auto-detect source
+      let resolvedSource = videoSource;
+      if (finalVideoFileUrl) resolvedSource = "upload";
+      else if (finalVideoUrl?.includes("veo.co")) resolvedSource = "veo";
+      else if (finalVideoUrl?.includes("hudl.com")) resolvedSource = "hudl";
+      else if (finalVideoUrl?.includes("youtube.com") || finalVideoUrl?.includes("youtu.be")) resolvedSource = "youtube";
+      else if (finalVideoUrl?.includes("vimeo.com")) resolvedSource = "vimeo";
+
       // Create video analysis
       const { data: analysisData, error: analysisError } = await supabase
         .from("video_analyses")
@@ -96,8 +100,9 @@ export function AddVideoAnalysisDialog({
           match_id: matchId || null,
           title,
           description: description || null,
-          video_url: videoUrl || null,
-          video_source: videoSource,
+          video_url: finalVideoUrl,
+          video_file_url: finalVideoFileUrl,
+          video_source: resolvedSource,
           match_start_timestamp: matchStartTime ? new Date(matchStartTime).toISOString() : null,
           created_by: user?.id,
         })
@@ -136,7 +141,8 @@ export function AddVideoAnalysisDialog({
     setTitle("");
     setDescription("");
     setVideoUrl("");
-    setVideoSource("veo");
+    setVideoFileUrl("");
+    setVideoSource("upload");
     setMatchId("");
     setMatchStartTime("");
     setSelectedPlayers([]);
@@ -146,6 +152,10 @@ export function AddVideoAnalysisDialog({
     e.preventDefault();
     if (!title.trim()) {
       toast.error("Veuillez saisir un titre");
+      return;
+    }
+    if (!videoUrl && !videoFileUrl) {
+      toast.error("Veuillez uploader une vidéo ou saisir un lien");
       return;
     }
     createMutation.mutate();
@@ -178,7 +188,7 @@ export function AddVideoAnalysisDialog({
                 <Input
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Titre de l'analyse vidéo"
+                  placeholder="Ex: Analyse mêlées vs Racing"
                 />
               </div>
 
@@ -196,12 +206,8 @@ export function AddVideoAnalysisDialog({
                     <SelectItem value="none">Aucun match - Vidéo libre</SelectItem>
                     {matches?.map((match) => (
                       <SelectItem key={match.id} value={match.id}>
-                        <div className="flex items-center gap-2">
-                          <span>
-                            {match.is_home ? "vs" : "@"} {match.opponent} -{" "}
-                            {format(new Date(match.match_date), "dd/MM/yyyy", { locale: fr })}
-                          </span>
-                        </div>
+                        {match.is_home ? "vs" : "@"} {match.opponent} -{" "}
+                        {format(new Date(match.match_date), "dd/MM/yyyy", { locale: fr })}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -211,44 +217,29 @@ export function AddVideoAnalysisDialog({
                 </p>
               </div>
 
-              {/* Video Source */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Source vidéo</Label>
-                  <Select value={videoSource} onValueChange={setVideoSource}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {VIDEO_SOURCES.map((source) => (
-                        <SelectItem key={source.value} value={source.value}>
-                          {source.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+              {/* Video Upload / URL */}
+              <VideoFileUpload
+                label="Vidéo source"
+                onFileUploaded={(url, source) => {
+                  if (source === "upload") {
+                    setVideoFileUrl(url);
+                    setVideoUrl("");
+                    setVideoSource("upload");
+                  } else {
+                    setVideoUrl(url);
+                    setVideoFileUrl("");
+                  }
+                }}
+                currentUrl={videoUrl || videoFileUrl}
+              />
 
-                <div className="space-y-2">
-                  <Label>Début de la vidéo</Label>
-                  <Input
-                    type="datetime-local"
-                    value={matchStartTime}
-                    onChange={(e) => setMatchStartTime(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              {/* Video URL */}
+              {/* Start time */}
               <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  <Link className="h-4 w-4" />
-                  URL de la vidéo (optionnel)
-                </Label>
+                <Label>Début de la vidéo (optionnel)</Label>
                 <Input
-                  value={videoUrl}
-                  onChange={(e) => setVideoUrl(e.target.value)}
-                  placeholder="https://app.veo.co/..."
+                  type="datetime-local"
+                  value={matchStartTime}
+                  onChange={(e) => setMatchStartTime(e.target.value)}
                 />
               </div>
 
