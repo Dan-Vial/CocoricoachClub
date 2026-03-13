@@ -19,14 +19,21 @@ const TAILWIND_COLOR_MAP: Record<string, string> = {
   "bg-cyan-500": "#06b6d4",
   "bg-emerald-500": "#10b981",
   "bg-amber-500": "#f59e0b", "bg-amber-400": "#fbbf24",
-  "bg-rose-500": "#f43f5e", "bg-rose-600": "#e11d48",
+  "bg-rose-500": "#f43f5e", "bg-rose-600": "#e11d48", "bg-rose-400": "#fb7185",
   "bg-violet-500": "#8b5cf6",
   "bg-fuchsia-500": "#d946ef",
   "bg-lime-500": "#84cc16",
-  "bg-sky-500": "#0ea5e9",
+  "bg-sky-500": "#0ea5e9", "bg-sky-400": "#38bdf8",
   "bg-slate-500": "#64748b",
   "bg-gray-400": "#9ca3af", "bg-gray-500": "#6b7280",
   "bg-primary": "#6366f1",
+  // Custom training type colors from design system CSS variables
+  "bg-training-collectif": "hsl(214, 70%, 50%)",
+  "bg-training-technique": "hsl(188, 76%, 40%)",
+  "bg-training-physique": "hsl(160, 60%, 42%)",
+  "bg-training-musculation": "hsl(32, 70%, 50%)",
+  "bg-training-repos": "hsl(214, 15%, 55%)",
+  "bg-training-test": "hsl(45, 93%, 47%)",
 };
 
 function tailwindColorToHsl(colorClass: string): string {

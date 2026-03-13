@@ -202,16 +202,31 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
         .delete()
         .eq("id", sessionId);
       if (error) throw error;
+      return sessionId;
+    },
+    onMutate: async (sessionId) => {
+      await queryClient.cancelQueries({ queryKey: ["sessions", categoryId] });
+      const previousSessions = queryClient.getQueryData(["sessions", categoryId]);
+      queryClient.setQueryData(["sessions", categoryId], (old: any[]) => {
+        if (!old) return old;
+        return old.filter((s) => s.id !== sessionId);
+      });
+      return { previousSessions };
     },
     onSuccess: () => {
+      toast.success("Séance supprimée avec succès");
+    },
+    onError: (error, variables, context) => {
+      if (context?.previousSessions) {
+        queryClient.setQueryData(["sessions", categoryId], context.previousSessions);
+      }
+      toast.error("Erreur lors de la suppression de la séance");
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["sessions", categoryId] });
       queryClient.invalidateQueries({ queryKey: ["training_sessions", categoryId] });
       queryClient.invalidateQueries({ queryKey: ["today_sessions", categoryId] });
       queryClient.invalidateQueries({ queryKey: ["today_session_exercises"] });
-      toast.success("Séance supprimée avec succès");
-    },
-    onError: () => {
-      toast.error("Erreur lors de la suppression de la séance");
     },
   });
 
@@ -222,13 +237,28 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
         .delete()
         .eq("id", matchId);
       if (error) throw error;
+      return matchId;
+    },
+    onMutate: async (matchId) => {
+      await queryClient.cancelQueries({ queryKey: ["matches", categoryId] });
+      const previousMatches = queryClient.getQueryData(["matches", categoryId]);
+      queryClient.setQueryData(["matches", categoryId], (old: any[]) => {
+        if (!old) return old;
+        return old.filter((m) => m.id !== matchId);
+      });
+      return { previousMatches };
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["matches", categoryId] });
       toast.success("Match supprimé avec succès");
     },
-    onError: () => {
+    onError: (error, variables, context) => {
+      if (context?.previousMatches) {
+        queryClient.setQueryData(["matches", categoryId], context.previousMatches);
+      }
       toast.error("Erreur lors de la suppression du match");
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["matches", categoryId] });
     },
   });
 
