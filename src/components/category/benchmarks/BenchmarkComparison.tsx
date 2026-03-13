@@ -146,13 +146,15 @@ export function BenchmarkComparison({ categoryId, sportType }: BenchmarkComparis
         }
       });
 
-      // Speed tests (test_category might be "speed" or similar)
+      // Speed tests
       if (bm.test_category === "speed" || bm.test_category === "sprint") {
         speedTests.forEach(t => {
           if (t.test_type === bm.test_type) {
             const pm = getPlayerMap(t.player_id);
             if (!pm.has(bm.id)) {
-              pm.set(bm.id, t.result);
+              // Pick the most relevant value
+              const val = t.vma_kmh || t.speed_kmh || t.time_40m_seconds;
+              if (val != null) pm.set(bm.id, val);
             }
           }
         });
@@ -161,10 +163,10 @@ export function BenchmarkComparison({ categoryId, sportType }: BenchmarkComparis
       // Strength tests
       if (bm.test_category === "strength" || bm.test_category === "force") {
         strengthTests.forEach(t => {
-          if (t.test_type === bm.test_type) {
+          if (t.test_name === bm.test_type) {
             const pm = getPlayerMap(t.player_id);
             if (!pm.has(bm.id)) {
-              pm.set(bm.id, t.result);
+              pm.set(bm.id, t.weight_kg);
             }
           }
         });
