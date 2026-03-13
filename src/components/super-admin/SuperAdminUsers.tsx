@@ -25,6 +25,7 @@ interface AdminUser {
   id: string;
   email: string | null;
   full_name: string | null;
+  phone: string | null;
   created_at: string | null;
   clubs_owned: number;
   is_super_admin: boolean;
