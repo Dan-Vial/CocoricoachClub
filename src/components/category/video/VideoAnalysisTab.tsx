@@ -163,6 +163,13 @@ export function VideoAnalysisTab({ categoryId, sportType }: VideoAnalysisTabProp
               Analyses Matchs
             </ColoredSubTabsTrigger>
             <ColoredSubTabsTrigger 
+              value="themes" 
+              colorKey="video"
+              icon={<Tag className="h-4 w-4" />}
+            >
+              Par Thème
+            </ColoredSubTabsTrigger>
+            <ColoredSubTabsTrigger 
               value="clips" 
               colorKey="video"
               icon={<Film className="h-4 w-4" />}
