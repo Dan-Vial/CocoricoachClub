@@ -204,6 +204,7 @@ export function DirectClipImport({
     // Reset form but keep match selection
     setCurrentClip({
       clipUrl: "",
+      clipFileUrl: "",
       title: "",
       actionType: "",
       matchId: currentClip.matchId,
