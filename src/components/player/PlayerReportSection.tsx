@@ -16,7 +16,7 @@ import { generateCsv, downloadCsv } from "@/lib/csv";
 import ExcelJS from "exceljs";
 import { preparePdfWithSettings, drawPdfHeader as drawPdfHeaderCustom, type PdfCustomSettings } from "@/lib/pdfExport";
 import { TEST_CATEGORIES, getTestLabel } from "@/lib/constants/testCategories";
-import { getStatsForSport } from "@/lib/constants/sportStats";
+import { getStatsForSport, getStatCategories } from "@/lib/constants/sportStats";
 
 interface PlayerReportSectionProps {
   playerId: string;
