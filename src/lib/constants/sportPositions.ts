@@ -83,7 +83,7 @@ export function getPositionGroupLabel(group: RugbyPositionGroup): string {
 export function isRugbySport(sportType: string | undefined): boolean {
   if (!sportType) return false;
   const baseSport = sportType.toLowerCase();
-  return ["xv", "7", "xiii", "rugby", "academie", "national_team"].includes(baseSport);
+  return ["xv", "7", "xiii", "touch", "rugby", "academie", "national_team"].includes(baseSport);
 }
 
 // Rugby XV positions (15 players)
@@ -131,6 +131,16 @@ export const RUGBY_XIII_POSITIONS: Position[] = [
   { id: "11", name: "2ème ligne gauche", x: 35, y: 85 },
   { id: "12", name: "2ème ligne droit", x: 65, y: 85 },
   { id: "13", name: "Troisième ligne centre", x: 50, y: 90 },
+];
+
+// Touch Rugby positions (6 players)
+export const TOUCH_RUGBY_POSITIONS: Position[] = [
+  { id: "1", name: "Link gauche", x: 15, y: 55 },
+  { id: "2", name: "Milieu gauche", x: 35, y: 70 },
+  { id: "3", name: "Milieu droit", x: 65, y: 70 },
+  { id: "4", name: "Link droit", x: 85, y: 55 },
+  { id: "5", name: "Demi", x: 50, y: 50 },
+  { id: "6", name: "Arrière", x: 50, y: 25 },
 ];
 
 // Football (soccer) positions - 4-3-3 formation (11 players)
@@ -183,7 +193,7 @@ export const JUDO_POSITIONS: Position[] = [];
 export const AVIRON_POSITIONS: Position[] = [];
 export const BOWLING_POSITIONS: Position[] = [];
 
-export type SportType = "XV" | "7" | "XIII" | "football" | "handball" | "volleyball" | "basketball" | "judo" | "aviron" | "bowling" | "academie" | "national_team";
+export type SportType = "XV" | "7" | "XIII" | "touch" | "football" | "handball" | "volleyball" | "basketball" | "judo" | "aviron" | "bowling" | "academie" | "national_team";
 
 export function getPositionsForSport(sportType: SportType | string): Position[] {
   // Extract base sport from subtypes like "basketball_club", "judo_academie"
@@ -200,6 +210,8 @@ export function getPositionsForSport(sportType: SportType | string): Position[] 
     case "XIII":
     case "xiii":
       return RUGBY_XIII_POSITIONS;
+    case "touch":
+      return TOUCH_RUGBY_POSITIONS;
     case "football":
       return FOOTBALL_POSITIONS;
     case "handball":
@@ -257,6 +269,16 @@ export function getSportFieldConfig(sportType: SportType | string) {
         starters: 13,
         substitutes: 4,
         totalSquad: 17,
+      };
+    case "touch":
+      return {
+        type: "rugby",
+        bgColor: "from-green-500 to-green-600",
+        aspectRatio: "2/3",
+        label: "Touch Rugby",
+        starters: 6,
+        substitutes: 8,
+        totalSquad: 14,
       };
     case "football":
       return {

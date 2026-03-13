@@ -3,8 +3,9 @@ export type SportType =
   | "XV" 
   | "7" 
   | "XIII"
+  | "touch"
   | "academie" 
-  | "national_team" 
+  | "national_team"
   | "football" 
   | "handball" 
   | "judo" 
@@ -100,6 +101,7 @@ export const RUGBY_SUBTYPES: SportSubTypeOption[] = [
   { value: "XV", label: "Rugby à XV" },
   { value: "7", label: "Rugby à 7" },
   { value: "XIII", label: "Rugby à XIII" },
+  { value: "touch", label: "Touch Rugby" },
   { value: "academie", label: "Académie / Pôle Espoir" },
   { value: "national_team", label: "Équipe Nationale" },
 ];
@@ -307,6 +309,7 @@ export const SPORT_TYPES: SportTypeOption[] = [
   { value: "XV", label: "Rugby à XV", category: "rugby" },
   { value: "7", label: "Rugby à 7", category: "rugby" },
   { value: "XIII", label: "Rugby à XIII", category: "rugby" },
+  { value: "touch", label: "Touch Rugby", category: "rugby" },
   { value: "academie", label: "Académie / Pôle Espoir", category: "rugby" },
   { value: "national_team", label: "Équipe Nationale", category: "rugby" },
   // Team sports - Club
@@ -378,6 +381,7 @@ export const getSportLabel = (type: string): string => {
   if (type === "XV" || type === "15") return "Rugby XV";
   if (type === "7") return "Rugby 7";
   if (type === "XIII") return "Rugby XIII";
+  if (type === "touch") return "Touch Rugby";
   if (type === "academie") return "Académie";
   if (type === "national_team") return "Équipe Nationale";
   
@@ -390,7 +394,7 @@ export const getSportLabel = (type: string): string => {
 };
 
 export const isRugbyType = (type: string): boolean => {
-  return ["XV", "7", "XIII", "15", "academie", "national_team"].includes(type);
+  return ["XV", "7", "XIII", "touch", "15", "academie", "national_team"].includes(type);
 };
 
 export const getMainSportFromType = (type: string): MainSportCategory => {

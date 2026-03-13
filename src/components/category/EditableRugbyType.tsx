@@ -60,6 +60,7 @@ export function EditableRugbyType({ categoryId, currentType }: EditableRugbyType
   const getDescription = (type: string) => {
     if (type === "XV") return "Passer au rugby à 7 activera l'onglet Tournois.";
     if (type === "7") return "Passer au rugby à XV désactivera l'onglet Tournois.";
+    if (type === "touch") return "Touch Rugby avec 6 joueurs par équipe.";
     if (type === "academie") return "Type Académie avec suivi scolaire et plans de développement.";
     if (type === "national_team") return "Type Équipe Nationale avec calendrier international et suivi des sélections.";
     return "";
