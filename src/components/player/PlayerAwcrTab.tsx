@@ -44,10 +44,23 @@ export function PlayerAwcrTab({ playerId, categoryId }: PlayerAwcrTabProps) {
     <div className="space-y-6">
       <Card className="bg-gradient-card shadow-md">
         <CardHeader>
-          <CardTitle>Historique EWMA</CardTitle>
-          <p className="text-sm text-muted-foreground mt-2">
-            Ratio EWMA = Charge Aiguë (7j) / Charge Chronique (28j) | Zone optimale: 0.85 - 1.30
-          </p>
+          <div className="flex justify-between items-center">
+            <div>
+              <CardTitle>Historique EWMA</CardTitle>
+              <p className="text-sm text-muted-foreground mt-2">
+                Ratio EWMA = Charge Aiguë (7j) / Charge Chronique (28j) | Zone optimale: 0.85 - 1.30
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsHrvDialogOpen(true)}
+              className="gap-2"
+            >
+              <Heart className="h-4 w-4 text-destructive" />
+              HRV
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           {ewmaResults.length > 0 ? (
