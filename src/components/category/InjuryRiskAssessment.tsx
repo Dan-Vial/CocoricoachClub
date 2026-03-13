@@ -378,7 +378,7 @@ export function InjuryRiskAssessment({ categoryId }: InjuryRiskAssessmentProps) 
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="text-sm text-muted-foreground">
-                    AWCR: {player.awcr?.toFixed(2) ?? "-"}
+                    EWMA: {player.awcr?.toFixed(2) ?? "-"}
                   </div>
                   <div className="text-sm text-muted-foreground">
                     W: {player.wellnessScore?.toFixed(2) ?? "-"}
