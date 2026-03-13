@@ -28,6 +28,7 @@ export function useStatPreferences({
   isGoalkeeper = false,
 }: UseStatPreferencesOptions) {
   // Fetch category-level preferences
+  // Returns { exists: boolean, keys: string[] } to distinguish "no row" from "empty selection"
   const { data: categoryPrefs, isLoading: loadingCategory } = useQuery({
     queryKey: ["stat-preferences", categoryId],
     queryFn: async () => {
@@ -37,15 +38,16 @@ export function useStatPreferences({
         .eq("category_id", categoryId)
         .maybeSingle();
       if (error) throw error;
-      if (!data) return null;
+      if (!data) return null; // No row = no preferences configured
+      // Row exists = user has configured preferences, respect the saved selection
       const allEnabled = [
         ...(data.enabled_stats ?? []),
         ...(data.enabled_custom_stats ?? []),
       ];
-      return allEnabled.length > 0 ? allEnabled : null;
+      return allEnabled; // Return array even if empty (user chose to disable all)
     },
     enabled: !!categoryId,
-    staleTime: 5000, // Short cache - invalidation from preferences dialog will force refetch
+    staleTime: 5000,
   });
 
   // Fetch custom stats for the category
