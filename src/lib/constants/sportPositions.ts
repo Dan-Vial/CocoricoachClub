@@ -193,7 +193,7 @@ export const JUDO_POSITIONS: Position[] = [];
 export const AVIRON_POSITIONS: Position[] = [];
 export const BOWLING_POSITIONS: Position[] = [];
 
-export type SportType = "XV" | "7" | "XIII" | "football" | "handball" | "volleyball" | "basketball" | "judo" | "aviron" | "bowling" | "academie" | "national_team";
+export type SportType = "XV" | "7" | "XIII" | "touch" | "football" | "handball" | "volleyball" | "basketball" | "judo" | "aviron" | "bowling" | "academie" | "national_team";
 
 export function getPositionsForSport(sportType: SportType | string): Position[] {
   // Extract base sport from subtypes like "basketball_club", "judo_academie"
