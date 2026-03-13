@@ -270,6 +270,16 @@ export function getSportFieldConfig(sportType: SportType | string) {
         substitutes: 4,
         totalSquad: 17,
       };
+    case "touch":
+      return {
+        type: "rugby",
+        bgColor: "from-green-500 to-green-600",
+        aspectRatio: "2/3",
+        label: "Touch Rugby",
+        starters: 6,
+        substitutes: 8,
+        totalSquad: 14,
+      };
     case "football":
       return {
         type: "football",
