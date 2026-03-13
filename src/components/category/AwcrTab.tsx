@@ -44,8 +44,25 @@ export function AwcrTab({ categoryId }: AwcrTabProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isTeamDialogOpen, setIsTeamDialogOpen] = useState(false);
   const [isOfflineDialogOpen, setIsOfflineDialogOpen] = useState(false);
+  const [isHrvDialogOpen, setIsHrvDialogOpen] = useState(false);
   const { isOnline } = useOnlineStatus();
   const { isViewer } = useViewerModeContext();
+
+  // Fetch category sport type
+  const { data: categoryData } = useQuery({
+    queryKey: ["category-sport-type", categoryId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("categories")
+        .select("rugby_type")
+        .eq("id", categoryId)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const showHrv = categoryData?.rugby_type ? supportsHrvTracking(categoryData.rugby_type) : false;
 
   // Realtime sync for AWCR/EWMA data
   useRealtimeSync({
