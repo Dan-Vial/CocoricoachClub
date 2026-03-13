@@ -88,7 +88,7 @@ import { RoleMenuPermissions } from "@/components/super-admin/RoleMenuPermission
          </div>
  
          {/* Main Content */}
-         <Tabs defaultValue="dashboard" className="space-y-6">
+         <Tabs defaultValue={defaultTab} className="space-y-6">
            <TabsList className="flex flex-wrap h-auto gap-1">
              <TabsTrigger value="dashboard" className="flex items-center gap-2">
                <LayoutDashboard className="h-4 w-4" />
