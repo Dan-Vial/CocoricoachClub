@@ -341,18 +341,19 @@ export function DirectClipImport({
             </Select>
           </div>
 
-          {/* Clip URL */}
-          <div className="space-y-2">
-            <Label className="flex items-center gap-2">
-              <Link className="h-4 w-4" />
-              URL du clip *
-            </Label>
-            <Input
-              value={currentClip.clipUrl || ""}
-              onChange={(e) => setCurrentClip({ ...currentClip, clipUrl: e.target.value })}
-              placeholder="https://..."
-            />
-          </div>
+          {/* Clip Video */}
+          <VideoFileUpload
+            label="Vidéo du clip *"
+            compact
+            onFileUploaded={(url, source) => {
+              if (source === "upload") {
+                setCurrentClip({ ...currentClip, clipFileUrl: url, clipUrl: url });
+              } else {
+                setCurrentClip({ ...currentClip, clipUrl: url, clipFileUrl: "" });
+              }
+            }}
+            currentUrl={currentClip.clipUrl || currentClip.clipFileUrl || ""}
+          />
 
           {/* Action Type */}
           <div className="space-y-2">
