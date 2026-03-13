@@ -371,11 +371,11 @@ export function UnifiedTestDialog({
                                 Vmax: <strong className="text-foreground">{gpsValues.vmaxKmh} km/h</strong>
                               </span>
                               <span className="flex items-center gap-1">
-                                <Zap className="h-3 w-3 text-amber-500" />
+                                <Zap className="h-3 w-3 text-accent-foreground" />
                                 Accel: <strong className="text-foreground">{gpsValues.accelMax} m/s²</strong>
                               </span>
                               <span className="flex items-center gap-1">
-                                <Timer className="h-3 w-3 text-blue-500" />
+                                <Timer className="h-3 w-3 text-primary" />
                                 {playerResults[player.id]}s
                               </span>
                             </div>
