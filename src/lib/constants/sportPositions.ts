@@ -133,6 +133,16 @@ export const RUGBY_XIII_POSITIONS: Position[] = [
   { id: "13", name: "Troisième ligne centre", x: 50, y: 90 },
 ];
 
+// Touch Rugby positions (6 players)
+export const TOUCH_RUGBY_POSITIONS: Position[] = [
+  { id: "1", name: "Link gauche", x: 15, y: 55 },
+  { id: "2", name: "Milieu gauche", x: 35, y: 70 },
+  { id: "3", name: "Milieu droit", x: 65, y: 70 },
+  { id: "4", name: "Link droit", x: 85, y: 55 },
+  { id: "5", name: "Demi", x: 50, y: 50 },
+  { id: "6", name: "Arrière", x: 50, y: 25 },
+];
+
 // Football (soccer) positions - 4-3-3 formation (11 players)
 export const FOOTBALL_POSITIONS: Position[] = [
   { id: "1", name: "Gardien", x: 50, y: 92 },

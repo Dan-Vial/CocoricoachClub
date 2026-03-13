@@ -393,7 +393,7 @@ export const getSportLabel = (type: string): string => {
 };
 
 export const isRugbyType = (type: string): boolean => {
-  return ["XV", "7", "XIII", "15", "academie", "national_team"].includes(type);
+  return ["XV", "7", "XIII", "touch", "15", "academie", "national_team"].includes(type);
 };
 
 export const getMainSportFromType = (type: string): MainSportCategory => {
