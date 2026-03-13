@@ -842,10 +842,9 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
           data.wellness.slice(0, 15).forEach((w, index) => {
             yPos = localCheckPageBreak(pdf, yPos, 10, pdfSettings);
             const vals = [w.sleep_quality, w.general_fatigue, w.stress_level, w.soreness_upper_body, w.soreness_lower_body].filter(v => v != null) as number[];
-            // For average: invert sleep (5-sleep) so all metrics share same polarity (lower = better)
+            // All metrics share same polarity (1=good, 5=bad → lower = better)
             const avgVals = [
-              w.sleep_quality != null ? (6 - w.sleep_quality) : null,
-              w.general_fatigue, w.stress_level, w.soreness_upper_body, w.soreness_lower_body
+              w.sleep_quality, w.general_fatigue, w.stress_level, w.soreness_upper_body, w.soreness_lower_body
             ].filter(v => v != null) as number[];
             const avg = avgVals.length > 0 ? (avgVals.reduce((a, b) => a + b, 0) / avgVals.length).toFixed(1) : '-';
             const avgNum = parseFloat(avg);
