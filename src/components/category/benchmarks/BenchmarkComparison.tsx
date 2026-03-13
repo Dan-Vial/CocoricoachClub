@@ -101,7 +101,7 @@ export function BenchmarkComparison({ categoryId, sportType }: BenchmarkComparis
     queryFn: async () => {
       const { data, error } = await supabase
         .from("speed_tests")
-        .select("player_id, test_type, result, test_date")
+        .select("player_id, test_type, vma_kmh, speed_kmh, time_40m_seconds, test_date")
         .eq("category_id", categoryId)
         .order("test_date", { ascending: false });
       if (error) throw error;
@@ -115,7 +115,7 @@ export function BenchmarkComparison({ categoryId, sportType }: BenchmarkComparis
     queryFn: async () => {
       const { data, error } = await supabase
         .from("strength_tests")
-        .select("player_id, test_type, result, test_date")
+        .select("player_id, test_name, weight_kg, test_date")
         .eq("category_id", categoryId)
         .order("test_date", { ascending: false });
       if (error) throw error;
