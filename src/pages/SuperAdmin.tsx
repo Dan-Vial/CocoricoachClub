@@ -176,14 +176,18 @@ import { SuperAdminUsage } from "@/components/super-admin/SuperAdminUsage";
            <TabsContent value="settings">
              <SuperAdminSettings />
            </TabsContent>
- 
-            <TabsContent value="permissions">
-              <RoleMenuPermissions />
-            </TabsContent>
 
-            <TabsContent value="audit">
-              <AuditLogsTab />
-            </TabsContent>
+             <TabsContent value="permissions">
+               <RoleMenuPermissions />
+             </TabsContent>
+
+             <TabsContent value="usage">
+               <SuperAdminUsage />
+             </TabsContent>
+
+             <TabsContent value="audit">
+               <AuditLogsTab />
+             </TabsContent>
           </Tabs>
        </div>
      </div>

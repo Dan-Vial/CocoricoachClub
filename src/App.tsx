@@ -101,6 +101,7 @@ const App = () => (
                 <PWAInstallPrompt />
                 <NotificationOnboarding />
                 <NotificationReminderModal />
+                <ActivityTracker />
                 <Routes>
                   <Route path="/auth" element={<Auth />} />
                   <Route path="/" element={<Clubs />} />
