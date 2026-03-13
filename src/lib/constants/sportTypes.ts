@@ -410,7 +410,7 @@ export const isCrossfitCategory = (rugbyType: string): boolean => {
 };
 
 export const isTeamSport = (type: string): boolean => {
-  return ["XV", "7", "XIII", "15", "academie", "national_team", "football", "handball", "volleyball", "basketball", "football_club", "football_academie", "football_national", "handball_club", "handball_academie", "handball_national", "volleyball_club", "volleyball_academie", "volleyball_national", "basketball_club", "basketball_academie", "basketball_national"].includes(type);
+  return ["XV", "7", "XIII", "15", "academie", "national_team", "football", "handball", "volleyball", "basketball", "football_club", "football_academie", "football_national", "handball_club", "handball_academie", "handball_national", "volleyball_club", "volleyball_academie", "volleyball_national", "basketball_club", "basketball_academie", "basketball_national", "basketball_3x3", "basketball_pro", "basketball_jeunes"].includes(type);
 };
 
 export const getRugbyTypes = (): SportTypeOption[] => {
