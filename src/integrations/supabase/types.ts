@@ -500,6 +500,80 @@ export type Database = {
           },
         ]
       }
+      benchmarks: {
+        Row: {
+          applies_to: string | null
+          category_id: string
+          created_at: string | null
+          created_by: string | null
+          id: string
+          level_1_label: string
+          level_1_max: number | null
+          level_2_label: string
+          level_2_max: number | null
+          level_3_label: string
+          level_3_max: number | null
+          level_4_label: string
+          level_4_max: number | null
+          lower_is_better: boolean
+          name: string
+          test_category: string
+          test_type: string
+          unit: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          applies_to?: string | null
+          category_id: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          level_1_label?: string
+          level_1_max?: number | null
+          level_2_label?: string
+          level_2_max?: number | null
+          level_3_label?: string
+          level_3_max?: number | null
+          level_4_label?: string
+          level_4_max?: number | null
+          lower_is_better?: boolean
+          name: string
+          test_category: string
+          test_type: string
+          unit?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          applies_to?: string | null
+          category_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          level_1_label?: string
+          level_1_max?: number | null
+          level_2_label?: string
+          level_2_max?: number | null
+          level_3_label?: string
+          level_3_max?: number | null
+          level_4_label?: string
+          level_4_max?: number | null
+          lower_is_better?: boolean
+          name?: string
+          test_category?: string
+          test_type?: string
+          unit?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "benchmarks_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       body_composition: {
         Row: {
           bmi: number | null
