@@ -39,8 +39,8 @@ interface DirectClipImportProps {
 }
 
 interface ClipToImport {
-  id: string;
   clipUrl: string;
+  clipFileUrl: string;
   title: string;
   actionType: string;
   matchId: string | null;
