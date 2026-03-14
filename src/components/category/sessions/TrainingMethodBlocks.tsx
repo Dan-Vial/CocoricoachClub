@@ -188,7 +188,7 @@ function ExerciseInput({
       </PopoverTrigger>
       <PopoverContent
         align="start"
-        className="p-1 w-[--radix-popover-trigger-width] max-h-64 overflow-y-auto z-[100] bg-popover border shadow-lg"
+        className="p-1 w-[min(400px,90vw)] max-h-64 overflow-y-auto z-[100] bg-popover border shadow-lg"
         onOpenAutoFocus={(e) => e.preventDefault()}
         sideOffset={4}
       >
@@ -197,15 +197,15 @@ function ExerciseInput({
             Aucun exercice trouvé - tapez pour créer
           </div>
         ) : (
-          filteredLibrary.slice(0, 12).map((libEx) => (
+          filteredLibrary.slice(0, 15).map((libEx) => (
             <button
               key={libEx.id}
               type="button"
-              className="w-full text-left px-2 py-2 hover:bg-muted rounded-sm text-sm flex justify-between items-center"
+              className="w-full text-left px-2 py-2 hover:bg-muted rounded-sm text-sm flex items-start gap-2"
               onClick={() => onSelectFromLibrary(exerciseIndex, libEx)}
             >
-              <span className="truncate pr-2">{libEx.name}</span>
-              <Badge variant="outline" className="text-xs shrink-0">
+              <span className="break-words min-w-0 flex-1">{libEx.name}</span>
+              <Badge variant="outline" className="text-[10px] shrink-0 mt-0.5">
                 {getCategoryLabel(libEx.category)}
               </Badge>
             </button>
@@ -1509,7 +1509,361 @@ function FartlekBlock({
   );
 }
 
-// Stato-dynamique Block Component  
+// Isometric Overcoming Block Component
+function IsometricOvercomingBlock({
+  exercises,
+  onUpdateExercise,
+  onSelectFromLibrary,
+  filteredLibrary,
+  searchQuery,
+  setSearchQuery,
+  showLibraryFor,
+  setShowLibraryFor,
+}: TrainingMethodBlockProps & { styleConfig: any }) {
+  const exercise = exercises[0]?.exercise;
+  const exerciseIndex = exercises[0]?.index;
+  if (!exercise) return null;
+
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-muted-foreground">
+        Contraction maximale contre une résistance fixe immobile. Poussez ou tirez de toutes vos forces pendant la durée prescrite.
+      </p>
+      <div className="border rounded-xl p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <Dumbbell className="h-4 w-4 text-muted-foreground shrink-0" />
+          <ExerciseInput exercise={exercise} exerciseIndex={exerciseIndex} placeholder="Nom de l'exercice..."
+            onUpdateExercise={onUpdateExercise} onSelectFromLibrary={onSelectFromLibrary}
+            filteredLibrary={filteredLibrary} searchQuery={searchQuery} setSearchQuery={setSearchQuery}
+            showLibraryFor={showLibraryFor} setShowLibraryFor={setShowLibraryFor} />
+        </div>
+        {exercise.exercise_name && (
+          <div className="space-y-3">
+            <div className="grid grid-cols-4 gap-2">
+              <div>
+                <Label className="text-xs text-muted-foreground">Séries</Label>
+                <Input type="number" min="1" className="h-8 text-xs"
+                  value={exercise.sets || ""} onChange={(e) => onUpdateExercise(exerciseIndex, "sets", parseInt(e.target.value) || 1)} />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Durée (s)</Label>
+                <Input type="number" min="1" className="h-8 text-xs" placeholder="6-10"
+                  value={exercise.reps || ""} onChange={(e) => onUpdateExercise(exerciseIndex, "reps", e.target.value)} />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Repos (s)</Label>
+                <Input type="number" min="0" className="h-8 text-xs"
+                  value={exercise.rest_seconds || ""} onChange={(e) => onUpdateExercise(exerciseIndex, "rest_seconds", parseInt(e.target.value) || null)} />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">RPE cible</Label>
+                <Input type="number" min="1" max="10" className="h-8 text-xs" placeholder="10"
+                  value={exercise.target_rpe || ""} onChange={(e) => onUpdateExercise(exerciseIndex, "target_rpe", parseInt(e.target.value) || null)} />
+              </div>
+            </div>
+            <div className="border rounded-lg p-3 bg-stone-50 dark:bg-stone-900/20">
+              <p className="text-xs font-medium text-stone-700 dark:text-stone-400">💪 Effort maximal contre résistance immobile — pas de mouvement, contraction à 100%</p>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Isometric Yielding Block Component
+function IsometricYieldingBlock({
+  exercises,
+  onUpdateExercise,
+  onSelectFromLibrary,
+  filteredLibrary,
+  searchQuery,
+  setSearchQuery,
+  showLibraryFor,
+  setShowLibraryFor,
+}: TrainingMethodBlockProps & { styleConfig: any }) {
+  const exercise = exercises[0]?.exercise;
+  const exerciseIndex = exercises[0]?.index;
+  if (!exercise) return null;
+
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-muted-foreground">
+        Maintien d'une charge à un angle articulaire spécifique. Résistez à la gravité le plus longtemps possible.
+      </p>
+      <div className="border rounded-xl p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <Dumbbell className="h-4 w-4 text-muted-foreground shrink-0" />
+          <ExerciseInput exercise={exercise} exerciseIndex={exerciseIndex} placeholder="Nom de l'exercice..."
+            onUpdateExercise={onUpdateExercise} onSelectFromLibrary={onSelectFromLibrary}
+            filteredLibrary={filteredLibrary} searchQuery={searchQuery} setSearchQuery={setSearchQuery}
+            showLibraryFor={showLibraryFor} setShowLibraryFor={setShowLibraryFor} />
+        </div>
+        {exercise.exercise_name && (
+          <div className="space-y-3">
+            <div className="grid grid-cols-5 gap-2">
+              <div>
+                <Label className="text-xs text-muted-foreground">Séries</Label>
+                <Input type="number" min="1" className="h-8 text-xs"
+                  value={exercise.sets || ""} onChange={(e) => onUpdateExercise(exerciseIndex, "sets", parseInt(e.target.value) || 1)} />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Durée (s)</Label>
+                <Input type="number" min="1" className="h-8 text-xs" placeholder="20-60"
+                  value={exercise.reps || ""} onChange={(e) => onUpdateExercise(exerciseIndex, "reps", e.target.value)} />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">%1RM</Label>
+                <Input type="number" min="0" max="100" className="h-8 text-xs" placeholder="60-80"
+                  value={exercise.weight_percent_rm || ""} onChange={(e) => onUpdateExercise(exerciseIndex, "weight_percent_rm", parseInt(e.target.value) || null)} />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Kg</Label>
+                <Input type="number" min="0" step="0.5" className="h-8 text-xs"
+                  value={exercise.weight_kg || ""} onChange={(e) => onUpdateExercise(exerciseIndex, "weight_kg", parseFloat(e.target.value) || null)} />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Repos (s)</Label>
+                <Input type="number" min="0" className="h-8 text-xs"
+                  value={exercise.rest_seconds || ""} onChange={(e) => onUpdateExercise(exerciseIndex, "rest_seconds", parseInt(e.target.value) || null)} />
+              </div>
+            </div>
+            <div className="border rounded-lg p-3 bg-slate-50 dark:bg-slate-900/20">
+              <p className="text-xs font-medium text-slate-700 dark:text-slate-400">⏱ Maintenez la position à l'angle prescrit — le temps sous tension est la variable clé</p>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Iso Max Block Component
+function IsoMaxBlock({
+  exercises,
+  onUpdateExercise,
+  onSelectFromLibrary,
+  filteredLibrary,
+  searchQuery,
+  setSearchQuery,
+  showLibraryFor,
+  setShowLibraryFor,
+}: TrainingMethodBlockProps & { styleConfig: any }) {
+  const exercise = exercises[0]?.exercise;
+  const exerciseIndex = exercises[0]?.index;
+  if (!exercise) return null;
+
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-muted-foreground">
+        Contraction isométrique maximale contre une charge très lourde (85-100% 1RM). Maintenez le plus longtemps possible.
+      </p>
+      <div className="border rounded-xl p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <Dumbbell className="h-4 w-4 text-muted-foreground shrink-0" />
+          <ExerciseInput exercise={exercise} exerciseIndex={exerciseIndex} placeholder="Nom de l'exercice..."
+            onUpdateExercise={onUpdateExercise} onSelectFromLibrary={onSelectFromLibrary}
+            filteredLibrary={filteredLibrary} searchQuery={searchQuery} setSearchQuery={setSearchQuery}
+            showLibraryFor={showLibraryFor} setShowLibraryFor={setShowLibraryFor} />
+        </div>
+        {exercise.exercise_name && (
+          <div className="space-y-3">
+            <div className="grid grid-cols-5 gap-2">
+              <div>
+                <Label className="text-xs text-muted-foreground">Séries</Label>
+                <Input type="number" min="1" className="h-8 text-xs"
+                  value={exercise.sets || ""} onChange={(e) => onUpdateExercise(exerciseIndex, "sets", parseInt(e.target.value) || 1)} />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Durée max (s)</Label>
+                <Input type="number" min="1" className="h-8 text-xs" placeholder="6-30"
+                  value={exercise.reps || ""} onChange={(e) => onUpdateExercise(exerciseIndex, "reps", e.target.value)} />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">%1RM</Label>
+                <Input type="number" min="0" max="100" className="h-8 text-xs" placeholder="85-100"
+                  value={exercise.weight_percent_rm || ""} onChange={(e) => onUpdateExercise(exerciseIndex, "weight_percent_rm", parseInt(e.target.value) || null)} />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Kg</Label>
+                <Input type="number" min="0" step="0.5" className="h-8 text-xs"
+                  value={exercise.weight_kg || ""} onChange={(e) => onUpdateExercise(exerciseIndex, "weight_kg", parseFloat(e.target.value) || null)} />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Repos (s)</Label>
+                <Input type="number" min="0" className="h-8 text-xs"
+                  value={exercise.rest_seconds || ""} onChange={(e) => onUpdateExercise(exerciseIndex, "rest_seconds", parseInt(e.target.value) || null)} />
+              </div>
+            </div>
+            <div className="border rounded-lg p-3 bg-zinc-50 dark:bg-zinc-900/20">
+              <p className="text-xs font-medium text-zinc-700 dark:text-zinc-400">🔥 Charge lourde (85-100% 1RM) — maintenez la contraction maximale le plus longtemps possible</p>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Super Pletnev Block Component
+function SuperPletnevBlock({
+  exercises,
+  onUpdateExercise,
+  onSelectFromLibrary,
+  filteredLibrary,
+  searchQuery,
+  setSearchQuery,
+  showLibraryFor,
+  setShowLibraryFor,
+}: TrainingMethodBlockProps & { styleConfig: any }) {
+  const exercise = exercises[0]?.exercise;
+  const exerciseIndex = exercises[0]?.index;
+  if (!exercise) return null;
+
+  const phases = [
+    { label: "Excentrique", desc: "Phase négative lente et contrôlée" },
+    { label: "Explosif", desc: "Phase concentrique explosive" },
+    { label: "Isométrie", desc: "Maintien statique 3-5s" },
+    { label: "Concentrique", desc: "Phase positive contrôlée" },
+  ];
+
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-muted-foreground">
+        Méthode de contraste avancée : excentrique lent, explosif, isométrie, concentrique. 4 phases par répétition.
+      </p>
+      <div className="border rounded-xl p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <Dumbbell className="h-4 w-4 text-muted-foreground shrink-0" />
+          <ExerciseInput exercise={exercise} exerciseIndex={exerciseIndex} placeholder="Nom de l'exercice..."
+            onUpdateExercise={onUpdateExercise} onSelectFromLibrary={onSelectFromLibrary}
+            filteredLibrary={filteredLibrary} searchQuery={searchQuery} setSearchQuery={setSearchQuery}
+            showLibraryFor={showLibraryFor} setShowLibraryFor={setShowLibraryFor} />
+        </div>
+        {exercise.exercise_name && (
+          <div className="space-y-3">
+            <div className="grid grid-cols-5 gap-2">
+              <div>
+                <Label className="text-xs text-muted-foreground">Séries</Label>
+                <Input type="number" min="1" className="h-8 text-xs"
+                  value={exercise.sets || ""} onChange={(e) => onUpdateExercise(exerciseIndex, "sets", parseInt(e.target.value) || 1)} />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Reps</Label>
+                <Input className="h-8 text-xs" placeholder="3-5"
+                  value={exercise.reps || ""} onChange={(e) => onUpdateExercise(exerciseIndex, "reps", e.target.value)} />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">%1RM</Label>
+                <Input type="number" min="0" max="100" className="h-8 text-xs" placeholder="70-85"
+                  value={exercise.weight_percent_rm || ""} onChange={(e) => onUpdateExercise(exerciseIndex, "weight_percent_rm", parseInt(e.target.value) || null)} />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Kg</Label>
+                <Input type="number" min="0" step="0.5" className="h-8 text-xs"
+                  value={exercise.weight_kg || ""} onChange={(e) => onUpdateExercise(exerciseIndex, "weight_kg", parseFloat(e.target.value) || null)} />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Repos (s)</Label>
+                <Input type="number" min="0" className="h-8 text-xs"
+                  value={exercise.rest_seconds || ""} onChange={(e) => onUpdateExercise(exerciseIndex, "rest_seconds", parseInt(e.target.value) || null)} />
+              </div>
+            </div>
+            <div className="border rounded-lg p-3 bg-violet-50 dark:bg-violet-900/20">
+              <p className="text-xs font-medium text-violet-700 dark:text-violet-400 mb-2">⚡ 4 phases par répétition :</p>
+              <div className="grid grid-cols-4 gap-2">
+                {phases.map((phase, i) => (
+                  <div key={i} className="text-center p-1.5 bg-violet-100 dark:bg-violet-800/30 rounded">
+                    <p className="text-[10px] font-bold text-violet-600 dark:text-violet-300">{i + 1}. {phase.label}</p>
+                    <p className="text-[9px] text-muted-foreground">{phase.desc}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Tempo (ex: 4-0-X-2)</Label>
+              <Input className="h-8 text-xs" placeholder="4-0-X-2"
+                value={exercise.tempo || ""} onChange={(e) => onUpdateExercise(exerciseIndex, "tempo", e.target.value)} />
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Combiné Haltéro Block Component
+function CombineHalteroBlock({
+  exercises,
+  onUpdateExercise,
+  onSelectFromLibrary,
+  filteredLibrary,
+  searchQuery,
+  setSearchQuery,
+  showLibraryFor,
+  setShowLibraryFor,
+}: TrainingMethodBlockProps & { styleConfig: any }) {
+  const exercise = exercises[0]?.exercise;
+  const exerciseIndex = exercises[0]?.index;
+  if (!exercise) return null;
+
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-muted-foreground">
+        Enchaînement de mouvements d'haltérophilie (épaulé, arraché, jeté) dans une même série sans reposer la barre.
+      </p>
+      <div className="border rounded-xl p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <Dumbbell className="h-4 w-4 text-muted-foreground shrink-0" />
+          <ExerciseInput exercise={exercise} exerciseIndex={exerciseIndex} placeholder="Ex: Épaulé + Jeté..."
+            onUpdateExercise={onUpdateExercise} onSelectFromLibrary={onSelectFromLibrary}
+            filteredLibrary={filteredLibrary} searchQuery={searchQuery} setSearchQuery={setSearchQuery}
+            showLibraryFor={showLibraryFor} setShowLibraryFor={setShowLibraryFor} />
+        </div>
+        {exercise.exercise_name && (
+          <div className="space-y-3">
+            <div className="grid grid-cols-5 gap-2">
+              <div>
+                <Label className="text-xs text-muted-foreground">Séries</Label>
+                <Input type="number" min="1" className="h-8 text-xs"
+                  value={exercise.sets || ""} onChange={(e) => onUpdateExercise(exerciseIndex, "sets", parseInt(e.target.value) || 1)} />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Reps</Label>
+                <Input className="h-8 text-xs" placeholder="1-3"
+                  value={exercise.reps || ""} onChange={(e) => onUpdateExercise(exerciseIndex, "reps", e.target.value)} />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">%1RM</Label>
+                <Input type="number" min="0" max="100" className="h-8 text-xs" placeholder="70-85"
+                  value={exercise.weight_percent_rm || ""} onChange={(e) => onUpdateExercise(exerciseIndex, "weight_percent_rm", parseInt(e.target.value) || null)} />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Kg</Label>
+                <Input type="number" min="0" step="0.5" className="h-8 text-xs"
+                  value={exercise.weight_kg || ""} onChange={(e) => onUpdateExercise(exerciseIndex, "weight_kg", parseFloat(e.target.value) || null)} />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Repos (s)</Label>
+                <Input type="number" min="0" className="h-8 text-xs"
+                  value={exercise.rest_seconds || ""} onChange={(e) => onUpdateExercise(exerciseIndex, "rest_seconds", parseInt(e.target.value) || null)} />
+              </div>
+            </div>
+            <div className="border rounded-lg p-3 bg-amber-50 dark:bg-amber-900/20">
+              <p className="text-xs font-medium text-amber-700 dark:text-amber-400">🏋️ Enchaînez les mouvements sans reposer la barre — ex: Épaulé + Front Squat + Jeté</p>
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Notes (détail des mouvements)</Label>
+              <Input className="h-8 text-xs" placeholder="Épaulé + Front Squat + Jeté"
+                value={exercise.notes || ""} onChange={(e) => onUpdateExercise(exerciseIndex, "notes", e.target.value)} />
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function StatoDynamiqueBlock({
   groupId,
   exercises,
@@ -1649,6 +2003,16 @@ export function TrainingMethodBlock(props: TrainingMethodBlockProps) {
         return <FartlekBlock {...props} styleConfig={styleConfig} />;
       case "stato_dynamique":
         return <StatoDynamiqueBlock {...props} styleConfig={styleConfig} />;
+      case "isometric_overcoming":
+        return <IsometricOvercomingBlock {...props} styleConfig={styleConfig} />;
+      case "isometric_yielding":
+        return <IsometricYieldingBlock {...props} styleConfig={styleConfig} />;
+      case "iso_max":
+        return <IsoMaxBlock {...props} styleConfig={styleConfig} />;
+      case "super_pletnev":
+        return <SuperPletnevBlock {...props} styleConfig={styleConfig} />;
+      case "combine_haltero":
+        return <CombineHalteroBlock {...props} styleConfig={styleConfig} />;
       case "superset":
       case "biset":
       case "triset":
