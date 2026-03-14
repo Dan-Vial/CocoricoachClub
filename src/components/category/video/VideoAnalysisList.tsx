@@ -129,7 +129,7 @@ export function VideoAnalysisList({
           <Video className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
           <h3 className="text-lg font-medium mb-2">Aucune analyse vidéo</h3>
           <p className="text-muted-foreground text-sm mb-4">
-            Créez une analyse pour lier vidéos, stats et données GPS d'un match
+            Créez une analyse pour lier vidéos, stats et données d'un {terminology.match.toLowerCase()}
           </p>
         </CardContent>
       </Card>
