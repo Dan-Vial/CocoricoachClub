@@ -165,7 +165,7 @@ export function InviteMemberDialog({ open, onOpenChange, clubId }: InviteMemberD
 
       const assignedCategories = allCategories ? null : selectedCategories;
 
-      const { data: invitation, error } = await (supabase as any)
+      const { data: invitation, error } = await supabase
         .from("club_invitations")
         .insert({
           club_id: clubId,
@@ -177,7 +177,10 @@ export function InviteMemberDialog({ open, onOpenChange, clubId }: InviteMemberD
         .select("token")
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error("[InviteMemberDialog] Insert error:", error);
+        throw error;
+      }
 
       const invitationLink = `${window.location.origin}/accept-invitation?token=${invitation.token}`;
       
