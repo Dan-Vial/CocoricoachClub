@@ -86,6 +86,9 @@ export function ExerciseLibrarySidebar({ sportType }: ExerciseLibrarySidebarProp
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [subcategoryFilter, setSubcategoryFilter] = useState("all");
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(true);
+
+  const hasActiveFilters = categoryFilter !== "all" || searchQuery.length > 0;
 
   const { data: exercises, isLoading } = useQuery({
     queryKey: ["exercise-library", user?.id],
@@ -128,89 +131,138 @@ export function ExerciseLibrarySidebar({ sportType }: ExerciseLibrarySidebarProp
     return matchesSearch && matchesCategory && matchesSubcategory;
   });
 
+  const selectedGroupLabel = CATEGORY_GROUPS.find(g => g.value === categoryFilter)?.label;
+  const selectedSubLabel = availableSubcategories.find(s => s.value === subcategoryFilter)?.label;
+
   return (
     <>
-      <div className="w-80 border-l bg-muted/30 flex flex-col">
-        <div className="p-4 border-b bg-background">
-          <div className="flex items-center justify-between mb-3">
+      <div className="w-80 border-l bg-muted/30 flex flex-col h-full">
+        <div className="border-b bg-background">
+          <div className="flex items-center justify-between p-3 pb-2">
             <div className="flex items-center gap-2">
-              <Dumbbell className="h-5 w-5 text-primary" />
-              <h3 className="font-semibold">Bibliothèque d'exercices</h3>
+              <Dumbbell className="h-4 w-4 text-primary" />
+              <h3 className="font-semibold text-sm">Bibliothèque</h3>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setShowAddDialog(true)}
-              title="Ajouter un exercice"
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={() => setShowAddDialog(true)}
+                title="Ajouter un exercice"
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={() => setFiltersOpen(!filtersOpen)}
+              >
+                {filtersOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              </Button>
+            </div>
           </div>
 
-          <div className="space-y-2">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Rechercher..."
-                className="pl-9"
-              />
+          {/* Collapsed filter summary */}
+          {!filtersOpen && hasActiveFilters && (
+            <div className="px-3 pb-2 flex flex-wrap gap-1">
+              {categoryFilter !== "all" && (
+                <Badge variant="secondary" className="text-xs gap-1">
+                  {selectedGroupLabel}
+                  {subcategoryFilter !== "all" && ` › ${selectedSubLabel}`}
+                  <X
+                    className="h-3 w-3 cursor-pointer opacity-70 hover:opacity-100"
+                    onClick={() => { setCategoryFilter("all"); setSubcategoryFilter("all"); }}
+                  />
+                </Badge>
+              )}
+              {searchQuery && (
+                <Badge variant="secondary" className="text-xs gap-1">
+                  "{searchQuery}"
+                  <X
+                    className="h-3 w-3 cursor-pointer opacity-70 hover:opacity-100"
+                    onClick={() => setSearchQuery("")}
+                  />
+                </Badge>
+              )}
             </div>
+          )}
 
-            <Select
-              value={categoryFilter}
-              onValueChange={(value) => {
-                setCategoryFilter(value);
-                setSubcategoryFilter("all");
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Toutes catégories" />
-              </SelectTrigger>
-              <SelectContent>
-                {CATEGORY_GROUPS.map((group) => (
-                  <SelectItem key={group.value} value={group.value}>
-                    {group.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          {/* Expanded filters */}
+          {filtersOpen && (
+            <div className="px-3 pb-3 space-y-2">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Rechercher..."
+                  className="pl-9 h-8 text-sm"
+                />
+              </div>
 
-            {categoryFilter !== "all" && availableSubcategories.length > 0 && (
-              <Select value={subcategoryFilter} onValueChange={setSubcategoryFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Toutes sous-catégories" />
+              <Select
+                value={categoryFilter}
+                onValueChange={(value) => {
+                  setCategoryFilter(value);
+                  setSubcategoryFilter("all");
+                }}
+              >
+                <SelectTrigger className="h-8 text-sm">
+                  <SelectValue placeholder="Toutes catégories" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Toutes sous-catégories</SelectItem>
-                  {availableSubcategories.map((subcategory) => (
-                    <SelectItem key={subcategory.value} value={subcategory.value}>
-                      {subcategory.label}
+                  {CATEGORY_GROUPS.map((group) => (
+                    <SelectItem key={group.value} value={group.value}>
+                      {group.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-            )}
-          </div>
-        </div>
 
-        <ScrollArea className="flex-1 p-4">
-          {isLoading ? (
-            <p className="text-center text-muted-foreground py-4">Chargement...</p>
-          ) : !filteredExercises?.length ? (
-            <p className="text-center text-muted-foreground py-4">Aucun exercice trouvé</p>
-          ) : (
-            <div className="space-y-2">
-              {filteredExercises.map((exercise) => (
-                <DraggableExercise key={exercise.id} exercise={exercise} />
-              ))}
+              {categoryFilter !== "all" && availableSubcategories.length > 0 && (
+                <Select value={subcategoryFilter} onValueChange={setSubcategoryFilter}>
+                  <SelectTrigger className="h-8 text-sm">
+                    <SelectValue placeholder="Toutes sous-catégories" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Toutes sous-catégories</SelectItem>
+                    {availableSubcategories.map((subcategory) => (
+                      <SelectItem key={subcategory.value} value={subcategory.value}>
+                        {subcategory.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
           )}
+        </div>
+
+        {/* Exercise count */}
+        {filteredExercises && filteredExercises.length > 0 && (
+          <div className="px-3 py-1.5 text-xs text-muted-foreground border-b bg-muted/20">
+            {filteredExercises.length} exercice{filteredExercises.length > 1 ? "s" : ""}
+          </div>
+        )}
+
+        <ScrollArea className="flex-1">
+          <div className="p-2 space-y-1.5">
+            {isLoading ? (
+              <p className="text-center text-muted-foreground py-4 text-sm">Chargement...</p>
+            ) : !filteredExercises?.length ? (
+              <p className="text-center text-muted-foreground py-4 text-sm">Aucun exercice trouvé</p>
+            ) : (
+              filteredExercises.map((exercise) => (
+                <DraggableExercise key={exercise.id} exercise={exercise} />
+              ))
+            )}
+          </div>
         </ScrollArea>
 
-        <div className="p-3 border-t text-xs text-center text-muted-foreground bg-background">
-          Glissez-déposez les exercices dans les séances
+        <div className="p-2 border-t text-xs text-center text-muted-foreground bg-background">
+          Glissez-déposez dans les séances
         </div>
       </div>
 
