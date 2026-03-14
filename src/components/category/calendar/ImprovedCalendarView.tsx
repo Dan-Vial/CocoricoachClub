@@ -473,7 +473,8 @@ export function ImprovedCalendarView({
           >
             {viewMode === "month" ? (
               // Monthly View
-              <div className="border rounded-xl overflow-hidden shadow-sm">
+              <div className="border rounded-xl overflow-x-auto shadow-sm">
+                <div className="min-w-[640px]">
                 {/* Header row */}
                 <div className="grid grid-cols-7 bg-muted/70">
                   {DAYS_OF_WEEK.map((day) => (
