@@ -58,7 +58,7 @@ interface BlockConfig {
   rest_seconds?: number;
   rest_between_rounds?: number;
   emom_interval?: number;
-  emom_mode?: "single" | "multi";
+  emom_mode?: string;
   time_cap_minutes?: number;
 }
 
@@ -308,7 +308,7 @@ function ExerciseSlotCard({
             
             {/* Sets, Reps, Weight - only show if exercise has name */}
             {hasExercise && exercise && (
-              <div className={cn("grid gap-2", isVbt ? "grid-cols-6" : "grid-cols-4")}>
+              <div className={cn("grid gap-2", isVbt ? "grid-cols-6" : "grid-cols-5")}>
                 <div>
                   <Label className="text-xs text-muted-foreground">Séries</Label>
                   <Input
@@ -328,21 +328,25 @@ function ExerciseSlotCard({
                   />
                 </div>
                 <div>
-                  <Label className="text-xs text-muted-foreground">{isVbt ? "Kg" : "%1RM"}</Label>
+                  <Label className="text-xs text-muted-foreground">%1RM</Label>
                   <Input
                     type="number"
                     min="0"
-                    max={isVbt ? undefined : 100}
-                    step={isVbt ? "0.5" : "1"}
+                    max={100}
                     className="h-8 text-xs"
-                    value={isVbt ? (exercise.weight_kg || "") : (exercise.weight_percent_rm || "")}
-                    onChange={(e) => {
-                      if (isVbt) {
-                        onUpdateExercise(exerciseIndex, "weight_kg", parseFloat(e.target.value) || null);
-                      } else {
-                        onUpdateExercise(exerciseIndex, "weight_percent_rm", parseInt(e.target.value) || null);
-                      }
-                    }}
+                    value={exercise.weight_percent_rm || ""}
+                    onChange={(e) => onUpdateExercise(exerciseIndex, "weight_percent_rm", parseInt(e.target.value) || null)}
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Kg</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    step="0.5"
+                    className="h-8 text-xs"
+                    value={exercise.weight_kg || ""}
+                    onChange={(e) => onUpdateExercise(exerciseIndex, "weight_kg", parseFloat(e.target.value) || null)}
                   />
                 </div>
                 {isVbt && (
@@ -517,7 +521,7 @@ function EmomBlock({
                   </Button>
                 </div>
                 {exercise.exercise_name && (
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-3 gap-2">
                     <div>
                       <Label className="text-xs text-muted-foreground">Reps</Label>
                       <Input
@@ -533,6 +537,16 @@ function EmomBlock({
                         className="h-8 text-xs"
                         value={exercise.weight_percent_rm || ""}
                         onChange={(e) => onUpdateExercise(index, "weight_percent_rm", parseInt(e.target.value) || null)}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Kg</Label>
+                      <Input
+                        type="number"
+                        step="0.5"
+                        className="h-8 text-xs"
+                        value={exercise.weight_kg || ""}
+                        onChange={(e) => onUpdateExercise(index, "weight_kg", parseFloat(e.target.value) || null)}
                       />
                     </div>
                   </div>
@@ -1239,6 +1253,336 @@ function FiveByFiveBlock({
   );
 }
 
+// Intermittent Cardio Block Component
+function IntermittentCardioBlock({
+  groupId,
+  exercises,
+  blockConfig,
+  styleConfig,
+  onUpdateBlockConfig,
+  onAddExerciseToGroup,
+  onRemoveExercise,
+  onUpdateExercise,
+  onSelectFromLibrary,
+  filteredLibrary,
+  searchQuery,
+  setSearchQuery,
+  showLibraryFor,
+  setShowLibraryFor,
+}: TrainingMethodBlockProps & { styleConfig: any }) {
+  const reps = blockConfig.rounds || 6;
+  const workSeconds = blockConfig.work_seconds || 30;
+  const restSeconds = blockConfig.rest_seconds || 30;
+  const totalMinutes = Math.round((reps * (workSeconds + restSeconds)) / 60);
+
+  return (
+    <div className="space-y-4">
+      {/* Support selector */}
+      <div>
+        <Label className="text-xs text-muted-foreground mb-2 block">Support (obligatoire)</Label>
+        <ToggleGroup
+          type="single"
+          value={blockConfig.emom_mode || "running"}
+          onValueChange={(v) => v && onUpdateBlockConfig(groupId, "emom_mode" as keyof BlockConfig, v)}
+          className="justify-start"
+        >
+          <ToggleGroupItem value="running" className="data-[state=on]:bg-orange-500 data-[state=on]:text-white">
+            🏃 Course à pied
+          </ToggleGroupItem>
+          <ToggleGroupItem value="cycling" className="data-[state=on]:bg-orange-500 data-[state=on]:text-white">
+            🚴 Vélo
+          </ToggleGroupItem>
+          <ToggleGroupItem value="swimming" className="data-[state=on]:bg-orange-500 data-[state=on]:text-white">
+            🏊 Natation
+          </ToggleGroupItem>
+        </ToggleGroup>
+      </div>
+
+      {/* Config */}
+      <div className="grid grid-cols-3 gap-4">
+        <div>
+          <Label className="text-xs text-muted-foreground">Répétitions</Label>
+          <Input type="number" min="1" className="h-8 text-sm" value={reps}
+            onChange={(e) => onUpdateBlockConfig(groupId, "rounds", parseInt(e.target.value) || 6)} />
+        </div>
+        <div>
+          <Label className="text-xs text-muted-foreground">Effort (s)</Label>
+          <Input type="number" min="5" className="h-8 text-sm" value={workSeconds}
+            onChange={(e) => onUpdateBlockConfig(groupId, "work_seconds", parseInt(e.target.value) || 30)} />
+        </div>
+        <div>
+          <Label className="text-xs text-muted-foreground">Récup (s)</Label>
+          <Input type="number" min="5" className="h-8 text-sm" value={restSeconds}
+            onChange={(e) => onUpdateBlockConfig(groupId, "rest_seconds", parseInt(e.target.value) || 30)} />
+        </div>
+      </div>
+
+      {/* Intensity */}
+      <div className="border rounded-lg p-3 bg-amber-50 dark:bg-amber-950/20 space-y-3">
+        <p className="text-sm font-medium text-amber-700 dark:text-amber-400">⚡ Intensité</p>
+        <div className="grid grid-cols-3 gap-3">
+          <div>
+            <Label className="text-xs text-muted-foreground">Type</Label>
+            <Select
+              value={blockConfig.time_cap_minutes?.toString() || "rpe"}
+              onValueChange={(v) => onUpdateBlockConfig(groupId, "time_cap_minutes" as keyof BlockConfig, v)}
+            >
+              <SelectTrigger className="h-8 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="rpe">RPE (/10)</SelectItem>
+                <SelectItem value="vma">% VMA (%)</SelectItem>
+                <SelectItem value="fc">FC cible (bpm)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label className="text-xs text-muted-foreground">RPE cible</Label>
+            <Input type="number" min="1" max="10" className="h-8 text-sm" placeholder="8" />
+          </div>
+          <div>
+            <Label className="text-xs text-muted-foreground">FC cible (bpm)</Label>
+            <Input type="number" min="60" max="220" className="h-8 text-sm" placeholder="160" />
+          </div>
+        </div>
+      </div>
+
+      {/* Summary */}
+      <div className={cn("px-4 py-3 rounded-lg text-sm font-medium", styleConfig.bgColor)}>
+        <p className="text-muted-foreground text-xs mb-1">Aperçu</p>
+        <p>Intermittent: {reps} × ({Math.floor(workSeconds / 60)}:{String(workSeconds % 60).padStart(2, "0")}/{Math.floor(restSeconds / 60)}:{String(restSeconds % 60).padStart(2, "0")})</p>
+        <p className="text-xs text-muted-foreground mt-1">≈ {totalMinutes} min total</p>
+      </div>
+    </div>
+  );
+}
+
+// Fartlek Block Component
+function FartlekBlock({
+  groupId,
+  exercises,
+  blockConfig,
+  styleConfig,
+  onUpdateBlockConfig,
+  onAddExerciseToGroup,
+  onRemoveExercise,
+  onUpdateExercise,
+  onSelectFromLibrary,
+  filteredLibrary,
+  searchQuery,
+  setSearchQuery,
+  showLibraryFor,
+  setShowLibraryFor,
+}: TrainingMethodBlockProps & { styleConfig: any }) {
+  const isStructured = blockConfig.emom_mode === "structured";
+  const cycles = blockConfig.rounds || 6;
+  const workSeconds = blockConfig.work_seconds || 0;
+  const restSeconds = blockConfig.rest_seconds || 0;
+  const totalMinutes = isStructured ? Math.round((cycles * (workSeconds + restSeconds)) / 60) : (blockConfig.duration_minutes || 0);
+
+  return (
+    <div className="space-y-4">
+      {/* Structure type */}
+      <div>
+        <Label className="text-xs text-muted-foreground mb-2 block">⚡ Type de structure</Label>
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            type="button"
+            className={cn(
+              "rounded-xl p-3 border-2 text-left transition-all",
+              !isStructured ? "border-green-500 bg-green-500 text-white" : "border-border hover:border-green-300"
+            )}
+            onClick={() => onUpdateBlockConfig(groupId, "emom_mode" as keyof BlockConfig, "free")}
+          >
+            <p className="font-medium text-sm">Fartlek libre</p>
+            <p className={cn("text-xs mt-1", !isStructured ? "text-green-100" : "text-muted-foreground")}>L'athlète varie les allures selon ses sensations</p>
+          </button>
+          <button
+            type="button"
+            className={cn(
+              "rounded-xl p-3 border-2 text-left transition-all",
+              isStructured ? "border-green-500 bg-green-500 text-white" : "border-border hover:border-green-300"
+            )}
+            onClick={() => onUpdateBlockConfig(groupId, "emom_mode" as keyof BlockConfig, "structured")}
+          >
+            <p className="font-medium text-sm">Fartlek structuré</p>
+            <p className={cn("text-xs mt-1", isStructured ? "text-green-100" : "text-muted-foreground")}>Phases d'effort et récupération définies</p>
+          </button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label className="text-xs text-muted-foreground">Nombre de cycles</Label>
+          <Input type="number" min="1" className="h-8 text-sm" value={cycles}
+            onChange={(e) => onUpdateBlockConfig(groupId, "rounds", parseInt(e.target.value) || 6)} />
+        </div>
+        <div>
+          <Label className="text-xs text-muted-foreground">⏱ Durée totale (calculée)</Label>
+          <div className="h-8 flex items-center px-3 rounded-md border bg-muted text-sm">
+            {totalMinutes} min
+          </div>
+          <p className="text-xs text-muted-foreground mt-1">Calculée automatiquement</p>
+        </div>
+      </div>
+
+      {isStructured && (
+        <>
+          {/* Effort phase */}
+          <div className="border rounded-lg p-3 bg-red-50 dark:bg-red-950/20 space-y-3">
+            <p className="text-sm font-medium text-red-600 dark:text-red-400">🔥 Phase d'effort</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs text-muted-foreground">Durée effort (s)</Label>
+                <Input type="number" min="5" className="h-8 text-sm" value={workSeconds}
+                  onChange={(e) => onUpdateBlockConfig(groupId, "work_seconds", parseInt(e.target.value) || 30)} />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">RPE cible</Label>
+                <Input type="number" min="1" max="10" className="h-8 text-sm" placeholder="7" />
+              </div>
+            </div>
+          </div>
+
+          {/* Recovery phase */}
+          <div className="border rounded-lg p-3 bg-green-50 dark:bg-green-950/20 space-y-3">
+            <p className="text-sm font-medium text-green-600 dark:text-green-400">🌿 Phase de récupération</p>
+            <div>
+              <Label className="text-xs text-muted-foreground">Durée récupération (s)</Label>
+              <Input type="number" min="5" className="h-8 text-sm" value={restSeconds}
+                onChange={(e) => onUpdateBlockConfig(groupId, "rest_seconds", parseInt(e.target.value) || 30)} />
+            </div>
+          </div>
+        </>
+      )}
+
+      {!isStructured && (
+        <div>
+          <Label className="text-xs text-muted-foreground">Durée totale (min)</Label>
+          <Input type="number" min="1" className="h-8 text-sm" value={blockConfig.duration_minutes || 20}
+            onChange={(e) => onUpdateBlockConfig(groupId, "duration_minutes", parseInt(e.target.value) || 20)} />
+        </div>
+      )}
+
+      {/* Summary */}
+      <div className={cn("px-4 py-3 rounded-lg text-sm", styleConfig.bgColor)}>
+        <p className="text-muted-foreground text-xs mb-1">Résumé</p>
+        {isStructured ? (
+          <>
+            <p className="font-medium">{cycles} × ({Math.floor(workSeconds / 60)}:{String(workSeconds % 60).padStart(2, "0")}/{Math.floor(restSeconds / 60)}:{String(restSeconds % 60).padStart(2, "0")})</p>
+            <p className="text-xs mt-1">● Effort: {Math.round(cycles * workSeconds / 60)} min &nbsp;&nbsp; ● Récup: {Math.round(cycles * restSeconds / 60)} min</p>
+          </>
+        ) : (
+          <p className="font-medium">Fartlek libre - {blockConfig.duration_minutes || 20} min</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Stato-dynamique Block Component  
+function StatoDynamiqueBlock({
+  groupId,
+  exercises,
+  blockConfig,
+  styleConfig,
+  onUpdateExercise,
+  onSelectFromLibrary,
+  filteredLibrary,
+  searchQuery,
+  setSearchQuery,
+  showLibraryFor,
+  setShowLibraryFor,
+}: TrainingMethodBlockProps & { styleConfig: any }) {
+  const exercise = exercises[0]?.exercise;
+  const exerciseIndex = exercises[0]?.index;
+  
+  if (!exercise) return null;
+
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-muted-foreground">
+        Maintien isométrique (3-5s) suivi d'une phase concentrique explosive. Développe la force et la puissance.
+      </p>
+
+      {/* Exercise slot */}
+      <div className="border rounded-xl p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <Dumbbell className="h-4 w-4 text-muted-foreground shrink-0" />
+          <ExerciseInput
+            exercise={exercise}
+            exerciseIndex={exerciseIndex}
+            placeholder="Nom de l'exercice..."
+            onUpdateExercise={onUpdateExercise}
+            onSelectFromLibrary={onSelectFromLibrary}
+            filteredLibrary={filteredLibrary}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            showLibraryFor={showLibraryFor}
+            setShowLibraryFor={setShowLibraryFor}
+          />
+        </div>
+        
+        {exercise.exercise_name && (
+          <div className="space-y-3">
+            <div className="grid grid-cols-5 gap-2">
+              <div>
+                <Label className="text-xs text-muted-foreground">Séries</Label>
+                <Input type="number" min="1" className="h-8 text-xs"
+                  value={exercise.sets || ""}
+                  onChange={(e) => onUpdateExercise(exerciseIndex, "sets", parseInt(e.target.value) || 1)} />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Reps</Label>
+                <Input className="h-8 text-xs" value={exercise.reps || ""}
+                  onChange={(e) => onUpdateExercise(exerciseIndex, "reps", e.target.value)} />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">%1RM</Label>
+                <Input type="number" min="0" max="100" className="h-8 text-xs"
+                  value={exercise.weight_percent_rm || ""}
+                  onChange={(e) => onUpdateExercise(exerciseIndex, "weight_percent_rm", parseInt(e.target.value) || null)} />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Kg</Label>
+                <Input type="number" min="0" step="0.5" className="h-8 text-xs"
+                  value={exercise.weight_kg || ""}
+                  onChange={(e) => onUpdateExercise(exerciseIndex, "weight_kg", parseFloat(e.target.value) || null)} />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Repos (s)</Label>
+                <Input type="number" min="0" className="h-8 text-xs"
+                  value={exercise.rest_seconds || ""}
+                  onChange={(e) => onUpdateExercise(exerciseIndex, "rest_seconds", parseInt(e.target.value) || null)} />
+              </div>
+            </div>
+
+            {/* Isometric hold config */}
+            <div className="border rounded-lg p-3 bg-amber-50 dark:bg-amber-950/20">
+              <p className="text-xs font-medium text-amber-700 dark:text-amber-400 mb-2">⏱ Phase isométrique</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs text-muted-foreground">Durée maintien (s)</Label>
+                  <Input type="number" min="1" max="10" className="h-8 text-xs" placeholder="3-5"
+                    value={exercise.tempo || ""}
+                    onChange={(e) => onUpdateExercise(exerciseIndex, "tempo", e.target.value)} />
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">RPE cible</Label>
+                  <Input type="number" min="1" max="10" className="h-8 text-xs" placeholder="8"
+                    value={exercise.target_rpe || ""}
+                    onChange={(e) => onUpdateExercise(exerciseIndex, "target_rpe", parseInt(e.target.value) || null)} />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // Main export component
 export function TrainingMethodBlock(props: TrainingMethodBlockProps) {
   const { method, groupId, exercises, blockConfig, onUnlinkGroup, onValidate, onCancel } = props;
@@ -1250,7 +1594,7 @@ export function TrainingMethodBlock(props: TrainingMethodBlockProps) {
   
   // For methods with flexible exercise count (EMOM, Tabata, Circuit, etc.), 
   // show total count without max limit
-  const isFlexibleMethod = ["emom", "tabata", "circuit", "amrap", "for_time", "death_by"].includes(method);
+  const isFlexibleMethod = ["emom", "tabata", "circuit", "amrap", "for_time", "death_by", "intermittent_cardio", "fartlek"].includes(method);
 
   // Render content based on method type
   const renderContent = () => {
@@ -1271,6 +1615,12 @@ export function TrainingMethodBlock(props: TrainingMethodBlockProps) {
         return <CardioBlock {...props} styleConfig={styleConfig} />;
       case "five_by_five":
         return <FiveByFiveBlock {...props} styleConfig={styleConfig} />;
+      case "intermittent_cardio":
+        return <IntermittentCardioBlock {...props} styleConfig={styleConfig} />;
+      case "fartlek":
+        return <FartlekBlock {...props} styleConfig={styleConfig} />;
+      case "stato_dynamique":
+        return <StatoDynamiqueBlock {...props} styleConfig={styleConfig} />;
       case "superset":
       case "biset":
       case "triset":

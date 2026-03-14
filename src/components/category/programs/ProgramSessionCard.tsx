@@ -94,6 +94,7 @@ interface ProgramExercise {
   sets: number;
   reps: string;
   percentage_1rm?: number;
+  weight_kg?: number | null;
   tempo?: string;
   rest_seconds: number;
   group_id?: string;
@@ -1284,6 +1285,28 @@ export function ProgramSessionCard({
                         className="h-8 text-sm"
                       />
                     </div>
+
+                    {/* Charge en KG */}
+                    {!vbtMode && (
+                      <div className="space-y-1">
+                        <label className="text-xs text-muted-foreground">Kg</label>
+                        <Input
+                          type="number"
+                          min={0}
+                          step="0.5"
+                          value={exercise.weight_kg || ""}
+                          onChange={(e) =>
+                            updateExercise(
+                              index,
+                              "weight_kg",
+                              e.target.value ? parseFloat(e.target.value) : null
+                            )
+                          }
+                          placeholder="60"
+                          className="h-8 text-sm"
+                        />
+                      </div>
+                    )}
 
                     {!isGrouped && (
                       <div className="space-y-1">
