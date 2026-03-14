@@ -3430,8 +3430,41 @@ export type Database = {
           },
         ]
       }
+      message_reactions: {
+        Row: {
+          created_at: string
+          emoji: string
+          id: string
+          message_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          emoji: string
+          id?: string
+          message_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          emoji?: string
+          id?: string
+          message_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_reactions_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
+          action_data: Json | null
           content: string
           conversation_id: string
           created_at: string
@@ -3439,11 +3472,13 @@ export type Database = {
           is_announcement: boolean | null
           is_urgent: boolean | null
           message_type: string | null
+          poll_id: string | null
           read_by: string[] | null
           sender_id: string
           updated_at: string
         }
         Insert: {
+          action_data?: Json | null
           content: string
           conversation_id: string
           created_at?: string
@@ -3451,11 +3486,13 @@ export type Database = {
           is_announcement?: boolean | null
           is_urgent?: boolean | null
           message_type?: string | null
+          poll_id?: string | null
           read_by?: string[] | null
           sender_id: string
           updated_at?: string
         }
         Update: {
+          action_data?: Json | null
           content?: string
           conversation_id?: string
           created_at?: string
@@ -3463,6 +3500,7 @@ export type Database = {
           is_announcement?: boolean | null
           is_urgent?: boolean | null
           message_type?: string | null
+          poll_id?: string | null
           read_by?: string[] | null
           sender_id?: string
           updated_at?: string
@@ -3473,6 +3511,13 @@ export type Database = {
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_poll_id_fkey"
+            columns: ["poll_id"]
+            isOneToOne: false
+            referencedRelation: "polls"
             referencedColumns: ["id"]
           },
         ]
@@ -4976,6 +5021,153 @@ export type Database = {
             columns: ["season_id"]
             isOneToOne: false
             referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      poll_options: {
+        Row: {
+          created_at: string
+          id: string
+          label: string
+          poll_id: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          label: string
+          poll_id: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          label?: string
+          poll_id?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "poll_options_poll_id_fkey"
+            columns: ["poll_id"]
+            isOneToOne: false
+            referencedRelation: "polls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      poll_votes: {
+        Row: {
+          created_at: string
+          id: string
+          option_id: string
+          poll_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          option_id: string
+          poll_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          option_id?: string
+          poll_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "poll_votes_option_id_fkey"
+            columns: ["option_id"]
+            isOneToOne: false
+            referencedRelation: "poll_options"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "poll_votes_poll_id_fkey"
+            columns: ["poll_id"]
+            isOneToOne: false
+            referencedRelation: "polls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      polls: {
+        Row: {
+          allow_multiple: boolean
+          category_id: string | null
+          conversation_id: string
+          created_at: string
+          created_by: string
+          expires_at: string | null
+          id: string
+          is_anonymous: boolean
+          is_closed: boolean
+          linked_event_id: string | null
+          linked_event_type: string | null
+          message_id: string | null
+          poll_type: string
+          question: string
+          updated_at: string
+        }
+        Insert: {
+          allow_multiple?: boolean
+          category_id?: string | null
+          conversation_id: string
+          created_at?: string
+          created_by: string
+          expires_at?: string | null
+          id?: string
+          is_anonymous?: boolean
+          is_closed?: boolean
+          linked_event_id?: string | null
+          linked_event_type?: string | null
+          message_id?: string | null
+          poll_type?: string
+          question: string
+          updated_at?: string
+        }
+        Update: {
+          allow_multiple?: boolean
+          category_id?: string | null
+          conversation_id?: string
+          created_at?: string
+          created_by?: string
+          expires_at?: string | null
+          id?: string
+          is_anonymous?: boolean
+          is_closed?: boolean
+          linked_event_id?: string | null
+          linked_event_type?: string | null
+          message_id?: string | null
+          poll_type?: string
+          question?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "polls_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "polls_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "polls_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
             referencedColumns: ["id"]
           },
         ]
