@@ -426,6 +426,9 @@ function EmomBlock({
             if (v) {
               const interval = parseInt(v.replace("e", "").replace("mom", "")) || 1;
               onUpdateBlockConfig(groupId, "emom_interval", interval);
+              // Auto-recalculate duration: exerciseCount * new interval
+              const newDuration = exercises.length * interval;
+              onUpdateBlockConfig(groupId, "duration_minutes", newDuration);
             }
           }}
           className="justify-start flex-wrap"
