@@ -360,7 +360,6 @@ export function getActionTypesForSport(sportType?: string): ActionType[] {
 }
 
 export function getActionTypeLabel(actionType: string): string {
-  // Combine all action types for label lookup
   const allActions = [
     ...COMMON_ACTIONS,
     ...RUGBY_ACTIONS,
@@ -369,6 +368,13 @@ export function getActionTypeLabel(actionType: string): string {
     ...BASKETBALL_ACTIONS,
     ...HANDBALL_ACTIONS,
     ...VOLLEYBALL_ACTIONS,
+    ...ATHLETISME_ACTIONS,
+    ...JUDO_ACTIONS,
+    ...NATATION_ACTIONS,
+    ...SKI_ACTIONS,
+    ...TRIATHLON_ACTIONS,
+    ...BOWLING_ACTIONS,
+    ...PADEL_ACTIONS,
   ];
   
   return allActions.find(a => a.value === actionType)?.label || actionType;
