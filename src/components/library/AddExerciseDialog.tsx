@@ -61,9 +61,11 @@ export function AddExerciseDialog() {
     const reathletisation = EXERCISE_CATEGORIES.filter(c => c.group === "reathletisation");
     const terrain = getTerrainCategoriesForSport(selectedSport);
     const stretching = EXERCISE_CATEGORIES.filter(c => c.group === "stretching_mobility");
+    const plyometrie = EXERCISE_CATEGORIES.filter(c => c.group === "plyometrie");
+    const neuro = EXERCISE_CATEGORIES.filter(c => c.group === "neuro");
     const other = EXERCISE_CATEGORIES.filter(c => c.group === null);
     
-    return { musculation, bodyweight, crossfit, course, ergo, sled, pilates, reathletisation, terrain, stretching, other };
+    return { musculation, bodyweight, crossfit, course, ergo, sled, pilates, reathletisation, terrain, stretching, plyometrie, neuro, other };
   }, [selectedSport]);
 
   const handleCategoryChange = (newCategory: string) => {
@@ -246,6 +248,22 @@ export function AddExerciseDialog() {
                   <SelectGroup>
                     <SelectLabel className={`text-xs font-semibold ${CATEGORY_GROUP_CONFIGS.pilates?.color}`}>Pilates / Yoga</SelectLabel>
                     {groupedCategories.pilates.map((cat) => (
+                      <SelectItem key={cat.value} value={cat.value}>
+                        {cat.label}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                  <SelectGroup>
+                    <SelectLabel className={`text-xs font-semibold ${CATEGORY_GROUP_CONFIGS.plyometrie?.color}`}>Pliométrie</SelectLabel>
+                    {groupedCategories.plyometrie.map((cat) => (
+                      <SelectItem key={cat.value} value={cat.value}>
+                        {cat.label}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                  <SelectGroup>
+                    <SelectLabel className={`text-xs font-semibold ${CATEGORY_GROUP_CONFIGS.neuro?.color}`}>Neuro / Cognitif</SelectLabel>
+                    {groupedCategories.neuro.map((cat) => (
                       <SelectItem key={cat.value} value={cat.value}>
                         {cat.label}
                       </SelectItem>
