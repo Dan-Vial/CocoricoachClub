@@ -58,7 +58,7 @@ interface BlockConfig {
   rest_seconds?: number;
   rest_between_rounds?: number;
   emom_interval?: number;
-  emom_mode?: "single" | "multi";
+  emom_mode?: string;
   time_cap_minutes?: number;
 }
 

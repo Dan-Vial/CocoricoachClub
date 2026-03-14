@@ -1285,6 +1285,28 @@ export function ProgramSessionCard({
                       />
                     </div>
 
+                    {/* Charge en KG */}
+                    {!vbtMode && (
+                      <div className="space-y-1">
+                        <label className="text-xs text-muted-foreground">Kg</label>
+                        <Input
+                          type="number"
+                          min={0}
+                          step="0.5"
+                          value={(exercise as any).weight_kg || ""}
+                          onChange={(e) =>
+                            updateExercise(
+                              index,
+                              "weight_kg" as any,
+                              e.target.value ? parseFloat(e.target.value) : null
+                            )
+                          }
+                          placeholder="60"
+                          className="h-8 text-sm"
+                        />
+                      </div>
+                    )}
+
                     {!isGrouped && (
                       <div className="space-y-1">
                         <label className="text-xs text-muted-foreground">Repos (s)</label>
