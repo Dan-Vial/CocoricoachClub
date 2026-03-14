@@ -35,6 +35,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { AddClipDialog } from "./AddClipDialog";
+import { getVideoTerminology } from "@/lib/constants/videoActionTypes";
 
 interface VideoAnalysis {
   id: string;
