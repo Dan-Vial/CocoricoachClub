@@ -93,7 +93,7 @@ export function MatchesTab({ categoryId, sportType }: MatchesTabProps) {
                   Gestion des {itemLabelPlural}
                 </CardTitle>
                 {!isViewer && (
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     {!isBowling && (
                       <Button 
                         variant="outline" 
@@ -105,9 +105,21 @@ export function MatchesTab({ categoryId, sportType }: MatchesTabProps) {
                         <span className="hidden sm:inline">Personnaliser stats</span>
                       </Button>
                     )}
+                    {isBowling && (
+                      <Button 
+                        variant="outline"
+                        onClick={() => createBowlingTraining.mutate()}
+                        disabled={createBowlingTraining.isPending}
+                        className="gap-2"
+                      >
+                        <Dumbbell className="h-4 w-4" />
+                        <span className="hidden sm:inline">Entraînement</span>
+                      </Button>
+                    )}
                     <Button onClick={() => setIsAddDialogOpen(true)} className="gap-2">
                       <Plus className="h-4 w-4" />
-                      Ajouter {isIndividual ? "une" : "un"} {itemLabel}
+                      <span className="hidden sm:inline">Ajouter {isIndividual ? "une" : "un"} {itemLabel}</span>
+                      <span className="sm:hidden"><Plus className="h-4 w-4" /></span>
                     </Button>
                   </div>
                 )}
