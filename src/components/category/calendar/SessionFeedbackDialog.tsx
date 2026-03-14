@@ -594,7 +594,8 @@ export function SessionFeedbackDialog({
                 <div className="space-y-3">
                   {sessionTests.map((test, idx) => {
                     const currentCategory = testCategories.find(c => c.value === test.test_category);
-                    const filledCount = Object.values(test.player_results).filter(v => v && v.trim() !== "").length;
+                    const savedCount = test.savedPlayerIds?.size || 0;
+                    const newFilledCount = Object.entries(test.player_results).filter(([pid, v]) => v && v.trim() !== "" && !test.savedPlayerIds?.has(pid)).length;
 
                     return (
                       <div
@@ -606,9 +607,14 @@ export function SessionFeedbackDialog({
                             <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center text-white font-bold text-xs">
                               {idx + 1}
                             </div>
-                            {test.test_type && (
-                              <Badge variant="outline" className="text-xs">
-                                {filledCount}/{playersToShow.length} résultats
+                            {test.test_type && savedCount > 0 && (
+                              <Badge variant="outline" className="text-xs bg-muted text-muted-foreground">
+                                ✓ {savedCount} enregistré(s)
+                              </Badge>
+                            )}
+                            {test.test_type && newFilledCount > 0 && (
+                              <Badge variant="outline" className="text-xs border-emerald-300 text-emerald-600">
+                                +{newFilledCount} nouveau(x)
                               </Badge>
                             )}
                           </div>
