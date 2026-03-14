@@ -255,10 +255,13 @@ export function ChatWindow({ conversationId, categoryId }: ChatWindowProps) {
                     </div>
                   )}
                   
-                  {message.message_type === "poll" && message.poll_id ? (
-                    <PollMessage pollId={message.poll_id} isOwnMessage={isOwnMessage(message.sender_id)} />
-                  ) : message.message_type === "poll" && !message.poll_id ? (
-                    <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                  {message.message_type === "poll" ? (
+                    <>
+                      <p className="text-sm font-medium whitespace-pre-wrap mb-2">{message.content}</p>
+                      {message.poll_id && (
+                        <PollMessage pollId={message.poll_id} isOwnMessage={isOwnMessage(message.sender_id)} />
+                      )}
+                    </>
                   ) : (
                     <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                   )}

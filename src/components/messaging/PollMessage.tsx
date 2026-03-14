@@ -134,30 +134,24 @@ export function PollMessage({ pollId, isOwnMessage }: PollMessageProps) {
 
   return (
     <div className="rounded-lg border bg-card p-3 space-y-3 min-w-[240px] max-w-full">
-      <div className="flex items-start gap-2">
-        <BarChart3 className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-        <div className="min-w-0">
-          <p className="font-semibold text-sm leading-tight">{poll.question}</p>
-          <div className="flex items-center gap-2 mt-1">
-            <Badge variant="outline" className="text-xs">
-              {uniqueVoters} vote{uniqueVoters !== 1 ? "s" : ""}
-            </Badge>
-            {poll.allow_multiple && (
-              <Badge variant="secondary" className="text-xs">Multiple</Badge>
-            )}
-            {isClosed && (
-              <Badge variant="destructive" className="text-xs">
-                <Lock className="h-3 w-3 mr-0.5" /> Fermé
-              </Badge>
-            )}
-            {poll.expires_at && !isClosed && (
-              <span className="text-xs text-muted-foreground flex items-center gap-0.5">
-                <Clock className="h-3 w-3" />
-                {format(new Date(poll.expires_at), "dd/MM HH:mm", { locale: fr })}
-              </span>
-            )}
-          </div>
-        </div>
+      <div className="flex items-center gap-2 flex-wrap">
+        <Badge variant="outline" className="text-xs">
+          {uniqueVoters} vote{uniqueVoters !== 1 ? "s" : ""}
+        </Badge>
+        {poll.allow_multiple && (
+          <Badge variant="secondary" className="text-xs">Multiple</Badge>
+        )}
+        {isClosed && (
+          <Badge variant="destructive" className="text-xs">
+            <Lock className="h-3 w-3 mr-0.5" /> Fermé
+          </Badge>
+        )}
+        {poll.expires_at && !isClosed && (
+          <span className="text-xs text-muted-foreground flex items-center gap-0.5">
+            <Clock className="h-3 w-3" />
+            {format(new Date(poll.expires_at), "dd/MM HH:mm", { locale: fr })}
+          </span>
+        )}
       </div>
 
       <div className="space-y-1.5">
