@@ -4,6 +4,8 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  SelectGroup,
+  SelectLabel,
 } from "@/components/ui/select";
 import {
   Tooltip,
@@ -12,7 +14,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Info } from "lucide-react";
-import { TRAINING_STYLES } from "@/lib/constants/trainingStyles";
+import { TRAINING_STYLES, getGroupedTrainingStyles } from "@/lib/constants/trainingStyles";
 import { cn } from "@/lib/utils";
 
 interface TrainingMethodSelectProps {
@@ -31,6 +33,7 @@ export function TrainingMethodSelect({
   showColorDot = false,
 }: TrainingMethodSelectProps) {
   const selectedStyle = TRAINING_STYLES.find(s => s.value === value);
+  const groupedStyles = getGroupedTrainingStyles();
   
   return (
     <div className="flex items-center gap-1 w-full min-w-0">
@@ -39,15 +42,22 @@ export function TrainingMethodSelect({
           <SelectValue />
         </SelectTrigger>
         <SelectContent className={cn("max-h-80 z-[9999]", className)}>
-          {TRAINING_STYLES.map((style) => (
-            <SelectItem key={style.value} value={style.value}>
-              <div className="flex items-center gap-2">
-                {showColorDot && style.color && (
-                  <div className={cn("w-2 h-2 rounded-full", style.color)} />
-                )}
-                <span>{style.label}</span>
-              </div>
-            </SelectItem>
+          {groupedStyles.map((group) => (
+            <SelectGroup key={group.group}>
+              <SelectLabel className="text-xs font-semibold text-muted-foreground px-2 py-1.5">
+                {group.label}
+              </SelectLabel>
+              {group.styles.map((style) => (
+                <SelectItem key={style.value} value={style.value}>
+                  <div className="flex items-center gap-2">
+                    {showColorDot && style.color && (
+                      <div className={cn("w-2 h-2 rounded-full", style.color)} />
+                    )}
+                    <span>{style.label}</span>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectGroup>
           ))}
         </SelectContent>
       </Select>

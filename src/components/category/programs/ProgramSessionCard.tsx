@@ -601,24 +601,41 @@ export function ProgramSessionCard({
                   <div className="px-2 py-2 text-xs text-muted-foreground">
                     Aucun exercice trouvé
                   </div>
-                ) : (
-                  filteredLibrary.slice(0, 12).map((libEx) => (
-                    <button
-                      key={libEx.id}
-                      type="button"
-                      className="w-full text-left px-2 py-2 hover:bg-muted rounded-sm text-sm flex justify-between items-center"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        selectFromLibrary(index, libEx);
-                      }}
-                    >
-                      <span className="truncate pr-2">{libEx.name}</span>
-                      <Badge variant="outline" className="text-xs shrink-0">
-                        {getCategoryLabel(libEx.category)}
-                      </Badge>
-                    </button>
-                  ))
-                )}
+                ) : (() => {
+                  // Group by category
+                  const grouped: Record<string, typeof filteredLibrary> = {};
+                  filteredLibrary.slice(0, 30).forEach((libEx) => {
+                    const cat = libEx.category || "autre";
+                    if (!grouped[cat]) grouped[cat] = [];
+                    grouped[cat].push(libEx);
+                  });
+                  return Object.entries(grouped).map(([cat, exercises]) => (
+                    <div key={cat}>
+                      <div className="px-2 py-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider sticky top-0 bg-popover border-b">
+                        {getCategoryLabel(cat)}
+                        {exercises[0]?.subcategory && ` · ${exercises[0].subcategory}`}
+                      </div>
+                      {exercises.map((libEx) => (
+                        <button
+                          key={libEx.id}
+                          type="button"
+                          className="w-full text-left px-2 py-2 hover:bg-muted rounded-sm text-sm flex justify-between items-center"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            selectFromLibrary(index, libEx);
+                          }}
+                        >
+                          <span className="truncate pr-2">{libEx.name}</span>
+                          {libEx.subcategory && (
+                            <Badge variant="outline" className="text-xs shrink-0">
+                              {libEx.subcategory}
+                            </Badge>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  ));
+                })()}
               </PopoverContent>
             </Popover>
           </div>

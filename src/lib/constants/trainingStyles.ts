@@ -13,6 +13,8 @@ export interface TrainingStyleCharacteristics {
   methodeIntensification: boolean;
 }
 
+export type TrainingMethodGroup = "classique" | "intensification" | "cardio" | "special";
+
 export interface TrainingStyleConfig {
   value: string;
   label: string;
@@ -21,6 +23,7 @@ export interface TrainingStyleConfig {
   bgColor: string;
   description: string;
   maxExercises?: number; // For linkable methods
+  group?: TrainingMethodGroup;
   characteristics?: TrainingStyleCharacteristics;
 }
 
@@ -549,6 +552,45 @@ export const getCardioBlockConfig = (method: string): CardioBlockConfig => {
         roundsLabel: "",
       };
   }
+};
+
+// Method group mapping
+export const METHOD_GROUP_MAP: Record<string, TrainingMethodGroup> = {
+  // Classique
+  normal: "classique", superset: "classique", biset: "classique", triset: "classique", giant_set: "classique",
+  // Intensification
+  drop_set: "intensification", rest_pause: "intensification", pyramid_up: "intensification", pyramid_down: "intensification",
+  five_by_five: "intensification", cluster: "intensification", bulgarian: "intensification",
+  super_pletnev: "intensification", combine_haltero: "intensification",
+  // Cardio
+  amrap: "cardio", for_time: "cardio", circuit: "cardio", emom: "cardio", tabata: "cardio",
+  death_by: "cardio", intermittent_cardio: "cardio", fartlek: "cardio",
+  // Spéciales (force/iso/vitesse)
+  vbt: "special", isometric_overcoming: "special", isometric_yielding: "special",
+  iso_max: "special", stato_dynamique: "special",
+};
+
+export const METHOD_GROUP_LABELS: Record<TrainingMethodGroup, string> = {
+  classique: "📋 Classique",
+  intensification: "💪 Intensification",
+  cardio: "🏃 Cardio / CrossFit",
+  special: "⚡ Méthodes spéciales",
+};
+
+export const getMethodGroup = (method: string): TrainingMethodGroup => METHOD_GROUP_MAP[method] || "classique";
+
+// Get training styles grouped
+export const getGroupedTrainingStyles = () => {
+  const groups: { group: TrainingMethodGroup; label: string; styles: TrainingStyleConfig[] }[] = [];
+  const order: TrainingMethodGroup[] = ["classique", "intensification", "special", "cardio"];
+  
+  for (const g of order) {
+    const styles = TRAINING_STYLES.filter(s => getMethodGroup(s.value) === g);
+    if (styles.length > 0) {
+      groups.push({ group: g, label: METHOD_GROUP_LABELS[g], styles });
+    }
+  }
+  return groups;
 };
 
 // Styles for workout builder (subset for standard gym sessions)
