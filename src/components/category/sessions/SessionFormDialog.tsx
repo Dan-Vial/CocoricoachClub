@@ -1538,7 +1538,7 @@ export function SessionFormDialog({
               </PopoverTrigger>
               <PopoverContent
                 align="start"
-                className="p-1 w-[--radix-popover-trigger-width] max-h-64 overflow-y-auto z-50"
+                className="p-1 w-[min(400px,90vw)] max-h-64 overflow-y-auto z-50"
                 onOpenAutoFocus={(e) => e.preventDefault()}
               >
                 {filteredLibrary.length === 0 ? (
@@ -1546,15 +1546,15 @@ export function SessionFormDialog({
                     Aucun exercice trouvé
                   </div>
                 ) : (
-                  filteredLibrary.slice(0, 12).map((libEx) => (
+                  filteredLibrary.slice(0, 15).map((libEx) => (
                     <button
                       key={libEx.id}
                       type="button"
-                      className="w-full text-left px-2 py-2 hover:bg-muted rounded-sm text-sm flex justify-between items-center"
+                      className="w-full text-left px-2 py-2 hover:bg-muted rounded-sm text-sm flex items-start gap-2"
                       onClick={() => selectFromLibrary(index, libEx)}
                     >
-                      <span className="truncate pr-2">{libEx.name}</span>
-                      <Badge variant="outline" className="text-xs shrink-0">
+                      <span className="break-words min-w-0 flex-1">{libEx.name}</span>
+                      <Badge variant="outline" className="text-[10px] shrink-0 mt-0.5">
                         {getCategoryLabel(libEx.category)}
                       </Badge>
                     </button>

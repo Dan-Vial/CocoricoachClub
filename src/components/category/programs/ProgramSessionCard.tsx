@@ -632,15 +632,15 @@ export function ProgramSessionCard({
                         <button
                           key={libEx.id}
                           type="button"
-                          className="w-full text-left px-2 py-2 hover:bg-muted rounded-sm text-sm flex justify-between items-center"
+                          className="w-full text-left px-2 py-2 hover:bg-muted rounded-sm text-sm flex items-start gap-2"
                           onClick={(e) => {
                             e.stopPropagation();
                             selectFromLibrary(index, libEx);
                           }}
                         >
-                          <span className="truncate pr-2">{libEx.name}</span>
+                          <span className="break-words min-w-0 flex-1">{libEx.name}</span>
                           {libEx.subcategory && (
-                            <Badge variant="outline" className="text-xs shrink-0">
+                            <Badge variant="outline" className="text-[10px] shrink-0 mt-0.5">
                               {libEx.subcategory}
                             </Badge>
                           )}
