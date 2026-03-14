@@ -254,6 +254,22 @@ export function AddExerciseDialog() {
                     ))}
                   </SelectGroup>
                   <SelectGroup>
+                    <SelectLabel className={`text-xs font-semibold ${CATEGORY_GROUP_CONFIGS.plyometrie?.color}`}>Pliométrie</SelectLabel>
+                    {groupedCategories.plyometrie.map((cat) => (
+                      <SelectItem key={cat.value} value={cat.value}>
+                        {cat.label}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                  <SelectGroup>
+                    <SelectLabel className={`text-xs font-semibold ${CATEGORY_GROUP_CONFIGS.neuro?.color}`}>Neuro / Cognitif</SelectLabel>
+                    {groupedCategories.neuro.map((cat) => (
+                      <SelectItem key={cat.value} value={cat.value}>
+                        {cat.label}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                  <SelectGroup>
                     <SelectLabel className={`text-xs font-semibold ${CATEGORY_GROUP_CONFIGS.reathletisation?.color}`}>Rehab / Réathlé</SelectLabel>
                     {groupedCategories.reathletisation.map((cat) => (
                       <SelectItem key={cat.value} value={cat.value}>
