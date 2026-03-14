@@ -117,7 +117,7 @@ export function WeeklySessionsView({
         </div>
       </CardHeader>
       <CardContent>
-        <div ref={weeklyCalendarRef} className="grid grid-cols-7 gap-2 print:gap-1">
+        <div ref={weeklyCalendarRef} className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2 print:grid-cols-7 print:gap-1">
           {weekDays.map((day, index) => {
             const daySessions = getSessionsForDay(day);
             const dayMatches = getMatchesForDay(day);
