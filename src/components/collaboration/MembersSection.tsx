@@ -140,7 +140,7 @@ export function MembersSection({ clubId, canManage }: MembersSectionProps) {
       // Update club_members role
       const { error } = await supabase
         .from("club_members")
-        .update({ role: newRole })
+        .update({ role: newRole as any })
         .eq("id", memberId);
       if (error) throw error;
 
