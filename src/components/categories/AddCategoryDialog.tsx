@@ -340,7 +340,14 @@ export function AddCategoryDialog({
                       <div className="flex items-center gap-2">
                         <Checkbox 
                           checked={selectedMembers.includes(member.id)}
-                          onCheckedChange={() => {}}
+                          onCheckedChange={(checked) => {
+                            setSelectedMembers((prev) => {
+                              if (checked) {
+                                return prev.includes(member.id) ? prev : [...prev, member.id];
+                              }
+                              return prev.filter((id) => id !== member.id);
+                            });
+                          }}
                           onClick={(e) => e.stopPropagation()}
                         />
                         <div>
