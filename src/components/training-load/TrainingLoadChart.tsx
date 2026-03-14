@@ -86,6 +86,38 @@ const CustomTooltip = ({ active, payload, label }: any) => {
              data.riskLevel === "warning" ? "Vigilance" : "Danger"}
           </Badge>
         </div>
+        {/* HRV data in tooltip */}
+        {(data.hrvMs != null || data.avgHrBpm != null || data.maxHrBpm != null) && (
+          <div className="pt-1 border-t space-y-1">
+            <div className="flex items-center gap-1 text-xs font-medium text-destructive">
+              <Heart className="h-3 w-3" /> Données cardiaques
+            </div>
+            {data.hrvMs != null && (
+              <div className="flex justify-between gap-4">
+                <span className="text-muted-foreground">HRV:</span>
+                <span className="font-semibold">{data.hrvMs} ms</span>
+              </div>
+            )}
+            {data.restingHrBpm != null && (
+              <div className="flex justify-between gap-4">
+                <span className="text-muted-foreground">FC repos:</span>
+                <span className="font-semibold">{data.restingHrBpm} bpm</span>
+              </div>
+            )}
+            {data.avgHrBpm != null && (
+              <div className="flex justify-between gap-4">
+                <span className="text-muted-foreground">FC moy:</span>
+                <span className="font-semibold">{data.avgHrBpm} bpm</span>
+              </div>
+            )}
+            {data.maxHrBpm != null && (
+              <div className="flex justify-between gap-4">
+                <span className="text-muted-foreground">FC max:</span>
+                <span className="font-semibold">{data.maxHrBpm} bpm</span>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -97,11 +129,13 @@ export function TrainingLoadChart({
   selectedMetric,
   onMetricChange,
   hasGpsData,
+  hasHrvData = false,
   isLoading = false,
   showZones = true,
   height = 350,
 }: TrainingLoadChartProps) {
   const [viewMode, setViewMode] = useState<"ratio" | "loads">("ratio");
+  const [showHrvOverlay, setShowHrvOverlay] = useState(true);
   const metricConfig = METRICS_CONFIG[selectedMetric];
 
   // Format data for chart
