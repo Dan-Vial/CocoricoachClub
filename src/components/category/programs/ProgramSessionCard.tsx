@@ -1250,21 +1250,21 @@ export function ProgramSessionCard({
                      <label className="text-xs text-muted-foreground">Méthode</label>
                      <TrainingMethodSelect
                        value={exercise.method}
-                       onValueChange={(value) => {
-                         if (LINKABLE_METHODS.includes(value)) {
-                           createBlockForMethod(index, value);
-                         } else if (DROP_METHODS.includes(value)) {
-                           initDropSets(index, value);
-                         } else if (CLUSTER_METHODS.includes(value)) {
-                           initClusterSets(index, value);
-                         } else {
-                           updateMultipleFields(index, {
-                             method: value,
-                             drop_sets: undefined,
-                             cluster_sets: undefined,
-                           });
-                         }
-                       }}
+                        onValueChange={(value) => {
+                          if (LINKABLE_METHODS.includes(value) || CARDIO_BLOCK_METHODS.includes(value) || SPECIAL_METHODS.includes(value)) {
+                            createBlockForMethod(index, value);
+                          } else if (DROP_METHODS.includes(value)) {
+                            initDropSets(index, value);
+                          } else if (CLUSTER_METHODS.includes(value)) {
+                            initClusterSets(index, value);
+                          } else {
+                            updateMultipleFields(index, {
+                              method: value,
+                              drop_sets: undefined,
+                              cluster_sets: undefined,
+                            });
+                          }
+                        }}
                        showColorDot={true}
                        triggerClassName="h-8 text-xs"
                      />
