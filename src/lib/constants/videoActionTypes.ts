@@ -521,3 +521,64 @@ export function sportSupportsGps(sportType?: string): boolean {
          sport.includes("football") || 
          sport.includes("aviron");
 }
+
+// Terminologie adaptée par sport
+export function getVideoTerminology(sportType?: string): {
+  match: string;
+  matches: string;
+  analysisTab: string;
+  associatedLabel: string;
+  noMatchLabel: string;
+  playerLabel: string;
+  playersLabel: string;
+} {
+  if (!sportType) return {
+    match: "Match",
+    matches: "Matchs",
+    analysisTab: "Analyses Matchs",
+    associatedLabel: "Match associé (optionnel)",
+    noMatchLabel: "Aucun match - Vidéo libre",
+    playerLabel: "Joueur",
+    playersLabel: "Joueurs",
+  };
+
+  const sport = sportType.toLowerCase();
+  const isIndividual = sport.includes("athletisme") || sport.includes("judo") || 
+    sport.includes("natation") || sport.includes("ski") || sport.includes("snow") ||
+    sport.includes("triathlon") || sport.includes("bowling") || sport.includes("aviron");
+  const isPadel = sport.includes("padel");
+
+  if (isIndividual) {
+    return {
+      match: "Compétition",
+      matches: "Compétitions",
+      analysisTab: "Analyses Compétitions",
+      associatedLabel: "Compétition associée (optionnel)",
+      noMatchLabel: "Aucune compétition - Vidéo libre",
+      playerLabel: "Athlète",
+      playersLabel: "Athlètes",
+    };
+  }
+
+  if (isPadel) {
+    return {
+      match: "Match",
+      matches: "Matchs",
+      analysisTab: "Analyses Matchs",
+      associatedLabel: "Match associé (optionnel)",
+      noMatchLabel: "Aucun match - Vidéo libre",
+      playerLabel: "Joueur",
+      playersLabel: "Joueurs",
+    };
+  }
+
+  return {
+    match: "Match",
+    matches: "Matchs",
+    analysisTab: "Analyses Matchs",
+    associatedLabel: "Match associé (optionnel)",
+    noMatchLabel: "Aucun match - Vidéo libre",
+    playerLabel: "Joueur",
+    playersLabel: "Joueurs",
+  };
+}
