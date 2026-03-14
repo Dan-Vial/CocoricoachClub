@@ -253,6 +253,7 @@ export function VideoAnalysisTab({ categoryId, sportType }: VideoAnalysisTabProp
         open={showAddDialog}
         onOpenChange={setShowAddDialog}
         categoryId={categoryId}
+        sportType={sportType}
         onSuccess={() => {
           refetch();
           setShowAddDialog(false);
