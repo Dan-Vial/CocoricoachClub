@@ -118,8 +118,7 @@ export function MatchesTab({ categoryId, sportType }: MatchesTabProps) {
                     )}
                     <Button onClick={() => setIsAddDialogOpen(true)} className="gap-2">
                       <Plus className="h-4 w-4" />
-                      <span className="hidden sm:inline">Ajouter {isIndividual ? "une" : "un"} {itemLabel}</span>
-                      <span className="sm:hidden"><Plus className="h-4 w-4" /></span>
+                      Ajouter {isIndividual ? "une" : "un"} {itemLabel}
                     </Button>
                   </div>
                 )}
