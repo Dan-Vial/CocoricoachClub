@@ -734,6 +734,8 @@ export function SessionDetailsDialog({
           </div>
         </Tabs>
 
+        </div>
+
         {/* Notify Button in Header */}
         <div className="absolute top-4 right-12">
           <Button variant="outline" size="sm" onClick={() => setIsNotifyOpen(true)}>
