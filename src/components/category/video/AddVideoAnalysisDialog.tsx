@@ -79,7 +79,7 @@ export function AddVideoAnalysisDialog({
         .eq("category_id", categoryId)
         .order("name");
       if (error) throw error;
-      return data as { id: string; name: string; position: string | null }[];
+      return data as { id: string; name: string; first_name: string | null; position: string | null }[];
     },
   });
 
