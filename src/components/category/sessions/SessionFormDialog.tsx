@@ -1100,7 +1100,53 @@ export function SessionFormDialog({
     setExercises([...exercises, ...newExercises]);
   };
 
-  // Drag and drop handlers for exercise library
+  // Replace a single exercise with a method block (avoids stale state from separate remove+create)
+  const replaceExerciseWithMethodBlock = (indexToRemove: number, method: string) => {
+    const groupId = crypto.randomUUID();
+    const remainingExercises = exercises.filter((_, i) => i !== indexToRemove)
+      .map((e, i) => ({ ...e, order_index: i }));
+    const startIndex = remainingExercises.length;
+
+    const isPyramidOrSpecial = isDropMethod(method) || method === "five_by_five" || method === "death_by" || method === "vbt";
+    const minExercises = isPyramidOrSpecial ? 1 : getMinExercisesForMethod(method);
+
+    let newExercises: Exercise[];
+    if (isPyramidOrSpecial) {
+      const exercise = emptyExercise(startIndex, groupId, 1, method);
+      if (isDropMethod(method)) {
+        let dropSets: { reps: string; percentage: number }[] = [];
+        if (method === "pyramid_up") dropSets = [{ reps: "12", percentage: 60 }, { reps: "10", percentage: 70 }, { reps: "8", percentage: 80 }];
+        else if (method === "pyramid_down") dropSets = [{ reps: "6", percentage: 85 }, { reps: "8", percentage: 75 }, { reps: "12", percentage: 65 }];
+        else if (method === "pyramid_full") dropSets = [{ reps: "12", percentage: 60 }, { reps: "10", percentage: 70 }, { reps: "8", percentage: 80 }, { reps: "10", percentage: 70 }, { reps: "12", percentage: 60 }];
+        else if (method === "drop_set") dropSets = [{ reps: "10", percentage: 80 }, { reps: "10", percentage: 70 }, { reps: "10", percentage: 60 }];
+        exercise.drop_sets = dropSets;
+        exercise.sets = dropSets.length;
+      } else if (method === "five_by_five") {
+        exercise.sets = 5; exercise.reps = "5"; exercise.weight_percent_rm = 80;
+      }
+      newExercises = [exercise];
+    } else {
+      newExercises = Array.from({ length: minExercises }, (_, i) =>
+        emptyExercise(startIndex + i, groupId, i + 1, method)
+      );
+    }
+
+    if (isCardioBlockMethod(method)) {
+      const config = getCardioBlockConfig(method);
+      const defaultBlockConfig: BlockConfig = {
+        duration_minutes: config.showDuration ? (method === "emom" ? minExercises : 10) : undefined,
+        rounds: method === "tabata" ? 8 : (config.showRounds ? 3 : undefined),
+        work_seconds: config.showWorkRest ? 20 : undefined,
+        rest_seconds: config.showWorkRest ? 10 : undefined,
+        emom_interval: method === "emom" ? 1 : undefined,
+        emom_mode: method === "emom" ? "single" : undefined,
+      };
+      setBlockConfigs(prev => ({ ...prev, [groupId]: defaultBlockConfig }));
+    }
+
+    setExercises([...remainingExercises, ...newExercises]);
+  };
+
   const handleDragStart = (event: DragStartEvent) => {
     setActiveExercise(event.active.data.current);
   };
