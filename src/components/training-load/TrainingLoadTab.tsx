@@ -67,6 +67,7 @@ export function TrainingLoadTab({ categoryId }: TrainingLoadTabProps) {
     summary, 
     availableMetrics, 
     hasGpsData,
+    hasHrvData,
     sportType,
     isLoading 
   } = useTrainingLoad({
