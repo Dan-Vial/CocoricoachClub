@@ -656,53 +656,90 @@ export function hasSpecialMetrics(category: string): boolean {
 }
 
 export const EXERCISE_SUBCATEGORIES = [
-  // Musculation
-  { value: "renforcement", label: "Renforcement", parentCategory: "musculation" },
-  { value: "conditioning", label: "Conditioning", parentCategory: "musculation" },
-  { value: "halterophilie", label: "Haltérophilie", parentCategory: "musculation" },
-  { value: "gymnastique", label: "Gymnastique", parentCategory: "musculation" },
-  { value: "plyometrie", label: "Pliométrie", parentCategory: "musculation" },
-  { value: "hypertrophie", label: "Hypertrophie", parentCategory: "musculation" },
-  { value: "force_max", label: "Force maximale", parentCategory: "musculation" },
-  { value: "endurance_force", label: "Endurance de force", parentCategory: "musculation" },
-  { value: "explosivite", label: "Explosivité", parentCategory: "musculation" },
-  { value: "vitesse", label: "Vitesse", parentCategory: "musculation" },
+  // ═══ Haltérophilie ═══
+  { value: "halterophilie_mouvements_complets", label: "Mouvements complets", parentCategory: "halterophilie" },
+  { value: "halterophilie_educatifs", label: "Éducatifs / Semi-technique", parentCategory: "halterophilie" },
+  { value: "halterophilie_accessoires", label: "Accessoires / Renforcement", parentCategory: "halterophilie" },
   
-  // Pliométrie
+  // ═══ Musculation ═══
+  { value: "force_max", label: "Force maximale", parentCategory: "musculation" },
+  { value: "hypertrophie", label: "Hypertrophie", parentCategory: "musculation" },
+  { value: "puissance", label: "Puissance / Explosivité", parentCategory: "musculation" },
+  { value: "endurance_force", label: "Endurance de force", parentCategory: "musculation" },
+  { value: "force_vitesse", label: "Force-Vitesse / VBT", parentCategory: "musculation" },
+  { value: "methode_specifique", label: "Méthode spécifique (tempo, cluster, contraste)", parentCategory: "musculation" },
+  { value: "renforcement_general", label: "Renforcement général", parentCategory: "musculation" },
+  { value: "isometrie", label: "Isométrie", parentCategory: "musculation" },
+  
+  // ═══ Pliométrie ═══
   { value: "plyo_low_intensity", label: "Basse intensité", parentCategory: "plyometrie" },
   { value: "plyo_medium_intensity", label: "Moyenne intensité", parentCategory: "plyometrie" },
   { value: "plyo_high_intensity", label: "Haute intensité", parentCategory: "plyometrie" },
   { value: "plyo_shock_method", label: "Méthode Shock", parentCategory: "plyometrie" },
+  { value: "plyo_medball_throws", label: "Lancers médecine ball", parentCategory: "plyometrie" },
   
-  // Neuro
-  { value: "neuro_visual", label: "Visuel", parentCategory: "neuro" },
-  { value: "neuro_motor", label: "Moteur", parentCategory: "neuro" },
-  { value: "neuro_cognitive", label: "Cognitif", parentCategory: "neuro" },
-  { value: "neuro_reactive", label: "Réactif", parentCategory: "neuro" },
+  // ═══ Neuro / Cognitif ═══
+  { value: "neuro_visual", label: "Visuel / Tracking", parentCategory: "neuro" },
+  { value: "neuro_motor", label: "Moteur / Coordination", parentCategory: "neuro" },
+  { value: "neuro_cognitive", label: "Cognitif / Décisionnel", parentCategory: "neuro" },
+  { value: "neuro_reactive", label: "Réactif / Go-NoGo", parentCategory: "neuro" },
   
-  // Rehab / Réathlé
+  // ═══ Poids de corps ═══
+  { value: "bodyweight_basics", label: "Fondamentaux", parentCategory: "bodyweight" },
+  { value: "bodyweight_advanced", label: "Avancé / Skills", parentCategory: "bodyweight" },
+  { value: "bodyweight_weighted", label: "Lesté", parentCategory: "bodyweight" },
+  
+  // ═══ CrossFit / Hyrox ═══
+  { value: "crossfit_metcon", label: "MetCon (WOD, AMRAP, EMOM...)", parentCategory: "crossfit_hyrox" },
+  { value: "crossfit_strength", label: "Strength", parentCategory: "crossfit_hyrox" },
+  { value: "crossfit_skill", label: "Skill / Gymnastic", parentCategory: "crossfit_hyrox" },
+  { value: "hyrox_specific", label: "Hyrox spécifique", parentCategory: "crossfit_hyrox" },
+  
+  // ═══ Ergo / Cardio ═══
+  { value: "ergo_endurance", label: "Endurance", parentCategory: "ergo" },
+  { value: "ergo_interval", label: "Interval / HIIT", parentCategory: "ergo" },
+  { value: "ergo_test", label: "Test / Benchmark", parentCategory: "ergo" },
+  { value: "ergo_recovery", label: "Récupération active", parentCategory: "ergo" },
+  
+  // ═══ Traîneau ═══
+  { value: "sled_strength", label: "Force / Charge lourde", parentCategory: "sled" },
+  { value: "sled_conditioning", label: "Conditioning / Répétitions", parentCategory: "sled" },
+  { value: "sled_sprint", label: "Sprint / Vitesse", parentCategory: "sled" },
+  
+  // ═══ Pilates / Yoga ═══
+  { value: "pilates_stability", label: "Stabilité / Core", parentCategory: "pilates" },
+  { value: "pilates_flexibility", label: "Souplesse / Flow", parentCategory: "pilates" },
+  { value: "pilates_strength", label: "Renforcement", parentCategory: "pilates" },
+  
+  // ═══ Rehab / Réathlétisation ═══
   { value: "phase1_protection", label: "Phase 1 - Réhabilitation", parentCategory: "reathletisation" },
   { value: "phase2_controlled", label: "Phase 2 - Renforcement", parentCategory: "reathletisation" },
   { value: "phase3_progressive", label: "Phase 3 - Retour terrain", parentCategory: "reathletisation" },
   { value: "phase4_return", label: "Phase 4 - Retour compétition", parentCategory: "reathletisation" },
-  { value: "prevention", label: "Prévention", parentCategory: "reathletisation" },
+  { value: "prevention", label: "Prévention / Prophylaxie", parentCategory: "reathletisation" },
   
-  // Stretching & Mobilité
-  { value: "prophylaxie", label: "Prophylaxie", parentCategory: "stretching_mobility" },
-  { value: "mobilite", label: "Mobilité", parentCategory: "stretching_mobility" },
-  { value: "echauffement", label: "Échauffement", parentCategory: "stretching_mobility" },
-  { value: "retour_calme", label: "Retour au calme", parentCategory: "stretching_mobility" },
+  // ═══ Échauffement / Mobilité ═══
+  { value: "echauffement_general", label: "Échauffement général", parentCategory: "stretching_mobility" },
+  { value: "mobilite_articulaire", label: "Mobilité articulaire", parentCategory: "stretching_mobility" },
+  { value: "etirements_dynamiques", label: "Étirements dynamiques", parentCategory: "stretching_mobility" },
+  { value: "etirements_statiques", label: "Étirements statiques", parentCategory: "stretching_mobility" },
+  { value: "automassage", label: "Auto-massage / Foam rolling", parentCategory: "stretching_mobility" },
+  { value: "retour_calme", label: "Retour au calme / Récupération", parentCategory: "stretching_mobility" },
   
-  // Terrain
+  // ═══ Terrain ═══
   { value: "vitesse_lineaire", label: "Vitesse linéaire", parentCategory: "terrain" },
   { value: "vitesse_changement", label: "Changements de direction", parentCategory: "terrain" },
   { value: "capacite_aerobie", label: "Capacité aérobie", parentCategory: "terrain" },
   { value: "puissance_aerobie", label: "Puissance aérobie", parentCategory: "terrain" },
+  { value: "technique_sport", label: "Technique spécifique", parentCategory: "terrain" },
+  { value: "tactique_sport", label: "Tactique / Jeu", parentCategory: "terrain" },
   
-  // Course
+  // ═══ Course ═══
   { value: "drills_echauffement", label: "Drills d'échauffement", parentCategory: "course" },
   { value: "sprint_specifique", label: "Sprint spécifique", parentCategory: "course" },
   { value: "haies_specifique", label: "Haies spécifique", parentCategory: "course" },
+  { value: "endurance_course", label: "Endurance / EF", parentCategory: "course" },
+  { value: "intensite_course", label: "Intensité (VMA, seuil, fractionné)", parentCategory: "course" },
 ] as const;
 
 export const DIFFICULTY_LEVELS = [
