@@ -386,7 +386,7 @@ export const getTrainingStyleConfig = (style: string): TrainingStyleConfig => {
 export const LINKABLE_METHODS = ["superset", "biset", "triset", "giant_set", "bulgarian"];
 
 // Cardio/CrossFit methods that create blocks with exercises inside
-export const CARDIO_BLOCK_METHODS = ["amrap", "for_time", "circuit", "emom", "tabata", "death_by"];
+export const CARDIO_BLOCK_METHODS = ["amrap", "for_time", "circuit", "emom", "tabata", "death_by", "intermittent_cardio", "fartlek"];
 
 // Methods that use drop sets configuration (progressive load changes)
 export const DROP_METHODS = ["drop_set", "pyramid_up", "pyramid_down", "pyramid_full"];
