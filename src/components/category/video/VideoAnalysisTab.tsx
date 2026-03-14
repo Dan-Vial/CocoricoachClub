@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { ColoredSubTabsList, ColoredSubTabsTrigger } from "@/components/ui/colored-subtabs";
 import { Video, Plus, Film, Users, BarChart3, Scissors, Tag } from "lucide-react";
+import { getVideoTerminology } from "@/lib/constants/videoActionTypes";
 import { AddVideoAnalysisDialog } from "./AddVideoAnalysisDialog";
 import { VideoAnalysisList } from "./VideoAnalysisList";
 import { VideoClipViewer } from "./VideoClipViewer";
@@ -25,6 +26,7 @@ export function VideoAnalysisTab({ categoryId, sportType }: VideoAnalysisTabProp
   const [editingAnalysisId, setEditingAnalysisId] = useState<string | null>(null);
   const [showDirectImport, setShowDirectImport] = useState(false);
   const queryClient = useQueryClient();
+  const terminology = getVideoTerminology(sportType);
 
   const { data: videoAnalyses, isLoading, refetch } = useQuery({
     queryKey: ["video-analyses", categoryId],
@@ -160,7 +162,7 @@ export function VideoAnalysisTab({ categoryId, sportType }: VideoAnalysisTabProp
               colorKey="video"
               icon={<Video className="h-4 w-4" />}
             >
-              Analyses Matchs
+              {terminology.analysisTab}
             </ColoredSubTabsTrigger>
             <ColoredSubTabsTrigger 
               value="themes" 
@@ -181,7 +183,7 @@ export function VideoAnalysisTab({ categoryId, sportType }: VideoAnalysisTabProp
               colorKey="video"
               icon={<Users className="h-4 w-4" />}
             >
-              Vue Joueurs
+              Vue {terminology.playersLabel}
             </ColoredSubTabsTrigger>
           </ColoredSubTabsList>
         </div>
@@ -251,6 +253,7 @@ export function VideoAnalysisTab({ categoryId, sportType }: VideoAnalysisTabProp
         open={showAddDialog}
         onOpenChange={setShowAddDialog}
         categoryId={categoryId}
+        sportType={sportType}
         onSuccess={() => {
           refetch();
           setShowAddDialog(false);

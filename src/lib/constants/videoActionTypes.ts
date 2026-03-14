@@ -166,6 +166,130 @@ const VOLLEYBALL_ACTIONS: ActionType[] = [
   { value: "pipe", label: "Pipe (attaque arrière)", category: "offensive" },
 ];
 
+// Actions spécifiques Athlétisme
+const ATHLETISME_ACTIONS: ActionType[] = [
+  // Technique
+  { value: "start_block", label: "Départ en starting-blocks", category: "offensive" },
+  { value: "race_phase", label: "Phase de course", category: "physical" },
+  { value: "finish_line", label: "Arrivée", category: "offensive" },
+  { value: "hurdle_technique", label: "Passage de haie", category: "offensive" },
+  { value: "hurdle_contact", label: "Contact haie", category: "other" },
+  { value: "throw_technique", label: "Technique de lancer", category: "offensive" },
+  { value: "approach_run", label: "Course d'élan", category: "physical" },
+  { value: "takeoff", label: "Impulsion / Envol", category: "offensive" },
+  { value: "landing", label: "Réception", category: "offensive" },
+  { value: "flight_phase", label: "Phase de vol", category: "offensive" },
+  { value: "release", label: "Lâcher / Release", category: "offensive" },
+  { value: "rotation", label: "Rotation", category: "physical" },
+  // Relay
+  { value: "baton_exchange", label: "Passage de relais", category: "transition" },
+  { value: "relay_zone", label: "Zone de transmission", category: "transition" },
+  // Endurance
+  { value: "pacing", label: "Gestion d'allure", category: "physical" },
+  { value: "kick_finish", label: "Finish / Kick final", category: "offensive" },
+  { value: "split_analysis", label: "Analyse des splits", category: "other" },
+  // General
+  { value: "warm_up", label: "Échauffement", category: "other" },
+  { value: "technical_drill", label: "Éducatif technique", category: "other" },
+  { value: "foul", label: "Faux départ / Faute", category: "other" },
+];
+
+// Actions spécifiques Judo
+const JUDO_ACTIONS: ActionType[] = [
+  { value: "ippon", label: "Ippon", category: "offensive" },
+  { value: "waza_ari", label: "Waza-ari", category: "offensive" },
+  { value: "yuko", label: "Yuko", category: "offensive" },
+  { value: "throw_technique", label: "Technique de projection", category: "offensive" },
+  { value: "osae_komi", label: "Immobilisation (Osae-komi)", category: "offensive" },
+  { value: "shime_waza", label: "Étranglement (Shime-waza)", category: "offensive" },
+  { value: "kansetsu_waza", label: "Clé articulaire (Kansetsu-waza)", category: "offensive" },
+  { value: "grip_fight", label: "Kumi-kata (prise de garde)", category: "defensive" },
+  { value: "counter_throw", label: "Contre-prise", category: "defensive" },
+  { value: "escape", label: "Sortie d'immobilisation", category: "defensive" },
+  { value: "ne_waza", label: "Travail au sol (Ne-waza)", category: "offensive" },
+  { value: "transition_stand_ground", label: "Transition debout/sol", category: "transition" },
+  { value: "shido", label: "Shido (pénalité)", category: "other" },
+  { value: "golden_score", label: "Golden Score", category: "other" },
+  { value: "randori", label: "Randori", category: "other" },
+];
+
+// Actions spécifiques Natation
+const NATATION_ACTIONS: ActionType[] = [
+  { value: "start_dive", label: "Plongeon de départ", category: "offensive" },
+  { value: "turn", label: "Virage", category: "offensive" },
+  { value: "underwater_phase", label: "Phase sous-marine (coulée)", category: "offensive" },
+  { value: "stroke_technique", label: "Technique de nage", category: "physical" },
+  { value: "breathing_pattern", label: "Pattern de respiration", category: "physical" },
+  { value: "finish_touch", label: "Touche d'arrivée", category: "offensive" },
+  { value: "split_analysis", label: "Analyse des passages", category: "other" },
+  { value: "relay_exchange", label: "Relais - échange", category: "transition" },
+  { value: "pacing_swim", label: "Gestion d'allure", category: "physical" },
+  { value: "kick_drill", label: "Travail de battements", category: "other" },
+  { value: "pull_drill", label: "Travail de bras", category: "other" },
+];
+
+// Actions spécifiques Ski / Sports de Glisse
+const SKI_ACTIONS: ActionType[] = [
+  { value: "start_ski", label: "Départ", category: "offensive" },
+  { value: "gate_passage", label: "Passage de porte", category: "offensive" },
+  { value: "turn_technique", label: "Technique de virage", category: "physical" },
+  { value: "glide_phase", label: "Phase de glisse", category: "physical" },
+  { value: "jump_ski", label: "Saut / Bosse", category: "offensive" },
+  { value: "trick", label: "Figure / Trick (Freestyle)", category: "offensive" },
+  { value: "landing_ski", label: "Réception", category: "offensive" },
+  { value: "shooting_biathlon", label: "Tir (Biathlon)", category: "set_piece" },
+  { value: "transition_ski", label: "Transition (changement de section)", category: "transition" },
+  { value: "finish_ski", label: "Arrivée", category: "offensive" },
+  { value: "fall", label: "Chute", category: "other" },
+  { value: "course_analysis", label: "Analyse de tracé", category: "other" },
+];
+
+// Actions spécifiques Triathlon
+const TRIATHLON_ACTIONS: ActionType[] = [
+  { value: "swim_start", label: "Départ natation", category: "offensive" },
+  { value: "swim_technique", label: "Technique natation", category: "physical" },
+  { value: "t1_transition", label: "Transition T1 (Swim→Bike)", category: "transition" },
+  { value: "bike_climb", label: "Montée vélo", category: "physical" },
+  { value: "bike_descent", label: "Descente vélo", category: "physical" },
+  { value: "bike_draft", label: "Drafting vélo", category: "offensive" },
+  { value: "t2_transition", label: "Transition T2 (Bike→Run)", category: "transition" },
+  { value: "run_pacing", label: "Gestion d'allure course", category: "physical" },
+  { value: "run_finish", label: "Finish course à pied", category: "offensive" },
+  { value: "nutrition_point", label: "Ravitaillement", category: "other" },
+  { value: "mechanical", label: "Problème mécanique", category: "other" },
+];
+
+// Actions spécifiques Bowling
+const BOWLING_ACTIONS: ActionType[] = [
+  { value: "strike", label: "Strike", category: "offensive" },
+  { value: "spare", label: "Spare", category: "offensive" },
+  { value: "split_conversion", label: "Conversion de split", category: "offensive" },
+  { value: "approach", label: "Approche", category: "physical" },
+  { value: "release_bowling", label: "Lâcher de balle", category: "offensive" },
+  { value: "ball_motion", label: "Trajectoire de balle", category: "other" },
+  { value: "lane_adjustment", label: "Ajustement de ligne", category: "other" },
+  { value: "spare_attempt", label: "Tentative de spare", category: "offensive" },
+  { value: "gutter", label: "Gouttière", category: "other" },
+];
+
+// Actions spécifiques Padel
+const PADEL_ACTIONS: ActionType[] = [
+  { value: "serve_padel", label: "Service", category: "set_piece" },
+  { value: "return_padel", label: "Retour de service", category: "offensive" },
+  { value: "bajada", label: "Bajada", category: "offensive" },
+  { value: "bandeja", label: "Bandeja", category: "offensive" },
+  { value: "vibora", label: "Víbora", category: "offensive" },
+  { value: "smash_padel", label: "Smash", category: "offensive" },
+  { value: "lob", label: "Lob", category: "offensive" },
+  { value: "chiquita", label: "Chiquita", category: "offensive" },
+  { value: "volley_padel", label: "Volée", category: "offensive" },
+  { value: "wall_shot", label: "Sortie de vitre", category: "defensive" },
+  { value: "counter_padel", label: "Contre-attaque", category: "transition" },
+  { value: "point_won", label: "Point gagné", category: "offensive" },
+  { value: "point_lost", label: "Point perdu", category: "other" },
+  { value: "unforced_error", label: "Faute directe", category: "other" },
+];
+
 export const ACTION_CATEGORIES = [
   { value: "offensive", label: "Offensive" },
   { value: "defensive", label: "Défensive" },
@@ -203,12 +327,39 @@ export function getActionTypesForSport(sportType?: string): ActionType[] {
   if (sport.includes("volleyball") || sport.includes("volley")) {
     return [...COMMON_ACTIONS, ...VOLLEYBALL_ACTIONS];
   }
+
+  if (sport.includes("athletisme") || sport.includes("athlétisme")) {
+    return [...COMMON_ACTIONS, ...ATHLETISME_ACTIONS];
+  }
+
+  if (sport.includes("judo")) {
+    return [...COMMON_ACTIONS, ...JUDO_ACTIONS];
+  }
+
+  if (sport.includes("natation") || sport.includes("swimming")) {
+    return [...COMMON_ACTIONS, ...NATATION_ACTIONS];
+  }
+
+  if (sport.includes("ski") || sport.includes("snow") || sport.includes("biathlon")) {
+    return [...COMMON_ACTIONS, ...SKI_ACTIONS];
+  }
+
+  if (sport.includes("triathlon")) {
+    return [...COMMON_ACTIONS, ...TRIATHLON_ACTIONS];
+  }
+
+  if (sport.includes("bowling")) {
+    return [...COMMON_ACTIONS, ...BOWLING_ACTIONS];
+  }
+
+  if (sport.includes("padel")) {
+    return [...COMMON_ACTIONS, ...PADEL_ACTIONS];
+  }
   
   return COMMON_ACTIONS;
 }
 
 export function getActionTypeLabel(actionType: string): string {
-  // Combine all action types for label lookup
   const allActions = [
     ...COMMON_ACTIONS,
     ...RUGBY_ACTIONS,
@@ -217,6 +368,13 @@ export function getActionTypeLabel(actionType: string): string {
     ...BASKETBALL_ACTIONS,
     ...HANDBALL_ACTIONS,
     ...VOLLEYBALL_ACTIONS,
+    ...ATHLETISME_ACTIONS,
+    ...JUDO_ACTIONS,
+    ...NATATION_ACTIONS,
+    ...SKI_ACTIONS,
+    ...TRIATHLON_ACTIONS,
+    ...BOWLING_ACTIONS,
+    ...PADEL_ACTIONS,
   ];
   
   return allActions.find(a => a.value === actionType)?.label || actionType;
@@ -291,6 +449,66 @@ export function getMatchStatsKeysForSport(sportType?: string): { key: string; la
       { key: "stroke_rate", label: "Cadence" },
     ];
   }
+
+  if (sport.includes("athletisme") || sport.includes("athlétisme")) {
+    return [
+      { key: "time", label: "Temps" },
+      { key: "distance", label: "Distance" },
+      { key: "attempts", label: "Essais" },
+      { key: "personal_best", label: "Record perso" },
+    ];
+  }
+
+  if (sport.includes("judo")) {
+    return [
+      { key: "ippons", label: "Ippons" },
+      { key: "waza_aris", label: "Waza-ari" },
+      { key: "throws", label: "Projections" },
+      { key: "shidos", label: "Shidos" },
+    ];
+  }
+
+  if (sport.includes("natation")) {
+    return [
+      { key: "time", label: "Temps" },
+      { key: "splits", label: "Passages" },
+      { key: "stroke_count", label: "Coups" },
+      { key: "turns", label: "Virages" },
+    ];
+  }
+
+  if (sport.includes("ski") || sport.includes("snow")) {
+    return [
+      { key: "time", label: "Temps" },
+      { key: "gates", label: "Portes" },
+      { key: "gap", label: "Écart" },
+    ];
+  }
+
+  if (sport.includes("triathlon")) {
+    return [
+      { key: "swim_time", label: "Natation" },
+      { key: "bike_time", label: "Vélo" },
+      { key: "run_time", label: "Course" },
+      { key: "transitions", label: "Transitions" },
+    ];
+  }
+
+  if (sport.includes("bowling")) {
+    return [
+      { key: "score", label: "Score" },
+      { key: "strikes", label: "Strikes" },
+      { key: "spares", label: "Spares" },
+    ];
+  }
+
+  if (sport.includes("padel")) {
+    return [
+      { key: "points_won", label: "Points gagnés" },
+      { key: "smashes", label: "Smashes" },
+      { key: "errors", label: "Fautes" },
+    ];
+  }
   
   return [];
 }
@@ -302,4 +520,65 @@ export function sportSupportsGps(sportType?: string): boolean {
   return sport.includes("rugby") || 
          sport.includes("football") || 
          sport.includes("aviron");
+}
+
+// Terminologie adaptée par sport
+export function getVideoTerminology(sportType?: string): {
+  match: string;
+  matches: string;
+  analysisTab: string;
+  associatedLabel: string;
+  noMatchLabel: string;
+  playerLabel: string;
+  playersLabel: string;
+} {
+  if (!sportType) return {
+    match: "Match",
+    matches: "Matchs",
+    analysisTab: "Analyses Matchs",
+    associatedLabel: "Match associé (optionnel)",
+    noMatchLabel: "Aucun match - Vidéo libre",
+    playerLabel: "Joueur",
+    playersLabel: "Joueurs",
+  };
+
+  const sport = sportType.toLowerCase();
+  const isIndividual = sport.includes("athletisme") || sport.includes("judo") || 
+    sport.includes("natation") || sport.includes("ski") || sport.includes("snow") ||
+    sport.includes("triathlon") || sport.includes("bowling") || sport.includes("aviron");
+  const isPadel = sport.includes("padel");
+
+  if (isIndividual) {
+    return {
+      match: "Compétition",
+      matches: "Compétitions",
+      analysisTab: "Analyses Compétitions",
+      associatedLabel: "Compétition associée (optionnel)",
+      noMatchLabel: "Aucune compétition - Vidéo libre",
+      playerLabel: "Athlète",
+      playersLabel: "Athlètes",
+    };
+  }
+
+  if (isPadel) {
+    return {
+      match: "Match",
+      matches: "Matchs",
+      analysisTab: "Analyses Matchs",
+      associatedLabel: "Match associé (optionnel)",
+      noMatchLabel: "Aucun match - Vidéo libre",
+      playerLabel: "Joueur",
+      playersLabel: "Joueurs",
+    };
+  }
+
+  return {
+    match: "Match",
+    matches: "Matchs",
+    analysisTab: "Analyses Matchs",
+    associatedLabel: "Match associé (optionnel)",
+    noMatchLabel: "Aucun match - Vidéo libre",
+    playerLabel: "Joueur",
+    playersLabel: "Joueurs",
+  };
 }

@@ -26,12 +26,14 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Video, Calendar, Users } from "lucide-react";
 import { VideoFileUpload } from "./VideoFileUpload";
+import { getVideoTerminology } from "@/lib/constants/videoActionTypes";
 
 interface AddVideoAnalysisDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   categoryId: string;
   onSuccess: () => void;
+  sportType?: string;
 }
 
 export function AddVideoAnalysisDialog({
@@ -39,7 +41,9 @@ export function AddVideoAnalysisDialog({
   onOpenChange,
   categoryId,
   onSuccess,
+  sportType,
 }: AddVideoAnalysisDialogProps) {
+  const terminology = getVideoTerminology(sportType);
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [title, setTitle] = useState("");
@@ -71,11 +75,11 @@ export function AddVideoAnalysisDialog({
     queryFn: async () => {
       const { data, error } = await supabase
         .from("players")
-        .select("id, name, position")
+        .select("id, name, first_name, position")
         .eq("category_id", categoryId)
         .order("name");
       if (error) throw error;
-      return data as { id: string; name: string; position: string | null }[];
+      return data as { id: string; name: string; first_name: string | null; position: string | null }[];
     },
   });
 
@@ -171,16 +175,16 @@ export function AddVideoAnalysisDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col overflow-hidden">
-        <DialogHeader className="flex-shrink-0">
+      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col overflow-hidden p-0">
+        <DialogHeader className="flex-shrink-0 px-6 pt-6 pb-2">
           <DialogTitle className="flex items-center gap-2">
             <Video className="h-5 w-5" />
             Nouvelle Analyse Vidéo
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
-          <ScrollArea className="flex-1 pr-4">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+          <ScrollArea className="flex-1 px-6">
             <div className="space-y-4 pb-4">
               {/* Title */}
               <div className="space-y-2">
@@ -192,18 +196,18 @@ export function AddVideoAnalysisDialog({
                 />
               </div>
 
-              {/* Match Selection (Optional) */}
+              {/* Match/Competition Selection (Optional) */}
               <div className="space-y-2">
                 <Label className="flex items-center gap-2">
                   <Calendar className="h-4 w-4" />
-                  Match associé (optionnel)
+                  {terminology.associatedLabel}
                 </Label>
                 <Select value={matchId} onValueChange={setMatchId}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Aucun match - Vidéo libre" />
+                    <SelectValue placeholder={terminology.noMatchLabel} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">Aucun match - Vidéo libre</SelectItem>
+                    <SelectItem value="none">{terminology.noMatchLabel}</SelectItem>
                     {matches?.map((match) => (
                       <SelectItem key={match.id} value={match.id}>
                         {match.is_home ? "vs" : "@"} {match.opponent} -{" "}
@@ -213,7 +217,7 @@ export function AddVideoAnalysisDialog({
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
-                  Vous pouvez créer une analyse sans match (entraînement, compilation...)
+                  Vous pouvez créer une analyse sans {terminology.match.toLowerCase()} (entraînement, compilation...)
                 </p>
               </div>
 
@@ -247,7 +251,7 @@ export function AddVideoAnalysisDialog({
               <div className="space-y-2">
                 <Label className="flex items-center gap-2">
                   <Users className="h-4 w-4" />
-                  Joueurs concernés (optionnel)
+                  {terminology.playersLabel} concerné(e)s (optionnel)
                 </Label>
                 <div className="h-32 border rounded-md p-2 overflow-y-auto">
                   <div className="space-y-2">
@@ -262,7 +266,7 @@ export function AddVideoAnalysisDialog({
                           htmlFor={`player-${player.id}`}
                           className="text-sm cursor-pointer flex items-center gap-2"
                         >
-                          {player.name}
+                          {player.first_name ? `${player.first_name} ${player.name}` : player.name}
                           {player.position && (
                             <span className="text-xs text-muted-foreground">
                               ({player.position})
@@ -274,7 +278,7 @@ export function AddVideoAnalysisDialog({
                   </div>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Sélectionnez les joueurs pour filtrer leurs clips associés
+                  Sélectionnez les {terminology.playersLabel.toLowerCase()} pour filtrer leurs clips associés
                 </p>
               </div>
 
@@ -291,7 +295,7 @@ export function AddVideoAnalysisDialog({
             </div>
           </ScrollArea>
 
-          <div className="flex justify-end gap-2 pt-4 border-t flex-shrink-0">
+          <div className="flex justify-end gap-2 p-6 pt-4 border-t flex-shrink-0">
             <Button
               type="button"
               variant="outline"
