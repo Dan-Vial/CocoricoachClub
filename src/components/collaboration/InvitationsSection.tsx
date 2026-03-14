@@ -38,20 +38,23 @@ export function InvitationsSection({ clubId, canManage }: InvitationsSectionProp
   const { data: invitations, isLoading } = useQuery({
     queryKey: ["club-invitations", clubId],
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("club_invitations")
         .select("*")
         .eq("club_id", clubId)
         .in("status", ["pending", "accepted"])
         .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data as any;
+      if (error) {
+        console.error("[InvitationsSection] Error:", error);
+        throw error;
+      }
+      return data;
     },
   });
 
   const deleteInvitation = useMutation({
     mutationFn: async (invitationId: string) => {
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from("club_invitations")
         .delete()
         .eq("id", invitationId);

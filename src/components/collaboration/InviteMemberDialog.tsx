@@ -78,12 +78,20 @@ export function InviteMemberDialog({ open, onOpenChange, clubId }: InviteMemberD
   const { data: currentStaffCount = 0 } = useQuery({
     queryKey: ["club-staff-count", clubId],
     queryFn: async () => {
-      const { count, error } = await (supabase as any)
-        .from("club_members")
-        .select("id", { count: "exact", head: true })
-        .eq("club_id", clubId);
-      if (error) throw error;
-      return count || 0;
+      try {
+        const { count, error } = await supabase
+          .from("club_members")
+          .select("id", { count: "exact", head: true })
+          .eq("club_id", clubId);
+        if (error) {
+          console.error("[InviteMemberDialog] Staff count error:", error);
+          return 0;
+        }
+        return count || 0;
+      } catch (e) {
+        console.error("[InviteMemberDialog] Unexpected error:", e);
+        return 0;
+      }
     },
     enabled: open,
     staleTime: 0,
@@ -157,7 +165,7 @@ export function InviteMemberDialog({ open, onOpenChange, clubId }: InviteMemberD
 
       const assignedCategories = allCategories ? null : selectedCategories;
 
-      const { data: invitation, error } = await (supabase as any)
+      const { data: invitation, error } = await supabase
         .from("club_invitations")
         .insert({
           club_id: clubId,
@@ -169,7 +177,10 @@ export function InviteMemberDialog({ open, onOpenChange, clubId }: InviteMemberD
         .select("token")
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error("[InviteMemberDialog] Insert error:", error);
+        throw error;
+      }
 
       const invitationLink = `${window.location.origin}/accept-invitation?token=${invitation.token}`;
       

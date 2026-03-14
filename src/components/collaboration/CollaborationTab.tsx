@@ -33,24 +33,32 @@ export function CollaborationTab({ clubId }: CollaborationTabProps) {
   const { data: userRole } = useQuery({
     queryKey: ["user-club-role", clubId, club?.user_id],
     queryFn: async () => {
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user) return null;
+      try {
+        const { data: user } = await supabase.auth.getUser();
+        if (!user.user) return null;
 
-      // Check if user is owner
-      if (club?.user_id === user.user.id) {
-        return "owner";
+        // Check if user is owner
+        if (club?.user_id === user.user.id) {
+          return "owner";
+        }
+
+        // Check if user is member
+        const { data, error } = await supabase
+          .from("club_members")
+          .select("role")
+          .eq("club_id", clubId)
+          .eq("user_id", user.user.id)
+          .maybeSingle();
+
+        if (error) {
+          console.error("[CollaborationTab] Error fetching role:", error);
+          return null;
+        }
+        return data?.role || null;
+      } catch (e) {
+        console.error("[CollaborationTab] Unexpected error:", e);
+        return null;
       }
-
-      // Check if user is member
-      const { data, error } = await (supabase as any)
-        .from("club_members")
-        .select("role")
-        .eq("club_id", clubId)
-        .eq("user_id", user.user.id)
-        .maybeSingle();
-
-      if (error) throw error;
-      return (data as any)?.role || null;
     },
     enabled: !!club,
   });

@@ -54,7 +54,7 @@ export function MembersSection({ clubId, canManage }: MembersSectionProps) {
   const { data: members, isLoading } = useQuery({
     queryKey: ["club-members", clubId],
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("club_members")
         .select("*")
         .eq("club_id", clubId)
@@ -111,7 +111,7 @@ export function MembersSection({ clubId, canManage }: MembersSectionProps) {
 
       if (categories && categories.length > 0) {
         const categoryIds = categories.map((c) => c.id);
-        await (supabase as any)
+        await supabase
           .from("category_members")
           .delete()
           .eq("user_id", member.user_id)
@@ -119,7 +119,7 @@ export function MembersSection({ clubId, canManage }: MembersSectionProps) {
       }
 
       // Remove from club_members
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from("club_members")
         .delete()
         .eq("id", member.id);
@@ -138,9 +138,9 @@ export function MembersSection({ clubId, canManage }: MembersSectionProps) {
   const updateRole = useMutation({
     mutationFn: async ({ memberId, userId, newRole }: { memberId: string; userId: string; newRole: string }) => {
       // Update club_members role
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from("club_members")
-        .update({ role: newRole })
+        .update({ role: newRole as any })
         .eq("id", memberId);
       if (error) throw error;
 
@@ -152,9 +152,9 @@ export function MembersSection({ clubId, canManage }: MembersSectionProps) {
 
       if (categories && categories.length > 0) {
         const categoryIds = categories.map((c) => c.id);
-        await (supabase as any)
+        await supabase
           .from("category_members")
-          .update({ role: newRole })
+          .update({ role: newRole as any })
           .eq("user_id", userId)
           .in("category_id", categoryIds);
       }
