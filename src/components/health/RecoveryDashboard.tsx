@@ -59,10 +59,10 @@ function calculateRecoveryScore(
   sorenessUpper: number,
   sorenessLower: number
 ): number {
-  // Normalize: sleep quality/duration high=good, others low=good
+  // All metrics: 1 = best, 5 = worst
   // Convert all to 0-100 scale where 100 = perfect recovery
-  const sleepScore = ((sleepQuality - 1) / 4) * 100;
-  const durationScore = ((sleepDuration - 1) / 4) * 100;
+  const sleepScore = ((5 - sleepQuality) / 4) * 100;
+  const durationScore = ((5 - sleepDuration) / 4) * 100;
   const fatigueScore = ((5 - fatigue) / 4) * 100;
   const stressScore = ((5 - stress) / 4) * 100;
   const sorenessUpperScore = ((5 - sorenessUpper) / 4) * 100;
