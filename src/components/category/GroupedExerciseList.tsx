@@ -43,6 +43,9 @@ const setTypeLabels: Record<string, string> = {
   for_time: "For Time",
   tabata: "Tabata",
   bulgarian: "Méthode Bulgare",
+  intermittent_cardio: "Intermittent Cardio",
+  fartlek: "Fartlek",
+  stato_dynamique: "Stato-dynamique",
 };
 
 interface GroupedExerciseListProps {
