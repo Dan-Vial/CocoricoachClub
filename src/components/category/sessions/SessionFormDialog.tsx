@@ -1626,7 +1626,7 @@ export function SessionFormDialog({
                <TrainingMethodSelect
                  value={exercise.set_type}
                   onValueChange={(v) => {
-                    if (LINKABLE_METHODS.includes(v) || CARDIO_BLOCK_METHODS.includes(v)) {
+                    if (LINKABLE_METHODS.includes(v) || CARDIO_BLOCK_METHODS.includes(v) || SPECIAL_METHODS.includes(v)) {
                       // Replace current exercise with a new method block in a single state update
                       replaceExerciseWithMethodBlock(index, v);
                     } else if (DROP_METHODS.includes(v)) {
