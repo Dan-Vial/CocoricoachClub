@@ -433,7 +433,7 @@ export function SessionDetailsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col overflow-hidden">
+      <DialogContent className="max-w-3xl w-[95vw] max-h-[90vh] flex flex-col overflow-hidden">
         <DialogHeader className="flex flex-row items-center justify-between shrink-0">
           <div>
             <DialogTitle className="flex items-center gap-2">
