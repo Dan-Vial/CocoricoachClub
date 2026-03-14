@@ -273,6 +273,7 @@ export const TEST_CATEGORIES: TestCategory[] = [
       { value: "neuro_d2_test", label: "Test d2 (barrage)", unit: "score" },
       { value: "neuro_concentration_index", label: "Index de concentration", unit: "score" },
     ],
+  },
   {
     value: "bowling_force",
     label: "Force / Stabilité",
