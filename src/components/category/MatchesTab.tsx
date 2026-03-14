@@ -5,6 +5,7 @@ import { Plus, Calendar, BarChart3, Settings2 } from "lucide-react";
 import { AddMatchCalendarDialog } from "./matches/AddMatchCalendarDialog";
 import { MatchCard } from "./matches/MatchCard";
 import { PlayerCumulativeStats } from "./matches/PlayerCumulativeStats";
+import { BowlingCumulativeStats } from "@/components/bowling/BowlingCumulativeStats";
 import { isFuture, isPast } from "date-fns";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { ColoredSubTabsList, ColoredSubTabsTrigger } from "@/components/ui/colored-subtabs";
