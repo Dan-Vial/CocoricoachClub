@@ -172,8 +172,12 @@ export function AddCategoryDialog({
       }
       onOpenChange(false);
     },
-    onError: () => {
-      toast.error("Erreur lors de l'ajout de la catégorie");
+    onError: (error: any) => {
+      console.error("[AddCategoryDialog] Full error:", error);
+      console.error("[AddCategoryDialog] Error message:", error?.message);
+      console.error("[AddCategoryDialog] Error details:", error?.details);
+      console.error("[AddCategoryDialog] Error code:", error?.code);
+      toast.error(`Erreur lors de l'ajout de la catégorie: ${error?.message || 'Erreur inconnue'}`);
     },
   });
 
