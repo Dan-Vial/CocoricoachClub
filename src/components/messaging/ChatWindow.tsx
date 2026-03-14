@@ -11,9 +11,13 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { Send, Users, MessageCircle, Bell, Check, CheckCheck } from "lucide-react";
+import { Send, Users, MessageCircle, Bell, Check, CheckCheck, BarChart3, ChevronUp, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { MessageReactions } from "./MessageReactions";
+import { PollMessage } from "./PollMessage";
+import { CreatePollDialog } from "./CreatePollDialog";
+import { PollSummaryPanel } from "./PollSummaryPanel";
 
 interface Message {
   id: string;
@@ -23,6 +27,9 @@ interface Message {
   is_urgent: boolean;
   read_by: string[];
   created_at: string;
+  message_type: string;
+  poll_id: string | null;
+  action_data: any;
 }
 
 interface ChatWindowProps {
@@ -33,6 +40,8 @@ interface ChatWindowProps {
 export function ChatWindow({ conversationId, categoryId }: ChatWindowProps) {
   const [newMessage, setNewMessage] = useState("");
   const [isAnnouncement, setIsAnnouncement] = useState(false);
+  const [pollDialogOpen, setPollDialogOpen] = useState(false);
+  const [showSummary, setShowSummary] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -48,7 +57,7 @@ export function ChatWindow({ conversationId, categoryId }: ChatWindowProps) {
       if (error) throw error;
       return data as Message[];
     },
-    refetchInterval: 5000, // Poll every 5 seconds as fallback
+    refetchInterval: 5000,
   });
 
   const { data: participants } = useQuery({
@@ -63,36 +72,55 @@ export function ChatWindow({ conversationId, categoryId }: ChatWindowProps) {
     },
   });
 
+  const { data: senderProfiles } = useQuery({
+    queryKey: ["sender-profiles", conversationId],
+    queryFn: async () => {
+      if (!messages) return {};
+      const uniqueIds = [...new Set(messages.map(m => m.sender_id))];
+      if (uniqueIds.length === 0) return {};
+      const { data } = await supabase.from("profiles").select("id, full_name").in("id", uniqueIds);
+      const map: Record<string, string> = {};
+      data?.forEach(p => { map[p.id] = p.full_name || p.id.substring(0, 6); });
+      return map;
+    },
+    enabled: !!messages && messages.length > 0,
+  });
+
   // Subscribe to realtime messages
   useEffect(() => {
     const channel = supabase
       .channel(`messages-${conversationId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "messages",
-          filter: `conversation_id=eq.${conversationId}`,
-        },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ["messages", conversationId] });
-        }
-      )
+      .on("postgres_changes", {
+        event: "INSERT",
+        schema: "public",
+        table: "messages",
+        filter: `conversation_id=eq.${conversationId}`,
+      }, () => {
+        queryClient.invalidateQueries({ queryKey: ["messages", conversationId] });
+      })
+      .on("postgres_changes", {
+        event: "*",
+        schema: "public",
+        table: "message_reactions",
+      }, () => {
+        // Invalidate all reaction queries for this conversation's messages
+        messages?.forEach(m => {
+          queryClient.invalidateQueries({ queryKey: ["message-reactions", m.id] });
+        });
+      })
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [conversationId, queryClient]);
+    return () => { supabase.removeChannel(channel); };
+  }, [conversationId, queryClient, messages]);
 
-  // Mark conversation as read when opened and when new messages arrive
+  // Mark conversation as read
   useEffect(() => {
     if (user && conversationId) {
       markConversationAsRead(conversationId, user.id);
       queryClient.invalidateQueries({ queryKey: ["unread-messages"] });
     }
   }, [conversationId, user, messages?.length, queryClient]);
+
   // Scroll to bottom on new messages
   useEffect(() => {
     if (scrollRef.current) {
@@ -103,28 +131,26 @@ export function ChatWindow({ conversationId, categoryId }: ChatWindowProps) {
   const sendMessage = useMutation({
     mutationFn: async () => {
       if (!newMessage.trim() || !user) return;
-      
       const messageContent = newMessage.trim();
-      
       const { error } = await supabase.from("messages").insert({
         conversation_id: conversationId,
         sender_id: user.id,
         content: messageContent,
         is_announcement: isAnnouncement,
         read_by: [user.id],
+        message_type: "text",
       });
       if (error) throw error;
 
-      // Send push notification to other participants (fire & forget)
+      // Push notification (fire & forget)
       try {
         const otherParticipants = participants?.filter(p => p.user_id !== user.id) || [];
         if (otherParticipants.length > 0) {
-          const target_user_ids = otherParticipants.map(p => p.user_id);
           await supabase.functions.invoke("send-targeted-notification", {
             body: {
               title: isAnnouncement ? "📢 Nouvelle annonce" : "💬 Nouveau message",
               message: messageContent.length > 100 ? messageContent.substring(0, 100) + "..." : messageContent,
-              target_user_ids,
+              target_user_ids: otherParticipants.map(p => p.user_id),
               channels: ["push"],
               data: { conversationId, type: "chat_message" },
             },
@@ -139,9 +165,7 @@ export function ChatWindow({ conversationId, categoryId }: ChatWindowProps) {
       setIsAnnouncement(false);
       queryClient.invalidateQueries({ queryKey: ["messages", conversationId] });
     },
-    onError: () => {
-      toast.error("Erreur lors de l'envoi");
-    },
+    onError: () => { toast.error("Erreur lors de l'envoi"); },
   });
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -152,80 +176,132 @@ export function ChatWindow({ conversationId, categoryId }: ChatWindowProps) {
   };
 
   const isOwnMessage = (senderId: string) => senderId === user?.id;
+  const getSenderName = (senderId: string) => senderProfiles?.[senderId] || senderId.substring(0, 2).toUpperCase();
+  const getSenderInitials = (senderId: string) => {
+    const name = senderProfiles?.[senderId];
+    if (name) {
+      const parts = name.split(" ");
+      return parts.map(p => p[0]).join("").substring(0, 2).toUpperCase();
+    }
+    return senderId.substring(0, 2).toUpperCase();
+  };
 
   return (
-    <Card className="h-[500px] flex flex-col">
+    <Card className="h-[600px] flex flex-col">
       <CardHeader className="pb-3 border-b">
         <div className="flex items-center justify-between">
           <CardTitle className="text-base flex items-center gap-2">
             <MessageCircle className="h-5 w-5" />
             Chat d'équipe
           </CardTitle>
-          <Badge variant="outline">
-            <Users className="h-3 w-3 mr-1" />
-            {participants?.length || 0} membres
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Badge variant="outline">
+              <Users className="h-3 w-3 mr-1" />
+              {participants?.length || 0}
+            </Badge>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowSummary(!showSummary)}
+              className="text-xs"
+            >
+              {showSummary ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              Résumé
+            </Button>
+          </div>
         </div>
+        {showSummary && (
+          <div className="mt-2">
+            <PollSummaryPanel conversationId={conversationId} categoryId={categoryId} />
+          </div>
+        )}
       </CardHeader>
-      
+
       <ScrollArea className="flex-1 p-4" ref={scrollRef}>
         <div className="space-y-3">
           {messages?.map((message) => (
             <div
               key={message.id}
               className={cn(
-                "flex gap-2",
+                "flex gap-2 group",
                 isOwnMessage(message.sender_id) ? "flex-row-reverse" : "flex-row"
               )}
             >
-              <Avatar className="h-8 w-8">
+              <Avatar className="h-8 w-8 shrink-0">
                 <AvatarFallback className="text-xs">
-                  {message.sender_id.substring(0, 2).toUpperCase()}
+                  {getSenderInitials(message.sender_id)}
                 </AvatarFallback>
               </Avatar>
-              <div
-                className={cn(
-                  "max-w-[70%] rounded-lg p-3",
-                  isOwnMessage(message.sender_id)
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted",
-                  message.is_announcement && "border-2 border-yellow-500"
+              <div className={cn("max-w-[75%]", isOwnMessage(message.sender_id) ? "items-end" : "items-start")}>
+                {!isOwnMessage(message.sender_id) && (
+                  <p className="text-xs text-muted-foreground mb-0.5 px-1">
+                    {getSenderName(message.sender_id)}
+                  </p>
                 )}
-              >
-                {message.is_announcement && (
-                  <div className="flex items-center gap-1 text-xs mb-1 opacity-80">
-                    <Bell className="h-3 w-3" />
-                    Annonce
-                  </div>
-                )}
-                <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                <div className="flex items-center justify-end gap-1 mt-1">
-                  <span className="text-xs opacity-70">
-                    {format(new Date(message.created_at), "HH:mm", { locale: fr })}
-                  </span>
-                  {isOwnMessage(message.sender_id) && (
-                    message.read_by.length > 1 ? (
-                      <CheckCheck className="h-3 w-3" />
-                    ) : (
-                      <Check className="h-3 w-3" />
-                    )
+                <div
+                  className={cn(
+                    "rounded-lg p-3",
+                    isOwnMessage(message.sender_id)
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted",
+                    message.is_announcement && "border-2 border-yellow-500",
+                    message.message_type === "poll" && "bg-transparent p-0"
+                  )}
+                >
+                  {message.is_announcement && message.message_type !== "poll" && (
+                    <div className="flex items-center gap-1 text-xs mb-1 opacity-80">
+                      <Bell className="h-3 w-3" />
+                      Annonce
+                    </div>
+                  )}
+                  
+                  {message.message_type === "poll" && message.poll_id ? (
+                    <PollMessage pollId={message.poll_id} isOwnMessage={isOwnMessage(message.sender_id)} />
+                  ) : (
+                    <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                  )}
+                  
+                  {message.message_type !== "poll" && (
+                    <div className="flex items-center justify-end gap-1 mt-1">
+                      <span className="text-xs opacity-70">
+                        {format(new Date(message.created_at), "HH:mm", { locale: fr })}
+                      </span>
+                      {isOwnMessage(message.sender_id) && (
+                        message.read_by.length > 1 ? (
+                          <CheckCheck className="h-3 w-3" />
+                        ) : (
+                          <Check className="h-3 w-3" />
+                        )
+                      )}
+                    </div>
                   )}
                 </div>
+                <MessageReactions messageId={message.id} isOwnMessage={isOwnMessage(message.sender_id)} />
               </div>
             </div>
           ))}
         </div>
       </ScrollArea>
 
-      <div className="p-4 border-t">
+      <div className="p-3 border-t">
         <div className="flex gap-2">
           <Button
             variant={isAnnouncement ? "default" : "outline"}
             size="icon"
             onClick={() => setIsAnnouncement(!isAnnouncement)}
             title="Envoyer comme annonce"
+            className="shrink-0"
           >
             <Bell className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => setPollDialogOpen(true)}
+            title="Créer un sondage"
+            className="shrink-0"
+          >
+            <BarChart3 className="h-4 w-4" />
           </Button>
           <Input
             value={newMessage}
@@ -234,14 +310,22 @@ export function ChatWindow({ conversationId, categoryId }: ChatWindowProps) {
             placeholder="Écrire un message..."
             className="flex-1"
           />
-          <Button 
-            onClick={() => sendMessage.mutate()} 
+          <Button
+            onClick={() => sendMessage.mutate()}
             disabled={!newMessage.trim() || sendMessage.isPending}
+            className="shrink-0"
           >
             <Send className="h-4 w-4" />
           </Button>
         </div>
       </div>
+
+      <CreatePollDialog
+        open={pollDialogOpen}
+        onOpenChange={setPollDialogOpen}
+        conversationId={conversationId}
+        categoryId={categoryId}
+      />
     </Card>
   );
 }
