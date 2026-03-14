@@ -444,6 +444,7 @@ export const isDropMethod = (method: string): boolean => DROP_METHODS.includes(m
 export const isClusterMethod = (method: string): boolean => CLUSTER_METHODS.includes(method);
 export const isBlockMethod = (method: string): boolean => ALL_BLOCK_METHODS.includes(method);
 export const isVbtMethod = (method: string): boolean => VBT_METHODS.includes(method);
+export const isSpecialMethod = (method: string): boolean => SPECIAL_METHODS.includes(method);
 
 // Get min exercises required for a linkable method
 export const getMinExercisesForMethod = (method: string): number => {

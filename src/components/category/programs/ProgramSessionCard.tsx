@@ -40,10 +40,16 @@ import {
   isDropMethod as checkIsDropMethod,
   isClusterMethod as checkIsClusterMethod,
   isVbtMethod as checkIsVbtMethod,
+  isCardioBlockMethod as checkIsCardioBlockMethod,
+  isSpecialMethod as checkIsSpecialMethod,
   getMaxExercisesForMethod,
+  getMinExercisesForMethod,
   LINKABLE_METHODS,
   DROP_METHODS,
   CLUSTER_METHODS,
+  CARDIO_BLOCK_METHODS,
+  SPECIAL_METHODS,
+  getGroupedTrainingStyles,
 } from "@/lib/constants/trainingStyles";
 
 interface DropSet {
@@ -299,12 +305,17 @@ export function ProgramSessionCard({
   };
 
   const createBlockForMethod = (sourceIndex: number, method: string) => {
-    const minExercises = (() => {
+    const isLinkable = LINKABLE_METHODS.includes(method);
+    const isCardio = CARDIO_BLOCK_METHODS.includes(method);
+    const isSpecial = SPECIAL_METHODS.includes(method);
+    
+    // For linkable methods, determine min exercises; for others, start with 1
+    const minExercises = isLinkable ? (() => {
       if (method === "superset" || method === "biset" || method === "bulgarian") return 2;
       if (method === "triset") return 3;
       if (method === "giant_set") return 4;
       return 2;
-    })();
+    })() : 1;
 
     const groupId = crypto.randomUUID();
     const sourceExercise = session.exercises[sourceIndex];
@@ -323,7 +334,7 @@ export function ProgramSessionCard({
       blockExercises.push({
         id: crypto.randomUUID(),
         exercise_name: "",
-        order_index: 0, // will be recalculated
+        order_index: 0,
         method,
         sets: sourceExercise.sets || 3,
         reps: sourceExercise.reps || "10",
@@ -343,12 +354,14 @@ export function ProgramSessionCard({
 
     onUpdate({ ...session, exercises: newExercises });
 
-    // Open library search for the first empty exercise in the block
-    const firstEmptyIndex = sourceIndex + 1;
-    setTimeout(() => {
-      setSearchQuery("");
-      setShowLibraryFor(firstEmptyIndex);
-    }, 150);
+    // Open library search for the first empty exercise in the block (if linkable)
+    if (minExercises > 1) {
+      const firstEmptyIndex = sourceIndex + 1;
+      setTimeout(() => {
+        setSearchQuery("");
+        setShowLibraryFor(firstEmptyIndex);
+      }, 150);
+    }
   };
 
   const unlinkGroup = (groupId: string) => {
@@ -1156,21 +1169,21 @@ export function ProgramSessionCard({
                      <label className="text-xs text-muted-foreground">Méthode</label>
                      <TrainingMethodSelect
                        value={exercise.method}
-                       onValueChange={(value) => {
-                         if (LINKABLE_METHODS.includes(value)) {
-                            createBlockForMethod(index, value);
-                         } else if (DROP_METHODS.includes(value)) {
-                           initDropSets(index, value);
-                         } else if (CLUSTER_METHODS.includes(value)) {
-                           initClusterSets(index, value);
-                         } else {
-                           updateMultipleFields(index, {
-                             method: value,
-                             drop_sets: undefined,
-                             cluster_sets: undefined,
-                           });
-                         }
-                       }}
+                        onValueChange={(value) => {
+                          if (LINKABLE_METHODS.includes(value) || CARDIO_BLOCK_METHODS.includes(value) || SPECIAL_METHODS.includes(value)) {
+                             createBlockForMethod(index, value);
+                          } else if (DROP_METHODS.includes(value)) {
+                            initDropSets(index, value);
+                          } else if (CLUSTER_METHODS.includes(value)) {
+                            initClusterSets(index, value);
+                          } else {
+                            updateMultipleFields(index, {
+                              method: value,
+                              drop_sets: undefined,
+                              cluster_sets: undefined,
+                            });
+                          }
+                        }}
                        triggerClassName="h-8 text-xs"
                      />
                    </div>
@@ -1237,21 +1250,21 @@ export function ProgramSessionCard({
                      <label className="text-xs text-muted-foreground">Méthode</label>
                      <TrainingMethodSelect
                        value={exercise.method}
-                       onValueChange={(value) => {
-                         if (LINKABLE_METHODS.includes(value)) {
-                           createBlockForMethod(index, value);
-                         } else if (DROP_METHODS.includes(value)) {
-                           initDropSets(index, value);
-                         } else if (CLUSTER_METHODS.includes(value)) {
-                           initClusterSets(index, value);
-                         } else {
-                           updateMultipleFields(index, {
-                             method: value,
-                             drop_sets: undefined,
-                             cluster_sets: undefined,
-                           });
-                         }
-                       }}
+                        onValueChange={(value) => {
+                          if (LINKABLE_METHODS.includes(value) || CARDIO_BLOCK_METHODS.includes(value) || SPECIAL_METHODS.includes(value)) {
+                            createBlockForMethod(index, value);
+                          } else if (DROP_METHODS.includes(value)) {
+                            initDropSets(index, value);
+                          } else if (CLUSTER_METHODS.includes(value)) {
+                            initClusterSets(index, value);
+                          } else {
+                            updateMultipleFields(index, {
+                              method: value,
+                              drop_sets: undefined,
+                              cluster_sets: undefined,
+                            });
+                          }
+                        }}
                        showColorDot={true}
                        triggerClassName="h-8 text-xs"
                      />

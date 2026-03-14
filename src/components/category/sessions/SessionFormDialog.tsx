@@ -76,6 +76,7 @@ import {
   CARDIO_BLOCK_METHODS,
   DROP_METHODS,
   CLUSTER_METHODS,
+  SPECIAL_METHODS,
   ALL_BLOCK_METHODS,
 } from "@/lib/constants/trainingStyles";
 import { SessionGpsImport, type GpsPlayerData } from "@/components/category/gps/SessionGpsImport";
@@ -1024,7 +1025,7 @@ export function SessionFormDialog({
     const startIndex = exercises.length;
     
     // For pyramid methods, 5x5, and death_by, we only need 1 exercise
-    const isPyramidOrSpecial = isDropMethod(method) || method === "five_by_five" || method === "death_by" || method === "vbt";
+    const isPyramidOrSpecial = isDropMethod(method) || method === "five_by_five" || method === "death_by" || method === "vbt" || SPECIAL_METHODS.includes(method);
     const minExercises = isPyramidOrSpecial ? 1 : getMinExercisesForMethod(method);
     
     let newExercises: Exercise[];
@@ -1107,7 +1108,7 @@ export function SessionFormDialog({
       .map((e, i) => ({ ...e, order_index: i }));
     const startIndex = remainingExercises.length;
 
-    const isPyramidOrSpecial = isDropMethod(method) || method === "five_by_five" || method === "death_by" || method === "vbt";
+    const isPyramidOrSpecial = isDropMethod(method) || method === "five_by_five" || method === "death_by" || method === "vbt" || SPECIAL_METHODS.includes(method);
     const minExercises = isPyramidOrSpecial ? 1 : getMinExercisesForMethod(method);
 
     let newExercises: Exercise[];
@@ -1625,7 +1626,7 @@ export function SessionFormDialog({
                <TrainingMethodSelect
                  value={exercise.set_type}
                   onValueChange={(v) => {
-                    if (LINKABLE_METHODS.includes(v) || CARDIO_BLOCK_METHODS.includes(v)) {
+                    if (LINKABLE_METHODS.includes(v) || CARDIO_BLOCK_METHODS.includes(v) || SPECIAL_METHODS.includes(v)) {
                       // Replace current exercise with a new method block in a single state update
                       replaceExerciseWithMethodBlock(index, v);
                     } else if (DROP_METHODS.includes(v)) {
@@ -2528,42 +2529,57 @@ export function SessionFormDialog({
 
   // Render block creation buttons
   const renderBlockCreationButtons = () => {
-    const blockMethods = [
-      ...LINKABLE_METHODS.map(m => getTrainingStyleConfig(m)),
-      ...CARDIO_BLOCK_METHODS.map(m => getTrainingStyleConfig(m)),
-      ...DROP_METHODS.map(m => getTrainingStyleConfig(m)),
-      getTrainingStyleConfig("five_by_five"),
-      getTrainingStyleConfig("vbt"),
+    const methodGroups = [
+      { label: "📋 Classique", methods: LINKABLE_METHODS },
+      { label: "💪 Intensification", methods: [...DROP_METHODS, "five_by_five", "super_pletnev", "combine_haltero", "bulgarian"] },
+      { label: "⚡ Spéciales", methods: ["vbt", "isometric_overcoming", "isometric_yielding", "iso_max", "stato_dynamique"] },
+      { label: "🏃 Cardio", methods: CARDIO_BLOCK_METHODS },
     ];
+
+    // Deduplicate (bulgarian is in both LINKABLE and intensification)
+    const seen = new Set<string>();
 
     return (
       <div className="space-y-2">
         <Label className="text-xs text-muted-foreground">Créer un bloc d'exercices</Label>
-        <div className="flex flex-wrap gap-2">
+        <div className="space-y-2">
           <TooltipProvider delayDuration={200}>
-          {blockMethods.map(style => (
-              <Tooltip key={style.value}>
-                <TooltipTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => createMethodBlock(style.value)}
-                    className={cn(
-                      "text-xs",
-                      style.borderColor,
-                      "hover:bg-opacity-20"
-                    )}
-                  >
-                    <div className={cn("w-2 h-2 rounded-full mr-2", style.color)} />
-                    {style.label}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="z-[9999]">
-                  <p className="text-xs max-w-xs">{style.description}</p>
-                </TooltipContent>
-              </Tooltip>
-          ))}
+            {methodGroups.map(group => {
+              const styles = group.methods
+                .filter(m => { if (seen.has(m)) return false; seen.add(m); return true; })
+                .map(m => getTrainingStyleConfig(m));
+              if (styles.length === 0) return null;
+              return (
+                <div key={group.label}>
+                  <p className="text-xs font-semibold text-muted-foreground mb-1">{group.label}</p>
+                  <div className="flex flex-wrap gap-1">
+                    {styles.map(style => (
+                      <Tooltip key={style.value}>
+                        <TooltipTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => createMethodBlock(style.value)}
+                            className={cn(
+                              "text-xs h-7 px-2",
+                              style.borderColor,
+                              "hover:bg-opacity-20"
+                            )}
+                          >
+                            <div className={cn("w-2 h-2 rounded-full mr-1.5 shrink-0", style.color)} />
+                            <span className="truncate">{style.label}</span>
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom" className="z-[9999]">
+                          <p className="text-xs max-w-xs">{style.description}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
           </TooltipProvider>
         </div>
       </div>
