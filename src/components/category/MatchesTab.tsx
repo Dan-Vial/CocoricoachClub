@@ -41,6 +41,26 @@ export function MatchesTab({ categoryId, sportType }: MatchesTabProps) {
 
   const { data: matches, isLoading } = useViewerMatches(categoryId);
 
+  // Create bowling training match
+  const createBowlingTraining = useMutation({
+    mutationFn: async () => {
+      const today = format(new Date(), "yyyy-MM-dd");
+      const { error } = await supabase.from("matches").insert({
+        category_id: categoryId,
+        opponent: `Entraînement ${format(new Date(), "dd/MM/yyyy")}`,
+        match_date: today,
+        event_type: "training",
+        is_home: true,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["matches", categoryId] });
+      toast.success("Entraînement bowling créé ! Ajoutez des joueurs puis saisissez les parties.");
+    },
+    onError: () => toast.error("Erreur lors de la création"),
+  });
+
   // Filter out sub-matches (they are displayed within their parent match)
   const parentMatches = matches?.filter((m) => !m.parent_match_id) || [];
   const upcomingMatches = parentMatches.filter((m) => isFuture(new Date(m.match_date)));
