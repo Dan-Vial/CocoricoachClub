@@ -118,15 +118,18 @@ export function AddCategoryDialog({
     return sport === "rugby" ? RUGBY_SUBTYPES : getOtherSportSubtypes(sport);
   }, [club?.sport]);
 
-  // Reset subtype when dialog opens or club changes
+  // Reset subtype when club sport changes and reset member selection only on dialog open
   useEffect(() => {
-    if (availableSubtypes.length > 0) {
-      setSportSubType(availableSubtypes[0].value);
-    }
-    if (open) {
-      setSelectedMembers([]);
-    }
-  }, [availableSubtypes, open]);
+    if (availableSubtypes.length === 0) return;
+
+    const defaultSubtype = availableSubtypes[0].value;
+    setSportSubType((prev) => (prev === defaultSubtype ? prev : defaultSubtype));
+  }, [availableSubtypes]);
+
+  useEffect(() => {
+    if (!open) return;
+    setSelectedMembers((prev) => (prev.length === 0 ? prev : []));
+  }, [open]);
 
   const addCategory = useMutation({
     mutationFn: async (data: { name: string; rugby_type: SportType; gender: "masculine" | "feminine" | "mixed"; memberIds: string[] }) => {
