@@ -2003,6 +2003,16 @@ export function TrainingMethodBlock(props: TrainingMethodBlockProps) {
         return <FartlekBlock {...props} styleConfig={styleConfig} />;
       case "stato_dynamique":
         return <StatoDynamiqueBlock {...props} styleConfig={styleConfig} />;
+      case "isometric_overcoming":
+        return <IsometricOvercomingBlock {...props} styleConfig={styleConfig} />;
+      case "isometric_yielding":
+        return <IsometricYieldingBlock {...props} styleConfig={styleConfig} />;
+      case "iso_max":
+        return <IsoMaxBlock {...props} styleConfig={styleConfig} />;
+      case "super_pletnev":
+        return <SuperPletnevBlock {...props} styleConfig={styleConfig} />;
+      case "combine_haltero":
+        return <CombineHalteroBlock {...props} styleConfig={styleConfig} />;
       case "superset":
       case "biset":
       case "triset":
