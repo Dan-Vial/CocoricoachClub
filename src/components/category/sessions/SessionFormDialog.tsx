@@ -76,6 +76,7 @@ import {
   CARDIO_BLOCK_METHODS,
   DROP_METHODS,
   CLUSTER_METHODS,
+  SPECIAL_METHODS,
   ALL_BLOCK_METHODS,
 } from "@/lib/constants/trainingStyles";
 import { SessionGpsImport, type GpsPlayerData } from "@/components/category/gps/SessionGpsImport";
