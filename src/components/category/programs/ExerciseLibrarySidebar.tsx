@@ -58,24 +58,14 @@ function DraggableExercise({ exercise }: DraggableExerciseProps) {
       {...attributes}
       {...listeners}
       className={cn(
-        "flex items-center gap-3 p-3 rounded-lg border-2 cursor-grab active:cursor-grabbing transition-all hover:shadow-md",
+        "flex items-center gap-2 px-2.5 py-1.5 rounded-md border cursor-grab active:cursor-grabbing transition-all hover:shadow-sm",
         categoryColors.borderColor,
         categoryColors.bgColor,
         isDragging && "opacity-50 shadow-lg"
       )}
     >
-      <div className={cn("p-1.5 rounded-md", categoryColors.bgColor)}>
-        <IconComponent className={cn("h-4 w-4", categoryColors.color)} />
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="font-medium text-sm truncate">{exercise.name}</p>
-        <Badge 
-          variant="outline" 
-          className={cn("text-xs mt-1", categoryColors.color, categoryColors.borderColor)}
-        >
-          {getCategoryLabel(exercise.category)}
-        </Badge>
-      </div>
+      <IconComponent className={cn("h-3.5 w-3.5 shrink-0", categoryColors.color)} />
+      <p className="font-medium text-xs truncate flex-1 min-w-0">{exercise.name}</p>
     </div>
   );
 }
