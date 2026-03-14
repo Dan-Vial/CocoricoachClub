@@ -138,7 +138,7 @@ export function MembersSection({ clubId, canManage }: MembersSectionProps) {
   const updateRole = useMutation({
     mutationFn: async ({ memberId, userId, newRole }: { memberId: string; userId: string; newRole: string }) => {
       // Update club_members role
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from("club_members")
         .update({ role: newRole })
         .eq("id", memberId);
