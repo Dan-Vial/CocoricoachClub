@@ -540,7 +540,7 @@ export const getCardioBlockConfig = (method: string): CardioBlockConfig => {
 
 // Styles for workout builder (subset for standard gym sessions)
 export const WORKOUT_BUILDER_STYLES = TRAINING_STYLES.filter(s => 
-  ["normal", "superset", "biset", "triset", "giant_set", "drop_set", "rest_pause", "pyramid_up", "pyramid_down", "five_by_five", "cluster", "bulgarian", "isometric_overcoming", "isometric_yielding", "amrap", "for_time", "circuit", "emom", "tabata", "death_by", "vbt", "intermittent_cardio", "fartlek", "stato_dynamique"].includes(s.value)
+  ["normal", "superset", "biset", "triset", "giant_set", "drop_set", "rest_pause", "pyramid_up", "pyramid_down", "five_by_five", "cluster", "bulgarian", "isometric_overcoming", "isometric_yielding", "amrap", "for_time", "circuit", "emom", "tabata", "death_by", "vbt", "intermittent_cardio", "fartlek", "stato_dynamique", "iso_max"].includes(s.value)
 );
 
 // All styles for program builder
