@@ -72,6 +72,7 @@ export function VideoAnalysisList({
   sportType,
 }: VideoAnalysisListProps) {
   const queryClient = useQueryClient();
+  const terminology = getVideoTerminology(sportType);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [addClipAnalysisId, setAddClipAnalysisId] = useState<string | null>(null);
 
