@@ -300,9 +300,9 @@ export function SleepAnalytics({ categoryId }: SleepAnalyticsProps) {
                   <YAxis dataKey="name" type="category" tick={{ fontSize: 10 }} width={70} />
                   <Tooltip />
                   <Legend />
-                  <Bar dataKey="qualité" fill="#6366f1" radius={[0, 4, 4, 0]} barSize={10} name="Qualité">
+                   <Bar dataKey="qualité" fill="#6366f1" radius={[0, 4, 4, 0]} barSize={10} name="Qualité">
                     {barData.map((entry, index) => (
-                      <Cell key={index} fill={entry.qualité >= 4 ? "#22c55e" : entry.qualité >= 3 ? "#f59e0b" : "#ef4444"} />
+                      <Cell key={index} fill={entry.qualité <= 2 ? "#22c55e" : entry.qualité <= 3 ? "#f59e0b" : "#ef4444"} />
                     ))}
                   </Bar>
                   <Bar dataKey="durée" fill="#8b5cf6" radius={[0, 4, 4, 0]} barSize={10} opacity={0.7} name="Durée" />

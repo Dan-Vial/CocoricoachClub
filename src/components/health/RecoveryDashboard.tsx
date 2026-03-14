@@ -454,7 +454,7 @@ export function RecoveryDashboard({ categoryId }: RecoveryDashboardProps) {
                       📉 Tendance baissière, surveiller
                     </p>
                   )}
-                  {player.sleepQualityAvg < 2.5 && (
+                  {player.sleepQualityAvg >= 3.5 && (
                     <p className="text-xs text-indigo-600">
                       🛏 Qualité de sommeil insuffisante
                     </p>
