@@ -297,8 +297,8 @@ export function RecoveryDashboard({ categoryId }: RecoveryDashboardProps) {
               <BedDouble className="h-4 w-4" />
               <span className="text-xs font-medium">Sommeil moyen</span>
             </div>
-            <p className="text-2xl font-bold text-indigo-600">{teamAvgSleep}/5</p>
-            <p className="text-xs text-muted-foreground">Qualité moyenne</p>
+            <p className={`text-2xl font-bold ${teamAvgSleep <= 2 ? "text-green-600" : teamAvgSleep <= 3 ? "text-amber-600" : "text-red-600"}`}>{teamAvgSleep}/5</p>
+            <p className="text-xs text-muted-foreground">{teamAvgSleep <= 2 ? "Bon sommeil" : teamAvgSleep <= 3 ? "Sommeil moyen" : "Sommeil insuffisant"}</p>
           </CardContent>
         </Card>
 
@@ -454,7 +454,7 @@ export function RecoveryDashboard({ categoryId }: RecoveryDashboardProps) {
                       📉 Tendance baissière, surveiller
                     </p>
                   )}
-                  {player.sleepQualityAvg < 2.5 && (
+                  {player.sleepQualityAvg >= 3.5 && (
                     <p className="text-xs text-indigo-600">
                       🛏 Qualité de sommeil insuffisante
                     </p>

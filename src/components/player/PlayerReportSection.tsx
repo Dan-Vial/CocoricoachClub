@@ -825,14 +825,8 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
           const wColWidths = [30, 24, 24, 24, 24, 24, 26];
           yPos = drawTableHeaderPdf(pdf, wHeaders, wColWidths, yPos, margin);
 
-          // Sleep: higher = better (5 = top). Fatigue/stress/soreness: lower = better (1 = top).
-          const getWellnessColorPositive = (val: number | null): [number, number, number] | null => {
-            if (val == null) return null;
-            if (val >= 4) return colors.success;
-            if (val >= 3) return colors.warning;
-            return colors.danger;
-          };
-          const getWellnessColorNegative = (val: number | null): [number, number, number] | null => {
+          // All metrics: 1=best (good), 5=worst (bad) → lower = better for ALL
+          const getWellnessColor = (val: number | null): [number, number, number] | null => {
             if (val == null) return null;
             if (val <= 2) return colors.success;
             if (val <= 3) return colors.warning;
@@ -858,12 +852,12 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
               avg !== '-' ? `${avg}/5` : '-',
             ], wColWidths, yPos, index % 2 === 1, margin, [
               null,
-              getWellnessColorPositive(w.sleep_quality),
-              getWellnessColorNegative(w.general_fatigue),
-              getWellnessColorNegative(w.stress_level),
-              getWellnessColorNegative(w.soreness_upper_body),
-              getWellnessColorNegative(w.soreness_lower_body),
-              !isNaN(avgNum) ? getWellnessColorNegative(avgNum) : null,
+              getWellnessColor(w.sleep_quality),
+              getWellnessColor(w.general_fatigue),
+              getWellnessColor(w.stress_level),
+              getWellnessColor(w.soreness_upper_body),
+              getWellnessColor(w.soreness_lower_body),
+              !isNaN(avgNum) ? getWellnessColor(avgNum) : null,
             ]);
           });
           yPos += 5;

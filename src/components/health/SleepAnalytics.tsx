@@ -115,6 +115,7 @@ export function SleepAnalytics({ categoryId }: SleepAnalyticsProps) {
     const avgDuration = data.durations.reduce((s, v) => s + v, 0) / data.durations.length;
 
     // Trend: compare first half vs second half
+    // Scale: 1=best, 5=worst → lower second half = improving
     const mid = Math.floor(data.qualities.length / 2);
     const firstHalf = data.qualities.slice(0, mid);
     const secondHalf = data.qualities.slice(mid);
@@ -122,13 +123,14 @@ export function SleepAnalytics({ categoryId }: SleepAnalyticsProps) {
     if (firstHalf.length > 0 && secondHalf.length > 0) {
       const avgFirst = firstHalf.reduce((s, v) => s + v, 0) / firstHalf.length;
       const avgSecond = secondHalf.reduce((s, v) => s + v, 0) / secondHalf.length;
-      if (avgSecond - avgFirst > 0.4) trend = "improving";
-      else if (avgFirst - avgSecond > 0.4) trend = "declining";
+      // Lower is better: if second half is lower → improving
+      if (avgFirst - avgSecond > 0.4) trend = "improving";
+      else if (avgSecond - avgFirst > 0.4) trend = "declining";
     }
 
-    // Worst night
-    const worstQuality = Math.min(...data.qualities);
-    const bestQuality = Math.max(...data.qualities);
+    // Worst night (highest value = worst, since 1=best, 5=worst)
+    const worstQuality = Math.max(...data.qualities);
+    const bestQuality = Math.min(...data.qualities);
 
     return {
       id,
@@ -139,9 +141,9 @@ export function SleepAnalytics({ categoryId }: SleepAnalyticsProps) {
       worstQuality,
       bestQuality,
       daysOfData: data.qualities.length,
-      poorNights: data.qualities.filter(q => q <= 2).length,
+      poorNights: data.qualities.filter(q => q >= 4).length, // 4 or 5 = poor sleep
     };
-  }).sort((a, b) => a.avgQuality - b.avgQuality);
+  }).sort((a, b) => b.avgQuality - a.avgQuality); // Worst (highest) first
 
   // Team averages
   const teamAvgQuality = playerStats.length > 0
@@ -150,17 +152,18 @@ export function SleepAnalytics({ categoryId }: SleepAnalyticsProps) {
   const teamAvgDuration = playerStats.length > 0
     ? Math.round(playerStats.reduce((s, p) => s + p.avgDuration, 0) / playerStats.length * 10) / 10
     : 0;
-  const playersWithPoorSleep = playerStats.filter(p => p.avgQuality < 3);
+  const playersWithPoorSleep = playerStats.filter(p => p.avgQuality >= 3.5); // 1=best, >=3.5 = poor
 
+  // Color functions: 1=best (green), 5=worst (red)
   const getQualityColor = (score: number) => {
-    if (score >= 4) return "text-green-600";
-    if (score >= 3) return "text-amber-600";
+    if (score <= 2) return "text-green-600";
+    if (score <= 3) return "text-amber-600";
     return "text-red-600";
   };
 
   const getQualityBg = (score: number) => {
-    if (score >= 4) return "bg-green-500/10 border-green-500/30";
-    if (score >= 3) return "bg-amber-500/10 border-amber-500/30";
+    if (score <= 2) return "bg-green-500/10 border-green-500/30";
+    if (score <= 3) return "bg-amber-500/10 border-amber-500/30";
     return "bg-red-500/10 border-red-500/30";
   };
 
@@ -241,7 +244,7 @@ export function SleepAnalytics({ categoryId }: SleepAnalyticsProps) {
             <p className={`text-2xl font-bold ${playersWithPoorSleep.length > 0 ? "text-red-600" : "text-green-600"}`}>
               {playersWithPoorSleep.length}
             </p>
-            <p className="text-xs text-muted-foreground">joueur{playersWithPoorSleep.length > 1 ? "s" : ""} &lt; 3/5</p>
+            <p className="text-xs text-muted-foreground">joueur{playersWithPoorSleep.length > 1 ? "s" : ""} ≥ 3.5/5</p>
           </CardContent>
         </Card>
 
@@ -297,9 +300,9 @@ export function SleepAnalytics({ categoryId }: SleepAnalyticsProps) {
                   <YAxis dataKey="name" type="category" tick={{ fontSize: 10 }} width={70} />
                   <Tooltip />
                   <Legend />
-                  <Bar dataKey="qualité" fill="#6366f1" radius={[0, 4, 4, 0]} barSize={10} name="Qualité">
+                   <Bar dataKey="qualité" fill="#6366f1" radius={[0, 4, 4, 0]} barSize={10} name="Qualité">
                     {barData.map((entry, index) => (
-                      <Cell key={index} fill={entry.qualité >= 4 ? "#22c55e" : entry.qualité >= 3 ? "#f59e0b" : "#ef4444"} />
+                      <Cell key={index} fill={entry.qualité <= 2 ? "#22c55e" : entry.qualité <= 3 ? "#f59e0b" : "#ef4444"} />
                     ))}
                   </Bar>
                   <Bar dataKey="durée" fill="#8b5cf6" radius={[0, 4, 4, 0]} barSize={10} opacity={0.7} name="Durée" />
