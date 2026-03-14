@@ -1294,11 +1294,11 @@ export function ProgramSessionCard({
                           type="number"
                           min={0}
                           step="0.5"
-                          value={(exercise as any).weight_kg || ""}
+                          value={exercise.weight_kg || ""}
                           onChange={(e) =>
                             updateExercise(
                               index,
-                              "weight_kg" as any,
+                              "weight_kg",
                               e.target.value ? parseFloat(e.target.value) : null
                             )
                           }
