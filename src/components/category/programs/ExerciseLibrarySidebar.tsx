@@ -13,7 +13,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Dumbbell, Search, GripVertical, Plus } from "lucide-react";
+import { Dumbbell, Search, Plus, ChevronUp, ChevronDown, X } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useDraggable } from "@dnd-kit/core";
 import { 
   CATEGORY_GROUPS, 
