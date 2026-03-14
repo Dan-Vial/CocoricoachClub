@@ -157,7 +157,13 @@ export function ExerciseLibrarySidebar({ sportType }: ExerciseLibrarySidebarProp
               />
             </div>
 
-            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+            <Select
+              value={categoryFilter}
+              onValueChange={(value) => {
+                setCategoryFilter(value);
+                setSubcategoryFilter("all");
+              }}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Toutes catégories" />
               </SelectTrigger>
@@ -169,6 +175,22 @@ export function ExerciseLibrarySidebar({ sportType }: ExerciseLibrarySidebarProp
                 ))}
               </SelectContent>
             </Select>
+
+            {categoryFilter !== "all" && availableSubcategories.length > 0 && (
+              <Select value={subcategoryFilter} onValueChange={setSubcategoryFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Toutes sous-catégories" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Toutes sous-catégories</SelectItem>
+                  {availableSubcategories.map((subcategory) => (
+                    <SelectItem key={subcategory.value} value={subcategory.value}>
+                      {subcategory.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
         </div>
 
