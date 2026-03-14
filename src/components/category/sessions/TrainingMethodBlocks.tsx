@@ -517,7 +517,7 @@ function EmomBlock({
                   </Button>
                 </div>
                 {exercise.exercise_name && (
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-3 gap-2">
                     <div>
                       <Label className="text-xs text-muted-foreground">Reps</Label>
                       <Input
@@ -533,6 +533,16 @@ function EmomBlock({
                         className="h-8 text-xs"
                         value={exercise.weight_percent_rm || ""}
                         onChange={(e) => onUpdateExercise(index, "weight_percent_rm", parseInt(e.target.value) || null)}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Kg</Label>
+                      <Input
+                        type="number"
+                        step="0.5"
+                        className="h-8 text-xs"
+                        value={exercise.weight_kg || ""}
+                        onChange={(e) => onUpdateExercise(index, "weight_kg", parseFloat(e.target.value) || null)}
                       />
                     </div>
                   </div>

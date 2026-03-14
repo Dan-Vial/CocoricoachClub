@@ -74,6 +74,7 @@ interface ProgramExercise {
   sets: number;
   reps: string;
   percentage_1rm?: number;
+  weight_kg?: number | null;
   tempo?: string;
   rest_seconds: number;
   group_id?: string;
