@@ -451,6 +451,7 @@ export function SessionDetailsDialog({
           </Button>
         </DialogHeader>
 
+        <div className="flex-1 overflow-y-auto min-h-0">
         {/* Printable content - includes exercises */}
         <div ref={printRef} className="print-content">
           {session && (
@@ -732,6 +733,8 @@ export function SessionDetailsDialog({
             </TabsContent>
           </div>
         </Tabs>
+
+        </div>
 
         {/* Notify Button in Header */}
         <div className="absolute top-4 right-12">
