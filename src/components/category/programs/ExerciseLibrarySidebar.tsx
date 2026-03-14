@@ -83,6 +83,7 @@ export function ExerciseLibrarySidebar({ sportType }: ExerciseLibrarySidebarProp
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const [subcategoryFilter, setSubcategoryFilter] = useState("all");
   const [showAddDialog, setShowAddDialog] = useState(false);
 
   const { data: exercises, isLoading } = useQuery({
@@ -101,20 +102,29 @@ export function ExerciseLibrarySidebar({ sportType }: ExerciseLibrarySidebarProp
     enabled: !!user,
   });
 
+  const availableSubcategories =
+    categoryFilter === "all"
+      ? []
+      : EXERCISE_SUBCATEGORIES.filter((sub) => sub.parentCategory === categoryFilter);
+
   const filteredExercises = exercises?.filter((exercise) => {
     const matchesSearch = exercise.name
       .toLowerCase()
       .includes(searchQuery.toLowerCase());
 
-    // Filter by sport - exclude exercises from other sports
     const matchesSport = isCategoryForSport(exercise.category, sportType);
-    
     if (!matchesSport) return false;
 
-    if (categoryFilter === "all") return matchesSearch;
+    const matchesCategory =
+      categoryFilter === "all" ||
+      getCategoriesByGroup(categoryFilter)
+        .map((c) => c.value)
+        .includes(exercise.category);
 
-    const categoriesInGroup = getCategoriesByGroup(categoryFilter).map((c) => c.value);
-    return matchesSearch && categoriesInGroup.includes(exercise.category);
+    const matchesSubcategory =
+      subcategoryFilter === "all" || exercise.subcategory === subcategoryFilter;
+
+    return matchesSearch && matchesCategory && matchesSubcategory;
   });
 
   return (
