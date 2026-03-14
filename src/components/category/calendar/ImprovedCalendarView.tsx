@@ -480,7 +480,7 @@ export function ImprovedCalendarView({
                   {DAYS_OF_WEEK.map((day) => (
                     <div
                       key={day}
-                      className="p-3 text-center text-sm font-semibold text-muted-foreground border-b"
+                      className="p-1.5 sm:p-3 text-center text-xs sm:text-sm font-semibold text-muted-foreground border-b"
                     >
                       {day}
                     </div>
