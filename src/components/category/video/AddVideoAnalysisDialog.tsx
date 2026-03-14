@@ -33,6 +33,7 @@ interface AddVideoAnalysisDialogProps {
   onOpenChange: (open: boolean) => void;
   categoryId: string;
   onSuccess: () => void;
+  sportType?: string;
 }
 
 export function AddVideoAnalysisDialog({
