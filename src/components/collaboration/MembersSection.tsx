@@ -119,7 +119,7 @@ export function MembersSection({ clubId, canManage }: MembersSectionProps) {
       }
 
       // Remove from club_members
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from("club_members")
         .delete()
         .eq("id", member.id);
