@@ -130,34 +130,20 @@ export function AddCategoryDialog({
 
   const addCategory = useMutation({
     mutationFn: async (data: { name: string; rugby_type: SportType; gender: "masculine" | "feminine" | "mixed"; memberIds: string[] }) => {
-      const { data: newCategory, error } = await supabase
-        .from("categories")
-        .insert({ name: data.name, club_id: clubId, rugby_type: data.rugby_type, gender: data.gender })
-        .select()
-        .single();
-      
+      const { data: categoryId, error } = await (supabase as any).rpc("create_category_with_members", {
+        _club_id: clubId,
+        _name: data.name,
+        _rugby_type: data.rugby_type,
+        _gender: data.gender,
+        _member_ids: data.memberIds,
+      });
+
       if (error) {
-        console.error("Category insert error:", error);
+        console.error("[AddCategoryDialog] create_category_with_members error:", error);
         throw error;
       }
 
-      // Update assigned_categories for selected members
-      if (data.memberIds.length > 0) {
-        for (const memberId of data.memberIds) {
-          const member = clubMembers.find((m: any) => m.id === memberId);
-          if (member) {
-            const currentCategories = member.assigned_categories || [];
-            const updatedCategories = [...currentCategories, newCategory.id];
-            
-            await supabase
-              .from("club_members")
-              .update({ assigned_categories: updatedCategories })
-              .eq("id", memberId);
-          }
-        }
-      }
-
-      return newCategory;
+      return { id: categoryId };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["categories", clubId] });

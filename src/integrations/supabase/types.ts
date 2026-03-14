@@ -7968,6 +7968,16 @@ export type Database = {
         Returns: boolean
       }
       cleanup_old_invitation_attempts: { Args: never; Returns: undefined }
+      create_category_with_members: {
+        Args: {
+          _club_id: string
+          _gender: string
+          _member_ids?: string[]
+          _name: string
+          _rugby_type: string
+        }
+        Returns: string
+      }
       get_safe_profile: {
         Args: { profile_id: string }
         Returns: {
