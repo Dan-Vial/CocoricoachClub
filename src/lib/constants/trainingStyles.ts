@@ -554,6 +554,45 @@ export const getCardioBlockConfig = (method: string): CardioBlockConfig => {
   }
 };
 
+// Method group mapping
+export const METHOD_GROUP_MAP: Record<string, TrainingMethodGroup> = {
+  // Classique
+  normal: "classique", superset: "classique", biset: "classique", triset: "classique", giant_set: "classique",
+  // Intensification
+  drop_set: "intensification", rest_pause: "intensification", pyramid_up: "intensification", pyramid_down: "intensification",
+  five_by_five: "intensification", cluster: "intensification", bulgarian: "intensification",
+  super_pletnev: "intensification", combine_haltero: "intensification",
+  // Cardio
+  amrap: "cardio", for_time: "cardio", circuit: "cardio", emom: "cardio", tabata: "cardio",
+  death_by: "cardio", intermittent_cardio: "cardio", fartlek: "cardio",
+  // Spéciales (force/iso/vitesse)
+  vbt: "special", isometric_overcoming: "special", isometric_yielding: "special",
+  iso_max: "special", stato_dynamique: "special",
+};
+
+export const METHOD_GROUP_LABELS: Record<TrainingMethodGroup, string> = {
+  classique: "📋 Classique",
+  intensification: "💪 Intensification",
+  cardio: "🏃 Cardio / CrossFit",
+  special: "⚡ Méthodes spéciales",
+};
+
+export const getMethodGroup = (method: string): TrainingMethodGroup => METHOD_GROUP_MAP[method] || "classique";
+
+// Get training styles grouped
+export const getGroupedTrainingStyles = () => {
+  const groups: { group: TrainingMethodGroup; label: string; styles: TrainingStyleConfig[] }[] = [];
+  const order: TrainingMethodGroup[] = ["classique", "intensification", "special", "cardio"];
+  
+  for (const g of order) {
+    const styles = TRAINING_STYLES.filter(s => getMethodGroup(s.value) === g);
+    if (styles.length > 0) {
+      groups.push({ group: g, label: METHOD_GROUP_LABELS[g], styles });
+    }
+  }
+  return groups;
+};
+
 // Styles for workout builder (subset for standard gym sessions)
 export const WORKOUT_BUILDER_STYLES = TRAINING_STYLES.filter(s => 
   ["normal", "superset", "biset", "triset", "giant_set", "drop_set", "rest_pause", "pyramid_up", "pyramid_down", "five_by_five", "cluster", "bulgarian", "isometric_overcoming", "isometric_yielding", "super_pletnev", "amrap", "for_time", "circuit", "emom", "tabata", "death_by", "vbt", "intermittent_cardio", "fartlek", "stato_dynamique", "iso_max", "combine_haltero"].includes(s.value)
