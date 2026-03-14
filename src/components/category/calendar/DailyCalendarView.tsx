@@ -138,11 +138,11 @@ export function DailyCalendarView({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               {/* Large date number */}
-              <div className="flex flex-col items-center justify-center h-20 w-20 rounded-2xl bg-white/20 backdrop-blur-sm">
-                <span className="text-3xl font-bold text-white">
+              <div className="flex flex-col items-center justify-center h-16 w-16 sm:h-20 sm:w-20 rounded-2xl bg-white/20 backdrop-blur-sm">
+                <span className="text-2xl sm:text-3xl font-bold text-white">
                   {format(day, "d")}
                 </span>
-                <span className="text-xs font-medium text-white/80 uppercase">
+                <span className="text-[10px] sm:text-xs font-medium text-white/80 uppercase">
                   {format(day, "MMM", { locale: fr })}
                 </span>
               </div>
