@@ -325,47 +325,43 @@ export function AddCategoryDialog({
               <p className="text-xs text-muted-foreground">
                 Les membres non sélectionnés garderont leur accès actuel.
               </p>
-              <ScrollArea className="h-40 border rounded-lg">
+              <div className="h-40 border rounded-lg overflow-y-auto">
                 <div className="p-2 space-y-1">
-                  {clubMembers.map((member: any) => (
-                    <div 
-                      key={member.id}
-                      className={`flex items-center justify-between p-2 rounded-md cursor-pointer transition-colors ${
-                        selectedMembers.includes(member.id) 
-                          ? "bg-primary/10 border border-primary/30" 
-                          : "hover:bg-muted"
-                      }`}
-                      onClick={() => toggleMember(member.id)}
-                    >
-                      <div className="flex items-center gap-2">
-                        <Checkbox 
-                          checked={selectedMembers.includes(member.id)}
-                          onCheckedChange={(checked) => {
-                            setSelectedMembers((prev) => {
-                              if (checked) {
-                                return prev.includes(member.id) ? prev : [...prev, member.id];
-                              }
-                              return prev.filter((id) => id !== member.id);
-                            });
-                          }}
-                          onClick={(e) => e.stopPropagation()}
-                        />
-                        <div>
-                          <p className="text-sm font-medium">
-                            {member.profile?.full_name || "Utilisateur"}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {member.profile?.email || ""}
-                          </p>
+                  {clubMembers.map((member: any) => {
+                    const isSelected = selectedMembers.includes(member.id);
+                    return (
+                      <label 
+                        key={member.id}
+                        className={`flex items-center justify-between p-2 rounded-md cursor-pointer transition-colors ${
+                          isSelected 
+                            ? "bg-primary/10 border border-primary/30" 
+                            : "hover:bg-muted"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => toggleMember(member.id)}
+                            className="h-4 w-4 rounded border-input accent-primary"
+                          />
+                          <div>
+                            <p className="text-sm font-medium">
+                              {member.profile?.full_name || "Utilisateur"}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {member.profile?.email || ""}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                      <Badge variant="outline" className="text-xs">
-                        {getRoleBadge(member.role)}
-                      </Badge>
-                    </div>
-                  ))}
+                        <Badge variant="outline" className="text-xs">
+                          {getRoleBadge(member.role)}
+                        </Badge>
+                      </label>
+                    );
+                  })}
                 </div>
-              </ScrollArea>
+              </div>
             </div>
           )}
 
