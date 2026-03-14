@@ -138,7 +138,7 @@ export function PollSummaryPanel({ conversationId, categoryId }: PollSummaryPane
       <div className="grid grid-cols-3 gap-2 text-center text-xs">
         <div className="space-y-1">
           <div className="flex items-center justify-center gap-1 text-green-600">
-            <CheckCircle2 className="h-3.5 w-3.5" />
+            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
             <span className="font-bold text-lg">{available.length}</span>
           </div>
           <p className="text-muted-foreground">Disponibles</p>
