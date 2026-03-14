@@ -251,7 +251,7 @@ export function AddVideoAnalysisDialog({
               <div className="space-y-2">
                 <Label className="flex items-center gap-2">
                   <Users className="h-4 w-4" />
-                  Joueurs concernés (optionnel)
+                  {terminology.playersLabel} concerné(e)s (optionnel)
                 </Label>
                 <div className="h-32 border rounded-md p-2 overflow-y-auto">
                   <div className="space-y-2">
