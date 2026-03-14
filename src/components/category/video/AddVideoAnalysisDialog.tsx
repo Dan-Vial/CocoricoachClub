@@ -196,18 +196,18 @@ export function AddVideoAnalysisDialog({
                 />
               </div>
 
-              {/* Match Selection (Optional) */}
+              {/* Match/Competition Selection (Optional) */}
               <div className="space-y-2">
                 <Label className="flex items-center gap-2">
                   <Calendar className="h-4 w-4" />
-                  Match associé (optionnel)
+                  {terminology.associatedLabel}
                 </Label>
                 <Select value={matchId} onValueChange={setMatchId}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Aucun match - Vidéo libre" />
+                    <SelectValue placeholder={terminology.noMatchLabel} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">Aucun match - Vidéo libre</SelectItem>
+                    <SelectItem value="none">{terminology.noMatchLabel}</SelectItem>
                     {matches?.map((match) => (
                       <SelectItem key={match.id} value={match.id}>
                         {match.is_home ? "vs" : "@"} {match.opponent} -{" "}
@@ -217,7 +217,7 @@ export function AddVideoAnalysisDialog({
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
-                  Vous pouvez créer une analyse sans match (entraînement, compilation...)
+                  Vous pouvez créer une analyse sans {terminology.match.toLowerCase()} (entraînement, compilation...)
                 </p>
               </div>
 
