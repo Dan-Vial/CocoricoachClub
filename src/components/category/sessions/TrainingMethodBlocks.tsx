@@ -1546,7 +1546,7 @@ function IsometricOvercomingBlock({
                   value={exercise.sets || ""} onChange={(e) => onUpdateExercise(exerciseIndex, "sets", parseInt(e.target.value) || 1)} />
               </div>
               <div>
-                <Label className="text-xs text-muted-foreground">Durée (s)</Label>
+                <Label className="text-xs text-muted-foreground">Durée contraction (s)</Label>
                 <Input type="number" min="1" className="h-8 text-xs" placeholder="6-10"
                   value={exercise.reps || ""} onChange={(e) => onUpdateExercise(exerciseIndex, "reps", e.target.value)} />
               </div>
@@ -1561,8 +1561,26 @@ function IsometricOvercomingBlock({
                   value={exercise.target_rpe || ""} onChange={(e) => onUpdateExercise(exerciseIndex, "target_rpe", parseInt(e.target.value) || null)} />
               </div>
             </div>
+
+            {/* Isometric specific config */}
             <div className="border rounded-lg p-3 bg-stone-50 dark:bg-stone-900/20">
-              <p className="text-xs font-medium text-stone-700 dark:text-stone-400">💪 Effort maximal contre résistance immobile — pas de mouvement, contraction à 100%</p>
+              <p className="text-xs font-medium text-stone-700 dark:text-stone-400 mb-2">📐 Configuration isométrique</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs text-muted-foreground">Angle articulaire (°)</Label>
+                  <Input className="h-8 text-xs" placeholder="Ex: 90° (mi-course)"
+                    value={exercise.tempo || ""} onChange={(e) => onUpdateExercise(exerciseIndex, "tempo", e.target.value)} />
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Position / Notes</Label>
+                  <Input className="h-8 text-xs" placeholder="Ex: Mi-course, position basse..."
+                    value={exercise.notes || ""} onChange={(e) => onUpdateExercise(exerciseIndex, "notes", e.target.value)} />
+                </div>
+              </div>
+            </div>
+
+            <div className="border rounded-lg p-2 bg-stone-100 dark:bg-stone-800/30">
+              <p className="text-[11px] text-stone-600 dark:text-stone-400">💪 Effort maximal contre résistance immobile — pas de mouvement, contraction à 100%. Pas de charge mobile.</p>
             </div>
           </div>
         )}
