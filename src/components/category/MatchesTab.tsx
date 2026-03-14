@@ -136,7 +136,11 @@ export function MatchesTab({ categoryId, sportType }: MatchesTabProps) {
         </TabsContent>
 
         <TabsContent value="stats">
-          <PlayerCumulativeStats categoryId={categoryId} sportType={sportType} />
+          {isBowling ? (
+            <BowlingCumulativeStats categoryId={categoryId} />
+          ) : (
+            <PlayerCumulativeStats categoryId={categoryId} sportType={sportType} />
+          )}
         </TabsContent>
       </Tabs>
 
