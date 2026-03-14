@@ -185,9 +185,6 @@ export function AddVideoAnalysisDialog({
 
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
           <ScrollArea className="flex-1 px-6">
-
-        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
-          <ScrollArea className="flex-1 pr-4">
             <div className="space-y-4 pb-4">
               {/* Title */}
               <div className="space-y-2">
