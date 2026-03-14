@@ -118,7 +118,7 @@ export function CalendarDayCell({
     <div
       ref={setNodeRef}
       className={cn(
-        "min-h-[120px] border-b border-r p-1.5 transition-colors relative cursor-pointer",
+        "min-h-[90px] sm:min-h-[120px] border-b border-r p-1 sm:p-1.5 transition-colors relative cursor-pointer",
         !isCurrentMonth && "bg-muted/30 text-muted-foreground",
         isToday && "bg-primary/5 ring-2 ring-primary/40 ring-inset",
         isOver && "bg-primary/10 ring-2 ring-primary/30 ring-inset"

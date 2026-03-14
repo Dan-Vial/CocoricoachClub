@@ -153,7 +153,7 @@ export function DailyCalendarView({
                     {relativeDay}
                   </span>
                 )}
-                <p className="text-2xl font-bold text-white capitalize">
+                <p className="text-xl sm:text-2xl font-bold text-white capitalize">
                   {format(day, "EEEE", { locale: fr })}
                 </p>
                 <p className="text-white/70 text-sm">
