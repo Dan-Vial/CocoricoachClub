@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { ColoredSubTabsList, ColoredSubTabsTrigger } from "@/components/ui/colored-subtabs";
 import { Video, Plus, Film, Users, BarChart3, Scissors, Tag } from "lucide-react";
+import { getVideoTerminology } from "@/lib/constants/videoActionTypes";
 import { AddVideoAnalysisDialog } from "./AddVideoAnalysisDialog";
 import { VideoAnalysisList } from "./VideoAnalysisList";
 import { VideoClipViewer } from "./VideoClipViewer";
