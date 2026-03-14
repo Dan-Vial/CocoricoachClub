@@ -456,11 +456,15 @@ export function SessionFeedbackDialog({
   );
 
   const hasTestResults = sessionTests.some(t => 
-    t.test_type && Object.values(t.player_results).some(v => v && v.trim() !== "")
+    t.test_type && Object.entries(t.player_results).some(([pid, v]) => v && v.trim() !== "" && !t.savedPlayerIds?.has(pid))
   );
 
   const testResultsCount = sessionTests.reduce((acc, t) => 
-    acc + Object.values(t.player_results).filter(v => v && v.trim() !== "").length, 0
+    acc + Object.entries(t.player_results).filter(([pid, v]) => v && v.trim() !== "" && !t.savedPlayerIds?.has(pid)).length, 0
+  );
+
+  const savedTestResultsCount = sessionTests.reduce((acc, t) => 
+    acc + (t.savedPlayerIds?.size || 0), 0
   );
 
   return (
