@@ -196,13 +196,56 @@ export function useTrainingLoad({
   // which have full historical context from the compute_ewma_loads trigger.
   // Only fall back to frontend recalculation for non-sRPE metrics or AWCR mode.
   const chartData: EWMAResult[] = (() => {
+    let baseData: EWMAResult[];
     if (isEwma && metric === "ewma_srpe" && awcrData && awcrData.length > 0) {
-      // Use DB-computed EWMA values directly
-      return buildEWMAFromDbData(awcrData, playerId);
+      baseData = buildEWMAFromDbData(awcrData, playerId);
+    } else {
+      baseData = isEwma
+        ? calculateEWMASeries(dailyData, metricConfig.dataKey)
+        : calculateAWCR(dailyData, metricConfig.dataKey);
     }
-    return isEwma
-      ? calculateEWMASeries(dailyData, metricConfig.dataKey)
-      : calculateAWCR(dailyData, metricConfig.dataKey);
+
+    // Merge HRV data into chart data by date
+    if (hrvData && hrvData.length > 0) {
+      const hrvByDate = new Map<string, { hrvMs: number | null; avgHr: number | null; maxHr: number | null; restingHr: number | null; count: number }>();
+      
+      hrvData.forEach((h: any) => {
+        const date = h.record_date;
+        const existing = hrvByDate.get(date);
+        if (existing) {
+          if (h.hrv_ms != null) existing.hrvMs = (existing.hrvMs || 0) + h.hrv_ms;
+          if (h.avg_hr_bpm != null) existing.avgHr = (existing.avgHr || 0) + h.avg_hr_bpm;
+          if (h.max_hr_bpm != null) existing.maxHr = Math.max(existing.maxHr || 0, h.max_hr_bpm);
+          if (h.resting_hr_bpm != null) existing.restingHr = (existing.restingHr || 0) + h.resting_hr_bpm;
+          existing.count++;
+        } else {
+          hrvByDate.set(date, {
+            hrvMs: h.hrv_ms,
+            avgHr: h.avg_hr_bpm,
+            maxHr: h.max_hr_bpm,
+            restingHr: h.resting_hr_bpm,
+            count: 1,
+          });
+        }
+      });
+
+      baseData = baseData.map(d => {
+        const hrv = hrvByDate.get(d.date);
+        if (hrv) {
+          const n = hrv.count;
+          return {
+            ...d,
+            hrvMs: hrv.hrvMs != null ? Math.round((hrv.hrvMs / n) * 10) / 10 : null,
+            avgHrBpm: hrv.avgHr != null ? Math.round(hrv.avgHr / n) : null,
+            maxHrBpm: hrv.maxHr,
+            restingHrBpm: hrv.restingHr != null ? Math.round(hrv.restingHr / n) : null,
+          };
+        }
+        return d;
+      });
+    }
+
+    return baseData;
   })();
 
   // Calculate summary from chart data (use last entry)
@@ -237,7 +280,8 @@ export function useTrainingLoad({
     metricConfig,
     sportType,
     hasGpsData,
-    isLoading: awcrLoading || gpsLoading,
+    hasHrvData,
+    isLoading: awcrLoading || gpsLoading || hrvLoading,
   };
 }
 
