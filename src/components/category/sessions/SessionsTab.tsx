@@ -166,20 +166,25 @@ export function SessionsTab({ categoryId }: SessionsTabProps) {
       if (sessionIds.length > 0) {
         const { data: exerciseCounts } = await supabase
           .from("gym_session_exercises")
-          .select("training_session_id")
+          .select("training_session_id, exercise_name")
           .in("training_session_id", sessionIds);
 
-        const countMap = new Map<string, Set<string>>();
+        const countMap = new Map<string, number>();
         exerciseCounts?.forEach((ex: any) => {
           if (!countMap.has(ex.training_session_id)) {
-            countMap.set(ex.training_session_id, new Set());
+            countMap.set(ex.training_session_id, new Set<string>());
           }
-          countMap.get(ex.training_session_id)!.add(ex.exercise_name);
+          (countMap.get(ex.training_session_id) as any).add(ex.exercise_name);
+        });
+
+        const finalCountMap = new Map<string, number>();
+        countMap.forEach((val, key) => {
+          finalCountMap.set(key, (val as any).size);
         });
 
         return data?.map((s) => ({
           ...s,
-          exerciseCount: countMap.get(s.id) || 0,
+          exerciseCount: finalCountMap.get(s.id) || 0,
         }));
       }
 
