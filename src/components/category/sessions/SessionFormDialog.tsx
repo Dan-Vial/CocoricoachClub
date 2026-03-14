@@ -1271,6 +1271,17 @@ export function SessionFormDialog({
     );
     
     setExercises([...exercises, newExercise]);
+
+    // Auto-calculate EMOM duration based on exercise count
+    if (method === "emom") {
+      const newCount = groupExercises.length + 1;
+      const config = blockConfigs[groupId] || {};
+      const interval = config.emom_interval || 1;
+      setBlockConfigs(prev => ({
+        ...prev,
+        [groupId]: { ...prev[groupId], duration_minutes: newCount * interval },
+      }));
+    }
   };
 
   const unlinkGroup = (groupId: string) => {
