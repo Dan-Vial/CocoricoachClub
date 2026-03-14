@@ -61,9 +61,11 @@ export function AddExerciseDialog() {
     const reathletisation = EXERCISE_CATEGORIES.filter(c => c.group === "reathletisation");
     const terrain = getTerrainCategoriesForSport(selectedSport);
     const stretching = EXERCISE_CATEGORIES.filter(c => c.group === "stretching_mobility");
+    const plyometrie = EXERCISE_CATEGORIES.filter(c => c.group === "plyometrie");
+    const neuro = EXERCISE_CATEGORIES.filter(c => c.group === "neuro");
     const other = EXERCISE_CATEGORIES.filter(c => c.group === null);
     
-    return { musculation, bodyweight, crossfit, course, ergo, sled, pilates, reathletisation, terrain, stretching, other };
+    return { musculation, bodyweight, crossfit, course, ergo, sled, pilates, reathletisation, terrain, stretching, plyometrie, neuro, other };
   }, [selectedSport]);
 
   const handleCategoryChange = (newCategory: string) => {
