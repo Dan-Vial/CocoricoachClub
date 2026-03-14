@@ -519,30 +519,33 @@ import { isIndividualSport } from "@/lib/constants/sportTypes";
    };
  
    // Calculate players to adapt for a session
-   const getPlayersToAdapt = (): { id: string; name: string; reason: string }[] => {
-     const toAdapt: { id: string; name: string; reason: string }[] = [];
-     
-      players.forEach(player => {
-        const ewmaRatio = playerEwmaMap.get(player.id);
-        const playerWellness = wellnessData.find(w => w.player_id === player.id);
-        
-        if (ewmaRatio != null && ewmaRatio > 1.3) {
-          toAdapt.push({
-            id: player.id,
-            name: getFullName(player),
-            reason: `EWMA ${ewmaRatio.toFixed(2)}`,
-         });
-       } else if (playerWellness) {
-         const score = calculateWeightedWellnessScore(playerWellness as WellnessEntry);
-         if (score > 3) {
-            toAdapt.push({
-              id: player.id,
-              name: getFullName(player),
-              reason: `Wellness ${score.toFixed(1)}/5`,
-           });
+    const getPlayersToAdapt = (): { id: string; name: string; reason: string }[] => {
+      const toAdapt: { id: string; name: string; reason: string }[] = [];
+      const injuredPlayerIds = new Set(injuries.filter(i => i.status === "active").map(i => i.player_id));
+      const uncertainPlayerIds = new Set(injuries.filter(i => i.status === "recovering").map(i => i.player_id));
+      
+       players.forEach(player => {
+         if (injuredPlayerIds.has(player.id) || uncertainPlayerIds.has(player.id)) return;
+
+         const ewmaRatio = playerEwmaMap.get(player.id);
+         const playerWellness = wellnessData.find(w => w.player_id === player.id);
+         
+         let reason = "";
+         if (ewmaRatio != null && (ewmaRatio > 1.3 || ewmaRatio < 0.8)) {
+           reason = `EWMA ${ewmaRatio.toFixed(2)}`;
          }
-       }
-     });
+         
+         if (playerWellness) {
+           const score = calculateWeightedWellnessScore(playerWellness as WellnessEntry);
+           if (score > 3) {
+             reason = reason ? `${reason} + Wellness ${score.toFixed(1)}` : `Wellness ${score.toFixed(1)}/5`;
+           }
+         }
+
+         if (reason) {
+           toAdapt.push({ id: player.id, name: getFullName(player), reason });
+         }
+       });
      
      return toAdapt;
    };
