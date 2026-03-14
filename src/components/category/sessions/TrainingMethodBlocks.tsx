@@ -1334,6 +1334,8 @@ function IntermittentCardioBlock({
                 <SelectItem value="rpe">RPE (/10)</SelectItem>
                 <SelectItem value="vma">% VMA (%)</SelectItem>
                 <SelectItem value="fc">FC cible (bpm)</SelectItem>
+                <SelectItem value="watts">Watts (W)</SelectItem>
+                <SelectItem value="rpm">RPM (tr/min)</SelectItem>
               </SelectContent>
             </Select>
           </div>
