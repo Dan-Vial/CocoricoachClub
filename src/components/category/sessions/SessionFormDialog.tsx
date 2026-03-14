@@ -1025,7 +1025,7 @@ export function SessionFormDialog({
     const startIndex = exercises.length;
     
     // For pyramid methods, 5x5, and death_by, we only need 1 exercise
-    const isPyramidOrSpecial = isDropMethod(method) || method === "five_by_five" || method === "death_by" || method === "vbt";
+    const isPyramidOrSpecial = isDropMethod(method) || method === "five_by_five" || method === "death_by" || method === "vbt" || SPECIAL_METHODS.includes(method);
     const minExercises = isPyramidOrSpecial ? 1 : getMinExercisesForMethod(method);
     
     let newExercises: Exercise[];
