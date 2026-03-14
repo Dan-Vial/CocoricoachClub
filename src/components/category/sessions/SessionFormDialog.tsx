@@ -1209,6 +1209,16 @@ export function SessionFormDialog({
             ? { ...e, group_order: groupOrder++ }
             : e
         );
+        // Auto-recalculate EMOM duration when removing exercise
+        if (exerciseToDelete.set_type === "emom" && exerciseToDelete.group_id) {
+          const remainingCount = newExercises.filter(e => e.group_id === exerciseToDelete.group_id).length;
+          const config = blockConfigs[exerciseToDelete.group_id] || {};
+          const interval = config.emom_interval || 1;
+          setBlockConfigs(prev => ({
+            ...prev,
+            [exerciseToDelete.group_id!]: { ...prev[exerciseToDelete.group_id!], duration_minutes: remainingCount * interval },
+          }));
+        }
       }
     }
 
