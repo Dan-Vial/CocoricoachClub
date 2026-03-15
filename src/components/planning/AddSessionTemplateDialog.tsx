@@ -123,7 +123,7 @@ export function AddSessionTemplateDialog({ categoryId, trigger }: AddSessionTemp
                   <SelectItem value="technical">Technique</SelectItem>
                   <SelectItem value="tactical">Tactique</SelectItem>
                   <SelectItem value="bowling_game">Parties d'Entraînement</SelectItem>
-                  <SelectItem value="bowling_spare">Entraînement Spares</SelectItem>
+                  <SelectItem value="bowling_spare">Entraînement Précision</SelectItem>
                   <SelectItem value="bowling_practice">Pratique Libre</SelectItem>
                   <SelectItem value="bowling_technique">Travail Technique</SelectItem>
                   <SelectItem value="bowling_approche">Travail d'Approche</SelectItem>

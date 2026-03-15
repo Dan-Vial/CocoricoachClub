@@ -647,7 +647,7 @@ export const TRAINING_TYPE_LABELS: Record<string, string> = {
   // Bowling specific
   bowling_practice: "Pratique Libre",
   bowling_technique: "Travail Technique",
-  bowling_spare: "Entraînement Spares",
+  bowling_spare: "Entraînement Précision",
   bowling_game: "Parties d'Entraînement",
   // Athlétisme specific - Sprint
   athle_vitesse: "Travail de Vitesse",
