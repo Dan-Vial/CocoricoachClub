@@ -324,6 +324,8 @@ export function BowlingSessionContent({ sessionId, categoryId, blockType, sessio
               categoryId={categoryId}
               readOnly
               initialFrames={(viewingRoundStats.stat_data as any).frames}
+              onSave={() => {}}
+              onCancel={() => setViewingRoundId(null)}
             />
           )}
         </DialogContent>
