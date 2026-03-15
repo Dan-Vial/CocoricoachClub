@@ -306,6 +306,7 @@ export function BowlingSessionContent({ sessionId, categoryId, blockType, sessio
               playerId={selectedPlayerId}
               categoryId={categoryId}
               onSave={handleSaveScore}
+              onCancel={() => setShowScoreSheet(false)}
             />
           )}
         </DialogContent>
