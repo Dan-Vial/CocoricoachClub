@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { ColoredSubTabsList, ColoredSubTabsTrigger, ColoredContentCard, ColoredCardHeader, ColoredTitle } from "@/components/ui/colored-subtabs";
-import { Calendar as CalendarIcon, Target } from "lucide-react";
+import { Calendar as CalendarIcon, Target, BarChart3, Dumbbell } from "lucide-react";
 import { toast } from "sonner";
 import { SessionFormDialog } from "./sessions/SessionFormDialog";
 import { AddMatchCalendarDialog } from "./matches/AddMatchCalendarDialog";
@@ -16,6 +16,7 @@ import { DailySessionsDialog } from "./DailySessionsDialog";
 import { format, isSameDay, startOfWeek, addDays } from "date-fns";
 import { useNavigate } from "react-router-dom";
 import { SeasonObjectivesSection } from "@/components/planning/SeasonObjectivesSection";
+import { BowlingTrainingStats } from "@/components/bowling/BowlingTrainingStats";
 import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 import { exportCalendarToPdf, printElement } from "@/lib/pdfExport";
 import { getTrainingTypesForSport, TRAINING_TYPE_COLORS } from "@/lib/constants/trainingTypes";
@@ -275,6 +276,8 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
     return <p className="text-muted-foreground">Chargement...</p>;
   }
 
+  const isBowling = (sportType || "").toLowerCase().includes("bowling");
+
   return (
     <div className="space-y-6">
       <Tabs defaultValue="global" className="space-y-4">
@@ -284,6 +287,12 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
             <span className="hidden sm:inline">Calendrier Global</span>
             <span className="sm:hidden">Global</span>
           </ColoredSubTabsTrigger>
+          {isBowling && (
+            <ColoredSubTabsTrigger value="training_stats" colorKey="planification" icon={<BarChart3 className="h-4 w-4" />}>
+              <span className="hidden sm:inline">Stats entraînement</span>
+              <span className="sm:hidden">Stats</span>
+            </ColoredSubTabsTrigger>
+          )}
           {/* Objectifs - Grisé en mode viewer */}
           {!isViewer && (
             <ColoredSubTabsTrigger value="objectives" colorKey="planification" icon={<Target className="h-4 w-4" />}>
@@ -352,6 +361,12 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
             onLineupMatch={(matchId) => setLineupMatchId(matchId)}
           />
         </TabsContent>
+
+        {isBowling && (
+          <TabsContent value="training_stats">
+            <BowlingTrainingStats categoryId={categoryId} />
+          </TabsContent>
+        )}
 
         {!isViewer && (
           <TabsContent value="objectives">
