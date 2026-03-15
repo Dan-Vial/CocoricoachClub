@@ -103,7 +103,7 @@ export function BowlingSpareTraining({ playerId, categoryId, trainingSessionId }
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg flex items-center gap-2">
             <Target className="h-5 w-5 text-orange-500" />
-            Entraînement Précision
+            Bowling Spare
           </CardTitle>
           <Button size="sm" onClick={() => setIsAddOpen(true)} className="gap-1">
             <Plus className="h-4 w-4" />

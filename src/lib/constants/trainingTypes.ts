@@ -157,7 +157,7 @@ export const ALL_TRAINING_TYPES: TrainingTypeOption[] = [
   // Bowling specific (with category)
   { value: "bowling_practice", label: "Pratique Libre", hasExercises: false, forSports: ["bowling"], category: "bowling" },
   { value: "bowling_technique", label: "Travail Technique", hasExercises: false, forSports: ["bowling"], category: "bowling" },
-  { value: "bowling_spare", label: "Entraînement Précision", hasExercises: false, forSports: ["bowling"], category: "bowling" },
+  { value: "bowling_spare", label: "Bowling Spare", hasExercises: false, forSports: ["bowling"], category: "bowling" },
   { value: "bowling_game", label: "Parties d'Entraînement", hasExercises: false, forSports: ["bowling"], category: "bowling" },
   { value: "bowling_approche", label: "Travail d'Approche", hasExercises: false, forSports: ["bowling"], category: "bowling" },
   { value: "bowling_release", label: "Travail de Lâcher", hasExercises: false, forSports: ["bowling"], category: "bowling" },
@@ -647,7 +647,7 @@ export const TRAINING_TYPE_LABELS: Record<string, string> = {
   // Bowling specific
   bowling_practice: "Pratique Libre",
   bowling_technique: "Travail Technique",
-  bowling_spare: "Entraînement Précision",
+  bowling_spare: "Bowling Spare",
   bowling_game: "Parties d'Entraînement",
   // Athlétisme specific - Sprint
   athle_vitesse: "Travail de Vitesse",
