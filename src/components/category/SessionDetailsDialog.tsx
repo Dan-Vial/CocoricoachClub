@@ -27,6 +27,7 @@ import { calculateWeightedRpe, formatDuration } from "@/lib/weightedRpeCalculati
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { getTrainingTypeLabel } from "@/lib/constants/trainingTypes";
 import { NotifyAthletesDialog } from "@/components/notifications/NotifyAthletesDialog";
+import { BowlingSessionContent } from "@/components/bowling/BowlingSessionContent";
 
 interface SessionDetailsDialogProps {
   open: boolean;
@@ -594,6 +595,24 @@ export function SessionDetailsDialog({
                 }
                 return null;
               })()}
+            </div>
+          )}
+
+          {/* Bowling-specific content for bowling_game and bowling_spare blocks */}
+          {sessionBlocks?.some((b: any) => b.training_type === "bowling_game" || b.training_type === "bowling_spare") && (
+            <div className="mb-4 space-y-4">
+              {sessionBlocks
+                .filter((b: any) => b.training_type === "bowling_game" || b.training_type === "bowling_spare")
+                .map((block: any) => (
+                  <BowlingSessionContent
+                    key={block.id}
+                    sessionId={sessionId}
+                    categoryId={categoryId}
+                    blockType={block.training_type as "bowling_game" | "bowling_spare"}
+                    sessionDate={sessionDate}
+                  />
+                ))
+              }
             </div>
           )}
 

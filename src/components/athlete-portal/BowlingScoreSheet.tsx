@@ -43,11 +43,12 @@ export interface BowlingStats {
 }
 
 interface BowlingScoreSheetProps {
-  onSave: (stats: BowlingStats, frames: FrameData[], ballData?: { mode: string; ballId?: string | null; frameBalls?: (string | null)[] }) => void;
-  onCancel: () => void;
+  onSave?: (stats: BowlingStats, frames: FrameData[], ballData?: { mode: string; ballId?: string | null; frameBalls?: (string | null)[] }) => void;
+  onCancel?: () => void;
   initialFrames?: FrameData[];
   playerId?: string;
   categoryId?: string;
+  readOnly?: boolean;
 }
 
 const createEmptyFrame = (): FrameData => ({
@@ -65,11 +66,11 @@ const createEmptyThrow = (): ThrowData => ({
   isSinglePinConverted: false,
 });
 
-export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, categoryId }: BowlingScoreSheetProps) {
+export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, categoryId, readOnly }: BowlingScoreSheetProps) {
   const [frames, setFrames] = useState<FrameData[]>(() => 
     initialFrames || Array.from({ length: 10 }, () => createEmptyFrame())
   );
-  const [isSaved, setIsSaved] = useState(false);
+  const [isSaved, setIsSaved] = useState(readOnly || false);
   const [ballMode, setBallMode] = useState<"simple" | "advanced">("simple");
   const [selectedBallId, setSelectedBallId] = useState<string | null>(null);
   const [frameBalls, setFrameBalls] = useState<(string | null)[]>(Array(10).fill(null));
@@ -506,7 +507,7 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, c
       ballId: ballMode === "simple" ? selectedBallId : null,
       frameBalls: ballMode === "advanced" ? frameBalls : undefined,
     } : undefined;
-    onSave(stats, frames, ballData);
+    onSave?.(stats, frames, ballData);
   };
 
   // Get cell background color based on throw value
