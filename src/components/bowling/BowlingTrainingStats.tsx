@@ -25,6 +25,7 @@ export function BowlingTrainingStats({ categoryId }: BowlingTrainingStatsProps) 
   const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
   const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
   const [selectedBallId, setSelectedBallId] = useState<string>("all");
+  const [selectedPlayerId, setSelectedPlayerId] = useState<string>("all");
 
   // Fetch training data
   const { data: trainingData, isLoading } = useQuery({
