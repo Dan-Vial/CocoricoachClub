@@ -85,7 +85,11 @@ export function BowlingTrainingStats({ categoryId }: BowlingTrainingStatsProps) 
     const map = new Map<string, string>();
     trainingData.games.forEach((g: any) => map.set(g.playerId, g.playerName));
     trainingData.spareExercises.forEach((ex: any) => {
-      if (!map.has(ex.player_id)) map.set(ex.player_id, "Athlète");
+      if (!map.has(ex.player_id)) {
+        const p = ex.player;
+        const name = p ? [p.first_name, p.name].filter(Boolean).join(" ") : "Athlète";
+        map.set(ex.player_id, name);
+      }
     });
     return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
   }, [trainingData]);
