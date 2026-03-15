@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { BowlingScoreSheet } from "@/components/athlete-portal/BowlingScoreSheet";
 import { BowlingSpareTraining } from "./BowlingSpareTraining";
-import { Target, Plus, Trophy, Eye } from "lucide-react";
+import { Target, Plus, Trophy, Eye, Users } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -122,6 +122,12 @@ export function BowlingSessionContent({ sessionId, categoryId, blockType, sessio
     setShowScoreSheet(true);
   };
 
+  const getPlayerName = (playerId: string) => {
+    const p = players?.find(pl => pl.id === playerId);
+    if (!p) return "Joueur";
+    return p.first_name ? `${p.first_name} ${p.name}` : p.name;
+  };
+
   const handleSaveScore = async (stats: any, frames: any, ballData?: any) => {
     const matchId = trainingMatch?.id;
     if (!matchId || !selectedPlayerId) return;
@@ -164,9 +170,29 @@ export function BowlingSessionContent({ sessionId, categoryId, blockType, sessio
     });
 
     queryClient.invalidateQueries({ queryKey: ["bowling-training-rounds", matchId] });
-    toast.success(`Partie enregistrée : ${stats.totalScore} points`);
+    toast.success(`${getPlayerName(selectedPlayerId)} : ${stats.totalScore} points enregistrés`);
     setShowScoreSheet(false);
   };
+
+  // Group rounds by player for display
+  const roundsByPlayer = (() => {
+    if (!rounds) return [];
+    const map = new Map<string, { playerName: string; rounds: any[] }>();
+    for (const r of rounds) {
+      const pid = r.player_id;
+      if (!map.has(pid)) {
+        const pName = r.player?.first_name
+          ? `${r.player.first_name} ${r.player.name}`
+          : r.player?.name || "Joueur";
+        map.set(pid, { playerName: pName, rounds: [] });
+      }
+      map.get(pid)!.rounds.push(r);
+    }
+    return Array.from(map.entries()).map(([playerId, data]) => ({
+      playerId,
+      ...data,
+    }));
+  })();
 
   if (blockType === "bowling_spare") {
     return (
@@ -258,44 +284,52 @@ export function BowlingSessionContent({ sessionId, categoryId, blockType, sessio
         </CardContent>
       </Card>
 
-      {/* Existing rounds */}
-      {rounds && rounds.length > 0 && (
+      {/* Existing rounds grouped by player */}
+      {roundsByPlayer.length > 0 && (
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm">Parties enregistrées</CardTitle>
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              Parties enregistrées
+            </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {rounds.map((round: any) => (
-                <div
-                  key={round.id}
-                  className="flex items-center justify-between p-3 rounded-lg border"
-                >
-                  <div className="flex items-center gap-3">
-                    <Badge variant="secondary" className="font-mono">
-                      #{round.round_number}
-                    </Badge>
-                    <span className="text-sm font-medium">
-                      {round.player?.first_name
-                        ? `${round.player.first_name} ${round.player.name}`
-                        : round.player?.name || "Joueur"}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-lg font-bold text-primary">
-                      {round.result || "—"}
-                    </span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setViewingRoundId(round.id)}
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                  </div>
+          <CardContent className="space-y-4">
+            {roundsByPlayer.map(({ playerId, playerName, rounds: playerRounds }) => (
+              <div key={playerId}>
+                <div className="flex items-center gap-2 mb-2">
+                  <Badge variant="outline" className="text-xs">{playerName}</Badge>
+                  <span className="text-xs text-muted-foreground">
+                    {playerRounds.length} partie{playerRounds.length > 1 ? "s" : ""}
+                  </span>
                 </div>
-              ))}
-            </div>
+                <div className="space-y-1.5 ml-2">
+                  {playerRounds.map((round: any) => (
+                    <div
+                      key={round.id}
+                      className="flex items-center justify-between p-2.5 rounded-lg border"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Badge variant="secondary" className="font-mono text-xs">
+                          #{round.round_number}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-lg font-bold text-primary">
+                          {round.result || "—"}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setViewingRoundId(round.id)}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
           </CardContent>
         </Card>
       )}
@@ -304,7 +338,9 @@ export function BowlingSessionContent({ sessionId, categoryId, blockType, sessio
       <Dialog open={showScoreSheet} onOpenChange={setShowScoreSheet}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Feuille de score - Entraînement</DialogTitle>
+            <DialogTitle>
+              Feuille de score — {getPlayerName(selectedPlayerId)}
+            </DialogTitle>
           </DialogHeader>
           {selectedPlayerId && (
             <BowlingScoreSheet
