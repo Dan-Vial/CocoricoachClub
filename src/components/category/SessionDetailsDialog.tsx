@@ -45,6 +45,12 @@ const trainingTypeLabels: Record<string, string> = {
   repos: "Repos",
   test: "Test",
   reathlétisation: "Réathlétisation",
+  bowling_game: "Parties d'Entraînement",
+  bowling_spare: "Entraînement Spares",
+  bowling_technique: "Travail Technique",
+  bowling_approche: "Travail d'Approche",
+  bowling_release: "Travail de Lâcher",
+  bowling_practice: "Pratique Libre",
 };
 
 const setTypeLabels: Record<string, string> = {
