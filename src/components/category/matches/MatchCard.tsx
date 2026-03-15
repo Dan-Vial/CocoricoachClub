@@ -460,22 +460,24 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
                   </DropdownMenuItem>
                 )}
                 {hasRoundBasedStats && (
-                  <DropdownMenuItem
-                    onClick={() => {
-                      console.log("[COMP_ROUNDS_DEBUG] open rounds", {
-                        matchId: match.id,
-                        categoryId,
-                        sportType,
-                      });
-                      setIsRoundsOpen(true);
-                    }}
-                  >
-                    <Swords className="h-4 w-4 mr-2" />
-                    {sportType.toLowerCase().includes("judo") ? `Combats (${roundsCount || 0})` : 
-                     sportType.toLowerCase().includes("bowling") ? `Parties (${roundsCount || 0})` : 
-                     sportType.toLowerCase().includes("aviron") ? `Courses (${roundsCount || 0})` : 
-                     sportType.toLowerCase().includes("athletisme") ? `Épreuves (${roundsCount || 0})` : `Épreuves (${roundsCount || 0})`}
-                  </DropdownMenuItem>
+                  isTrainingMatch ? (
+                    <DropdownMenuItem disabled className="opacity-50 cursor-not-allowed">
+                      <Lock className="h-4 w-4 mr-2 text-muted-foreground" />
+                      {sportType.toLowerCase().includes("bowling") ? `Parties (${roundsCount || 0})` : `Épreuves (${roundsCount || 0})`} — via Planification
+                    </DropdownMenuItem>
+                  ) : (
+                    <DropdownMenuItem
+                      onClick={() => {
+                        setIsRoundsOpen(true);
+                      }}
+                    >
+                      <Swords className="h-4 w-4 mr-2" />
+                      {sportType.toLowerCase().includes("judo") ? `Combats (${roundsCount || 0})` : 
+                       sportType.toLowerCase().includes("bowling") ? `Parties (${roundsCount || 0})` : 
+                       sportType.toLowerCase().includes("aviron") ? `Courses (${roundsCount || 0})` : 
+                       sportType.toLowerCase().includes("athletisme") ? `Épreuves (${roundsCount || 0})` : `Épreuves (${roundsCount || 0})`}
+                    </DropdownMenuItem>
+                  )
                 )}
                 {canHaveSubMatches && (
                   <>
