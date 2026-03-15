@@ -1116,7 +1116,9 @@ export function CompetitionRoundsDialog({
                                 <BowlingScoreSheet
                                   key={`bowling-${round.round_number}-${round.isLocked}`}
                                   initialFrames={round.bowlingFrames}
-                                  onSave={(stats, frames) => {
+                                  playerId={selectedPlayer.playerId}
+                                  categoryId={categoryId}
+                                  onSave={(stats, frames, ballData) => {
                                     handleBowlingScoreSheetSave(
                                       selectedPlayer.playerId,
                                       round.round_number,

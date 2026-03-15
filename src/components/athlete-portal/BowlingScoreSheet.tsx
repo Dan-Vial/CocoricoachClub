@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { BowlingBallSelector } from "@/components/bowling/BowlingBallSelector";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -42,9 +43,11 @@ export interface BowlingStats {
 }
 
 interface BowlingScoreSheetProps {
-  onSave: (stats: BowlingStats, frames: FrameData[]) => void;
+  onSave: (stats: BowlingStats, frames: FrameData[], ballData?: { mode: string; ballId?: string | null; frameBalls?: (string | null)[] }) => void;
   onCancel: () => void;
   initialFrames?: FrameData[];
+  playerId?: string;
+  categoryId?: string;
 }
 
 const createEmptyFrame = (): FrameData => ({
@@ -62,11 +65,21 @@ const createEmptyThrow = (): ThrowData => ({
   isSinglePinConverted: false,
 });
 
-export function BowlingScoreSheet({ onSave, onCancel, initialFrames }: BowlingScoreSheetProps) {
+export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, categoryId }: BowlingScoreSheetProps) {
   const [frames, setFrames] = useState<FrameData[]>(() => 
     initialFrames || Array.from({ length: 10 }, () => createEmptyFrame())
   );
   const [isSaved, setIsSaved] = useState(false);
+  const [ballMode, setBallMode] = useState<"simple" | "advanced">("simple");
+  const [selectedBallId, setSelectedBallId] = useState<string | null>(null);
+  const [frameBalls, setFrameBalls] = useState<(string | null)[]>(Array(10).fill(null));
+  const handleFrameBallChange = (frameIndex: number, ballId: string | null) => {
+    setFrameBalls(prev => {
+      const next = [...prev];
+      next[frameIndex] = ballId;
+      return next;
+    });
+  };
   const [stats, setStats] = useState<BowlingStats>({
     totalScore: 0,
     strikes: 0,
@@ -488,7 +501,12 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames }: BowlingSc
 
   const handleSave = () => {
     setIsSaved(true);
-    onSave(stats, frames);
+    const ballData = playerId ? {
+      mode: ballMode,
+      ballId: ballMode === "simple" ? selectedBallId : null,
+      frameBalls: ballMode === "advanced" ? frameBalls : undefined,
+    } : undefined;
+    onSave(stats, frames, ballData);
   };
 
   // Get cell background color based on throw value
@@ -510,6 +528,20 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames }: BowlingSc
             Partie enregistrée - Consultation uniquement
           </span>
         </div>
+      )}
+
+      {/* Ball Selector */}
+      {playerId && categoryId && !isSaved && (
+        <BowlingBallSelector
+          playerId={playerId}
+          categoryId={categoryId}
+          mode={ballMode}
+          onModeChange={setBallMode}
+          selectedBallId={selectedBallId}
+          onBallChange={setSelectedBallId}
+          frameBalls={frameBalls}
+          onFrameBallChange={handleFrameBallChange}
+        />
       )}
 
       {/* Classic Bowling Score Sheet */}

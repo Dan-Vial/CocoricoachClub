@@ -631,6 +631,54 @@ export type Database = {
           },
         ]
       }
+      bowling_ball_catalog: {
+        Row: {
+          brand: string
+          core_type: string
+          cover_type: string
+          created_at: string
+          created_by: string | null
+          differential: number | null
+          factory_surface: string | null
+          id: string
+          image_url: string | null
+          intermediate_diff: number | null
+          is_system: boolean
+          model: string
+          rg: number | null
+        }
+        Insert: {
+          brand: string
+          core_type?: string
+          cover_type?: string
+          created_at?: string
+          created_by?: string | null
+          differential?: number | null
+          factory_surface?: string | null
+          id?: string
+          image_url?: string | null
+          intermediate_diff?: number | null
+          is_system?: boolean
+          model: string
+          rg?: number | null
+        }
+        Update: {
+          brand?: string
+          core_type?: string
+          cover_type?: string
+          created_at?: string
+          created_by?: string | null
+          differential?: number | null
+          factory_surface?: string | null
+          id?: string
+          image_url?: string | null
+          intermediate_diff?: number | null
+          is_system?: boolean
+          model?: string
+          rg?: number | null
+        }
+        Relationships: []
+      }
       bowling_oil_patterns: {
         Row: {
           buff_distance_feet: number | null
@@ -702,6 +750,80 @@ export type Database = {
             columns: ["match_id"]
             isOneToOne: false
             referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bowling_spare_training: {
+        Row: {
+          attempts: number
+          ball_arsenal_id: string | null
+          category_id: string
+          created_at: string
+          exercise_type: string
+          id: string
+          notes: string | null
+          player_id: string
+          session_date: string
+          success_rate: number | null
+          successes: number
+          training_session_id: string | null
+        }
+        Insert: {
+          attempts?: number
+          ball_arsenal_id?: string | null
+          category_id: string
+          created_at?: string
+          exercise_type: string
+          id?: string
+          notes?: string | null
+          player_id: string
+          session_date?: string
+          success_rate?: number | null
+          successes?: number
+          training_session_id?: string | null
+        }
+        Update: {
+          attempts?: number
+          ball_arsenal_id?: string | null
+          category_id?: string
+          created_at?: string
+          exercise_type?: string
+          id?: string
+          notes?: string | null
+          player_id?: string
+          session_date?: string
+          success_rate?: number | null
+          successes?: number
+          training_session_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bowling_spare_training_ball_arsenal_id_fkey"
+            columns: ["ball_arsenal_id"]
+            isOneToOne: false
+            referencedRelation: "player_bowling_arsenal"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bowling_spare_training_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bowling_spare_training_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bowling_spare_training_training_session_id_fkey"
+            columns: ["training_session_id"]
+            isOneToOne: false
+            referencedRelation: "training_sessions"
             referencedColumns: ["id"]
           },
         ]
@@ -4156,6 +4278,79 @@ export type Database = {
           },
           {
             foreignKeyName: "player_availability_scores_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      player_bowling_arsenal: {
+        Row: {
+          ball_catalog_id: string | null
+          category_id: string
+          created_at: string
+          current_surface: string | null
+          custom_ball_brand: string | null
+          custom_ball_name: string | null
+          games_played: number
+          id: string
+          is_active: boolean
+          notes: string | null
+          player_id: string
+          purchase_date: string | null
+          updated_at: string
+          weight_lbs: number | null
+        }
+        Insert: {
+          ball_catalog_id?: string | null
+          category_id: string
+          created_at?: string
+          current_surface?: string | null
+          custom_ball_brand?: string | null
+          custom_ball_name?: string | null
+          games_played?: number
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          player_id: string
+          purchase_date?: string | null
+          updated_at?: string
+          weight_lbs?: number | null
+        }
+        Update: {
+          ball_catalog_id?: string | null
+          category_id?: string
+          created_at?: string
+          current_surface?: string | null
+          custom_ball_brand?: string | null
+          custom_ball_name?: string | null
+          games_played?: number
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          player_id?: string
+          purchase_date?: string | null
+          updated_at?: string
+          weight_lbs?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_bowling_arsenal_ball_catalog_id_fkey"
+            columns: ["ball_catalog_id"]
+            isOneToOne: false
+            referencedRelation: "bowling_ball_catalog"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_bowling_arsenal_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_bowling_arsenal_player_id_fkey"
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"

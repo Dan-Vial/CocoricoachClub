@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Calendar, BarChart3, Settings2, Dumbbell } from "lucide-react";
+import { Plus, Calendar, BarChart3, Settings2, Dumbbell, Target } from "lucide-react";
 import { AddMatchCalendarDialog } from "./matches/AddMatchCalendarDialog";
 import { MatchCard } from "./matches/MatchCard";
 import { PlayerCumulativeStats } from "./matches/PlayerCumulativeStats";
 import { BowlingCumulativeStats } from "@/components/bowling/BowlingCumulativeStats";
+import { BowlingTrainingStats } from "@/components/bowling/BowlingTrainingStats";
 import { isFuture, isPast, format } from "date-fns";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { ColoredSubTabsList, ColoredSubTabsTrigger } from "@/components/ui/colored-subtabs";
@@ -80,6 +81,11 @@ export function MatchesTab({ categoryId, sportType }: MatchesTabProps) {
             <ColoredSubTabsTrigger value="stats" colorKey="competition" icon={<BarChart3 className="h-4 w-4" />}>
               Stats cumulées
             </ColoredSubTabsTrigger>
+            {isBowling && (
+              <ColoredSubTabsTrigger value="training_stats" colorKey="competition" icon={<Target className="h-4 w-4" />}>
+                Stats entraînement
+              </ColoredSubTabsTrigger>
+            )}
           </ColoredSubTabsList>
         </div>
 
@@ -177,6 +183,12 @@ export function MatchesTab({ categoryId, sportType }: MatchesTabProps) {
             <PlayerCumulativeStats categoryId={categoryId} sportType={sportType} />
           )}
         </TabsContent>
+
+        {isBowling && (
+          <TabsContent value="training_stats">
+            <BowlingTrainingStats categoryId={categoryId} />
+          </TabsContent>
+        )}
       </Tabs>
 
       <AddMatchCalendarDialog
