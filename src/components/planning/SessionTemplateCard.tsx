@@ -33,6 +33,12 @@ const sessionTypeLabels: Record<string, string> = {
   repos: "Repos",
   test: "Test",
   reathlétisation: "Réathlétisation",
+  bowling_game: "Parties d'Entraînement",
+  bowling_spare: "Entraînement Spares",
+  bowling_practice: "Pratique Libre",
+  bowling_technique: "Travail Technique",
+  bowling_approche: "Travail d'Approche",
+  bowling_release: "Travail de Lâcher",
 };
 
 const sessionTypeColors: Record<string, string> = {
