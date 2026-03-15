@@ -46,7 +46,6 @@ export function BowlingSessionContent({ sessionId, categoryId, blockType, sessio
   const { data: trainingMatch } = useQuery({
     queryKey: ["bowling-training-match", sessionId],
     queryFn: async () => {
-      // Look for a match linked to this session date with training type
       const { data, error } = await supabase
         .from("matches")
         .select("id, opponent, match_date")
@@ -117,7 +116,6 @@ export function BowlingSessionContent({ sessionId, categoryId, blockType, sessio
       return;
     }
     
-    // Create match if needed
     if (!trainingMatch) {
       await createTrainingMatch.mutateAsync();
     }
@@ -128,7 +126,6 @@ export function BowlingSessionContent({ sessionId, categoryId, blockType, sessio
     const matchId = trainingMatch?.id;
     if (!matchId || !selectedPlayerId) return;
 
-    // Count existing rounds for this player
     const existingCount = rounds?.filter(r => r.player_id === selectedPlayerId).length || 0;
 
     const { data: roundData, error: roundError } = await supabase
@@ -148,7 +145,6 @@ export function BowlingSessionContent({ sessionId, categoryId, blockType, sessio
       return;
     }
 
-    // Save detailed stats
     const statData: any = {
       frames,
       totalScore: stats.totalScore,
@@ -175,24 +171,19 @@ export function BowlingSessionContent({ sessionId, categoryId, blockType, sessio
   if (blockType === "bowling_spare") {
     return (
       <div className="space-y-4">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 mb-2">
           <Target className="h-5 w-5 text-destructive" />
           <h4 className="font-medium">Entraînement Spécifique Spares</h4>
         </div>
-        {selectedPlayerId ? (
-          <BowlingSpareTraining
-            playerId={selectedPlayerId}
-            categoryId={categoryId}
-            trainingSessionId={sessionId}
-          />
-        ) : (
-          <Card>
-            <CardContent className="pt-6">
-              <div className="space-y-3">
-                <p className="text-sm text-muted-foreground">Sélectionnez un joueur pour enregistrer les exercices de spare</p>
+
+        {/* Player selector always visible */}
+        <Card>
+          <CardContent className="pt-4 pb-3">
+            <div className="flex items-center gap-3">
+              <div className="flex-1">
                 <Select value={selectedPlayerId} onValueChange={setSelectedPlayerId}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Choisir un joueur" />
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner un joueur" />
                   </SelectTrigger>
                   <SelectContent>
                     {players?.map((p) => (
@@ -203,15 +194,29 @@ export function BowlingSessionContent({ sessionId, categoryId, blockType, sessio
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Spare training immediately below once player selected */}
+        {selectedPlayerId ? (
+          <BowlingSpareTraining
+            playerId={selectedPlayerId}
+            categoryId={categoryId}
+            trainingSessionId={sessionId}
+          />
+        ) : (
+          <Card>
+            <CardContent className="py-8 text-center">
+              <Target className="h-8 w-8 mx-auto mb-2 text-muted-foreground/50" />
+              <p className="text-sm text-muted-foreground">
+                Sélectionnez un joueur pour enregistrer les exercices de précision
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Quille 5 · Quille 7 · Quille 10
+              </p>
             </CardContent>
           </Card>
-        )}
-        {selectedPlayerId && (
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => setSelectedPlayerId("")}>
-              Changer de joueur
-            </Button>
-          </div>
         )}
       </div>
     );
