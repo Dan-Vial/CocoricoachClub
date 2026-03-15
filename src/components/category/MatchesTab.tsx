@@ -183,6 +183,12 @@ export function MatchesTab({ categoryId, sportType }: MatchesTabProps) {
             <PlayerCumulativeStats categoryId={categoryId} sportType={sportType} />
           )}
         </TabsContent>
+
+        {isBowling && (
+          <TabsContent value="training_stats">
+            <BowlingTrainingStats categoryId={categoryId} />
+          </TabsContent>
+        )}
       </Tabs>
 
       <AddMatchCalendarDialog
