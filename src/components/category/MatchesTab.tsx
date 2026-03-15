@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Calendar, BarChart3, Settings2, Dumbbell } from "lucide-react";
+import { Plus, Calendar, BarChart3, Settings2, Dumbbell, Target } from "lucide-react";
 import { AddMatchCalendarDialog } from "./matches/AddMatchCalendarDialog";
 import { MatchCard } from "./matches/MatchCard";
 import { PlayerCumulativeStats } from "./matches/PlayerCumulativeStats";
 import { BowlingCumulativeStats } from "@/components/bowling/BowlingCumulativeStats";
+import { BowlingTrainingStats } from "@/components/bowling/BowlingTrainingStats";
 import { isFuture, isPast, format } from "date-fns";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { ColoredSubTabsList, ColoredSubTabsTrigger } from "@/components/ui/colored-subtabs";
