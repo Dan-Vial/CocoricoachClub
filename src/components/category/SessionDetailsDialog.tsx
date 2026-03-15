@@ -27,6 +27,7 @@ import { calculateWeightedRpe, formatDuration } from "@/lib/weightedRpeCalculati
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { getTrainingTypeLabel } from "@/lib/constants/trainingTypes";
 import { NotifyAthletesDialog } from "@/components/notifications/NotifyAthletesDialog";
+import { BowlingSessionContent } from "@/components/bowling/BowlingSessionContent";
 
 interface SessionDetailsDialogProps {
   open: boolean;
