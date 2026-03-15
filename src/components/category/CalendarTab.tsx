@@ -361,6 +361,12 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
           />
         </TabsContent>
 
+        {isBowling && (
+          <TabsContent value="training_stats">
+            <BowlingTrainingStats categoryId={categoryId} />
+          </TabsContent>
+        )}
+
         {!isViewer && (
           <TabsContent value="objectives">
             <SeasonObjectivesSection categoryId={categoryId} />
