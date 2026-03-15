@@ -24,6 +24,7 @@ export const CORE_TYPES = [
 export const BALL_WEIGHTS = [12, 13, 14, 15, 16] as const;
 
 export const SPARE_EXERCISE_TYPES = [
+  { value: "spare_pin_5", label: "Quille 5" },
   { value: "spare_pin_7", label: "Quille 7" },
   { value: "spare_pin_10", label: "Quille 10" },
 ] as const;
