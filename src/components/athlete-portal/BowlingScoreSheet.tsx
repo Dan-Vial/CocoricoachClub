@@ -530,6 +530,20 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, c
         </div>
       )}
 
+      {/* Ball Selector */}
+      {playerId && categoryId && !isSaved && (
+        <BowlingBallSelector
+          playerId={playerId}
+          categoryId={categoryId}
+          mode={ballMode}
+          onModeChange={setBallMode}
+          selectedBallId={selectedBallId}
+          onBallChange={setSelectedBallId}
+          frameBalls={frameBalls}
+          onFrameBallChange={handleFrameBallChange}
+        />
+      )}
+
       {/* Classic Bowling Score Sheet */}
       <Card>
         <CardHeader className="pb-2">
