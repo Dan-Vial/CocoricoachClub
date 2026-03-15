@@ -55,6 +55,12 @@ const sessionTypeColors: Record<string, string> = {
   repos: "bg-training-repos",
   test: "bg-training-test",
   reathlétisation: "bg-amber-500",
+  bowling_game: "bg-green-600",
+  bowling_spare: "bg-lime-500",
+  bowling_practice: "bg-emerald-500",
+  bowling_technique: "bg-teal-500",
+  bowling_approche: "bg-cyan-500",
+  bowling_release: "bg-blue-500",
 };
 
 const intensityColors: Record<string, string> = {
