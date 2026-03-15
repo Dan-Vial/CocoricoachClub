@@ -27,6 +27,7 @@ export const SPARE_EXERCISE_TYPES = [
   { value: "spare_pin_5", label: "Quille 5" },
   { value: "spare_pin_7", label: "Quille 7" },
   { value: "spare_pin_10", label: "Quille 10" },
+  { value: "spare_general", label: "Spares" },
 ] as const;
 
 export function getCoverTypeLabel(value: string): string {
