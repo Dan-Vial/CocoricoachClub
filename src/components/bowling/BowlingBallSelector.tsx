@@ -94,14 +94,14 @@ export function BowlingBallSelector({
             <div key={i} className="text-center">
               <p className="text-[10px] text-muted-foreground mb-0.5">F{i + 1}</p>
               <Select
-                value={frameBalls?.[i] || ""}
-                onValueChange={(v) => onFrameBallChange?.(i, v || null)}
+                value={frameBalls?.[i] || "none"}
+                onValueChange={(v) => onFrameBallChange?.(i, v === "none" ? null : v)}
               >
                 <SelectTrigger className="h-7 text-[10px] px-1">
                   <SelectValue placeholder="-" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">-</SelectItem>
+                  <SelectItem value="none">-</SelectItem>
                   {arsenal.map((ball: any) => (
                     <SelectItem key={ball.id} value={ball.id}>
                       {ball.displayName.split(" ").pop()}
