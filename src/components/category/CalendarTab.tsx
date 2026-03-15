@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { ColoredSubTabsList, ColoredSubTabsTrigger, ColoredContentCard, ColoredCardHeader, ColoredTitle } from "@/components/ui/colored-subtabs";
-import { Calendar as CalendarIcon, Target } from "lucide-react";
+import { Calendar as CalendarIcon, Target, BarChart3, Dumbbell } from "lucide-react";
 import { toast } from "sonner";
 import { SessionFormDialog } from "./sessions/SessionFormDialog";
 import { AddMatchCalendarDialog } from "./matches/AddMatchCalendarDialog";
