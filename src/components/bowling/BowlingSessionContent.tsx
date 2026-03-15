@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { BowlingScoreSheet } from "@/components/athlete-portal/BowlingScoreSheet";
 import { BowlingSpareTraining } from "./BowlingSpareTraining";
-import { Target, Plus, Trophy, Eye, Users } from "lucide-react";
+import { Target, Plus, Trophy, Eye, Users, X } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -25,7 +25,8 @@ export function BowlingSessionContent({ sessionId, categoryId, blockType, sessio
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [selectedPlayerId, setSelectedPlayerId] = useState<string>("");
-  const [showScoreSheet, setShowScoreSheet] = useState(false);
+  const [activeSheetPlayers, setActiveSheetPlayers] = useState<string[]>([]);
+  const [activeSheetPlayerId, setActiveSheetPlayerId] = useState<string>("");
   const [viewingRoundId, setViewingRoundId] = useState<string | null>(null);
 
   // Fetch players
@@ -119,7 +120,12 @@ export function BowlingSessionContent({ sessionId, categoryId, blockType, sessio
     if (!trainingMatch) {
       await createTrainingMatch.mutateAsync();
     }
-    setShowScoreSheet(true);
+
+    // Add player to active sheets if not already there
+    if (!activeSheetPlayers.includes(selectedPlayerId)) {
+      setActiveSheetPlayers(prev => [...prev, selectedPlayerId]);
+    }
+    setActiveSheetPlayerId(selectedPlayerId);
   };
 
   const getPlayerName = (playerId: string) => {
@@ -128,17 +134,17 @@ export function BowlingSessionContent({ sessionId, categoryId, blockType, sessio
     return p.first_name ? `${p.first_name} ${p.name}` : p.name;
   };
 
-  const handleSaveScore = async (stats: any, frames: any, ballData?: any) => {
+  const handleSaveScore = useCallback(async (playerId: string, stats: any, frames: any, ballData?: any) => {
     const matchId = trainingMatch?.id;
-    if (!matchId || !selectedPlayerId) return;
+    if (!matchId || !playerId) return;
 
-    const existingCount = rounds?.filter(r => r.player_id === selectedPlayerId).length || 0;
+    const existingCount = rounds?.filter(r => r.player_id === playerId).length || 0;
 
     const { data: roundData, error: roundError } = await supabase
       .from("competition_rounds")
       .insert({
         match_id: matchId,
-        player_id: selectedPlayerId,
+        player_id: playerId,
         round_number: existingCount + 1,
         result: stats.totalScore?.toString() || "0",
         notes: ballData ? JSON.stringify(ballData) : null,
@@ -170,8 +176,22 @@ export function BowlingSessionContent({ sessionId, categoryId, blockType, sessio
     });
 
     queryClient.invalidateQueries({ queryKey: ["bowling-training-rounds", matchId] });
-    toast.success(`${getPlayerName(selectedPlayerId)} : ${stats.totalScore} points enregistrés`);
-    setShowScoreSheet(false);
+    toast.success(`${getPlayerName(playerId)} : ${stats.totalScore} points enregistrés`);
+    
+    // Remove from active sheets after save
+    setActiveSheetPlayers(prev => prev.filter(id => id !== playerId));
+    if (activeSheetPlayerId === playerId) {
+      const remaining = activeSheetPlayers.filter(id => id !== playerId);
+      setActiveSheetPlayerId(remaining[0] || "");
+    }
+  }, [trainingMatch, rounds, players, queryClient, activeSheetPlayers, activeSheetPlayerId]);
+
+  const handleCloseSheet = (playerId: string) => {
+    setActiveSheetPlayers(prev => prev.filter(id => id !== playerId));
+    if (activeSheetPlayerId === playerId) {
+      const remaining = activeSheetPlayers.filter(id => id !== playerId);
+      setActiveSheetPlayerId(remaining[0] || "");
+    }
   };
 
   // Group rounds by player for display
@@ -202,7 +222,6 @@ export function BowlingSessionContent({ sessionId, categoryId, blockType, sessio
           <h4 className="font-medium">Entraînement Précision</h4>
         </div>
 
-        {/* Player selector always visible */}
         <Card>
           <CardContent className="pt-4 pb-3">
             <div className="flex items-center gap-3">
@@ -224,7 +243,6 @@ export function BowlingSessionContent({ sessionId, categoryId, blockType, sessio
           </CardContent>
         </Card>
 
-        {/* Spare training immediately below once player selected */}
         {selectedPlayerId ? (
           <BowlingSpareTraining
             playerId={selectedPlayerId}
@@ -284,6 +302,52 @@ export function BowlingSessionContent({ sessionId, categoryId, blockType, sessio
         </CardContent>
       </Card>
 
+      {/* Active score sheets with player tabs */}
+      {activeSheetPlayers.length > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">Feuilles de score en cours</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {/* Player tabs for switching */}
+            <div className="flex flex-wrap gap-1.5">
+              {activeSheetPlayers.map(pid => (
+                <div key={pid} className="flex items-center gap-0.5">
+                  <Button
+                    variant={activeSheetPlayerId === pid ? "default" : "outline"}
+                    size="sm"
+                    className="text-xs h-7"
+                    onClick={() => setActiveSheetPlayerId(pid)}
+                  >
+                    {getPlayerName(pid)}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 w-7 p-0"
+                    onClick={() => handleCloseSheet(pid)}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+
+            {/* Render all active score sheets, show only selected */}
+            {activeSheetPlayers.map(pid => (
+              <div key={pid} style={{ display: activeSheetPlayerId === pid ? "block" : "none" }}>
+                <BowlingScoreSheet
+                  playerId={pid}
+                  categoryId={categoryId}
+                  onSave={(stats, frames, ballData) => handleSaveScore(pid, stats, frames, ballData)}
+                  onCancel={() => handleCloseSheet(pid)}
+                />
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Existing rounds grouped by player */}
       {roundsByPlayer.length > 0 && (
         <Card>
@@ -333,25 +397,6 @@ export function BowlingSessionContent({ sessionId, categoryId, blockType, sessio
           </CardContent>
         </Card>
       )}
-
-      {/* Score Sheet Dialog */}
-      <Dialog open={showScoreSheet} onOpenChange={setShowScoreSheet}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              Feuille de score — {getPlayerName(selectedPlayerId)}
-            </DialogTitle>
-          </DialogHeader>
-          {selectedPlayerId && (
-            <BowlingScoreSheet
-              playerId={selectedPlayerId}
-              categoryId={categoryId}
-              onSave={handleSaveScore}
-              onCancel={() => setShowScoreSheet(false)}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
 
       {/* View Round Dialog */}
       <Dialog open={!!viewingRoundId} onOpenChange={(open) => !open && setViewingRoundId(null)}>
