@@ -200,7 +200,27 @@ export function BowlingTrainingStats({ categoryId }: BowlingTrainingStatsProps) 
 
   return (
     <div className="space-y-4">
-      {/* Date range + Ball filter */}
+      {/* Player + Date range + Ball filter */}
+      <div className="flex flex-wrap gap-2 items-center">
+        {players.length > 0 && (
+          <Select value={selectedPlayerId} onValueChange={setSelectedPlayerId}>
+            <SelectTrigger className="w-[180px] h-8">
+              <SelectValue placeholder="Tous les athlètes" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tous les athlètes</SelectItem>
+              {players.map((p) => (
+                <SelectItem key={p.id} value={p.id}>
+                  <span className="flex items-center gap-1.5">
+                    <Users className="h-3 w-3" />
+                    {p.name}
+                  </span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+      </div>
       <div className="flex flex-wrap gap-2 items-center">
         <Popover>
           <PopoverTrigger asChild>
