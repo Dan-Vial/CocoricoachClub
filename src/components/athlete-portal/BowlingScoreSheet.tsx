@@ -64,11 +64,21 @@ const createEmptyThrow = (): ThrowData => ({
   isSinglePinConverted: false,
 });
 
-export function BowlingScoreSheet({ onSave, onCancel, initialFrames }: BowlingScoreSheetProps) {
+export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, categoryId }: BowlingScoreSheetProps) {
   const [frames, setFrames] = useState<FrameData[]>(() => 
     initialFrames || Array.from({ length: 10 }, () => createEmptyFrame())
   );
   const [isSaved, setIsSaved] = useState(false);
+  const [ballMode, setBallMode] = useState<"simple" | "advanced">("simple");
+  const [selectedBallId, setSelectedBallId] = useState<string | null>(null);
+  const [frameBalls, setFrameBalls] = useState<(string | null)[]>(Array(10).fill(null));
+  const handleFrameBallChange = (frameIndex: number, ballId: string | null) => {
+    setFrameBalls(prev => {
+      const next = [...prev];
+      next[frameIndex] = ballId;
+      return next;
+    });
+  };
   const [stats, setStats] = useState<BowlingStats>({
     totalScore: 0,
     strikes: 0,
