@@ -31,46 +31,48 @@ export function BowlingTrainingStats({ categoryId }: BowlingTrainingStatsProps) 
         .eq("event_type", "training")
         .order("match_date", { ascending: false });
 
-      if (!matches || matches.length === 0) return { games: [], spareExercises: [] };
-
-      const matchIds = matches.map(m => m.id);
-      const matchMap = Object.fromEntries(matches.map(m => [m.id, m]));
-
-      const { data: rounds } = await supabase
-        .from("competition_rounds")
-        .select("*, competition_round_stats(*), players(id, name, first_name)")
-        .in("match_id", matchIds)
-        .order("round_number");
-
       const games: any[] = [];
-      for (const round of rounds || []) {
-        const match = matchMap[round.match_id];
-        const player = round.players as any;
-        const statData = ((round.competition_round_stats as any[])?.[0]?.stat_data as any) || {};
-        const bowlingFrames = (statData.frames || statData.bowlingFrames) as FrameData[] | undefined;
-        const score = (statData.totalScore ?? statData.gameScore) || parseInt(round.result || "0") || 0;
 
-        if (score > 0 || bowlingFrames) {
-          games.push({
-            roundId: round.id,
-            matchId: round.match_id,
-            playerId: round.player_id,
-            playerName: player ? [player.first_name, player.name].filter(Boolean).join(" ") : "Athlète",
-            matchDate: match?.match_date || "",
-            score,
-            strikes: statData.strikes || 0,
-            spares: statData.spares || 0,
-            strikePercentage: statData.strikePercentage || 0,
-            sparePercentage: statData.sparePercentage || 0,
-            openFrames: statData.openFrames || 0,
-            frames: bowlingFrames,
-          });
+      if (matches && matches.length > 0) {
+        const matchIds = matches.map(m => m.id);
+        const matchMap = Object.fromEntries(matches.map(m => [m.id, m]));
+
+        const { data: rounds } = await supabase
+          .from("competition_rounds")
+          .select("*, competition_round_stats(*), players(id, name, first_name)")
+          .in("match_id", matchIds)
+          .order("round_number");
+
+        for (const round of rounds || []) {
+          const match = matchMap[round.match_id];
+          const player = round.players as any;
+          const statData = ((round.competition_round_stats as any[])?.[0]?.stat_data as any) || {};
+          const bowlingFrames = (statData.frames || statData.bowlingFrames) as FrameData[] | undefined;
+          const score = (statData.totalScore ?? statData.gameScore) || parseInt(round.result || "0") || 0;
+
+          if (score > 0 || bowlingFrames) {
+            games.push({
+              roundId: round.id,
+              matchId: round.match_id,
+              playerId: round.player_id,
+              playerName: player ? [player.first_name, player.name].filter(Boolean).join(" ") : "Athlète",
+              matchDate: match?.match_date || "",
+              score,
+              strikes: statData.strikes || 0,
+              spares: statData.spares || 0,
+              strikePercentage: statData.strikePercentage || 0,
+              sparePercentage: statData.sparePercentage || 0,
+              openFrames: statData.openFrames || 0,
+              frames: bowlingFrames,
+            });
+          }
         }
       }
 
+      // Always fetch spare exercises regardless of training matches
       const { data: spareData } = await supabase
         .from("bowling_spare_training" as any)
-        .select("*")
+        .select("*, player:players(name, first_name)")
         .eq("category_id", categoryId)
         .order("session_date", { ascending: false });
 
@@ -83,7 +85,11 @@ export function BowlingTrainingStats({ categoryId }: BowlingTrainingStatsProps) 
     const map = new Map<string, string>();
     trainingData.games.forEach((g: any) => map.set(g.playerId, g.playerName));
     trainingData.spareExercises.forEach((ex: any) => {
-      if (!map.has(ex.player_id)) map.set(ex.player_id, "Athlète");
+      if (!map.has(ex.player_id)) {
+        const p = ex.player;
+        const name = p ? [p.first_name, p.name].filter(Boolean).join(" ") : "Athlète";
+        map.set(ex.player_id, name);
+      }
     });
     return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
   }, [trainingData]);
