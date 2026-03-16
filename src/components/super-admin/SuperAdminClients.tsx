@@ -694,21 +694,95 @@ export function SuperAdminClients() {
            onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
            placeholder="Notes internes..."
          />
+         </div>
+
+        {/* Subscription section */}
+        <div className="space-y-3 p-4 rounded-lg border bg-muted/30">
+          <Label className="text-base font-semibold flex items-center gap-2">
+            <CreditCard className="h-4 w-4" />
+            Abonnement
+          </Label>
+          <div className="space-y-3">
+            <div className="space-y-2">
+              <Label>Plan d'abonnement</Label>
+              <Select value={selectedPlanId} onValueChange={setSelectedPlanId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Aucun plan (optionnel)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Aucun plan</SelectItem>
+                  {plans.map((plan: any) => (
+                    <SelectItem key={plan.id} value={plan.id}>
+                      {plan.name} {plan.price_monthly ? `— ${plan.price_monthly}€/mois` : "— Gratuit"}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {selectedPlanId && selectedPlanId !== "none" && (
+              <>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Date de début</Label>
+                    <Input
+                      type="date"
+                      value={subStartDate}
+                      onChange={(e) => setSubStartDate(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Date de fin (optionnel)</Label>
+                    <Input
+                      type="date"
+                      value={subEndDate}
+                      onChange={(e) => setSubEndDate(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Montant (€)</Label>
+                    <Input
+                      type="number"
+                      placeholder={plans.find((p: any) => p.id === selectedPlanId)?.price_monthly?.toString() || "0"}
+                      value={subAmount}
+                      onChange={(e) => setSubAmount(e.target.value)}
+                    />
+                    <p className="text-xs text-muted-foreground">Laissez vide pour utiliser le prix du plan</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Moyen de paiement</Label>
+                    <Select value={subPaymentMethod} onValueChange={setSubPaymentMethod}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Non défini" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="card">Carte bancaire</SelectItem>
+                        <SelectItem value="transfer">Virement</SelectItem>
+                        <SelectItem value="check">Chèque</SelectItem>
+                        <SelectItem value="other">Autre</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
         </div>
 
-        {/* Club & Categories section - only in create mode */}
-        {!editingClient && (
-          <CreateClientCategoriesSection
-            clubName={clubName}
-            onClubNameChange={setClubName}
-            clubSport={clubSport}
-            onClubSportChange={setClubSport}
-            categories={categoryDrafts}
-            onCategoriesChange={setCategoryDrafts}
-          />
-        )}
-      </div>
-    );
+         {/* Club & Categories section - only in create mode */}
+         {!editingClient && (
+           <CreateClientCategoriesSection
+             clubName={clubName}
+             onClubNameChange={setClubName}
+             clubSport={clubSport}
+             onClubSportChange={setClubSport}
+             categories={categoryDrafts}
+             onCategoriesChange={setCategoryDrafts}
+           />
+         )}
+       </div>
+     );
  
    return (
      <Card>
