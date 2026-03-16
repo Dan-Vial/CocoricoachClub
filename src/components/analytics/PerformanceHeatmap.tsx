@@ -48,16 +48,21 @@ export function PerformanceHeatmap({ categoryId }: PerformanceHeatmapProps) {
     },
   });
 
+  // Fetch data from 28 days before month start to compute Gabbett AWCR rolling averages
+  const extendedStartDate = format(
+    new Date(startOfMonth(selectedMonth).getTime() - 28 * 24 * 60 * 60 * 1000),
+    "yyyy-MM-dd"
+  );
+
   const { data: awcrData } = useQuery({
     queryKey: ["heatmap-awcr", categoryId, selectedMonth],
     queryFn: async () => {
-      const startDate = format(startOfMonth(selectedMonth), "yyyy-MM-dd");
       const endDate = format(endOfMonth(selectedMonth), "yyyy-MM-dd");
       const { data, error } = await supabase
         .from("awcr_tracking")
         .select("player_id, session_date, awcr, training_load, acute_load, chronic_load")
         .eq("category_id", categoryId)
-        .gte("session_date", startDate)
+        .gte("session_date", extendedStartDate)
         .lte("session_date", endDate);
       if (error) throw error;
       return data as AwcrData[];
@@ -128,27 +133,43 @@ export function PerformanceHeatmap({ categoryId }: PerformanceHeatmapProps) {
   const getValueForCell = (playerId: string, date: Date): number | null => {
     const dateStr = format(date, "yyyy-MM-dd");
     
-    if (selectedMetric === "awcr" || selectedMetric === "ewma_ratio") {
-      // Get all records for this player/date and use the latest one (highest training_load or last entry)
+    if (selectedMetric === "awcr") {
+      // Gabbett AWCR: sum of last 7 days / (sum of last 28 days / 4)
+      const dateMs = date.getTime();
+      const playerRecords = awcrData?.filter((d) => d.player_id === playerId) ?? [];
+      
+      const sumForRange = (days: number) => {
+        const startMs = dateMs - days * 24 * 60 * 60 * 1000;
+        return playerRecords
+          .filter((d) => {
+            const dMs = new Date(d.session_date).getTime();
+            return dMs > startMs && dMs <= dateMs;
+          })
+          .reduce((sum, r) => sum + (r.training_load ?? 0), 0);
+      };
+      
+      const acute7 = sumForRange(7);
+      const chronic28 = sumForRange(28);
+      
+      if (chronic28 === 0) return null;
+      // Gabbett ratio = (7-day sum) / (28-day sum / 4) = acute weekly / chronic weekly average
+      return Math.round((acute7 / (chronic28 / 4)) * 100) / 100;
+    } else if (selectedMetric === "ewma_ratio") {
+      // EWMA ratio from stored acute_load / chronic_load
       const records = awcrData?.filter(
         (d) => d.player_id === playerId && d.session_date === dateStr
       ) ?? [];
       if (records.length === 0) return null;
-      
-      // Use the record with the most recent/highest data
       const best = records.reduce((a, b) => {
-        // Prefer records with actual AWCR values
-        if (a.awcr !== null && b.awcr === null) return a;
-        if (b.awcr !== null && a.awcr === null) return b;
+        if (a.acute_load !== null && b.acute_load === null) return a;
+        if (b.acute_load !== null && a.acute_load === null) return b;
         return (a.training_load ?? 0) >= (b.training_load ?? 0) ? a : b;
       });
-      
-      if (selectedMetric === "ewma_ratio" && best.acute_load && best.chronic_load && best.chronic_load > 0) {
+      if (best.acute_load && best.chronic_load && best.chronic_load > 0) {
         return Math.round((best.acute_load / best.chronic_load) * 100) / 100;
       }
       return best.awcr ?? null;
     } else if (selectedMetric === "training_load") {
-      // Sum all training loads for the day
       const records = awcrData?.filter(
         (d) => d.player_id === playerId && d.session_date === dateStr
       ) ?? [];
