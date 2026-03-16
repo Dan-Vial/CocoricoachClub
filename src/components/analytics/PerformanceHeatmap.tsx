@@ -48,16 +48,21 @@ export function PerformanceHeatmap({ categoryId }: PerformanceHeatmapProps) {
     },
   });
 
+  // Fetch data from 28 days before month start to compute Gabbett AWCR rolling averages
+  const extendedStartDate = format(
+    new Date(startOfMonth(selectedMonth).getTime() - 28 * 24 * 60 * 60 * 1000),
+    "yyyy-MM-dd"
+  );
+
   const { data: awcrData } = useQuery({
     queryKey: ["heatmap-awcr", categoryId, selectedMonth],
     queryFn: async () => {
-      const startDate = format(startOfMonth(selectedMonth), "yyyy-MM-dd");
       const endDate = format(endOfMonth(selectedMonth), "yyyy-MM-dd");
       const { data, error } = await supabase
         .from("awcr_tracking")
         .select("player_id, session_date, awcr, training_load, acute_load, chronic_load")
         .eq("category_id", categoryId)
-        .gte("session_date", startDate)
+        .gte("session_date", extendedStartDate)
         .lte("session_date", endDate);
       if (error) throw error;
       return data as AwcrData[];
