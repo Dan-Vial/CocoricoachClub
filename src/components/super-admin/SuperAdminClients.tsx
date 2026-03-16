@@ -252,8 +252,26 @@ export function SuperAdminClients() {
                 .insert(categoriesToInsert);
               if (catError) throw catError;
             }
-          }
-        }
+         }
+         }
+
+         // Create subscription if plan selected
+         if (selectedPlanId) {
+           const plan = plans.find((p: any) => p.id === selectedPlanId);
+           const amount = subAmount ? parseFloat(subAmount) : (plan?.price_monthly || null);
+           const { error: subError } = await supabase
+             .from("client_subscriptions")
+             .insert({
+               client_id: clientData.id,
+               plan_id: selectedPlanId,
+               start_date: subStartDate,
+               end_date: subEndDate || null,
+               amount,
+               payment_method: subPaymentMethod || null,
+               status: "active",
+             });
+           if (subError) console.error("Subscription creation error:", subError);
+         }
 
         // Send invitation email to the club admin if email is provided
         if (data.email) {
