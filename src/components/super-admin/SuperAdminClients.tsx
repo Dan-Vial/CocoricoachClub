@@ -427,28 +427,72 @@ export function SuperAdminClients() {
      },
    });
  
-    const resetForm = () => {
-      setFormData({
-        name: "",
-        email: "",
-        phone: "",
-        address: "",
-        status: "trial",
-        max_clubs: 1,
-        max_categories_per_club: 3,
-        max_staff_users: 5,
-        max_athletes: 50,
-        notes: "",
-         video_enabled: false,
-         gps_data_enabled: false,
-         academy_enabled: false,
-      });
-      setClubName("");
-      setClubSport("rugby");
-      setCategoryDrafts([]);
-      setGeneratedInviteLink(null);
-      setLinkCopied(false);
-    };
+     const resetForm = () => {
+       setFormData({
+         name: "",
+         email: "",
+         phone: "",
+         address: "",
+         status: "trial",
+         max_clubs: 1,
+         max_categories_per_club: 3,
+         max_staff_users: 5,
+         max_athletes: 50,
+         notes: "",
+          video_enabled: false,
+          gps_data_enabled: false,
+          academy_enabled: false,
+       });
+       setClubName("");
+       setClubSport("rugby");
+       setCategoryDrafts([]);
+       setGeneratedInviteLink(null);
+       setLinkCopied(false);
+       setSelectedPlanId("");
+       setSubStartDate(new Date().toISOString().split("T")[0]);
+       setSubEndDate("");
+       setSubAmount("");
+       setSubPaymentMethod("");
+     };
+
+     const resetSubForm = () => {
+       setSelectedPlanId("");
+       setSubStartDate(new Date().toISOString().split("T")[0]);
+       setSubEndDate("");
+       setSubAmount("");
+       setSubPaymentMethod("");
+     };
+
+     // Assign subscription to existing client
+     const assignSubscription = useMutation({
+       mutationFn: async (clientId: string) => {
+         if (!selectedPlanId) throw new Error("Veuillez sélectionner un plan");
+         const plan = plans.find((p: any) => p.id === selectedPlanId);
+         const amount = subAmount ? parseFloat(subAmount) : (plan?.price_monthly || null);
+         const { error } = await supabase
+           .from("client_subscriptions")
+           .insert({
+             client_id: clientId,
+             plan_id: selectedPlanId,
+             start_date: subStartDate,
+             end_date: subEndDate || null,
+             amount,
+             payment_method: subPaymentMethod || null,
+             status: "active",
+           });
+         if (error) throw error;
+       },
+       onSuccess: () => {
+         toast.success("Abonnement assigné avec succès");
+         queryClient.invalidateQueries({ queryKey: ["super-admin-clients"] });
+         queryClient.invalidateQueries({ queryKey: ["client-subscriptions"] });
+         setAssignSubClientId(null);
+         resetSubForm();
+       },
+       onError: () => {
+         toast.error("Erreur lors de l'assignation de l'abonnement");
+       },
+     });
 
     const copyInviteLink = async (link: string) => {
       try {
