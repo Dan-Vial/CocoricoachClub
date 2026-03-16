@@ -256,7 +256,7 @@ export function SuperAdminClients() {
          }
 
          // Create subscription if plan selected
-         if (selectedPlanId) {
+         if (selectedPlanId && selectedPlanId !== "none") {
            const plan = plans.find((p: any) => p.id === selectedPlanId);
            const amount = subAmount ? parseFloat(subAmount) : (plan?.price_monthly || null);
            const { error: subError } = await supabase
