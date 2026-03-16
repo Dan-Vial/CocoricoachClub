@@ -73,6 +73,19 @@ export function SuperAdminClients() {
       const [searchQuery, setSearchQuery] = useState("");
       const [assignSubClientId, setAssignSubClientId] = useState<string | null>(null);
  
+     // Fetch subscription plans
+     const { data: plans = [] } = useQuery({
+       queryKey: ["subscription-plans"],
+       queryFn: async () => {
+         const { data, error } = await supabase
+           .from("subscription_plans")
+           .select("*")
+           .order("price_monthly");
+         if (error) throw error;
+         return data;
+       },
+     });
+
      // Fetch formal clients with their subscriptions
      const { data: clients = [], isLoading } = useQuery({
        queryKey: ["super-admin-clients"],
