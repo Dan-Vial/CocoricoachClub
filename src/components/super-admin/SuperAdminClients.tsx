@@ -60,12 +60,18 @@ export function SuperAdminClients() {
        gps_data_enabled: false,
        academy_enabled: false,
     });
+    const [selectedPlanId, setSelectedPlanId] = useState<string>("");
+    const [subStartDate, setSubStartDate] = useState(new Date().toISOString().split("T")[0]);
+    const [subEndDate, setSubEndDate] = useState("");
+    const [subAmount, setSubAmount] = useState("");
+    const [subPaymentMethod, setSubPaymentMethod] = useState("");
     const [clubName, setClubName] = useState("");
     const [clubSport, setClubSport] = useState<MainSportCategory>("rugby");
      const [categoryDrafts, setCategoryDrafts] = useState<CategoryDraft[]>([]);
       const [generatedInviteLink, setGeneratedInviteLink] = useState<string | null>(null);
       const [linkCopied, setLinkCopied] = useState(false);
       const [searchQuery, setSearchQuery] = useState("");
+      const [assignSubClientId, setAssignSubClientId] = useState<string | null>(null);
  
      // Fetch formal clients with their subscriptions
      const { data: clients = [], isLoading } = useQuery({
