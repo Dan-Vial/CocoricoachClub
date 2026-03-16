@@ -1190,7 +1190,92 @@ export function SuperAdminClients() {
                clientName={categoryOptionsClient.name}
              />
            )}
-        </CardContent>
-      </Card>
-    );
-  }
+            {/* Assign Subscription Dialog */}
+            <Dialog open={!!assignSubClientId} onOpenChange={(open) => { if (!open) { setAssignSubClientId(null); resetSubForm(); } }}>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <CreditCard className="h-5 w-5" />
+                    Assigner un abonnement
+                  </DialogTitle>
+                  <DialogDescription>
+                    {clients.find((c: any) => c.id === assignSubClientId)?.name || "Client"}
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Plan d'abonnement *</Label>
+                    <Select value={selectedPlanId} onValueChange={setSelectedPlanId}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Sélectionner un plan" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {plans.map((plan: any) => (
+                          <SelectItem key={plan.id} value={plan.id}>
+                            {plan.name} {plan.price_monthly ? `— ${plan.price_monthly}€/mois` : "— Gratuit"}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Date de début</Label>
+                      <Input
+                        type="date"
+                        value={subStartDate}
+                        onChange={(e) => setSubStartDate(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Date de fin</Label>
+                      <Input
+                        type="date"
+                        value={subEndDate}
+                        onChange={(e) => setSubEndDate(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Montant (€)</Label>
+                      <Input
+                        type="number"
+                        placeholder={plans.find((p: any) => p.id === selectedPlanId)?.price_monthly?.toString() || "0"}
+                        value={subAmount}
+                        onChange={(e) => setSubAmount(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Paiement</Label>
+                      <Select value={subPaymentMethod} onValueChange={setSubPaymentMethod}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Non défini" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="card">Carte bancaire</SelectItem>
+                          <SelectItem value="transfer">Virement</SelectItem>
+                          <SelectItem value="check">Chèque</SelectItem>
+                          <SelectItem value="other">Autre</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => { setAssignSubClientId(null); resetSubForm(); }}>
+                    Annuler
+                  </Button>
+                  <Button
+                    onClick={() => assignSubClientId && assignSubscription.mutate(assignSubClientId)}
+                    disabled={!selectedPlanId || assignSubscription.isPending}
+                  >
+                    {assignSubscription.isPending ? "Assignation..." : "Assigner"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+         </CardContent>
+       </Card>
+     );
+   }
