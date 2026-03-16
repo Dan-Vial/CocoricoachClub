@@ -992,6 +992,17 @@ export function SuperAdminClients() {
                          <Button
                            variant="ghost"
                            size="icon"
+                           title="Assigner un abonnement"
+                           onClick={() => {
+                             resetSubForm();
+                             setAssignSubClientId(client.id);
+                           }}
+                         >
+                           <CreditCard className="h-4 w-4 text-primary" />
+                         </Button>
+                         <Button
+                           variant="ghost"
+                           size="icon"
                            title="Copier le lien d'invitation"
                            onClick={async () => {
                             if (!client.email) {
