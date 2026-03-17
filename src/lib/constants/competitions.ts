@@ -1399,6 +1399,8 @@ export const getCompetitionStagesBySport = (sportType: string): CompetitionStage
       return TRIATHLON_STAGES;
     case "padel":
       return PADEL_STAGES;
+    case "tennis":
+      return TENNIS_STAGES;
     case "natation":
     case "aviron":
     case "athletisme":
