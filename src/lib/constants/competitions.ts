@@ -1270,6 +1270,8 @@ export const getCompetitionsBySport = (sportType: string): CompetitionCategory[]
       return CROSSFIT_COMPETITIONS;
     case "padel":
       return PADEL_COMPETITIONS;
+    case "tennis":
+      return TENNIS_COMPETITIONS;
     case "natation":
       return NATATION_COMPETITIONS;
     case "ski":
