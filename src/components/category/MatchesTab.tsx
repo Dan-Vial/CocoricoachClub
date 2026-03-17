@@ -187,9 +187,10 @@ export function MatchesTab({ categoryId, sportType }: MatchesTabProps) {
           )}
         </TabsContent>
 
-        {isBowling && (
+        {hasTrainingStats && (
           <TabsContent value="training_stats">
-            <BowlingTrainingStats categoryId={categoryId} />
+            {isBowling && <BowlingTrainingStats categoryId={categoryId} />}
+            {isTennis && <TennisTrainingStats categoryId={categoryId} />}
           </TabsContent>
         )}
       </Tabs>
