@@ -56,6 +56,13 @@ const AVIRON_DISTANCES = [
   { value: 6000, label: "6000m (Tête de rivière)" },
 ];
 
+// Tennis match formats
+const TENNIS_FORMATS = [
+  { value: "simple", label: "Simple" },
+  { value: "double", label: "Double" },
+  { value: "double_mixte", label: "Double Mixte" },
+];
+
 // Age categories
 const AGE_CATEGORIES = [
   { value: "U15", label: "U15 (Cadet)" },
