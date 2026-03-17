@@ -33,6 +33,8 @@ export function MatchesTab({ categoryId, sportType }: MatchesTabProps) {
   // Check if this is an individual sport (judo, bowling)
   const isIndividual = isIndividualSport(sportType || "");
   const isBowling = (sportType || "").toLowerCase().includes("bowling");
+  const isTennis = (sportType || "").toLowerCase().includes("tennis");
+  const hasTrainingStats = isBowling || isTennis;
   
   // Labels adaptés selon le sport
   const itemLabel = isIndividual ? "compétition" : "match";
