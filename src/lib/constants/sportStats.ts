@@ -1016,6 +1016,16 @@ export function getStatCategories(sportType: SportType | string): { key: string;
     ];
   }
 
+  // Tennis
+  if (baseSport === "tennis") {
+    return [
+      { key: "scoring", label: "Score & Breaks" },
+      { key: "attack", label: "Service & Coups gagnants" },
+      { key: "defense", label: "Retour & Défense" },
+      { key: "general", label: "Général" },
+    ];
+  }
+
   // Basketball
   if (baseSport === "basketball") {
     return [
