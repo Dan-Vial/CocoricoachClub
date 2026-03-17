@@ -647,6 +647,8 @@ export function SessionDetailsDialog({
               ) : (
                 <p className="text-xs text-muted-foreground">Aucun athlète dans cette catégorie.</p>
               )}
+            </div>
+          )}
 
           {session?.notes && getDisplayNotes(session.notes) && (
             <p className="text-sm text-muted-foreground mb-4 p-3 bg-muted/30 rounded-lg">
