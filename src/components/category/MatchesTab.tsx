@@ -7,6 +7,7 @@ import { MatchCard } from "./matches/MatchCard";
 import { PlayerCumulativeStats } from "./matches/PlayerCumulativeStats";
 import { BowlingCumulativeStats } from "@/components/bowling/BowlingCumulativeStats";
 import { BowlingTrainingStats } from "@/components/bowling/BowlingTrainingStats";
+import { TennisTrainingStats } from "@/components/tennis/TennisTrainingStats";
 import { isFuture, isPast, format } from "date-fns";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { ColoredSubTabsList, ColoredSubTabsTrigger } from "@/components/ui/colored-subtabs";
@@ -32,6 +33,8 @@ export function MatchesTab({ categoryId, sportType }: MatchesTabProps) {
   // Check if this is an individual sport (judo, bowling)
   const isIndividual = isIndividualSport(sportType || "");
   const isBowling = (sportType || "").toLowerCase().includes("bowling");
+  const isTennis = (sportType || "").toLowerCase().includes("tennis");
+  const hasTrainingStats = isBowling || isTennis;
   
   // Labels adaptés selon le sport
   const itemLabel = isIndividual ? "compétition" : "match";
@@ -41,13 +44,14 @@ export function MatchesTab({ categoryId, sportType }: MatchesTabProps) {
 
   const { data: matches, isLoading } = useViewerMatches(categoryId);
 
-  // Create bowling training match
-  const createBowlingTraining = useMutation({
+  // Create training match (bowling or tennis)
+  const createTrainingMatch = useMutation({
     mutationFn: async () => {
       const today = format(new Date(), "yyyy-MM-dd");
+      const label = isTennis ? "Match d'entraînement" : "Entraînement";
       const { error } = await supabase.from("matches").insert({
         category_id: categoryId,
-        opponent: `Entraînement ${format(new Date(), "dd/MM/yyyy")}`,
+        opponent: `${label} ${format(new Date(), "dd/MM/yyyy")}`,
         match_date: today,
         event_type: "training",
         is_home: true,
@@ -56,7 +60,10 @@ export function MatchesTab({ categoryId, sportType }: MatchesTabProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["matches", categoryId] });
-      toast.success("Entraînement bowling créé ! Ajoutez des joueurs puis saisissez les parties.");
+      const msg = isTennis
+        ? "Match d'entraînement créé ! Ajoutez la composition puis saisissez les stats."
+        : "Entraînement bowling créé ! Ajoutez des joueurs puis saisissez les parties.";
+      toast.success(msg);
     },
     onError: () => toast.error("Erreur lors de la création"),
   });
@@ -81,7 +88,7 @@ export function MatchesTab({ categoryId, sportType }: MatchesTabProps) {
             <ColoredSubTabsTrigger value="stats" colorKey="competition" icon={<BarChart3 className="h-4 w-4" />}>
               Stats cumulées
             </ColoredSubTabsTrigger>
-            {isBowling && (
+            {hasTrainingStats && (
               <ColoredSubTabsTrigger value="training_stats" colorKey="competition" icon={<Target className="h-4 w-4" />}>
                 Stats entraînement
               </ColoredSubTabsTrigger>
@@ -110,15 +117,15 @@ export function MatchesTab({ categoryId, sportType }: MatchesTabProps) {
                         <span className="hidden sm:inline">Personnaliser stats</span>
                       </Button>
                     )}
-                    {isBowling && (
+                    {(isBowling || isTennis) && (
                       <Button 
                         variant="outline"
-                        onClick={() => createBowlingTraining.mutate()}
-                        disabled={createBowlingTraining.isPending}
+                        onClick={() => createTrainingMatch.mutate()}
+                        disabled={createTrainingMatch.isPending}
                         className="gap-2"
                       >
                         <Dumbbell className="h-4 w-4" />
-                        <span className="hidden sm:inline">Entraînement</span>
+                        <span className="hidden sm:inline">{isTennis ? "Match entraînement" : "Entraînement"}</span>
                       </Button>
                     )}
                     <Button onClick={() => setIsAddDialogOpen(true)} className="gap-2">
@@ -184,9 +191,10 @@ export function MatchesTab({ categoryId, sportType }: MatchesTabProps) {
           )}
         </TabsContent>
 
-        {isBowling && (
+        {hasTrainingStats && (
           <TabsContent value="training_stats">
-            <BowlingTrainingStats categoryId={categoryId} />
+            {isBowling && <BowlingTrainingStats categoryId={categoryId} />}
+            {isTennis && <TennisTrainingStats categoryId={categoryId} />}
           </TabsContent>
         )}
       </Tabs>

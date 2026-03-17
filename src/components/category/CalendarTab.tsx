@@ -17,6 +17,7 @@ import { format, isSameDay, startOfWeek, addDays } from "date-fns";
 import { useNavigate } from "react-router-dom";
 import { SeasonObjectivesSection } from "@/components/planning/SeasonObjectivesSection";
 import { BowlingTrainingStats } from "@/components/bowling/BowlingTrainingStats";
+import { TennisTrainingStats } from "@/components/tennis/TennisTrainingStats";
 import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 import { exportCalendarToPdf, printElement } from "@/lib/pdfExport";
 import { getTrainingTypesForSport, TRAINING_TYPE_COLORS } from "@/lib/constants/trainingTypes";
@@ -277,6 +278,8 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
   }
 
   const isBowling = (sportType || "").toLowerCase().includes("bowling");
+  const isTennis = (sportType || "").toLowerCase().includes("tennis");
+  const hasTrainingStats = isBowling || isTennis;
 
   return (
     <div className="space-y-6">
@@ -287,7 +290,7 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
             <span className="hidden sm:inline">Calendrier Global</span>
             <span className="sm:hidden">Global</span>
           </ColoredSubTabsTrigger>
-          {isBowling && (
+          {hasTrainingStats && (
             <ColoredSubTabsTrigger value="training_stats" colorKey="planification" icon={<BarChart3 className="h-4 w-4" />}>
               <span className="hidden sm:inline">Stats entraînement</span>
               <span className="sm:hidden">Stats</span>
@@ -362,9 +365,10 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
           />
         </TabsContent>
 
-        {isBowling && (
+        {hasTrainingStats && (
           <TabsContent value="training_stats">
-            <BowlingTrainingStats categoryId={categoryId} />
+            {isBowling && <BowlingTrainingStats categoryId={categoryId} />}
+            {isTennis && <TennisTrainingStats categoryId={categoryId} />}
           </TabsContent>
         )}
 
