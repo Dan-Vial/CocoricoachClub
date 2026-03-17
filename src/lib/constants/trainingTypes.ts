@@ -599,6 +599,19 @@ export const TRAINING_TYPE_COLORS: Record<string, string> = {
   athle_mobilite: "bg-lime-500",
   athle_combines: "bg-gradient-to-r from-purple-500 to-pink-500",
   athle_ppg: "bg-gray-500",
+  // Tennis specific
+  tennis_service: "bg-green-500",
+  tennis_retour: "bg-blue-500",
+  tennis_fond_court: "bg-emerald-500",
+  tennis_volley: "bg-orange-500",
+  tennis_coup_droit: "bg-red-500",
+  tennis_revers: "bg-purple-500",
+  tennis_tactique: "bg-indigo-500",
+  tennis_match: "bg-rose-500",
+  tennis_physique_court: "bg-amber-500",
+  tennis_jeu_double: "bg-teal-500",
+  tennis_panier: "bg-lime-500",
+  tennis_mental: "bg-violet-500",
   // Default for custom types
   _default: "bg-gray-500",
 };
