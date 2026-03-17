@@ -162,6 +162,7 @@ export function AddMatchCalendarDialog({
     setEventType("individual");
     setAgeCategory("");
     setDistanceMeters(undefined);
+    setMatchFormat("simple");
   };
 
   const handleSubmit = (e: React.FormEvent) => {
