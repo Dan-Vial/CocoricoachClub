@@ -100,6 +100,9 @@ export function AddMatchCalendarDialog({
   const [ageCategory, setAgeCategory] = useState("");
   const [distanceMeters, setDistanceMeters] = useState<number | undefined>();
   
+  // Tennis specific fields
+  const [matchFormat, setMatchFormat] = useState<string>("simple");
+  
   const queryClient = useQueryClient();
 
   const COMPETITION_STAGES = getCompetitionStagesBySport(sportType || "XV");
