@@ -290,7 +290,7 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
             <span className="hidden sm:inline">Calendrier Global</span>
             <span className="sm:hidden">Global</span>
           </ColoredSubTabsTrigger>
-          {isBowling && (
+          {hasTrainingStats && (
             <ColoredSubTabsTrigger value="training_stats" colorKey="planification" icon={<BarChart3 className="h-4 w-4" />}>
               <span className="hidden sm:inline">Stats entraînement</span>
               <span className="sm:hidden">Stats</span>
