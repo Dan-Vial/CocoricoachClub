@@ -715,4 +715,17 @@ export const TRAINING_TYPE_LABELS: Record<string, string> = {
   athle_mobilite: "Mobilité Spécifique",
   athle_combines: "Épreuves Combinées",
   athle_ppg: "PPG (Prépa Physique Générale)",
+  // Tennis specific
+  tennis_service: "Travail de Service",
+  tennis_retour: "Travail de Retour",
+  tennis_fond_court: "Fond de Court",
+  tennis_volley: "Volées / Filet",
+  tennis_coup_droit: "Coup droit",
+  tennis_revers: "Revers",
+  tennis_tactique: "Tactique",
+  tennis_match: "Match d'Entraînement",
+  tennis_physique_court: "Physique sur Court",
+  tennis_jeu_double: "Jeu en Double",
+  tennis_panier: "Panier de balles",
+  tennis_mental: "Préparation Mentale",
 };
