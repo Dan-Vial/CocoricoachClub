@@ -805,6 +805,8 @@ export function getStatsForSport(sportType: SportType | string, isGoalkeeper: bo
       return getSkiStatsForDiscipline(discipline);
     case "triathlon":
       return getTriathlonStatsForDiscipline(discipline);
+    case "tennis":
+      return TENNIS_STATS;
     case "athletisme":
     case "athlétisme":
       return discipline ? getAthletismeStatsForDiscipline(discipline) : getAllAthletismeStats();
