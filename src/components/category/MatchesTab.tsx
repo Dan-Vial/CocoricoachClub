@@ -84,7 +84,7 @@ export function MatchesTab({ categoryId, sportType }: MatchesTabProps) {
             <ColoredSubTabsTrigger value="stats" colorKey="competition" icon={<BarChart3 className="h-4 w-4" />}>
               Stats cumulées
             </ColoredSubTabsTrigger>
-            {isBowling && (
+            {hasTrainingStats && (
               <ColoredSubTabsTrigger value="training_stats" colorKey="competition" icon={<Target className="h-4 w-4" />}>
                 Stats entraînement
               </ColoredSubTabsTrigger>
