@@ -7,6 +7,7 @@ import { MatchCard } from "./matches/MatchCard";
 import { PlayerCumulativeStats } from "./matches/PlayerCumulativeStats";
 import { BowlingCumulativeStats } from "@/components/bowling/BowlingCumulativeStats";
 import { BowlingTrainingStats } from "@/components/bowling/BowlingTrainingStats";
+import { TennisTrainingStats } from "@/components/tennis/TennisTrainingStats";
 import { isFuture, isPast, format } from "date-fns";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { ColoredSubTabsList, ColoredSubTabsTrigger } from "@/components/ui/colored-subtabs";
