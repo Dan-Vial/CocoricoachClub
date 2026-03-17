@@ -117,15 +117,15 @@ export function MatchesTab({ categoryId, sportType }: MatchesTabProps) {
                         <span className="hidden sm:inline">Personnaliser stats</span>
                       </Button>
                     )}
-                    {isBowling && (
+                    {(isBowling || isTennis) && (
                       <Button 
                         variant="outline"
-                        onClick={() => createBowlingTraining.mutate()}
-                        disabled={createBowlingTraining.isPending}
+                        onClick={() => createTrainingMatch.mutate()}
+                        disabled={createTrainingMatch.isPending}
                         className="gap-2"
                       >
                         <Dumbbell className="h-4 w-4" />
-                        <span className="hidden sm:inline">Entraînement</span>
+                        <span className="hidden sm:inline">{isTennis ? "Match entraînement" : "Entraînement"}</span>
                       </Button>
                     )}
                     <Button onClick={() => setIsAddDialogOpen(true)} className="gap-2">
