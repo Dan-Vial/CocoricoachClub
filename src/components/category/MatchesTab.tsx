@@ -44,13 +44,14 @@ export function MatchesTab({ categoryId, sportType }: MatchesTabProps) {
 
   const { data: matches, isLoading } = useViewerMatches(categoryId);
 
-  // Create bowling training match
-  const createBowlingTraining = useMutation({
+  // Create training match (bowling or tennis)
+  const createTrainingMatch = useMutation({
     mutationFn: async () => {
       const today = format(new Date(), "yyyy-MM-dd");
+      const label = isTennis ? "Match d'entraînement" : "Entraînement";
       const { error } = await supabase.from("matches").insert({
         category_id: categoryId,
-        opponent: `Entraînement ${format(new Date(), "dd/MM/yyyy")}`,
+        opponent: `${label} ${format(new Date(), "dd/MM/yyyy")}`,
         match_date: today,
         event_type: "training",
         is_home: true,
@@ -59,7 +60,10 @@ export function MatchesTab({ categoryId, sportType }: MatchesTabProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["matches", categoryId] });
-      toast.success("Entraînement bowling créé ! Ajoutez des joueurs puis saisissez les parties.");
+      const msg = isTennis
+        ? "Match d'entraînement créé ! Ajoutez la composition puis saisissez les stats."
+        : "Entraînement bowling créé ! Ajoutez des joueurs puis saisissez les parties.";
+      toast.success(msg);
     },
     onError: () => toast.error("Erreur lors de la création"),
   });
