@@ -450,6 +450,20 @@ export const isPadelCategory = (rugbyType: string): boolean => {
   return rugbyType?.startsWith("padel") || rugbyType === "padel";
 };
 
+// Tennis positions
+export const TENNIS_POSITIONS: PlayerAttributeOption[] = [
+  { value: "tennis_droitier", label: "Droitier" },
+  { value: "tennis_gaucher", label: "Gaucher" },
+  { value: "tennis_simple", label: "Spécialiste Simple" },
+  { value: "tennis_double", label: "Spécialiste Double" },
+  { value: "tennis_polyvalent", label: "Polyvalent" },
+];
+
+// Helper to check if a category is tennis
+export const isTennisCategory = (rugbyType: string): boolean => {
+  return rugbyType?.startsWith("tennis") || rugbyType === "tennis";
+};
+
 export const SPORT_TYPES: SportTypeOption[] = [
   // Rugby types
   { value: "XV", label: "Rugby à XV", category: "rugby" },
@@ -484,6 +498,7 @@ export const SPORT_TYPES: SportTypeOption[] = [
   { value: "natation_club", label: "Natation - Club", category: "individual" },
   { value: "ski_club", label: "Sports de Glisse - Club", category: "individual" },
   { value: "triathlon_club", label: "Triathlon - Club", category: "individual" },
+  { value: "tennis_club", label: "Tennis - Club", category: "individual" },
   // Individual sports - Académie
   { value: "judo_academie", label: "Judo - Académie", category: "individual" },
   { value: "bowling_academie", label: "Bowling - Académie", category: "individual" },
@@ -492,6 +507,7 @@ export const SPORT_TYPES: SportTypeOption[] = [
   { value: "natation_academie", label: "Natation - Académie", category: "individual" },
   { value: "ski_academie", label: "Sports de Glisse - Académie", category: "individual" },
   { value: "triathlon_academie", label: "Triathlon - Académie", category: "individual" },
+  { value: "tennis_academie", label: "Tennis - Académie", category: "individual" },
   // Individual sports - National
   { value: "judo_national", label: "Judo - Équipe Nationale", category: "individual" },
   { value: "bowling_national", label: "Bowling - Équipe Nationale", category: "individual" },
@@ -500,6 +516,7 @@ export const SPORT_TYPES: SportTypeOption[] = [
   { value: "natation_national", label: "Natation - Équipe Nationale", category: "individual" },
   { value: "ski_national", label: "Sports de Glisse - Équipe Nationale", category: "individual" },
   { value: "triathlon_national", label: "Triathlon - Équipe Nationale", category: "individual" },
+  { value: "tennis_national", label: "Tennis - Équipe Nationale", category: "individual" },
   // CrossFit / Hyrox / Musculation
   { value: "crossfit_box", label: "CrossFit - Box / Salle", category: "individual" },
   { value: "crossfit_hyrox", label: "Hyrox / Fitness Fonctionnel", category: "individual" },
@@ -533,6 +550,7 @@ export const SPORT_TYPES: SportTypeOption[] = [
   { value: "natation", label: "Natation", category: "individual" },
   { value: "ski", label: "Sports de Glisse", category: "individual" },
   { value: "triathlon", label: "Triathlon", category: "individual" },
+  { value: "tennis", label: "Tennis", category: "individual" },
 ];
 
 export const getSportLabel = (type: string): string => {
