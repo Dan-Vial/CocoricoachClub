@@ -193,6 +193,28 @@ export function AddMatchCalendarDialog({
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Tennis specific: Match format */}
+          {isTennis && (
+            <div className="space-y-2">
+              <Label>Format de jeu *</Label>
+              <div className="flex gap-4 flex-wrap">
+                {TENNIS_FORMATS.map((fmt) => (
+                  <label key={fmt.value} className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="matchFormat"
+                      value={fmt.value}
+                      checked={matchFormat === fmt.value}
+                      onChange={(e) => setMatchFormat(e.target.value)}
+                      className="w-4 h-4"
+                    />
+                    <span>{fmt.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Aviron specific: Event type (Individual/Team) */}
           {isAviron && (
             <div className="space-y-2">
