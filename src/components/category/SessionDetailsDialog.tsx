@@ -28,6 +28,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { getTrainingTypeLabel } from "@/lib/constants/trainingTypes";
 import { NotifyAthletesDialog } from "@/components/notifications/NotifyAthletesDialog";
 import { BowlingSessionContent } from "@/components/bowling/BowlingSessionContent";
+import { TennisDrillTraining } from "@/components/tennis/TennisDrillTraining";
 
 interface SessionDetailsDialogProps {
   open: boolean;
