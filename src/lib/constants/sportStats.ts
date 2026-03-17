@@ -686,6 +686,50 @@ export const DUATHLON_STATS: StatField[] = [
 ];
 
 export type SportType = "XV" | "7" | "XIII" | "football" | "handball" | "volleyball" | "basketball" | "judo" | "aviron" | "bowling" | "academie" | "national_team" | "athletisme" | "padel" | "natation" | "ski" | "triathlon";
+// Tennis stats
+export const TENNIS_STATS: StatField[] = [
+  // Scoring
+  { key: "setsWon", label: "Sets gagnés", shortLabel: "Sets G.", category: "scoring", type: "number" },
+  { key: "setsLost", label: "Sets perdus", shortLabel: "Sets P.", category: "scoring", type: "number" },
+  { key: "gamesWon", label: "Jeux gagnés", shortLabel: "Jeux G.", category: "scoring", type: "number" },
+  { key: "gamesLost", label: "Jeux perdus", shortLabel: "Jeux P.", category: "scoring", type: "number" },
+  { key: "tiebreaksWon", label: "Tie-breaks gagnés", shortLabel: "TB G.", category: "scoring", type: "number" },
+  { key: "tiebreaksLost", label: "Tie-breaks perdus", shortLabel: "TB P.", category: "scoring", type: "number" },
+  { key: "breakPointsWon", label: "Breaks réalisés", shortLabel: "Breaks", category: "scoring", type: "number" },
+  { key: "breakPointsOpportunities", label: "Opportunités de break", shortLabel: "Opp. break", category: "scoring", type: "number" },
+  { key: "breakPointConversion", label: "% conversion break", shortLabel: "% Break", category: "scoring", type: "percentage", max: 100, computedFrom: { successKey: "breakPointsWon", totalKey: "breakPointsOpportunities" } },
+  // Attack / Service
+  { key: "aces", label: "Aces", shortLabel: "Aces", category: "attack", type: "number" },
+  { key: "doubleFaults", label: "Doubles fautes", shortLabel: "Dbl fautes", category: "attack", type: "number" },
+  { key: "firstServeIn", label: "1ères balles in", shortLabel: "1ère in", category: "attack", type: "number" },
+  { key: "firstServeTotal", label: "1ères balles totales", shortLabel: "1ère total", category: "attack", type: "number" },
+  { key: "firstServePercentage", label: "% 1ère balle", shortLabel: "% 1ère", category: "attack", type: "percentage", max: 100, computedFrom: { successKey: "firstServeIn", totalKey: "firstServeTotal" } },
+  { key: "firstServePointsWon", label: "Points gagnés sur 1ère", shortLabel: "Pts 1ère", category: "attack", type: "number" },
+  { key: "secondServePointsWon", label: "Points gagnés sur 2ème", shortLabel: "Pts 2ème", category: "attack", type: "number" },
+  { key: "serviceGamesWon", label: "Jeux de service gagnés", shortLabel: "J. serv. G.", category: "attack", type: "number" },
+  { key: "serviceGamesPlayed", label: "Jeux de service joués", shortLabel: "J. serv.", category: "attack", type: "number" },
+  { key: "serviceHoldPercentage", label: "% jeux de service tenus", shortLabel: "% Hold", category: "attack", type: "percentage", max: 100, computedFrom: { successKey: "serviceGamesWon", totalKey: "serviceGamesPlayed" } },
+  { key: "winners", label: "Coups gagnants", shortLabel: "Winners", category: "attack", type: "number" },
+  { key: "forehandWinners", label: "Winners coup droit", shortLabel: "W. CD", category: "attack", type: "number" },
+  { key: "backhandWinners", label: "Winners revers", shortLabel: "W. Rev.", category: "attack", type: "number" },
+  // Defense / Return
+  { key: "unforcedErrors", label: "Fautes directes", shortLabel: "F. directes", category: "defense", type: "number" },
+  { key: "forcedErrors", label: "Fautes provoquées", shortLabel: "F. provoquées", category: "defense", type: "number" },
+  { key: "returnPointsWon", label: "Points gagnés en retour", shortLabel: "Pts retour", category: "defense", type: "number" },
+  { key: "returnPointsPlayed", label: "Points joués en retour", shortLabel: "Pts ret. total", category: "defense", type: "number" },
+  { key: "returnPointsPercentage", label: "% points gagnés en retour", shortLabel: "% Retour", category: "defense", type: "percentage", max: 100, computedFrom: { successKey: "returnPointsWon", totalKey: "returnPointsPlayed" } },
+  { key: "breakPointsSaved", label: "Balles de break sauvées", shortLabel: "BP sauvées", category: "defense", type: "number" },
+  { key: "breakPointsFaced", label: "Balles de break subies", shortLabel: "BP subies", category: "defense", type: "number" },
+  { key: "breakPointSavePercentage", label: "% balles de break sauvées", shortLabel: "% BP sauvées", category: "defense", type: "percentage", max: 100, computedFrom: { successKey: "breakPointsSaved", totalKey: "breakPointsFaced" } },
+  // General
+  { key: "minutesPlayed", label: "Durée du match (min)", shortLabel: "Durée", category: "general", type: "number" },
+  { key: "totalPointsWon", label: "Points gagnés", shortLabel: "Pts gagnés", category: "general", type: "number" },
+  { key: "totalPointsPlayed", label: "Points joués", shortLabel: "Pts joués", category: "general", type: "number" },
+  { key: "netApproaches", label: "Montées au filet", shortLabel: "Montées", category: "general", type: "number" },
+  { key: "netPointsWon", label: "Points gagnés au filet", shortLabel: "Pts filet", category: "general", type: "number" },
+  { key: "netSuccessPercentage", label: "% réussite au filet", shortLabel: "% Filet", category: "general", type: "percentage", max: 100, computedFrom: { successKey: "netPointsWon", totalKey: "netApproaches" } },
+  { key: "rallyLengthAvg", label: "Longueur moy. échange", shortLabel: "L. échange", category: "general", type: "number" },
+];
 
 // Helper function to extract base sport from subtypes like "aviron_club", "judo_academie"
 function getBaseSport(sportType: string): string {
@@ -761,6 +805,8 @@ export function getStatsForSport(sportType: SportType | string, isGoalkeeper: bo
       return getSkiStatsForDiscipline(discipline);
     case "triathlon":
       return getTriathlonStatsForDiscipline(discipline);
+    case "tennis":
+      return TENNIS_STATS;
     case "athletisme":
     case "athlétisme":
       return discipline ? getAthletismeStatsForDiscipline(discipline) : getAllAthletismeStats();
@@ -967,6 +1013,16 @@ export function getStatCategories(sportType: SportType | string): { key: string;
       { key: "general", label: "Segments & Transitions" },
       { key: "attack", label: "Puissance / Allure" },
       { key: "defense", label: "Physiologique" },
+    ];
+  }
+
+  // Tennis
+  if (baseSport === "tennis") {
+    return [
+      { key: "scoring", label: "Score & Breaks" },
+      { key: "attack", label: "Service & Coups gagnants" },
+      { key: "defense", label: "Retour & Défense" },
+      { key: "general", label: "Général" },
     ];
   }
 
