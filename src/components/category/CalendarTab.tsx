@@ -278,6 +278,8 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
   }
 
   const isBowling = (sportType || "").toLowerCase().includes("bowling");
+  const isTennis = (sportType || "").toLowerCase().includes("tennis");
+  const hasTrainingStats = isBowling || isTennis;
 
   return (
     <div className="space-y-6">
