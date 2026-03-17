@@ -58,7 +58,7 @@ export function TennisTrainingStats({ categoryId }: TennisTrainingStatsProps) {
       for (const stat of stats || []) {
         const match = matches.find((m) => m.id === stat.match_id);
         const player = stat.players as any;
-        const statData = (stat.stats as Record<string, number>) || {};
+        const statData = ((stat.sport_data as Record<string, any>) || {}) as Record<string, number>;
 
         result.push({
           matchId: stat.match_id,
