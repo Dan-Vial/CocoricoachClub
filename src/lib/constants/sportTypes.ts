@@ -599,7 +599,7 @@ export const getMainSportFromType = (type: string): MainSportCategory => {
 export const isIndividualSport = (type: string): boolean => {
   const individualSports = [
     "judo", "bowling", "aviron", "athletisme", "crossfit",
-    "padel", "natation", "ski", "triathlon",
+    "padel", "natation", "ski", "triathlon", "tennis",
     "judo_club", "judo_academie", "judo_national",
     "bowling_club", "bowling_academie", "bowling_national",
     "aviron_club", "aviron_academie", "aviron_national",
@@ -608,6 +608,7 @@ export const isIndividualSport = (type: string): boolean => {
     "natation_club", "natation_academie", "natation_national",
     "ski_club", "ski_academie", "ski_national",
     "triathlon_club", "triathlon_academie", "triathlon_national",
+    "tennis_club", "tennis_academie", "tennis_national",
     "athletisme_sprints", "athletisme_haies", "athletisme_demi_fond",
     "athletisme_fond", "athletisme_marche", "athletisme_sauts_longueur",
     "athletisme_sauts_hauteur", "athletisme_lancers", "athletisme_combines",
