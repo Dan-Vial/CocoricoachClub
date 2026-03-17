@@ -28,6 +28,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { getTrainingTypeLabel } from "@/lib/constants/trainingTypes";
 import { NotifyAthletesDialog } from "@/components/notifications/NotifyAthletesDialog";
 import { BowlingSessionContent } from "@/components/bowling/BowlingSessionContent";
+import { TennisDrillTraining } from "@/components/tennis/TennisDrillTraining";
 
 interface SessionDetailsDialogProps {
   open: boolean;
@@ -619,6 +620,33 @@ export function SessionDetailsDialog({
                   />
                 ))
               }
+            </div>
+          )}
+
+          {/* Tennis-specific drill training for tennis blocks */}
+          {sessionBlocks?.some((b: any) => typeof b.training_type === "string" && b.training_type.startsWith("tennis_") && b.training_type !== "tennis_match") && (
+            <div className="mb-4 space-y-4">
+              <h4 className="text-sm font-semibold flex items-center gap-2">
+                🎾 Exercices spécifiques Tennis
+              </h4>
+              {players && players.length > 0 ? (
+                <div className="space-y-3">
+                  {players.map((player) => (
+                    <div key={player.id}>
+                      <p className="text-xs font-medium text-muted-foreground mb-1">
+                        {player.first_name ? `${player.first_name} ${player.name}` : player.name}
+                      </p>
+                      <TennisDrillTraining
+                        playerId={player.id}
+                        categoryId={categoryId}
+                        trainingSessionId={sessionId}
+                      />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground">Aucun athlète dans cette catégorie.</p>
+              )}
             </div>
           )}
 
