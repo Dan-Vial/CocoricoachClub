@@ -3092,6 +3092,7 @@ export type Database = {
           location: string | null
           longest_play_sequence: number | null
           match_date: string
+          match_format: string | null
           match_time: string | null
           notes: string | null
           opponent: string
@@ -3116,6 +3117,7 @@ export type Database = {
           location?: string | null
           longest_play_sequence?: number | null
           match_date: string
+          match_format?: string | null
           match_time?: string | null
           notes?: string | null
           opponent: string
@@ -3140,6 +3142,7 @@ export type Database = {
           location?: string | null
           longest_play_sequence?: number | null
           match_date?: string
+          match_format?: string | null
           match_time?: string | null
           notes?: string | null
           opponent?: string
