@@ -254,6 +254,20 @@ export const ALL_TRAINING_TYPES: TrainingTypeOption[] = [
   { value: "athle_force_explosive", label: "Force Explosive", hasExercises: true, forSports: ["athletisme"], category: "athle_lancers" },
   { value: "athle_glisse", label: "Technique Glissé (Poids)", hasExercises: false, forSports: ["athletisme"], category: "athle_lancers" },
   
+  // Tennis specific
+  { value: "tennis_service", label: "Travail de Service", hasExercises: false, forSports: ["tennis"], category: "tennis" },
+  { value: "tennis_retour", label: "Travail de Retour", hasExercises: false, forSports: ["tennis"], category: "tennis" },
+  { value: "tennis_fond_court", label: "Fond de Court", hasExercises: false, forSports: ["tennis"], category: "tennis" },
+  { value: "tennis_volley", label: "Travail Volées / Filet", hasExercises: false, forSports: ["tennis"], category: "tennis" },
+  { value: "tennis_coup_droit", label: "Coup droit", hasExercises: false, forSports: ["tennis"], category: "tennis" },
+  { value: "tennis_revers", label: "Revers", hasExercises: false, forSports: ["tennis"], category: "tennis" },
+  { value: "tennis_tactique", label: "Tactique / Schémas de jeu", hasExercises: false, forSports: ["tennis"], category: "tennis" },
+  { value: "tennis_match", label: "Match d'Entraînement", hasExercises: false, forSports: ["tennis"], category: "tennis" },
+  { value: "tennis_physique_court", label: "Physique sur Court", hasExercises: false, forSports: ["tennis"], category: "tennis" },
+  { value: "tennis_jeu_double", label: "Jeu en Double", hasExercises: false, forSports: ["tennis"], category: "tennis" },
+  { value: "tennis_panier", label: "Panier de balles", hasExercises: false, forSports: ["tennis"], category: "tennis" },
+  { value: "tennis_mental", label: "Préparation Mentale", hasExercises: false, forSports: ["tennis"], category: "tennis" },
+
   // Padel specific
   { value: "padel_match", label: "Match d'Entraînement", hasExercises: false, forSports: ["padel"], category: "padel" },
   { value: "padel_technique", label: "Technique (Bandeja, Víbora...)", hasExercises: false, forSports: ["padel"], category: "padel" },
