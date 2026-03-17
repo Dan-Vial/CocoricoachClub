@@ -83,6 +83,7 @@ export function AddMatchCalendarDialog({
   const competitions = getCompetitionsBySport(sportType);
   const isIndividual = isIndividualSport(sportType);
   const isAviron = sportType.toLowerCase().includes("aviron");
+  const isTennis = sportType.toLowerCase().includes("tennis");
   
   const [opponent, setOpponent] = useState("");
   const [competition, setCompetition] = useState("");
