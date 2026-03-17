@@ -1,0 +1,17 @@
+include:
+  - ./devops/supabase/supabase/docker-compose.yml
+
+services:
+  frontend:
+    image: node:24
+    working_dir: /app
+    command: ["sh", "-c", "npm i --legacy-peer-deps && exec npm run dev"]
+    # command: ["sh", "-c", "npm i && exec npm run dev"]
+    env_file: .env
+    expose:
+      - 8080
+      - 24678 # WebSocket: @react-refresh for ViteJS => ws://XXX
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./:/app:z
