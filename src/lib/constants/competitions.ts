@@ -1448,6 +1448,10 @@ export const getCompetitionStageLabel = (stage: string): string => {
     transition_2: "T2",
     course: "Course",
     sprint_finish: "Sprint Finish",
+    // Tennis
+    premier_tour: "1er tour",
+    deuxieme_tour: "2ème tour",
+    troisieme_tour: "3ème tour",
   };
   return allStages[stage] || stage;
 };
