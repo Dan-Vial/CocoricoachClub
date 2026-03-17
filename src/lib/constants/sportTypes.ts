@@ -19,6 +19,7 @@ export type SportType =
   | "natation"
   | "ski"
   | "triathlon"
+  | "tennis"
   | "football_club"
   | "football_academie"
   | "football_national"
@@ -58,6 +59,9 @@ export type SportType =
   | "triathlon_club"
   | "triathlon_academie"
   | "triathlon_national"
+  | "tennis_club"
+  | "tennis_academie"
+  | "tennis_national"
   // Athlétisme disciplines
   | "athletisme_sprints"
   | "athletisme_haies"
