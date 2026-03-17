@@ -408,6 +408,7 @@ export const getOtherSportSubtypes = (sport: MainSportCategory): SportSubTypeOpt
     natation: "Natation",
     ski: "Sports de Glisse",
     triathlon: "Triathlon",
+    tennis: "Tennis",
   };
 
   const label = sportLabels[sport] || sport;
