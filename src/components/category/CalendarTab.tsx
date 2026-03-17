@@ -365,9 +365,10 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
           />
         </TabsContent>
 
-        {isBowling && (
+        {hasTrainingStats && (
           <TabsContent value="training_stats">
-            <BowlingTrainingStats categoryId={categoryId} />
+            {isBowling && <BowlingTrainingStats categoryId={categoryId} />}
+            {isTennis && <TennisTrainingStats categoryId={categoryId} />}
           </TabsContent>
         )}
 
