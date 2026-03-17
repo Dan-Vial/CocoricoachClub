@@ -85,7 +85,7 @@ export interface SportTypeOption {
 }
 
 // Main sport categories for the first dropdown
-export type MainSportCategory = "rugby" | "football" | "handball" | "volleyball" | "basketball" | "judo" | "bowling" | "aviron" | "athletisme" | "crossfit" | "padel" | "natation" | "ski" | "triathlon";
+export type MainSportCategory = "rugby" | "football" | "handball" | "volleyball" | "basketball" | "judo" | "bowling" | "aviron" | "athletisme" | "crossfit" | "padel" | "natation" | "ski" | "triathlon" | "tennis";
 
 export interface MainSportOption {
   value: MainSportCategory;
@@ -98,6 +98,7 @@ export const MAIN_SPORTS: MainSportOption[] = [
   { value: "handball", label: "Handball" },
   { value: "volleyball", label: "Volleyball" },
   { value: "basketball", label: "Basketball" },
+  { value: "tennis", label: "Tennis" },
   { value: "padel", label: "Padel" },
   { value: "natation", label: "Natation" },
   { value: "ski", label: "Sports de Glisse (Ski / Snow)" },
