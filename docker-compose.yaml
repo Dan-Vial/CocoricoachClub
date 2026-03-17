@@ -1,0 +1,30 @@
+services:
+  frontend:
+    image: oven/bun
+    working_dir: /app
+
+    command: ["sh", "-c", "./devops/bun/entrypoint.sh"]
+
+    tty: true
+    stdin_open: true
+    init: true
+
+    userns_mode: "keep-id"
+    user: "${UID}:${GID}"
+
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+
+    env_file: .env.developement
+    expose:
+      - 8080
+      - 24678 # WebSocket: @react-refresh for ViteJS => ws://XXX
+    ports:
+      - "8080:8080"
+
+    volumes:
+      - ${PWD}:/app:Z
+      - ${HOME}/.cache/bun:/home/bun/.cache/bun:Z
+      - ${HOME}/.bun:/home/bun/.bun:Z
