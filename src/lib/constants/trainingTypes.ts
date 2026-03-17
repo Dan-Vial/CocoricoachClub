@@ -84,6 +84,7 @@ function getBaseSport(sportType: string): string {
   if (normalizedSport.startsWith('natation')) return 'natation';
   if (normalizedSport.startsWith('ski') || normalizedSport.startsWith('snow')) return 'ski';
   if (normalizedSport.startsWith('triathlon')) return 'triathlon';
+  if (normalizedSport.startsWith('tennis')) return 'tennis';
   return normalizedSport;
 }
 
