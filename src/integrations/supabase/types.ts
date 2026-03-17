@@ -7137,6 +7137,70 @@ export type Database = {
           },
         ]
       }
+      tennis_drill_training: {
+        Row: {
+          attempts: number
+          category_id: string
+          created_at: string
+          exercise_type: string
+          id: string
+          notes: string | null
+          player_id: string
+          session_date: string
+          success_rate: number | null
+          successes: number
+          training_session_id: string | null
+        }
+        Insert: {
+          attempts?: number
+          category_id: string
+          created_at?: string
+          exercise_type: string
+          id?: string
+          notes?: string | null
+          player_id: string
+          session_date?: string
+          success_rate?: number | null
+          successes?: number
+          training_session_id?: string | null
+        }
+        Update: {
+          attempts?: number
+          category_id?: string
+          created_at?: string
+          exercise_type?: string
+          id?: string
+          notes?: string | null
+          player_id?: string
+          session_date?: string
+          success_rate?: number | null
+          successes?: number
+          training_session_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tennis_drill_training_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tennis_drill_training_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tennis_drill_training_training_session_id_fkey"
+            columns: ["training_session_id"]
+            isOneToOne: false
+            referencedRelation: "training_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       test_reminders: {
         Row: {
           category_id: string
