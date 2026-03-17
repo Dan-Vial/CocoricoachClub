@@ -126,7 +126,9 @@ export function AddMatchCalendarDialog({
         event_type: isAviron ? eventType : (isIndividual ? "individual" : "team"),
         age_category: ageCategory || null,
         distance_meters: distanceMeters || null,
-      });
+        // Tennis specific
+        match_format: isTennis ? matchFormat : null,
+      } as any);
       if (error) throw error;
     },
     onSuccess: () => {
