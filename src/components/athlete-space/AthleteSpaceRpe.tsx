@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,23 +7,77 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
-import { Activity, CheckCircle2, Clock, Calendar, Lock } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Activity, CheckCircle2, Clock, Calendar, Lock, Target } from "lucide-react";
 import { toast } from "sonner";
 import { format, parseISO, addDays } from "date-fns";
 import { fr } from "date-fns/locale";
 import { getTrainingTypeLabel } from "@/lib/constants/trainingTypes";
 import { getTestLabel } from "@/lib/constants/testCategories";
 import { getDisplayNotes } from "@/lib/utils/sessionNotes";
+import { SPARE_EXERCISE_TYPES } from "@/lib/constants/bowlingBallBrands";
 
 interface Props {
   playerId: string;
   categoryId: string;
 }
 
+type SessionRow = {
+  id: string;
+  session_date: string;
+  training_type: string;
+  session_start_time: string | null;
+  session_end_time: string | null;
+  notes: string | null;
+  bowling_exercise_type?: string | null;
+};
+
+const BLOCK_TO_SPARE_MAP: Record<string, string> = {
+  quille_7: "spare_pin_7",
+  quille_10: "spare_pin_10",
+  spares: "spare_general",
+  poche: "spare_poche",
+};
+
+const BOWLING_EXERCISE_LABELS: Record<string, string> = {
+  quille_7: "Quille 7",
+  quille_10: "Quille 10",
+  spares: "Spares",
+  poche: "Poche",
+};
+
 export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
   const queryClient = useQueryClient();
   const today = new Date().toISOString().split("T")[0];
   const endDate = addDays(new Date(), 14).toISOString().split("T")[0];
+
+  const enrichSessionsWithBowlingExercise = async (sessions: SessionRow[]): Promise<SessionRow[]> => {
+    if (sessions.length === 0) return [];
+
+    const sessionIds = sessions.map((s) => s.id);
+    const { data: blocks, error } = await supabase
+      .from("training_session_blocks")
+      .select("training_session_id, training_type, bowling_exercise_type")
+      .in("training_session_id", sessionIds);
+
+    if (error) throw error;
+
+    const exerciseBySession = new Map<string, string>();
+    for (const block of blocks || []) {
+      if (
+        block.training_type === "bowling_spare" &&
+        block.bowling_exercise_type &&
+        !exerciseBySession.has(block.training_session_id)
+      ) {
+        exerciseBySession.set(block.training_session_id, block.bowling_exercise_type);
+      }
+    }
+
+    return sessions.map((session) => ({
+      ...session,
+      bowling_exercise_type: exerciseBySession.get(session.id) ?? null,
+    }));
+  };
 
   // Fetch sessions assigned to this player: today + upcoming (next 14 days)
   const { data: allSessions = [] } = useQuery({
