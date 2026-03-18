@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/components/ui/sonner";
-import { Shield, ArrowLeft, LayoutDashboard, Users, Building2, CreditCard, Video, Bell, Settings, FileText, Lock, Clock } from "lucide-react";
+import { Shield, ArrowLeft, LayoutDashboard, Users, Building2, CreditCard, Video, Bell, Settings, FileText, Lock, Clock, Dumbbell } from "lucide-react";
 
 // Import tab components
 import { SuperAdminDashboard } from "@/components/super-admin/SuperAdminDashboard";
@@ -21,6 +21,7 @@ import { SuperAdminSettings } from "@/components/super-admin/SuperAdminSettings"
 import { AuditLogsTab } from "@/components/admin/AuditLogsTab";
 import { RoleMenuPermissions } from "@/components/super-admin/RoleMenuPermissions";
 import { SuperAdminUsage } from "@/components/super-admin/SuperAdminUsage";
+import { SuperAdminExerciseLibrary } from "@/components/super-admin/SuperAdminExerciseLibrary";
  
  export default function SuperAdmin() {
    const { user, loading: authLoading } = useAuth();
@@ -135,10 +136,14 @@ import { SuperAdminUsage } from "@/components/super-admin/SuperAdminUsage";
                  <Clock className="h-4 w-4" />
                  Utilisation
                </TabsTrigger>
-               <TabsTrigger value="audit" className="flex items-center gap-2">
-                 <FileText className="h-4 w-4" />
-                 Audit
-               </TabsTrigger>
+                <TabsTrigger value="exercises" className="flex items-center gap-2">
+                  <Dumbbell className="h-4 w-4" />
+                  Exercices
+                </TabsTrigger>
+                <TabsTrigger value="audit" className="flex items-center gap-2">
+                  <FileText className="h-4 w-4" />
+                  Audit
+                </TabsTrigger>
              </TabsList>
  
            <TabsContent value="dashboard">
@@ -185,9 +190,13 @@ import { SuperAdminUsage } from "@/components/super-admin/SuperAdminUsage";
                <SuperAdminUsage />
              </TabsContent>
 
-             <TabsContent value="audit">
-               <AuditLogsTab />
-             </TabsContent>
+              <TabsContent value="exercises">
+                <SuperAdminExerciseLibrary />
+              </TabsContent>
+
+              <TabsContent value="audit">
+                <AuditLogsTab />
+              </TabsContent>
           </Tabs>
        </div>
      </div>

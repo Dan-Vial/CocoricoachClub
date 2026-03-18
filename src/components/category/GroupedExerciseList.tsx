@@ -4,6 +4,8 @@ import { Dumbbell } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getCategoryLabel } from "@/lib/constants/exerciseCategories";
 import { getTrainingStyleConfig } from "@/lib/constants/trainingStyles";
+import { ExerciseMediaViewer } from "@/components/library/ExerciseMediaViewer";
+import { useExerciseMedia } from "@/lib/hooks/useExerciseMedia";
 
 interface Exercise {
   id?: string;
@@ -84,6 +86,8 @@ export function GroupedExerciseList({
   compact = false,
   forPrint = false,
 }: GroupedExerciseListProps) {
+  const { getMedia } = useExerciseMedia();
+
   // Organize exercises into groups
   const exerciseGroups = useMemo(() => {
     if (!exercises || exercises.length === 0) return [];
@@ -121,6 +125,7 @@ export function GroupedExerciseList({
   // Render a single exercise card
   const renderExerciseCard = (ex: Exercise, idx: number, isGrouped: boolean, exerciseNumber?: number) => {
     const styleConfig = getTrainingStyleConfig(ex.set_type || ex.method || "normal");
+    const media = getMedia(ex.exercise_name);
     
     return (
       <div 
@@ -148,9 +153,15 @@ export function GroupedExerciseList({
                 {idx + 1}.
               </span>
             )}
-            <span className={cn("font-medium", compact && "text-sm", fieldMode && "text-white")}>
-              {ex.exercise_name}
-            </span>
+            <ExerciseMediaViewer
+              exerciseName={ex.exercise_name}
+              imageUrl={media?.image_url}
+              youtubeUrl={media?.youtube_url}
+            >
+              <span className={cn("font-medium", compact && "text-sm", fieldMode && "text-white")}>
+                {ex.exercise_name}
+              </span>
+            </ExerciseMediaViewer>
           </div>
           {!compact && (
             <div className="flex gap-1 flex-wrap justify-end">

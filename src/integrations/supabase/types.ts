@@ -1864,6 +1864,7 @@ export type Database = {
           difficulty: string | null
           equipment: string[] | null
           id: string
+          image_url: string | null
           is_system: boolean | null
           muscle_groups: string[] | null
           name: string
@@ -1879,6 +1880,7 @@ export type Database = {
           difficulty?: string | null
           equipment?: string[] | null
           id?: string
+          image_url?: string | null
           is_system?: boolean | null
           muscle_groups?: string[] | null
           name: string
@@ -1894,6 +1896,7 @@ export type Database = {
           difficulty?: string | null
           equipment?: string[] | null
           id?: string
+          image_url?: string | null
           is_system?: boolean | null
           muscle_groups?: string[] | null
           name?: string
