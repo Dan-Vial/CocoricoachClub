@@ -128,6 +128,10 @@ serve(async (req) => {
       const category = session.categories as any;
       const trainingTypeLabel = getTrainingTypeLabel(session.training_type);
 
+      // Deep link URL for quick access
+      const appBaseUrl = "https://cocoricoachclub.lovable.app";
+      const rpeDeepLink = `${appBaseUrl}/athlete-space?tab=rpe`;
+
       // ── EMAIL via OneSignal ──────────────────────────────────────────────
       const emailRecipients = players.filter((p) => p.email).map((p) => p.email!);
 
@@ -142,15 +146,23 @@ serve(async (req) => {
               email_subject: `📊 RPE - Comment as-tu ressenti la séance ?`,
               email_body: `
                 <html>
-                  <body style="font-family: Arial, sans-serif; padding: 20px;">
-                    <h2>Séance terminée ! 🏋️</h2>
-                    <p>La séance de <strong>${trainingTypeLabel}</strong> est terminée.</p>
-                    <p><strong>Catégorie:</strong> ${category.name}</p>
-                    <p>N'oublie pas de renseigner ton RPE (perception de l'effort) pour aider ton staff à optimiser ta charge d'entraînement.</p>
-                    <br>
-                    <p>Échelle RPE : 1 (très facile) à 10 (effort maximal)</p>
-                    <br>
-                    <p>Bravo pour l'entraînement ! 💪</p>
+                  <body style="font-family: Arial, sans-serif; padding: 20px; background-color: #f4f4f5;">
+                    <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                      <div style="background: linear-gradient(135deg, #059669 0%, #10b981 100%); padding: 24px; text-align: center;">
+                        <h1 style="color: white; margin: 0; font-size: 20px;">🏉 CocoriCoach</h1>
+                      </div>
+                      <div style="padding: 24px;">
+                        <h2 style="margin: 0 0 12px;">Séance terminée ! 🏋️</h2>
+                        <p>La séance de <strong>${trainingTypeLabel}</strong> est terminée.</p>
+                        <p><strong>Catégorie:</strong> ${category.name}</p>
+                        <p>N'oublie pas de renseigner ton RPE (perception de l'effort) pour aider ton staff à optimiser ta charge d'entraînement.</p>
+                        <p style="color: #6b7280;">Échelle RPE : 1 (très facile) à 10 (effort maximal)</p>
+                        <div style="text-align: center; margin: 24px 0;">
+                          <a href="${rpeDeepLink}" style="display: inline-block; background: linear-gradient(135deg, #059669, #10b981); color: white; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: bold; font-size: 16px;">📊 Renseigner mon RPE</a>
+                        </div>
+                        <p>Bravo pour l'entraînement ! 💪</p>
+                      </div>
+                    </div>
                   </body>
                 </html>
               `,
@@ -190,11 +202,13 @@ serve(async (req) => {
                 fr: `"${trainingTypeLabel}" (${category.name}) est terminée. Donne ton RPE en 10 secondes !`,
                 en: `"${trainingTypeLabel}" (${category.name}) est terminée. Donne ton RPE en 10 secondes !`,
               },
+              url: rpeDeepLink,
               ttl: 7200,
               data: {
                 type: "rpe_reminder",
                 session_id: session.id,
                 category_id: session.category_id,
+                url: rpeDeepLink,
               },
             }),
           });

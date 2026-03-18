@@ -424,7 +424,7 @@ export default function AthleteSpace() {
 
       {/* Content */}
       <main className="max-w-5xl mx-auto px-4 py-6">
-       <Tabs defaultValue="dashboard" className="w-full">
+       <Tabs defaultValue={searchParams.get("tab") || "dashboard"} className="w-full">
              <TabsList className="w-full flex overflow-x-auto gap-1 h-auto flex-nowrap justify-start bg-transparent p-0 mb-6 pb-2" style={{ WebkitOverflowScrolling: 'touch' }}>
               <TabsTrigger 
                  value="dashboard" 
