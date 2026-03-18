@@ -81,6 +81,7 @@ interface Exercise {
   drop_sets?: DropSet[];
   cluster_sets?: ClusterSet[];
   tempo?: string;
+  contraction_regime?: string;
   target_rpe?: number;
   target_velocity?: number; // VBT - target velocity in m/s
 }
