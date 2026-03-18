@@ -606,7 +606,7 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
                     >
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="font-medium text-sm">{getTrainingTypeLabel(session.training_type)}</p>
+                          <p className="font-medium text-sm">{getSessionTrainingLabel(session)}</p>
                           {renderTestInfo(session)}
                           {renderSessionNotes(session.notes)}
                           {session.session_start_time && (
