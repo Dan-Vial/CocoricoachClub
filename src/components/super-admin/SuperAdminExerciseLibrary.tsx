@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -318,41 +318,6 @@ function ExerciseFormDialog({
   const [saving, setSaving] = useState(false);
   const [selectedSport, setSelectedSport] = useState("all");
 
-  // Populate form when editing
-  useState(() => {
-    if (exercise) {
-      setName(exercise.name || "");
-      setCategory(exercise.category || "");
-      setSubcategory(exercise.subcategory || "");
-      setYoutubeUrl(exercise.youtube_url || "");
-      setDescription(exercise.description || "");
-      setDifficulty(exercise.difficulty || "intermediate");
-      setImageUrl(exercise.image_url || "");
-    } else {
-      resetForm();
-    }
-  });
-
-  // Re-populate when exercise changes
-  const populateEffect = () => {
-    if (exercise) {
-      setName(exercise.name || "");
-      setCategory(exercise.category || "");
-      setSubcategory(exercise.subcategory || "");
-      setYoutubeUrl(exercise.youtube_url || "");
-      setDescription(exercise.description || "");
-      setDifficulty(exercise.difficulty || "intermediate");
-      setImageUrl(exercise.image_url || "");
-    } else {
-      resetForm();
-    }
-  };
-
-  // Use a key-based approach by resetting when `open` changes
-  if (open && exercise && name === "" && exercise.name) {
-    populateEffect();
-  }
-
   const resetForm = () => {
     setName("");
     setCategory("");
@@ -363,6 +328,22 @@ function ExerciseFormDialog({
     setImageUrl("");
     setSelectedSport("all");
   };
+
+  useEffect(() => {
+    if (!open) return;
+
+    if (exercise) {
+      setName(exercise.name || "");
+      setCategory(exercise.category || "");
+      setSubcategory(exercise.subcategory || "");
+      setYoutubeUrl(exercise.youtube_url || "");
+      setDescription(exercise.description || "");
+      setDifficulty(exercise.difficulty || "intermediate");
+      setImageUrl(exercise.image_url || "");
+    } else {
+      resetForm();
+    }
+  }, [open, exercise]);
 
   const handleImageUpload = async (file: File) => {
     if (file.size > 2 * 1024 * 1024) {
