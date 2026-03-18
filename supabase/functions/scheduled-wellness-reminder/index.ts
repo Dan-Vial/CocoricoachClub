@@ -131,10 +131,12 @@ serve(async (req) => {
                 fr: `Prends 30 secondes pour remplir ton Wellness du jour (${category.name}).`,
                 en: `Prends 30 secondes pour remplir ton Wellness du jour (${category.name}).`,
               },
+              url: wellnessDeepLink,
               ttl: 3600,
               data: {
                 type: "wellness_reminder",
                 category_id: category.id,
+                url: wellnessDeepLink,
               },
             }),
           });

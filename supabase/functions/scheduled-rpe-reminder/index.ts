@@ -202,11 +202,13 @@ serve(async (req) => {
                 fr: `"${trainingTypeLabel}" (${category.name}) est terminée. Donne ton RPE en 10 secondes !`,
                 en: `"${trainingTypeLabel}" (${category.name}) est terminée. Donne ton RPE en 10 secondes !`,
               },
+              url: rpeDeepLink,
               ttl: 7200,
               data: {
                 type: "rpe_reminder",
                 session_id: session.id,
                 category_id: session.category_id,
+                url: rpeDeepLink,
               },
             }),
           });
