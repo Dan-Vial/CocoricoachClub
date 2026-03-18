@@ -136,10 +136,14 @@ import { SuperAdminExerciseLibrary } from "@/components/super-admin/SuperAdminEx
                  <Clock className="h-4 w-4" />
                  Utilisation
                </TabsTrigger>
-               <TabsTrigger value="audit" className="flex items-center gap-2">
-                 <FileText className="h-4 w-4" />
-                 Audit
-               </TabsTrigger>
+                <TabsTrigger value="exercises" className="flex items-center gap-2">
+                  <Dumbbell className="h-4 w-4" />
+                  Exercices
+                </TabsTrigger>
+                <TabsTrigger value="audit" className="flex items-center gap-2">
+                  <FileText className="h-4 w-4" />
+                  Audit
+                </TabsTrigger>
              </TabsList>
  
            <TabsContent value="dashboard">
