@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Dumbbell, Search, Plus, ChevronUp, ChevronDown, X } from "lucide-react";
+import { Dumbbell, Search, Plus, ChevronUp, ChevronDown, X, Video, Image as ImageIcon } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useDraggable } from "@dnd-kit/core";
 import { 
@@ -27,6 +27,7 @@ import {
   EXERCISE_CATEGORIES
 } from "@/lib/constants/exerciseCategories";
 import { QuickAddExerciseDialog } from "@/components/library/QuickAddExerciseDialog";
+import { ExerciseMediaViewer } from "@/components/library/ExerciseMediaViewer";
 import { cn } from "@/lib/utils";
 
 interface ExerciseLibrarySidebarProps {
@@ -38,6 +39,8 @@ interface DraggableExerciseProps {
     id: string;
     name: string;
     category: string;
+    youtube_url?: string | null;
+    image_url?: string | null;
   };
 }
 
@@ -51,6 +54,8 @@ function DraggableExercise({ exercise }: DraggableExerciseProps) {
   const categoryInfo = EXERCISE_CATEGORIES.find(c => c.value === exercise.category);
   const groupConfig = categoryInfo?.group ? getCategoryGroupConfig(categoryInfo.group) : null;
   const IconComponent = groupConfig?.icon || Dumbbell;
+
+  const hasMedia = !!exercise.youtube_url || !!exercise.image_url;
 
   return (
     <div
@@ -66,6 +71,26 @@ function DraggableExercise({ exercise }: DraggableExerciseProps) {
     >
       <IconComponent className={cn("h-3.5 w-3.5 shrink-0", categoryColors.color)} />
       <p className="font-medium text-xs truncate flex-1 min-w-0">{exercise.name}</p>
+      {hasMedia && (
+        <ExerciseMediaViewer
+          exerciseName={exercise.name}
+          imageUrl={exercise.image_url}
+          youtubeUrl={exercise.youtube_url}
+        >
+          <span
+            className="shrink-0 p-0.5 rounded hover:bg-background/80 transition-colors"
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+            title="Voir le média"
+          >
+            {exercise.youtube_url ? (
+              <Video className="h-3.5 w-3.5 text-primary" />
+            ) : (
+              <ImageIcon className="h-3.5 w-3.5 text-primary" />
+            )}
+          </span>
+        </ExerciseMediaViewer>
+      )}
     </div>
   );
 }
