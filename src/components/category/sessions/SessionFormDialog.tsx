@@ -164,6 +164,7 @@ interface Exercise {
   cluster_sets?: ClusterSet[];
   block_config?: BlockConfig;
   tempo?: string;
+  contraction_regime?: string;
   target_rpe?: number;
   target_velocity?: number; // VBT - target velocity in m/s
   target_force_newton?: number | null; // Force in Newton
