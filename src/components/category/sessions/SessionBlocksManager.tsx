@@ -36,7 +36,15 @@ export interface SessionBlock {
   target_intensity?: string;
   volume?: string;
   contact_charge?: string;
+  bowling_exercise_type?: string;
 }
+
+const BOWLING_PRECISION_EXERCISES = [
+  { value: "quille_7", label: "Quille 7" },
+  { value: "quille_10", label: "Quille 10" },
+  { value: "spares", label: "Spares (général)" },
+  { value: "poche", label: "Poche" },
+];
 
 interface SessionBlocksManagerProps {
   blocks: SessionBlock[];
