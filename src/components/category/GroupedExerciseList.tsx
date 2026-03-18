@@ -153,9 +153,15 @@ export function GroupedExerciseList({
                 {idx + 1}.
               </span>
             )}
-            <span className={cn("font-medium", compact && "text-sm", fieldMode && "text-white")}>
-              {ex.exercise_name}
-            </span>
+            <ExerciseMediaViewer
+              exerciseName={ex.exercise_name}
+              imageUrl={media?.image_url}
+              youtubeUrl={media?.youtube_url}
+            >
+              <span className={cn("font-medium", compact && "text-sm", fieldMode && "text-white")}>
+                {ex.exercise_name}
+              </span>
+            </ExerciseMediaViewer>
           </div>
           {!compact && (
             <div className="flex gap-1 flex-wrap justify-end">
