@@ -2468,15 +2468,53 @@ export function SessionFormDialog({
           </div>
         )}
 
+        {/* Tempo + Contraction Regime */}
+        {!isCardioBlock && exercise.exercise_name && (
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            <div>
+              <Label className="text-xs text-muted-foreground">Tempo</Label>
+              <Input
+                className="h-8 text-xs"
+                placeholder="3-1-2-0"
+                value={exercise.tempo || ""}
+                onChange={(e) => updateExercise(index, "tempo", e.target.value)}
+              />
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Régime de contraction</Label>
+              <Select
+                value={exercise.contraction_regime || ""}
+                onValueChange={(v) => updateExercise(index, "contraction_regime", v || undefined)}
+              >
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue placeholder="Sélectionner..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="concentrique">Concentrique</SelectItem>
+                  <SelectItem value="excentrique">Excentrique</SelectItem>
+                  <SelectItem value="isometrique">Isométrique</SelectItem>
+                  <SelectItem value="pliometrique">Pliométrique</SelectItem>
+                  <SelectItem value="stato_dynamique">Stato-dynamique</SelectItem>
+                  <SelectItem value="concentrique_excentrique">Concentrique + Excentrique</SelectItem>
+                  <SelectItem value="excentrique_surcharge">Excentrique surchargé</SelectItem>
+                  <SelectItem value="balistique">Balistique</SelectItem>
+                  <SelectItem value="isokinetique">Isocinétique</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        )}
+
         {/* Notes for non-cardio exercises */}
         {!isCardioBlock && (
           <div>
-            <Label className="text-xs text-muted-foreground">Notes</Label>
-            <Input
-              className="h-8 text-xs"
-              placeholder="Notes..."
+            <Label className="text-xs text-muted-foreground">Notes / Consignes</Label>
+            <Textarea
+              className="min-h-[40px] text-xs resize-y"
+              placeholder="Consignes, explications de la méthode, points clés..."
               value={exercise.notes}
               onChange={(e) => updateExercise(index, "notes", e.target.value)}
+              rows={2}
             />
           </div>
         )}
