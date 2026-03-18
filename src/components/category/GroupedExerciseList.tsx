@@ -86,6 +86,8 @@ export function GroupedExerciseList({
   compact = false,
   forPrint = false,
 }: GroupedExerciseListProps) {
+  const { getMedia } = useExerciseMedia();
+
   // Organize exercises into groups
   const exerciseGroups = useMemo(() => {
     if (!exercises || exercises.length === 0) return [];
