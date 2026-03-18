@@ -208,19 +208,31 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
     },
   });
 
-  const completedSessionIds = new Set(submittedRpes.map(r => r.training_session_id));
+  const completedSessionIds = new Set(submittedRpes.map((r) => r.training_session_id));
 
   const [selectedSession, setSelectedSession] = useState<string | null>(null);
   const [rpe, setRpe] = useState(5);
   const [duration, setDuration] = useState("");
   const [durationLocked, setDurationLocked] = useState(false);
+  const [spareExerciseType, setSpareExerciseType] = useState<string>("spare_pin_7");
+  const [spareAttempts, setSpareAttempts] = useState("");
+  const [spareSuccesses, setSpareSuccesses] = useState("");
 
-  // Calculate duration from session start/end times
+  const selectedSessionData = useMemo(
+    () => todaySessions.find((s) => s.id === selectedSession),
+    [todaySessions, selectedSession]
+  );
+  const isPrecisionSession = selectedSessionData?.training_type === "bowling_spare";
+
+  const prefilledExerciseLabel = selectedSessionData?.bowling_exercise_type
+    ? BOWLING_EXERCISE_LABELS[selectedSessionData.bowling_exercise_type] || null
+    : null;
+
   const getSessionDuration = (session: { session_start_time?: string | null; session_end_time?: string | null }) => {
     if (!session.session_start_time || !session.session_end_time) return null;
     const [sh, sm] = session.session_start_time.split(":").map(Number);
     const [eh, em] = session.session_end_time.split(":").map(Number);
-    const diff = (eh * 60 + em) - (sh * 60 + sm);
+    const diff = eh * 60 + em - (sh * 60 + sm);
     return diff > 0 ? diff : null;
   };
 
@@ -229,10 +241,19 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
       setSelectedSession(null);
       return;
     }
+
     setSelectedSession(sessionId);
     setRpe(5);
-    const session = todaySessions.find(s => s.id === sessionId);
+    setSpareAttempts("");
+    setSpareSuccesses("");
+
+    const session = todaySessions.find((s) => s.id === sessionId);
     if (session) {
+      const mappedExercise = session.bowling_exercise_type
+        ? BLOCK_TO_SPARE_MAP[session.bowling_exercise_type] || "spare_pin_7"
+        : "spare_pin_7";
+      setSpareExerciseType(mappedExercise);
+
       const calcDuration = getSessionDuration(session);
       if (calcDuration) {
         setDuration(calcDuration.toString());
