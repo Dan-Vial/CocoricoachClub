@@ -83,7 +83,6 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
   const { data: allSessions = [] } = useQuery({
     queryKey: ["athlete-space-sessions", categoryId, playerId, today, endDate],
     queryFn: async () => {
-      // First get session IDs where this player is assigned
       const { data: attendance, error: attError } = await supabase
         .from("training_attendance")
         .select("training_session_id")
@@ -92,11 +91,9 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
         .lte("attendance_date", endDate);
       if (attError) throw attError;
 
-      const assignedSessionIds = attendance?.map(a => a.training_session_id).filter(Boolean) as string[];
+      const assignedSessionIds = attendance?.map((a) => a.training_session_id).filter(Boolean) as string[];
 
       if (assignedSessionIds.length === 0) {
-        // Fallback: if no attendance records exist at all for this period, 
-        // check if sessions have "all" mode (no attendance records for anyone)
         const { data: sessions, error } = await supabase
           .from("training_sessions")
           .select("id, session_date, training_type, session_start_time, session_end_time, notes")
@@ -106,19 +103,19 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
           .order("session_date")
           .order("session_start_time");
         if (error) throw error;
-        
-        // Only return sessions that have NO attendance records (meaning "all players")
-        const sessionIds = sessions?.map(s => s.id) || [];
+
+        const sessionIds = sessions?.map((s) => s.id) || [];
         if (sessionIds.length === 0) return [];
-        
+
         const { data: anyAttendance } = await supabase
           .from("training_attendance")
           .select("training_session_id")
           .in("training_session_id", sessionIds)
           .limit(1000);
-        
-        const sessionsWithAttendance = new Set(anyAttendance?.map(a => a.training_session_id));
-        return (sessions || []).filter(s => !sessionsWithAttendance.has(s.id));
+
+        const sessionsWithAttendance = new Set(anyAttendance?.map((a) => a.training_session_id));
+        const visible = (sessions || []).filter((s) => !sessionsWithAttendance.has(s.id));
+        return enrichSessionsWithBowlingExercise(visible as SessionRow[]);
       }
 
       const { data, error } = await supabase
@@ -129,30 +126,36 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
         .order("session_start_time");
       if (error) throw error;
 
-      // Also include sessions with NO attendance records (all players mode)
       const { data: allCatSessions } = await supabase
         .from("training_sessions")
         .select("id, session_date, training_type, session_start_time, session_end_time, notes")
         .eq("category_id", categoryId)
         .gte("session_date", today)
         .lte("session_date", endDate);
-      
-      const existingIds = new Set((data || []).map(s => s.id));
-      const allCatSessionIds = (allCatSessions || []).map(s => s.id);
-      
+
+      const existingIds = new Set((data || []).map((s) => s.id));
+      const allCatSessionIds = (allCatSessions || []).map((s) => s.id);
+
       if (allCatSessionIds.length > 0) {
         const { data: allAttendance } = await supabase
           .from("training_attendance")
           .select("training_session_id")
           .in("training_session_id", allCatSessionIds)
           .limit(1000);
-        
-        const sessionsWithAttendance = new Set(allAttendance?.map(a => a.training_session_id));
-        const noAttendanceSessions = (allCatSessions || []).filter(s => !sessionsWithAttendance.has(s.id) && !existingIds.has(s.id));
-        return [...(data || []), ...noAttendanceSessions].sort((a, b) => a.session_date.localeCompare(b.session_date) || (a.session_start_time || "").localeCompare(b.session_start_time || ""));
+
+        const sessionsWithAttendance = new Set(allAttendance?.map((a) => a.training_session_id));
+        const noAttendanceSessions = (allCatSessions || []).filter(
+          (s) => !sessionsWithAttendance.has(s.id) && !existingIds.has(s.id)
+        );
+        const merged = [...(data || []), ...noAttendanceSessions].sort(
+          (a, b) =>
+            a.session_date.localeCompare(b.session_date) ||
+            (a.session_start_time || "").localeCompare(b.session_start_time || "")
+        );
+        return enrichSessionsWithBowlingExercise(merged as SessionRow[]);
       }
 
-      return data || [];
+      return enrichSessionsWithBowlingExercise((data || []) as SessionRow[]);
     },
   });
 
