@@ -246,7 +246,12 @@ export function ExerciseLibrarySection() {
                               styles.border
                             )}
                           >
-                            {exercise.youtube_url && getYoutubeEmbedUrl(exercise.youtube_url) && (
+                            {exercise.image_url && (
+                              <div className="aspect-video bg-muted overflow-hidden">
+                                <img src={exercise.image_url} alt={exercise.name} className="w-full h-full object-cover" />
+                              </div>
+                            )}
+                            {!exercise.image_url && exercise.youtube_url && getYoutubeEmbedUrl(exercise.youtube_url) && (
                               <div className="aspect-video">
                                 <iframe
                                   src={getYoutubeEmbedUrl(exercise.youtube_url)!}
