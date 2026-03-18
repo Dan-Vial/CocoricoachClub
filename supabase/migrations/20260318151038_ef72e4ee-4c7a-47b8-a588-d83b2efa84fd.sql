@@ -1,0 +1,1 @@
+ALTER TABLE public.training_session_blocks ADD COLUMN bowling_exercise_type text;
