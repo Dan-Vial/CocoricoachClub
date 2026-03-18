@@ -125,6 +125,7 @@ export function GroupedExerciseList({
   // Render a single exercise card
   const renderExerciseCard = (ex: Exercise, idx: number, isGrouped: boolean, exerciseNumber?: number) => {
     const styleConfig = getTrainingStyleConfig(ex.set_type || ex.method || "normal");
+    const media = getMedia(ex.exercise_name);
     
     return (
       <div 
