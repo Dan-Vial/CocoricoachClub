@@ -572,7 +572,7 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
                {doneSessions.map(s => (
                  <div key={s.id} className="flex items-center justify-between p-2 rounded bg-status-optimal/10">
                    <div className="flex flex-col gap-0.5">
-                     <span className="text-sm font-medium">{getTrainingTypeLabel(s.training_type)}</span>
+                     <span className="text-sm font-medium">{getSessionTrainingLabel(s)}</span>
                       {renderTestInfo(s)}
                    </div>
                    <CheckCircle2 className="h-4 w-4 text-status-optimal" />
