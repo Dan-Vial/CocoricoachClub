@@ -14,6 +14,7 @@ interface Exercise {
   weight_kg?: number | null;
   rest_seconds?: number | null;
   tempo?: string | null;
+  contraction_regime?: string | null;
   notes?: string | null;
   set_type?: string | null;
   method?: string | null;
@@ -21,6 +22,18 @@ interface Exercise {
   group_order?: number | null;
   order_index?: number | null;
 }
+
+const contractionLabels: Record<string, string> = {
+  concentrique: "Concentrique",
+  excentrique: "Excentrique",
+  isometrique: "Isométrique",
+  pliometrique: "Pliométrique",
+  stato_dynamique: "Stato-dyn.",
+  concentrique_excentrique: "Conc.+Exc.",
+  excentrique_surcharge: "Exc. surchargé",
+  balistique: "Balistique",
+  isokinetique: "Isocinétique",
+};
 
 interface ExerciseGroup {
   groupId: string | null;
@@ -162,6 +175,11 @@ export function GroupedExerciseList({
           {ex.weight_kg && <span>@ {ex.weight_kg} kg</span>}
           {ex.rest_seconds && <span>- {ex.rest_seconds}s repos</span>}
           {!compact && ex.tempo && <span>Tempo: {ex.tempo}</span>}
+          {!compact && ex.contraction_regime && (
+            <Badge variant="outline" className="text-[10px] px-1 py-0">
+              {contractionLabels[ex.contraction_regime] || ex.contraction_regime}
+            </Badge>
+          )}
         </div>
         {!compact && ex.notes && (
           <p className={cn(
