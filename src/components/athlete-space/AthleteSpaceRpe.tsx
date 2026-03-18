@@ -224,9 +224,10 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
   );
   const isPrecisionSession = selectedSessionData?.training_type === "bowling_spare";
 
-  const prefilledExerciseLabel = selectedSessionData?.bowling_exercise_type
-    ? BOWLING_EXERCISE_LABELS[selectedSessionData.bowling_exercise_type] || null
-    : null;
+  const getSpareExerciseLabel = (value: string | null | undefined): string | null => {
+    if (!value) return null;
+    return BOWLING_EXERCISE_LABELS[value] || SPARE_EXERCISE_TYPES.find((t) => t.value === value)?.label || value;
+  };
 
   const getSessionDuration = (session: { session_start_time?: string | null; session_end_time?: string | null }) => {
     if (!session.session_start_time || !session.session_end_time) return null;
@@ -234,6 +235,27 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
     const [eh, em] = session.session_end_time.split(":").map(Number);
     const diff = eh * 60 + em - (sh * 60 + sm);
     return diff > 0 ? diff : null;
+  };
+
+  const attemptsValue = Number(spareAttempts);
+  const successesValue = Number(spareSuccesses);
+  const isSpareStatsValid =
+    !isPrecisionSession ||
+    (Number.isInteger(attemptsValue) &&
+      Number.isInteger(successesValue) &&
+      attemptsValue > 0 &&
+      successesValue >= 0 &&
+      successesValue <= attemptsValue);
+
+  const getSessionTrainingLabel = (session: SessionRow) => {
+    const baseLabel = getTrainingTypeLabel(session.training_type);
+    if (session.training_type !== "bowling_spare") return baseLabel;
+
+    const selectedExerciseLabel =
+      selectedSession === session.id ? getSpareExerciseLabel(spareExerciseType) : null;
+    const configuredExerciseLabel = getSpareExerciseLabel(session.bowling_exercise_type);
+
+    return `${baseLabel} — ${configuredExerciseLabel || selectedExerciseLabel || "Exercice à définir"}`;
   };
 
   const handleSelectSession = (sessionId: string) => {
@@ -268,26 +290,63 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
   const submitRpe = useMutation({
     mutationFn: async () => {
       if (!selectedSession || !duration) throw new Error("Données manquantes");
-      const durationMin = parseInt(duration);
-      const { error } = await supabase.from("awcr_tracking").insert({
-        player_id: playerId,
-        category_id: categoryId,
-        session_date: today,
-        rpe,
-        duration_minutes: durationMin,
-        training_session_id: selectedSession,
-      });
-      if (error) throw error;
+
+      const durationMin = parseInt(duration, 10);
+      if (Number.isNaN(durationMin) || durationMin <= 0) {
+        throw new Error("Durée invalide");
+      }
+
+      if (isPrecisionSession && !isSpareStatsValid) {
+        throw new Error("Renseigne des statistiques valides (réussites ≤ tentatives)");
+      }
+
+      const { data: awcrRow, error: awcrError } = await supabase
+        .from("awcr_tracking")
+        .insert({
+          player_id: playerId,
+          category_id: categoryId,
+          session_date: today,
+          rpe,
+          duration_minutes: durationMin,
+          training_session_id: selectedSession,
+        })
+        .select("id")
+        .single();
+
+      if (awcrError || !awcrRow) throw awcrError || new Error("Erreur AWCR");
+
+      if (isPrecisionSession) {
+        const successRate = Math.round((successesValue / attemptsValue) * 10000) / 100;
+        const { error: spareError } = await supabase.from("bowling_spare_training").insert({
+          player_id: playerId,
+          category_id: categoryId,
+          session_date: today,
+          training_session_id: selectedSession,
+          exercise_type: spareExerciseType,
+          attempts: attemptsValue,
+          successes: successesValue,
+          success_rate: successRate,
+        });
+
+        if (spareError) {
+          await supabase.from("awcr_tracking").delete().eq("id", awcrRow.id);
+          throw spareError;
+        }
+      }
     },
     onSuccess: () => {
-      toast.success("RPE enregistré !");
+      toast.success(isPrecisionSession ? "RPE et statistiques enregistrés !" : "RPE enregistré !");
       queryClient.invalidateQueries({ queryKey: ["athlete-space-rpes"] });
       queryClient.invalidateQueries({ queryKey: ["athlete-space-awcr"] });
+      queryClient.invalidateQueries({ queryKey: ["athlete-space-sessions"] });
       setSelectedSession(null);
       setRpe(5);
       setDuration("");
+      setSpareAttempts("");
+      setSpareSuccesses("");
+      setSpareExerciseType("spare_pin_7");
     },
-    onError: () => toast.error("Erreur lors de l'enregistrement"),
+    onError: (error: any) => toast.error(error?.message || "Erreur lors de l'enregistrement"),
   });
 
   const getRpeColor = (val: number) => {
@@ -362,7 +421,7 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
                 >
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="font-medium text-sm">{getTrainingTypeLabel(session.training_type)}</p>
+                      <p className="font-medium text-sm">{getSessionTrainingLabel(session)}</p>
                       {renderTestInfo(session)}
                       {renderSessionNotes(session.notes)}
                       {session.session_start_time && (
@@ -395,6 +454,7 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
                         </div>
                       </div>
                     </div>
+
                     <div>
                       <Label className="text-sm">Durée (minutes)</Label>
                       {durationLocked ? (
@@ -419,13 +479,68 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
                         />
                       )}
                     </div>
+
+                    {isPrecisionSession && (
+                      <div className="space-y-3 rounded-lg border border-border p-3">
+                        <div>
+                          <Label className="text-sm">Exercice précision</Label>
+                          <Select value={spareExerciseType} onValueChange={setSpareExerciseType}>
+                            <SelectTrigger className="mt-1">
+                              <SelectValue placeholder="Choisir l'exercice" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {SPARE_EXERCISE_TYPES.map((type) => (
+                                <SelectItem key={type.value} value={type.value}>
+                                  {type.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <Label className="text-sm">Tentatives</Label>
+                            <Input
+                              type="number"
+                              min={1}
+                              step={1}
+                              value={spareAttempts}
+                              onChange={(e) => setSpareAttempts(e.target.value)}
+                              placeholder="Ex: 20"
+                              className="mt-1"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-sm">Réussites</Label>
+                            <Input
+                              type="number"
+                              min={0}
+                              step={1}
+                              value={spareSuccesses}
+                              onChange={(e) => setSpareSuccesses(e.target.value)}
+                              placeholder="Ex: 14"
+                              className="mt-1"
+                            />
+                          </div>
+                        </div>
+
+                        {attemptsValue > 0 && successesValue >= 0 && successesValue <= attemptsValue && (
+                          <p className="text-xs text-muted-foreground flex items-center gap-1">
+                            <Target className="h-3 w-3" />
+                            Taux de réussite : {Math.round((successesValue / attemptsValue) * 10000) / 100}%
+                          </p>
+                        )}
+                      </div>
+                    )}
+
                     <Button
                       onClick={() => submitRpe.mutate()}
-                      disabled={!duration || submitRpe.isPending}
+                      disabled={!duration || !isSpareStatsValid || submitRpe.isPending}
                       className="w-full"
                     >
                       <CheckCircle2 className="h-4 w-4 mr-2" />
-                      Valider mon RPE
+                      {isPrecisionSession ? "Valider mon RPE et mes stats" : "Valider mon RPE"}
                     </Button>
                   </div>
                 )}
