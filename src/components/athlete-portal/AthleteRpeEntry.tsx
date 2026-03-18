@@ -11,11 +11,15 @@ import { format, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
 import { getTrainingTypeLabel } from "@/lib/constants/trainingTypes";
 import { athletePortalHeaders, buildAthletePortalFunctionUrl } from "@/lib/athletePortalClient";
+import { AthleteSpareExerciseForm } from "./AthleteSpareExerciseForm";
+import { BowlingScoreSheet, BowlingStats } from "./BowlingScoreSheet";
 
 interface AthleteRpeEntryProps {
   token?: string;
   playerId: string;
   categoryId: string;
+  sportType?: string;
+  onRefreshStats?: () => void;
 }
 
 interface Session {
@@ -26,7 +30,7 @@ interface Session {
   session_end_time: string | null;
 }
 
-export function AthleteRpeEntry({ token, playerId, categoryId }: AthleteRpeEntryProps) {
+export function AthleteRpeEntry({ token, playerId, categoryId, sportType, onRefreshStats }: AthleteRpeEntryProps) {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [completedSessionIds, setCompletedSessionIds] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
@@ -34,9 +38,18 @@ export function AthleteRpeEntry({ token, playerId, categoryId }: AthleteRpeEntry
   const [rpe, setRpe] = useState<number>(5);
   const [duration, setDuration] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmittingSpare, setIsSubmittingSpare] = useState(false);
+  const [showScoreSheet, setShowScoreSheet] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
-  // Fetch sessions
+  const isBowling = sportType?.toLowerCase().startsWith("bowling");
+
   useEffect(() => {
+    fetchSessions();
+  }, [token, refreshKey]);
+
+  const fetchSessions = () => {
+    setIsLoading(true);
     fetch(buildAthletePortalFunctionUrl("sessions", token), {
       headers: athletePortalHeaders(),
     })
@@ -52,7 +65,9 @@ export function AthleteRpeEntry({ token, playerId, categoryId }: AthleteRpeEntry
         setIsLoading(false);
         toast.error("Erreur lors du chargement des séances");
       });
-  }, [token]);
+  };
+
+  const refresh = () => setRefreshKey(k => k + 1);
 
   const getSessionDuration = (session: Session) => {
     if (session.session_start_time && session.session_end_time) {
@@ -67,15 +82,19 @@ export function AthleteRpeEntry({ token, playerId, categoryId }: AthleteRpeEntry
 
   const handleSelectSession = (sessionId: string) => {
     setSelectedSession(sessionId);
+    setShowScoreSheet(false);
     const session = sessions.find(s => s.id === sessionId);
     if (session) {
       setDuration(getSessionDuration(session).toString());
     }
   };
 
+  const selectedSessionData = sessions.find(s => s.id === selectedSession);
+  const isPrecision = selectedSessionData?.training_type === "bowling_spare";
+  const isSimulation = selectedSessionData?.training_type === "bowling_game" || selectedSessionData?.training_type === "bowling_practice";
+
   const handleSubmit = async () => {
     if (!selectedSession || !duration) return;
-
     setIsSubmitting(true);
     try {
       const res = await fetch(buildAthletePortalFunctionUrl("submit-rpe", token), {
@@ -87,21 +106,84 @@ export function AthleteRpeEntry({ token, playerId, categoryId }: AthleteRpeEntry
           duration: parseInt(duration),
         }),
       });
-
       const data = await res.json();
       if (data.success) {
-        toast.success("RPE enregistré avec succès !");
+        toast.success("RPE enregistré !");
         setCompletedSessionIds(prev => new Set([...prev, selectedSession]));
         setSelectedSession(null);
         setRpe(5);
         setDuration("");
+        onRefreshStats?.();
       } else {
-        toast.error(data.error || "Erreur lors de l'enregistrement");
+        toast.error(data.error || "Erreur");
       }
     } catch {
       toast.error("Erreur de connexion");
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleSubmitSpare = async (exercises: Array<{ exercise_type: string; attempts: number; successes: number }>) => {
+    if (!selectedSession) return;
+    setIsSubmittingSpare(true);
+    try {
+      const res = await fetch(buildAthletePortalFunctionUrl("submit-spare-stats", token), {
+        method: "POST",
+        headers: athletePortalHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify({ session_id: selectedSession, exercises }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success("Stats de précision enregistrées !");
+        onRefreshStats?.();
+      } else {
+        toast.error(data.error || "Erreur");
+      }
+    } catch {
+      toast.error("Erreur de connexion");
+    } finally {
+      setIsSubmittingSpare(false);
+    }
+  };
+
+  const handleSaveScoreSheet = async (stats: BowlingStats) => {
+    if (!selectedSession) return;
+    try {
+      const res = await fetch(buildAthletePortalFunctionUrl("submit-training-scores", token), {
+        method: "POST",
+        headers: athletePortalHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify({
+          session_id: selectedSession,
+          games: [{
+            gameNumber: 1,
+            score: stats.totalScore,
+            strikes: stats.strikes,
+            spares: stats.spares,
+            splitCount: stats.splitCount,
+            splitConverted: stats.splitConverted,
+            splitOnLastThrow: stats.splitOnLastThrow,
+            singlePinCount: stats.singlePinCount,
+            singlePinConverted: stats.singlePinConverted,
+            pocketCount: stats.pocketCount,
+            strikePercentage: stats.strikePercentage,
+            sparePercentage: stats.sparePercentage,
+            splitPercentage: stats.splitPercentage,
+            singlePinConversionRate: stats.singlePinConversionRate,
+            pocketPercentage: stats.pocketPercentage,
+            openFrames: stats.openFrames,
+          }],
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success("Feuille de score enregistrée !");
+        onRefreshStats?.();
+      } else {
+        toast.error(data.error || "Erreur");
+      }
+    } catch {
+      toast.error("Erreur de connexion");
     }
   };
 
@@ -136,6 +218,7 @@ export function AthleteRpeEntry({ token, playerId, categoryId }: AthleteRpeEntry
           </CardTitle>
           <CardDescription>
             Sélectionnez une séance pour saisir votre ressenti (RPE)
+            {isBowling && " et vos statistiques bowling"}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -181,73 +264,107 @@ export function AthleteRpeEntry({ token, playerId, categoryId }: AthleteRpeEntry
 
       {/* RPE Entry Form */}
       {selectedSession && (
-        <Card className="border-primary">
-          <CardHeader>
-            <CardTitle>Saisir votre RPE</CardTitle>
-            <CardDescription>
-              RPE = Rate of Perceived Exertion (effort ressenti de 1 à 10)
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <Label>Effort ressenti (RPE)</Label>
-                <span className={`text-2xl font-bold ${getRpeColor(rpe)}`}>
-                  {rpe}
-                </span>
+        <>
+          <Card className="border-primary">
+            <CardHeader>
+              <CardTitle>Saisir votre RPE</CardTitle>
+              <CardDescription>
+                RPE = Rate of Perceived Exertion (effort ressenti de 1 à 10)
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <Label>Effort ressenti (RPE)</Label>
+                  <span className={`text-2xl font-bold ${getRpeColor(rpe)}`}>
+                    {rpe}
+                  </span>
+                </div>
+                <Slider
+                  value={[rpe]}
+                  onValueChange={([v]) => setRpe(v)}
+                  min={1}
+                  max={10}
+                  step={1}
+                  className="py-4"
+                />
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>1 - Très facile</span>
+                  <span>5 - Modéré</span>
+                  <span>10 - Maximum</span>
+                </div>
               </div>
-              <Slider
-                value={[rpe]}
-                onValueChange={([v]) => setRpe(v)}
-                min={1}
-                max={10}
-                step={1}
-                className="py-4"
-              />
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>1 - Très facile</span>
-                <span>5 - Modéré</span>
-                <span>10 - Maximum</span>
+
+              <div className="space-y-2">
+                <Label htmlFor="duration">Durée (minutes)</Label>
+                <Input
+                  id="duration"
+                  type="number"
+                  min="1"
+                  value={duration}
+                  onChange={(e) => setDuration(e.target.value)}
+                  placeholder="60"
+                />
               </div>
-            </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="duration">Durée (minutes)</Label>
-              <Input
-                id="duration"
-                type="number"
-                min="1"
-                value={duration}
-                onChange={(e) => setDuration(e.target.value)}
-                placeholder="60"
-              />
-            </div>
+              <div className="p-3 bg-muted rounded-lg">
+                <p className="text-sm text-muted-foreground">
+                  <strong>Charge d'entraînement :</strong>{" "}
+                  {rpe * (parseInt(duration) || 0)} UA
+                </p>
+              </div>
 
-            <div className="p-3 bg-muted rounded-lg">
-              <p className="text-sm text-muted-foreground">
-                <strong>Charge d'entraînement :</strong>{" "}
-                {rpe * (parseInt(duration) || 0)} UA
-              </p>
-            </div>
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => setSelectedSession(null)}
+                >
+                  Annuler
+                </Button>
+                <Button
+                  className="flex-1"
+                  onClick={handleSubmit}
+                  disabled={isSubmitting || !duration}
+                >
+                  {isSubmitting ? "Enregistrement..." : "Enregistrer RPE"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
 
-            <div className="flex gap-3">
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={() => setSelectedSession(null)}
-              >
-                Annuler
-              </Button>
-              <Button
-                className="flex-1"
-                onClick={handleSubmit}
-                disabled={isSubmitting || !duration}
-              >
-                {isSubmitting ? "Enregistrement..." : "Enregistrer"}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+          {/* Bowling Precision Stats */}
+          {isBowling && isPrecision && (
+            <AthleteSpareExerciseForm
+              onSubmit={handleSubmitSpare}
+              isSubmitting={isSubmittingSpare}
+            />
+          )}
+
+          {/* Bowling Score Sheet */}
+          {isBowling && isSimulation && (
+            <Card className="border-blue-300 dark:border-blue-700">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Feuille de score</CardTitle>
+                <CardDescription>Remplissez votre feuille de score bowling</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {!showScoreSheet ? (
+                  <Button variant="outline" className="w-full" onClick={() => setShowScoreSheet(true)}>
+                    Ajouter une feuille de score
+                  </Button>
+                ) : (
+                  <BowlingScoreSheet
+                    onSave={(stats) => handleSaveScoreSheet(stats)}
+                    onCancel={() => setShowScoreSheet(false)}
+                    playerId={playerId}
+                    categoryId={categoryId}
+                  />
+                )}
+              </CardContent>
+            </Card>
+          )}
+        </>
       )}
 
       {/* Completed Sessions */}

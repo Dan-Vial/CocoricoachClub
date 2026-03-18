@@ -1,12 +1,14 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Loader2, User, XCircle, Activity, Trophy, LogOut } from "lucide-react";
+import { Loader2, User, XCircle, Activity, Trophy, LogOut, BarChart3, CalendarPlus } from "lucide-react";
 import { AthleteRpeEntry } from "@/components/athlete-portal/AthleteRpeEntry";
 import { AthleteMatchStats } from "@/components/athlete-portal/AthleteMatchStats";
+import { AthleteTrainingStats } from "@/components/athlete-portal/AthleteTrainingStats";
+import { AthleteCreateSession } from "@/components/athlete-portal/AthleteCreateSession";
 import { AthletePWAInstallPopup } from "@/components/athlete/AthletePWAInstallPopup";
 import { athletePortalHeaders, buildAthletePortalFunctionUrl } from "@/lib/athletePortalClient";
 import { useAuth } from "@/contexts/AuthContext";
@@ -29,17 +31,17 @@ export default function AthletePortal() {
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [errorMessage, setErrorMessage] = useState("");
   const [athleteInfo, setAthleteInfo] = useState<AthleteInfo | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
   const token = searchParams.get("token");
 
+  const isBowling = athleteInfo?.sport_type?.toLowerCase().startsWith("bowling");
+
   useEffect(() => {
-    // If user is logged in and is an athlete, fetch their data directly
     if (user && user.user_metadata?.is_athlete) {
       fetchLoggedInAthleteData();
     } else if (token) {
-      // Legacy token-based access
       validateToken();
     } else if (user) {
-      // User is logged in but not an athlete
       navigate("/");
     } else {
       setStatus("error");
@@ -49,14 +51,10 @@ export default function AthletePortal() {
 
   const fetchLoggedInAthleteData = async () => {
     try {
-      // Fetch the player linked to this user
       const { data: player, error: playerError } = await supabase
         .from("players")
         .select(`
-          id,
-          name,
-          first_name,
-          category_id,
+          id, name, first_name, category_id,
           categories!inner(name, rugby_type, clubs!inner(name))
         `)
         .eq("user_id", user!.id)
@@ -78,8 +76,7 @@ export default function AthletePortal() {
         sport_type: (player.categories as any).rugby_type,
       });
       setStatus("success");
-    } catch (err) {
-      console.error("Error fetching athlete data:", err);
+    } catch {
       setStatus("error");
       setErrorMessage("Erreur lors du chargement des données");
     }
@@ -90,7 +87,6 @@ export default function AthletePortal() {
     try {
       const res = await fetch(url, { headers: athletePortalHeaders() });
       const data = await res.json().catch(() => ({}));
-
       if (data?.success) {
         setAthleteInfo({
           player_id: data.player_id,
@@ -116,15 +112,17 @@ export default function AthletePortal() {
     navigate("/auth");
   };
 
+  const handleRefresh = useCallback(() => {
+    setRefreshKey(k => k + 1);
+  }, []);
+
   if (status === "loading") {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
           <CardContent className="flex flex-col items-center py-8 space-y-4">
             <Loader2 className="h-12 w-12 animate-spin text-primary" />
-            <p className="text-center text-muted-foreground">
-              Chargement de ton espace athlète...
-            </p>
+            <p className="text-center text-muted-foreground">Chargement de ton espace athlète...</p>
           </CardContent>
         </Card>
       </div>
@@ -137,12 +135,8 @@ export default function AthletePortal() {
         <Card className="w-full max-w-md">
           <CardContent className="flex flex-col items-center py-8 space-y-4">
             <XCircle className="h-12 w-12 text-destructive" />
-            <p className="text-center font-medium text-destructive">
-              {errorMessage}
-            </p>
-            <p className="text-sm text-muted-foreground text-center">
-              Contacte ton coach pour obtenir de l'aide.
-            </p>
+            <p className="text-center font-medium text-destructive">{errorMessage}</p>
+            <p className="text-sm text-muted-foreground text-center">Contacte ton coach pour obtenir de l'aide.</p>
             {user && (
               <Button variant="outline" onClick={handleSignOut}>
                 <LogOut className="mr-2 h-4 w-4" />
@@ -159,9 +153,10 @@ export default function AthletePortal() {
     ? `${athleteInfo.player_first_name} ${athleteInfo.player_name}`
     : athleteInfo?.player_name;
 
+  const tabCount = isBowling ? 4 : 2;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 p-4">
-      {/* PWA Install Popup for athletes */}
       <AthletePWAInstallPopup playerId={athleteInfo?.player_id} />
 
       <div className="max-w-4xl mx-auto space-y-6">
@@ -190,35 +185,53 @@ export default function AthletePortal() {
           </CardHeader>
         </Card>
 
-        {/* Portal Instructions */}
+        {/* Instructions */}
         <Card className="bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800">
           <CardContent className="py-4">
             <p className="text-sm text-blue-800 dark:text-blue-200">
               <strong>Ton espace athlète</strong> – Saisis tes données personnelles :
-              RPE après les entraînements et statistiques après les matchs. Ces données seront automatiquement
-              synchronisées avec ton coach.
+              RPE après les entraînements{isBowling ? ", feuilles de score, exercices de précision" : ""} et statistiques après les matchs.
             </p>
           </CardContent>
         </Card>
 
         {/* Main Tabs */}
         <Tabs defaultValue="rpe" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="rpe" className="gap-2">
+          <TabsList className={`grid w-full ${isBowling ? "grid-cols-4" : "grid-cols-2"}`}>
+            <TabsTrigger value="rpe" className="gap-1 text-xs sm:text-sm">
               <Activity className="h-4 w-4" />
-              Séances & RPE
+              <span className="hidden sm:inline">Séances & RPE</span>
+              <span className="sm:hidden">RPE</span>
             </TabsTrigger>
-            <TabsTrigger value="matches" className="gap-2">
+            <TabsTrigger value="matches" className="gap-1 text-xs sm:text-sm">
               <Trophy className="h-4 w-4" />
-              Compétitions
+              <span className="hidden sm:inline">Compétitions</span>
+              <span className="sm:hidden">Compét.</span>
             </TabsTrigger>
+            {isBowling && (
+              <>
+                <TabsTrigger value="stats" className="gap-1 text-xs sm:text-sm">
+                  <BarChart3 className="h-4 w-4" />
+                  <span className="hidden sm:inline">Stats Entraînement</span>
+                  <span className="sm:hidden">Stats</span>
+                </TabsTrigger>
+                <TabsTrigger value="create" className="gap-1 text-xs sm:text-sm">
+                  <CalendarPlus className="h-4 w-4" />
+                  <span className="hidden sm:inline">Ajouter Séance</span>
+                  <span className="sm:hidden">+ Séance</span>
+                </TabsTrigger>
+              </>
+            )}
           </TabsList>
 
           <TabsContent value="rpe" className="mt-6">
             <AthleteRpeEntry
+              key={refreshKey}
               token={token || undefined}
               playerId={athleteInfo!.player_id}
               categoryId={athleteInfo!.category_id}
+              sportType={athleteInfo?.sport_type}
+              onRefreshStats={handleRefresh}
             />
           </TabsContent>
 
@@ -230,6 +243,26 @@ export default function AthletePortal() {
               sportType={athleteInfo?.sport_type}
             />
           </TabsContent>
+
+          {isBowling && (
+            <>
+              <TabsContent value="stats" className="mt-6">
+                <AthleteTrainingStats
+                  key={`stats-${refreshKey}`}
+                  token={token || undefined}
+                  playerId={athleteInfo!.player_id}
+                  categoryId={athleteInfo!.category_id}
+                />
+              </TabsContent>
+
+              <TabsContent value="create" className="mt-6">
+                <AthleteCreateSession
+                  token={token || undefined}
+                  onSessionCreated={handleRefresh}
+                />
+              </TabsContent>
+            </>
+          )}
         </Tabs>
       </div>
     </div>
