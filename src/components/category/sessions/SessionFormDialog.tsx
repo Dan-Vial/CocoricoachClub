@@ -841,6 +841,8 @@ export function SessionFormDialog({
               reps: ex.reps ? parseInt(ex.reps) : null,
               weight_kg: ex.weight_mode === "kg" ? ex.weight_kg : null,
               rest_seconds: ex.rest_seconds,
+              tempo: ex.tempo || null,
+              contraction_regime: ex.contraction_regime || null,
               notes: ex.weight_mode === "percent_rm" && ex.weight_percent_rm 
                 ? `${ex.weight_percent_rm}% RM${ex.notes ? ` - ${ex.notes}` : ""}` 
                 : (ex.notes || null),
