@@ -191,6 +191,7 @@ const emptyExercise = (index: number, groupId?: string, groupOrder?: number, met
   cluster_sets: undefined,
   block_config: undefined,
   tempo: undefined,
+  contraction_regime: undefined,
   target_rpe: undefined,
 });
 
