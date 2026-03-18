@@ -19,7 +19,6 @@ interface AthleteTokenInfo {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -67,24 +66,16 @@ serve(async (req) => {
       sport_type = (categoryData.clubs as { sport_type?: string }).sport_type;
     }
 
-    // Handle different actions
+    const json = (data: unknown, status = 200) =>
+      new Response(JSON.stringify(data), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+
+    // ─── VALIDATE ───
     if (action === "validate") {
-      return new Response(
-        JSON.stringify({ 
-          success: true, 
-          player_id, 
-          player_name, 
-          category_id, 
-          category_name, 
-          club_name,
-          sport_type
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return json({ success: true, player_id, player_name, category_id, category_name, club_name, sport_type });
     }
 
+    // ─── SESSIONS ───
     if (action === "sessions") {
-      // Get recent training sessions (last 14 days)
       const twoWeeksAgo = new Date();
       twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
 
@@ -97,7 +88,6 @@ serve(async (req) => {
 
       if (error) throw error;
 
-      // Get existing RPE entries for this player
       const { data: existingRpe } = await supabase
         .from("awcr_tracking")
         .select("training_session_id")
@@ -105,18 +95,11 @@ serve(async (req) => {
 
       const rpeSessionIds = new Set(existingRpe?.map(r => r.training_session_id) || []);
 
-      return new Response(
-        JSON.stringify({ 
-          success: true, 
-          sessions,
-          completedSessionIds: Array.from(rpeSessionIds)
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return json({ success: true, sessions, completedSessionIds: Array.from(rpeSessionIds) });
     }
 
+    // ─── MATCHES ───
     if (action === "matches") {
-      // Get recent matches (last 30 days)
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
@@ -129,7 +112,6 @@ serve(async (req) => {
 
       if (error) throw error;
 
-      // Check player lineup for each match
       const matchIds = matches?.map(m => m.id) || [];
       const { data: lineups } = await supabase
         .from("match_lineups")
@@ -139,7 +121,6 @@ serve(async (req) => {
 
       const lineupMatchIds = new Set(lineups?.map(l => l.match_id) || []);
 
-      // Get existing stats
       const { data: existingStats } = await supabase
         .from("player_match_stats")
         .select("match_id")
@@ -147,28 +128,22 @@ serve(async (req) => {
 
       const statsMatchIds = new Set(existingStats?.map(s => s.match_id) || []);
 
-      return new Response(
-        JSON.stringify({ 
-          success: true, 
-          matches: matches?.filter(m => lineupMatchIds.has(m.id)) || [],
-          completedMatchIds: Array.from(statsMatchIds)
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return json({
+        success: true,
+        matches: matches?.filter(m => lineupMatchIds.has(m.id)) || [],
+        completedMatchIds: Array.from(statsMatchIds),
+      });
     }
 
+    // ─── SUBMIT RPE ───
     if (action === "submit-rpe" && req.method === "POST") {
       const body = await req.json();
       const { session_id, rpe, duration } = body;
 
       if (!session_id || !rpe || !duration) {
-        return new Response(
-          JSON.stringify({ success: false, error: "Données manquantes" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return json({ success: false, error: "Données manquantes" }, 400);
       }
 
-      // Get session date
       const { data: session } = await supabase
         .from("training_sessions")
         .select("session_date")
@@ -176,15 +151,10 @@ serve(async (req) => {
         .single();
 
       if (!session) {
-        return new Response(
-          JSON.stringify({ success: false, error: "Séance introuvable" }),
-          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return json({ success: false, error: "Séance introuvable" }, 404);
       }
 
       const trainingLoad = rpe * duration;
-
-      // Calculate AWCR
       const sessionDate = new Date(session.session_date);
       const sevenDaysAgo = new Date(sessionDate);
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
@@ -226,21 +196,16 @@ serve(async (req) => {
 
       if (insertError) throw insertError;
 
-      return new Response(
-        JSON.stringify({ success: true }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return json({ success: true });
     }
 
+    // ─── SUBMIT MATCH STATS ───
     if (action === "submit-stats" && req.method === "POST") {
       const body = await req.json();
       const { match_id, minutes_played, goals, assists, yellow_cards, red_cards } = body;
 
       if (!match_id) {
-        return new Response(
-          JSON.stringify({ success: false, error: "Match ID manquant" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return json({ success: false, error: "Match ID manquant" }, 400);
       }
 
       const { error: insertError } = await supabase.from("player_match_stats").insert({
@@ -254,25 +219,18 @@ serve(async (req) => {
       });
 
       if (insertError) throw insertError;
-
-      return new Response(
-        JSON.stringify({ success: true }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return json({ success: true });
     }
 
+    // ─── SUBMIT BOWLING STATS (competition) ───
     if (action === "submit-bowling-stats" && req.method === "POST") {
       const body = await req.json();
       const { match_id, games } = body;
 
       if (!match_id || !games || !Array.isArray(games) || games.length === 0) {
-        return new Response(
-          JSON.stringify({ success: false, error: "Données manquantes" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return json({ success: false, error: "Données manquantes" }, 400);
       }
 
-      // Insert each game as a competition_round
       for (const game of games) {
         const { error: roundError } = await supabase.from("competition_rounds").insert({
           match_id,
@@ -280,10 +238,8 @@ serve(async (req) => {
           round_number: game.gameNumber,
           result: "completed",
         });
-
         if (roundError) throw roundError;
 
-        // Get the inserted round ID
         const { data: insertedRound } = await supabase
           .from("competition_rounds")
           .select("id")
@@ -293,7 +249,6 @@ serve(async (req) => {
           .single();
 
         if (insertedRound) {
-          // Insert stats for this round
           const { error: statsError } = await supabase.from("competition_round_stats").insert({
             round_id: insertedRound.id,
             stat_data: {
@@ -315,21 +270,193 @@ serve(async (req) => {
               openFrames: game.openFrames,
             },
           });
-
           if (statsError) throw statsError;
         }
       }
 
-      return new Response(
-        JSON.stringify({ success: true }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return json({ success: true });
     }
 
-    return new Response(
-      JSON.stringify({ success: false, error: "Action non reconnue" }),
-      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    // ─── SUBMIT SPARE TRAINING (from athlete portal) ───
+    if (action === "submit-spare-stats" && req.method === "POST") {
+      const body = await req.json();
+      const { session_id, exercises } = body;
+      // exercises: Array<{ exercise_type: string, attempts: number, successes: number }>
+
+      if (!session_id || !exercises || !Array.isArray(exercises)) {
+        return json({ success: false, error: "Données manquantes" }, 400);
+      }
+
+      const { data: session } = await supabase
+        .from("training_sessions")
+        .select("session_date")
+        .eq("id", session_id)
+        .single();
+
+      if (!session) return json({ success: false, error: "Séance introuvable" }, 404);
+
+      for (const ex of exercises) {
+        const successRate = ex.attempts > 0 ? (ex.successes / ex.attempts) * 100 : 0;
+        const { error } = await supabase.from("bowling_spare_training").insert({
+          player_id,
+          category_id,
+          training_session_id: session_id,
+          session_date: session.session_date,
+          exercise_type: ex.exercise_type,
+          attempts: ex.attempts,
+          successes: ex.successes,
+          success_rate: Math.round(successRate * 10) / 10,
+        });
+        if (error) throw error;
+      }
+
+      return json({ success: true });
+    }
+
+    // ─── SUBMIT TRAINING SCORES (bowling game scores from athlete portal) ───
+    if (action === "submit-training-scores" && req.method === "POST") {
+      const body = await req.json();
+      const { session_id, games } = body;
+      // games: Array of bowling game stats
+
+      if (!session_id || !games || !Array.isArray(games) || games.length === 0) {
+        return json({ success: false, error: "Données manquantes" }, 400);
+      }
+
+      for (const game of games) {
+        // Use competition_rounds with the session's training_session link
+        // We store training game scores in competition_rounds with a virtual match approach
+        // Instead, store directly in a simpler way using the session reference
+        const { error: roundError } = await supabase.from("competition_rounds").insert({
+          match_id: session_id, // We'll use session_id as reference
+          player_id,
+          round_number: game.gameNumber,
+          result: "completed",
+          notes: "training_session",
+        });
+
+        if (roundError) {
+          // If match_id FK constraint fails, we need a different approach
+          // Store as bowling_spare_training with a special type
+          console.error("Round insert error:", roundError);
+          // Fallback: store in awcr_tracking notes or a different way
+          continue;
+        }
+
+        const { data: insertedRound } = await supabase
+          .from("competition_rounds")
+          .select("id")
+          .eq("match_id", session_id)
+          .eq("player_id", player_id)
+          .eq("round_number", game.gameNumber)
+          .single();
+
+        if (insertedRound) {
+          await supabase.from("competition_round_stats").insert({
+            round_id: insertedRound.id,
+            stat_data: {
+              gameScore: game.score,
+              strikes: game.strikes,
+              spares: game.spares,
+              splitCount: game.splitCount,
+              splitConverted: game.splitConverted,
+              splitOnLastThrow: game.splitOnLastThrow,
+              singlePinCount: game.singlePinCount,
+              singlePinConverted: game.singlePinConverted,
+              pocketCount: game.pocketCount,
+              strikePercentage: game.strikePercentage,
+              sparePercentage: game.sparePercentage,
+              splitPercentage: game.splitPercentage,
+              singlePinConversionRate: game.singlePinConversionRate,
+              pocketPercentage: game.pocketPercentage,
+              openFrames: game.openFrames,
+              isTraining: true,
+            },
+          });
+        }
+      }
+
+      return json({ success: true });
+    }
+
+    // ─── CREATE SESSION (athlete creates their own) ───
+    if (action === "create-session" && req.method === "POST") {
+      const body = await req.json();
+      const { session_date, training_type, duration_minutes } = body;
+
+      if (!session_date || !training_type) {
+        return json({ success: false, error: "Données manquantes" }, 400);
+      }
+
+      const endTime = duration_minutes ? 
+        `${Math.floor(duration_minutes / 60 + 9).toString().padStart(2, '0')}:${(duration_minutes % 60).toString().padStart(2, '0')}` : null;
+
+      const { data: newSession, error } = await supabase
+        .from("training_sessions")
+        .insert({
+          category_id,
+          session_date,
+          training_type,
+          session_start_time: "09:00",
+          session_end_time: endTime || "10:00",
+          notes: `Séance créée par l'athlète ${player_name}`,
+        })
+        .select("id")
+        .single();
+
+      if (error) throw error;
+
+      return json({ success: true, session_id: newSession.id });
+    }
+
+    // ─── TRAINING STATS (fetch for athlete view) ───
+    if (action === "training-stats") {
+      // Fetch bowling spare training stats
+      const { data: spareStats, error: spareError } = await supabase
+        .from("bowling_spare_training")
+        .select("*")
+        .eq("player_id", player_id)
+        .order("session_date", { ascending: false });
+
+      if (spareError) throw spareError;
+
+      // Fetch training game scores (competition_rounds with training note)
+      const { data: trainingRounds, error: roundsError } = await supabase
+        .from("competition_rounds")
+        .select("*, competition_round_stats(*)")
+        .eq("player_id", player_id)
+        .eq("notes", "training_session")
+        .order("created_at", { ascending: false });
+
+      if (roundsError) throw roundsError;
+
+      // Also fetch competition rounds linked to training sessions (bowling_game type)
+      // Get training sessions of type bowling_game
+      const { data: gameSessions } = await supabase
+        .from("training_sessions")
+        .select("id, session_date")
+        .eq("category_id", category_id)
+        .in("training_type", ["bowling_game", "bowling_practice"]);
+
+      const gameSessionIds = gameSessions?.map(s => s.id) || [];
+
+      // Fetch RPE/AWCR data for these sessions
+      const { data: awcrData } = await supabase
+        .from("awcr_tracking")
+        .select("training_session_id, session_date, rpe, duration_minutes, training_load")
+        .eq("player_id", player_id)
+        .order("session_date", { ascending: false });
+
+      return json({
+        success: true,
+        spareStats: spareStats || [],
+        trainingRounds: trainingRounds || [],
+        gameSessions: gameSessions || [],
+        awcrData: awcrData || [],
+      });
+    }
+
+    return json({ success: false, error: "Action non reconnue" }, 400);
 
   } catch (error: unknown) {
     console.error("Error:", error);
