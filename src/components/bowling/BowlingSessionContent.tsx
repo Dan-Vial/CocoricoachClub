@@ -219,7 +219,7 @@ export function BowlingSessionContent({ sessionId, categoryId, blockType, sessio
       <div className="space-y-4">
         <div className="flex items-center gap-2 mb-2">
           <Target className="h-5 w-5 text-destructive" />
-          <h4 className="font-medium">Bowling Spare</h4>
+          <h4 className="font-medium">Entraînement Précision</h4>
         </div>
 
         <Card>
