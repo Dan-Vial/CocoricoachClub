@@ -190,9 +190,13 @@ import { SuperAdminExerciseLibrary } from "@/components/super-admin/SuperAdminEx
                <SuperAdminUsage />
              </TabsContent>
 
-             <TabsContent value="audit">
-               <AuditLogsTab />
-             </TabsContent>
+              <TabsContent value="exercises">
+                <SuperAdminExerciseLibrary />
+              </TabsContent>
+
+              <TabsContent value="audit">
+                <AuditLogsTab />
+              </TabsContent>
           </Tabs>
        </div>
      </div>
