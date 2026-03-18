@@ -219,7 +219,7 @@ export function BowlingSessionContent({ sessionId, categoryId, blockType, sessio
       <div className="space-y-4">
         <div className="flex items-center gap-2 mb-2">
           <Target className="h-5 w-5 text-destructive" />
-          <h4 className="font-medium">Bowling Spare</h4>
+          <h4 className="font-medium">Entraînement Précision</h4>
         </div>
 
         <Card>
@@ -254,10 +254,10 @@ export function BowlingSessionContent({ sessionId, categoryId, blockType, sessio
             <CardContent className="py-8 text-center">
               <Target className="h-8 w-8 mx-auto mb-2 text-muted-foreground/50" />
               <p className="text-sm text-muted-foreground">
-                Sélectionnez un joueur pour enregistrer les exercices de spare
+                Sélectionnez un joueur pour enregistrer les exercices de précision
               </p>
               <p className="text-xs text-muted-foreground mt-1">
-                Quille 5 · Quille 7 · Quille 10
+                Quille 7 · Quille 10 · Spares · Poche
               </p>
             </CardContent>
           </Card>
