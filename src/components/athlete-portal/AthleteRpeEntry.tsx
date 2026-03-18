@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
-import { Activity, Calendar, Clock, CheckCircle2, Loader2 } from "lucide-react";
+import { Activity, Calendar, Clock, CheckCircle2, Loader2, Target } from "lucide-react";
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -28,7 +28,24 @@ interface Session {
   training_type: string;
   session_start_time: string | null;
   session_end_time: string | null;
+  bowling_exercise_type?: string | null;
+  blocks?: Array<{ training_type: string; bowling_exercise_type?: string | null }>;
 }
+
+// Map block bowling_exercise_type values to SPARE_EXERCISE_TYPES values
+const BLOCK_TO_SPARE_MAP: Record<string, string> = {
+  quille_7: "spare_pin_7",
+  quille_10: "spare_pin_10",
+  spares: "spare_general",
+  poche: "spare_poche",
+};
+
+const BOWLING_EXERCISE_LABELS: Record<string, string> = {
+  quille_7: "Quille 7",
+  quille_10: "Quille 10",
+  spares: "Spares",
+  poche: "Poche",
+};
 
 export function AthleteRpeEntry({ token, playerId, categoryId, sportType, onRefreshStats }: AthleteRpeEntryProps) {
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -92,6 +109,15 @@ export function AthleteRpeEntry({ token, playerId, categoryId, sportType, onRefr
   const selectedSessionData = sessions.find(s => s.id === selectedSession);
   const isPrecision = selectedSessionData?.training_type === "bowling_spare";
   const isSimulation = selectedSessionData?.training_type === "bowling_game" || selectedSessionData?.training_type === "bowling_practice";
+
+  // Get the pre-filled exercise type from the block
+  const prefilledExerciseType = selectedSessionData?.bowling_exercise_type
+    ? BLOCK_TO_SPARE_MAP[selectedSessionData.bowling_exercise_type] || undefined
+    : undefined;
+
+  const prefilledExerciseLabel = selectedSessionData?.bowling_exercise_type
+    ? BOWLING_EXERCISE_LABELS[selectedSessionData.bowling_exercise_type] || null
+    : null;
 
   const handleSubmit = async () => {
     if (!selectedSession || !duration) return;
@@ -228,35 +254,49 @@ export function AthleteRpeEntry({ token, playerId, categoryId, sportType, onRefr
             </p>
           ) : (
             <div className="space-y-3">
-              {pendingSessions.map((session) => (
-                <div
-                  key={session.id}
-                  className={`p-4 rounded-lg border cursor-pointer transition-all ${
-                    selectedSession === session.id
-                      ? "border-primary bg-primary/5 ring-2 ring-primary/20"
-                      : "hover:bg-muted/50"
-                  }`}
-                  onClick={() => handleSelectSession(session.id)}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium">
-                        {format(parseISO(session.session_date), "EEEE d MMMM", { locale: fr })}
-                      </span>
+              {pendingSessions.map((session) => {
+                const exerciseLabel = session.bowling_exercise_type
+                  ? BOWLING_EXERCISE_LABELS[session.bowling_exercise_type]
+                  : null;
+
+                return (
+                  <div
+                    key={session.id}
+                    className={`p-4 rounded-lg border cursor-pointer transition-all ${
+                      selectedSession === session.id
+                        ? "border-primary bg-primary/5 ring-2 ring-primary/20"
+                        : "hover:bg-muted/50"
+                    }`}
+                    onClick={() => handleSelectSession(session.id)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                        <span className="font-medium">
+                          {format(parseISO(session.session_date), "EEEE d MMMM", { locale: fr })}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <Badge variant="outline">
+                          {getTrainingTypeLabel(session.training_type)}
+                        </Badge>
+                        {exerciseLabel && (
+                          <Badge variant="secondary" className="gap-1">
+                            <Target className="h-3 w-3" />
+                            {exerciseLabel}
+                          </Badge>
+                        )}
+                      </div>
                     </div>
-                    <Badge variant="outline">
-                      {getTrainingTypeLabel(session.training_type)}
-                    </Badge>
+                    {session.session_start_time && (
+                      <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
+                        <Clock className="h-3 w-3" />
+                        {session.session_start_time} - {session.session_end_time}
+                      </div>
+                    )}
                   </div>
-                  {session.session_start_time && (
-                    <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
-                      <Clock className="h-3 w-3" />
-                      {session.session_start_time} - {session.session_end_time}
-                    </div>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>
@@ -338,6 +378,8 @@ export function AthleteRpeEntry({ token, playerId, categoryId, sportType, onRefr
             <AthleteSpareExerciseForm
               onSubmit={handleSubmitSpare}
               isSubmitting={isSubmittingSpare}
+              prefilledExerciseType={prefilledExerciseType}
+              exerciseLabel={prefilledExerciseLabel}
             />
           )}
 

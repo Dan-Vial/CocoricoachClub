@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,12 +17,28 @@ interface SpareExercise {
 interface AthleteSpareExerciseFormProps {
   onSubmit: (exercises: SpareExercise[]) => void;
   isSubmitting: boolean;
+  /** Pre-filled exercise type from block bowling_exercise_type (mapped to SPARE_EXERCISE_TYPES value) */
+  prefilledExerciseType?: string;
+  /** Human label for the exercise (e.g. "Quille 7") */
+  exerciseLabel?: string | null;
 }
 
-export function AthleteSpareExerciseForm({ onSubmit, isSubmitting }: AthleteSpareExerciseFormProps) {
+export function AthleteSpareExerciseForm({
+  onSubmit,
+  isSubmitting,
+  prefilledExerciseType,
+  exerciseLabel,
+}: AthleteSpareExerciseFormProps) {
   const [exercises, setExercises] = useState<SpareExercise[]>([
-    { exercise_type: "", attempts: 0, successes: 0 },
+    { exercise_type: prefilledExerciseType || "", attempts: 0, successes: 0 },
   ]);
+
+  // Reset when prefilled type changes
+  useEffect(() => {
+    if (prefilledExerciseType) {
+      setExercises([{ exercise_type: prefilledExerciseType, attempts: 0, successes: 0 }]);
+    }
+  }, [prefilledExerciseType]);
 
   const addExercise = () => {
     setExercises(prev => [...prev, { exercise_type: "", attempts: 0, successes: 0 }]);
@@ -49,6 +65,15 @@ export function AthleteSpareExerciseForm({ onSubmit, isSubmitting }: AthleteSpar
           <Target className="h-4 w-4 text-orange-600" />
           Exercices de Précision
         </CardTitle>
+        {exerciseLabel && (
+          <CardDescription className="flex items-center gap-1.5">
+            Exercice planifié :
+            <Badge variant="secondary" className="text-xs gap-1">
+              <Target className="h-3 w-3" />
+              {exerciseLabel}
+            </Badge>
+          </CardDescription>
+        )}
       </CardHeader>
       <CardContent className="space-y-4">
         {exercises.map((ex, i) => (
@@ -83,7 +108,7 @@ export function AthleteSpareExerciseForm({ onSubmit, isSubmitting }: AthleteSpar
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label className="text-xs">Tentatives</Label>
+                <Label className="text-xs">Nombre de lancers</Label>
                 <Input
                   type="number"
                   min="0"
@@ -93,7 +118,7 @@ export function AthleteSpareExerciseForm({ onSubmit, isSubmitting }: AthleteSpar
                 />
               </div>
               <div>
-                <Label className="text-xs">Réussites</Label>
+                <Label className="text-xs">Réussis</Label>
                 <Input
                   type="number"
                   min="0"
@@ -105,9 +130,14 @@ export function AthleteSpareExerciseForm({ onSubmit, isSubmitting }: AthleteSpar
               </div>
             </div>
             {ex.attempts > 0 && (
-              <Badge variant="outline" className="text-xs">
-                Taux: {((ex.successes / ex.attempts) * 100).toFixed(0)}%
-              </Badge>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="text-xs">
+                  Taux: {((ex.successes / ex.attempts) * 100).toFixed(0)}%
+                </Badge>
+                <span className="text-xs text-muted-foreground">
+                  ({ex.successes}/{ex.attempts})
+                </span>
+              </div>
             )}
           </div>
         ))}

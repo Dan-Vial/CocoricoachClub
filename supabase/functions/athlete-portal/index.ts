@@ -88,6 +88,37 @@ serve(async (req) => {
 
       if (error) throw error;
 
+      // Fetch blocks for these sessions to get bowling_exercise_type
+      const sessionIds = sessions?.map(s => s.id) || [];
+      let blocksBySession: Record<string, any[]> = {};
+      if (sessionIds.length > 0) {
+        const { data: blocks } = await supabase
+          .from("training_session_blocks")
+          .select("training_session_id, training_type, bowling_exercise_type")
+          .in("training_session_id", sessionIds);
+        
+        for (const block of (blocks || [])) {
+          if (!blocksBySession[block.training_session_id]) {
+            blocksBySession[block.training_session_id] = [];
+          }
+          blocksBySession[block.training_session_id].push(block);
+        }
+      }
+
+      // Enrich sessions with block info
+      const enrichedSessions = sessions?.map(s => {
+        const blocks = blocksBySession[s.id] || [];
+        const precisionBlock = blocks.find(b => b.training_type === "bowling_spare" && b.bowling_exercise_type);
+        return {
+          ...s,
+          bowling_exercise_type: precisionBlock?.bowling_exercise_type || null,
+          blocks: blocks.map(b => ({
+            training_type: b.training_type,
+            bowling_exercise_type: b.bowling_exercise_type,
+          })),
+        };
+      }) || [];
+
       const { data: existingRpe } = await supabase
         .from("awcr_tracking")
         .select("training_session_id")
@@ -95,7 +126,7 @@ serve(async (req) => {
 
       const rpeSessionIds = new Set(existingRpe?.map(r => r.training_session_id) || []);
 
-      return json({ success: true, sessions, completedSessionIds: Array.from(rpeSessionIds) });
+      return json({ success: true, sessions: enrichedSessions, completedSessionIds: Array.from(rpeSessionIds) });
     }
 
     // ─── MATCHES ───
