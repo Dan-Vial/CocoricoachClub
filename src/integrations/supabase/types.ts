@@ -2485,6 +2485,7 @@ export type Database = {
       gym_session_exercises: {
         Row: {
           category_id: string
+          contraction_regime: string | null
           created_at: string
           duration_seconds: number | null
           exercise_category: string | null
@@ -2507,6 +2508,7 @@ export type Database = {
         }
         Insert: {
           category_id: string
+          contraction_regime?: string | null
           created_at?: string
           duration_seconds?: number | null
           exercise_category?: string | null
@@ -2529,6 +2531,7 @@ export type Database = {
         }
         Update: {
           category_id?: string
+          contraction_regime?: string | null
           created_at?: string
           duration_seconds?: number | null
           exercise_category?: string | null
