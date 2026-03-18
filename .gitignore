@@ -22,3 +22,18 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# TypeScript cache
+*.tsbuildinfo
+
+# DotEnv
+.env
+.env.*
+!.env.example
+
+# Supabase 
+supabase/.temp
+# self hosted
+devops/supabase/supabase
+
+devops/frontend/.lock

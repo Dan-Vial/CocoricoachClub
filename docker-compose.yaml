@@ -1,9 +1,19 @@
+# services supabase self hosted
+# include:
+#   - ${PWD}/devops/supabase/supabase/docker-compose.yaml
+
 services:
   frontend:
-    image: oven/bun
-    working_dir: /app
+    image: local/oven/bun
+    build:
+      context: .
+      dockerfile: devops/bun/Dockerfile
 
-    command: ["sh", "-c", "./devops/bun/entrypoint.sh"]
+    working_dir: /app
+    command: ["tail", "-f", "/dev/null"]
+    environment:
+      - PORT=${PORT}
+      - SUPABASE_ACCESS_TOKEN=${SUPABASE_ACCESS_TOKEN}
 
     tty: true
     stdin_open: true
@@ -17,12 +27,8 @@ services:
         soft: -1
         hard: -1
 
-    env_file: .env.developement
-    expose:
-      - 8080
-      - 24678 # WebSocket: @react-refresh for ViteJS => ws://XXX
     ports:
-      - "8080:8080"
+      - "${PORT}:${PORT}"
 
     volumes:
       - ${PWD}:/app:Z

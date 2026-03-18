@@ -1,50 +1,59 @@
 <!doctype html>
 <html lang="fr">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>CocoriCoach Club</title>
-    <meta name="description" content="Application de suivi de performance sportive - Planification, tests physiques et gestion des athlètes" />
-    <meta name="author" content="CocoriCoach Club" />
-    
-    <!-- PWA Meta Tags -->
-    <meta name="theme-color" content="#0F172A" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="CocoriCoach Club" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <link rel="mask-icon" href="/mask-icon.svg" color="#0F172A" />
 
-    <meta property="og:title" content="CocoriCoach Club" />
-    <meta property="og:description" content="Lovable Generated Project" />
-    <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>CocoriCoach Club</title>
+  <meta name="description"
+    content="Application de suivi de performance sportive - Planification, tests physiques et gestion des athlètes" />
+  <meta name="author" content="CocoriCoach Club" />
 
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@Lovable" />
-    <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
-    <!-- OneSignal SDK v16 -->
-    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
-    <script>
-      window.OneSignalDeferred = window.OneSignalDeferred || [];
-      OneSignalDeferred.push(async function(OneSignal) {
-        await OneSignal.init({
-          appId: "3f2d5f09-1f41-47af-ae1d-66deb5be52a5",
-          serviceWorkerParam: { scope: "/" },
-          serviceWorkerPath: "OneSignalSDKWorker.js",
-          notifyButton: { enable: false },
-          promptOptions: { slidedown: { enabled: false } },
-          autoRegister: false,
-          autoResubscribe: true,
-        });
-        window.OneSignal = OneSignal;
-        console.log("[OneSignal] SDK v16 initialized");
+  <!-- PWA Meta Tags -->
+  <meta name="theme-color" content="#0F172A" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="CocoriCoach Club" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="mask-icon" href="/mask-icon.svg" color="#0F172A" />
+
+  <meta property="og:title" content="CocoriCoach Club" />
+  <meta property="og:description" content="Lovable Generated Project" />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:site" content="@Lovable" />
+  <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+
+  <!-- OneSignal SDK v16 -->
+  <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+  <script type="module">
+    window.OneSignalDeferred = window.OneSignalDeferred || [];
+    OneSignalDeferred.push(async function (OneSignal) {
+      await OneSignal.init({
+        appId: "%VITE_ONE_SIGNAL_APP_ID%",
+        serviceWorkerParam: {scope: "/"},
+        serviceWorkerPath: "OneSignalSDKWorker.js",
+        notifyButton: {enable: false},
+        promptOptions: {slidedown: {enabled: false}},
+        autoRegister: false,
+        autoResubscribe: true,
+
+        // Config develop-local
+        ...(import.meta.env.DEV && {
+          allowLocalhostAsSecureOrigin: true,
+        })
       });
-    </script>
-  </head>
+      window.OneSignal = OneSignal;
+      console.log("[OneSignal] SDK v16 initialized");
+    });
+  </script>
+</head>
 
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+
 </html>
