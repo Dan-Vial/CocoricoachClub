@@ -529,7 +529,7 @@ export function SessionFormDialog({
   useEffect(() => {
     if (existingBlocks && existingBlocks.length > 0 && editSession) {
       setSessionBlocks(
-        existingBlocks.map((block) => ({
+        existingBlocks.map((block: any) => ({
           id: block.id,
           training_type: block.training_type,
           intensity: block.intensity || undefined,
@@ -537,6 +537,7 @@ export function SessionFormDialog({
           end_time: block.end_time || undefined,
           notes: block.notes || undefined,
           block_order: block.block_order,
+          bowling_exercise_type: block.bowling_exercise_type || undefined,
         }))
       );
     } else if (!editSession) {
@@ -813,6 +814,7 @@ export function SessionFormDialog({
             target_intensity: block.target_intensity || null,
             volume: block.volume || null,
             contact_charge: block.contact_charge || null,
+            bowling_exercise_type: block.bowling_exercise_type || null,
           }));
 
         if (blockRecords.length > 0) {

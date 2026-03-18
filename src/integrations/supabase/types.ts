@@ -7620,6 +7620,7 @@ export type Database = {
       training_session_blocks: {
         Row: {
           block_order: number
+          bowling_exercise_type: string | null
           contact_charge: string | null
           created_at: string
           end_time: string | null
@@ -7636,6 +7637,7 @@ export type Database = {
         }
         Insert: {
           block_order?: number
+          bowling_exercise_type?: string | null
           contact_charge?: string | null
           created_at?: string
           end_time?: string | null
@@ -7652,6 +7654,7 @@ export type Database = {
         }
         Update: {
           block_order?: number
+          bowling_exercise_type?: string | null
           contact_charge?: string | null
           created_at?: string
           end_time?: string | null
