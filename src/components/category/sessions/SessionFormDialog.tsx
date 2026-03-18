@@ -516,6 +516,8 @@ export function SessionFormDialog({
           set_type: ex.set_type || "normal",
           group_id: ex.group_id || null,
           group_order: undefined,
+          tempo: ex.tempo || undefined,
+          contraction_regime: (ex as any).contraction_regime || undefined,
         }))
       );
     } else if (!editSession) {
