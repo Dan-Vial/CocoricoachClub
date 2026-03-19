@@ -783,120 +783,153 @@ export function AddSessionDialog({
 
               {/* Player Selection Section */}
               <div className="space-y-3 border rounded-lg p-4 bg-muted/30">
-                <div className="flex items-center justify-between">
-                  <Label className="flex items-center gap-2 text-base font-medium">
-                    <Users className="h-4 w-4" />
-                    Joueurs concernés
-                  </Label>
-                  <div className="flex gap-2">
-                    <Button
-                      type="button"
-                      variant={playerSelectionMode === "all" ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => {
-                        setPlayerSelectionMode("all");
-                        setSelectedPlayers([]);
-                      }}
-                    >
-                      Tous
-                    </Button>
-                    <Button
-                      type="button"
-                      variant={playerSelectionMode === "specific" ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setPlayerSelectionMode("specific")}
-                    >
-                      Spécifiques
-                    </Button>
-                  </div>
-                </div>
+                <Label className="flex items-center gap-2 text-base font-medium">
+                  <Users className="h-4 w-4" />
+                  Joueurs concernés
+                </Label>
 
-                {playerSelectionMode === "specific" && (
-                  <>
-                    <div className="flex flex-wrap gap-2">
-                      <Button type="button" variant="outline" size="sm" onClick={selectAll} className="text-xs">
-                        <UserCheck className="h-3 w-3 mr-1" />
-                        Tous ({players?.length || 0})
-                      </Button>
-                      {injuredPlayers.length > 0 && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={selectAllInjured}
-                          className="text-xs border-amber-300 text-amber-700 hover:bg-amber-50"
-                        >
-                          <AlertTriangle className="h-3 w-3 mr-1" />
-                          Blessés ({injuredPlayers.length})
-                        </Button>
-                      )}
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={selectAllHealthy}
-                        className="text-xs border-green-300 text-green-700 hover:bg-green-50"
-                      >
-                        <UserCheck className="h-3 w-3 mr-1" />
-                        Aptes ({healthyPlayers.length})
-                      </Button>
-                      {selectedPlayers.length > 0 && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={clearSelection}
-                          className="text-xs text-muted-foreground"
-                        >
-                          Effacer
-                        </Button>
-                      )}
-                    </div>
-
-                    {selectedPlayers.length > 0 && (
-                      <Badge variant="secondary" className="w-fit">
-                        {selectedPlayers.length} joueur(s) sélectionné(s)
-                      </Badge>
-                    )}
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto">
-                      {players?.map((player) => (
-                        <div
-                          key={player.id}
-                          onClick={() => togglePlayer(player.id)}
-                          className={cn(
-                            "flex items-center gap-2 p-2 rounded-md border cursor-pointer transition-colors select-none",
-                            selectedPlayers.includes(player.id)
-                              ? "border-primary bg-primary/10"
-                              : "border-border hover:bg-muted/50",
-                            player.isInjured && "border-amber-300 bg-amber-50/50"
-                          )}
-                        >
-                          <Checkbox
-                            checked={selectedPlayers.includes(player.id)}
-                            className="pointer-events-none"
-                          />
-                          <Avatar className="h-6 w-6 pointer-events-none">
-                            <AvatarImage src={player.avatar_url || undefined} />
-                            <AvatarFallback className="text-xs">{(player.first_name || player.name).slice(0, 2).toUpperCase()}</AvatarFallback>
+                {isAthleteMode ? (
+                  <div className="space-y-2">
+                    {(() => {
+                      const athletePlayer = players?.find(p => p.id === athletePlayerId);
+                      return athletePlayer ? (
+                        <div className="flex items-center gap-2 p-2 rounded-md border border-primary bg-primary/10">
+                          <Checkbox checked={true} className="pointer-events-none" />
+                          <Avatar className="h-6 w-6">
+                            <AvatarImage src={athletePlayer.avatar_url || undefined} />
+                            <AvatarFallback className="text-xs">{(athletePlayer.first_name || athletePlayer.name).slice(0, 2).toUpperCase()}</AvatarFallback>
                           </Avatar>
-                          <span className="text-sm truncate flex-1 pointer-events-none">{player.first_name ? `${player.first_name} ${player.name}` : player.name}</span>
-                          {player.isInjured && <AlertTriangle className="h-3 w-3 text-amber-500 flex-shrink-0 pointer-events-none" />}
-                          {player.position && (
-                            <Badge variant="outline" className="text-xs flex-shrink-0 pointer-events-none">
-                              {player.position}
+                          <span className="text-sm truncate flex-1">
+                            {athletePlayer.first_name ? `${athletePlayer.first_name} ${athletePlayer.name}` : athletePlayer.name}
+                          </span>
+                          {athletePlayer.position && (
+                            <Badge variant="outline" className="text-xs flex-shrink-0">
+                              {athletePlayer.position}
                             </Badge>
                           )}
                         </div>
-                      ))}
+                      ) : (
+                        <p className="text-sm text-muted-foreground">Chargement...</p>
+                      );
+                    })()}
+                    <p className="text-xs text-muted-foreground">
+                      Cette séance sera créée uniquement pour toi.
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-center justify-end">
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          variant={playerSelectionMode === "all" ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => {
+                            setPlayerSelectionMode("all");
+                            setSelectedPlayers([]);
+                          }}
+                        >
+                          Tous
+                        </Button>
+                        <Button
+                          type="button"
+                          variant={playerSelectionMode === "specific" ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setPlayerSelectionMode("specific")}
+                        >
+                          Spécifiques
+                        </Button>
+                      </div>
                     </div>
-                  </>
-                )}
 
-                {playerSelectionMode === "all" && (
-                  <p className="text-sm text-muted-foreground">
-                    Tous les joueurs de la catégorie seront concernés par cette séance.
-                  </p>
+                    {playerSelectionMode === "specific" && (
+                      <>
+                        <div className="flex flex-wrap gap-2">
+                          <Button type="button" variant="outline" size="sm" onClick={selectAll} className="text-xs">
+                            <UserCheck className="h-3 w-3 mr-1" />
+                            Tous ({players?.length || 0})
+                          </Button>
+                          {injuredPlayers.length > 0 && (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={selectAllInjured}
+                              className="text-xs border-amber-300 text-amber-700 hover:bg-amber-50"
+                            >
+                              <AlertTriangle className="h-3 w-3 mr-1" />
+                              Blessés ({injuredPlayers.length})
+                            </Button>
+                          )}
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={selectAllHealthy}
+                            className="text-xs border-green-300 text-green-700 hover:bg-green-50"
+                          >
+                            <UserCheck className="h-3 w-3 mr-1" />
+                            Aptes ({healthyPlayers.length})
+                          </Button>
+                          {selectedPlayers.length > 0 && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={clearSelection}
+                              className="text-xs text-muted-foreground"
+                            >
+                              Effacer
+                            </Button>
+                          )}
+                        </div>
+
+                        {selectedPlayers.length > 0 && (
+                          <Badge variant="secondary" className="w-fit">
+                            {selectedPlayers.length} joueur(s) sélectionné(s)
+                          </Badge>
+                        )}
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto">
+                          {players?.map((player) => (
+                            <div
+                              key={player.id}
+                              onClick={() => togglePlayer(player.id)}
+                              className={cn(
+                                "flex items-center gap-2 p-2 rounded-md border cursor-pointer transition-colors select-none",
+                                selectedPlayers.includes(player.id)
+                                  ? "border-primary bg-primary/10"
+                                  : "border-border hover:bg-muted/50",
+                                player.isInjured && "border-amber-300 bg-amber-50/50"
+                              )}
+                            >
+                              <Checkbox
+                                checked={selectedPlayers.includes(player.id)}
+                                className="pointer-events-none"
+                              />
+                              <Avatar className="h-6 w-6 pointer-events-none">
+                                <AvatarImage src={player.avatar_url || undefined} />
+                                <AvatarFallback className="text-xs">{(player.first_name || player.name).slice(0, 2).toUpperCase()}</AvatarFallback>
+                              </Avatar>
+                              <span className="text-sm truncate flex-1 pointer-events-none">{player.first_name ? `${player.first_name} ${player.name}` : player.name}</span>
+                              {player.isInjured && <AlertTriangle className="h-3 w-3 text-amber-500 flex-shrink-0 pointer-events-none" />}
+                              {player.position && (
+                                <Badge variant="outline" className="text-xs flex-shrink-0 pointer-events-none">
+                                  {player.position}
+                                </Badge>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    )}
+
+                    {playerSelectionMode === "all" && (
+                      <p className="text-sm text-muted-foreground">
+                        Tous les joueurs de la catégorie seront concernés par cette séance.
+                      </p>
+                    )}
+                  </>
                 )}
               </div>
             </div>
