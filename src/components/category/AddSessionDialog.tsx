@@ -343,13 +343,14 @@ export function AddSessionDialog({
       if (gpsCount > 0) toastMessage += ` et ${gpsCount} données GPS`;
       toast.success(toastMessage);
 
-      // 🔔 Send push notifications to participants
-      const mainType = sessionBlocks.length > 0 ? sessionBlocks[0].training_type : type;
-      const participantIds = playerSelectionMode === "specific" && selectedPlayers.length > 0
-        ? selectedPlayers
-        : undefined; // undefined = notify all category members
-      
-      notify({
+      // 🔔 Send push notifications to participants (skip in athlete mode)
+      if (!isAthleteMode) {
+        const mainType = sessionBlocks.length > 0 ? sessionBlocks[0].training_type : type;
+        const participantIds = playerSelectionMode === "specific" && selectedPlayers.length > 0
+          ? selectedPlayers
+          : undefined;
+        
+        notify({
         action: "created",
         sessionId: sessionData?.id,
         categoryId,
