@@ -9,7 +9,7 @@ import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Activity, CheckCircle2, Clock, Calendar, Lock, Target, Heart } from "lucide-react";
+import { Activity, CheckCircle2, Clock, Calendar, Lock, Target, Heart, Dumbbell, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 import { format, parseISO, addDays } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -17,6 +17,7 @@ import { getTrainingTypeLabel } from "@/lib/constants/trainingTypes";
 import { getTestLabel } from "@/lib/constants/testCategories";
 import { getDisplayNotes } from "@/lib/utils/sessionNotes";
 import { SPARE_EXERCISE_TYPES } from "@/lib/constants/bowlingBallBrands";
+import { GroupedExerciseList } from "@/components/category/GroupedExerciseList";
 
 interface Props {
   playerId: string;
@@ -212,6 +213,7 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
   const completedSessionIds = new Set(submittedRpes.map((r) => r.training_session_id));
 
   const [selectedSession, setSelectedSession] = useState<string | null>(null);
+  const [expandedExerciseSessionId, setExpandedExerciseSessionId] = useState<string | null>(null);
   const [rpe, setRpe] = useState(5);
   const [duration, setDuration] = useState("");
   const [durationLocked, setDurationLocked] = useState(false);
@@ -229,6 +231,31 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
   const [zone3, setZone3] = useState("");
   const [zone4, setZone4] = useState("");
   const [zone5, setZone5] = useState("");
+
+  // Fetch exercises for all visible sessions
+  const allSessionIds = useMemo(() => allSessions.map(s => s.id), [allSessions]);
+  const { data: allSessionExercises = [] } = useQuery({
+    queryKey: ["athlete-rpe-exercises", allSessionIds],
+    queryFn: async () => {
+      if (allSessionIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from("gym_session_exercises")
+        .select("*")
+        .in("training_session_id", allSessionIds)
+        .order("order_index");
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: allSessionIds.length > 0,
+  });
+
+  const exercisesBySession = useMemo(() => {
+    return allSessionExercises.reduce((acc, ex) => {
+      if (!acc[ex.training_session_id]) acc[ex.training_session_id] = [];
+      acc[ex.training_session_id].push(ex);
+      return acc;
+    }, {} as Record<string, typeof allSessionExercises>);
+  }, [allSessionExercises]);
 
   const selectedSessionData = useMemo(
     () => todaySessions.find((s) => s.id === selectedSession),
@@ -451,6 +478,32 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
     return <p className="text-xs text-muted-foreground mt-0.5 italic">{display}</p>;
   };
 
+  const renderExerciseToggle = (sessionId: string) => {
+    const exercises = exercisesBySession[sessionId] || [];
+    if (exercises.length === 0) return null;
+    const isExpanded = expandedExerciseSessionId === sessionId;
+    return (
+      <>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setExpandedExerciseSessionId(isExpanded ? null : sessionId);
+          }}
+          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mt-1.5"
+        >
+          <Dumbbell className="h-3 w-3" />
+          <span>{exercises.length} exercice{exercises.length > 1 ? "s" : ""}</span>
+          {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+        </button>
+        {isExpanded && (
+          <div className="mt-2 border-t border-border/50 pt-2">
+            <GroupedExerciseList exercises={exercises} compact maxHeight="250px" />
+          </div>
+        )}
+      </>
+    );
+  };
+
   return (
     <div className="space-y-6">
       {/* Today: Pending sessions */}
@@ -465,9 +518,9 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
           <CardContent className="space-y-4">
             {pendingSessions.map(session => (
               <div key={session.id}>
-                <button
+                <div
                   onClick={() => handleSelectSession(session.id)}
-                  className={`w-full text-left p-3 rounded-lg border transition-colors ${
+                  className={`w-full text-left p-3 rounded-lg border transition-colors cursor-pointer ${
                     selectedSession === session.id
                       ? "border-accent bg-accent/5"
                       : "border-border hover:border-accent/50"
@@ -488,7 +541,8 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
                     </div>
                     <Badge variant="outline" className="text-xs">À remplir</Badge>
                   </div>
-                </button>
+                  {renderExerciseToggle(session.id)}
+                </div>
 
                 {selectedSession === session.id && (
                   <div className="mt-3 p-4 rounded-lg bg-muted/30 space-y-4">
@@ -744,12 +798,15 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
           <CardContent>
             <div className="space-y-2">
                {doneSessions.map(s => (
-                 <div key={s.id} className="flex items-center justify-between p-2 rounded bg-status-optimal/10">
-                   <div className="flex flex-col gap-0.5">
-                     <span className="text-sm font-medium">{getSessionTrainingLabel(s)}</span>
-                      {renderTestInfo(s)}
+                 <div key={s.id} className="p-2 rounded bg-status-optimal/10">
+                   <div className="flex items-center justify-between">
+                     <div className="flex flex-col gap-0.5">
+                       <span className="text-sm font-medium">{getSessionTrainingLabel(s)}</span>
+                        {renderTestInfo(s)}
+                     </div>
+                     <CheckCircle2 className="h-4 w-4 text-status-optimal" />
                    </div>
-                   <CheckCircle2 className="h-4 w-4 text-status-optimal" />
+                   {renderExerciseToggle(s.id)}
                  </div>
                ))}
             </div>
@@ -796,6 +853,7 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
                           <span className="text-xs">Jour J</span>
                         </div>
                       </div>
+                      {renderExerciseToggle(session.id)}
                     </div>
                   ))}
                 </div>
