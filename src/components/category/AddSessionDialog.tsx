@@ -235,9 +235,11 @@ export function AddSessionDialog({
       }
 
       // Determine which players to use
-      const playersToUse = playerSelectionMode === "specific" && selectedPlayers.length > 0 
-        ? selectedPlayers 
-        : players?.map(p => p.id) || [];
+      const playersToUse = isAthleteMode
+        ? [athletePlayerId!]
+        : playerSelectionMode === "specific" && selectedPlayers.length > 0 
+          ? selectedPlayers 
+          : players?.map(p => p.id) || [];
 
       // Create attendance records for selected players (one attendance per session, not per block!)
       if (playersToUse.length > 0) {
