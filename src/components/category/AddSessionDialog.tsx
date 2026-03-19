@@ -73,7 +73,9 @@ export function AddSessionDialog({
   open,
   onOpenChange,
   categoryId,
+  athletePlayerId,
 }: AddSessionDialogProps) {
+  const isAthleteMode = !!athletePlayerId;
   const { user } = useAuth();
   const { notify } = useSessionNotifications();
   const [date, setDate] = useState("");
