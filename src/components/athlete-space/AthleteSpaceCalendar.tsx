@@ -1,21 +1,10 @@
 import { useState, useMemo } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
 import {
   Activity,
   Plus,
@@ -24,17 +13,16 @@ import {
   CheckCircle2,
   Clock,
   User,
-  X,
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
-import { format, isSameDay, parseISO } from "date-fns";
+import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { toast } from "sonner";
 import { NAV_COLORS } from "@/components/ui/colored-nav-tabs";
 import { cn } from "@/lib/utils";
-import { getTrainingTypeLabel, getTrainingTypesForSport } from "@/lib/constants/trainingTypes";
+import { getTrainingTypeLabel } from "@/lib/constants/trainingTypes";
 import { GroupedExerciseList } from "@/components/category/GroupedExerciseList";
+import { AddSessionDialog } from "@/components/category/AddSessionDialog";
 
 interface Props {
   playerId: string;
@@ -45,15 +33,9 @@ interface Props {
 const ATHLETE_SESSION_COLOR = "#8B5CF6"; // violet-500
 
 export function AthleteSpaceCalendar({ playerId, categoryId, sportType }: Props) {
-  const queryClient = useQueryClient();
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [expandedSessionId, setExpandedSessionId] = useState<string | null>(null);
-  const [newSessionDate, setNewSessionDate] = useState("");
-  const [newSessionType, setNewSessionType] = useState("individuelle");
-  const [newSessionStartTime, setNewSessionStartTime] = useState("");
-  const [newSessionEndTime, setNewSessionEndTime] = useState("");
-  const [newSessionNotes, setNewSessionNotes] = useState("");
 
   // Fetch sessions for this category
   const { data: sessions = [] } = useQuery({
@@ -98,7 +80,7 @@ export function AthleteSpaceCalendar({ playerId, categoryId, sportType }: Props)
 
   const completedSessionIds = new Set(submittedRpes.map(r => r.training_session_id));
 
-  const trainingTypes = getTrainingTypesForSport(sportType);
+  // trainingTypes not needed anymore - handled by AddSessionDialog
 
   // Calendar date modifiers
   const sessionDates = sessions.map(s => new Date(s.session_date));
@@ -137,56 +119,7 @@ export function AthleteSpaceCalendar({ playerId, categoryId, sportType }: Props)
     }, {} as Record<string, typeof sessionExercises>);
   }, [sessionExercises]);
 
-  const createSessionMutation = useMutation({
-    mutationFn: async () => {
-      if (!newSessionDate) throw new Error("Date requise");
-      if (!newSessionType) throw new Error("Type de séance requis");
-
-      const { data: newSession, error } = await supabase.from("training_sessions").insert({
-        category_id: categoryId,
-        session_date: newSessionDate,
-        training_type: newSessionType,
-        session_start_time: newSessionStartTime || null,
-        session_end_time: newSessionEndTime || null,
-        notes: newSessionNotes ? `[Séance athlète] ${newSessionNotes}` : "[Séance athlète]",
-        created_by_player_id: playerId,
-      }).select("id").single();
-      if (error) throw error;
-
-      // Auto-add athlete as participant
-      if (newSession?.id) {
-        await supabase.from("training_attendance").insert({
-          training_session_id: newSession.id,
-          player_id: playerId,
-          category_id: categoryId,
-          status: "present",
-          attendance_date: newSessionDate,
-        });
-      }
-    },
-    onSuccess: () => {
-      toast.success("Séance créée ! Elle apparaîtra dans le planning du staff.");
-      queryClient.invalidateQueries({ queryKey: ["athlete-calendar-sessions"] });
-      queryClient.invalidateQueries({ queryKey: ["sessions", categoryId] });
-      queryClient.invalidateQueries({ queryKey: ["training_sessions", categoryId] });
-      queryClient.invalidateQueries({ queryKey: ["athlete-space-sessions"] });
-      resetForm();
-      setIsCreateOpen(false);
-    },
-    onError: (error: any) => toast.error(error.message || "Erreur lors de la création"),
-  });
-
-  const resetForm = () => {
-    setNewSessionType("individuelle");
-    setNewSessionStartTime("");
-    setNewSessionEndTime("");
-    setNewSessionNotes("");
-  };
-
-  const openCreateDialog = (date?: Date) => {
-    const d = date || selectedDate || new Date();
-    setNewSessionDate(format(d, "yyyy-MM-dd"));
-    resetForm();
+  const openCreateDialog = () => {
     setIsCreateOpen(true);
   };
 
@@ -275,7 +208,7 @@ export function AthleteSpaceCalendar({ playerId, categoryId, sportType }: Props)
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => openCreateDialog(selectedDate)}
+                        onClick={() => openCreateDialog()}
                         className="gap-1.5"
                       >
                         <Plus className="h-3.5 w-3.5" />
@@ -396,7 +329,7 @@ export function AthleteSpaceCalendar({ playerId, categoryId, sportType }: Props)
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => openCreateDialog(selectedDate)}
+                        onClick={() => openCreateDialog()}
                         className="w-full gap-1.5 text-muted-foreground"
                       >
                         <Plus className="h-3.5 w-3.5" />
@@ -417,97 +350,12 @@ export function AthleteSpaceCalendar({ playerId, categoryId, sportType }: Props)
         </CardContent>
       </Card>
 
-      {/* Create Session Dialog */}
-      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Plus className="h-5 w-5" style={{ color: ATHLETE_SESSION_COLOR }} />
-              Ajouter une séance
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="space-y-4 py-2">
-            <div>
-              <Label className="text-sm">Date</Label>
-              <Input
-                type="date"
-                value={newSessionDate}
-                onChange={(e) => setNewSessionDate(e.target.value)}
-                className="mt-1"
-              />
-            </div>
-
-            <div>
-              <Label className="text-sm">Type de séance</Label>
-              <Select value={newSessionType} onValueChange={setNewSessionType}>
-                <SelectTrigger className="mt-1">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {trainingTypes.map(t => (
-                    <SelectItem key={t.value} value={t.value}>
-                      {t.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label className="text-sm">Heure début</Label>
-                <Input
-                  type="time"
-                  value={newSessionStartTime}
-                  onChange={(e) => setNewSessionStartTime(e.target.value)}
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <Label className="text-sm">Heure fin</Label>
-                <Input
-                  type="time"
-                  value={newSessionEndTime}
-                  onChange={(e) => setNewSessionEndTime(e.target.value)}
-                  className="mt-1"
-                />
-              </div>
-            </div>
-
-            <div>
-              <Label className="text-sm">Notes</Label>
-              <Textarea
-                value={newSessionNotes}
-                onChange={(e) => setNewSessionNotes(e.target.value)}
-                placeholder="Ex: Rattrapage séance du mardi..."
-                className="mt-1"
-                rows={2}
-              />
-            </div>
-
-            <div className="p-2.5 rounded-lg bg-muted/50 text-xs text-muted-foreground">
-              <User className="h-3.5 w-3.5 inline mr-1" style={{ color: ATHLETE_SESSION_COLOR }} />
-              Cette séance sera visible par le staff dans le planning avec une couleur distincte.
-              Tu pourras renseigner ton RPE une fois la séance terminée.
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
-              Annuler
-            </Button>
-            <Button
-              onClick={() => createSessionMutation.mutate()}
-              disabled={!newSessionDate || createSessionMutation.isPending}
-              style={{ backgroundColor: ATHLETE_SESSION_COLOR }}
-            >
-              <Plus className="h-4 w-4 mr-1" />
-              Créer la séance
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <AddSessionDialog
+        open={isCreateOpen}
+        onOpenChange={setIsCreateOpen}
+        categoryId={categoryId}
+        athletePlayerId={playerId}
+      />
     </div>
   );
 }
