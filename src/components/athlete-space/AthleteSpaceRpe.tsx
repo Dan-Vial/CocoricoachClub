@@ -274,6 +274,11 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
     setRpe(5);
     setSpareAttempts("");
     setSpareSuccesses("");
+    setShowHrv(false);
+    setHrvMs("");
+    setRestingHr("");
+    setAvgHr("");
+    setMaxHr("");
 
     const session = todaySessions.find((s) => s.id === sessionId);
     if (session) {
