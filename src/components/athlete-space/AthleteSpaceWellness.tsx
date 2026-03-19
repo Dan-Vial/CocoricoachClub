@@ -149,11 +149,30 @@ export function AthleteSpaceWellness({ playerId, categoryId }: Props) {
         notes: notes || null,
       });
       if (error) throw error;
+
+      // Insert HRV morning data if provided
+      if (showHrv && (hrvMs || restingHr)) {
+        const { error: hrvError } = await supabase.from("hrv_records").insert({
+          player_id: playerId,
+          category_id: categoryId,
+          record_date: today,
+          record_type: "morning",
+          hrv_ms: hrvMs ? parseFloat(hrvMs) : null,
+          resting_hr_bpm: restingHr ? parseFloat(restingHr) : null,
+        });
+        if (hrvError) {
+          console.error("HRV insert error:", hrvError);
+          toast.error("Wellness enregistré mais erreur HRV");
+        }
+      }
     },
     onSuccess: () => {
       toast.success("Wellness enregistré !");
       queryClient.invalidateQueries({ queryKey: ["athlete-space-wellness"] });
       queryClient.invalidateQueries({ queryKey: ["athlete-space-wellness-today"] });
+      if (showHrv) {
+        queryClient.invalidateQueries({ queryKey: ["hrv_records"] });
+      }
       setExpanded(false);
     },
     onError: () => toast.error("Erreur lors de l'enregistrement"),
