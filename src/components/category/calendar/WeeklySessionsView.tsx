@@ -2,7 +2,7 @@ import { useMemo, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Calendar, Clock, Swords, Dumbbell, Printer } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar, Clock, Swords, Dumbbell, Printer, User } from "lucide-react";
 import { format, startOfWeek, endOfWeek, addWeeks, subWeeks, eachDayOfInterval, isSameDay } from "date-fns";
 import { fr } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -188,7 +188,13 @@ export function WeeklySessionsView({
                         )}
                       >
                         <div className="flex items-center gap-1 text-xs">
-                          <div className={cn("h-2 w-2 rounded-full shrink-0", bgColor)} />
+                          {(session as any).created_by_player_id && (
+                            <User className="h-2.5 w-2.5 text-violet-500 shrink-0" />
+                          )}
+                          <div className={cn(
+                            "h-2 w-2 rounded-full shrink-0",
+                            (session as any).created_by_player_id ? "bg-violet-500" : bgColor
+                          )} />
                           <span className="font-medium truncate">
                             {label.slice(0, 12)}
                           </span>

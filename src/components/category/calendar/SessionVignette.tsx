@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
-import { Eye, Pencil, MessageSquare, Trash2, Bell } from "lucide-react";
+import { Eye, Pencil, MessageSquare, Trash2, Bell, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getTrainingTypeColor, getTrainingTypeLabel } from "@/lib/constants/trainingTypes";
 
@@ -53,6 +53,7 @@ interface SessionVignetteProps {
     session_end_time: string | null;
     training_type: string;
     notes: string | null;
+    created_by_player_id?: string | null;
   };
   blocks?: SessionBlock[];
   onPreview: () => void;
@@ -99,6 +100,7 @@ export function SessionVignette({
   const label = getTrainingTypeLabel(session.training_type);
   const startTime = formatTime(session.session_start_time);
   const hasBlocks = blocks && blocks.length > 0;
+  const isAthleteCreated = !!session.created_by_player_id;
 
   const handleActionClick = (e: React.MouseEvent, action: () => void) => {
     e.stopPropagation();
@@ -125,10 +127,14 @@ export function SessionVignette({
       <div
         className={cn(
           "rounded-lg px-2 py-1.5 text-white text-[11px] font-medium transition-all relative overflow-hidden",
-          !hasBlocks && bgColor,
-          isDragging && "shadow-lg ring-2 ring-primary/50"
+          !hasBlocks && !isAthleteCreated && bgColor,
+          isDragging && "shadow-lg ring-2 ring-primary/50",
+          isAthleteCreated && !hasBlocks && "ring-2 ring-violet-400"
         )}
-        style={hasBlocks ? (() => {
+        style={
+          isAthleteCreated && !hasBlocks
+            ? { backgroundColor: "#8B5CF6" }
+            : hasBlocks ? (() => {
           const uniqueBlocks = blocks.slice(0, 3);
           const colors = uniqueBlocks.map(b => {
             const colorClass = getTrainingTypeColor(b.training_type);
@@ -157,6 +163,9 @@ export function SessionVignette({
           "flex items-center gap-1.5 transition-opacity pointer-events-none",
           isHovered && !isDragging && "opacity-0"
         )}>
+          {isAthleteCreated && (
+            <User className="h-3 w-3 opacity-80 shrink-0" />
+          )}
           {startTime && (
             <>
               <span className="font-bold">{startTime}</span>
