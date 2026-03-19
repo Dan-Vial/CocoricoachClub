@@ -76,6 +76,7 @@ export function SessionVignette({
   onNotify,
   isViewer,
   isDraggable = true,
+  playerName,
 }: SessionVignetteProps) {
   const [isHovered, setIsHovered] = useState(false);
 
