@@ -121,6 +121,9 @@ export function AthleteSpaceWellness({ playerId, categoryId }: Props) {
   const [painZone, setPainZone] = useState("");
   const [painLocation, setPainLocation] = useState("");
   const [notes, setNotes] = useState("");
+  const [showHrv, setShowHrv] = useState(false);
+  const [hrvMs, setHrvMs] = useState("");
+  const [restingHr, setRestingHr] = useState("");
 
   const allFieldsFilled = values.sleep_quality > 0 && values.sleep_duration > 0 &&
     values.general_fatigue > 0 && values.soreness_upper_body > 0 &&
