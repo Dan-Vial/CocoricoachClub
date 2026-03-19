@@ -351,14 +351,15 @@ export function AddSessionDialog({
           : undefined;
         
         notify({
-        action: "created",
-        sessionId: sessionData?.id,
-        categoryId,
-        sessionDate: date,
-        sessionStartTime: startTime || null,
-        sessionType: mainType,
-        participantPlayerIds: participantIds,
-      });
+          action: "created",
+          sessionId: sessionData?.id,
+          categoryId,
+          sessionDate: date,
+          sessionStartTime: startTime || null,
+          sessionType: mainType,
+          participantPlayerIds: participantIds,
+        });
+      }
 
       resetForm();
       onOpenChange(false);
