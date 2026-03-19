@@ -51,6 +51,7 @@ export function WeeklySessionsView({
   onWeekChange,
   onViewSession,
   onViewMatch,
+  playerNamesMap,
 }: WeeklySessionsViewProps) {
   const weekStart = startOfWeek(currentWeek, { weekStartsOn: 1 });
   const weekEnd = endOfWeek(currentWeek, { weekStartsOn: 1 });
