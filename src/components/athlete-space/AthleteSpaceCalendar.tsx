@@ -208,7 +208,7 @@ export function AthleteSpaceCalendar({ playerId, categoryId, sportType }: Props)
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => openCreateDialog(selectedDate)}
+                        onClick={() => openCreateDialog()}
                         className="gap-1.5"
                       >
                         <Plus className="h-3.5 w-3.5" />
