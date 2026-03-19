@@ -196,7 +196,10 @@ export function AddSessionDialog({
           session_end_time: endTime || null,
           training_type: mainType || "autre",
           intensity: mainIntensity,
-          notes: notes || null,
+          notes: isAthleteMode
+            ? (notes ? `[Séance athlète] ${notes}` : "[Séance athlète]")
+            : (notes || null),
+          ...(isAthleteMode ? { created_by_player_id: athletePlayerId } : {}),
         }])
         .select()
         .single();
