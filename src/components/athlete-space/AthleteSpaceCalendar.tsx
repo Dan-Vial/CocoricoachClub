@@ -350,97 +350,12 @@ export function AthleteSpaceCalendar({ playerId, categoryId, sportType }: Props)
         </CardContent>
       </Card>
 
-      {/* Create Session Dialog */}
-      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Plus className="h-5 w-5" style={{ color: ATHLETE_SESSION_COLOR }} />
-              Ajouter une séance
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="space-y-4 py-2">
-            <div>
-              <Label className="text-sm">Date</Label>
-              <Input
-                type="date"
-                value={newSessionDate}
-                onChange={(e) => setNewSessionDate(e.target.value)}
-                className="mt-1"
-              />
-            </div>
-
-            <div>
-              <Label className="text-sm">Type de séance</Label>
-              <Select value={newSessionType} onValueChange={setNewSessionType}>
-                <SelectTrigger className="mt-1">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {trainingTypes.map(t => (
-                    <SelectItem key={t.value} value={t.value}>
-                      {t.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label className="text-sm">Heure début</Label>
-                <Input
-                  type="time"
-                  value={newSessionStartTime}
-                  onChange={(e) => setNewSessionStartTime(e.target.value)}
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <Label className="text-sm">Heure fin</Label>
-                <Input
-                  type="time"
-                  value={newSessionEndTime}
-                  onChange={(e) => setNewSessionEndTime(e.target.value)}
-                  className="mt-1"
-                />
-              </div>
-            </div>
-
-            <div>
-              <Label className="text-sm">Notes</Label>
-              <Textarea
-                value={newSessionNotes}
-                onChange={(e) => setNewSessionNotes(e.target.value)}
-                placeholder="Ex: Rattrapage séance du mardi..."
-                className="mt-1"
-                rows={2}
-              />
-            </div>
-
-            <div className="p-2.5 rounded-lg bg-muted/50 text-xs text-muted-foreground">
-              <User className="h-3.5 w-3.5 inline mr-1" style={{ color: ATHLETE_SESSION_COLOR }} />
-              Cette séance sera visible par le staff dans le planning avec une couleur distincte.
-              Tu pourras renseigner ton RPE une fois la séance terminée.
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
-              Annuler
-            </Button>
-            <Button
-              onClick={() => createSessionMutation.mutate()}
-              disabled={!newSessionDate || createSessionMutation.isPending}
-              style={{ backgroundColor: ATHLETE_SESSION_COLOR }}
-            >
-              <Plus className="h-4 w-4 mr-1" />
-              Créer la séance
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <AddSessionDialog
+        open={isCreateOpen}
+        onOpenChange={setIsCreateOpen}
+        categoryId={categoryId}
+        athletePlayerId={playerId}
+      />
     </div>
   );
 }
