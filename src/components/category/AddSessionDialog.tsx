@@ -485,8 +485,8 @@ export function AddSessionDialog({
             </p>
           )}
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
-          <ScrollArea className="flex-1 pr-4">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+          <ScrollArea className="flex-1 min-h-0 max-h-[calc(90vh-180px)] pr-4">
             <div className="space-y-4 py-4">
               {/* Date and time */}
               <div className="space-y-2">
