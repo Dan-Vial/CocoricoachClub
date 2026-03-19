@@ -48,6 +48,7 @@ export function AthleteSpaceCalendar({ playerId, categoryId, sportType }: Props)
   const queryClient = useQueryClient();
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [expandedSessionId, setExpandedSessionId] = useState<string | null>(null);
   const [newSessionDate, setNewSessionDate] = useState("");
   const [newSessionType, setNewSessionType] = useState("individuelle");
   const [newSessionStartTime, setNewSessionStartTime] = useState("");
