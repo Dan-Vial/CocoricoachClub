@@ -518,6 +518,7 @@ export function ImprovedCalendarView({
                       onViewMatch={(match) => onViewMatch?.(match)}
                       onStatsMatch={(match) => onStatsMatch?.(match)}
                       onDeleteMatch={(matchId) => onDeleteMatch?.(matchId)}
+                      playerNamesMap={playerNamesMap}
                     />
                   ))}
               </div>
