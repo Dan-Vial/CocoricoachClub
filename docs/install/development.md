@@ -59,6 +59,12 @@ You may also define environment-specific files:
 > are properly configured before starting the environment.
 > If needed, refer to `.env.example` for required variables.
 
+Build images:
+
+```bash
+docker compose build
+```
+
 Start containers:
 
 ```bash
