@@ -608,6 +608,9 @@ export function ImprovedCalendarView({
                                 )}
                               </div>
                               <p className="font-semibold text-sm mt-0.5 truncate">
+                                {session.created_by_player_id && playerNamesMap[session.created_by_player_id]
+                                  ? `${playerNamesMap[session.created_by_player_id]} · `
+                                  : ""}
                                 {trainingTypeLabels[session.training_type] || session.training_type}
                               </p>
                               {session.notes && getDisplayNotes(session.notes) && (
