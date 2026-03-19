@@ -301,52 +301,82 @@ export function AthleteSpaceCalendar({ playerId, categoryId, sportType }: Props)
                       {daySessions.map(session => {
                         const isAthleteSession = session.created_by_player_id === playerId;
                         const isCompleted = completedSessionIds.has(session.id);
+                        const exercises = exercisesBySession[session.id] || [];
+                        const isExpanded = expandedSessionId === session.id;
 
                         return (
                           <div
                             key={session.id}
                             className={cn(
-                              "p-3 rounded-lg border transition-colors",
+                              "rounded-lg border transition-colors",
                               isAthleteSession
                                 ? "border-l-4"
                                 : "border-border"
                             )}
                             style={isAthleteSession ? { borderLeftColor: ATHLETE_SESSION_COLOR, backgroundColor: `${ATHLETE_SESSION_COLOR}08` } : {}}
                           >
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <Activity className="h-4 w-4 text-muted-foreground" />
-                                <div>
-                                  <div className="flex items-center gap-2">
-                                    <p className="font-medium text-sm">
-                                      {getTrainingTypeLabel(session.training_type)}
-                                    </p>
-                                    {isAthleteSession && (
-                                      <Badge
-                                        className="text-[10px] h-4 px-1.5 border"
-                                        style={{
-                                          backgroundColor: `${ATHLETE_SESSION_COLOR}15`,
-                                          color: ATHLETE_SESSION_COLOR,
-                                          borderColor: `${ATHLETE_SESSION_COLOR}40`,
-                                        }}
-                                      >
-                                        <User className="h-2.5 w-2.5 mr-0.5" />
-                                        Ma séance
-                                      </Badge>
+                            <button
+                              className="w-full text-left p-3"
+                              onClick={() => setExpandedSessionId(isExpanded ? null : session.id)}
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <Activity className="h-4 w-4 text-muted-foreground" />
+                                  <div>
+                                    <div className="flex items-center gap-2">
+                                      <p className="font-medium text-sm">
+                                        {getTrainingTypeLabel(session.training_type)}
+                                      </p>
+                                      {isAthleteSession && (
+                                        <Badge
+                                          className="text-[10px] h-4 px-1.5 border"
+                                          style={{
+                                            backgroundColor: `${ATHLETE_SESSION_COLOR}15`,
+                                            color: ATHLETE_SESSION_COLOR,
+                                            borderColor: `${ATHLETE_SESSION_COLOR}40`,
+                                          }}
+                                        >
+                                          <User className="h-2.5 w-2.5 mr-0.5" />
+                                          Ma séance
+                                        </Badge>
+                                      )}
+                                    </div>
+                                    {session.session_start_time && (
+                                      <p className="text-xs text-muted-foreground flex items-center gap-1">
+                                        <Clock className="h-3 w-3" />
+                                        {session.session_start_time.slice(0, 5)}
+                                        {session.session_end_time && ` - ${session.session_end_time.slice(0, 5)}`}
+                                      </p>
                                     )}
                                   </div>
-                                  {session.session_start_time && (
-                                    <p className="text-xs text-muted-foreground flex items-center gap-1">
-                                      <Clock className="h-3 w-3" />
-                                      {session.session_start_time.slice(0, 5)}
-                                      {session.session_end_time && ` - ${session.session_end_time.slice(0, 5)}`}
-                                    </p>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                  {exercises.length > 0 && (
+                                    <Badge variant="outline" className="text-[10px] h-4 px-1.5">
+                                      <Dumbbell className="h-2.5 w-2.5 mr-0.5" />
+                                      {exercises.length}
+                                    </Badge>
+                                  )}
+                                  {isCompleted && (
+                                    <CheckCircle2 className="h-4 w-4 text-status-optimal" />
+                                  )}
+                                  {exercises.length > 0 && (
+                                    isExpanded ? <ChevronUp className="h-3.5 w-3.5 text-muted-foreground" /> : <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
                                   )}
                                 </div>
                               </div>
-                              {isCompleted && (
-                                <CheckCircle2 className="h-4 w-4 text-status-optimal" />
-                              )}
+                            </button>
+
+                            {/* Expanded exercises with video buttons */}
+                            {isExpanded && exercises.length > 0 && (
+                              <div className="px-3 pb-3 border-t border-border/50 pt-2">
+                                <GroupedExerciseList
+                                  exercises={exercises}
+                                  compact
+                                  maxHeight="300px"
+                                />
+                              </div>
+                            )}
                             </div>
                           </div>
                         );
