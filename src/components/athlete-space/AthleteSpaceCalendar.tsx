@@ -376,6 +376,7 @@ export function AthleteSpaceCalendar({ playerId, categoryId, sportType }: Props)
                                   maxHeight="300px"
                                 />
                               </div>
+                            )}
                           </div>
                         );
                       })}
