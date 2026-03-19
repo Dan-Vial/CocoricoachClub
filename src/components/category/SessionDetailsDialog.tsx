@@ -484,6 +484,15 @@ export function SessionDetailsDialog({
                   {attendance.length} joueur(s)
                 </Badge>
               )}
+              {session.created_by_player_id && (() => {
+                const creator = players?.find(p => p.id === session.created_by_player_id);
+                return creator ? (
+                  <Badge variant="outline" className="flex items-center gap-1 border-violet-300 text-violet-600 bg-violet-50 dark:bg-violet-950/20 dark:text-violet-400">
+                    <Users className="h-3 w-3" />
+                    Créée par {creator.first_name ? `${creator.first_name} ${creator.name}` : creator.name}
+                  </Badge>
+                ) : null;
+              })()}
             </div>
           )}
 
