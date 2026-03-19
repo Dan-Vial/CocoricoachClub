@@ -21,6 +21,7 @@ import { AthleteSpaceEducation } from "@/components/athlete-space/AthleteSpaceEd
 import { MessagingTab } from "@/components/messaging/MessagingTab";
 import { AthleteSpaceSettings } from "@/components/athlete-space/AthleteSpaceSettings";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
+import { AthleteSpaceCalendar } from "@/components/athlete-space/AthleteSpaceCalendar";
 
 interface AthleteInfo {
   player_id: string;
