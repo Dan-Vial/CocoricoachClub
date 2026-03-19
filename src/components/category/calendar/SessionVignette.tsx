@@ -100,6 +100,7 @@ export function SessionVignette({
   const label = getTrainingTypeLabel(session.training_type);
   const startTime = formatTime(session.session_start_time);
   const hasBlocks = blocks && blocks.length > 0;
+  const isAthleteCreated = !!session.created_by_player_id;
 
   const handleActionClick = (e: React.MouseEvent, action: () => void) => {
     e.stopPropagation();
