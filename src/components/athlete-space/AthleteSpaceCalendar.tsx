@@ -80,7 +80,7 @@ export function AthleteSpaceCalendar({ playerId, categoryId, sportType }: Props)
 
   const completedSessionIds = new Set(submittedRpes.map(r => r.training_session_id));
 
-  const trainingTypes = getTrainingTypesForSport(sportType);
+  // trainingTypes not needed anymore - handled by AddSessionDialog
 
   // Calendar date modifiers
   const sessionDates = sessions.map(s => new Date(s.session_date));
