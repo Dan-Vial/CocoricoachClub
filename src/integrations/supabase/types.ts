@@ -7683,6 +7683,7 @@ export type Database = {
         Row: {
           category_id: string
           created_at: string
+          created_by_player_id: string | null
           id: string
           intensity: number | null
           notes: string | null
@@ -7695,6 +7696,7 @@ export type Database = {
         Insert: {
           category_id: string
           created_at?: string
+          created_by_player_id?: string | null
           id?: string
           intensity?: number | null
           notes?: string | null
@@ -7707,6 +7709,7 @@ export type Database = {
         Update: {
           category_id?: string
           created_at?: string
+          created_by_player_id?: string | null
           id?: string
           intensity?: number | null
           notes?: string | null
@@ -7722,6 +7725,13 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_sessions_created_by_player_id_fkey"
+            columns: ["created_by_player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
             referencedColumns: ["id"]
           },
         ]
