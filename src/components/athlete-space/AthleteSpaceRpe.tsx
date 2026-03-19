@@ -344,18 +344,46 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
           throw spareError;
         }
       }
+      // Insert HRV data if provided
+      if (showHrv && (hrvMs || restingHr || avgHr || maxHr)) {
+        const sessionType = selectedSessionData?.training_type;
+        const hrvRecordType = sessionType === "test" ? "test" : sessionType === "competition" ? "competition" : "session";
+        const { error: hrvError } = await supabase.from("hrv_records").insert({
+          player_id: playerId,
+          category_id: categoryId,
+          record_date: today,
+          record_type: hrvRecordType,
+          training_session_id: selectedSession,
+          hrv_ms: hrvMs ? parseFloat(hrvMs) : null,
+          resting_hr_bpm: restingHr ? parseFloat(restingHr) : null,
+          avg_hr_bpm: avgHr ? parseFloat(avgHr) : null,
+          max_hr_bpm: maxHr ? parseFloat(maxHr) : null,
+        });
+        if (hrvError) {
+          console.error("HRV insert error:", hrvError);
+          toast.error("RPE enregistré mais erreur HRV");
+        }
+      }
     },
     onSuccess: () => {
       toast.success(isPrecisionSession ? "RPE et statistiques enregistrés !" : "RPE enregistré !");
       queryClient.invalidateQueries({ queryKey: ["athlete-space-rpes"] });
       queryClient.invalidateQueries({ queryKey: ["athlete-space-awcr"] });
       queryClient.invalidateQueries({ queryKey: ["athlete-space-sessions"] });
+      if (showHrv) {
+        queryClient.invalidateQueries({ queryKey: ["hrv_records"] });
+      }
       setSelectedSession(null);
       setRpe(5);
       setDuration("");
       setSpareAttempts("");
       setSpareSuccesses("");
       setSpareExerciseType("spare_pin_7");
+      setShowHrv(false);
+      setHrvMs("");
+      setRestingHr("");
+      setAvgHr("");
+      setMaxHr("");
     },
     onError: (error: any) => toast.error(error?.message || "Erreur lors de l'enregistrement"),
   });
