@@ -63,6 +63,7 @@ interface SessionVignetteProps {
   onNotify?: () => void;
   isViewer: boolean;
   isDraggable?: boolean;
+  playerName?: string | null;
 }
 
 export function SessionVignette({
