@@ -593,7 +593,7 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
                       <div className="flex items-center gap-2">
                         <Checkbox checked={showHrv} onCheckedChange={(v) => {
                           setShowHrv(!!v);
-                          if (!v) { setHrvMs(""); setRestingHr(""); setAvgHr(""); setMaxHr(""); }
+                          if (!v) { setHrvMs(""); setRestingHr(""); setAvgHr(""); setMaxHr(""); setShowZones(false); setZone1(""); setZone2(""); setZone3(""); setZone4(""); setZone5(""); }
                         }} />
                         <Label className="text-sm flex items-center gap-1.5">
                           <Heart className="h-3.5 w-3.5 text-destructive" />
@@ -606,56 +606,102 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
                       </div>
 
                       {showHrv && (
-                        <div className="grid grid-cols-2 gap-3 pl-6">
-                          <div className="space-y-1.5">
-                            <Label className="text-xs">HRV (ms)</Label>
-                            <Input
-                              type="number"
-                              min="0"
-                              max="300"
-                              placeholder="Ex: 65"
-                              value={hrvMs}
-                              onChange={(e) => setHrvMs(e.target.value)}
-                              className="h-9"
-                            />
+                        <div className="space-y-3 pl-6">
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1.5">
+                              <Label className="text-xs">HRV (ms)</Label>
+                              <Input
+                                type="number"
+                                min="0"
+                                max="300"
+                                placeholder="Ex: 65"
+                                value={hrvMs}
+                                onChange={(e) => setHrvMs(e.target.value)}
+                                className="h-9"
+                              />
+                            </div>
+                            <div className="space-y-1.5">
+                              <Label className="text-xs">FC repos (bpm)</Label>
+                              <Input
+                                type="number"
+                                min="30"
+                                max="120"
+                                placeholder="Ex: 55"
+                                value={restingHr}
+                                onChange={(e) => setRestingHr(e.target.value)}
+                                className="h-9"
+                              />
+                            </div>
+                            <div className="space-y-1.5">
+                              <Label className="text-xs">FC moyenne (bpm)</Label>
+                              <Input
+                                type="number"
+                                min="40"
+                                max="220"
+                                placeholder="Ex: 145"
+                                value={avgHr}
+                                onChange={(e) => setAvgHr(e.target.value)}
+                                className="h-9"
+                              />
+                            </div>
+                            <div className="space-y-1.5">
+                              <Label className="text-xs">FC max (bpm)</Label>
+                              <Input
+                                type="number"
+                                min="60"
+                                max="230"
+                                placeholder="Ex: 185"
+                                value={maxHr}
+                                onChange={(e) => setMaxHr(e.target.value)}
+                                className="h-9"
+                              />
+                            </div>
                           </div>
-                          <div className="space-y-1.5">
-                            <Label className="text-xs">FC repos (bpm)</Label>
-                            <Input
-                              type="number"
-                              min="30"
-                              max="120"
-                              placeholder="Ex: 55"
-                              value={restingHr}
-                              onChange={(e) => setRestingHr(e.target.value)}
-                              className="h-9"
-                            />
+
+                          {/* Optional zone times */}
+                          <div className="flex items-center gap-2">
+                            <Checkbox checked={showZones} onCheckedChange={(v) => {
+                              setShowZones(!!v);
+                              if (!v) { setZone1(""); setZone2(""); setZone3(""); setZone4(""); setZone5(""); }
+                            }} />
+                            <Label className="text-xs">Ajouter le temps par zone cardiaque</Label>
                           </div>
-                          <div className="space-y-1.5">
-                            <Label className="text-xs">FC moyenne (bpm)</Label>
-                            <Input
-                              type="number"
-                              min="40"
-                              max="220"
-                              placeholder="Ex: 145"
-                              value={avgHr}
-                              onChange={(e) => setAvgHr(e.target.value)}
-                              className="h-9"
-                            />
-                          </div>
-                          <div className="space-y-1.5">
-                            <Label className="text-xs">FC max (bpm)</Label>
-                            <Input
-                              type="number"
-                              min="60"
-                              max="230"
-                              placeholder="Ex: 185"
-                              value={maxHr}
-                              onChange={(e) => setMaxHr(e.target.value)}
-                              className="h-9"
-                            />
-                          </div>
-                          <p className="col-span-2 text-[10px] text-muted-foreground">
+
+                          {showZones && (
+                            <div className="space-y-2 rounded-lg border border-border p-3">
+                              <Label className="text-xs font-medium text-muted-foreground">Temps par zone (minutes)</Label>
+                              {[
+                                { label: "Z1 — Récupération", color: "bg-sky-500", state: zone1, setter: setZone1 },
+                                { label: "Z2 — Endurance", color: "bg-emerald-500", state: zone2, setter: setZone2 },
+                                { label: "Z3 — Tempo", color: "bg-amber-500", state: zone3, setter: setZone3 },
+                                { label: "Z4 — Seuil", color: "bg-orange-500", state: zone4, setter: setZone4 },
+                                { label: "Z5 — VO2max", color: "bg-red-500", state: zone5, setter: setZone5 },
+                              ].map((z) => (
+                                <div key={z.label} className="flex items-center gap-2">
+                                  <div className={`w-2.5 h-2.5 rounded-full ${z.color} shrink-0`} />
+                                  <span className="text-xs w-28 shrink-0">{z.label}</span>
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    placeholder="min"
+                                    value={z.state}
+                                    onChange={(e) => z.setter(e.target.value)}
+                                    className="h-7 w-20 text-sm text-right"
+                                  />
+                                </div>
+                              ))}
+                              {(() => {
+                                const total = [zone1, zone2, zone3, zone4, zone5]
+                                  .filter(Boolean)
+                                  .reduce((s, v) => s + (parseFloat(v) || 0), 0);
+                                return total > 0 ? (
+                                  <p className="text-xs text-muted-foreground text-right">Total : {total} min</p>
+                                ) : null;
+                              })()}
+                            </div>
+                          )}
+
+                          <p className="text-[10px] text-muted-foreground">
                             Données visibles dans Santé → HRV
                           </p>
                         </div>
