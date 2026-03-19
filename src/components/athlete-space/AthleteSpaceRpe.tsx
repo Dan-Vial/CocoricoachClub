@@ -518,9 +518,9 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
           <CardContent className="space-y-4">
             {pendingSessions.map(session => (
               <div key={session.id}>
-                <button
+                <div
                   onClick={() => handleSelectSession(session.id)}
-                  className={`w-full text-left p-3 rounded-lg border transition-colors ${
+                  className={`w-full text-left p-3 rounded-lg border transition-colors cursor-pointer ${
                     selectedSession === session.id
                       ? "border-accent bg-accent/5"
                       : "border-border hover:border-accent/50"
@@ -541,7 +541,8 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
                     </div>
                     <Badge variant="outline" className="text-xs">À remplir</Badge>
                   </div>
-                </button>
+                  {renderExerciseToggle(session.id)}
+                </div>
 
                 {selectedSession === session.id && (
                   <div className="mt-3 p-4 rounded-lg bg-muted/30 space-y-4">
