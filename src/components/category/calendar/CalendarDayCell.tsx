@@ -71,6 +71,7 @@ export function CalendarDayCell({
   onViewMatch,
   onStatsMatch,
   onDeleteMatch,
+  playerNamesMap,
 }: CalendarDayCellProps) {
   const dateStr = format(day, "yyyy-MM-dd");
   const { setNodeRef, isOver } = useDroppable({
