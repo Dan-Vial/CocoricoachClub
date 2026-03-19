@@ -42,6 +42,7 @@ interface Session {
   training_type: string;
   notes: string | null;
   intensity?: number | null;
+  created_by_player_id?: string | null;
 }
 
 interface Match {
