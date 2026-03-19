@@ -476,7 +476,12 @@ export function AddSessionDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>Ajouter une séance d'entraînement</DialogTitle>
+          <DialogTitle>{isAthleteMode ? "Ajouter ma séance" : "Ajouter une séance d'entraînement"}</DialogTitle>
+          {isAthleteMode && (
+            <p className="text-sm text-muted-foreground">
+              Cette séance sera visible par le staff dans le planning.
+            </p>
+          )}
         </DialogHeader>
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
           <ScrollArea className="flex-1 pr-4">
