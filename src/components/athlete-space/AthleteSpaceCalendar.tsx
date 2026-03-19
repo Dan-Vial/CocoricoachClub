@@ -34,6 +34,7 @@ import { toast } from "sonner";
 import { NAV_COLORS } from "@/components/ui/colored-nav-tabs";
 import { cn } from "@/lib/utils";
 import { getTrainingTypeLabel, getTrainingTypesForSport } from "@/lib/constants/trainingTypes";
+import { GroupedExerciseList } from "@/components/category/GroupedExerciseList";
 
 interface Props {
   playerId: string;
