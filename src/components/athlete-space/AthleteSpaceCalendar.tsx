@@ -158,7 +158,9 @@ export function AthleteSpaceCalendar({ playerId, categoryId, sportType }: Props)
         await supabase.from("training_attendance").insert({
           training_session_id: newSession.id,
           player_id: playerId,
+          category_id: categoryId,
           status: "present",
+          attendance_date: newSessionDate,
         });
       }
     },
