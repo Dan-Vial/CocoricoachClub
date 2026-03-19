@@ -52,6 +52,17 @@ export function PostSessionRpeDialog({
   const queryClient = useQueryClient();
   const [entries, setEntries] = useState<Record<string, PlayerRpeEntry>>({});
   const [defaultDuration, setDefaultDuration] = useState("60");
+  const [showHrv, setShowHrv] = useState(false);
+  const [hrvMs, setHrvMs] = useState("");
+  const [restingHr, setRestingHr] = useState("");
+  const [avgHr, setAvgHr] = useState("");
+  const [maxHr, setMaxHr] = useState("");
+  const [showZones, setShowZones] = useState(false);
+  const [zone1, setZone1] = useState("");
+  const [zone2, setZone2] = useState("");
+  const [zone3, setZone3] = useState("");
+  const [zone4, setZone4] = useState("");
+  const [zone5, setZone5] = useState("");
 
   // Fetch players info
   const { data: players } = useQuery({
