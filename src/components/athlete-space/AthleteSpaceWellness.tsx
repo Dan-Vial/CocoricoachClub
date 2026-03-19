@@ -368,6 +368,52 @@ export function AthleteSpaceWellness({ playerId, categoryId }: Props) {
             />
           </div>
 
+          {/* HRV morning data (optional) */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <Checkbox checked={showHrv} onCheckedChange={(v) => {
+                setShowHrv(!!v);
+                if (!v) { setHrvMs(""); setRestingHr(""); }
+              }} />
+              <Label className="text-sm flex items-center gap-1.5">
+                <Activity className="h-3.5 w-3.5" style={{ color: NAV_COLORS.sante.base }} />
+                Ajouter mes données HRV (matin repos)
+              </Label>
+            </div>
+
+            {showHrv && (
+              <div className="grid grid-cols-2 gap-3 pl-6">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">HRV (ms)</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    max="300"
+                    placeholder="Ex: 65"
+                    value={hrvMs}
+                    onChange={(e) => setHrvMs(e.target.value)}
+                    className="h-9"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">FC repos (bpm)</Label>
+                  <Input
+                    type="number"
+                    min="30"
+                    max="120"
+                    placeholder="Ex: 55"
+                    value={restingHr}
+                    onChange={(e) => setRestingHr(e.target.value)}
+                    className="h-9"
+                  />
+                </div>
+                <p className="col-span-2 text-[10px] text-muted-foreground">
+                  Ces données seront visibles dans Santé → HRV
+                </p>
+              </div>
+            )}
+          </div>
+
           <Button
             onClick={() => submitWellness.mutate()}
             disabled={submitWellness.isPending || !allFieldsFilled}
