@@ -853,6 +853,7 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
                           <span className="text-xs">Jour J</span>
                         </div>
                       </div>
+                      {renderExerciseToggle(session.id)}
                     </div>
                   ))}
                 </div>
