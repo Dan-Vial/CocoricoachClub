@@ -353,7 +353,7 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
         }
       }
       // Insert HRV data if provided
-      if (showHrv && (hrvMs || restingHr || avgHr || maxHr)) {
+      if (showHrv && (hrvMs || restingHr || avgHr || maxHr || zone1 || zone2 || zone3 || zone4 || zone5)) {
         const sessionType = selectedSessionData?.training_type;
         const hrvRecordType = sessionType === "test" ? "test" : sessionType === "competition" ? "competition" : "session";
         const { error: hrvError } = await supabase.from("hrv_records").insert({
@@ -366,6 +366,11 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
           resting_hr_bpm: restingHr ? parseFloat(restingHr) : null,
           avg_hr_bpm: avgHr ? parseFloat(avgHr) : null,
           max_hr_bpm: maxHr ? parseFloat(maxHr) : null,
+          zone1_minutes: zone1 ? parseFloat(zone1) : null,
+          zone2_minutes: zone2 ? parseFloat(zone2) : null,
+          zone3_minutes: zone3 ? parseFloat(zone3) : null,
+          zone4_minutes: zone4 ? parseFloat(zone4) : null,
+          zone5_minutes: zone5 ? parseFloat(zone5) : null,
         });
         if (hrvError) {
           console.error("HRV insert error:", hrvError);
