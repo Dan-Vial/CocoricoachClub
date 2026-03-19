@@ -186,6 +186,35 @@ export function PostSessionRpeDialog({
       const { error } = await supabase.from("awcr_tracking").insert(insertData);
       if (error) throw error;
 
+      // Save HRV data if provided
+      if (showHrv && (hrvMs || restingHr || avgHr || maxHr || zone1 || zone2 || zone3 || zone4 || zone5)) {
+        const sessionType = session.training_type;
+        const hrvRecordType = sessionType === "test" ? "test" : sessionType === "competition" ? "competition" : "session";
+        
+        const hrvInserts = validEntries.map(entry => ({
+          player_id: entry.playerId,
+          category_id: categoryId,
+          record_date: session.session_date,
+          record_type: hrvRecordType,
+          training_session_id: session.id,
+          hrv_ms: hrvMs ? parseFloat(hrvMs) : null,
+          resting_hr_bpm: restingHr ? parseFloat(restingHr) : null,
+          avg_hr_bpm: avgHr ? parseFloat(avgHr) : null,
+          max_hr_bpm: maxHr ? parseFloat(maxHr) : null,
+          zone1_minutes: zone1 ? parseFloat(zone1) : null,
+          zone2_minutes: zone2 ? parseFloat(zone2) : null,
+          zone3_minutes: zone3 ? parseFloat(zone3) : null,
+          zone4_minutes: zone4 ? parseFloat(zone4) : null,
+          zone5_minutes: zone5 ? parseFloat(zone5) : null,
+        }));
+
+        const { error: hrvError } = await supabase.from("hrv_records").insert(hrvInserts);
+        if (hrvError) {
+          console.error("HRV insert error:", hrvError);
+          toast.error("RPE enregistrés mais erreur HRV");
+        }
+      }
+
       // Trigger AWCR alerts check
       try {
         await supabase.functions.invoke("check-awcr-alerts");
@@ -198,7 +227,14 @@ export function PostSessionRpeDialog({
     onSuccess: (count) => {
       queryClient.invalidateQueries({ queryKey: ["awcr_tracking"] });
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      if (showHrv) {
+        queryClient.invalidateQueries({ queryKey: ["hrv_records"] });
+      }
       toast.success(`${count} entrées RPE enregistrées`);
+      setShowHrv(false);
+      setHrvMs(""); setRestingHr(""); setAvgHr(""); setMaxHr("");
+      setShowZones(false);
+      setZone1(""); setZone2(""); setZone3(""); setZone4(""); setZone5("");
       onOpenChange(false);
     },
     onError: (error: Error) => {
