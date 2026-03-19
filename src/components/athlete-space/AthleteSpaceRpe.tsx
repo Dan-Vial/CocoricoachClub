@@ -218,6 +218,11 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
   const [spareExerciseType, setSpareExerciseType] = useState<string>("spare_pin_7");
   const [spareAttempts, setSpareAttempts] = useState("");
   const [spareSuccesses, setSpareSuccesses] = useState("");
+  const [showHrv, setShowHrv] = useState(false);
+  const [hrvMs, setHrvMs] = useState("");
+  const [restingHr, setRestingHr] = useState("");
+  const [avgHr, setAvgHr] = useState("");
+  const [maxHr, setMaxHr] = useState("");
 
   const selectedSessionData = useMemo(
     () => todaySessions.find((s) => s.id === selectedSession),
