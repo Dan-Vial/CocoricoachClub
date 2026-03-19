@@ -146,6 +146,15 @@ export function ImprovedCalendarView({
     enabled: selectedPlayerIds.length > 0,
   });
 
+  // Build player names map for athlete-created sessions
+  const playerNamesMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    if (players) {
+      players.forEach(p => { map[p.id] = p.first_name ? `${p.first_name} ${p.name}` : p.name; });
+    }
+    return map;
+  }, [players]);
+
   // Get training types for event type filter
   const trainingTypes = useMemo(() => getTrainingTypesForSport(sportType), [sportType]);
 
