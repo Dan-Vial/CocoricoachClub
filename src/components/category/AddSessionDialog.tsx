@@ -41,6 +41,8 @@ interface AddSessionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   categoryId: string;
+  /** When set, the dialog runs in "athlete mode": player is pre-selected & locked, session is tagged as athlete-created */
+  athletePlayerId?: string;
 }
 
 interface Exercise {
