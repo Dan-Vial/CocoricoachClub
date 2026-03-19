@@ -51,6 +51,7 @@ interface CalendarDayCellProps {
   onViewMatch?: (match: Match) => void;
   onStatsMatch?: (match: Match) => void;
   onDeleteMatch?: (matchId: string) => void;
+  playerNamesMap?: Record<string, string>;
 }
 
 export function CalendarDayCell({
