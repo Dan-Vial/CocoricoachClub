@@ -476,8 +476,8 @@ export function AddSessionDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
-        <DialogHeader>
+      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col overflow-hidden">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>{isAthleteMode ? "Ajouter ma séance" : "Ajouter une séance d'entraînement"}</DialogTitle>
           {isAthleteMode && (
             <p className="text-sm text-muted-foreground">
@@ -485,8 +485,8 @@ export function AddSessionDialog({
             </p>
           )}
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
-          <ScrollArea className="flex-1 min-h-0 max-h-[calc(90vh-180px)] pr-4">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+          <div className="flex-1 overflow-y-auto pr-2">
             <div className="space-y-4 py-4">
               {/* Date and time */}
               <div className="space-y-2">
