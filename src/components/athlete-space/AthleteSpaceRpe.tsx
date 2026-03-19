@@ -213,6 +213,7 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
   const completedSessionIds = new Set(submittedRpes.map((r) => r.training_session_id));
 
   const [selectedSession, setSelectedSession] = useState<string | null>(null);
+  const [expandedExerciseSessionId, setExpandedExerciseSessionId] = useState<string | null>(null);
   const [rpe, setRpe] = useState(5);
   const [duration, setDuration] = useState("");
   const [durationLocked, setDurationLocked] = useState(false);
@@ -230,6 +231,31 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
   const [zone3, setZone3] = useState("");
   const [zone4, setZone4] = useState("");
   const [zone5, setZone5] = useState("");
+
+  // Fetch exercises for all visible sessions
+  const allSessionIds = useMemo(() => allSessions.map(s => s.id), [allSessions]);
+  const { data: allSessionExercises = [] } = useQuery({
+    queryKey: ["athlete-rpe-exercises", allSessionIds],
+    queryFn: async () => {
+      if (allSessionIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from("gym_session_exercises")
+        .select("*")
+        .in("training_session_id", allSessionIds)
+        .order("order_index");
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: allSessionIds.length > 0,
+  });
+
+  const exercisesBySession = useMemo(() => {
+    return allSessionExercises.reduce((acc, ex) => {
+      if (!acc[ex.training_session_id]) acc[ex.training_session_id] = [];
+      acc[ex.training_session_id].push(ex);
+      return acc;
+    }, {} as Record<string, typeof allSessionExercises>);
+  }, [allSessionExercises]);
 
   const selectedSessionData = useMemo(
     () => todaySessions.find((s) => s.id === selectedSession),
