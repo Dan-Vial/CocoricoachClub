@@ -171,6 +171,7 @@ export function CalendarDayCell({
               onNotify={onNotifySession ? () => onNotifySession(session) : undefined}
               isViewer={isViewer}
               isDraggable={!isViewer}
+              playerName={session.created_by_player_id && playerNamesMap ? playerNamesMap[session.created_by_player_id] : null}
             />
           </div>
         ))}
