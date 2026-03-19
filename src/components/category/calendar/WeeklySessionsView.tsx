@@ -199,6 +199,9 @@ export function WeeklySessionsView({
                             (session as any).created_by_player_id ? "bg-violet-500" : bgColor
                           )} />
                           <span className="font-medium truncate">
+                            {(session as any).created_by_player_id && playerNamesMap?.[(session as any).created_by_player_id]
+                              ? `${playerNamesMap[(session as any).created_by_player_id].split(' ')[0]} · `
+                              : ""}
                             {label.slice(0, 12)}
                           </span>
                         </div>
