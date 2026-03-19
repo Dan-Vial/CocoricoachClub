@@ -935,9 +935,9 @@ export function AddSessionDialog({
                 )}
               </div>
             </div>
-          </ScrollArea>
+          </div>
           
-          <DialogFooter className="mt-4 pt-4 border-t">
+          <DialogFooter className="flex-shrink-0 mt-4 pt-4 border-t">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Annuler
             </Button>
