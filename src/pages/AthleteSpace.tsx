@@ -454,19 +454,32 @@ export default function AthleteSpace() {
                 <Activity className="h-3.5 w-3.5" />
                 RPE
               </TabsTrigger>
-              <TabsTrigger 
-                value="wellness"
-                 className="athlete-tab shrink-0 gap-1 px-2 py-1.5 rounded-xl font-semibold text-xs transition-all duration-200 data-[state=active]:shadow-lg"
-                 style={{
-                   color: NAV_COLORS.sante.base,
-                   backgroundColor: `${NAV_COLORS.sante.base}15`,
-                   borderBottom: `3px solid ${NAV_COLORS.sante.base}`,
-                   ["--tab-color" as string]: NAV_COLORS.sante.base,
-                 }}
-               >
-                 <Heart className="h-3.5 w-3.5" />
-                 Wellness
-              </TabsTrigger>
+               <TabsTrigger 
+                 value="wellness"
+                  className="athlete-tab shrink-0 gap-1 px-2 py-1.5 rounded-xl font-semibold text-xs transition-all duration-200 data-[state=active]:shadow-lg"
+                  style={{
+                    color: NAV_COLORS.sante.base,
+                    backgroundColor: `${NAV_COLORS.sante.base}15`,
+                    borderBottom: `3px solid ${NAV_COLORS.sante.base}`,
+                    ["--tab-color" as string]: NAV_COLORS.sante.base,
+                  }}
+                >
+                  <Heart className="h-3.5 w-3.5" />
+                  Wellness
+               </TabsTrigger>
+               <TabsTrigger 
+                 value="calendar"
+                  className="athlete-tab shrink-0 gap-1 px-2 py-1.5 rounded-xl font-semibold text-xs transition-all duration-200 data-[state=active]:shadow-lg"
+                  style={{
+                    color: NAV_COLORS.planification.base,
+                    backgroundColor: `${NAV_COLORS.planification.base}15`,
+                    borderBottom: `3px solid ${NAV_COLORS.planification.base}`,
+                    ["--tab-color" as string]: NAV_COLORS.planification.base,
+                  }}
+                >
+                  <CalendarDays className="h-3.5 w-3.5" />
+                  Calendrier
+               </TabsTrigger>
               <TabsTrigger 
                 value="progression"
                  className="athlete-tab shrink-0 gap-1 px-2 py-1.5 rounded-xl font-semibold text-xs transition-all duration-200 data-[state=active]:shadow-lg"
