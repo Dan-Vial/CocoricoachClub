@@ -478,6 +478,32 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
     return <p className="text-xs text-muted-foreground mt-0.5 italic">{display}</p>;
   };
 
+  const renderExerciseToggle = (sessionId: string) => {
+    const exercises = exercisesBySession[sessionId] || [];
+    if (exercises.length === 0) return null;
+    const isExpanded = expandedExerciseSessionId === sessionId;
+    return (
+      <>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setExpandedExerciseSessionId(isExpanded ? null : sessionId);
+          }}
+          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mt-1.5"
+        >
+          <Dumbbell className="h-3 w-3" />
+          <span>{exercises.length} exercice{exercises.length > 1 ? "s" : ""}</span>
+          {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+        </button>
+        {isExpanded && (
+          <div className="mt-2 border-t border-border/50 pt-2">
+            <GroupedExerciseList exercises={exercises} compact maxHeight="250px" />
+          </div>
+        )}
+      </>
+    );
+  };
+
   return (
     <div className="space-y-6">
       {/* Today: Pending sessions */}
