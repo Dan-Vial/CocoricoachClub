@@ -175,6 +175,7 @@ export function SessionVignette({
             </>
           )}
           <span className="truncate opacity-90">
+            {isAthleteCreated && playerName ? `${playerName} · ` : ""}
             {hasBlocks ? `${blocks.length} blocs` : label}
           </span>
         </div>
