@@ -163,6 +163,9 @@ export function SessionVignette({
           "flex items-center gap-1.5 transition-opacity pointer-events-none",
           isHovered && !isDragging && "opacity-0"
         )}>
+          {isAthleteCreated && (
+            <User className="h-3 w-3 opacity-80 shrink-0" />
+          )}
           {startTime && (
             <>
               <span className="font-bold">{startTime}</span>
