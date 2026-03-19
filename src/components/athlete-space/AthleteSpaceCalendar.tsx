@@ -112,6 +112,31 @@ export function AthleteSpaceCalendar({ playerId, categoryId, sportType }: Props)
   const daySessions = sessions.filter(s => s.session_date === selectedDateStr);
   const dayMatches = matches.filter(m => m.match_date === selectedDateStr);
 
+  // Fetch exercises for day sessions
+  const daySessionIds = daySessions.map(s => s.id);
+  const { data: sessionExercises = [] } = useQuery({
+    queryKey: ["athlete-calendar-exercises", daySessionIds],
+    queryFn: async () => {
+      if (daySessionIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from("gym_session_exercises")
+        .select("*")
+        .in("training_session_id", daySessionIds)
+        .order("order_index");
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: daySessionIds.length > 0,
+  });
+
+  const exercisesBySession = useMemo(() => {
+    return sessionExercises.reduce((acc, ex) => {
+      if (!acc[ex.training_session_id]) acc[ex.training_session_id] = [];
+      acc[ex.training_session_id].push(ex);
+      return acc;
+    }, {} as Record<string, typeof sessionExercises>);
+  }, [sessionExercises]);
+
   const createSessionMutation = useMutation({
     mutationFn: async () => {
       if (!newSessionDate) throw new Error("Date requise");
