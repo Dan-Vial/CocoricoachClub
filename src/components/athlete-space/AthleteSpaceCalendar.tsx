@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,6 +25,8 @@ import {
   Clock,
   User,
   X,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { format, isSameDay, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -32,6 +34,7 @@ import { toast } from "sonner";
 import { NAV_COLORS } from "@/components/ui/colored-nav-tabs";
 import { cn } from "@/lib/utils";
 import { getTrainingTypeLabel, getTrainingTypesForSport } from "@/lib/constants/trainingTypes";
+import { GroupedExerciseList } from "@/components/category/GroupedExerciseList";
 
 interface Props {
   playerId: string;
@@ -45,6 +48,7 @@ export function AthleteSpaceCalendar({ playerId, categoryId, sportType }: Props)
   const queryClient = useQueryClient();
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [expandedSessionId, setExpandedSessionId] = useState<string | null>(null);
   const [newSessionDate, setNewSessionDate] = useState("");
   const [newSessionType, setNewSessionType] = useState("individuelle");
   const [newSessionStartTime, setNewSessionStartTime] = useState("");
@@ -107,6 +111,31 @@ export function AthleteSpaceCalendar({ playerId, categoryId, sportType }: Props)
   const selectedDateStr = selectedDate ? format(selectedDate, "yyyy-MM-dd") : null;
   const daySessions = sessions.filter(s => s.session_date === selectedDateStr);
   const dayMatches = matches.filter(m => m.match_date === selectedDateStr);
+
+  // Fetch exercises for day sessions
+  const daySessionIds = daySessions.map(s => s.id);
+  const { data: sessionExercises = [] } = useQuery({
+    queryKey: ["athlete-calendar-exercises", daySessionIds],
+    queryFn: async () => {
+      if (daySessionIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from("gym_session_exercises")
+        .select("*")
+        .in("training_session_id", daySessionIds)
+        .order("order_index");
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: daySessionIds.length > 0,
+  });
+
+  const exercisesBySession = useMemo(() => {
+    return sessionExercises.reduce((acc, ex) => {
+      if (!acc[ex.training_session_id]) acc[ex.training_session_id] = [];
+      acc[ex.training_session_id].push(ex);
+      return acc;
+    }, {} as Record<string, typeof sessionExercises>);
+  }, [sessionExercises]);
 
   const createSessionMutation = useMutation({
     mutationFn: async () => {
@@ -272,53 +301,82 @@ export function AthleteSpaceCalendar({ playerId, categoryId, sportType }: Props)
                       {daySessions.map(session => {
                         const isAthleteSession = session.created_by_player_id === playerId;
                         const isCompleted = completedSessionIds.has(session.id);
+                        const exercises = exercisesBySession[session.id] || [];
+                        const isExpanded = expandedSessionId === session.id;
 
                         return (
                           <div
                             key={session.id}
                             className={cn(
-                              "p-3 rounded-lg border transition-colors",
+                              "rounded-lg border transition-colors",
                               isAthleteSession
                                 ? "border-l-4"
                                 : "border-border"
                             )}
                             style={isAthleteSession ? { borderLeftColor: ATHLETE_SESSION_COLOR, backgroundColor: `${ATHLETE_SESSION_COLOR}08` } : {}}
                           >
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <Activity className="h-4 w-4 text-muted-foreground" />
-                                <div>
-                                  <div className="flex items-center gap-2">
-                                    <p className="font-medium text-sm">
-                                      {getTrainingTypeLabel(session.training_type)}
-                                    </p>
-                                    {isAthleteSession && (
-                                      <Badge
-                                        className="text-[10px] h-4 px-1.5 border"
-                                        style={{
-                                          backgroundColor: `${ATHLETE_SESSION_COLOR}15`,
-                                          color: ATHLETE_SESSION_COLOR,
-                                          borderColor: `${ATHLETE_SESSION_COLOR}40`,
-                                        }}
-                                      >
-                                        <User className="h-2.5 w-2.5 mr-0.5" />
-                                        Ma séance
-                                      </Badge>
+                            <button
+                              className="w-full text-left p-3"
+                              onClick={() => setExpandedSessionId(isExpanded ? null : session.id)}
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <Activity className="h-4 w-4 text-muted-foreground" />
+                                  <div>
+                                    <div className="flex items-center gap-2">
+                                      <p className="font-medium text-sm">
+                                        {getTrainingTypeLabel(session.training_type)}
+                                      </p>
+                                      {isAthleteSession && (
+                                        <Badge
+                                          className="text-[10px] h-4 px-1.5 border"
+                                          style={{
+                                            backgroundColor: `${ATHLETE_SESSION_COLOR}15`,
+                                            color: ATHLETE_SESSION_COLOR,
+                                            borderColor: `${ATHLETE_SESSION_COLOR}40`,
+                                          }}
+                                        >
+                                          <User className="h-2.5 w-2.5 mr-0.5" />
+                                          Ma séance
+                                        </Badge>
+                                      )}
+                                    </div>
+                                    {session.session_start_time && (
+                                      <p className="text-xs text-muted-foreground flex items-center gap-1">
+                                        <Clock className="h-3 w-3" />
+                                        {session.session_start_time.slice(0, 5)}
+                                        {session.session_end_time && ` - ${session.session_end_time.slice(0, 5)}`}
+                                      </p>
                                     )}
                                   </div>
-                                  {session.session_start_time && (
-                                    <p className="text-xs text-muted-foreground flex items-center gap-1">
-                                      <Clock className="h-3 w-3" />
-                                      {session.session_start_time.slice(0, 5)}
-                                      {session.session_end_time && ` - ${session.session_end_time.slice(0, 5)}`}
-                                    </p>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                  {exercises.length > 0 && (
+                                    <Badge variant="outline" className="text-[10px] h-4 px-1.5">
+                                      <Dumbbell className="h-2.5 w-2.5 mr-0.5" />
+                                      {exercises.length}
+                                    </Badge>
+                                  )}
+                                  {isCompleted && (
+                                    <CheckCircle2 className="h-4 w-4 text-status-optimal" />
+                                  )}
+                                  {exercises.length > 0 && (
+                                    isExpanded ? <ChevronUp className="h-3.5 w-3.5 text-muted-foreground" /> : <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
                                   )}
                                 </div>
                               </div>
-                              {isCompleted && (
-                                <CheckCircle2 className="h-4 w-4 text-status-optimal" />
-                              )}
-                            </div>
+                            </button>
+
+                            {/* Expanded exercises with video buttons */}
+                            {isExpanded && exercises.length > 0 && (
+                              <div className="px-3 pb-3 border-t border-border/50 pt-2">
+                                <GroupedExerciseList
+                                  exercises={exercises}
+                                  compact
+                                  maxHeight="300px"
+                                />
+                              </div>
+                            )}
                           </div>
                         );
                       })}
