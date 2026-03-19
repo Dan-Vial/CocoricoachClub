@@ -25,6 +25,8 @@ import {
   Clock,
   User,
   X,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { format, isSameDay, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
