@@ -53,6 +53,7 @@ interface SessionVignetteProps {
     session_end_time: string | null;
     training_type: string;
     notes: string | null;
+    created_by_player_id?: string | null;
   };
   blocks?: SessionBlock[];
   onPreview: () => void;
