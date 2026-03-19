@@ -142,7 +142,7 @@ export function AthleteSpaceCalendar({ playerId, categoryId, sportType }: Props)
       if (!newSessionDate) throw new Error("Date requise");
       if (!newSessionType) throw new Error("Type de séance requis");
 
-      const { error } = await supabase.from("training_sessions").insert({
+      const { data: newSession, error } = await supabase.from("training_sessions").insert({
         category_id: categoryId,
         session_date: newSessionDate,
         training_type: newSessionType,
@@ -150,8 +150,17 @@ export function AthleteSpaceCalendar({ playerId, categoryId, sportType }: Props)
         session_end_time: newSessionEndTime || null,
         notes: newSessionNotes ? `[Séance athlète] ${newSessionNotes}` : "[Séance athlète]",
         created_by_player_id: playerId,
-      });
+      }).select("id").single();
       if (error) throw error;
+
+      // Auto-add athlete as participant
+      if (newSession?.id) {
+        await supabase.from("training_attendance").insert({
+          training_session_id: newSession.id,
+          player_id: playerId,
+          status: "present",
+        });
+      }
     },
     onSuccess: () => {
       toast.success("Séance créée ! Elle apparaîtra dans le planning du staff.");
