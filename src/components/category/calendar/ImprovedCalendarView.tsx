@@ -42,6 +42,7 @@ interface Session {
   training_type: string;
   notes: string | null;
   intensity?: number | null;
+  created_by_player_id?: string | null;
 }
 
 interface Match {
@@ -144,6 +145,15 @@ export function ImprovedCalendarView({
     },
     enabled: selectedPlayerIds.length > 0,
   });
+
+  // Build player names map for athlete-created sessions
+  const playerNamesMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    if (players) {
+      players.forEach(p => { map[p.id] = p.first_name ? `${p.first_name} ${p.name}` : p.name; });
+    }
+    return map;
+  }, [players]);
 
   // Get training types for event type filter
   const trainingTypes = useMemo(() => getTrainingTypesForSport(sportType), [sportType]);
@@ -508,6 +518,7 @@ export function ImprovedCalendarView({
                       onViewMatch={(match) => onViewMatch?.(match)}
                       onStatsMatch={(match) => onStatsMatch?.(match)}
                       onDeleteMatch={(matchId) => onDeleteMatch?.(matchId)}
+                      playerNamesMap={playerNamesMap}
                     />
                   ))}
               </div>
@@ -597,6 +608,9 @@ export function ImprovedCalendarView({
                                 )}
                               </div>
                               <p className="font-semibold text-sm mt-0.5 truncate">
+                                {session.created_by_player_id && playerNamesMap[session.created_by_player_id]
+                                  ? `${playerNamesMap[session.created_by_player_id]} · `
+                                  : ""}
                                 {trainingTypeLabels[session.training_type] || session.training_type}
                               </p>
                               {session.notes && getDisplayNotes(session.notes) && (

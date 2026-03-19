@@ -18,6 +18,7 @@ interface Session {
   training_type: string;
   intensity: number | null;
   notes: string | null;
+  created_by_player_id?: string | null;
 }
 
 interface Match {
@@ -37,6 +38,7 @@ interface WeeklySessionsViewProps {
   onWeekChange: (date: Date) => void;
   onViewSession: (session: Session) => void;
   onViewMatch: (match: Match) => void;
+  playerNamesMap?: Record<string, string>;
 }
 
 const DAYS_OF_WEEK = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
@@ -49,6 +51,7 @@ export function WeeklySessionsView({
   onWeekChange,
   onViewSession,
   onViewMatch,
+  playerNamesMap,
 }: WeeklySessionsViewProps) {
   const weekStart = startOfWeek(currentWeek, { weekStartsOn: 1 });
   const weekEnd = endOfWeek(currentWeek, { weekStartsOn: 1 });
@@ -196,6 +199,9 @@ export function WeeklySessionsView({
                             (session as any).created_by_player_id ? "bg-violet-500" : bgColor
                           )} />
                           <span className="font-medium truncate">
+                            {(session as any).created_by_player_id && playerNamesMap?.[(session as any).created_by_player_id]
+                              ? `${playerNamesMap[(session as any).created_by_player_id].split(' ')[0]} · `
+                              : ""}
                             {label.slice(0, 12)}
                           </span>
                         </div>

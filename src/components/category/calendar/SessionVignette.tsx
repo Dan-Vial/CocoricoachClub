@@ -63,6 +63,7 @@ interface SessionVignetteProps {
   onNotify?: () => void;
   isViewer: boolean;
   isDraggable?: boolean;
+  playerName?: string | null;
 }
 
 export function SessionVignette({
@@ -75,6 +76,7 @@ export function SessionVignette({
   onNotify,
   isViewer,
   isDraggable = true,
+  playerName,
 }: SessionVignetteProps) {
   const [isHovered, setIsHovered] = useState(false);
 
@@ -173,6 +175,7 @@ export function SessionVignette({
             </>
           )}
           <span className="truncate opacity-90">
+            {isAthleteCreated && playerName ? `${playerName} · ` : ""}
             {hasBlocks ? `${blocks.length} blocs` : label}
           </span>
         </div>
