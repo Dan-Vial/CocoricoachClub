@@ -38,6 +38,7 @@ interface WeeklySessionsViewProps {
   onWeekChange: (date: Date) => void;
   onViewSession: (session: Session) => void;
   onViewMatch: (match: Match) => void;
+  playerNamesMap?: Record<string, string>;
 }
 
 const DAYS_OF_WEEK = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
