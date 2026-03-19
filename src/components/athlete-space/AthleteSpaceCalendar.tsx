@@ -1,21 +1,10 @@
 import { useState, useMemo } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
 import {
   Activity,
   Plus,
@@ -24,17 +13,16 @@ import {
   CheckCircle2,
   Clock,
   User,
-  X,
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
-import { format, isSameDay, parseISO } from "date-fns";
+import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { toast } from "sonner";
 import { NAV_COLORS } from "@/components/ui/colored-nav-tabs";
 import { cn } from "@/lib/utils";
-import { getTrainingTypeLabel, getTrainingTypesForSport } from "@/lib/constants/trainingTypes";
+import { getTrainingTypeLabel } from "@/lib/constants/trainingTypes";
 import { GroupedExerciseList } from "@/components/category/GroupedExerciseList";
+import { AddSessionDialog } from "@/components/category/AddSessionDialog";
 
 interface Props {
   playerId: string;
