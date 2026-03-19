@@ -33,15 +33,9 @@ interface Props {
 const ATHLETE_SESSION_COLOR = "#8B5CF6"; // violet-500
 
 export function AthleteSpaceCalendar({ playerId, categoryId, sportType }: Props) {
-  const queryClient = useQueryClient();
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [expandedSessionId, setExpandedSessionId] = useState<string | null>(null);
-  const [newSessionDate, setNewSessionDate] = useState("");
-  const [newSessionType, setNewSessionType] = useState("individuelle");
-  const [newSessionStartTime, setNewSessionStartTime] = useState("");
-  const [newSessionEndTime, setNewSessionEndTime] = useState("");
-  const [newSessionNotes, setNewSessionNotes] = useState("");
 
   // Fetch sessions for this category
   const { data: sessions = [] } = useQuery({
