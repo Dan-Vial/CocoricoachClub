@@ -7,8 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Activity, CheckCircle2, Clock, Calendar, Lock, Target } from "lucide-react";
+import { Activity, CheckCircle2, Clock, Calendar, Lock, Target, Heart } from "lucide-react";
 import { toast } from "sonner";
 import { format, parseISO, addDays } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -217,6 +218,11 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
   const [spareExerciseType, setSpareExerciseType] = useState<string>("spare_pin_7");
   const [spareAttempts, setSpareAttempts] = useState("");
   const [spareSuccesses, setSpareSuccesses] = useState("");
+  const [showHrv, setShowHrv] = useState(false);
+  const [hrvMs, setHrvMs] = useState("");
+  const [restingHr, setRestingHr] = useState("");
+  const [avgHr, setAvgHr] = useState("");
+  const [maxHr, setMaxHr] = useState("");
 
   const selectedSessionData = useMemo(
     () => todaySessions.find((s) => s.id === selectedSession),
@@ -268,6 +274,11 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
     setRpe(5);
     setSpareAttempts("");
     setSpareSuccesses("");
+    setShowHrv(false);
+    setHrvMs("");
+    setRestingHr("");
+    setAvgHr("");
+    setMaxHr("");
 
     const session = todaySessions.find((s) => s.id === sessionId);
     if (session) {
@@ -333,18 +344,46 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
           throw spareError;
         }
       }
+      // Insert HRV data if provided
+      if (showHrv && (hrvMs || restingHr || avgHr || maxHr)) {
+        const sessionType = selectedSessionData?.training_type;
+        const hrvRecordType = sessionType === "test" ? "test" : sessionType === "competition" ? "competition" : "session";
+        const { error: hrvError } = await supabase.from("hrv_records").insert({
+          player_id: playerId,
+          category_id: categoryId,
+          record_date: today,
+          record_type: hrvRecordType,
+          training_session_id: selectedSession,
+          hrv_ms: hrvMs ? parseFloat(hrvMs) : null,
+          resting_hr_bpm: restingHr ? parseFloat(restingHr) : null,
+          avg_hr_bpm: avgHr ? parseFloat(avgHr) : null,
+          max_hr_bpm: maxHr ? parseFloat(maxHr) : null,
+        });
+        if (hrvError) {
+          console.error("HRV insert error:", hrvError);
+          toast.error("RPE enregistré mais erreur HRV");
+        }
+      }
     },
     onSuccess: () => {
       toast.success(isPrecisionSession ? "RPE et statistiques enregistrés !" : "RPE enregistré !");
       queryClient.invalidateQueries({ queryKey: ["athlete-space-rpes"] });
       queryClient.invalidateQueries({ queryKey: ["athlete-space-awcr"] });
       queryClient.invalidateQueries({ queryKey: ["athlete-space-sessions"] });
+      if (showHrv) {
+        queryClient.invalidateQueries({ queryKey: ["hrv_records"] });
+      }
       setSelectedSession(null);
       setRpe(5);
       setDuration("");
       setSpareAttempts("");
       setSpareSuccesses("");
       setSpareExerciseType("spare_pin_7");
+      setShowHrv(false);
+      setHrvMs("");
+      setRestingHr("");
+      setAvgHr("");
+      setMaxHr("");
     },
     onError: (error: any) => toast.error(error?.message || "Erreur lors de l'enregistrement"),
   });
@@ -533,6 +572,80 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
                         )}
                       </div>
                     )}
+
+                    {/* Optional HRV section */}
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <Checkbox checked={showHrv} onCheckedChange={(v) => {
+                          setShowHrv(!!v);
+                          if (!v) { setHrvMs(""); setRestingHr(""); setAvgHr(""); setMaxHr(""); }
+                        }} />
+                        <Label className="text-sm flex items-center gap-1.5">
+                          <Heart className="h-3.5 w-3.5 text-destructive" />
+                          {selectedSessionData?.training_type === "test"
+                            ? "Ajouter mes données HRV test"
+                            : selectedSessionData?.training_type === "competition"
+                            ? "Ajouter mes données HRV compétition"
+                            : "Ajouter mes données HRV séance"}
+                        </Label>
+                      </div>
+
+                      {showHrv && (
+                        <div className="grid grid-cols-2 gap-3 pl-6">
+                          <div className="space-y-1.5">
+                            <Label className="text-xs">HRV (ms)</Label>
+                            <Input
+                              type="number"
+                              min="0"
+                              max="300"
+                              placeholder="Ex: 65"
+                              value={hrvMs}
+                              onChange={(e) => setHrvMs(e.target.value)}
+                              className="h-9"
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label className="text-xs">FC repos (bpm)</Label>
+                            <Input
+                              type="number"
+                              min="30"
+                              max="120"
+                              placeholder="Ex: 55"
+                              value={restingHr}
+                              onChange={(e) => setRestingHr(e.target.value)}
+                              className="h-9"
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label className="text-xs">FC moyenne (bpm)</Label>
+                            <Input
+                              type="number"
+                              min="40"
+                              max="220"
+                              placeholder="Ex: 145"
+                              value={avgHr}
+                              onChange={(e) => setAvgHr(e.target.value)}
+                              className="h-9"
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label className="text-xs">FC max (bpm)</Label>
+                            <Input
+                              type="number"
+                              min="60"
+                              max="230"
+                              placeholder="Ex: 185"
+                              value={maxHr}
+                              onChange={(e) => setMaxHr(e.target.value)}
+                              className="h-9"
+                            />
+                          </div>
+                          <p className="col-span-2 text-[10px] text-muted-foreground">
+                            Données visibles dans Santé → HRV
+                          </p>
+                        </div>
+                      )}
+                    </div>
 
                     <Button
                       onClick={() => submitRpe.mutate()}
