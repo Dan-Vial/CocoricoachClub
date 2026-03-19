@@ -402,6 +402,86 @@ export function PostSessionRpeDialog({
             </div>
           </ScrollArea>
 
+          {/* HRV Section (optional) */}
+          <div className="p-3 bg-muted/30 rounded-lg space-y-3">
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="show-hrv"
+                checked={showHrv}
+                onCheckedChange={(c) => setShowHrv(!!c)}
+              />
+              <Label htmlFor="show-hrv" className="text-sm flex items-center gap-1.5 cursor-pointer">
+                <Heart className="h-3.5 w-3.5 text-rose-500" />
+                Ajouter données HRV / cardio (optionnel)
+              </Label>
+            </div>
+
+            {showHrv && (
+              <div className="space-y-3 pt-1">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  <div>
+                    <Label className="text-xs">HRV (ms)</Label>
+                    <Input type="number" min="0" className="h-8 mt-1" value={hrvMs} onChange={(e) => setHrvMs(e.target.value)} placeholder="ex: 65" />
+                  </div>
+                  <div>
+                    <Label className="text-xs">FC repos</Label>
+                    <Input type="number" min="0" className="h-8 mt-1" value={restingHr} onChange={(e) => setRestingHr(e.target.value)} placeholder="bpm" />
+                  </div>
+                  <div>
+                    <Label className="text-xs">FC moy</Label>
+                    <Input type="number" min="0" className="h-8 mt-1" value={avgHr} onChange={(e) => setAvgHr(e.target.value)} placeholder="bpm" />
+                  </div>
+                  <div>
+                    <Label className="text-xs">FC max</Label>
+                    <Input type="number" min="0" className="h-8 mt-1" value={maxHr} onChange={(e) => setMaxHr(e.target.value)} placeholder="bpm" />
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="show-zones"
+                    checked={showZones}
+                    onCheckedChange={(c) => setShowZones(!!c)}
+                  />
+                  <Label htmlFor="show-zones" className="text-xs cursor-pointer">
+                    Ajouter le temps par zone cardiaque
+                  </Label>
+                </div>
+
+                {showZones && (
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-5 gap-2">
+                      {[
+                        { label: "Z1 Récup", color: "border-sky-400", value: zone1, set: setZone1 },
+                        { label: "Z2 Aéro", color: "border-emerald-400", value: zone2, set: setZone2 },
+                        { label: "Z3 Tempo", color: "border-amber-400", value: zone3, set: setZone3 },
+                        { label: "Z4 Seuil", color: "border-orange-400", value: zone4, set: setZone4 },
+                        { label: "Z5 VO2", color: "border-rose-400", value: zone5, set: setZone5 },
+                      ].map((z) => (
+                        <div key={z.label}>
+                          <Label className="text-[10px] block mb-1">{z.label}</Label>
+                          <Input
+                            type="number"
+                            min="0"
+                            className={cn("h-7 text-xs border-l-2", z.color)}
+                            value={z.value}
+                            onChange={(e) => z.set(e.target.value)}
+                            placeholder="min"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                    {(zone1 || zone2 || zone3 || zone4 || zone5) && (
+                      <p className="text-[10px] text-muted-foreground text-right">
+                        Total: {[zone1, zone2, zone3, zone4, zone5].reduce((s, v) => s + (parseFloat(v) || 0), 0)} min
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
           {/* RPE scale reference */}
           <div className="p-2 bg-muted/30 rounded-lg text-xs text-muted-foreground">
             <strong>Échelle RPE:</strong> 1-2 Très léger | 3-4 Léger | 5-6 Modéré | 7-8 Difficile | 9-10 Maximal
