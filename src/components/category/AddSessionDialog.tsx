@@ -556,12 +556,14 @@ export function AddSessionDialog({
                 />
               </div>
 
-              {/* GPS Import Section */}
-              <SessionGpsImport
-                players={players?.map(p => ({ id: p.id, name: p.name, position: p.position })) || []}
-                gpsData={gpsData}
-                onGpsDataChange={setGpsData}
-              />
+              {/* GPS Import Section - staff only */}
+              {!isAthleteMode && (
+                <SessionGpsImport
+                  players={players?.map(p => ({ id: p.id, name: p.name, position: p.position })) || []}
+                  gpsData={gpsData}
+                  onGpsDataChange={setGpsData}
+                />
+              )}
 
               {/* Exercises Section - Only shown for certain training types */}
               {showExerciseSection && (
