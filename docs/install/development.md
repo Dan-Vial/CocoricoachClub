@@ -8,7 +8,6 @@ This guide explains how to install and run the project locally
 
 Make sure you have installed:
 
-- [bun](https://bun.com/) – JavaScript runtime & toolkit
 - [Docker](https://www.docker.com/) or [Podman](https://podman.io/) with Compose
 - A [Supabase](https://supabase.com/) account and project
 - A [OneSignal](https://onesignal.com/) account and project
@@ -36,6 +35,7 @@ cp .env.example .env
 
 You may also define environment-specific files:
 
+- `.env`
 - `.env.development`
 - `.env.production`
 
