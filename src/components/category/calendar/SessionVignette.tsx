@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
-import { Eye, Pencil, MessageSquare, Trash2, Bell } from "lucide-react";
+import { Eye, Pencil, MessageSquare, Trash2, Bell, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getTrainingTypeColor, getTrainingTypeLabel } from "@/lib/constants/trainingTypes";
 
