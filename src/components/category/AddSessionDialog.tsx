@@ -36,11 +36,14 @@ import { QuickAddExerciseDialog } from "@/components/library/QuickAddExerciseDia
 import { SessionGpsImport, type GpsPlayerData } from "@/components/category/gps/SessionGpsImport";
 import { SessionBlocksManager, type SessionBlock } from "@/components/category/sessions/SessionBlocksManager";
 import { useSessionNotifications } from "@/lib/hooks/useSessionNotifications";
+import { athletePortalHeaders, buildAthletePortalFunctionUrl } from "@/lib/athletePortalClient";
 
 interface AddSessionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   categoryId: string;
+  /** When set, the dialog runs in "athlete mode": player is pre-selected & locked, session is tagged as athlete-created */
+  athletePlayerId?: string;
 }
 
 interface Exercise {
@@ -71,7 +74,9 @@ export function AddSessionDialog({
   open,
   onOpenChange,
   categoryId,
+  athletePlayerId,
 }: AddSessionDialogProps) {
+  const isAthleteMode = !!athletePlayerId;
   const { user } = useAuth();
   const { notify } = useSessionNotifications();
   const [date, setDate] = useState("");
@@ -111,6 +116,7 @@ export function AddSessionDialog({
   const trainingTypes = getTrainingTypesForSport(sportType);
   
   const showExerciseSection = trainingTypeHasExercises(type);
+  const hasValidBlocks = sessionBlocks.some((block) => !!block.training_type);
 
   // When a training type with exercises is selected, ensure UI is ready
   useEffect(() => {
@@ -179,10 +185,59 @@ export function AddSessionDialog({
     mutationFn: async () => {
       // Create the session - use first block type if blocks exist, otherwise use selected type
       const mainType = sessionBlocks.length > 0 ? sessionBlocks[0].training_type : type;
-      const mainIntensity = sessionBlocks.length > 0 
+      const mainIntensity = sessionBlocks.length > 0
         ? sessionBlocks.reduce((max, b) => Math.max(max, b.intensity || 0), 0)
         : (intensity ? parseInt(intensity) : null);
-      
+
+      if (isAthleteMode) {
+        const { data: authData } = await supabase.auth.getSession();
+        const accessToken = authData.session?.access_token;
+
+        if (!accessToken || !athletePlayerId) {
+          throw new Error("Session expirée. Reconnecte-toi.");
+        }
+
+        const athleteBlocks = sessionBlocks
+          .filter((block) => block.training_type)
+          .map((block, idx) => ({
+            block_order: idx,
+            start_time: block.start_time || null,
+            end_time: block.end_time || null,
+            training_type: block.training_type,
+            intensity: block.intensity ?? null,
+            notes: block.notes || null,
+            session_type: block.session_type || null,
+            objective: block.objective || null,
+            target_intensity: block.target_intensity || null,
+            volume: block.volume || null,
+            contact_charge: block.contact_charge || null,
+          }));
+
+        const response = await fetch(buildAthletePortalFunctionUrl("create-session-auth"), {
+          method: "POST",
+          headers: athletePortalHeaders({ "Content-Type": "application/json" }, accessToken),
+          body: JSON.stringify({
+            category_id: categoryId,
+            player_id: athletePlayerId,
+            session_date: date,
+            session_start_time: startTime || null,
+            session_end_time: endTime || null,
+            training_type: mainType || "autre",
+            intensity: mainIntensity,
+            notes: notes || null,
+            session_blocks: athleteBlocks,
+          }),
+        });
+
+        const payload = await response.json();
+
+        if (!response.ok || !payload?.success) {
+          throw new Error(payload?.error || "Erreur lors de la création de la séance");
+        }
+
+        return { id: payload.session_id };
+      }
+
       const { data: sessionData, error: sessionError } = await supabase
         .from("training_sessions")
         .insert([{
@@ -196,7 +251,7 @@ export function AddSessionDialog({
         }])
         .select()
         .single();
-      
+
       if (sessionError) throw sessionError;
 
       // If session blocks exist, create them
@@ -222,14 +277,14 @@ export function AddSessionDialog({
           const { error: blocksError } = await supabase
             .from("training_session_blocks")
             .insert(blockRecords);
-          
+
           if (blocksError) throw blocksError;
         }
       }
 
       // Determine which players to use
-      const playersToUse = playerSelectionMode === "specific" && selectedPlayers.length > 0 
-        ? selectedPlayers 
+      const playersToUse = playerSelectionMode === "specific" && selectedPlayers.length > 0
+        ? selectedPlayers
         : players?.map(p => p.id) || [];
 
       // Create attendance records for selected players (one attendance per session, not per block!)
@@ -245,14 +300,14 @@ export function AddSessionDialog({
         const { error: attendanceError } = await supabase
           .from("training_attendance")
           .insert(attendanceRecords);
-        
+
         if (attendanceError) throw attendanceError;
       }
 
       // If exercises were added, create them for each selected player
       const validExercises = exercises.filter(e => e.exercise_name.trim());
       if (validExercises.length > 0 && playersToUse.length > 0) {
-        const exerciseRecords = playersToUse.flatMap(playerId => 
+        const exerciseRecords = playersToUse.flatMap(playerId =>
           validExercises.map((ex, idx) => ({
             training_session_id: sessionData.id,
             player_id: playerId,
@@ -272,7 +327,7 @@ export function AddSessionDialog({
         const { error: exerciseError } = await supabase
           .from("gym_session_exercises")
           .insert(exerciseRecords);
-        
+
         if (exerciseError) throw exerciseError;
       }
 
@@ -301,7 +356,7 @@ export function AddSessionDialog({
         const { error: gpsError } = await supabase
           .from("gps_sessions")
           .insert(gpsRecords);
-        
+
         if (gpsError) throw gpsError;
       }
 
@@ -318,38 +373,46 @@ export function AddSessionDialog({
       queryClient.invalidateQueries({ queryKey: ["today_sessions_decision", categoryId] });
       queryClient.invalidateQueries({ queryKey: ["tomorrow_sessions_decision", categoryId] });
       queryClient.invalidateQueries({ queryKey: ["today_attendance_decision", categoryId] });
-      
+      if (isAthleteMode) {
+        queryClient.invalidateQueries({ queryKey: ["athlete-calendar-sessions"] });
+        queryClient.invalidateQueries({ queryKey: ["athlete-space-sessions"] });
+        queryClient.invalidateQueries({ queryKey: ["sessions", categoryId] });
+      }
+
       const exerciseCount = exercises.filter(e => e.exercise_name.trim()).length;
       const gpsCount = gpsData.filter(d => d.matchedPlayer).length;
       const blockCount = sessionBlocks.filter(b => b.training_type).length;
-      
+
       let toastMessage = "Séance ajoutée";
       if (blockCount > 0) toastMessage += ` avec ${blockCount} bloc(s)`;
-      if (exerciseCount > 0) toastMessage += ` et ${exerciseCount} exercice(s)`;
-      if (gpsCount > 0) toastMessage += ` et ${gpsCount} données GPS`;
+      if (!isAthleteMode && exerciseCount > 0) toastMessage += ` et ${exerciseCount} exercice(s)`;
+      if (!isAthleteMode && gpsCount > 0) toastMessage += ` et ${gpsCount} données GPS`;
       toast.success(toastMessage);
 
-      // 🔔 Send push notifications to participants
-      const mainType = sessionBlocks.length > 0 ? sessionBlocks[0].training_type : type;
-      const participantIds = playerSelectionMode === "specific" && selectedPlayers.length > 0
-        ? selectedPlayers
-        : undefined; // undefined = notify all category members
-      
-      notify({
-        action: "created",
-        sessionId: sessionData?.id,
-        categoryId,
-        sessionDate: date,
-        sessionStartTime: startTime || null,
-        sessionType: mainType,
-        participantPlayerIds: participantIds,
-      });
+      // 🔔 Send push notifications to participants (skip in athlete mode)
+      if (!isAthleteMode) {
+        const mainType = sessionBlocks.length > 0 ? sessionBlocks[0].training_type : type;
+        const participantIds = playerSelectionMode === "specific" && selectedPlayers.length > 0
+          ? selectedPlayers
+          : undefined;
+
+        notify({
+          action: "created",
+          sessionId: sessionData?.id,
+          categoryId,
+          sessionDate: date,
+          sessionStartTime: startTime || null,
+          sessionType: mainType,
+          participantPlayerIds: participantIds,
+        });
+      }
 
       resetForm();
       onOpenChange(false);
     },
-    onError: () => {
-      toast.error("Erreur lors de l'ajout de la séance");
+    onError: (error: unknown) => {
+      const message = error instanceof Error ? error.message : "Erreur lors de l'ajout de la séance";
+      toast.error(message);
     },
   });
 
@@ -372,25 +435,32 @@ export function AddSessionDialog({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
+    if (addSession.isPending) {
+      return;
+    }
+
     if (endTime && !startTime) {
       toast.error("Veuillez indiquer une heure de début si vous spécifiez une heure de fin");
       return;
     }
-    
+
     if (startTime && endTime && endTime <= startTime) {
       toast.error("L'heure de fin doit être après l'heure de début");
       return;
     }
-    
-    // Validate: must have blocks with valid types
-    const hasValidBlocks = sessionBlocks.length > 0 && sessionBlocks.some(b => b.training_type);
-    
-    if (date && hasValidBlocks) {
-      addSession.mutate();
-    } else if (!hasValidBlocks) {
-      toast.error("Veuillez ajouter au moins un bloc thématique");
+
+    if (!date) {
+      toast.error("Veuillez sélectionner une date");
+      return;
     }
+
+    if (!hasValidBlocks) {
+      toast.error("Veuillez ajouter au moins un bloc thématique");
+      return;
+    }
+
+    addSession.mutate();
   };
 
   const togglePlayer = (playerId: string) => {
@@ -460,12 +530,17 @@ export function AddSessionDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
-        <DialogHeader>
-          <DialogTitle>Ajouter une séance d'entraînement</DialogTitle>
+      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col overflow-hidden">
+        <DialogHeader className="flex-shrink-0">
+          <DialogTitle>{isAthleteMode ? "Ajouter ma séance" : "Ajouter une séance d'entraînement"}</DialogTitle>
+          {isAthleteMode && (
+            <p className="text-sm text-muted-foreground">
+              Cette séance sera visible par le staff dans le planning.
+            </p>
+          )}
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
-          <ScrollArea className="flex-1 pr-4">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+          <div className="flex-1 overflow-y-auto pr-2">
             <div className="space-y-4 py-4">
               {/* Date and time */}
               <div className="space-y-2">
@@ -537,12 +612,14 @@ export function AddSessionDialog({
                 />
               </div>
 
-              {/* GPS Import Section */}
-              <SessionGpsImport
-                players={players?.map(p => ({ id: p.id, name: p.name, position: p.position })) || []}
-                gpsData={gpsData}
-                onGpsDataChange={setGpsData}
-              />
+              {/* GPS Import Section - staff only */}
+              {!isAthleteMode && (
+                <SessionGpsImport
+                  players={players?.map(p => ({ id: p.id, name: p.name, position: p.position })) || []}
+                  gpsData={gpsData}
+                  onGpsDataChange={setGpsData}
+                />
+              )}
 
               {/* Exercises Section - Only shown for certain training types */}
               {showExerciseSection && (
@@ -762,130 +839,163 @@ export function AddSessionDialog({
 
               {/* Player Selection Section */}
               <div className="space-y-3 border rounded-lg p-4 bg-muted/30">
-                <div className="flex items-center justify-between">
-                  <Label className="flex items-center gap-2 text-base font-medium">
-                    <Users className="h-4 w-4" />
-                    Joueurs concernés
-                  </Label>
-                  <div className="flex gap-2">
-                    <Button
-                      type="button"
-                      variant={playerSelectionMode === "all" ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => {
-                        setPlayerSelectionMode("all");
-                        setSelectedPlayers([]);
-                      }}
-                    >
-                      Tous
-                    </Button>
-                    <Button
-                      type="button"
-                      variant={playerSelectionMode === "specific" ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setPlayerSelectionMode("specific")}
-                    >
-                      Spécifiques
-                    </Button>
-                  </div>
-                </div>
+                <Label className="flex items-center gap-2 text-base font-medium">
+                  <Users className="h-4 w-4" />
+                  Joueurs concernés
+                </Label>
 
-                {playerSelectionMode === "specific" && (
-                  <>
-                    <div className="flex flex-wrap gap-2">
-                      <Button type="button" variant="outline" size="sm" onClick={selectAll} className="text-xs">
-                        <UserCheck className="h-3 w-3 mr-1" />
-                        Tous ({players?.length || 0})
-                      </Button>
-                      {injuredPlayers.length > 0 && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={selectAllInjured}
-                          className="text-xs border-amber-300 text-amber-700 hover:bg-amber-50"
-                        >
-                          <AlertTriangle className="h-3 w-3 mr-1" />
-                          Blessés ({injuredPlayers.length})
-                        </Button>
-                      )}
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={selectAllHealthy}
-                        className="text-xs border-green-300 text-green-700 hover:bg-green-50"
-                      >
-                        <UserCheck className="h-3 w-3 mr-1" />
-                        Aptes ({healthyPlayers.length})
-                      </Button>
-                      {selectedPlayers.length > 0 && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={clearSelection}
-                          className="text-xs text-muted-foreground"
-                        >
-                          Effacer
-                        </Button>
-                      )}
-                    </div>
-
-                    {selectedPlayers.length > 0 && (
-                      <Badge variant="secondary" className="w-fit">
-                        {selectedPlayers.length} joueur(s) sélectionné(s)
-                      </Badge>
-                    )}
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto">
-                      {players?.map((player) => (
-                        <div
-                          key={player.id}
-                          onClick={() => togglePlayer(player.id)}
-                          className={cn(
-                            "flex items-center gap-2 p-2 rounded-md border cursor-pointer transition-colors select-none",
-                            selectedPlayers.includes(player.id)
-                              ? "border-primary bg-primary/10"
-                              : "border-border hover:bg-muted/50",
-                            player.isInjured && "border-amber-300 bg-amber-50/50"
-                          )}
-                        >
-                          <Checkbox
-                            checked={selectedPlayers.includes(player.id)}
-                            className="pointer-events-none"
-                          />
-                          <Avatar className="h-6 w-6 pointer-events-none">
-                            <AvatarImage src={player.avatar_url || undefined} />
-                            <AvatarFallback className="text-xs">{(player.first_name || player.name).slice(0, 2).toUpperCase()}</AvatarFallback>
+                {isAthleteMode ? (
+                  <div className="space-y-2">
+                    {(() => {
+                      const athletePlayer = players?.find(p => p.id === athletePlayerId);
+                      return athletePlayer ? (
+                        <div className="flex items-center gap-2 p-2 rounded-md border border-primary bg-primary/10">
+                          <Checkbox checked={true} className="pointer-events-none" />
+                          <Avatar className="h-6 w-6">
+                            <AvatarImage src={athletePlayer.avatar_url || undefined} />
+                            <AvatarFallback className="text-xs">{(athletePlayer.first_name || athletePlayer.name).slice(0, 2).toUpperCase()}</AvatarFallback>
                           </Avatar>
-                          <span className="text-sm truncate flex-1 pointer-events-none">{player.first_name ? `${player.first_name} ${player.name}` : player.name}</span>
-                          {player.isInjured && <AlertTriangle className="h-3 w-3 text-amber-500 flex-shrink-0 pointer-events-none" />}
-                          {player.position && (
-                            <Badge variant="outline" className="text-xs flex-shrink-0 pointer-events-none">
-                              {player.position}
+                          <span className="text-sm truncate flex-1">
+                            {athletePlayer.first_name ? `${athletePlayer.first_name} ${athletePlayer.name}` : athletePlayer.name}
+                          </span>
+                          {athletePlayer.position && (
+                            <Badge variant="outline" className="text-xs flex-shrink-0">
+                              {athletePlayer.position}
                             </Badge>
                           )}
                         </div>
-                      ))}
+                      ) : (
+                        <p className="text-sm text-muted-foreground">Chargement...</p>
+                      );
+                    })()}
+                    <p className="text-xs text-muted-foreground">
+                      Cette séance sera créée uniquement pour toi.
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-center justify-end">
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          variant={playerSelectionMode === "all" ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => {
+                            setPlayerSelectionMode("all");
+                            setSelectedPlayers([]);
+                          }}
+                        >
+                          Tous
+                        </Button>
+                        <Button
+                          type="button"
+                          variant={playerSelectionMode === "specific" ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setPlayerSelectionMode("specific")}
+                        >
+                          Spécifiques
+                        </Button>
+                      </div>
                     </div>
-                  </>
-                )}
 
-                {playerSelectionMode === "all" && (
-                  <p className="text-sm text-muted-foreground">
-                    Tous les joueurs de la catégorie seront concernés par cette séance.
-                  </p>
+                    {playerSelectionMode === "specific" && (
+                      <>
+                        <div className="flex flex-wrap gap-2">
+                          <Button type="button" variant="outline" size="sm" onClick={selectAll} className="text-xs">
+                            <UserCheck className="h-3 w-3 mr-1" />
+                            Tous ({players?.length || 0})
+                          </Button>
+                          {injuredPlayers.length > 0 && (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={selectAllInjured}
+                              className="text-xs border-amber-300 text-amber-700 hover:bg-amber-50"
+                            >
+                              <AlertTriangle className="h-3 w-3 mr-1" />
+                              Blessés ({injuredPlayers.length})
+                            </Button>
+                          )}
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={selectAllHealthy}
+                            className="text-xs border-green-300 text-green-700 hover:bg-green-50"
+                          >
+                            <UserCheck className="h-3 w-3 mr-1" />
+                            Aptes ({healthyPlayers.length})
+                          </Button>
+                          {selectedPlayers.length > 0 && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={clearSelection}
+                              className="text-xs text-muted-foreground"
+                            >
+                              Effacer
+                            </Button>
+                          )}
+                        </div>
+
+                        {selectedPlayers.length > 0 && (
+                          <Badge variant="secondary" className="w-fit">
+                            {selectedPlayers.length} joueur(s) sélectionné(s)
+                          </Badge>
+                        )}
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto">
+                          {players?.map((player) => (
+                            <div
+                              key={player.id}
+                              onClick={() => togglePlayer(player.id)}
+                              className={cn(
+                                "flex items-center gap-2 p-2 rounded-md border cursor-pointer transition-colors select-none",
+                                selectedPlayers.includes(player.id)
+                                  ? "border-primary bg-primary/10"
+                                  : "border-border hover:bg-muted/50",
+                                player.isInjured && "border-amber-300 bg-amber-50/50"
+                              )}
+                            >
+                              <Checkbox
+                                checked={selectedPlayers.includes(player.id)}
+                                className="pointer-events-none"
+                              />
+                              <Avatar className="h-6 w-6 pointer-events-none">
+                                <AvatarImage src={player.avatar_url || undefined} />
+                                <AvatarFallback className="text-xs">{(player.first_name || player.name).slice(0, 2).toUpperCase()}</AvatarFallback>
+                              </Avatar>
+                              <span className="text-sm truncate flex-1 pointer-events-none">{player.first_name ? `${player.first_name} ${player.name}` : player.name}</span>
+                              {player.isInjured && <AlertTriangle className="h-3 w-3 text-amber-500 flex-shrink-0 pointer-events-none" />}
+                              {player.position && (
+                                <Badge variant="outline" className="text-xs flex-shrink-0 pointer-events-none">
+                                  {player.position}
+                                </Badge>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    )}
+
+                    {playerSelectionMode === "all" && (
+                      <p className="text-sm text-muted-foreground">
+                        Tous les joueurs de la catégorie seront concernés par cette séance.
+                      </p>
+                    )}
+                  </>
                 )}
               </div>
             </div>
-          </ScrollArea>
+          </div>
           
-          <DialogFooter className="mt-4 pt-4 border-t">
+          <DialogFooter className="flex-shrink-0 mt-4 pt-4 border-t">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Annuler
             </Button>
-            <Button type="submit" disabled={!date || !type.trim() || addSession.isPending}>
+            <Button type="submit" aria-busy={addSession.isPending}>
               {addSession.isPending ? "Ajout..." : "Ajouter"}
             </Button>
           </DialogFooter>

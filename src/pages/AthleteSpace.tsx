@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, User, LogOut, Activity, Heart, BarChart3, Target, Video, BookOpen, Shield, ArrowLeft, Search, ChevronRight, MessageSquare, Settings } from "lucide-react";
+import { Loader2, User, LogOut, Activity, Heart, BarChart3, Target, Video, BookOpen, Shield, ArrowLeft, Search, ChevronRight, MessageSquare, Settings, CalendarDays } from "lucide-react";
 import { NAV_COLORS } from "@/components/ui/colored-nav-tabs";
 import { AthletePWAInstallPopup } from "@/components/athlete/AthletePWAInstallPopup";
 import { AthleteSpaceDashboard } from "@/components/athlete-space/AthleteSpaceDashboard";
@@ -21,6 +21,7 @@ import { AthleteSpaceEducation } from "@/components/athlete-space/AthleteSpaceEd
 import { MessagingTab } from "@/components/messaging/MessagingTab";
 import { AthleteSpaceSettings } from "@/components/athlete-space/AthleteSpaceSettings";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
+import { AthleteSpaceCalendar } from "@/components/athlete-space/AthleteSpaceCalendar";
 
 interface AthleteInfo {
   player_id: string;
@@ -424,7 +425,7 @@ export default function AthleteSpace() {
 
       {/* Content */}
       <main className="max-w-5xl mx-auto px-4 py-6">
-       <Tabs defaultValue="dashboard" className="w-full">
+       <Tabs defaultValue={searchParams.get("tab") || "dashboard"} className="w-full">
              <TabsList className="w-full flex overflow-x-auto gap-1 h-auto flex-nowrap justify-start bg-transparent p-0 mb-6 pb-2" style={{ WebkitOverflowScrolling: 'touch' }}>
               <TabsTrigger 
                  value="dashboard" 
@@ -453,19 +454,32 @@ export default function AthleteSpace() {
                 <Activity className="h-3.5 w-3.5" />
                 RPE
               </TabsTrigger>
-              <TabsTrigger 
-                value="wellness"
-                 className="athlete-tab shrink-0 gap-1 px-2 py-1.5 rounded-xl font-semibold text-xs transition-all duration-200 data-[state=active]:shadow-lg"
-                 style={{
-                   color: NAV_COLORS.sante.base,
-                   backgroundColor: `${NAV_COLORS.sante.base}15`,
-                   borderBottom: `3px solid ${NAV_COLORS.sante.base}`,
-                   ["--tab-color" as string]: NAV_COLORS.sante.base,
-                 }}
-               >
-                 <Heart className="h-3.5 w-3.5" />
-                 Wellness
-              </TabsTrigger>
+               <TabsTrigger 
+                 value="wellness"
+                  className="athlete-tab shrink-0 gap-1 px-2 py-1.5 rounded-xl font-semibold text-xs transition-all duration-200 data-[state=active]:shadow-lg"
+                  style={{
+                    color: NAV_COLORS.sante.base,
+                    backgroundColor: `${NAV_COLORS.sante.base}15`,
+                    borderBottom: `3px solid ${NAV_COLORS.sante.base}`,
+                    ["--tab-color" as string]: NAV_COLORS.sante.base,
+                  }}
+                >
+                  <Heart className="h-3.5 w-3.5" />
+                  Wellness
+               </TabsTrigger>
+               <TabsTrigger 
+                 value="calendar"
+                  className="athlete-tab shrink-0 gap-1 px-2 py-1.5 rounded-xl font-semibold text-xs transition-all duration-200 data-[state=active]:shadow-lg"
+                  style={{
+                    color: NAV_COLORS.planification.base,
+                    backgroundColor: `${NAV_COLORS.planification.base}15`,
+                    borderBottom: `3px solid ${NAV_COLORS.planification.base}`,
+                    ["--tab-color" as string]: NAV_COLORS.planification.base,
+                  }}
+                >
+                  <CalendarDays className="h-3.5 w-3.5" />
+                  Calendrier
+               </TabsTrigger>
               <TabsTrigger 
                 value="progression"
                  className="athlete-tab shrink-0 gap-1 px-2 py-1.5 rounded-xl font-semibold text-xs transition-all duration-200 data-[state=active]:shadow-lg"
@@ -575,6 +589,14 @@ export default function AthleteSpace() {
             <AthleteSpaceWellness
               playerId={athleteInfo.player_id}
               categoryId={athleteInfo.category_id}
+            />
+          </TabsContent>
+
+          <TabsContent value="calendar">
+            <AthleteSpaceCalendar
+              playerId={athleteInfo.player_id}
+              categoryId={athleteInfo.category_id}
+              sportType={athleteInfo.sport_type}
             />
           </TabsContent>
 

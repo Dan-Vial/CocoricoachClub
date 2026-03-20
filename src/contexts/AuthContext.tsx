@@ -79,6 +79,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    let initialSessionRestored = false;
+
     // Initialize OneSignal SDK early — fully silent, never crash the app
     try {
       initOneSignal().catch(() => {});
@@ -86,47 +88,51 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // OneSignal may throw synchronously on unsupported origins/browsers
     }
 
-    // Set up auth state listener
+    // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         setIsOfflineSession(false);
-        setLoading(false);
+
+        // Only set loading=false from listener AFTER initial session is restored
+        // to avoid premature "no user" state that causes redirect loops
+        if (initialSessionRestored) {
+          setLoading(false);
+        }
         
         // Save session for offline use
         saveOfflineSession(session, session?.user ?? null);
 
         // Sync OneSignal on login (non-blocking, deferred)
         if (session?.user) {
-          // Reset onboarding flag if permission still "default" so popup re-appears
           resetOnboardingIfNeeded(session.user.id);
           setTimeout(() => syncOneSignalUser(session.user), 1000);
         }
       }
     );
 
-    // Check for existing session
+    // Restore session from storage
     supabase.auth.getSession().then(({ data: { session } }) => {
+      initialSessionRestored = true;
       if (session) {
         setSession(session);
         setUser(session.user);
         setIsOfflineSession(false);
         saveOfflineSession(session, session.user);
-        // Sync OneSignal for existing session
         resetOnboardingIfNeeded(session.user.id);
         setTimeout(() => syncOneSignalUser(session.user), 1000);
       } else if (!navigator.onLine) {
-        const { user: offlineUser, isOfflineSession: isOffline } = loadOfflineSession();
+        const { user: offlineUser } = loadOfflineSession();
         if (offlineUser) {
           setUser(offlineUser);
           setIsOfflineSession(true);
-          console.log("Using offline session for user:", offlineUser.email);
         }
       }
       setLoading(false);
     }).catch((error) => {
       console.error("Error getting session:", error);
+      initialSessionRestored = true;
       if (!navigator.onLine) {
         const { user: offlineUser } = loadOfflineSession();
         if (offlineUser) {

@@ -12,10 +12,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { format, differenceInMinutes, parse } from "date-fns";
 import { fr } from "date-fns/locale";
-import { Activity, Clock, Loader2, Users, ChevronRight } from "lucide-react";
+import { Activity, Clock, Loader2, Users, ChevronRight, Heart } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 
@@ -51,6 +52,17 @@ export function PostSessionRpeDialog({
   const queryClient = useQueryClient();
   const [entries, setEntries] = useState<Record<string, PlayerRpeEntry>>({});
   const [defaultDuration, setDefaultDuration] = useState("60");
+  const [showHrv, setShowHrv] = useState(false);
+  const [hrvMs, setHrvMs] = useState("");
+  const [restingHr, setRestingHr] = useState("");
+  const [avgHr, setAvgHr] = useState("");
+  const [maxHr, setMaxHr] = useState("");
+  const [showZones, setShowZones] = useState(false);
+  const [zone1, setZone1] = useState("");
+  const [zone2, setZone2] = useState("");
+  const [zone3, setZone3] = useState("");
+  const [zone4, setZone4] = useState("");
+  const [zone5, setZone5] = useState("");
 
   // Fetch players info
   const { data: players } = useQuery({
@@ -174,6 +186,35 @@ export function PostSessionRpeDialog({
       const { error } = await supabase.from("awcr_tracking").insert(insertData);
       if (error) throw error;
 
+      // Save HRV data if provided
+      if (showHrv && (hrvMs || restingHr || avgHr || maxHr || zone1 || zone2 || zone3 || zone4 || zone5)) {
+        const sessionType = session.training_type;
+        const hrvRecordType = sessionType === "test" ? "test" : sessionType === "competition" ? "competition" : "session";
+        
+        const hrvInserts = validEntries.map(entry => ({
+          player_id: entry.playerId,
+          category_id: categoryId,
+          record_date: session.session_date,
+          record_type: hrvRecordType,
+          training_session_id: session.id,
+          hrv_ms: hrvMs ? parseFloat(hrvMs) : null,
+          resting_hr_bpm: restingHr ? parseFloat(restingHr) : null,
+          avg_hr_bpm: avgHr ? parseFloat(avgHr) : null,
+          max_hr_bpm: maxHr ? parseFloat(maxHr) : null,
+          zone1_minutes: zone1 ? parseFloat(zone1) : null,
+          zone2_minutes: zone2 ? parseFloat(zone2) : null,
+          zone3_minutes: zone3 ? parseFloat(zone3) : null,
+          zone4_minutes: zone4 ? parseFloat(zone4) : null,
+          zone5_minutes: zone5 ? parseFloat(zone5) : null,
+        }));
+
+        const { error: hrvError } = await supabase.from("hrv_records").insert(hrvInserts);
+        if (hrvError) {
+          console.error("HRV insert error:", hrvError);
+          toast.error("RPE enregistrés mais erreur HRV");
+        }
+      }
+
       // Trigger AWCR alerts check
       try {
         await supabase.functions.invoke("check-awcr-alerts");
@@ -186,7 +227,14 @@ export function PostSessionRpeDialog({
     onSuccess: (count) => {
       queryClient.invalidateQueries({ queryKey: ["awcr_tracking"] });
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      if (showHrv) {
+        queryClient.invalidateQueries({ queryKey: ["hrv_records"] });
+      }
       toast.success(`${count} entrées RPE enregistrées`);
+      setShowHrv(false);
+      setHrvMs(""); setRestingHr(""); setAvgHr(""); setMaxHr("");
+      setShowZones(false);
+      setZone1(""); setZone2(""); setZone3(""); setZone4(""); setZone5("");
       onOpenChange(false);
     },
     onError: (error: Error) => {
@@ -353,6 +401,86 @@ export function PostSessionRpeDialog({
               })}
             </div>
           </ScrollArea>
+
+          {/* HRV Section (optional) */}
+          <div className="p-3 bg-muted/30 rounded-lg space-y-3">
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="show-hrv"
+                checked={showHrv}
+                onCheckedChange={(c) => setShowHrv(!!c)}
+              />
+              <Label htmlFor="show-hrv" className="text-sm flex items-center gap-1.5 cursor-pointer">
+                <Heart className="h-3.5 w-3.5 text-rose-500" />
+                Ajouter données HRV / cardio (optionnel)
+              </Label>
+            </div>
+
+            {showHrv && (
+              <div className="space-y-3 pt-1">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  <div>
+                    <Label className="text-xs">HRV (ms)</Label>
+                    <Input type="number" min="0" className="h-8 mt-1" value={hrvMs} onChange={(e) => setHrvMs(e.target.value)} placeholder="ex: 65" />
+                  </div>
+                  <div>
+                    <Label className="text-xs">FC repos</Label>
+                    <Input type="number" min="0" className="h-8 mt-1" value={restingHr} onChange={(e) => setRestingHr(e.target.value)} placeholder="bpm" />
+                  </div>
+                  <div>
+                    <Label className="text-xs">FC moy</Label>
+                    <Input type="number" min="0" className="h-8 mt-1" value={avgHr} onChange={(e) => setAvgHr(e.target.value)} placeholder="bpm" />
+                  </div>
+                  <div>
+                    <Label className="text-xs">FC max</Label>
+                    <Input type="number" min="0" className="h-8 mt-1" value={maxHr} onChange={(e) => setMaxHr(e.target.value)} placeholder="bpm" />
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="show-zones"
+                    checked={showZones}
+                    onCheckedChange={(c) => setShowZones(!!c)}
+                  />
+                  <Label htmlFor="show-zones" className="text-xs cursor-pointer">
+                    Ajouter le temps par zone cardiaque
+                  </Label>
+                </div>
+
+                {showZones && (
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-5 gap-2">
+                      {[
+                        { label: "Z1 Récup", color: "border-sky-400", value: zone1, set: setZone1 },
+                        { label: "Z2 Aéro", color: "border-emerald-400", value: zone2, set: setZone2 },
+                        { label: "Z3 Tempo", color: "border-amber-400", value: zone3, set: setZone3 },
+                        { label: "Z4 Seuil", color: "border-orange-400", value: zone4, set: setZone4 },
+                        { label: "Z5 VO2", color: "border-rose-400", value: zone5, set: setZone5 },
+                      ].map((z) => (
+                        <div key={z.label}>
+                          <Label className="text-[10px] block mb-1">{z.label}</Label>
+                          <Input
+                            type="number"
+                            min="0"
+                            className={cn("h-7 text-xs border-l-2", z.color)}
+                            value={z.value}
+                            onChange={(e) => z.set(e.target.value)}
+                            placeholder="min"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                    {(zone1 || zone2 || zone3 || zone4 || zone5) && (
+                      <p className="text-[10px] text-muted-foreground text-right">
+                        Total: {[zone1, zone2, zone3, zone4, zone5].reduce((s, v) => s + (parseFloat(v) || 0), 0)} min
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
 
           {/* RPE scale reference */}
           <div className="p-2 bg-muted/30 rounded-lg text-xs text-muted-foreground">

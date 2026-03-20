@@ -36,7 +36,15 @@ export interface SessionBlock {
   target_intensity?: string;
   volume?: string;
   contact_charge?: string;
+  bowling_exercise_type?: string;
 }
+
+const BOWLING_PRECISION_EXERCISES = [
+  { value: "quille_7", label: "Quille 7" },
+  { value: "quille_10", label: "Quille 10" },
+  { value: "spares", label: "Spares (général)" },
+  { value: "poche", label: "Poche" },
+];
 
 interface SessionBlocksManagerProps {
   blocks: SessionBlock[];
@@ -289,6 +297,26 @@ export function SessionBlocksManager({
                           />
                         </div>
                       </div>
+
+                      {/* Bowling precision exercise type */}
+                      {block.training_type === "bowling_spare" && (
+                        <div className="space-y-1">
+                          <Label className="text-xs text-muted-foreground">Exercice précision</Label>
+                          <Select
+                            value={block.bowling_exercise_type || ""}
+                            onValueChange={(val) => updateBlock(index, "bowling_exercise_type", val || undefined)}
+                          >
+                            <SelectTrigger className="h-9">
+                              <SelectValue placeholder="Sélectionner l'exercice..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {BOWLING_PRECISION_EXERCISES.map((ex) => (
+                                <SelectItem key={ex.value} value={ex.value}>{ex.label}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
 
                       {/* Enrichment fields */}
                       <div className="space-y-1">

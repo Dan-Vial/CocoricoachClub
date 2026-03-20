@@ -1,0 +1,1 @@
+ALTER TABLE public.gym_session_exercises ADD COLUMN contraction_regime text DEFAULT NULL;

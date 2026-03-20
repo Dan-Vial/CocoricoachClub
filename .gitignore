@@ -37,3 +37,4 @@ supabase/.temp
 devops/supabase/supabase
 
 devops/frontend/.lock
+dev-dist

@@ -164,6 +164,7 @@ interface Exercise {
   cluster_sets?: ClusterSet[];
   block_config?: BlockConfig;
   tempo?: string;
+  contraction_regime?: string;
   target_rpe?: number;
   target_velocity?: number; // VBT - target velocity in m/s
   target_force_newton?: number | null; // Force in Newton
@@ -190,6 +191,7 @@ const emptyExercise = (index: number, groupId?: string, groupOrder?: number, met
   cluster_sets: undefined,
   block_config: undefined,
   tempo: undefined,
+  contraction_regime: undefined,
   target_rpe: undefined,
 });
 
@@ -514,6 +516,8 @@ export function SessionFormDialog({
           set_type: ex.set_type || "normal",
           group_id: ex.group_id || null,
           group_order: undefined,
+          tempo: ex.tempo || undefined,
+          contraction_regime: (ex as any).contraction_regime || undefined,
         }))
       );
     } else if (!editSession) {
@@ -525,7 +529,7 @@ export function SessionFormDialog({
   useEffect(() => {
     if (existingBlocks && existingBlocks.length > 0 && editSession) {
       setSessionBlocks(
-        existingBlocks.map((block) => ({
+        existingBlocks.map((block: any) => ({
           id: block.id,
           training_type: block.training_type,
           intensity: block.intensity || undefined,
@@ -533,6 +537,7 @@ export function SessionFormDialog({
           end_time: block.end_time || undefined,
           notes: block.notes || undefined,
           block_order: block.block_order,
+          bowling_exercise_type: block.bowling_exercise_type || undefined,
         }))
       );
     } else if (!editSession) {
@@ -809,6 +814,7 @@ export function SessionFormDialog({
             target_intensity: block.target_intensity || null,
             volume: block.volume || null,
             contact_charge: block.contact_charge || null,
+            bowling_exercise_type: block.bowling_exercise_type || null,
           }));
 
         if (blockRecords.length > 0) {
@@ -839,6 +845,8 @@ export function SessionFormDialog({
               reps: ex.reps ? parseInt(ex.reps) : null,
               weight_kg: ex.weight_mode === "kg" ? ex.weight_kg : null,
               rest_seconds: ex.rest_seconds,
+              tempo: ex.tempo || null,
+              contraction_regime: ex.contraction_regime || null,
               notes: ex.weight_mode === "percent_rm" && ex.weight_percent_rm 
                 ? `${ex.weight_percent_rm}% RM${ex.notes ? ` - ${ex.notes}` : ""}` 
                 : (ex.notes || null),
@@ -2466,15 +2474,53 @@ export function SessionFormDialog({
           </div>
         )}
 
+        {/* Tempo + Contraction Regime */}
+        {!isCardioBlock && exercise.exercise_name && (
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            <div>
+              <Label className="text-xs text-muted-foreground">Tempo</Label>
+              <Input
+                className="h-8 text-xs"
+                placeholder="3-1-2-0"
+                value={exercise.tempo || ""}
+                onChange={(e) => updateExercise(index, "tempo", e.target.value)}
+              />
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Régime de contraction</Label>
+              <Select
+                value={exercise.contraction_regime || ""}
+                onValueChange={(v) => updateExercise(index, "contraction_regime", v || undefined)}
+              >
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue placeholder="Sélectionner..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="concentrique">Concentrique</SelectItem>
+                  <SelectItem value="excentrique">Excentrique</SelectItem>
+                  <SelectItem value="isometrique">Isométrique</SelectItem>
+                  <SelectItem value="pliometrique">Pliométrique</SelectItem>
+                  <SelectItem value="stato_dynamique">Stato-dynamique</SelectItem>
+                  <SelectItem value="concentrique_excentrique">Concentrique + Excentrique</SelectItem>
+                  <SelectItem value="excentrique_surcharge">Excentrique surchargé</SelectItem>
+                  <SelectItem value="balistique">Balistique</SelectItem>
+                  <SelectItem value="isokinetique">Isocinétique</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        )}
+
         {/* Notes for non-cardio exercises */}
         {!isCardioBlock && (
           <div>
-            <Label className="text-xs text-muted-foreground">Notes</Label>
-            <Input
-              className="h-8 text-xs"
-              placeholder="Notes..."
+            <Label className="text-xs text-muted-foreground">Notes / Consignes</Label>
+            <Textarea
+              className="min-h-[40px] text-xs resize-y"
+              placeholder="Consignes, explications de la méthode, points clés..."
               value={exercise.notes}
               onChange={(e) => updateExercise(index, "notes", e.target.value)}
+              rows={2}
             />
           </div>
         )}

@@ -4,6 +4,8 @@ import { Dumbbell } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getCategoryLabel } from "@/lib/constants/exerciseCategories";
 import { getTrainingStyleConfig } from "@/lib/constants/trainingStyles";
+import { ExerciseMediaViewer } from "@/components/library/ExerciseMediaViewer";
+import { useExerciseMedia } from "@/lib/hooks/useExerciseMedia";
 
 interface Exercise {
   id?: string;
@@ -14,6 +16,7 @@ interface Exercise {
   weight_kg?: number | null;
   rest_seconds?: number | null;
   tempo?: string | null;
+  contraction_regime?: string | null;
   notes?: string | null;
   set_type?: string | null;
   method?: string | null;
@@ -21,6 +24,18 @@ interface Exercise {
   group_order?: number | null;
   order_index?: number | null;
 }
+
+const contractionLabels: Record<string, string> = {
+  concentrique: "Concentrique",
+  excentrique: "Excentrique",
+  isometrique: "Isométrique",
+  pliometrique: "Pliométrique",
+  stato_dynamique: "Stato-dyn.",
+  concentrique_excentrique: "Conc.+Exc.",
+  excentrique_surcharge: "Exc. surchargé",
+  balistique: "Balistique",
+  isokinetique: "Isocinétique",
+};
 
 interface ExerciseGroup {
   groupId: string | null;
@@ -71,6 +86,8 @@ export function GroupedExerciseList({
   compact = false,
   forPrint = false,
 }: GroupedExerciseListProps) {
+  const { getMedia } = useExerciseMedia();
+
   // Organize exercises into groups
   const exerciseGroups = useMemo(() => {
     if (!exercises || exercises.length === 0) return [];
@@ -108,6 +125,7 @@ export function GroupedExerciseList({
   // Render a single exercise card
   const renderExerciseCard = (ex: Exercise, idx: number, isGrouped: boolean, exerciseNumber?: number) => {
     const styleConfig = getTrainingStyleConfig(ex.set_type || ex.method || "normal");
+    const media = getMedia(ex.exercise_name);
     
     return (
       <div 
@@ -135,9 +153,15 @@ export function GroupedExerciseList({
                 {idx + 1}.
               </span>
             )}
-            <span className={cn("font-medium", compact && "text-sm", fieldMode && "text-white")}>
-              {ex.exercise_name}
-            </span>
+            <ExerciseMediaViewer
+              exerciseName={ex.exercise_name}
+              imageUrl={media?.image_url}
+              youtubeUrl={media?.youtube_url}
+            >
+              <span className={cn("font-medium", compact && "text-sm", fieldMode && "text-white")}>
+                {ex.exercise_name}
+              </span>
+            </ExerciseMediaViewer>
           </div>
           {!compact && (
             <div className="flex gap-1 flex-wrap justify-end">
@@ -162,6 +186,11 @@ export function GroupedExerciseList({
           {ex.weight_kg && <span>@ {ex.weight_kg} kg</span>}
           {ex.rest_seconds && <span>- {ex.rest_seconds}s repos</span>}
           {!compact && ex.tempo && <span>Tempo: {ex.tempo}</span>}
+          {!compact && ex.contraction_regime && (
+            <Badge variant="outline" className="text-[10px] px-1 py-0">
+              {contractionLabels[ex.contraction_regime] || ex.contraction_regime}
+            </Badge>
+          )}
         </div>
         {!compact && ex.notes && (
           <p className={cn(

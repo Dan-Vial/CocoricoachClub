@@ -16,6 +16,7 @@ interface Session {
   session_end_time: string | null;
   training_type: string;
   notes: string | null;
+  created_by_player_id?: string | null;
 }
 
 interface Match {
@@ -50,6 +51,7 @@ interface CalendarDayCellProps {
   onViewMatch?: (match: Match) => void;
   onStatsMatch?: (match: Match) => void;
   onDeleteMatch?: (matchId: string) => void;
+  playerNamesMap?: Record<string, string>;
 }
 
 export function CalendarDayCell({
@@ -69,6 +71,7 @@ export function CalendarDayCell({
   onViewMatch,
   onStatsMatch,
   onDeleteMatch,
+  playerNamesMap,
 }: CalendarDayCellProps) {
   const dateStr = format(day, "yyyy-MM-dd");
   const { setNodeRef, isOver } = useDroppable({
@@ -168,6 +171,7 @@ export function CalendarDayCell({
               onNotify={onNotifySession ? () => onNotifySession(session) : undefined}
               isViewer={isViewer}
               isDraggable={!isViewer}
+              playerName={session.created_by_player_id && playerNamesMap ? playerNamesMap[session.created_by_player_id] : null}
             />
           </div>
         ))}

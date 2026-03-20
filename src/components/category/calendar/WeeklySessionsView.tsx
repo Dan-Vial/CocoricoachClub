@@ -2,7 +2,7 @@ import { useMemo, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Calendar, Clock, Swords, Dumbbell, Printer } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar, Clock, Swords, Dumbbell, Printer, User } from "lucide-react";
 import { format, startOfWeek, endOfWeek, addWeeks, subWeeks, eachDayOfInterval, isSameDay } from "date-fns";
 import { fr } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -18,6 +18,7 @@ interface Session {
   training_type: string;
   intensity: number | null;
   notes: string | null;
+  created_by_player_id?: string | null;
 }
 
 interface Match {
@@ -37,6 +38,7 @@ interface WeeklySessionsViewProps {
   onWeekChange: (date: Date) => void;
   onViewSession: (session: Session) => void;
   onViewMatch: (match: Match) => void;
+  playerNamesMap?: Record<string, string>;
 }
 
 const DAYS_OF_WEEK = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
@@ -49,6 +51,7 @@ export function WeeklySessionsView({
   onWeekChange,
   onViewSession,
   onViewMatch,
+  playerNamesMap,
 }: WeeklySessionsViewProps) {
   const weekStart = startOfWeek(currentWeek, { weekStartsOn: 1 });
   const weekEnd = endOfWeek(currentWeek, { weekStartsOn: 1 });
@@ -188,8 +191,17 @@ export function WeeklySessionsView({
                         )}
                       >
                         <div className="flex items-center gap-1 text-xs">
-                          <div className={cn("h-2 w-2 rounded-full shrink-0", bgColor)} />
+                          {(session as any).created_by_player_id && (
+                            <User className="h-2.5 w-2.5 text-violet-500 shrink-0" />
+                          )}
+                          <div className={cn(
+                            "h-2 w-2 rounded-full shrink-0",
+                            (session as any).created_by_player_id ? "bg-violet-500" : bgColor
+                          )} />
                           <span className="font-medium truncate">
+                            {(session as any).created_by_player_id && playerNamesMap?.[(session as any).created_by_player_id]
+                              ? `${playerNamesMap[(session as any).created_by_player_id].split(' ')[0]} · `
+                              : ""}
                             {label.slice(0, 12)}
                           </span>
                         </div>

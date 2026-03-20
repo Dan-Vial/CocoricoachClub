@@ -56,6 +56,13 @@ const AVIRON_DISTANCES = [
   { value: 6000, label: "6000m (Tête de rivière)" },
 ];
 
+// Tennis match formats
+const TENNIS_FORMATS = [
+  { value: "simple", label: "Simple" },
+  { value: "double", label: "Double" },
+  { value: "double_mixte", label: "Double Mixte" },
+];
+
 // Age categories
 const AGE_CATEGORIES = [
   { value: "U15", label: "U15 (Cadet)" },
@@ -76,6 +83,7 @@ export function AddMatchCalendarDialog({
   const competitions = getCompetitionsBySport(sportType);
   const isIndividual = isIndividualSport(sportType);
   const isAviron = sportType.toLowerCase().includes("aviron");
+  const isTennis = sportType.toLowerCase().includes("tennis");
   
   const [opponent, setOpponent] = useState("");
   const [competition, setCompetition] = useState("");
@@ -91,6 +99,9 @@ export function AddMatchCalendarDialog({
   const [eventType, setEventType] = useState<string>("individual");
   const [ageCategory, setAgeCategory] = useState("");
   const [distanceMeters, setDistanceMeters] = useState<number | undefined>();
+  
+  // Tennis specific fields
+  const [matchFormat, setMatchFormat] = useState<string>("simple");
   
   const queryClient = useQueryClient();
 
@@ -115,7 +126,9 @@ export function AddMatchCalendarDialog({
         event_type: isAviron ? eventType : (isIndividual ? "individual" : "team"),
         age_category: ageCategory || null,
         distance_meters: distanceMeters || null,
-      });
+        // Tennis specific
+        match_format: isTennis ? matchFormat : null,
+      } as any);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -149,6 +162,7 @@ export function AddMatchCalendarDialog({
     setEventType("individual");
     setAgeCategory("");
     setDistanceMeters(undefined);
+    setMatchFormat("simple");
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -179,6 +193,28 @@ export function AddMatchCalendarDialog({
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Tennis specific: Match format */}
+          {isTennis && (
+            <div className="space-y-2">
+              <Label>Format de jeu *</Label>
+              <div className="flex gap-4 flex-wrap">
+                {TENNIS_FORMATS.map((fmt) => (
+                  <label key={fmt.value} className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="matchFormat"
+                      value={fmt.value}
+                      checked={matchFormat === fmt.value}
+                      onChange={(e) => setMatchFormat(e.target.value)}
+                      className="w-4 h-4"
+                    />
+                    <span>{fmt.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Aviron specific: Event type (Individual/Team) */}
           {isAviron && (
             <div className="space-y-2">

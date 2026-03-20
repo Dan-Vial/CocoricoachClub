@@ -47,6 +47,10 @@ serve(async (req) => {
     let totalPushSent = 0;
     const results: any[] = [];
 
+    // Deep link URL for quick access
+    const appBaseUrl = "https://cocoricoachclub.lovable.app";
+    const wellnessDeepLink = `${appBaseUrl}/athlete-space?tab=wellness`;
+
     for (const category of categories) {
       // Get players with email OR with a user account (for push)
       const { data: players, error: playersError } = await supabase
@@ -75,13 +79,22 @@ serve(async (req) => {
               email_subject: "🌅 Wellness du jour - Comment te sens-tu ?",
               email_body: `
                 <html>
-                  <body style="font-family: Arial, sans-serif; padding: 20px;">
-                    <h2>Bonjour !</h2>
-                    <p>N'oublie pas de renseigner ton Wellness du jour pour aider ton staff à suivre ta récupération.</p>
-                    <p><strong>Catégorie:</strong> ${category.name}</p>
-                    <p>Évalue ton niveau de fatigue, qualité de sommeil, stress et douleurs musculaires.</p>
-                    <br>
-                    <p>À bientôt sur le terrain ! 💪</p>
+                  <body style="font-family: Arial, sans-serif; padding: 20px; background-color: #f4f4f5;">
+                    <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                      <div style="background: linear-gradient(135deg, #059669 0%, #10b981 100%); padding: 24px; text-align: center;">
+                        <h1 style="color: white; margin: 0; font-size: 20px;">🏉 CocoriCoach</h1>
+                      </div>
+                      <div style="padding: 24px;">
+                        <h2 style="margin: 0 0 12px;">Bonjour ! 🌅</h2>
+                        <p>N'oublie pas de renseigner ton <strong>Wellness du jour</strong> pour aider ton staff à suivre ta récupération.</p>
+                        <p><strong>Catégorie:</strong> ${category.name}</p>
+                        <p>Évalue ton niveau de fatigue, qualité de sommeil, stress et douleurs musculaires.</p>
+                        <div style="text-align: center; margin: 24px 0;">
+                          <a href="${wellnessDeepLink}" style="display: inline-block; background: linear-gradient(135deg, #059669, #10b981); color: white; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: bold; font-size: 16px;">❤️ Remplir mon Wellness</a>
+                        </div>
+                        <p>À bientôt sur le terrain ! 💪</p>
+                      </div>
+                    </div>
                   </body>
                 </html>
               `,
@@ -118,10 +131,12 @@ serve(async (req) => {
                 fr: `Prends 30 secondes pour remplir ton Wellness du jour (${category.name}).`,
                 en: `Prends 30 secondes pour remplir ton Wellness du jour (${category.name}).`,
               },
+              url: wellnessDeepLink,
               ttl: 3600,
               data: {
                 type: "wellness_reminder",
                 category_id: category.id,
+                url: wellnessDeepLink,
               },
             }),
           });

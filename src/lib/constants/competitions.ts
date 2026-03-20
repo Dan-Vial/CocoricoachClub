@@ -847,6 +847,111 @@ export const CROSSFIT_COMPETITIONS: CompetitionCategory[] = [
   },
 ];
 
+// Tennis competitions
+export const TENNIS_COMPETITIONS: CompetitionCategory[] = [
+  {
+    label: "Championnats Jeunes",
+    options: [
+      "Championnat Départemental U12",
+      "Championnat Départemental U14",
+      "Championnat Départemental U16",
+      "Championnat Départemental U18",
+      "Championnat Régional U12",
+      "Championnat Régional U14",
+      "Championnat Régional U16",
+      "Championnat Régional U18",
+      "Championnat de France U12",
+      "Championnat de France U14",
+      "Championnat de France U16",
+      "Championnat de France U18",
+      "Orange Bowl",
+      "Les Petits As",
+    ],
+  },
+  {
+    label: "Tournois Nationaux (Simple)",
+    options: [
+      "Tournoi TMC 15",
+      "Tournoi TMC 30",
+      "Tournoi TMC 40",
+      "Tournoi National 1",
+      "Tournoi National 2",
+      "Tournoi National 3",
+      "Championnat de France Seniors",
+      "Championnat de France par équipes",
+      "Open de France",
+    ],
+  },
+  {
+    label: "Circuit ATP / WTA",
+    options: [
+      "ATP 250",
+      "ATP 500",
+      "ATP Masters 1000",
+      "ATP Finals",
+      "WTA 250",
+      "WTA 500",
+      "WTA 1000",
+      "WTA Finals",
+      "ATP Challenger",
+      "WTA 125",
+      "ITF World Tennis Tour",
+    ],
+  },
+  {
+    label: "Grand Chelem",
+    options: [
+      "Open d'Australie",
+      "Roland-Garros",
+      "Wimbledon",
+      "US Open",
+    ],
+  },
+  {
+    label: "Compétitions par Équipes",
+    options: [
+      "Coupe Davis",
+      "Billie Jean King Cup",
+      "United Cup",
+      "ATP Cup",
+      "Interclubs National",
+      "Interclubs Régional",
+      "Interclubs Départemental",
+    ],
+  },
+  {
+    label: "Compétitions Internationales",
+    options: [
+      "Jeux Olympiques",
+      "Universiade",
+      "Jeux Méditerranéens",
+    ],
+  },
+  {
+    label: "Autres",
+    options: [
+      "Tournoi Open",
+      "Tournoi interne",
+      "Matchs amicaux",
+      "Exhibition",
+    ],
+  },
+];
+
+// Tennis competition stages
+export const TENNIS_STAGES: CompetitionStage[] = [
+  { value: "", label: "Aucune" },
+  { value: "qualifications", label: "Qualifications" },
+  { value: "premier_tour", label: "1er tour" },
+  { value: "deuxieme_tour", label: "2ème tour" },
+  { value: "troisieme_tour", label: "3ème tour" },
+  { value: "seiziemes", label: "16èmes de finale" },
+  { value: "huitiemes", label: "8èmes de finale" },
+  { value: "quarts", label: "Quarts de finale" },
+  { value: "demies", label: "Demi-finales" },
+  { value: "finale", label: "Finale" },
+];
+
 // Padel competitions
 export const PADEL_COMPETITIONS: CompetitionCategory[] = [
   {
@@ -1165,6 +1270,8 @@ export const getCompetitionsBySport = (sportType: string): CompetitionCategory[]
       return CROSSFIT_COMPETITIONS;
     case "padel":
       return PADEL_COMPETITIONS;
+    case "tennis":
+      return TENNIS_COMPETITIONS;
     case "natation":
       return NATATION_COMPETITIONS;
     case "ski":
@@ -1292,6 +1399,8 @@ export const getCompetitionStagesBySport = (sportType: string): CompetitionStage
       return TRIATHLON_STAGES;
     case "padel":
       return PADEL_STAGES;
+    case "tennis":
+      return TENNIS_STAGES;
     case "natation":
     case "aviron":
     case "athletisme":
@@ -1339,6 +1448,10 @@ export const getCompetitionStageLabel = (stage: string): string => {
     transition_2: "T2",
     course: "Course",
     sprint_finish: "Sprint Finish",
+    // Tennis
+    premier_tour: "1er tour",
+    deuxieme_tour: "2ème tour",
+    troisieme_tour: "3ème tour",
   };
   return allStages[stage] || stage;
 };

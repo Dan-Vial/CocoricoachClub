@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -81,6 +82,7 @@ interface Exercise {
   drop_sets?: DropSet[];
   cluster_sets?: ClusterSet[];
   tempo?: string;
+  contraction_regime?: string;
   target_rpe?: number;
   target_velocity?: number; // VBT - target velocity in m/s
 }
@@ -718,27 +720,61 @@ function PyramidBlock({
         </div>
       )}
 
-      {/* Tempo and RPE */}
+      {/* Tempo, Contraction Regime and RPE */}
       {exercise.exercise_name && (
-        <div className="flex items-center gap-4 pt-3 border-t flex-wrap">
-          <div className="flex items-center gap-2">
-            <Label className="text-sm">Tempo</Label>
-            <Input
-              className="h-8 w-24 text-sm"
-              placeholder="3-1-2-0"
-              value={exercise.tempo || ""}
-              onChange={(e) => onUpdateExercise(exerciseIndex, "tempo", e.target.value)}
-            />
+        <div className="space-y-2 pt-3 border-t">
+          <div className="flex items-center gap-4 flex-wrap">
+            <div className="flex items-center gap-2">
+              <Label className="text-sm">Tempo</Label>
+              <Input
+                className="h-8 w-24 text-sm"
+                placeholder="3-1-2-0"
+                value={exercise.tempo || ""}
+                onChange={(e) => onUpdateExercise(exerciseIndex, "tempo", e.target.value)}
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Label className="text-sm whitespace-nowrap">Régime</Label>
+              <Select
+                value={exercise.contraction_regime || ""}
+                onValueChange={(v) => onUpdateExercise(exerciseIndex, "contraction_regime", v || undefined)}
+              >
+                <SelectTrigger className="h-8 text-xs w-40">
+                  <SelectValue placeholder="Contraction..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="concentrique">Concentrique</SelectItem>
+                  <SelectItem value="excentrique">Excentrique</SelectItem>
+                  <SelectItem value="isometrique">Isométrique</SelectItem>
+                  <SelectItem value="pliometrique">Pliométrique</SelectItem>
+                  <SelectItem value="stato_dynamique">Stato-dynamique</SelectItem>
+                  <SelectItem value="concentrique_excentrique">Conc. + Exc.</SelectItem>
+                  <SelectItem value="excentrique_surcharge">Exc. surchargé</SelectItem>
+                  <SelectItem value="balistique">Balistique</SelectItem>
+                  <SelectItem value="isokinetique">Isocinétique</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-2">
+              <Label className="text-sm">RPE cible</Label>
+              <Input
+                type="number"
+                min="1"
+                max="10"
+                className="h-8 w-16 text-sm"
+                value={exercise.target_rpe || ""}
+                onChange={(e) => onUpdateExercise(exerciseIndex, "target_rpe", parseInt(e.target.value) || null)}
+              />
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Label className="text-sm">RPE cible</Label>
-            <Input
-              type="number"
-              min="1"
-              max="10"
-              className="h-8 w-16 text-sm"
-              value={exercise.target_rpe || ""}
-              onChange={(e) => onUpdateExercise(exerciseIndex, "target_rpe", parseInt(e.target.value) || null)}
+          <div>
+            <Label className="text-xs text-muted-foreground">Notes / Consignes</Label>
+            <Textarea
+              className="min-h-[36px] text-xs resize-y"
+              placeholder="Consignes, explications..."
+              value={exercise.notes || ""}
+              onChange={(e) => onUpdateExercise(exerciseIndex, "notes", e.target.value)}
+              rows={1}
             />
           </div>
         </div>

@@ -1167,6 +1167,68 @@ export const ATHLETIC_PROFILES: Record<string, AthleticProfileConfig> = {
       },
     },
   },
+  tennis: {
+    sport: "tennis",
+    label: "Tennis",
+    tests: [
+      {
+        key: "sprint5_10",
+        label: "Sprint navette 5-10-5m",
+        shortLabel: "Navette",
+        unit: "s",
+        testType: "sprint_5_10_5",
+        tableSource: "generic_tests",
+        higherIsBetter: false,
+      },
+      {
+        key: "cmj",
+        label: "Counter Movement Jump",
+        shortLabel: "CMJ",
+        unit: "cm",
+        testType: "cmj",
+        tableSource: "jump_tests",
+        higherIsBetter: true,
+      },
+    ],
+    profileDescription: "Agilité / changement de direction / Explosivité",
+    profileTypes: {
+      primary: {
+        label: "Profil Agilité",
+        description: "Excellent changement de direction et réactivité",
+        recommendations: [
+          "Développer la puissance des membres inférieurs",
+          "Travail pliométrique",
+          "Maintenir l'agilité et la vitesse de déplacement",
+        ],
+      },
+      balanced: {
+        label: "Profil Athlétique Complet",
+        description: "Bon équilibre agilité/explosivité",
+        recommendations: [
+          "Maintenir l'équilibre actuel",
+          "Travail de coordination",
+          "Renforcement spécifique tennis",
+        ],
+      },
+      secondary: {
+        label: "Profil Explosif",
+        description: "Excellente puissance et détente",
+        recommendations: [
+          "Améliorer la vitesse latérale",
+          "Travail de changements de direction",
+          "Exercices spécifiques de déplacement court",
+        ],
+      },
+      insufficientData: {
+        label: "Données insuffisantes",
+        description: "Tests navette 5-10-5 et CMJ requis",
+        recommendations: [
+          "Effectuer un test de navette 5-10-5",
+          "Effectuer un test de détente verticale (CMJ)",
+        ],
+      },
+    },
+  },
 };
 
 export function getAthleticProfileConfig(sportType: string, playerDiscipline?: string | null): AthleticProfileConfig {

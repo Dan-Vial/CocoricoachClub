@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -42,6 +43,14 @@ export default function Auth() {
   const [searchParams] = useSearchParams();
   const redirectUrl = searchParams.get("redirect");
   const [isLoading, setIsLoading] = useState(false);
+
+  // Redirect authenticated users away from auth page
+  const { user, loading: authLoading } = useAuth();
+  useEffect(() => {
+    if (!authLoading && user) {
+      navigate(redirectUrl || "/", { replace: true });
+    }
+  }, [user, authLoading, navigate, redirectUrl]);
   const [forgotStep, setForgotStep] = useState<"hidden" | "email" | "reset" | "success">("hidden");
   const [forgotEmail, setForgotEmail] = useState("");
   const [forgotLoading, setForgotLoading] = useState(false);

@@ -12,7 +12,7 @@
  import { Textarea } from "@/components/ui/textarea";
  import { Checkbox } from "@/components/ui/checkbox";
  import { toast } from "@/components/ui/sonner";
-import { Plus, Edit, Pause, Play, Trash2, Building2, Mail, Video, MapPin, FolderOpen, User, Gift, DollarSign, Copy, Link, Check, GraduationCap, Search } from "lucide-react";
+import { Plus, Edit, Pause, Play, Trash2, Building2, Mail, Video, MapPin, FolderOpen, User, Gift, DollarSign, Copy, Link, Check, GraduationCap, Search, CreditCard } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { InviteClientDialog } from "./InviteClientDialog";
@@ -60,13 +60,32 @@ export function SuperAdminClients() {
        gps_data_enabled: false,
        academy_enabled: false,
     });
+    const [selectedPlanId, setSelectedPlanId] = useState<string>("");
+    const [subStartDate, setSubStartDate] = useState(new Date().toISOString().split("T")[0]);
+    const [subEndDate, setSubEndDate] = useState("");
+    const [subAmount, setSubAmount] = useState("");
+    const [subPaymentMethod, setSubPaymentMethod] = useState("");
     const [clubName, setClubName] = useState("");
     const [clubSport, setClubSport] = useState<MainSportCategory>("rugby");
      const [categoryDrafts, setCategoryDrafts] = useState<CategoryDraft[]>([]);
       const [generatedInviteLink, setGeneratedInviteLink] = useState<string | null>(null);
       const [linkCopied, setLinkCopied] = useState(false);
       const [searchQuery, setSearchQuery] = useState("");
+      const [assignSubClientId, setAssignSubClientId] = useState<string | null>(null);
  
+     // Fetch subscription plans
+     const { data: plans = [] } = useQuery({
+       queryKey: ["subscription-plans"],
+       queryFn: async () => {
+         const { data, error } = await supabase
+           .from("subscription_plans")
+           .select("*")
+           .order("price_monthly");
+         if (error) throw error;
+         return data;
+       },
+     });
+
      // Fetch formal clients with their subscriptions
      const { data: clients = [], isLoading } = useQuery({
        queryKey: ["super-admin-clients"],
@@ -233,8 +252,26 @@ export function SuperAdminClients() {
                 .insert(categoriesToInsert);
               if (catError) throw catError;
             }
-          }
-        }
+         }
+         }
+
+         // Create subscription if plan selected
+         if (selectedPlanId && selectedPlanId !== "none") {
+           const plan = plans.find((p: any) => p.id === selectedPlanId);
+           const amount = subAmount ? parseFloat(subAmount) : (plan?.price_monthly || null);
+           const { error: subError } = await supabase
+             .from("client_subscriptions")
+             .insert({
+               client_id: clientData.id,
+               plan_id: selectedPlanId,
+               start_date: subStartDate,
+               end_date: subEndDate || null,
+               amount,
+               payment_method: subPaymentMethod || null,
+               status: "active",
+             });
+           if (subError) console.error("Subscription creation error:", subError);
+         }
 
         // Send invitation email to the club admin if email is provided
         if (data.email) {
@@ -390,28 +427,72 @@ export function SuperAdminClients() {
      },
    });
  
-    const resetForm = () => {
-      setFormData({
-        name: "",
-        email: "",
-        phone: "",
-        address: "",
-        status: "trial",
-        max_clubs: 1,
-        max_categories_per_club: 3,
-        max_staff_users: 5,
-        max_athletes: 50,
-        notes: "",
-         video_enabled: false,
-         gps_data_enabled: false,
-         academy_enabled: false,
-      });
-      setClubName("");
-      setClubSport("rugby");
-      setCategoryDrafts([]);
-      setGeneratedInviteLink(null);
-      setLinkCopied(false);
-    };
+     const resetForm = () => {
+       setFormData({
+         name: "",
+         email: "",
+         phone: "",
+         address: "",
+         status: "trial",
+         max_clubs: 1,
+         max_categories_per_club: 3,
+         max_staff_users: 5,
+         max_athletes: 50,
+         notes: "",
+          video_enabled: false,
+          gps_data_enabled: false,
+          academy_enabled: false,
+       });
+       setClubName("");
+       setClubSport("rugby");
+       setCategoryDrafts([]);
+       setGeneratedInviteLink(null);
+       setLinkCopied(false);
+       setSelectedPlanId("");
+       setSubStartDate(new Date().toISOString().split("T")[0]);
+       setSubEndDate("");
+       setSubAmount("");
+       setSubPaymentMethod("");
+     };
+
+     const resetSubForm = () => {
+       setSelectedPlanId("");
+       setSubStartDate(new Date().toISOString().split("T")[0]);
+       setSubEndDate("");
+       setSubAmount("");
+       setSubPaymentMethod("");
+     };
+
+     // Assign subscription to existing client
+     const assignSubscription = useMutation({
+       mutationFn: async (clientId: string) => {
+         if (!selectedPlanId) throw new Error("Veuillez sélectionner un plan");
+         const plan = plans.find((p: any) => p.id === selectedPlanId);
+         const amount = subAmount ? parseFloat(subAmount) : (plan?.price_monthly || null);
+         const { error } = await supabase
+           .from("client_subscriptions")
+           .insert({
+             client_id: clientId,
+             plan_id: selectedPlanId,
+             start_date: subStartDate,
+             end_date: subEndDate || null,
+             amount,
+             payment_method: subPaymentMethod || null,
+             status: "active",
+           });
+         if (error) throw error;
+       },
+       onSuccess: () => {
+         toast.success("Abonnement assigné avec succès");
+         queryClient.invalidateQueries({ queryKey: ["super-admin-clients"] });
+         queryClient.invalidateQueries({ queryKey: ["client-subscriptions"] });
+         setAssignSubClientId(null);
+         resetSubForm();
+       },
+       onError: () => {
+         toast.error("Erreur lors de l'assignation de l'abonnement");
+       },
+     });
 
     const copyInviteLink = async (link: string) => {
       try {
@@ -613,21 +694,95 @@ export function SuperAdminClients() {
            onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
            placeholder="Notes internes..."
          />
+         </div>
+
+        {/* Subscription section */}
+        <div className="space-y-3 p-4 rounded-lg border bg-muted/30">
+          <Label className="text-base font-semibold flex items-center gap-2">
+            <CreditCard className="h-4 w-4" />
+            Abonnement
+          </Label>
+          <div className="space-y-3">
+            <div className="space-y-2">
+              <Label>Plan d'abonnement</Label>
+              <Select value={selectedPlanId} onValueChange={setSelectedPlanId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Aucun plan (optionnel)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Aucun plan</SelectItem>
+                  {plans.map((plan: any) => (
+                    <SelectItem key={plan.id} value={plan.id}>
+                      {plan.name} {plan.price_monthly ? `— ${plan.price_monthly}€/mois` : "— Gratuit"}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {selectedPlanId && selectedPlanId !== "none" && (
+              <>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Date de début</Label>
+                    <Input
+                      type="date"
+                      value={subStartDate}
+                      onChange={(e) => setSubStartDate(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Date de fin (optionnel)</Label>
+                    <Input
+                      type="date"
+                      value={subEndDate}
+                      onChange={(e) => setSubEndDate(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Montant (€)</Label>
+                    <Input
+                      type="number"
+                      placeholder={plans.find((p: any) => p.id === selectedPlanId)?.price_monthly?.toString() || "0"}
+                      value={subAmount}
+                      onChange={(e) => setSubAmount(e.target.value)}
+                    />
+                    <p className="text-xs text-muted-foreground">Laissez vide pour utiliser le prix du plan</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Moyen de paiement</Label>
+                    <Select value={subPaymentMethod} onValueChange={setSubPaymentMethod}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Non défini" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="card">Carte bancaire</SelectItem>
+                        <SelectItem value="transfer">Virement</SelectItem>
+                        <SelectItem value="check">Chèque</SelectItem>
+                        <SelectItem value="other">Autre</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
         </div>
 
-        {/* Club & Categories section - only in create mode */}
-        {!editingClient && (
-          <CreateClientCategoriesSection
-            clubName={clubName}
-            onClubNameChange={setClubName}
-            clubSport={clubSport}
-            onClubSportChange={setClubSport}
-            categories={categoryDrafts}
-            onCategoriesChange={setCategoryDrafts}
-          />
-        )}
-      </div>
-    );
+         {/* Club & Categories section - only in create mode */}
+         {!editingClient && (
+           <CreateClientCategoriesSection
+             clubName={clubName}
+             onClubNameChange={setClubName}
+             clubSport={clubSport}
+             onClubSportChange={setClubSport}
+             categories={categoryDrafts}
+             onCategoriesChange={setCategoryDrafts}
+           />
+         )}
+       </div>
+     );
  
    return (
      <Card>
@@ -837,6 +992,17 @@ export function SuperAdminClients() {
                          <Button
                            variant="ghost"
                            size="icon"
+                           title="Assigner un abonnement"
+                           onClick={() => {
+                             resetSubForm();
+                             setAssignSubClientId(client.id);
+                           }}
+                         >
+                           <CreditCard className="h-4 w-4 text-primary" />
+                         </Button>
+                         <Button
+                           variant="ghost"
+                           size="icon"
                            title="Copier le lien d'invitation"
                            onClick={async () => {
                             if (!client.email) {
@@ -1024,7 +1190,92 @@ export function SuperAdminClients() {
                clientName={categoryOptionsClient.name}
              />
            )}
-        </CardContent>
-      </Card>
-    );
-  }
+            {/* Assign Subscription Dialog */}
+            <Dialog open={!!assignSubClientId} onOpenChange={(open) => { if (!open) { setAssignSubClientId(null); resetSubForm(); } }}>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <CreditCard className="h-5 w-5" />
+                    Assigner un abonnement
+                  </DialogTitle>
+                  <DialogDescription>
+                    {clients.find((c: any) => c.id === assignSubClientId)?.name || "Client"}
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Plan d'abonnement *</Label>
+                    <Select value={selectedPlanId} onValueChange={setSelectedPlanId}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Sélectionner un plan" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {plans.map((plan: any) => (
+                          <SelectItem key={plan.id} value={plan.id}>
+                            {plan.name} {plan.price_monthly ? `— ${plan.price_monthly}€/mois` : "— Gratuit"}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Date de début</Label>
+                      <Input
+                        type="date"
+                        value={subStartDate}
+                        onChange={(e) => setSubStartDate(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Date de fin</Label>
+                      <Input
+                        type="date"
+                        value={subEndDate}
+                        onChange={(e) => setSubEndDate(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Montant (€)</Label>
+                      <Input
+                        type="number"
+                        placeholder={plans.find((p: any) => p.id === selectedPlanId)?.price_monthly?.toString() || "0"}
+                        value={subAmount}
+                        onChange={(e) => setSubAmount(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Paiement</Label>
+                      <Select value={subPaymentMethod} onValueChange={setSubPaymentMethod}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Non défini" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="card">Carte bancaire</SelectItem>
+                          <SelectItem value="transfer">Virement</SelectItem>
+                          <SelectItem value="check">Chèque</SelectItem>
+                          <SelectItem value="other">Autre</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => { setAssignSubClientId(null); resetSubForm(); }}>
+                    Annuler
+                  </Button>
+                  <Button
+                    onClick={() => assignSubClientId && assignSubscription.mutate(assignSubClientId)}
+                    disabled={!selectedPlanId || assignSubscription.isPending}
+                  >
+                    {assignSubscription.isPending ? "Assignation..." : "Assigner"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+         </CardContent>
+       </Card>
+     );
+   }

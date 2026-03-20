@@ -4,11 +4,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CheckCircle2, Heart, ChevronDown, ChevronUp } from "lucide-react";
+import { CheckCircle2, Heart, ChevronDown, ChevronUp, Activity } from "lucide-react";
 import { toast } from "sonner";
 import { NAV_COLORS } from "@/components/ui/colored-nav-tabs";
 import { cn } from "@/lib/utils";
@@ -120,6 +121,9 @@ export function AthleteSpaceWellness({ playerId, categoryId }: Props) {
   const [painZone, setPainZone] = useState("");
   const [painLocation, setPainLocation] = useState("");
   const [notes, setNotes] = useState("");
+  const [showHrv, setShowHrv] = useState(false);
+  const [hrvMs, setHrvMs] = useState("");
+  const [restingHr, setRestingHr] = useState("");
 
   const allFieldsFilled = values.sleep_quality > 0 && values.sleep_duration > 0 &&
     values.general_fatigue > 0 && values.soreness_upper_body > 0 &&
@@ -145,11 +149,30 @@ export function AthleteSpaceWellness({ playerId, categoryId }: Props) {
         notes: notes || null,
       });
       if (error) throw error;
+
+      // Insert HRV morning data if provided
+      if (showHrv && (hrvMs || restingHr)) {
+        const { error: hrvError } = await supabase.from("hrv_records").insert({
+          player_id: playerId,
+          category_id: categoryId,
+          record_date: today,
+          record_type: "morning",
+          hrv_ms: hrvMs ? parseFloat(hrvMs) : null,
+          resting_hr_bpm: restingHr ? parseFloat(restingHr) : null,
+        });
+        if (hrvError) {
+          console.error("HRV insert error:", hrvError);
+          toast.error("Wellness enregistré mais erreur HRV");
+        }
+      }
     },
     onSuccess: () => {
       toast.success("Wellness enregistré !");
       queryClient.invalidateQueries({ queryKey: ["athlete-space-wellness"] });
       queryClient.invalidateQueries({ queryKey: ["athlete-space-wellness-today"] });
+      if (showHrv) {
+        queryClient.invalidateQueries({ queryKey: ["hrv_records"] });
+      }
       setExpanded(false);
     },
     onError: () => toast.error("Erreur lors de l'enregistrement"),
@@ -343,6 +366,52 @@ export function AthleteSpaceWellness({ playerId, categoryId }: Props) {
               className="mt-1"
               rows={2}
             />
+          </div>
+
+          {/* HRV morning data (optional) */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <Checkbox checked={showHrv} onCheckedChange={(v) => {
+                setShowHrv(!!v);
+                if (!v) { setHrvMs(""); setRestingHr(""); }
+              }} />
+              <Label className="text-sm flex items-center gap-1.5">
+                <Activity className="h-3.5 w-3.5" style={{ color: NAV_COLORS.sante.base }} />
+                Ajouter mes données HRV (matin repos)
+              </Label>
+            </div>
+
+            {showHrv && (
+              <div className="grid grid-cols-2 gap-3 pl-6">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">HRV (ms)</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    max="300"
+                    placeholder="Ex: 65"
+                    value={hrvMs}
+                    onChange={(e) => setHrvMs(e.target.value)}
+                    className="h-9"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">FC repos (bpm)</Label>
+                  <Input
+                    type="number"
+                    min="30"
+                    max="120"
+                    placeholder="Ex: 55"
+                    value={restingHr}
+                    onChange={(e) => setRestingHr(e.target.value)}
+                    className="h-9"
+                  />
+                </div>
+                <p className="col-span-2 text-[10px] text-muted-foreground">
+                  Ces données seront visibles dans Santé → HRV
+                </p>
+              </div>
+            )}
           </div>
 
           <Button

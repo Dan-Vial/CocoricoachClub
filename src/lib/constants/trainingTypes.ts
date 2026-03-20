@@ -30,6 +30,8 @@ export const SPORT_TRAINING_CATEGORIES: TrainingTypeCategory[] = [
   { key: "volleyball", label: "Volleyball", forSports: ["volleyball"] },
   // Basketball
   { key: "basketball", label: "Basketball", forSports: ["basketball"] },
+  // Tennis
+  { key: "tennis", label: "Tennis", forSports: ["tennis"] },
   // Aviron
   { key: "aviron", label: "Aviron", forSports: ["aviron"] },
   // Judo
@@ -84,6 +86,7 @@ function getBaseSport(sportType: string): string {
   if (normalizedSport.startsWith('natation')) return 'natation';
   if (normalizedSport.startsWith('ski') || normalizedSport.startsWith('snow')) return 'ski';
   if (normalizedSport.startsWith('triathlon')) return 'triathlon';
+  if (normalizedSport.startsWith('tennis')) return 'tennis';
   return normalizedSport;
 }
 
@@ -157,7 +160,7 @@ export const ALL_TRAINING_TYPES: TrainingTypeOption[] = [
   // Bowling specific (with category)
   { value: "bowling_practice", label: "Pratique Libre", hasExercises: false, forSports: ["bowling"], category: "bowling" },
   { value: "bowling_technique", label: "Travail Technique", hasExercises: false, forSports: ["bowling"], category: "bowling" },
-  { value: "bowling_spare", label: "Bowling Spare", hasExercises: false, forSports: ["bowling"], category: "bowling" },
+  { value: "bowling_spare", label: "Entraînement Précision", hasExercises: false, forSports: ["bowling"], category: "bowling" },
   { value: "bowling_game", label: "Parties d'Entraînement", hasExercises: false, forSports: ["bowling"], category: "bowling" },
   { value: "bowling_approche", label: "Travail d'Approche", hasExercises: false, forSports: ["bowling"], category: "bowling" },
   { value: "bowling_release", label: "Travail de Lâcher", hasExercises: false, forSports: ["bowling"], category: "bowling" },
@@ -251,6 +254,20 @@ export const ALL_TRAINING_TYPES: TrainingTypeOption[] = [
   { value: "athle_force_explosive", label: "Force Explosive", hasExercises: true, forSports: ["athletisme"], category: "athle_lancers" },
   { value: "athle_glisse", label: "Technique Glissé (Poids)", hasExercises: false, forSports: ["athletisme"], category: "athle_lancers" },
   
+  // Tennis specific
+  { value: "tennis_service", label: "Travail de Service", hasExercises: false, forSports: ["tennis"], category: "tennis" },
+  { value: "tennis_retour", label: "Travail de Retour", hasExercises: false, forSports: ["tennis"], category: "tennis" },
+  { value: "tennis_fond_court", label: "Fond de Court", hasExercises: false, forSports: ["tennis"], category: "tennis" },
+  { value: "tennis_volley", label: "Travail Volées / Filet", hasExercises: false, forSports: ["tennis"], category: "tennis" },
+  { value: "tennis_coup_droit", label: "Coup droit", hasExercises: false, forSports: ["tennis"], category: "tennis" },
+  { value: "tennis_revers", label: "Revers", hasExercises: false, forSports: ["tennis"], category: "tennis" },
+  { value: "tennis_tactique", label: "Tactique / Schémas de jeu", hasExercises: false, forSports: ["tennis"], category: "tennis" },
+  { value: "tennis_match", label: "Match d'Entraînement", hasExercises: false, forSports: ["tennis"], category: "tennis" },
+  { value: "tennis_physique_court", label: "Physique sur Court", hasExercises: false, forSports: ["tennis"], category: "tennis" },
+  { value: "tennis_jeu_double", label: "Jeu en Double", hasExercises: false, forSports: ["tennis"], category: "tennis" },
+  { value: "tennis_panier", label: "Panier de balles", hasExercises: false, forSports: ["tennis"], category: "tennis" },
+  { value: "tennis_mental", label: "Préparation Mentale", hasExercises: false, forSports: ["tennis"], category: "tennis" },
+
   // Padel specific
   { value: "padel_match", label: "Match d'Entraînement", hasExercises: false, forSports: ["padel"], category: "padel" },
   { value: "padel_technique", label: "Technique (Bandeja, Víbora...)", hasExercises: false, forSports: ["padel"], category: "padel" },
@@ -582,6 +599,19 @@ export const TRAINING_TYPE_COLORS: Record<string, string> = {
   athle_mobilite: "bg-lime-500",
   athle_combines: "bg-gradient-to-r from-purple-500 to-pink-500",
   athle_ppg: "bg-gray-500",
+  // Tennis specific
+  tennis_service: "bg-green-500",
+  tennis_retour: "bg-blue-500",
+  tennis_fond_court: "bg-emerald-500",
+  tennis_volley: "bg-orange-500",
+  tennis_coup_droit: "bg-red-500",
+  tennis_revers: "bg-purple-500",
+  tennis_tactique: "bg-indigo-500",
+  tennis_match: "bg-rose-500",
+  tennis_physique_court: "bg-amber-500",
+  tennis_jeu_double: "bg-teal-500",
+  tennis_panier: "bg-lime-500",
+  tennis_mental: "bg-violet-500",
   // Default for custom types
   _default: "bg-gray-500",
 };
@@ -685,4 +715,17 @@ export const TRAINING_TYPE_LABELS: Record<string, string> = {
   athle_mobilite: "Mobilité Spécifique",
   athle_combines: "Épreuves Combinées",
   athle_ppg: "PPG (Prépa Physique Générale)",
+  // Tennis specific
+  tennis_service: "Travail de Service",
+  tennis_retour: "Travail de Retour",
+  tennis_fond_court: "Fond de Court",
+  tennis_volley: "Volées / Filet",
+  tennis_coup_droit: "Coup droit",
+  tennis_revers: "Revers",
+  tennis_tactique: "Tactique",
+  tennis_match: "Match d'Entraînement",
+  tennis_physique_court: "Physique sur Court",
+  tennis_jeu_double: "Jeu en Double",
+  tennis_panier: "Panier de balles",
+  tennis_mental: "Préparation Mentale",
 };

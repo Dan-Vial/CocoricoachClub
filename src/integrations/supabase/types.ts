@@ -1864,6 +1864,7 @@ export type Database = {
           difficulty: string | null
           equipment: string[] | null
           id: string
+          image_url: string | null
           is_system: boolean | null
           muscle_groups: string[] | null
           name: string
@@ -1879,6 +1880,7 @@ export type Database = {
           difficulty?: string | null
           equipment?: string[] | null
           id?: string
+          image_url?: string | null
           is_system?: boolean | null
           muscle_groups?: string[] | null
           name: string
@@ -1894,6 +1896,7 @@ export type Database = {
           difficulty?: string | null
           equipment?: string[] | null
           id?: string
+          image_url?: string | null
           is_system?: boolean | null
           muscle_groups?: string[] | null
           name?: string
@@ -2485,6 +2488,7 @@ export type Database = {
       gym_session_exercises: {
         Row: {
           category_id: string
+          contraction_regime: string | null
           created_at: string
           duration_seconds: number | null
           exercise_category: string | null
@@ -2507,6 +2511,7 @@ export type Database = {
         }
         Insert: {
           category_id: string
+          contraction_regime?: string | null
           created_at?: string
           duration_seconds?: number | null
           exercise_category?: string | null
@@ -2529,6 +2534,7 @@ export type Database = {
         }
         Update: {
           category_id?: string
+          contraction_regime?: string | null
           created_at?: string
           duration_seconds?: number | null
           exercise_category?: string | null
@@ -3092,6 +3098,7 @@ export type Database = {
           location: string | null
           longest_play_sequence: number | null
           match_date: string
+          match_format: string | null
           match_time: string | null
           notes: string | null
           opponent: string
@@ -3116,6 +3123,7 @@ export type Database = {
           location?: string | null
           longest_play_sequence?: number | null
           match_date: string
+          match_format?: string | null
           match_time?: string | null
           notes?: string | null
           opponent: string
@@ -3140,6 +3148,7 @@ export type Database = {
           location?: string | null
           longest_play_sequence?: number | null
           match_date?: string
+          match_format?: string | null
           match_time?: string | null
           notes?: string | null
           opponent?: string
@@ -7134,6 +7143,70 @@ export type Database = {
           },
         ]
       }
+      tennis_drill_training: {
+        Row: {
+          attempts: number
+          category_id: string
+          created_at: string
+          exercise_type: string
+          id: string
+          notes: string | null
+          player_id: string
+          session_date: string
+          success_rate: number | null
+          successes: number
+          training_session_id: string | null
+        }
+        Insert: {
+          attempts?: number
+          category_id: string
+          created_at?: string
+          exercise_type: string
+          id?: string
+          notes?: string | null
+          player_id: string
+          session_date?: string
+          success_rate?: number | null
+          successes?: number
+          training_session_id?: string | null
+        }
+        Update: {
+          attempts?: number
+          category_id?: string
+          created_at?: string
+          exercise_type?: string
+          id?: string
+          notes?: string | null
+          player_id?: string
+          session_date?: string
+          success_rate?: number | null
+          successes?: number
+          training_session_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tennis_drill_training_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tennis_drill_training_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tennis_drill_training_training_session_id_fkey"
+            columns: ["training_session_id"]
+            isOneToOne: false
+            referencedRelation: "training_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       test_reminders: {
         Row: {
           category_id: string
@@ -7547,6 +7620,7 @@ export type Database = {
       training_session_blocks: {
         Row: {
           block_order: number
+          bowling_exercise_type: string | null
           contact_charge: string | null
           created_at: string
           end_time: string | null
@@ -7563,6 +7637,7 @@ export type Database = {
         }
         Insert: {
           block_order?: number
+          bowling_exercise_type?: string | null
           contact_charge?: string | null
           created_at?: string
           end_time?: string | null
@@ -7579,6 +7654,7 @@ export type Database = {
         }
         Update: {
           block_order?: number
+          bowling_exercise_type?: string | null
           contact_charge?: string | null
           created_at?: string
           end_time?: string | null
@@ -7607,6 +7683,7 @@ export type Database = {
         Row: {
           category_id: string
           created_at: string
+          created_by_player_id: string | null
           id: string
           intensity: number | null
           notes: string | null
@@ -7619,6 +7696,7 @@ export type Database = {
         Insert: {
           category_id: string
           created_at?: string
+          created_by_player_id?: string | null
           id?: string
           intensity?: number | null
           notes?: string | null
@@ -7631,6 +7709,7 @@ export type Database = {
         Update: {
           category_id?: string
           created_at?: string
+          created_by_player_id?: string | null
           id?: string
           intensity?: number | null
           notes?: string | null
@@ -7646,6 +7725,13 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_sessions_created_by_player_id_fkey"
+            columns: ["created_by_player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
             referencedColumns: ["id"]
           },
         ]
