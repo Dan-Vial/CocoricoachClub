@@ -945,7 +945,7 @@ export function AddSessionDialog({
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Annuler
             </Button>
-            <Button type="submit" disabled={!date || addSession.isPending}>
+            <Button type="submit" disabled={addSession.isPending}>
               {addSession.isPending ? "Ajout..." : "Ajouter"}
             </Button>
           </DialogFooter>
