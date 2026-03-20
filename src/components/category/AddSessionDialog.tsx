@@ -185,10 +185,59 @@ export function AddSessionDialog({
     mutationFn: async () => {
       // Create the session - use first block type if blocks exist, otherwise use selected type
       const mainType = sessionBlocks.length > 0 ? sessionBlocks[0].training_type : type;
-      const mainIntensity = sessionBlocks.length > 0 
+      const mainIntensity = sessionBlocks.length > 0
         ? sessionBlocks.reduce((max, b) => Math.max(max, b.intensity || 0), 0)
         : (intensity ? parseInt(intensity) : null);
-      
+
+      if (isAthleteMode) {
+        const { data: authData } = await supabase.auth.getSession();
+        const accessToken = authData.session?.access_token;
+
+        if (!accessToken || !athletePlayerId) {
+          throw new Error("Session expirée. Reconnecte-toi.");
+        }
+
+        const athleteBlocks = sessionBlocks
+          .filter((block) => block.training_type)
+          .map((block, idx) => ({
+            block_order: idx,
+            start_time: block.start_time || null,
+            end_time: block.end_time || null,
+            training_type: block.training_type,
+            intensity: block.intensity ?? null,
+            notes: block.notes || null,
+            session_type: block.session_type || null,
+            objective: block.objective || null,
+            target_intensity: block.target_intensity || null,
+            volume: block.volume || null,
+            contact_charge: block.contact_charge || null,
+          }));
+
+        const response = await fetch(buildAthletePortalFunctionUrl("create-session-auth"), {
+          method: "POST",
+          headers: athletePortalHeaders({ "Content-Type": "application/json" }, accessToken),
+          body: JSON.stringify({
+            category_id: categoryId,
+            player_id: athletePlayerId,
+            session_date: date,
+            session_start_time: startTime || null,
+            session_end_time: endTime || null,
+            training_type: mainType || "autre",
+            intensity: mainIntensity,
+            notes: notes || null,
+            session_blocks: athleteBlocks,
+          }),
+        });
+
+        const payload = await response.json();
+
+        if (!response.ok || !payload?.success) {
+          throw new Error(payload?.error || "Erreur lors de la création de la séance");
+        }
+
+        return { id: payload.session_id };
+      }
+
       const { data: sessionData, error: sessionError } = await supabase
         .from("training_sessions")
         .insert([{
@@ -198,14 +247,11 @@ export function AddSessionDialog({
           session_end_time: endTime || null,
           training_type: mainType || "autre",
           intensity: mainIntensity,
-          notes: isAthleteMode
-            ? (notes ? `[Séance athlète] ${notes}` : "[Séance athlète]")
-            : (notes || null),
-          ...(isAthleteMode ? { created_by_player_id: athletePlayerId } : {}),
+          notes: notes || null,
         }])
         .select()
         .single();
-      
+
       if (sessionError) throw sessionError;
 
       // If session blocks exist, create them
@@ -231,17 +277,15 @@ export function AddSessionDialog({
           const { error: blocksError } = await supabase
             .from("training_session_blocks")
             .insert(blockRecords);
-          
+
           if (blocksError) throw blocksError;
         }
       }
 
       // Determine which players to use
-      const playersToUse = isAthleteMode
-        ? [athletePlayerId!]
-        : playerSelectionMode === "specific" && selectedPlayers.length > 0 
-          ? selectedPlayers 
-          : players?.map(p => p.id) || [];
+      const playersToUse = playerSelectionMode === "specific" && selectedPlayers.length > 0
+        ? selectedPlayers
+        : players?.map(p => p.id) || [];
 
       // Create attendance records for selected players (one attendance per session, not per block!)
       if (playersToUse.length > 0) {
@@ -256,14 +300,14 @@ export function AddSessionDialog({
         const { error: attendanceError } = await supabase
           .from("training_attendance")
           .insert(attendanceRecords);
-        
+
         if (attendanceError) throw attendanceError;
       }
 
       // If exercises were added, create them for each selected player
       const validExercises = exercises.filter(e => e.exercise_name.trim());
       if (validExercises.length > 0 && playersToUse.length > 0) {
-        const exerciseRecords = playersToUse.flatMap(playerId => 
+        const exerciseRecords = playersToUse.flatMap(playerId =>
           validExercises.map((ex, idx) => ({
             training_session_id: sessionData.id,
             player_id: playerId,
@@ -283,7 +327,7 @@ export function AddSessionDialog({
         const { error: exerciseError } = await supabase
           .from("gym_session_exercises")
           .insert(exerciseRecords);
-        
+
         if (exerciseError) throw exerciseError;
       }
 
@@ -312,7 +356,7 @@ export function AddSessionDialog({
         const { error: gpsError } = await supabase
           .from("gps_sessions")
           .insert(gpsRecords);
-        
+
         if (gpsError) throw gpsError;
       }
 
@@ -334,15 +378,15 @@ export function AddSessionDialog({
         queryClient.invalidateQueries({ queryKey: ["athlete-space-sessions"] });
         queryClient.invalidateQueries({ queryKey: ["sessions", categoryId] });
       }
-      
+
       const exerciseCount = exercises.filter(e => e.exercise_name.trim()).length;
       const gpsCount = gpsData.filter(d => d.matchedPlayer).length;
       const blockCount = sessionBlocks.filter(b => b.training_type).length;
-      
+
       let toastMessage = "Séance ajoutée";
       if (blockCount > 0) toastMessage += ` avec ${blockCount} bloc(s)`;
-      if (exerciseCount > 0) toastMessage += ` et ${exerciseCount} exercice(s)`;
-      if (gpsCount > 0) toastMessage += ` et ${gpsCount} données GPS`;
+      if (!isAthleteMode && exerciseCount > 0) toastMessage += ` et ${exerciseCount} exercice(s)`;
+      if (!isAthleteMode && gpsCount > 0) toastMessage += ` et ${gpsCount} données GPS`;
       toast.success(toastMessage);
 
       // 🔔 Send push notifications to participants (skip in athlete mode)
@@ -351,7 +395,7 @@ export function AddSessionDialog({
         const participantIds = playerSelectionMode === "specific" && selectedPlayers.length > 0
           ? selectedPlayers
           : undefined;
-        
+
         notify({
           action: "created",
           sessionId: sessionData?.id,
@@ -366,8 +410,9 @@ export function AddSessionDialog({
       resetForm();
       onOpenChange(false);
     },
-    onError: () => {
-      toast.error("Erreur lors de l'ajout de la séance");
+    onError: (error: unknown) => {
+      const message = error instanceof Error ? error.message : "Erreur lors de l'ajout de la séance";
+      toast.error(message);
     },
   });
 
