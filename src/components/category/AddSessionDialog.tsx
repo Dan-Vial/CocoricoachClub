@@ -193,6 +193,13 @@ export function AddSessionDialog({
           throw new Error("Session expirée. Reconnecte-toi.");
         }
 
+        const { data: authData } = await supabase.auth.getSession();
+        const accessToken = authData.session?.access_token;
+
+        if (!accessToken) {
+          throw new Error("Session expirée. Reconnecte-toi.");
+        }
+
         const athleteBlocks = sessionBlocks
           .filter((block) => block.training_type)
           .map((block, idx) => ({
@@ -210,6 +217,9 @@ export function AddSessionDialog({
           }));
 
         const { data: payload, error } = await supabase.functions.invoke("athlete-create-session", {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
           body: {
             category_id: categoryId,
             player_id: athletePlayerId,
