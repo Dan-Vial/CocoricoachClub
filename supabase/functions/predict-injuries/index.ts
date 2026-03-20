@@ -93,7 +93,7 @@ serve(async (req) => {
     fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28);
     const { data: awcrData, error: awcrError } = await supabase
       .from('awcr_tracking')
-      .select('player_id, session_date, awcr, training_load, acute_load, chronic_load, rpe, duration_minutes')
+      .select('player_id, session_date, awcr, training_load, acute_load, chronic_load, rpe, duration_minutes, training_session_id')
       .eq('category_id', categoryId)
       .gte('session_date', fourWeeksAgo.toISOString().split('T')[0])
       .order('session_date', { ascending: true });
