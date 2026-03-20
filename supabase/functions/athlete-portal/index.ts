@@ -32,8 +32,6 @@ serve(async (req) => {
     const token = url.searchParams.get("token");
     const action = url.searchParams.get("action");
 
-    const json = (data: unknown, status = 200) =>
-      new Response(JSON.stringify(data), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
     if (action === "create-session-auth" && req.method === "POST") {
       const authHeader = req.headers.get("Authorization") ?? "";
