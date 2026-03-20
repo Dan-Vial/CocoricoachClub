@@ -42,6 +42,14 @@ export default function Auth() {
   const [searchParams] = useSearchParams();
   const redirectUrl = searchParams.get("redirect");
   const [isLoading, setIsLoading] = useState(false);
+
+  // Redirect authenticated users away from auth page
+  const { user, loading: authLoading } = useAuth();
+  useEffect(() => {
+    if (!authLoading && user) {
+      navigate(redirectUrl || "/", { replace: true });
+    }
+  }, [user, authLoading, navigate, redirectUrl]);
   const [forgotStep, setForgotStep] = useState<"hidden" | "email" | "reset" | "success">("hidden");
   const [forgotEmail, setForgotEmail] = useState("");
   const [forgotLoading, setForgotLoading] = useState(false);
