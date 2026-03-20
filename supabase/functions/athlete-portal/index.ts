@@ -164,9 +164,6 @@ serve(async (req) => {
       sport_type = (categoryData.clubs as { sport_type?: string }).sport_type;
     }
 
-    const json = (data: unknown, status = 200) =>
-      new Response(JSON.stringify(data), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-
     // ─── VALIDATE ───
     if (action === "validate") {
       return json({ success: true, player_id, player_name, category_id, category_name, club_name, sport_type });
