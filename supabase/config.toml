@@ -1,4 +1,4 @@
-project_id = "mbloebaovvvgfwxsdzgo"
+project_id = "env(SUPABASE_PROJECT_ID)"
 
 [functions.voice-assistant]
 verify_jwt = true

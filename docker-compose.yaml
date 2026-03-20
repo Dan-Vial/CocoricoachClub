@@ -1,0 +1,36 @@
+# services supabase self hosted
+# include:
+#   - ${PWD}/devops/supabase/supabase/docker-compose.yaml
+
+services:
+  frontend:
+    image: local/oven/bun
+    build:
+      context: .
+      dockerfile: devops/bun/Dockerfile
+
+    working_dir: /app
+    command: ["tail", "-f", "/dev/null"]
+    environment:
+      - PORT=${PORT}
+      - SUPABASE_ACCESS_TOKEN=${SUPABASE_ACCESS_TOKEN}
+
+    tty: true
+    stdin_open: true
+    init: true
+
+    userns_mode: "keep-id"
+    user: "${UID}:${GID}"
+
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+
+    ports:
+      - "${PORT}:${PORT}"
+
+    volumes:
+      - ${PWD}:/app:Z
+      - ${HOME}/.cache/bun:/home/bun/.cache/bun:Z
+      - ${HOME}/.bun:/home/bun/.bun:Z
