@@ -390,6 +390,10 @@ export function AddSessionDialog({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (addSession.isPending) {
+      return;
+    }
+
     if (endTime && !startTime) {
       toast.error("Veuillez indiquer une heure de début si vous spécifiez une heure de fin");
       return;
@@ -945,7 +949,7 @@ export function AddSessionDialog({
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Annuler
             </Button>
-            <Button type="submit" disabled={addSession.isPending}>
+            <Button type="submit" aria-busy={addSession.isPending}>
               {addSession.isPending ? "Ajout..." : "Ajouter"}
             </Button>
           </DialogFooter>
