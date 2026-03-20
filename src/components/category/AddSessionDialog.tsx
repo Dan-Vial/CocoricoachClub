@@ -115,6 +115,7 @@ export function AddSessionDialog({
   const trainingTypes = getTrainingTypesForSport(sportType);
   
   const showExerciseSection = trainingTypeHasExercises(type);
+  const hasValidBlocks = sessionBlocks.some((block) => !!block.training_type);
 
   // When a training type with exercises is selected, ensure UI is ready
   useEffect(() => {
@@ -399,9 +400,7 @@ export function AddSessionDialog({
       return;
     }
     
-    // Validate: must have blocks with valid types
-    const hasValidBlocks = sessionBlocks.length > 0 && sessionBlocks.some(b => b.training_type);
-    
+    // Validate: must have at least one block with a thematic type
     if (date && hasValidBlocks) {
       addSession.mutate();
     } else if (!hasValidBlocks) {
@@ -941,7 +940,7 @@ export function AddSessionDialog({
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Annuler
             </Button>
-            <Button type="submit" disabled={!date || !type.trim() || addSession.isPending}>
+            <Button type="submit" disabled={!date || !hasValidBlocks || addSession.isPending}>
               {addSession.isPending ? "Ajout..." : "Ajouter"}
             </Button>
           </DialogFooter>
