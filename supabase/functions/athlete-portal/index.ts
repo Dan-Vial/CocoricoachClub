@@ -32,11 +32,109 @@ serve(async (req) => {
     const token = url.searchParams.get("token");
     const action = url.searchParams.get("action");
 
+    const json = (data: unknown, status = 200) =>
+      new Response(JSON.stringify(data), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+
+    if (action === "create-session-auth" && req.method === "POST") {
+      const authHeader = req.headers.get("Authorization") ?? "";
+      const jwt = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
+
+      if (!jwt) {
+        return json({ success: false, error: "Authentification requise" }, 401);
+      }
+
+      const { data: userData, error: userError } = await supabase.auth.getUser(jwt);
+      const userId = userData.user?.id;
+
+      if (userError || !userId) {
+        return json({ success: false, error: "Session invalide" }, 401);
+      }
+
+      const body = await req.json();
+      const {
+        category_id,
+        player_id,
+        session_date,
+        training_type,
+        session_start_time,
+        session_end_time,
+        intensity,
+        notes,
+        session_blocks,
+      } = body;
+
+      if (!category_id || !player_id || !session_date || !training_type) {
+        return json({ success: false, error: "Données manquantes" }, 400);
+      }
+
+      const { data: player, error: playerError } = await supabase
+        .from("players")
+        .select("id")
+        .eq("id", player_id)
+        .eq("category_id", category_id)
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (playerError) throw playerError;
+      if (!player) {
+        return json({ success: false, error: "Accès refusé pour ce joueur" }, 403);
+      }
+
+      const parsedIntensity =
+        typeof intensity === "number"
+          ? intensity
+          : typeof intensity === "string" && intensity.trim() !== ""
+            ? Number(intensity)
+            : null;
+
+      const { data: createdSession, error: createSessionError } = await supabase
+        .from("training_sessions")
+        .insert({
+          category_id,
+          session_date,
+          training_type,
+          session_start_time: session_start_time || null,
+          session_end_time: session_end_time || null,
+          intensity: Number.isNaN(parsedIntensity) ? null : parsedIntensity,
+          created_by_player_id: player_id,
+          notes: notes ? `[Séance athlète] ${notes}` : "[Séance athlète]",
+        })
+        .select("id")
+        .single();
+
+      if (createSessionError) throw createSessionError;
+
+      const blockRecords = Array.isArray(session_blocks)
+        ? session_blocks
+            .filter((block) => block?.training_type)
+            .map((block, idx) => ({
+              training_session_id: createdSession.id,
+              block_order: idx,
+              start_time: block.start_time || null,
+              end_time: block.end_time || null,
+              training_type: block.training_type,
+              intensity: block.intensity ?? null,
+              notes: block.notes || null,
+              session_type: block.session_type || null,
+              objective: block.objective || null,
+              target_intensity: block.target_intensity ?? null,
+              volume: block.volume ?? null,
+              contact_charge: block.contact_charge ?? null,
+            }))
+        : [];
+
+      if (blockRecords.length > 0) {
+        const { error: blocksError } = await supabase
+          .from("training_session_blocks")
+          .insert(blockRecords);
+        if (blocksError) throw blocksError;
+      }
+
+      return json({ success: true, session_id: createdSession.id });
+    }
+
     if (!token) {
-      return new Response(
-        JSON.stringify({ success: false, error: "Token manquant" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return json({ success: false, error: "Token manquant" }, 400);
     }
 
     // Validate token
@@ -65,9 +163,6 @@ serve(async (req) => {
     if (categoryData?.clubs && typeof categoryData.clubs === 'object' && 'sport_type' in categoryData.clubs) {
       sport_type = (categoryData.clubs as { sport_type?: string }).sport_type;
     }
-
-    const json = (data: unknown, status = 200) =>
-      new Response(JSON.stringify(data), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
     // ─── VALIDATE ───
     if (action === "validate") {
