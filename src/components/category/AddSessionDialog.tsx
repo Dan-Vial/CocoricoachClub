@@ -123,7 +123,270 @@ export function AddSessionDialog({
     setShowExercises(true);
     setExercises((prev) => (prev.length === 0 ? [emptyExercise(0)] : prev));
   }, [open, showExerciseSection]);
-...
+
+  const { data: players } = useQuery({
+    queryKey: ["players-with-injuries", categoryId],
+    queryFn: async () => {
+      const { data: playersData, error: playersError } = await supabase
+        .from("players")
+        .select("id, name, first_name, position, avatar_url")
+        .eq("category_id", categoryId)
+        .order("name");
+      if (playersError) throw playersError;
+
+      const { data: injuriesData } = await supabase
+        .from("injuries")
+        .select("player_id")
+        .eq("category_id", categoryId)
+        .in("status", ["active", "recovering"]);
+
+      const injuredPlayerIds = new Set(injuriesData?.map(i => i.player_id) || []);
+
+      return playersData?.map(p => ({
+        ...p,
+        isInjured: injuredPlayerIds.has(p.id)
+      })) || [];
+    },
+    enabled: open,
+  });
+
+  // Fetch exercise library
+  const { data: libraryExercises } = useQuery({
+    queryKey: ["exercise-library", user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data, error } = await supabase
+        .from("exercise_library")
+        .select("*")
+        .or(`user_id.eq.${user.id},is_system.eq.true`)
+        .order("name");
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user && open && showExerciseSection,
+  });
+
+  const injuredPlayers = players?.filter(p => p.isInjured) || [];
+  const healthyPlayers = players?.filter(p => !p.isInjured) || [];
+
+  const filteredLibrary = libraryExercises?.filter((ex) => {
+    const matchesSearch = ex.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      ex.category.toLowerCase().includes(searchQuery.toLowerCase());
+    // Filter by sport - exclude exercises from other sports
+    const matchesSport = isCategoryForSport(ex.category, sportType);
+    return matchesSearch && matchesSport;
+  }) || [];
+  
+  // Get categories filtered for the current sport
+  const availableCategories = getCategoriesForSport(sportType);
+
+  const addSession = useMutation({
+    mutationFn: async () => {
+      // Create the session - use first block type if blocks exist, otherwise use selected type
+      const mainType = sessionBlocks.length > 0 ? sessionBlocks[0].training_type : type;
+      const mainIntensity = sessionBlocks.length > 0 
+        ? sessionBlocks.reduce((max, b) => Math.max(max, b.intensity || 0), 0)
+        : (intensity ? parseInt(intensity) : null);
+      
+      const { data: sessionData, error: sessionError } = await supabase
+        .from("training_sessions")
+        .insert([{
+          category_id: categoryId,
+          session_date: date,
+          session_start_time: startTime || null,
+          session_end_time: endTime || null,
+          training_type: mainType || "autre",
+          intensity: mainIntensity,
+          notes: isAthleteMode
+            ? (notes ? `[Séance athlète] ${notes}` : "[Séance athlète]")
+            : (notes || null),
+          ...(isAthleteMode ? { created_by_player_id: athletePlayerId } : {}),
+        }])
+        .select()
+        .single();
+      
+      if (sessionError) throw sessionError;
+
+      // If session blocks exist, create them
+      if (sessionBlocks.length > 0) {
+        const blockRecords = sessionBlocks
+          .filter(block => block.training_type)
+          .map((block, idx) => ({
+            training_session_id: sessionData.id,
+            block_order: idx,
+            start_time: block.start_time || null,
+            end_time: block.end_time || null,
+            training_type: block.training_type,
+            intensity: block.intensity,
+            notes: block.notes || null,
+            session_type: block.session_type || null,
+            objective: block.objective || null,
+            target_intensity: block.target_intensity || null,
+            volume: block.volume || null,
+            contact_charge: block.contact_charge || null,
+          }));
+
+        if (blockRecords.length > 0) {
+          const { error: blocksError } = await supabase
+            .from("training_session_blocks")
+            .insert(blockRecords);
+          
+          if (blocksError) throw blocksError;
+        }
+      }
+
+      // Determine which players to use
+      const playersToUse = isAthleteMode
+        ? [athletePlayerId!]
+        : playerSelectionMode === "specific" && selectedPlayers.length > 0 
+          ? selectedPlayers 
+          : players?.map(p => p.id) || [];
+
+      // Create attendance records for selected players (one attendance per session, not per block!)
+      if (playersToUse.length > 0) {
+        const attendanceRecords = playersToUse.map(playerId => ({
+          player_id: playerId,
+          category_id: categoryId,
+          attendance_date: date,
+          training_session_id: sessionData.id,
+          status: "present",
+        }));
+
+        const { error: attendanceError } = await supabase
+          .from("training_attendance")
+          .insert(attendanceRecords);
+        
+        if (attendanceError) throw attendanceError;
+      }
+
+      // If exercises were added, create them for each selected player
+      const validExercises = exercises.filter(e => e.exercise_name.trim());
+      if (validExercises.length > 0 && playersToUse.length > 0) {
+        const exerciseRecords = playersToUse.flatMap(playerId => 
+          validExercises.map((ex, idx) => ({
+            training_session_id: sessionData.id,
+            player_id: playerId,
+            category_id: categoryId,
+            exercise_name: ex.exercise_name,
+            exercise_category: ex.exercise_category,
+            sets: ex.sets,
+            reps: ex.reps,
+            weight_kg: ex.weight_kg,
+            rest_seconds: ex.rest_seconds,
+            notes: ex.notes || null,
+            order_index: idx,
+            library_exercise_id: ex.library_exercise_id,
+          }))
+        );
+
+        const { error: exerciseError } = await supabase
+          .from("gym_session_exercises")
+          .insert(exerciseRecords);
+        
+        if (exerciseError) throw exerciseError;
+      }
+
+      // If GPS data was imported, create GPS session records linked to this session
+      const validGpsData = gpsData.filter(d => d.matchedPlayer);
+      if (validGpsData.length > 0) {
+        const gpsRecords = validGpsData.map(d => ({
+          category_id: categoryId,
+          player_id: d.matchedPlayer!.id,
+          session_date: date,
+          session_name: mainType || null,
+          training_session_id: sessionData.id,
+          source: 'catapult' as const,
+          total_distance_m: d.total_distance_m,
+          high_speed_distance_m: d.high_speed_distance_m,
+          sprint_distance_m: d.sprint_distance_m,
+          max_speed_ms: d.max_speed_ms,
+          player_load: d.player_load,
+          accelerations: d.accelerations,
+          decelerations: d.decelerations,
+          duration_minutes: d.duration_minutes,
+          sprint_count: d.sprint_count,
+          raw_data: d.raw_data,
+        }));
+
+        const { error: gpsError } = await supabase
+          .from("gps_sessions")
+          .insert(gpsRecords);
+        
+        if (gpsError) throw gpsError;
+      }
+
+      return sessionData;
+    },
+    onSuccess: (sessionData) => {
+      queryClient.invalidateQueries({ queryKey: ["training_sessions", categoryId] });
+      queryClient.invalidateQueries({ queryKey: ["today_sessions", categoryId] });
+      queryClient.invalidateQueries({ queryKey: ["today_session_exercises"] });
+      queryClient.invalidateQueries({ queryKey: ["training_attendance"] });
+      queryClient.invalidateQueries({ queryKey: ["gym-exercises"] });
+      queryClient.invalidateQueries({ queryKey: ["gps-sessions", categoryId] });
+      queryClient.invalidateQueries({ queryKey: ["session-blocks"] });
+      queryClient.invalidateQueries({ queryKey: ["today_sessions_decision", categoryId] });
+      queryClient.invalidateQueries({ queryKey: ["tomorrow_sessions_decision", categoryId] });
+      queryClient.invalidateQueries({ queryKey: ["today_attendance_decision", categoryId] });
+      if (isAthleteMode) {
+        queryClient.invalidateQueries({ queryKey: ["athlete-calendar-sessions"] });
+        queryClient.invalidateQueries({ queryKey: ["athlete-space-sessions"] });
+        queryClient.invalidateQueries({ queryKey: ["sessions", categoryId] });
+      }
+      
+      const exerciseCount = exercises.filter(e => e.exercise_name.trim()).length;
+      const gpsCount = gpsData.filter(d => d.matchedPlayer).length;
+      const blockCount = sessionBlocks.filter(b => b.training_type).length;
+      
+      let toastMessage = "Séance ajoutée";
+      if (blockCount > 0) toastMessage += ` avec ${blockCount} bloc(s)`;
+      if (exerciseCount > 0) toastMessage += ` et ${exerciseCount} exercice(s)`;
+      if (gpsCount > 0) toastMessage += ` et ${gpsCount} données GPS`;
+      toast.success(toastMessage);
+
+      // 🔔 Send push notifications to participants (skip in athlete mode)
+      if (!isAthleteMode) {
+        const mainType = sessionBlocks.length > 0 ? sessionBlocks[0].training_type : type;
+        const participantIds = playerSelectionMode === "specific" && selectedPlayers.length > 0
+          ? selectedPlayers
+          : undefined;
+        
+        notify({
+          action: "created",
+          sessionId: sessionData?.id,
+          categoryId,
+          sessionDate: date,
+          sessionStartTime: startTime || null,
+          sessionType: mainType,
+          participantPlayerIds: participantIds,
+        });
+      }
+
+      resetForm();
+      onOpenChange(false);
+    },
+    onError: () => {
+      toast.error("Erreur lors de l'ajout de la séance");
+    },
+  });
+
+  const resetForm = () => {
+    setDate("");
+    setStartTime("");
+    setEndTime("");
+    setType("");
+    setIntensity("");
+    setNotes("");
+    setSelectedPlayers([]);
+    setPlayerSelectionMode("all");
+    setExercises([]);
+    setShowExercises(true);
+    setSearchQuery("");
+    setShowLibraryFor(null);
+    setGpsData([]);
+    setSessionBlocks([]);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
