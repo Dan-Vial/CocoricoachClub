@@ -36,7 +36,6 @@ import { QuickAddExerciseDialog } from "@/components/library/QuickAddExerciseDia
 import { SessionGpsImport, type GpsPlayerData } from "@/components/category/gps/SessionGpsImport";
 import { SessionBlocksManager, type SessionBlock } from "@/components/category/sessions/SessionBlocksManager";
 import { useSessionNotifications } from "@/lib/hooks/useSessionNotifications";
-import { athletePortalHeaders, buildAthletePortalFunctionUrl } from "@/lib/athletePortalClient";
 
 interface AddSessionDialogProps {
   open: boolean;
@@ -190,10 +189,14 @@ export function AddSessionDialog({
         : (intensity ? parseInt(intensity) : null);
 
       if (isAthleteMode) {
+        if (!athletePlayerId) {
+          throw new Error("Session expirée. Reconnecte-toi.");
+        }
+
         const { data: authData } = await supabase.auth.getSession();
         const accessToken = authData.session?.access_token;
 
-        if (!accessToken || !athletePlayerId) {
+        if (!accessToken) {
           throw new Error("Session expirée. Reconnecte-toi.");
         }
 
@@ -213,10 +216,11 @@ export function AddSessionDialog({
             contact_charge: block.contact_charge || null,
           }));
 
-        const response = await fetch(buildAthletePortalFunctionUrl("create-session-auth"), {
-          method: "POST",
-          headers: athletePortalHeaders({ "Content-Type": "application/json" }, accessToken),
-          body: JSON.stringify({
+        const { data: payload, error } = await supabase.functions.invoke("athlete-create-session", {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: {
             category_id: categoryId,
             player_id: athletePlayerId,
             session_date: date,
@@ -226,12 +230,14 @@ export function AddSessionDialog({
             intensity: mainIntensity,
             notes: notes || null,
             session_blocks: athleteBlocks,
-          }),
+          },
         });
 
-        const payload = await response.json();
+        if (error) {
+          throw new Error(error.message || "Erreur lors de la création de la séance");
+        }
 
-        if (!response.ok || !payload?.success) {
+        if (!payload?.success) {
           throw new Error(payload?.error || "Erreur lors de la création de la séance");
         }
 
