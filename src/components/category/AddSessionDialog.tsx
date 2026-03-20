@@ -36,7 +36,6 @@ import { QuickAddExerciseDialog } from "@/components/library/QuickAddExerciseDia
 import { SessionGpsImport, type GpsPlayerData } from "@/components/category/gps/SessionGpsImport";
 import { SessionBlocksManager, type SessionBlock } from "@/components/category/sessions/SessionBlocksManager";
 import { useSessionNotifications } from "@/lib/hooks/useSessionNotifications";
-import { athletePortalHeaders, buildAthletePortalFunctionUrl } from "@/lib/athletePortalClient";
 
 interface AddSessionDialogProps {
   open: boolean;
@@ -190,10 +189,7 @@ export function AddSessionDialog({
         : (intensity ? parseInt(intensity) : null);
 
       if (isAthleteMode) {
-        const { data: authData } = await supabase.auth.getSession();
-        const accessToken = authData.session?.access_token;
-
-        if (!accessToken || !athletePlayerId) {
+        if (!athletePlayerId) {
           throw new Error("Session expirée. Reconnecte-toi.");
         }
 
@@ -213,9 +209,7 @@ export function AddSessionDialog({
             contact_charge: block.contact_charge || null,
           }));
 
-        const response = await fetch(buildAthletePortalFunctionUrl("create-session-auth"), {
-          method: "POST",
-          headers: athletePortalHeaders({ "Content-Type": "application/json" }, accessToken),
+        const { data: payload, error } = await supabase.functions.invoke("athlete-create-session", {
           body: JSON.stringify({
             category_id: categoryId,
             player_id: athletePlayerId,
@@ -229,9 +223,11 @@ export function AddSessionDialog({
           }),
         });
 
-        const payload = await response.json();
+        if (error) {
+          throw new Error(error.message || "Erreur lors de la création de la séance");
+        }
 
-        if (!response.ok || !payload?.success) {
+        if (!payload?.success) {
           throw new Error(payload?.error || "Erreur lors de la création de la séance");
         }
 
