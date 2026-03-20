@@ -390,6 +390,10 @@ export function AddSessionDialog({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (addSession.isPending) {
+      return;
+    }
+
     if (endTime && !startTime) {
       toast.error("Veuillez indiquer une heure de début si vous spécifiez une heure de fin");
       return;
