@@ -389,23 +389,28 @@ export function AddSessionDialog({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (endTime && !startTime) {
       toast.error("Veuillez indiquer une heure de début si vous spécifiez une heure de fin");
       return;
     }
-    
+
     if (startTime && endTime && endTime <= startTime) {
       toast.error("L'heure de fin doit être après l'heure de début");
       return;
     }
-    
-    // Validate: must have at least one block with a thematic type
-    if (date && hasValidBlocks) {
-      addSession.mutate();
-    } else if (!hasValidBlocks) {
-      toast.error("Veuillez ajouter au moins un bloc thématique");
+
+    if (!date) {
+      toast.error("Veuillez sélectionner une date");
+      return;
     }
+
+    if (!hasValidBlocks) {
+      toast.error("Veuillez ajouter au moins un bloc thématique");
+      return;
+    }
+
+    addSession.mutate();
   };
 
   const togglePlayer = (playerId: string) => {
