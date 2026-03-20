@@ -210,7 +210,7 @@ export function AddSessionDialog({
           }));
 
         const { data: payload, error } = await supabase.functions.invoke("athlete-create-session", {
-          body: JSON.stringify({
+          body: {
             category_id: categoryId,
             player_id: athletePlayerId,
             session_date: date,
@@ -220,7 +220,7 @@ export function AddSessionDialog({
             intensity: mainIntensity,
             notes: notes || null,
             session_blocks: athleteBlocks,
-          }),
+          },
         });
 
         if (error) {
