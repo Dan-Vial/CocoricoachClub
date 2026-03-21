@@ -33,8 +33,8 @@
     OneSignalDeferred.push(async function (OneSignal) {
       await OneSignal.init({
         appId: "%VITE_ONE_SIGNAL_APP_ID%",
-        serviceWorkerParam: {scope: "/"},
-        serviceWorkerPath: "OneSignalSDKWorker.js",
+        serviceWorkerParam: {scope: "/push/onesignal/"},
+        serviceWorkerPath: "push/onesignal/OneSignalSDKWorker.js",
         notifyButton: {enable: false},
         promptOptions: {slidedown: {enabled: false}},
         autoRegister: false,
