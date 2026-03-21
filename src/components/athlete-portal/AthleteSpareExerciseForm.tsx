@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Target, Plus, Trash2 } from "lucide-react";
+import { Target, Plus, Trash2, Lock } from "lucide-react";
 import { SPARE_EXERCISE_TYPES } from "@/lib/constants/bowlingBallBrands";
 
 interface SpareExercise {
@@ -29,6 +29,9 @@ export function AthleteSpareExerciseForm({
   prefilledExerciseType,
   exerciseLabel,
 }: AthleteSpareExerciseFormProps) {
+  // If staff assigned a specific exercise, lock it
+  const isStaffAssigned = !!prefilledExerciseType;
+
   const [exercises, setExercises] = useState<SpareExercise[]>([
     { exercise_type: prefilledExerciseType || "", attempts: 0, successes: 0 },
   ]);
@@ -65,9 +68,10 @@ export function AthleteSpareExerciseForm({
           <Target className="h-4 w-4 text-orange-600" />
           Exercices de Précision
         </CardTitle>
-        {exerciseLabel && (
+        {isStaffAssigned && exerciseLabel && (
           <CardDescription className="flex items-center gap-1.5">
-            Exercice planifié :
+            <Lock className="h-3 w-3 text-muted-foreground" />
+            Exercice assigné par le staff :
             <Badge variant="secondary" className="text-xs gap-1">
               <Target className="h-3 w-3" />
               {exerciseLabel}
@@ -78,7 +82,7 @@ export function AthleteSpareExerciseForm({
       <CardContent className="space-y-4">
         {exercises.map((ex, i) => (
           <div key={i} className="space-y-3 p-3 bg-muted/50 rounded-lg relative">
-            {exercises.length > 1 && (
+            {!isStaffAssigned && exercises.length > 1 && (
               <Button
                 variant="ghost"
                 size="icon"
@@ -90,21 +94,31 @@ export function AthleteSpareExerciseForm({
             )}
             <div>
               <Label className="text-xs">Type d'exercice</Label>
-              <Select
-                value={ex.exercise_type}
-                onValueChange={(v) => updateExercise(i, "exercise_type", v)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Choisir un exercice" />
-                </SelectTrigger>
-                <SelectContent>
-                  {SPARE_EXERCISE_TYPES.map((type) => (
-                    <SelectItem key={type.value} value={type.value}>
-                      {type.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {isStaffAssigned && i === 0 ? (
+                // Staff-assigned: show locked badge instead of dropdown
+                <div className="flex items-center gap-2 mt-1.5 px-3 py-2 bg-muted rounded-md border border-input">
+                  <Lock className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-sm font-medium">
+                    {exerciseLabel || SPARE_EXERCISE_TYPES.find(t => t.value === ex.exercise_type)?.label || ex.exercise_type}
+                  </span>
+                </div>
+              ) : (
+                <Select
+                  value={ex.exercise_type}
+                  onValueChange={(v) => updateExercise(i, "exercise_type", v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choisir un exercice" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SPARE_EXERCISE_TYPES.map((type) => (
+                      <SelectItem key={type.value} value={type.value}>
+                        {type.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -142,10 +156,13 @@ export function AthleteSpareExerciseForm({
           </div>
         ))}
 
-        <Button variant="outline" size="sm" onClick={addExercise} className="w-full">
-          <Plus className="h-4 w-4 mr-1" />
-          Ajouter un exercice
-        </Button>
+        {/* Only show "Add exercise" button if NOT staff-assigned */}
+        {!isStaffAssigned && (
+          <Button variant="outline" size="sm" onClick={addExercise} className="w-full">
+            <Plus className="h-4 w-4 mr-1" />
+            Ajouter un exercice
+          </Button>
+        )}
 
         {validExercises.length > 0 && (
           <Button
