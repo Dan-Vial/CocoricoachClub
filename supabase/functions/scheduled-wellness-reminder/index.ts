@@ -48,7 +48,7 @@ serve(async (req) => {
     const results: any[] = [];
 
     // Deep link URL for quick access
-    const appBaseUrl = "https://cocoricoachclub.lovable.app";
+    const appBaseUrl = "https://cocoricoachclub.com";
     const wellnessDeepLink = `${appBaseUrl}/athlete-space?tab=wellness`;
 
     for (const category of categories) {

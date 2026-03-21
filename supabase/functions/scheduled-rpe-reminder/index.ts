@@ -129,7 +129,7 @@ serve(async (req) => {
       const trainingTypeLabel = getTrainingTypeLabel(session.training_type);
 
       // Deep link URL for quick access
-      const appBaseUrl = "https://cocoricoachclub.lovable.app";
+      const appBaseUrl = "https://cocoricoachclub.com";
       const rpeDeepLink = `${appBaseUrl}/athlete-space?tab=rpe`;
 
       // ── EMAIL via OneSignal ──────────────────────────────────────────────
