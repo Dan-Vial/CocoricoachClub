@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Plus, LogOut, Shield, User, Search } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { AddClubDialog } from "@/components/clubs/AddClubDialog";
 import { ClubCard } from "@/components/clubs/ClubCard";
@@ -195,7 +195,7 @@ export default function Clubs() {
     );
   }
 
-  if (!user) return null;
+  if (!user) return <Navigate to="/auth" replace />;
 
   const hasOnlyAthleteRole = athleteCategories && athleteCategories.length > 0 && athleteCategories.every(cm => cm.role === "athlete");
   const hasNoClubs = myClubs.length === 0;
