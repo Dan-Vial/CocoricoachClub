@@ -195,7 +195,7 @@ export default function Clubs() {
     );
   }
 
-  if (!user) return null;
+  if (!user) return <Navigate to="/auth" replace />;
 
   const hasOnlyAthleteRole = athleteCategories && athleteCategories.length > 0 && athleteCategories.every(cm => cm.role === "athlete");
   const hasNoClubs = myClubs.length === 0;
