@@ -63,6 +63,13 @@ export type Database = {
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "academic_absences_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       academic_grades: {
@@ -115,6 +122,13 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academic_grades_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -172,6 +186,13 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_documents_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -318,6 +339,13 @@ export type Database = {
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "athlete_access_tokens_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       athlete_invitations: {
@@ -390,6 +418,13 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "athlete_invitations_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -489,6 +524,13 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "awcr_tracking_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
             referencedColumns: ["id"]
           },
           {
@@ -627,6 +669,13 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "body_composition_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -817,6 +866,13 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bowling_spare_training_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
             referencedColumns: ["id"]
           },
           {
@@ -1156,6 +1212,13 @@ export type Database = {
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "clip_player_associations_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       club_invitations: {
@@ -1403,6 +1466,13 @@ export type Database = {
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "competition_rounds_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       concussion_protocols: {
@@ -1567,6 +1637,13 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "convocation_recipients_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -1845,6 +1922,13 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_participants_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
             referencedColumns: ["id"]
           },
           {
@@ -2140,6 +2224,13 @@ export type Database = {
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "gathering_wellness_assessments_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       generic_tests: {
@@ -2198,6 +2289,13 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "generic_tests_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -2477,6 +2575,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "gps_sessions_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "gps_sessions_training_session_id_fkey"
             columns: ["training_session_id"]
             isOneToOne: false
@@ -2575,6 +2680,13 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gym_session_exercises_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
             referencedColumns: ["id"]
           },
           {
@@ -2688,6 +2800,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "hrv_records_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "hrv_records_training_session_id_fkey"
             columns: ["training_session_id"]
             isOneToOne: false
@@ -2755,6 +2874,13 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "injuries_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -2879,6 +3005,13 @@ export type Database = {
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "jump_tests_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       match_lineups: {
@@ -2933,6 +3066,13 @@ export type Database = {
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "match_lineups_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       match_sheet_players: {
@@ -2985,6 +3125,13 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_sheet_players_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -3250,6 +3397,13 @@ export type Database = {
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "medical_records_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       menstrual_cycles: {
@@ -3299,6 +3453,13 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "menstrual_cycles_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -3362,6 +3523,13 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "menstrual_symptoms_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -3439,6 +3607,13 @@ export type Database = {
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "mental_assessments_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       mental_goals: {
@@ -3494,6 +3669,13 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mental_goals_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -3557,6 +3739,13 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mental_prep_sessions_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -3703,6 +3892,13 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mobility_tests_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -3991,6 +4187,13 @@ export type Database = {
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "nutrition_entries_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       payment_history: {
@@ -4178,6 +4381,13 @@ export type Database = {
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "player_academic_profiles_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       player_academic_tracking: {
@@ -4230,6 +4440,13 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_academic_tracking_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -4290,6 +4507,13 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_availability_scores_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -4365,6 +4589,13 @@ export type Database = {
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "player_bowling_arsenal_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       player_caps: {
@@ -4438,6 +4669,13 @@ export type Database = {
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "player_caps_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       player_contacts: {
@@ -4499,6 +4737,13 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_contacts_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -4565,6 +4810,13 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_development_plans_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -4636,6 +4888,13 @@ export type Database = {
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "player_evaluations_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       player_exercise_completions: {
@@ -4691,6 +4950,13 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_exercise_completions_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
             referencedColumns: ["id"]
           },
           {
@@ -4801,6 +5067,13 @@ export type Database = {
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "player_match_stats_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       player_measurements: {
@@ -4844,6 +5117,13 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_measurements_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -4927,6 +5207,13 @@ export type Database = {
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "player_performance_references_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       player_rehab_protocols: {
@@ -5001,6 +5288,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "player_rehab_protocols_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "player_rehab_protocols_protocol_id_fkey"
             columns: ["protocol_id"]
             isOneToOne: false
@@ -5058,6 +5352,13 @@ export type Database = {
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "player_selections_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       player_transfers: {
@@ -5107,6 +5408,13 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_transfers_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
             referencedColumns: ["id"]
           },
           {
@@ -5505,6 +5813,13 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "program_assignments_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
             referencedColumns: ["id"]
           },
           {
@@ -6084,6 +6399,13 @@ export type Database = {
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "recovery_journal_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       recruitment_prospects: {
@@ -6229,6 +6551,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "rehab_calendar_events_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "rehab_calendar_events_player_rehab_protocol_id_fkey"
             columns: ["player_rehab_protocol_id"]
             isOneToOne: false
@@ -6354,6 +6683,13 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "return_to_play_protocols_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -6503,6 +6839,13 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rugby_specific_tests_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -6775,6 +7118,13 @@ export type Database = {
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "smart_alerts_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       speed_tests: {
@@ -6835,6 +7185,13 @@ export type Database = {
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "speed_tests_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       staff_notes: {
@@ -6886,6 +7243,13 @@ export type Database = {
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "staff_notes_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       strength_tests: {
@@ -6929,6 +7293,13 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "strength_tests_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -7199,6 +7570,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "tennis_drill_training_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "tennis_drill_training_training_session_id_fkey"
             columns: ["training_session_id"]
             isOneToOne: false
@@ -7329,6 +7707,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "tournament_player_rotation_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "tournament_player_rotation_tournament_match_id_fkey"
             columns: ["tournament_match_id"]
             isOneToOne: false
@@ -7434,6 +7819,13 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_attendance_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
             referencedColumns: ["id"]
           },
           {
@@ -7732,6 +8124,13 @@ export type Database = {
             columns: ["created_by_player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_sessions_created_by_player_id_fkey"
+            columns: ["created_by_player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -8214,6 +8613,13 @@ export type Database = {
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "wellness_tracking_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
     }
@@ -8310,6 +8716,117 @@ export type Database = {
           token: string | null
         }
         Relationships: []
+      }
+      players_safe: {
+        Row: {
+          allergies: string | null
+          avatar_url: string | null
+          birth_date: string | null
+          birth_year: number | null
+          category_id: string | null
+          club_origin: string | null
+          created_at: string | null
+          dietary_requirements: string | null
+          discipline: string | null
+          email: string | null
+          emergency_notes: string | null
+          first_name: string | null
+          id: string | null
+          medical_notes: string | null
+          name: string | null
+          parent_contact_1_email: string | null
+          parent_contact_1_name: string | null
+          parent_contact_1_phone: string | null
+          parent_contact_1_relation: string | null
+          parent_contact_2_email: string | null
+          parent_contact_2_name: string | null
+          parent_contact_2_phone: string | null
+          parent_contact_2_relation: string | null
+          phone: string | null
+          position: string | null
+          pwa_install_dismissed: boolean | null
+          season_id: string | null
+          specialty: string | null
+          user_id: string | null
+        }
+        Insert: {
+          allergies?: never
+          avatar_url?: string | null
+          birth_date?: string | null
+          birth_year?: number | null
+          category_id?: string | null
+          club_origin?: string | null
+          created_at?: string | null
+          dietary_requirements?: never
+          discipline?: string | null
+          email?: never
+          emergency_notes?: never
+          first_name?: string | null
+          id?: string | null
+          medical_notes?: never
+          name?: string | null
+          parent_contact_1_email?: never
+          parent_contact_1_name?: never
+          parent_contact_1_phone?: never
+          parent_contact_1_relation?: never
+          parent_contact_2_email?: never
+          parent_contact_2_name?: never
+          parent_contact_2_phone?: never
+          parent_contact_2_relation?: never
+          phone?: never
+          position?: string | null
+          pwa_install_dismissed?: boolean | null
+          season_id?: string | null
+          specialty?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          allergies?: never
+          avatar_url?: string | null
+          birth_date?: string | null
+          birth_year?: number | null
+          category_id?: string | null
+          club_origin?: string | null
+          created_at?: string | null
+          dietary_requirements?: never
+          discipline?: string | null
+          email?: never
+          emergency_notes?: never
+          first_name?: string | null
+          id?: string | null
+          medical_notes?: never
+          name?: string | null
+          parent_contact_1_email?: never
+          parent_contact_1_name?: never
+          parent_contact_1_phone?: never
+          parent_contact_1_relation?: never
+          parent_contact_2_email?: never
+          parent_contact_2_name?: never
+          parent_contact_2_phone?: never
+          parent_contact_2_relation?: never
+          phone?: never
+          position?: string | null
+          pwa_install_dismissed?: boolean | null
+          season_id?: string | null
+          specialty?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "players_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "players_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       safe_category_invitations: {
         Row: {
