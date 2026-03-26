@@ -286,6 +286,7 @@ export const JUDO_STATS: StatField[] = [
   { key: "victoryModeWazaari", label: "Mode victoire: Waza-ari", shortLabel: "Waza-ari", category: "scoring", type: "number", max: 1 },
   { key: "victoryModeDecision", label: "Mode victoire: Décision", shortLabel: "Décision", category: "scoring", type: "number", max: 1 },
   { key: "victoryModeHansoku", label: "Mode victoire: Hansoku-make", shortLabel: "Hansoku", category: "scoring", type: "number", max: 1 },
+  { key: "victoryModeYuko", label: "Mode victoire: Yuko", shortLabel: "Yuko", category: "scoring", type: "number", max: 1 },
   { key: "finalScore", label: "Score final", shortLabel: "Score", category: "scoring", type: "number" },
   { key: "combatDuration", label: "Temps du combat (sec)", shortLabel: "Durée", category: "scoring", type: "number" },
   
