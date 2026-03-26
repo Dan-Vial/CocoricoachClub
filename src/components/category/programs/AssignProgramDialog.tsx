@@ -289,7 +289,7 @@ export function AssignProgramDialog({
           </DialogTitle>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 pr-2">
+        <div className="flex-1 overflow-y-auto pr-2">
           <div className="space-y-4">
             {/* Start date */}
             <div className="space-y-2">
