@@ -4678,6 +4678,69 @@ export type Database = {
           },
         ]
       }
+      player_categories: {
+        Row: {
+          category_id: string
+          club_id: string
+          id: string
+          is_primary: boolean | null
+          joined_at: string | null
+          player_id: string
+        }
+        Insert: {
+          category_id: string
+          club_id: string
+          id?: string
+          is_primary?: boolean | null
+          joined_at?: string | null
+          player_id: string
+        }
+        Update: {
+          category_id?: string
+          club_id?: string
+          id?: string
+          is_primary?: boolean | null
+          joined_at?: string | null
+          player_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_categories_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_categories_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "admin_all_clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_categories_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_categories_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_categories_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       player_contacts: {
         Row: {
           address: string | null
@@ -8967,6 +9030,17 @@ export type Database = {
           _rugby_type: string
         }
         Returns: string
+      }
+      get_player_categories: {
+        Args: { _player_id: string }
+        Returns: {
+          category_id: string
+          category_name: string
+          club_id: string
+          club_name: string
+          is_primary: boolean
+          sport_type: string
+        }[]
       }
       get_safe_profile: {
         Args: { profile_id: string }
