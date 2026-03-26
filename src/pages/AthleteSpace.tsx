@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, User, LogOut, Activity, Heart, BarChart3, Target, Video, BookOpen, Shield, ArrowLeft, Search, ChevronRight, MessageSquare, Settings, CalendarDays } from "lucide-react";
+import { Loader2, User, LogOut, Activity, Heart, BarChart3, Target, Video, BookOpen, Shield, ArrowLeft, Search, ChevronRight, MessageSquare, Settings, CalendarDays, FlaskConical } from "lucide-react";
 import { NAV_COLORS } from "@/components/ui/colored-nav-tabs";
 import { AthletePWAInstallPopup } from "@/components/athlete/AthletePWAInstallPopup";
 import { AthleteSpaceDashboard } from "@/components/athlete-space/AthleteSpaceDashboard";
@@ -22,6 +22,7 @@ import { MessagingTab } from "@/components/messaging/MessagingTab";
 import { AthleteSpaceSettings } from "@/components/athlete-space/AthleteSpaceSettings";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 import { AthleteSpaceCalendar } from "@/components/athlete-space/AthleteSpaceCalendar";
+import { AthleteSpaceTests } from "@/components/athlete-space/AthleteSpaceTests";
 
 interface AthleteInfo {
   player_id: string;
@@ -481,6 +482,19 @@ export default function AthleteSpace() {
                   Calendrier
                </TabsTrigger>
               <TabsTrigger 
+                value="tests"
+                 className="athlete-tab shrink-0 gap-1 px-2 py-1.5 rounded-xl font-semibold text-xs transition-all duration-200 data-[state=active]:shadow-lg"
+                 style={{
+                   color: NAV_COLORS.performance.base,
+                  backgroundColor: `${NAV_COLORS.performance.base}15`,
+                  borderBottom: `3px solid ${NAV_COLORS.performance.base}`,
+                  ["--tab-color" as string]: NAV_COLORS.performance.base,
+                }}
+              >
+                <FlaskConical className="h-3.5 w-3.5" />
+                Tests
+              </TabsTrigger>
+              <TabsTrigger 
                 value="progression"
                  className="athlete-tab shrink-0 gap-1 px-2 py-1.5 rounded-xl font-semibold text-xs transition-all duration-200 data-[state=active]:shadow-lg"
                  style={{
@@ -594,6 +608,14 @@ export default function AthleteSpace() {
 
           <TabsContent value="calendar">
             <AthleteSpaceCalendar
+              playerId={athleteInfo.player_id}
+              categoryId={athleteInfo.category_id}
+              sportType={athleteInfo.sport_type}
+            />
+          </TabsContent>
+
+          <TabsContent value="tests">
+            <AthleteSpaceTests
               playerId={athleteInfo.player_id}
               categoryId={athleteInfo.category_id}
               sportType={athleteInfo.sport_type}

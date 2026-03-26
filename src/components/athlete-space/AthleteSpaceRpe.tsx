@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { AthleteSpaceRpeHistory } from "./AthleteSpaceRpeHistory";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -862,6 +863,9 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
           </CardContent>
         </Card>
       )}
+
+      {/* RPE History Charts */}
+      <AthleteSpaceRpeHistory playerId={playerId} categoryId={categoryId} />
     </div>
   );
 }

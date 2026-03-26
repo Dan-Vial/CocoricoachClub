@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { AthleteSpaceWellnessHistory } from "./AthleteSpaceWellnessHistory";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -191,6 +192,7 @@ export function AthleteSpaceWellness({ playerId, categoryId }: Props) {
     );
 
     return (
+      <>
       <Card className="bg-gradient-card shadow-md">
         <CardContent className="py-6">
           <div className="flex items-center gap-3">
@@ -213,11 +215,14 @@ export function AthleteSpaceWellness({ playerId, categoryId }: Props) {
           </div>
         </CardContent>
       </Card>
+      <AthleteSpaceWellnessHistory playerId={playerId} categoryId={categoryId} />
+      </>
     );
   }
 
   // Not filled yet
   return (
+    <>
     <Card className="shadow-md border-2" style={{ borderColor: `${NAV_COLORS.sante.base}40`, backgroundColor: `${NAV_COLORS.sante.base}06` }}>
       <button
         onClick={() => setExpanded(!expanded)}
@@ -426,5 +431,9 @@ export function AthleteSpaceWellness({ playerId, categoryId }: Props) {
         </CardContent>
       )}
     </Card>
+
+    {/* Wellness History Charts */}
+    <AthleteSpaceWellnessHistory playerId={playerId} categoryId={categoryId} />
+    </>
   );
 }
