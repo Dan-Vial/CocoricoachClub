@@ -18,10 +18,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Trash2, Filter, Eye, Copy, Check, Mail, RefreshCw, FileSpreadsheet } from "lucide-react";
+import { Plus, Trash2, Filter, Eye, Copy, Check, Mail, RefreshCw, FileSpreadsheet, Link2 } from "lucide-react";
 import { toast } from "sonner";
 import { AddPlayerDialogWithInvite } from "./AddPlayerDialogWithInvite";
 import { BulkAddPlayersDialog } from "./BulkAddPlayersDialog";
+import { LinkExistingPlayerDialog } from "./LinkExistingPlayerDialog";
 import { useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -48,6 +49,7 @@ interface PlayersTabProps {
 export function PlayersTab({ categoryId }: PlayersTabProps) {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isBulkDialogOpen, setIsBulkDialogOpen] = useState(false);
+  const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false);
   const [disciplineFilter, setDisciplineFilter] = useState<string>("all");
   const [copiedInviteId, setCopiedInviteId] = useState<string | null>(null);
   const queryClient = useQueryClient();
@@ -291,6 +293,10 @@ export function PlayersTab({ categoryId }: PlayersTabProps) {
             )}
             {!isViewer && (
               <>
+                <Button onClick={() => setIsLinkDialogOpen(true)} variant="outline" className="gap-2 whitespace-nowrap">
+                  <Link2 className="h-4 w-4" />
+                  <span className="hidden sm:inline">Rattacher</span>
+                </Button>
                 <Button onClick={() => setIsBulkDialogOpen(true)} variant="outline" className="gap-2 whitespace-nowrap">
                   <FileSpreadsheet className="h-4 w-4" />
                   <span className="hidden sm:inline">Import Excel</span>
@@ -472,6 +478,11 @@ export function PlayersTab({ categoryId }: PlayersTabProps) {
       <BulkAddPlayersDialog
         open={isBulkDialogOpen}
         onOpenChange={setIsBulkDialogOpen}
+        categoryId={categoryId}
+      />
+      <LinkExistingPlayerDialog
+        open={isLinkDialogOpen}
+        onOpenChange={setIsLinkDialogOpen}
         categoryId={categoryId}
       />
     </Card>

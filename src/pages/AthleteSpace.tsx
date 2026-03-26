@@ -126,7 +126,7 @@ export default function AthleteSpace() {
         }
       }
 
-      // Normal athlete flow - fetch ALL player entries for this user
+      // Normal athlete flow - fetch player record(s) for this user
       const { data: players, error } = await supabase
         .from("players")
         .select(`
@@ -154,6 +154,7 @@ export default function AthleteSpace() {
         return;
       }
 
+      // Build entries from primary player records
       const entries: AthleteInfo[] = players.map(player => ({
         player_id: player.id,
         player_name: player.name,
@@ -166,6 +167,38 @@ export default function AthleteSpace() {
         avatar_url: player.avatar_url || undefined,
         cover_image_url: (player.categories as any).cover_image_url || undefined,
       }));
+
+      // Also fetch additional categories from player_categories junction table
+      const playerIds = players.map(p => p.id);
+      const existingCategoryIds = new Set(entries.map(e => e.category_id));
+
+      const { data: extraCategories } = await supabase
+        .from("player_categories")
+        .select("player_id, category_id, categories(name, rugby_type, cover_image_url, clubs(name))")
+        .in("player_id", playerIds);
+
+      if (extraCategories) {
+        for (const pc of extraCategories) {
+          if (!existingCategoryIds.has(pc.category_id)) {
+            const player = players.find(p => p.id === pc.player_id);
+            if (player && pc.categories) {
+              entries.push({
+                player_id: player.id,
+                player_name: player.name,
+                player_first_name: player.first_name || undefined,
+                category_id: pc.category_id,
+                category_name: (pc.categories as any).name,
+                club_name: (pc.categories as any).clubs?.name || "",
+                sport_type: (pc.categories as any).rugby_type,
+                position: player.position || undefined,
+                avatar_url: player.avatar_url || undefined,
+                cover_image_url: (pc.categories as any).cover_image_url || undefined,
+              });
+              existingCategoryIds.add(pc.category_id);
+            }
+          }
+        }
+      }
 
       setAllAthleteEntries(entries);
 
