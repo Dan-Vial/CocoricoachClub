@@ -427,5 +427,9 @@ export function AthleteSpaceWellness({ playerId, categoryId }: Props) {
         </CardContent>
       )}
     </Card>
+
+    {/* Wellness History Charts */}
+    <AthleteSpaceWellnessHistory playerId={playerId} categoryId={categoryId} />
+    </>
   );
 }

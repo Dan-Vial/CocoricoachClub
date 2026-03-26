@@ -863,6 +863,9 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
           </CardContent>
         </Card>
       )}
+
+      {/* RPE History Charts */}
+      <AthleteSpaceRpeHistory playerId={playerId} categoryId={categoryId} />
     </div>
   );
 }
