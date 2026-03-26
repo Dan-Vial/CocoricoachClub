@@ -222,6 +222,7 @@ export function AthleteSpaceWellness({ playerId, categoryId }: Props) {
 
   // Not filled yet
   return (
+    <>
     <Card className="shadow-md border-2" style={{ borderColor: `${NAV_COLORS.sante.base}40`, backgroundColor: `${NAV_COLORS.sante.base}06` }}>
       <button
         onClick={() => setExpanded(!expanded)}
