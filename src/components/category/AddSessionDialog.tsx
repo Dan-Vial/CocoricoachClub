@@ -406,7 +406,7 @@ export function AddSessionDialog({
 
       let toastMessage = "Séance ajoutée";
       if (blockCount > 0) toastMessage += ` avec ${blockCount} bloc(s)`;
-      if (!isAthleteMode && exerciseCount > 0) toastMessage += ` et ${exerciseCount} exercice(s)`;
+      if (exerciseCount > 0) toastMessage += ` et ${exerciseCount} exercice(s)`;
       if (!isAthleteMode && gpsCount > 0) toastMessage += ` et ${gpsCount} données GPS`;
       toast.success(toastMessage);
 
