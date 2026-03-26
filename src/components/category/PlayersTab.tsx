@@ -480,6 +480,11 @@ export function PlayersTab({ categoryId }: PlayersTabProps) {
         onOpenChange={setIsBulkDialogOpen}
         categoryId={categoryId}
       />
+      <LinkExistingPlayerDialog
+        open={isLinkDialogOpen}
+        onOpenChange={setIsLinkDialogOpen}
+        categoryId={categoryId}
+      />
     </Card>
   );
 }
