@@ -57,6 +57,7 @@ serve(async (req) => {
       intensity,
       notes,
       session_blocks,
+      exercises,
     } = body ?? {};
 
     if (!category_id || !player_id || !session_date || !training_type) {
@@ -100,6 +101,7 @@ serve(async (req) => {
 
     if (sessionError) throw sessionError;
 
+    // Insert session blocks
     const blockRecords = Array.isArray(session_blocks)
       ? session_blocks
           .filter((block) => block?.training_type)
@@ -127,6 +129,39 @@ serve(async (req) => {
       if (blocksError) {
         await supabase.from("training_sessions").delete().eq("id", session.id);
         throw blocksError;
+      }
+    }
+
+    // Insert exercises
+    const exerciseRecords = Array.isArray(exercises)
+      ? exercises
+          .filter((ex) => ex?.exercise_name?.trim())
+          .map((ex, idx) => ({
+            training_session_id: session.id,
+            player_id,
+            category_id,
+            exercise_name: ex.exercise_name,
+            exercise_category: ex.exercise_category || "autre",
+            sets: ex.sets ?? 3,
+            reps: ex.reps ?? null,
+            weight_kg: ex.weight_kg ?? null,
+            rest_seconds: ex.rest_seconds ?? null,
+            notes: ex.notes || null,
+            order_index: idx,
+            library_exercise_id: ex.library_exercise_id || null,
+          }))
+      : [];
+
+    if (exerciseRecords.length > 0) {
+      const { error: exercisesError } = await supabase
+        .from("gym_session_exercises")
+        .insert(exerciseRecords);
+
+      if (exercisesError) {
+        // Cleanup on failure
+        await supabase.from("training_session_blocks").delete().eq("training_session_id", session.id);
+        await supabase.from("training_sessions").delete().eq("id", session.id);
+        throw exercisesError;
       }
     }
 
