@@ -614,6 +614,14 @@ export default function AthleteSpace() {
             />
           </TabsContent>
 
+          <TabsContent value="tests">
+            <AthleteSpaceTests
+              playerId={athleteInfo.player_id}
+              categoryId={athleteInfo.category_id}
+              sportType={athleteInfo.sport_type}
+            />
+          </TabsContent>
+
           <TabsContent value="progression">
             <AthleteSpaceProgression
               playerId={athleteInfo.player_id}
