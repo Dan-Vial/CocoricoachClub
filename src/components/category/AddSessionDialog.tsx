@@ -216,6 +216,20 @@ export function AddSessionDialog({
             contact_charge: block.contact_charge || null,
           }));
 
+        const validExercisesForAthlete = exercises
+          .filter(e => e.exercise_name.trim())
+          .map((ex, idx) => ({
+            exercise_name: ex.exercise_name,
+            exercise_category: ex.exercise_category,
+            sets: ex.sets,
+            reps: ex.reps,
+            weight_kg: ex.weight_kg,
+            rest_seconds: ex.rest_seconds,
+            notes: ex.notes || null,
+            order_index: idx,
+            library_exercise_id: ex.library_exercise_id,
+          }));
+
         const { data: payload, error } = await supabase.functions.invoke("athlete-create-session", {
           headers: {
             Authorization: `Bearer ${accessToken}`,
@@ -230,6 +244,7 @@ export function AddSessionDialog({
             intensity: mainIntensity,
             notes: notes || null,
             session_blocks: athleteBlocks,
+            exercises: validExercisesForAthlete,
           },
         });
 
@@ -391,7 +406,7 @@ export function AddSessionDialog({
 
       let toastMessage = "Séance ajoutée";
       if (blockCount > 0) toastMessage += ` avec ${blockCount} bloc(s)`;
-      if (!isAthleteMode && exerciseCount > 0) toastMessage += ` et ${exerciseCount} exercice(s)`;
+      if (exerciseCount > 0) toastMessage += ` et ${exerciseCount} exercice(s)`;
       if (!isAthleteMode && gpsCount > 0) toastMessage += ` et ${gpsCount} données GPS`;
       toast.success(toastMessage);
 
