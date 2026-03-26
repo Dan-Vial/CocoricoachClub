@@ -49,6 +49,7 @@ interface PlayersTabProps {
 export function PlayersTab({ categoryId }: PlayersTabProps) {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isBulkDialogOpen, setIsBulkDialogOpen] = useState(false);
+  const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false);
   const [disciplineFilter, setDisciplineFilter] = useState<string>("all");
   const [copiedInviteId, setCopiedInviteId] = useState<string | null>(null);
   const queryClient = useQueryClient();
