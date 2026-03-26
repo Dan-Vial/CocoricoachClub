@@ -192,6 +192,7 @@ export function AthleteSpaceWellness({ playerId, categoryId }: Props) {
     );
 
     return (
+      <>
       <Card className="bg-gradient-card shadow-md">
         <CardContent className="py-6">
           <div className="flex items-center gap-3">
@@ -214,6 +215,8 @@ export function AthleteSpaceWellness({ playerId, categoryId }: Props) {
           </div>
         </CardContent>
       </Card>
+      <AthleteSpaceWellnessHistory playerId={playerId} categoryId={categoryId} />
+      </>
     );
   }
 
