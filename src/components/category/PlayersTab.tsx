@@ -293,6 +293,10 @@ export function PlayersTab({ categoryId }: PlayersTabProps) {
             )}
             {!isViewer && (
               <>
+                <Button onClick={() => setIsLinkDialogOpen(true)} variant="outline" className="gap-2 whitespace-nowrap">
+                  <Link2 className="h-4 w-4" />
+                  <span className="hidden sm:inline">Rattacher</span>
+                </Button>
                 <Button onClick={() => setIsBulkDialogOpen(true)} variant="outline" className="gap-2 whitespace-nowrap">
                   <FileSpreadsheet className="h-4 w-4" />
                   <span className="hidden sm:inline">Import Excel</span>
