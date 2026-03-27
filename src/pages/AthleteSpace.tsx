@@ -91,38 +91,41 @@ export default function AthleteSpace() {
 
   const fetchAthleteData = async () => {
     try {
-      // If super admin viewing a specific player
+      // If staff/admin viewing a specific player via ?playerId=
       if (queryPlayerId) {
-        const { data: isSA } = await supabase.rpc("is_super_admin", { _user_id: user!.id });
-        if (isSA) {
-          setIsSuperAdminView(true);
-          const { data: player, error } = await supabase
-            .from("players")
-            .select(`
-              id, name, first_name, category_id, position, avatar_url,
-              categories!inner(name, rugby_type, cover_image_url, clubs!inner(name))
-            `)
-            .eq("id", queryPlayerId)
-            .single();
+        const { data: player, error } = await supabase
+          .from("players")
+          .select(`
+            id, name, first_name, category_id, position, avatar_url,
+            categories!inner(name, rugby_type, cover_image_url, clubs!inner(name))
+          `)
+          .eq("id", queryPlayerId)
+          .single();
 
-          if (error || !player) {
-            navigate("/");
+        if (!error && player) {
+          // Check if user is super admin or has access to this category
+          const { data: isSA } = await supabase.rpc("is_super_admin", { _user_id: user!.id });
+          const { data: hasAccess } = await supabase.rpc("can_access_category", { 
+            _user_id: user!.id, 
+            _category_id: player.category_id 
+          });
+
+          if (isSA || hasAccess) {
+            setIsSuperAdminView(true);
+            setAthleteInfo({
+              player_id: player.id,
+              player_name: player.name,
+              player_first_name: player.first_name || undefined,
+              category_id: player.category_id,
+              category_name: (player.categories as any).name,
+              club_name: (player.categories as any).clubs.name,
+              sport_type: (player.categories as any).rugby_type,
+              position: player.position || undefined,
+              avatar_url: player.avatar_url || undefined,
+              cover_image_url: (player.categories as any).cover_image_url || undefined,
+            });
             return;
           }
-
-          setAthleteInfo({
-            player_id: player.id,
-            player_name: player.name,
-            player_first_name: player.first_name || undefined,
-            category_id: player.category_id,
-            category_name: (player.categories as any).name,
-            club_name: (player.categories as any).clubs.name,
-            sport_type: (player.categories as any).rugby_type,
-            position: player.position || undefined,
-            avatar_url: player.avatar_url || undefined,
-            cover_image_url: (player.categories as any).cover_image_url || undefined,
-          });
-          return;
         }
       }
 
