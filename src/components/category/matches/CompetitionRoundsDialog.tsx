@@ -1078,11 +1078,30 @@ export function CompetitionRoundsDialog({
                             </div>
                           )}
 
-                          {/* Bowling: Phase, Adversaire, then score sheet */}
+                          {/* Bowling: Category, Phase, Adversaire, then score sheet */}
                           {isBowling && (
                             <div className={`space-y-4 ${round.isLocked ? "opacity-80" : ""}`}>
-                              {/* Phase and opponent info - always visible */}
-                              <div className={`grid grid-cols-2 gap-3 ${round.isLocked ? "pointer-events-none" : ""}`}>
+                              {/* Category, Phase, and opponent info - always visible */}
+                              <div className={`grid grid-cols-3 gap-3 ${round.isLocked ? "pointer-events-none" : ""}`}>
+                                <div>
+                                  <Label className="text-xs">Catégorie</Label>
+                                  <Select
+                                    value={round.bowlingCategory || ""}
+                                    onValueChange={(value) => updateRound(selectedPlayer.playerId, round.round_number, { bowlingCategory: value })}
+                                    disabled={round.isLocked}
+                                  >
+                                    <SelectTrigger className="h-8">
+                                      <SelectValue placeholder="Sélectionner..." />
+                                    </SelectTrigger>
+                                    <SelectContent className="z-[200]">
+                                      {BOWLING_COMPETITION_CATEGORIES.map((cat) => (
+                                        <SelectItem key={cat.value} value={cat.value}>
+                                          {cat.label}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
                                 <div>
                                   <Label className="text-xs">Phase</Label>
                                   <Select
