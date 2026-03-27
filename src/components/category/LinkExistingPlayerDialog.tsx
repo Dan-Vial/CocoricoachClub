@@ -87,7 +87,7 @@ export function LinkExistingPlayerDialog({
   });
 
   const linkPlayer = useMutation({
-    mutationFn: async (playerId: string) => {
+    mutationFn: async ({ playerId, hasAccount }: { playerId: string; hasAccount: boolean }) => {
       if (!category) throw new Error("Catégorie non trouvée");
 
       const { error } = await supabase
@@ -97,15 +97,21 @@ export function LinkExistingPlayerDialog({
           category_id: categoryId,
           club_id: category.club_id,
           is_primary: false,
+          status: hasAccount ? "pending" : "accepted",
         });
 
       if (error) throw error;
+      return hasAccount;
     },
-    onSuccess: () => {
+    onSuccess: (hasAccount) => {
       queryClient.invalidateQueries({ queryKey: ["players"] });
       queryClient.invalidateQueries({ queryKey: ["existing-players-ids", categoryId] });
       queryClient.invalidateQueries({ queryKey: ["search-players-to-link"] });
-      toast.success("Joueur rattaché à cette catégorie");
+      toast.success(
+        hasAccount
+          ? "Demande envoyée — l'athlète doit accepter"
+          : "Joueur rattaché à cette catégorie"
+      );
     },
     onError: (error: any) => {
       if (error.message?.includes("duplicate")) {
