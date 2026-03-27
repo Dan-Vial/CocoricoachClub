@@ -344,8 +344,9 @@ export function CompetitionRoundsDialog({
             const statData = r.competition_round_stats?.[0]?.stat_data as Record<string, any> || {};
             // Extract bowling frames if stored in stat_data
             const bowlingFrames = statData.bowlingFrames as FrameData[] | undefined;
-            // Remove bowlingFrames from stats object for display
-            const { bowlingFrames: _, ...cleanStats } = statData;
+            const bowlingCategory = statData.bowlingCategory as string | undefined;
+            // Remove internal fields from stats object for display
+            const { bowlingFrames: _, bowlingCategory: _bc, ...cleanStats } = statData;
             
             return {
               id: r.id,
