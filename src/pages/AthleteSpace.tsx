@@ -46,7 +46,7 @@ export default function AthleteSpace() {
   const [showCategorySelector, setShowCategorySelector] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [isSuperAdminView, setIsSuperAdminView] = useState(false);
+  const [isStaffView, setIsStaffView] = useState(false);
   const [showPlayerSelector, setShowPlayerSelector] = useState(false);
   const [playerSearch, setPlayerSearch] = useState("");
   const { total: unreadCount } = useUnreadMessages(athleteInfo?.category_id || "");
