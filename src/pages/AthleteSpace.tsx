@@ -175,7 +175,8 @@ export default function AthleteSpace() {
       const { data: extraCategories } = await supabase
         .from("player_categories")
         .select("player_id, category_id, categories(name, rugby_type, cover_image_url, clubs(name))")
-        .in("player_id", playerIds);
+        .in("player_id", playerIds)
+        .eq("status", "accepted");
 
       if (extraCategories) {
         for (const pc of extraCategories) {
