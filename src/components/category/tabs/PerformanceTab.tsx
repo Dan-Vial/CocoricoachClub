@@ -107,10 +107,6 @@ export function PerformanceTab({ categoryId }: PerformanceTabProps) {
       <TabsContent value="mental">
         <MentalPerformanceSection categoryId={categoryId} />
       </TabsContent>
-
-      <TabsContent value="benchmarks">
-        <BenchmarkTab categoryId={categoryId} sportType={sportType} />
-      </TabsContent>
     </Tabs>
   );
 }
