@@ -97,9 +97,17 @@ const JUDO_PHASES = [
   { value: "finale", label: "Finale" },
 ];
 
-// Bowling phases
+// Bowling competition categories
+const BOWLING_COMPETITION_CATEGORIES = [
+  { value: "individuelle", label: "Individuelle" },
+  { value: "doublette", label: "Doublette" },
+  { value: "equipe_4", label: "Équipe de 4" },
+  { value: "masters", label: "Masters" },
+];
+
+// Bowling phases (subcategories)
 const BOWLING_PHASES = [
-  { value: "qualification", label: "Qualification" },
+  { value: "qualification", label: "Qualifications" },
   { value: "round_robin", label: "Round Robin" },
   { value: "quart", label: "Quart de finale" },
   { value: "demi", label: "Demi-finale" },
