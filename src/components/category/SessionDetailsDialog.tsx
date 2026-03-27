@@ -1,4 +1,5 @@
 import { useState, useRef, useMemo } from "react";
+import { getObjectiveLabel } from "@/lib/constants/sessionBlockOptions";
 import { getDisplayNotes } from "@/lib/utils/sessionNotes";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";

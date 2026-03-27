@@ -752,10 +752,8 @@ export const exportSessionToPdf = async (
       
       // Objective badge
       if (block.objective) {
-        const objLabels: Record<string, string> = {
-          aerobie: "Aérobie", anaerobie: "Anaérobie", vitesse_explosivite: "Vitesse/Explosivité",
-          force_contact: "Force/Contact", tactique: "Tactique", technique: "Technique"
-        };
+        const { getObjectiveLabel } = await import("@/lib/constants/sessionBlockOptions");
+        const objText = getObjectiveLabel(block.objective);
         const objText = objLabels[block.objective] || block.objective;
         const objWidth = pdf.getTextWidth(objText) + 4;
         pdf.setFillColor(240, 240, 245);
