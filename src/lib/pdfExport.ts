@@ -753,9 +753,7 @@ export const exportSessionToPdf = async (
       
       // Objective badge
       if (block.objective) {
-        const { getObjectiveLabel } = await import("@/lib/constants/sessionBlockOptions");
         const objText = getObjectiveLabel(block.objective);
-        const objText = objLabels[block.objective] || block.objective;
         const objWidth = pdf.getTextWidth(objText) + 4;
         pdf.setFillColor(240, 240, 245);
         pdf.roundedRect(xCursor, row1Y - 4.5, objWidth + 4, 6, 1.5, 1.5, 'F');
