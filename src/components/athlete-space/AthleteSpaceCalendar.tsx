@@ -269,9 +269,10 @@ export function AthleteSpaceCalendar({ playerId, categoryId, sportType }: Props)
 
                       {/* Sessions */}
                       {daySessions.map(session => {
-                        const isAthleteSession = session.created_by_player_id === playerId;
+                          const isAthleteSession = session.created_by_player_id === playerId;
                         const isCompleted = completedSessionIds.has(session.id);
                         const exercises = exercisesBySession[session.id] || [];
+                        const blocks = blocksBySession[session.id] || [];
                         const isExpanded = expandedSessionId === session.id;
 
                         return (
