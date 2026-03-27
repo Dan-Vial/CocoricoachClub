@@ -177,10 +177,34 @@ export function NotificationBell({ variant = "hero" }: { variant?: "hero" | "def
         return "📝";
       case "test_reminder":
         return "🏃";
+      case "category_link_request":
+        return "🔗";
       default:
         return "ℹ️";
     }
   };
+
+  const respondToLink = useMutation({
+    mutationFn: async ({ playerCategoryId, response, notificationId }: { playerCategoryId: string; response: string; notificationId: string }) => {
+      const { data, error } = await supabase.rpc("respond_to_category_link", {
+        _player_category_id: playerCategoryId,
+        _response: response,
+      });
+      if (error) throw error;
+      const result = data as any;
+      if (!result?.success) throw new Error(result?.error || "Erreur");
+      // Mark notification as read
+      await supabase.from("notifications").update({ is_read: true }).eq("id", notificationId);
+      return response;
+    },
+    onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      toast.success(response === "accepted" ? "Structure acceptée !" : "Demande refusée");
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Erreur");
+    },
+  });
 
   const handleGoToPendingUsers = () => {
     setOpen(false);
