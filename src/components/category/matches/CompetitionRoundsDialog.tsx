@@ -852,8 +852,13 @@ export function CompetitionRoundsDialog({
                             <CardTitle className="text-base flex items-center gap-2">
                               {isAviron ? <Ship className="h-4 w-4" /> : isJudo ? <Swords className="h-4 w-4" /> : <Circle className="h-4 w-4" />}
                               {roundLabel} {round.round_number}
+                              {isBowling && round.bowlingCategory && (
+                                <Badge variant="secondary" className="ml-1">
+                                  {BOWLING_COMPETITION_CATEGORIES.find(c => c.value === round.bowlingCategory)?.label || round.bowlingCategory}
+                                </Badge>
+                              )}
                               {round.phase && (
-                                <Badge variant="outline" className="ml-2">
+                                <Badge variant="outline" className="ml-1">
                                   {phases.find(p => p.value === round.phase)?.label || round.phase}
                                 </Badge>
                               )}
