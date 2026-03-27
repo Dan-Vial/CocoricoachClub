@@ -57,7 +57,8 @@ export function LinkExistingPlayerDialog({
       const { data: linkedPlayers } = await supabase
         .from("player_categories")
         .select("player_id")
-        .eq("category_id", categoryId);
+        .eq("category_id", categoryId)
+        .eq("status", "accepted");
 
       const ids = new Set<string>();
       directPlayers?.forEach(p => ids.add(p.id));
