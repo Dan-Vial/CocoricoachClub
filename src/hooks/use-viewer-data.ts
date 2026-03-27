@@ -82,7 +82,8 @@ export function useViewerPlayers(categoryId: string) {
       const { data: linkedEntries } = await supabase
         .from("player_categories")
         .select("player_id, players(*)")
-        .eq("category_id", categoryId);
+        .eq("category_id", categoryId)
+        .eq("status", "accepted");
 
       const directIds = new Set((directPlayers || []).map((p: any) => p.id));
       const linkedPlayers = (linkedEntries || [])

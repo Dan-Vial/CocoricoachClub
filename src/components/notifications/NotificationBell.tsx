@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Bell, Check, Trash2, UserPlus, ArrowRight } from "lucide-react";
+import { Bell, Check, Trash2, UserPlus, ArrowRight, CheckCircle, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -23,7 +23,9 @@ interface Notification {
   is_read: boolean;
   created_at: string;
   notification_type: string;
+  notification_subtype: string | null;
   injury_id: string | null;
+  metadata: any;
 }
 
 interface PendingUser {
@@ -175,10 +177,34 @@ export function NotificationBell({ variant = "hero" }: { variant?: "hero" | "def
         return "📝";
       case "test_reminder":
         return "🏃";
+      case "category_link_request":
+        return "🔗";
       default:
         return "ℹ️";
     }
   };
+
+  const respondToLink = useMutation({
+    mutationFn: async ({ playerCategoryId, response, notificationId }: { playerCategoryId: string; response: string; notificationId: string }) => {
+      const { data, error } = await supabase.rpc("respond_to_category_link", {
+        _player_category_id: playerCategoryId,
+        _response: response,
+      });
+      if (error) throw error;
+      const result = data as any;
+      if (!result?.success) throw new Error(result?.error || "Erreur");
+      // Mark notification as read
+      await supabase.from("notifications").update({ is_read: true }).eq("id", notificationId);
+      return response;
+    },
+    onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      toast.success(response === "accepted" ? "Structure acceptée !" : "Demande refusée");
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Erreur");
+    },
+  });
 
   const handleGoToPendingUsers = () => {
     setOpen(false);
@@ -308,6 +334,38 @@ export function NotificationBell({ variant = "hero" }: { variant?: "hero" | "def
                       <p className="text-sm text-muted-foreground mt-1">
                         {notification.message}
                       </p>
+                      {notification.notification_type === "category_link_request" && notification.notification_subtype === "pending" && notification.metadata?.player_category_id && (
+                        <div className="flex gap-2 mt-2">
+                          <Button
+                            size="sm"
+                            variant="default"
+                            className="gap-1 h-7 text-xs"
+                            onClick={() => respondToLink.mutate({
+                              playerCategoryId: notification.metadata.player_category_id,
+                              response: "accepted",
+                              notificationId: notification.id,
+                            })}
+                            disabled={respondToLink.isPending}
+                          >
+                            <CheckCircle className="h-3 w-3" />
+                            Accepter
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="gap-1 h-7 text-xs"
+                            onClick={() => respondToLink.mutate({
+                              playerCategoryId: notification.metadata.player_category_id,
+                              response: "declined",
+                              notificationId: notification.id,
+                            })}
+                            disabled={respondToLink.isPending}
+                          >
+                            <XCircle className="h-3 w-3" />
+                            Refuser
+                          </Button>
+                        </div>
+                      )}
                       <p className="text-xs text-muted-foreground mt-2">
                         {formatDistanceToNow(new Date(notification.created_at), {
                           addSuffix: true,

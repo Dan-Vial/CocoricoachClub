@@ -57,7 +57,8 @@ export function LinkExistingPlayerDialog({
       const { data: linkedPlayers } = await supabase
         .from("player_categories")
         .select("player_id")
-        .eq("category_id", categoryId);
+        .eq("category_id", categoryId)
+        .eq("status", "accepted");
 
       const ids = new Set<string>();
       directPlayers?.forEach(p => ids.add(p.id));
@@ -75,7 +76,7 @@ export function LinkExistingPlayerDialog({
       const { data, error } = await supabase
         .from("players")
         .select(`
-          id, name, first_name, category_id, position, avatar_url,
+          id, name, first_name, category_id, position, avatar_url, user_id,
           categories!inner(name, clubs!inner(name))
         `)
         .or(`name.ilike.%${search}%,first_name.ilike.%${search}%`)
@@ -87,7 +88,7 @@ export function LinkExistingPlayerDialog({
   });
 
   const linkPlayer = useMutation({
-    mutationFn: async (playerId: string) => {
+    mutationFn: async ({ playerId, hasAccount }: { playerId: string; hasAccount: boolean }) => {
       if (!category) throw new Error("Catégorie non trouvée");
 
       const { error } = await supabase
@@ -97,15 +98,21 @@ export function LinkExistingPlayerDialog({
           category_id: categoryId,
           club_id: category.club_id,
           is_primary: false,
+          status: hasAccount ? "pending" : "accepted",
         });
 
       if (error) throw error;
+      return hasAccount;
     },
-    onSuccess: () => {
+    onSuccess: (hasAccount) => {
       queryClient.invalidateQueries({ queryKey: ["players"] });
       queryClient.invalidateQueries({ queryKey: ["existing-players-ids", categoryId] });
       queryClient.invalidateQueries({ queryKey: ["search-players-to-link"] });
-      toast.success("Joueur rattaché à cette catégorie");
+      toast.success(
+        hasAccount
+          ? "Demande envoyée — l'athlète doit accepter"
+          : "Joueur rattaché à cette catégorie"
+      );
     },
     onError: (error: any) => {
       if (error.message?.includes("duplicate")) {
@@ -180,12 +187,17 @@ export function LinkExistingPlayerDialog({
                           {catName}
                         </Badge>
                         <span className="text-xs text-muted-foreground">{clubName}</span>
+                        {player.user_id && (
+                          <Badge variant="outline" className="text-[10px] h-4 px-1.5 text-primary border-primary/30">
+                            Compte actif
+                          </Badge>
+                        )}
                       </div>
                     </div>
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => linkPlayer.mutate(player.id)}
+                      onClick={() => linkPlayer.mutate({ playerId: player.id, hasAccount: !!player.user_id })}
                       disabled={linkPlayer.isPending}
                       className="gap-1.5"
                     >
