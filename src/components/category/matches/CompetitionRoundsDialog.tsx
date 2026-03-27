@@ -59,6 +59,7 @@ interface Round {
   ranking?: number;
   gap_to_first?: string;
   // Bowling specific
+  bowlingCategory?: string;
   isLocked?: boolean;
   bowlingFrames?: FrameData[];
 }
