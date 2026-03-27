@@ -94,8 +94,34 @@ export function AthleteSpaceCalendar({ playerId, categoryId, sportType }: Props)
   const daySessions = sessions.filter(s => s.session_date === selectedDateStr);
   const dayMatches = matches.filter(m => m.match_date === selectedDateStr);
 
-  // Fetch exercises for day sessions
+  // Fetch blocks for day sessions
   const daySessionIds = daySessions.map(s => s.id);
+  const { data: sessionBlocks = [] } = useQuery({
+    queryKey: ["athlete-calendar-blocks", daySessionIds],
+    queryFn: async () => {
+      if (daySessionIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from("training_session_blocks")
+        .select("training_session_id, training_type, block_order")
+        .in("training_session_id", daySessionIds)
+        .order("block_order");
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: daySessionIds.length > 0,
+  });
+
+  const blocksBySession = useMemo(() => {
+    return sessionBlocks.reduce((acc, block) => {
+      if (!acc[block.training_session_id]) acc[block.training_session_id] = [];
+      if (!acc[block.training_session_id].some((b: { training_type: string }) => b.training_type === block.training_type)) {
+        acc[block.training_session_id].push(block);
+      }
+      return acc;
+    }, {} as Record<string, typeof sessionBlocks>);
+  }, [sessionBlocks]);
+
+  // Fetch exercises for day sessions
   const { data: sessionExercises = [] } = useQuery({
     queryKey: ["athlete-calendar-exercises", daySessionIds],
     queryFn: async () => {
@@ -243,9 +269,10 @@ export function AthleteSpaceCalendar({ playerId, categoryId, sportType }: Props)
 
                       {/* Sessions */}
                       {daySessions.map(session => {
-                        const isAthleteSession = session.created_by_player_id === playerId;
+                          const isAthleteSession = session.created_by_player_id === playerId;
                         const isCompleted = completedSessionIds.has(session.id);
                         const exercises = exercisesBySession[session.id] || [];
+                        const blocks = blocksBySession[session.id] || [];
                         const isExpanded = expandedSessionId === session.id;
 
                         return (
@@ -267,10 +294,21 @@ export function AthleteSpaceCalendar({ playerId, categoryId, sportType }: Props)
                                 <div className="flex items-center gap-2">
                                   <Activity className="h-4 w-4 text-muted-foreground" />
                                   <div>
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-2 flex-wrap">
                                       <p className="font-medium text-sm">
                                         {getTrainingTypeLabel(session.training_type)}
                                       </p>
+                                      {blocks.length > 0 && blocks.some(b => b.training_type !== session.training_type) && (
+                                        <div className="flex gap-1 flex-wrap">
+                                          {blocks
+                                            .filter(b => b.training_type !== session.training_type)
+                                            .map((b, i) => (
+                                              <Badge key={i} variant="outline" className="text-[10px] h-4 px-1.5">
+                                                {getTrainingTypeLabel(b.training_type)}
+                                              </Badge>
+                                            ))}
+                                        </div>
+                                      )}
                                       {isAthleteSession && (
                                         <Badge
                                           className="text-[10px] h-4 px-1.5 border"
