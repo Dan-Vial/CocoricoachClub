@@ -64,9 +64,9 @@ export default function AthleteSpace() {
     enabled: !!user?.id,
   });
 
-  // Fetch all players for super admin selector
+  // Fetch players for selector (super admin sees all, staff sees their categories)
   const { data: allPlayers = [] } = useQuery({
-    queryKey: ["all-players-for-selector"],
+    queryKey: ["all-players-for-selector", user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("players")
@@ -75,7 +75,7 @@ export default function AthleteSpace() {
       if (error) throw error;
       return data || [];
     },
-    enabled: showPlayerSelector && !!isSuperAdmin,
+    enabled: showPlayerSelector && !!user?.id,
   });
 
   const queryCategoryId = searchParams.get("categoryId");
