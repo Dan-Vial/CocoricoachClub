@@ -75,7 +75,7 @@ export function LinkExistingPlayerDialog({
       const { data, error } = await supabase
         .from("players")
         .select(`
-          id, name, first_name, category_id, position, avatar_url,
+          id, name, first_name, category_id, position, avatar_url, user_id,
           categories!inner(name, clubs!inner(name))
         `)
         .or(`name.ilike.%${search}%,first_name.ilike.%${search}%`)
