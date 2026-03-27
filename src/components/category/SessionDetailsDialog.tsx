@@ -1,4 +1,5 @@
 import { useState, useRef, useMemo } from "react";
+import { getObjectiveLabel } from "@/lib/constants/sessionBlockOptions";
 import { getDisplayNotes } from "@/lib/utils/sessionNotes";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -534,7 +535,7 @@ export function SessionDetailsDialog({
                         )}
                         {block.objective && (
                           <Badge variant="outline" className="text-xs bg-primary/5">
-                            {block.objective === "aerobie" ? "Aérobie" : block.objective === "anaerobie" ? "Anaérobie" : block.objective === "vitesse_explosivite" ? "Vitesse/Explosivité" : block.objective === "force_contact" ? "Force/Contact" : block.objective === "tactique" ? "Tactique" : block.objective === "technique" ? "Technique" : block.objective}
+                            {getObjectiveLabel(block.objective)}
                           </Badge>
                         )}
                       </div>

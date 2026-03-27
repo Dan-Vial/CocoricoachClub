@@ -4,6 +4,7 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { getTrainingTypeLabel } from "@/lib/constants/trainingTypes";
+import { getObjectiveLabel } from "@/lib/constants/sessionBlockOptions";
 
 // Color palette for PDF exports
 const colors = {
@@ -752,11 +753,7 @@ export const exportSessionToPdf = async (
       
       // Objective badge
       if (block.objective) {
-        const objLabels: Record<string, string> = {
-          aerobie: "Aérobie", anaerobie: "Anaérobie", vitesse_explosivite: "Vitesse/Explosivité",
-          force_contact: "Force/Contact", tactique: "Tactique", technique: "Technique"
-        };
-        const objText = objLabels[block.objective] || block.objective;
+        const objText = getObjectiveLabel(block.objective);
         const objWidth = pdf.getTextWidth(objText) + 4;
         pdf.setFillColor(240, 240, 245);
         pdf.roundedRect(xCursor, row1Y - 4.5, objWidth + 4, 6, 1.5, 1.5, 'F');
