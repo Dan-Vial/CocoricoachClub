@@ -4,11 +4,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Target, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { Target, TrendingUp, Weight } from "lucide-react";
 
 interface BenchmarkComparisonProps {
   categoryId: string;
   sportType?: string;
+}
+
+interface BenchmarkLevel {
+  label: string;
+  threshold: number | null;
+  color: string;
 }
 
 interface Benchmark {
@@ -18,42 +24,54 @@ interface Benchmark {
   test_type: string;
   unit: string | null;
   lower_is_better: boolean;
-  level_1_label: string;
-  level_1_max: number | null;
-  level_2_label: string;
-  level_2_max: number | null;
-  level_3_label: string;
-  level_3_max: number | null;
-  level_4_label: string;
-  level_4_max: number | null;
+  levels: BenchmarkLevel[];
+  use_body_weight_ratio: boolean;
+  body_weight_multiplier: number | null;
+  filter_type: string;
+  filter_value: string | null;
 }
 
-function getPlayerLevel(value: number, benchmark: Benchmark): { level: number; label: string; color: string } {
-  const { lower_is_better, level_1_max, level_2_max, level_3_max, level_4_max } = benchmark;
-
-  if (lower_is_better) {
-    // Lower is better: level 4 (best) has the smallest threshold
-    if (level_4_max != null && value <= level_4_max)
-      return { level: 4, label: benchmark.level_4_label, color: "bg-emerald-500 text-white" };
-    if (level_3_max != null && value <= level_3_max)
-      return { level: 3, label: benchmark.level_3_label, color: "bg-green-500 text-white" };
-    if (level_2_max != null && value <= level_2_max)
-      return { level: 2, label: benchmark.level_2_label, color: "bg-amber-500 text-white" };
-    return { level: 1, label: benchmark.level_1_label, color: "bg-red-500 text-white" };
-  } else {
-    // Higher is better: level 4 (best) has the highest threshold
-    if (level_4_max != null && value >= level_4_max)
-      return { level: 4, label: benchmark.level_4_label, color: "bg-emerald-500 text-white" };
-    if (level_3_max != null && value >= level_3_max)
-      return { level: 3, label: benchmark.level_3_label, color: "bg-green-500 text-white" };
-    if (level_2_max != null && value >= level_2_max)
-      return { level: 2, label: benchmark.level_2_label, color: "bg-amber-500 text-white" };
-    return { level: 1, label: benchmark.level_1_label, color: "bg-red-500 text-white" };
+function getPlayerLevel(
+  value: number,
+  benchmark: Benchmark,
+  playerWeight?: number | null
+): { label: string; color: string } {
+  const levels = benchmark.levels;
+  if (!levels || levels.length === 0) {
+    return { label: "N/A", color: "#94a3b8" };
   }
+
+  // If body-weight ratio is used, adjust thresholds
+  const adjustedLevels = levels.map(l => {
+    if (benchmark.use_body_weight_ratio && benchmark.body_weight_multiplier && playerWeight && l.threshold != null) {
+      return { ...l, threshold: l.threshold * playerWeight };
+    }
+    return l;
+  });
+
+  // Levels are ordered from worst to best
+  // For lower_is_better: value <= threshold is good (check from best level down)
+  // For higher_is_better: value >= threshold is good (check from best level down)
+  for (let i = adjustedLevels.length - 1; i >= 0; i--) {
+    const level = adjustedLevels[i];
+    if (level.threshold == null) continue;
+
+    if (benchmark.lower_is_better) {
+      if (value <= level.threshold) {
+        return { label: level.label, color: level.color };
+      }
+    } else {
+      if (value >= level.threshold) {
+        return { label: level.label, color: level.color };
+      }
+    }
+  }
+
+  // Didn't match any level, return the worst
+  return { label: adjustedLevels[0]?.label || "N/A", color: adjustedLevels[0]?.color || "#ef4444" };
 }
 
 export function BenchmarkComparison({ categoryId, sportType }: BenchmarkComparisonProps) {
-  // Fetch benchmarks
   const { data: benchmarks = [] } = useQuery({
     queryKey: ["benchmarks", categoryId],
     queryFn: async () => {
@@ -63,17 +81,19 @@ export function BenchmarkComparison({ categoryId, sportType }: BenchmarkComparis
         .eq("category_id", categoryId)
         .order("created_at");
       if (error) throw error;
-      return data as Benchmark[];
+      return (data || []).map((b: any) => ({
+        ...b,
+        levels: Array.isArray(b.levels) ? b.levels : [],
+      })) as Benchmark[];
     },
   });
 
-  // Fetch players
   const { data: players = [] } = useQuery({
     queryKey: ["players", categoryId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("players")
-        .select("id, name, first_name")
+        .select("id, name, first_name, position")
         .eq("category_id", categoryId)
         .order("name");
       if (error) throw error;
@@ -81,7 +101,33 @@ export function BenchmarkComparison({ categoryId, sportType }: BenchmarkComparis
     },
   });
 
-  // Fetch latest test results for all players
+  // Fetch latest body composition for body-weight calculations
+  const { data: bodyComps = [] } = useQuery({
+    queryKey: ["body-comp-benchmark", categoryId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("body_composition")
+        .select("player_id, weight_kg, measurement_date")
+        .eq("category_id", categoryId)
+        .order("measurement_date", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    enabled: benchmarks.some(b => b.use_body_weight_ratio),
+  });
+
+  // Latest weight per player
+  const playerWeights = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const bc of bodyComps) {
+      if (bc.weight_kg && !map.has(bc.player_id)) {
+        map.set(bc.player_id, bc.weight_kg);
+      }
+    }
+    return map;
+  }, [bodyComps]);
+
+  // Fetch test results
   const { data: genericTests = [] } = useQuery({
     queryKey: ["generic_tests_benchmark", categoryId],
     queryFn: async () => {
@@ -124,35 +170,27 @@ export function BenchmarkComparison({ categoryId, sportType }: BenchmarkComparis
     enabled: benchmarks.length > 0,
   });
 
-  // Build a lookup: player_id -> benchmark_id -> latest result
+  // Build player results map
   const playerResults = useMemo(() => {
     const map = new Map<string, Map<string, number>>();
-
-    // Helper to get or create player map
-    const getPlayerMap = (playerId: string) => {
-      if (!map.has(playerId)) map.set(playerId, new Map());
-      return map.get(playerId)!;
+    const getPlayerMap = (pid: string) => {
+      if (!map.has(pid)) map.set(pid, new Map());
+      return map.get(pid)!;
     };
 
-    // For each benchmark, find latest matching test result per player
     benchmarks.forEach(bm => {
-      // Generic tests
       genericTests.forEach(t => {
         if (t.test_category === bm.test_category && t.test_type === bm.test_type) {
           const pm = getPlayerMap(t.player_id);
-          if (!pm.has(bm.id)) {
-            pm.set(bm.id, t.result_value);
-          }
+          if (!pm.has(bm.id)) pm.set(bm.id, t.result_value);
         }
       });
 
-      // Speed tests
       if (bm.test_category === "speed" || bm.test_category === "sprint") {
         speedTests.forEach(t => {
           if (t.test_type === bm.test_type) {
             const pm = getPlayerMap(t.player_id);
             if (!pm.has(bm.id)) {
-              // Pick the most relevant value
               const val = t.vma_kmh || t.speed_kmh || t.time_40m_seconds;
               if (val != null) pm.set(bm.id, val);
             }
@@ -160,14 +198,11 @@ export function BenchmarkComparison({ categoryId, sportType }: BenchmarkComparis
         });
       }
 
-      // Strength tests
       if (bm.test_category === "strength" || bm.test_category === "force") {
         strengthTests.forEach(t => {
           if (t.test_name === bm.test_type) {
             const pm = getPlayerMap(t.player_id);
-            if (!pm.has(bm.id)) {
-              pm.set(bm.id, t.weight_kg);
-            }
+            if (!pm.has(bm.id)) pm.set(bm.id, t.weight_kg);
           }
         });
       }
@@ -176,22 +211,11 @@ export function BenchmarkComparison({ categoryId, sportType }: BenchmarkComparis
     return map;
   }, [benchmarks, genericTests, speedTests, strengthTests]);
 
-  // Stats summary
-  const summaryStats = useMemo(() => {
-    return benchmarks.map(bm => {
-      let total = 0;
-      let levels = [0, 0, 0, 0]; // count per level
-      players.forEach(p => {
-        const val = playerResults.get(p.id)?.get(bm.id);
-        if (val != null) {
-          total++;
-          const { level } = getPlayerLevel(val, bm);
-          levels[level - 1]++;
-        }
-      });
-      return { benchmarkId: bm.id, total, levels };
-    });
-  }, [benchmarks, players, playerResults]);
+  // Filter players based on benchmark filter
+  const getFilteredPlayers = (bm: Benchmark) => {
+    if (bm.filter_type === "all" || !bm.filter_value) return players;
+    return players.filter(p => (p as any).position === bm.filter_value);
+  };
 
   if (benchmarks.length === 0) {
     return (
@@ -199,7 +223,7 @@ export function BenchmarkComparison({ categoryId, sportType }: BenchmarkComparis
         <CardContent className="py-12 text-center">
           <Target className="h-12 w-12 mx-auto text-muted-foreground/40 mb-3" />
           <p className="text-muted-foreground">
-            Aucun benchmark défini. Configurez des benchmarks dans l'onglet ci-dessus pour comparer les performances.
+            Aucun benchmark défini. Configurez des benchmarks ci-dessus pour comparer les performances.
           </p>
         </CardContent>
       </Card>
@@ -227,7 +251,14 @@ export function BenchmarkComparison({ categoryId, sportType }: BenchmarkComparis
                   <TableHead key={bm.id} className="text-center min-w-[120px]">
                     <div>
                       <p className="font-medium">{bm.name}</p>
-                      <p className="text-xs text-muted-foreground font-normal">{bm.unit}</p>
+                      <p className="text-xs text-muted-foreground font-normal">
+                        {bm.unit}
+                        {bm.use_body_weight_ratio && (
+                          <span className="ml-1">
+                            <Weight className="h-3 w-3 inline" /> {bm.body_weight_multiplier}x PDC
+                          </span>
+                        )}
+                      </p>
                     </div>
                   </TableHead>
                 ))}
@@ -241,6 +272,8 @@ export function BenchmarkComparison({ categoryId, sportType }: BenchmarkComparis
                   </TableCell>
                   {benchmarks.map(bm => {
                     const val = playerResults.get(player.id)?.get(bm.id);
+                    const weight = playerWeights.get(player.id);
+
                     if (val == null) {
                       return (
                         <TableCell key={bm.id} className="text-center">
@@ -248,12 +281,21 @@ export function BenchmarkComparison({ categoryId, sportType }: BenchmarkComparis
                         </TableCell>
                       );
                     }
-                    const { label, color } = getPlayerLevel(val, bm);
+
+                    const { label, color } = getPlayerLevel(val, bm, weight);
+
+                    // Show ratio if body-weight based
+                    let displayValue = val.toString();
+                    if (bm.use_body_weight_ratio && weight) {
+                      const ratio = (val / weight).toFixed(2);
+                      displayValue = `${val} (${ratio}x)`;
+                    }
+
                     return (
                       <TableCell key={bm.id} className="text-center">
                         <div className="flex flex-col items-center gap-0.5">
-                          <span className="font-mono font-semibold text-sm">{val}</span>
-                          <Badge className={`text-[10px] px-1.5 py-0 ${color}`}>
+                          <span className="font-mono font-semibold text-sm">{displayValue}</span>
+                          <Badge className="text-[10px] px-1.5 py-0 text-white" style={{ backgroundColor: color }}>
                             {label}
                           </Badge>
                         </div>
@@ -262,39 +304,6 @@ export function BenchmarkComparison({ categoryId, sportType }: BenchmarkComparis
                   })}
                 </TableRow>
               ))}
-
-              {/* Summary row */}
-              <TableRow className="bg-muted/30 font-semibold border-t-2">
-                <TableCell className="sticky left-0 bg-muted/30 z-10">Répartition</TableCell>
-                {benchmarks.map((bm, idx) => {
-                  const stats = summaryStats[idx];
-                  if (!stats || stats.total === 0) {
-                    return <TableCell key={bm.id} className="text-center text-xs text-muted-foreground">Aucune donnée</TableCell>;
-                  }
-                  return (
-                    <TableCell key={bm.id} className="text-center">
-                      <div className="flex justify-center gap-1">
-                        {stats.levels.map((count, i) => (
-                          count > 0 && (
-                            <Badge
-                              key={i}
-                              variant="outline"
-                              className={`text-[10px] ${
-                                i === 0 ? "border-red-300 text-red-600" :
-                                i === 1 ? "border-amber-300 text-amber-600" :
-                                i === 2 ? "border-green-300 text-green-600" :
-                                "border-emerald-300 text-emerald-600"
-                              }`}
-                            >
-                              {count}
-                            </Badge>
-                          )
-                        ))}
-                      </div>
-                    </TableCell>
-                  );
-                })}
-              </TableRow>
             </TableBody>
           </Table>
         </div>
