@@ -94,8 +94,34 @@ export function AthleteSpaceCalendar({ playerId, categoryId, sportType }: Props)
   const daySessions = sessions.filter(s => s.session_date === selectedDateStr);
   const dayMatches = matches.filter(m => m.match_date === selectedDateStr);
 
-  // Fetch exercises for day sessions
+  // Fetch blocks for day sessions
   const daySessionIds = daySessions.map(s => s.id);
+  const { data: sessionBlocks = [] } = useQuery({
+    queryKey: ["athlete-calendar-blocks", daySessionIds],
+    queryFn: async () => {
+      if (daySessionIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from("training_session_blocks")
+        .select("training_session_id, training_type, block_order")
+        .in("training_session_id", daySessionIds)
+        .order("block_order");
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: daySessionIds.length > 0,
+  });
+
+  const blocksBySession = useMemo(() => {
+    return sessionBlocks.reduce((acc, block) => {
+      if (!acc[block.training_session_id]) acc[block.training_session_id] = [];
+      if (!acc[block.training_session_id].some((b: { training_type: string }) => b.training_type === block.training_type)) {
+        acc[block.training_session_id].push(block);
+      }
+      return acc;
+    }, {} as Record<string, typeof sessionBlocks>);
+  }, [sessionBlocks]);
+
+  // Fetch exercises for day sessions
   const { data: sessionExercises = [] } = useQuery({
     queryKey: ["athlete-calendar-exercises", daySessionIds],
     queryFn: async () => {
