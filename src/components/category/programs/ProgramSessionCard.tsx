@@ -1609,16 +1609,27 @@ export function ProgramSessionCard({
           </div>
         )}
 
-        {/* Tempo field */}
+        {/* Tempo & Notes */}
         {!exercise.is_rm_test && (
-          <div className="flex items-center gap-2 pt-2 border-t">
-            <label className="text-xs text-muted-foreground">Tempo</label>
-            <Input
-              value={exercise.tempo || ""}
-              onChange={(e) => updateExercise(index, "tempo", e.target.value)}
-              placeholder="3-1-2-0"
-              className="h-7 text-xs w-24"
-            />
+          <div className="flex items-center gap-4 pt-2 border-t flex-wrap">
+            <div className="flex items-center gap-2">
+              <label className="text-xs text-muted-foreground">Tempo</label>
+              <Input
+                value={exercise.tempo || ""}
+                onChange={(e) => updateExercise(index, "tempo", e.target.value)}
+                placeholder="3-1-2-0"
+                className="h-7 text-xs w-24"
+              />
+            </div>
+            <div className="flex items-center gap-2 flex-1 min-w-[200px]">
+              <label className="text-xs text-muted-foreground whitespace-nowrap">Notes</label>
+              <Input
+                value={exercise.notes || ""}
+                onChange={(e) => updateExercise(index, "notes", e.target.value)}
+                placeholder="Consignes, remarques..."
+                className="h-7 text-xs flex-1"
+              />
+            </div>
           </div>
         )}
       </div>
