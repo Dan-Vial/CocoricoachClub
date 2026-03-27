@@ -1,11 +1,10 @@
 import { Tabs, TabsContent } from "@/components/ui/tabs";
-import { BarChart3, Dumbbell, History, Zap, Lock, Brain, Target } from "lucide-react";
+import { BarChart3, Dumbbell, History, Zap, Lock, Brain } from "lucide-react";
 import { AnalyticsTab } from "@/components/analytics/AnalyticsTab";
 import { PhysicalPreparationTab } from "@/components/category/PhysicalPreparationTab";
 import { SessionHistoryTimeline } from "@/components/category/history/SessionHistoryTimeline";
 import { TrainingLoadTab } from "@/components/training-load/TrainingLoadTab";
 import { MentalPerformanceSection } from "@/components/category/mental/MentalPerformanceSection";
-import { BenchmarkTab } from "@/components/category/benchmarks/BenchmarkTab";
 import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
