@@ -59,6 +59,7 @@ interface Round {
   ranking?: number;
   gap_to_first?: string;
   // Bowling specific
+  bowlingCategory?: string;
   isLocked?: boolean;
   bowlingFrames?: FrameData[];
 }
@@ -97,9 +98,17 @@ const JUDO_PHASES = [
   { value: "finale", label: "Finale" },
 ];
 
-// Bowling phases
+// Bowling competition categories
+const BOWLING_COMPETITION_CATEGORIES = [
+  { value: "individuelle", label: "Individuelle" },
+  { value: "doublette", label: "Doublette" },
+  { value: "equipe_4", label: "Équipe de 4" },
+  { value: "masters", label: "Masters" },
+];
+
+// Bowling phases (subcategories)
 const BOWLING_PHASES = [
-  { value: "qualification", label: "Qualification" },
+  { value: "qualification", label: "Qualifications" },
   { value: "round_robin", label: "Round Robin" },
   { value: "quart", label: "Quart de finale" },
   { value: "demi", label: "Demi-finale" },
@@ -335,8 +344,9 @@ export function CompetitionRoundsDialog({
             const statData = r.competition_round_stats?.[0]?.stat_data as Record<string, any> || {};
             // Extract bowling frames if stored in stat_data
             const bowlingFrames = statData.bowlingFrames as FrameData[] | undefined;
-            // Remove bowlingFrames from stats object for display
-            const { bowlingFrames: _, ...cleanStats } = statData;
+            const bowlingCategory = statData.bowlingCategory as string | undefined;
+            // Remove internal fields from stats object for display
+            const { bowlingFrames: _, bowlingCategory: _bc, ...cleanStats } = statData;
             
             return {
               id: r.id,
@@ -356,6 +366,7 @@ export function CompetitionRoundsDialog({
               // For bowling: mark as locked if it has an id (already saved), restore frames
               isLocked: !!r.id,
               bowlingFrames: bowlingFrames,
+              bowlingCategory: bowlingCategory,
             };
           }),
         };
@@ -430,9 +441,11 @@ export function CompetitionRoundsDialog({
           if (roundError) throw roundError;
 
           // Insert stats for this round (include bowling frames if present)
-          const statDataToSave = round.bowlingFrames 
-            ? { ...round.stats, bowlingFrames: round.bowlingFrames }
-            : round.stats;
+          const statDataToSave = {
+            ...round.stats,
+            ...(round.bowlingFrames ? { bowlingFrames: round.bowlingFrames } : {}),
+            ...(round.bowlingCategory ? { bowlingCategory: round.bowlingCategory } : {}),
+          };
           
           if (Object.keys(statDataToSave).length > 0) {
             const insertData = {
@@ -839,8 +852,13 @@ export function CompetitionRoundsDialog({
                             <CardTitle className="text-base flex items-center gap-2">
                               {isAviron ? <Ship className="h-4 w-4" /> : isJudo ? <Swords className="h-4 w-4" /> : <Circle className="h-4 w-4" />}
                               {roundLabel} {round.round_number}
+                              {isBowling && round.bowlingCategory && (
+                                <Badge variant="secondary" className="ml-1">
+                                  {BOWLING_COMPETITION_CATEGORIES.find(c => c.value === round.bowlingCategory)?.label || round.bowlingCategory}
+                                </Badge>
+                              )}
                               {round.phase && (
-                                <Badge variant="outline" className="ml-2">
+                                <Badge variant="outline" className="ml-1">
                                   {phases.find(p => p.value === round.phase)?.label || round.phase}
                                 </Badge>
                               )}
@@ -1065,11 +1083,30 @@ export function CompetitionRoundsDialog({
                             </div>
                           )}
 
-                          {/* Bowling: Phase, Adversaire, then score sheet */}
+                          {/* Bowling: Category, Phase, Adversaire, then score sheet */}
                           {isBowling && (
                             <div className={`space-y-4 ${round.isLocked ? "opacity-80" : ""}`}>
-                              {/* Phase and opponent info - always visible */}
-                              <div className={`grid grid-cols-2 gap-3 ${round.isLocked ? "pointer-events-none" : ""}`}>
+                              {/* Category, Phase, and opponent info - always visible */}
+                              <div className={`grid grid-cols-3 gap-3 ${round.isLocked ? "pointer-events-none" : ""}`}>
+                                <div>
+                                  <Label className="text-xs">Catégorie</Label>
+                                  <Select
+                                    value={round.bowlingCategory || ""}
+                                    onValueChange={(value) => updateRound(selectedPlayer.playerId, round.round_number, { bowlingCategory: value })}
+                                    disabled={round.isLocked}
+                                  >
+                                    <SelectTrigger className="h-8">
+                                      <SelectValue placeholder="Sélectionner..." />
+                                    </SelectTrigger>
+                                    <SelectContent className="z-[200]">
+                                      {BOWLING_COMPETITION_CATEGORIES.map((cat) => (
+                                        <SelectItem key={cat.value} value={cat.value}>
+                                          {cat.label}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
                                 <div>
                                   <Label className="text-xs">Phase</Label>
                                   <Select
