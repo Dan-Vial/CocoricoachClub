@@ -366,6 +366,7 @@ export function CompetitionRoundsDialog({
               // For bowling: mark as locked if it has an id (already saved), restore frames
               isLocked: !!r.id,
               bowlingFrames: bowlingFrames,
+              bowlingCategory: bowlingCategory,
             };
           }),
         };
