@@ -23,7 +23,9 @@ interface Notification {
   is_read: boolean;
   created_at: string;
   notification_type: string;
+  notification_subtype: string | null;
   injury_id: string | null;
+  metadata: any;
 }
 
 interface PendingUser {
