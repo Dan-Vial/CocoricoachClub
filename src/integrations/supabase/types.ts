@@ -4686,6 +4686,7 @@ export type Database = {
           is_primary: boolean | null
           joined_at: string | null
           player_id: string
+          status: string
         }
         Insert: {
           category_id: string
@@ -4694,6 +4695,7 @@ export type Database = {
           is_primary?: boolean | null
           joined_at?: string | null
           player_id: string
+          status?: string
         }
         Update: {
           category_id?: string
@@ -4702,6 +4704,7 @@ export type Database = {
           is_primary?: boolean | null
           joined_at?: string | null
           player_id?: string
+          status?: string
         }
         Relationships: [
           {
@@ -9083,6 +9086,10 @@ export type Database = {
       }
       renew_invitation: {
         Args: { _invitation_id: string; _table_name: string }
+        Returns: Json
+      }
+      respond_to_category_link: {
+        Args: { _player_category_id: string; _response: string }
         Returns: Json
       }
       user_is_conversation_admin: {
