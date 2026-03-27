@@ -147,9 +147,19 @@ export default function AthleteSpace() {
       }
 
       if (!players || players.length === 0) {
-        // If super admin, show player selector instead of redirecting
+        // If super admin or staff member, show player selector
         const { data: isSA } = await supabase.rpc("is_super_admin", { _user_id: user!.id });
         if (isSA) {
+          setShowPlayerSelector(true);
+          return;
+        }
+        // Check if user is a club/category member (staff)
+        const { data: clubMemberships } = await supabase
+          .from("club_members")
+          .select("club_id")
+          .eq("user_id", user!.id)
+          .limit(1);
+        if (clubMemberships && clubMemberships.length > 0) {
           setShowPlayerSelector(true);
           return;
         }
