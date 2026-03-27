@@ -37,20 +37,6 @@ function PerformanceDisabledMessage() {
 export function PerformanceTab({ categoryId }: PerformanceTabProps) {
   const { isViewer } = useViewerModeContext();
 
-  const { data: category } = useQuery({
-    queryKey: ["category-sport-type-perf", categoryId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("categories")
-        .select("rugby_type")
-        .eq("id", categoryId)
-        .single();
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  const sportType = category?.rugby_type || "";
 
   if (isViewer) {
     return <PerformanceDisabledMessage />;
