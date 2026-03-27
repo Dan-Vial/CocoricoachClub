@@ -64,9 +64,9 @@ export default function AthleteSpace() {
     enabled: !!user?.id,
   });
 
-  // Fetch all players for super admin selector
+  // Fetch players for selector (super admin sees all, staff sees their categories)
   const { data: allPlayers = [] } = useQuery({
-    queryKey: ["all-players-for-selector"],
+    queryKey: ["all-players-for-selector", user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("players")
@@ -75,7 +75,7 @@ export default function AthleteSpace() {
       if (error) throw error;
       return data || [];
     },
-    enabled: showPlayerSelector && !!isSuperAdmin,
+    enabled: showPlayerSelector && !!user?.id,
   });
 
   const queryCategoryId = searchParams.get("categoryId");
@@ -91,38 +91,41 @@ export default function AthleteSpace() {
 
   const fetchAthleteData = async () => {
     try {
-      // If super admin viewing a specific player
+      // If staff/admin viewing a specific player via ?playerId=
       if (queryPlayerId) {
-        const { data: isSA } = await supabase.rpc("is_super_admin", { _user_id: user!.id });
-        if (isSA) {
-          setIsSuperAdminView(true);
-          const { data: player, error } = await supabase
-            .from("players")
-            .select(`
-              id, name, first_name, category_id, position, avatar_url,
-              categories!inner(name, rugby_type, cover_image_url, clubs!inner(name))
-            `)
-            .eq("id", queryPlayerId)
-            .single();
+        const { data: player, error } = await supabase
+          .from("players")
+          .select(`
+            id, name, first_name, category_id, position, avatar_url,
+            categories!inner(name, rugby_type, cover_image_url, clubs!inner(name))
+          `)
+          .eq("id", queryPlayerId)
+          .single();
 
-          if (error || !player) {
-            navigate("/");
+        if (!error && player) {
+          // Check if user is super admin or has access to this category
+          const { data: isSA } = await supabase.rpc("is_super_admin", { _user_id: user!.id });
+          const { data: hasAccess } = await supabase.rpc("can_access_category", { 
+            _user_id: user!.id, 
+            _category_id: player.category_id 
+          });
+
+          if (isSA || hasAccess) {
+            setIsSuperAdminView(true);
+            setAthleteInfo({
+              player_id: player.id,
+              player_name: player.name,
+              player_first_name: player.first_name || undefined,
+              category_id: player.category_id,
+              category_name: (player.categories as any).name,
+              club_name: (player.categories as any).clubs.name,
+              sport_type: (player.categories as any).rugby_type,
+              position: player.position || undefined,
+              avatar_url: player.avatar_url || undefined,
+              cover_image_url: (player.categories as any).cover_image_url || undefined,
+            });
             return;
           }
-
-          setAthleteInfo({
-            player_id: player.id,
-            player_name: player.name,
-            player_first_name: player.first_name || undefined,
-            category_id: player.category_id,
-            category_name: (player.categories as any).name,
-            club_name: (player.categories as any).clubs.name,
-            sport_type: (player.categories as any).rugby_type,
-            position: player.position || undefined,
-            avatar_url: player.avatar_url || undefined,
-            cover_image_url: (player.categories as any).cover_image_url || undefined,
-          });
-          return;
         }
       }
 
@@ -144,9 +147,19 @@ export default function AthleteSpace() {
       }
 
       if (!players || players.length === 0) {
-        // If super admin, show player selector instead of redirecting
+        // If super admin or staff member, show player selector
         const { data: isSA } = await supabase.rpc("is_super_admin", { _user_id: user!.id });
         if (isSA) {
+          setShowPlayerSelector(true);
+          return;
+        }
+        // Check if user is a club/category member (staff)
+        const { data: clubMemberships } = await supabase
+          .from("club_members")
+          .select("club_id")
+          .eq("user_id", user!.id)
+          .limit(1);
+        if (clubMemberships && clubMemberships.length > 0) {
           setShowPlayerSelector(true);
           return;
         }
