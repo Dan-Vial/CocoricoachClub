@@ -7,6 +7,8 @@ import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { ColoredNavTabsList } from "@/components/ui/colored-nav-tabs";
 import * as TabsPrimitive from "@radix-ui/react-tabs";
 import { cn } from "@/lib/utils";
+import { BenchmarkManager } from "./benchmarks/BenchmarkManager";
+import { BenchmarkComparison } from "./benchmarks/BenchmarkComparison";
 
 interface TestsTabProps {
   categoryId: string;
@@ -74,6 +76,8 @@ export function TestsTab({ categoryId, sportType }: TestsTabProps) {
     return { nonRehab, hasRehab };
   }, [sportType]);
 
+  const benchmarkColorIndex = testCategories.nonRehab.length + (testCategories.hasRehab ? 2 : 1);
+
   return (
     <Card className="bg-gradient-card shadow-md">
       <CardHeader>
@@ -99,6 +103,11 @@ export function TestsTab({ categoryId, sportType }: TestsTabProps) {
                   colorIndex={testCategories.nonRehab.length + 1}
                 />
               )}
+              <TestCategoryTrigger
+                value="benchmarks"
+                label="📊 Benchmarks"
+                colorIndex={benchmarkColorIndex}
+              />
             </ColoredNavTabsList>
             <ScrollBar orientation="horizontal" />
           </ScrollArea>
@@ -126,6 +135,11 @@ export function TestsTab({ categoryId, sportType }: TestsTabProps) {
               />
             </TabsContent>
           )}
+
+          <TabsContent value="benchmarks" className="space-y-6">
+            <BenchmarkManager categoryId={categoryId} sportType={sportType} />
+            <BenchmarkComparison categoryId={categoryId} sportType={sportType} />
+          </TabsContent>
         </Tabs>
       </CardContent>
     </Card>

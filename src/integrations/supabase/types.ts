@@ -545,9 +545,12 @@ export type Database = {
       benchmarks: {
         Row: {
           applies_to: string | null
+          body_weight_multiplier: number | null
           category_id: string
           created_at: string | null
           created_by: string | null
+          filter_type: string | null
+          filter_value: string | null
           id: string
           level_1_label: string
           level_1_max: number | null
@@ -557,18 +560,23 @@ export type Database = {
           level_3_max: number | null
           level_4_label: string
           level_4_max: number | null
+          levels: Json | null
           lower_is_better: boolean
           name: string
           test_category: string
           test_type: string
           unit: string | null
           updated_at: string | null
+          use_body_weight_ratio: boolean | null
         }
         Insert: {
           applies_to?: string | null
+          body_weight_multiplier?: number | null
           category_id: string
           created_at?: string | null
           created_by?: string | null
+          filter_type?: string | null
+          filter_value?: string | null
           id?: string
           level_1_label?: string
           level_1_max?: number | null
@@ -578,18 +586,23 @@ export type Database = {
           level_3_max?: number | null
           level_4_label?: string
           level_4_max?: number | null
+          levels?: Json | null
           lower_is_better?: boolean
           name: string
           test_category: string
           test_type: string
           unit?: string | null
           updated_at?: string | null
+          use_body_weight_ratio?: boolean | null
         }
         Update: {
           applies_to?: string | null
+          body_weight_multiplier?: number | null
           category_id?: string
           created_at?: string | null
           created_by?: string | null
+          filter_type?: string | null
+          filter_value?: string | null
           id?: string
           level_1_label?: string
           level_1_max?: number | null
@@ -599,12 +612,14 @@ export type Database = {
           level_3_max?: number | null
           level_4_label?: string
           level_4_max?: number | null
+          levels?: Json | null
           lower_is_better?: boolean
           name?: string
           test_category?: string
           test_type?: string
           unit?: string | null
           updated_at?: string | null
+          use_body_weight_ratio?: boolean | null
         }
         Relationships: [
           {
@@ -1773,6 +1788,96 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      custom_test_categories: {
+        Row: {
+          category_id: string
+          created_at: string | null
+          custom_test_id: string
+          id: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string | null
+          custom_test_id: string
+          id?: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string | null
+          custom_test_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_test_categories_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "custom_test_categories_custom_test_id_fkey"
+            columns: ["custom_test_id"]
+            isOneToOne: false
+            referencedRelation: "custom_tests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      custom_tests: {
+        Row: {
+          club_id: string
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          is_time: boolean | null
+          name: string
+          test_category: string
+          unit: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          club_id: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_time?: boolean | null
+          name: string
+          test_category: string
+          unit?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          club_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_time?: boolean | null
+          name?: string
+          test_category?: string
+          unit?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_tests_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "admin_all_clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "custom_tests_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
             referencedColumns: ["id"]
           },
         ]
