@@ -187,6 +187,11 @@ export function LinkExistingPlayerDialog({
                           {catName}
                         </Badge>
                         <span className="text-xs text-muted-foreground">{clubName}</span>
+                        {player.user_id && (
+                          <Badge variant="outline" className="text-[10px] h-4 px-1.5 text-primary border-primary/30">
+                            Compte actif
+                          </Badge>
+                        )}
                       </div>
                     </div>
                     <Button
