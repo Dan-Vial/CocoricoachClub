@@ -294,10 +294,21 @@ export function AthleteSpaceCalendar({ playerId, categoryId, sportType }: Props)
                                 <div className="flex items-center gap-2">
                                   <Activity className="h-4 w-4 text-muted-foreground" />
                                   <div>
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-2 flex-wrap">
                                       <p className="font-medium text-sm">
                                         {getTrainingTypeLabel(session.training_type)}
                                       </p>
+                                      {blocks.length > 0 && blocks.some(b => b.training_type !== session.training_type) && (
+                                        <div className="flex gap-1 flex-wrap">
+                                          {blocks
+                                            .filter(b => b.training_type !== session.training_type)
+                                            .map((b, i) => (
+                                              <Badge key={i} variant="outline" className="text-[10px] h-4 px-1.5">
+                                                {getTrainingTypeLabel(b.training_type)}
+                                              </Badge>
+                                            ))}
+                                        </div>
+                                      )}
                                       {isAthleteSession && (
                                         <Badge
                                           className="text-[10px] h-4 px-1.5 border"
