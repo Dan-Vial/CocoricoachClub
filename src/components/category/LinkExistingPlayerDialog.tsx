@@ -191,7 +191,7 @@ export function LinkExistingPlayerDialog({
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => linkPlayer.mutate(player.id)}
+                      onClick={() => linkPlayer.mutate({ playerId: player.id, hasAccount: !!player.user_id })}
                       disabled={linkPlayer.isPending}
                       className="gap-1.5"
                     >
