@@ -386,7 +386,7 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
 
       if (awcrError || !awcrRow) throw awcrError || new Error("Erreur AWCR");
 
-      if (isPrecisionSession) {
+      if (isBowlingPrecision) {
         const successRate = Math.round((successesValue / attemptsValue) * 10000) / 100;
         const { error: spareError } = await supabase.from("bowling_spare_training").insert({
           player_id: playerId,
@@ -402,6 +402,23 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
         if (spareError) {
           await supabase.from("awcr_tracking").delete().eq("id", awcrRow.id);
           throw spareError;
+        }
+      } else if (isGenericPrecision && attemptsValue > 0) {
+        // Insert into precision_training table
+        const { error: precisionError } = await supabase.from("precision_training").insert({
+          player_id: playerId,
+          category_id: categoryId,
+          session_date: today,
+          training_session_id: selectedSession,
+          exercise_type_id: precisionExerciseId || null,
+          exercise_label: precisionExerciseLabel || "Précision",
+          attempts: attemptsValue,
+          successes: successesValue,
+        });
+
+        if (precisionError) {
+          await supabase.from("awcr_tracking").delete().eq("id", awcrRow.id);
+          throw precisionError;
         }
       }
       // Insert HRV data if provided
