@@ -689,6 +689,67 @@ export function SessionFormDialog({
         }
       }
 
+      // --- ATHLETE MODE: use edge function ---
+      if (isAthleteMode) {
+        if (!athletePlayerId) throw new Error("Session expirée. Reconnecte-toi.");
+        const { data: authData } = await supabase.auth.getSession();
+        const accessToken = authData.session?.access_token;
+        if (!accessToken) throw new Error("Session expirée. Reconnecte-toi.");
+
+        const athleteBlocks = sessionBlocks
+          .filter((block) => block.training_type)
+          .map((block, idx) => ({
+            block_order: idx,
+            start_time: block.start_time || null,
+            end_time: block.end_time || null,
+            training_type: block.training_type,
+            intensity: block.intensity ?? null,
+            notes: block.notes || null,
+            session_type: block.session_type || null,
+            objective: block.objective || null,
+            target_intensity: block.target_intensity || null,
+            volume: block.volume || null,
+            contact_charge: block.contact_charge || null,
+          }));
+
+        const validExercisesForAthlete = exercises
+          .filter(e => e.exercise_name.trim())
+          .map((ex, idx) => ({
+            exercise_name: ex.exercise_name,
+            exercise_category: ex.exercise_category,
+            sets: ex.sets,
+            reps: ex.reps,
+            weight_kg: ex.weight_mode === "kg" ? ex.weight_kg : null,
+            rest_seconds: ex.rest_seconds,
+            notes: ex.weight_mode === "percent_rm" && ex.weight_percent_rm
+              ? `${ex.weight_percent_rm}% RM${ex.notes ? ` - ${ex.notes}` : ""}`
+              : (ex.notes || null),
+            order_index: idx,
+            library_exercise_id: ex.library_exercise_id,
+          }));
+
+        const { data: payload, error } = await supabase.functions.invoke("athlete-create-session", {
+          headers: { Authorization: `Bearer ${accessToken}` },
+          body: {
+            category_id: categoryId,
+            player_id: athletePlayerId,
+            session_date: date,
+            session_start_time: startTime || null,
+            session_end_time: endTime || null,
+            training_type: mainType || "autre",
+            intensity: mainIntensity,
+            notes: finalNotes || null,
+            session_blocks: athleteBlocks,
+            exercises: validExercisesForAthlete,
+          },
+        });
+
+        if (error) throw new Error(error.message || "Erreur lors de la création de la séance");
+        if (!payload?.success) throw new Error(payload?.error || "Erreur lors de la création de la séance");
+        return payload.session_id;
+      }
+
+      // --- STAFF MODE ---
       const sessionData = {
         category_id: categoryId,
         session_date: date,
