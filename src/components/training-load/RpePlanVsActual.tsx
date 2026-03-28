@@ -233,7 +233,7 @@ export function RpePlanVsActual({ categoryId, onPlayerClick }: RpePlanVsActualPr
     return Array.from(playerAggregates.entries())
       .map(([id, data]) => ({
         playerId: id,
-        name: data.name.split(" ")[0], // First name only for chart
+        name: data.name,
         planned: Math.round((data.avgPlanned / data.count) * 10) / 10,
         actual: Math.round((data.avgActual / data.count) * 10) / 10,
         difference: Math.round(((data.avgActual - data.avgPlanned) / data.count) * 10) / 10,
