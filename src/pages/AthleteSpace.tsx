@@ -8,7 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, User, LogOut, Activity, Heart, BarChart3, Target, Video, Shield, ArrowLeft, Search, ChevronRight, MessageSquare, Settings, CalendarDays, FlaskConical } from "lucide-react";
+import { Loader2, User, LogOut, Activity, Heart, BarChart3, Target, Video, Shield, ArrowLeft, Search, ChevronRight, MessageSquare, Settings, CalendarDays, FlaskConical, CircleDot } from "lucide-react";
+import { PlayerBowlingArsenal } from "@/components/bowling/PlayerBowlingArsenal";
 import { NAV_COLORS } from "@/components/ui/colored-nav-tabs";
 import { AthletePWAInstallPopup } from "@/components/athlete/AthletePWAInstallPopup";
 import { AthleteSpaceDashboard } from "@/components/athlete-space/AthleteSpaceDashboard";
@@ -409,6 +410,8 @@ export default function AthleteSpace() {
 
   if (!athleteInfo) return null;
 
+  const isBowling = (athleteInfo.sport_type || "").toLowerCase().includes("bowling");
+
   const displayName = athleteInfo.player_first_name
     ? `${athleteInfo.player_first_name} ${athleteInfo.player_name}`
     : athleteInfo.player_name;
@@ -578,8 +581,23 @@ export default function AthleteSpace() {
                  }}
                >
                  <Shield className="h-3.5 w-3.5" />
-                 Santé
-              </TabsTrigger>
+                  Santé
+               </TabsTrigger>
+               {isBowling && (
+                 <TabsTrigger 
+                   value="arsenal"
+                   className="athlete-tab shrink-0 gap-1 px-2 py-1.5 rounded-xl font-semibold text-xs transition-all duration-200 data-[state=active]:shadow-lg"
+                   style={{
+                     color: NAV_COLORS.programmation.base,
+                     backgroundColor: `${NAV_COLORS.programmation.base}15`,
+                     borderBottom: `3px solid ${NAV_COLORS.programmation.base}`,
+                     ["--tab-color" as string]: NAV_COLORS.programmation.base,
+                   }}
+                 >
+                   <CircleDot className="h-3.5 w-3.5" />
+                   Arsenal
+                 </TabsTrigger>
+               )}
                {(
                   <TabsTrigger 
                     value="messaging"
@@ -678,7 +696,14 @@ export default function AthleteSpace() {
             />
           </TabsContent>
 
-
+          {isBowling && (
+            <TabsContent value="arsenal">
+              <PlayerBowlingArsenal
+                playerId={athleteInfo.player_id}
+                categoryId={athleteInfo.category_id}
+              />
+            </TabsContent>
+          )}
           <TabsContent value="messaging">
               <MessagingTab categoryId={athleteInfo.category_id} isAthlete={true} />
             </TabsContent>
