@@ -1041,6 +1041,10 @@ export function SessionFormDialog({
     setActiveTab("details");
   };
 
+  const handleTypeChange = (newType: string) => {
+    setType(newType);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
