@@ -8474,6 +8474,7 @@ export type Database = {
           session_date: string
           session_end_time: string | null
           session_start_time: string | null
+          test_reminder_id: string | null
           training_type: string
         }
         Insert: {
@@ -8487,6 +8488,7 @@ export type Database = {
           session_date: string
           session_end_time?: string | null
           session_start_time?: string | null
+          test_reminder_id?: string | null
           training_type: string
         }
         Update: {
@@ -8500,6 +8502,7 @@ export type Database = {
           session_date?: string
           session_end_time?: string | null
           session_start_time?: string | null
+          test_reminder_id?: string | null
           training_type?: string
         }
         Relationships: [
@@ -8522,6 +8525,13 @@ export type Database = {
             columns: ["created_by_player_id"]
             isOneToOne: false
             referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_sessions_test_reminder_id_fkey"
+            columns: ["test_reminder_id"]
+            isOneToOne: false
+            referencedRelation: "test_reminders"
             referencedColumns: ["id"]
           },
         ]
