@@ -52,6 +52,7 @@ export function SessionFeedbackDialog({
 }: SessionFeedbackDialogProps) {
   const [rpeValues, setRpeValues] = useState<Record<string, { rpe: string; duration: string }>>({});
   const [sessionTests, setSessionTests] = useState<SessionTest[]>([]);
+  const [weightLogs, setWeightLogs] = useState<Record<string, Record<string, { weight: string; sets: string; reps: string }>>>({});
   const [activeTab, setActiveTab] = useState(sessionType === "test" ? "tests" : "rpe");
   const queryClient = useQueryClient();
 
