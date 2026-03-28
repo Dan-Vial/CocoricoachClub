@@ -37,7 +37,7 @@ export function AvailabilityScoreTab({ categoryId }: AvailabilityScoreTabProps) 
       // Get all players
       const { data: players } = await supabase
         .from("players")
-        .select("id, name, avatar_url, position")
+        .select("id, first_name, name, avatar_url, position")
         .eq("category_id", categoryId);
 
       if (!players) return [];
