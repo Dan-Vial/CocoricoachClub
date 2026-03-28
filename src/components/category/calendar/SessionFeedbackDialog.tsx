@@ -388,24 +388,25 @@ export function SessionFeedbackDialog({
       queryClient.invalidateQueries({ queryKey: ["generic_tests", categoryId] });
       queryClient.invalidateQueries({ queryKey: ["generic_tests_discovery", categoryId] });
       queryClient.invalidateQueries({ queryKey: ["today_session_tests"] });
-      // Invalidate analytics caches
       queryClient.invalidateQueries({ queryKey: ["generic-tests-evolution", categoryId] });
       queryClient.invalidateQueries({ queryKey: ["generic-tests-multi-comparison", categoryId] });
+      queryClient.invalidateQueries({ queryKey: ["athlete-exercise-logs"] });
+      queryClient.invalidateQueries({ queryKey: ["athlete-exercise-logs-dashboard"] });
       
-      let message = "";
-      if (result.rpeCount > 0) message += `${result.rpeCount} RPE enregistré(s)`;
-      if (result.testCount > 0) {
-        if (message) message += " et ";
-        message += `${result.testCount} résultat(s) de test`;
-      }
-      if (message) {
-        toast.success(message);
+      const parts: string[] = [];
+      if (result.rpeCount > 0) parts.push(`${result.rpeCount} RPE`);
+      if (result.testCount > 0) parts.push(`${result.testCount} test(s)`);
+      if (result.weightCount > 0) parts.push(`${result.weightCount} charge(s)`);
+      
+      if (parts.length > 0) {
+        toast.success(`Enregistré: ${parts.join(", ")}`);
       } else {
         toast.info("Aucune donnée à enregistrer");
       }
       
       setRpeValues({});
       setSessionTests([]);
+      setWeightLogs({});
       onOpenChange(false);
     },
     onError: (error: Error) => {
