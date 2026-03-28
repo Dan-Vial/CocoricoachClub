@@ -22,7 +22,7 @@ import { NAV_COLORS } from "@/components/ui/colored-nav-tabs";
 import { cn } from "@/lib/utils";
 import { getTrainingTypeLabel } from "@/lib/constants/trainingTypes";
 import { GroupedExerciseList } from "@/components/category/GroupedExerciseList";
-import { AddSessionDialog } from "@/components/category/AddSessionDialog";
+import { SessionFormDialog } from "@/components/category/sessions/SessionFormDialog";
 
 interface Props {
   playerId: string;
@@ -388,7 +388,7 @@ export function AthleteSpaceCalendar({ playerId, categoryId, sportType }: Props)
         </CardContent>
       </Card>
 
-      <AddSessionDialog
+      <SessionFormDialog
         open={isCreateOpen}
         onOpenChange={setIsCreateOpen}
         categoryId={categoryId}

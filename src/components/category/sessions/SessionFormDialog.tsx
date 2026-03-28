@@ -93,6 +93,8 @@ interface SessionFormDialogProps {
   categoryId: string;
   editSession?: any | null;
   defaultDate?: string; // Format: "yyyy-MM-dd"
+  /** When set, the dialog runs in "athlete mode": player is pre-selected & locked, session is tagged as athlete-created */
+  athletePlayerId?: string;
 }
 
 // Erg-specific data structure for cardio machines
@@ -254,7 +256,9 @@ export function SessionFormDialog({
   categoryId,
   editSession,
   defaultDate,
+  athletePlayerId,
 }: SessionFormDialogProps) {
+  const isAthleteMode = !!athletePlayerId;
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
@@ -685,6 +689,67 @@ export function SessionFormDialog({
         }
       }
 
+      // --- ATHLETE MODE: use edge function ---
+      if (isAthleteMode) {
+        if (!athletePlayerId) throw new Error("Session expirée. Reconnecte-toi.");
+        const { data: authData } = await supabase.auth.getSession();
+        const accessToken = authData.session?.access_token;
+        if (!accessToken) throw new Error("Session expirée. Reconnecte-toi.");
+
+        const athleteBlocks = sessionBlocks
+          .filter((block) => block.training_type)
+          .map((block, idx) => ({
+            block_order: idx,
+            start_time: block.start_time || null,
+            end_time: block.end_time || null,
+            training_type: block.training_type,
+            intensity: block.intensity ?? null,
+            notes: block.notes || null,
+            session_type: block.session_type || null,
+            objective: block.objective || null,
+            target_intensity: block.target_intensity || null,
+            volume: block.volume || null,
+            contact_charge: block.contact_charge || null,
+          }));
+
+        const validExercisesForAthlete = exercises
+          .filter(e => e.exercise_name.trim())
+          .map((ex, idx) => ({
+            exercise_name: ex.exercise_name,
+            exercise_category: ex.exercise_category,
+            sets: ex.sets,
+            reps: ex.reps,
+            weight_kg: ex.weight_mode === "kg" ? ex.weight_kg : null,
+            rest_seconds: ex.rest_seconds,
+            notes: ex.weight_mode === "percent_rm" && ex.weight_percent_rm
+              ? `${ex.weight_percent_rm}% RM${ex.notes ? ` - ${ex.notes}` : ""}`
+              : (ex.notes || null),
+            order_index: idx,
+            library_exercise_id: ex.library_exercise_id,
+          }));
+
+        const { data: payload, error } = await supabase.functions.invoke("athlete-create-session", {
+          headers: { Authorization: `Bearer ${accessToken}` },
+          body: {
+            category_id: categoryId,
+            player_id: athletePlayerId,
+            session_date: date,
+            session_start_time: startTime || null,
+            session_end_time: endTime || null,
+            training_type: mainType || "autre",
+            intensity: mainIntensity,
+            notes: finalNotes || null,
+            session_blocks: athleteBlocks,
+            exercises: validExercisesForAthlete,
+          },
+        });
+
+        if (error) throw new Error(error.message || "Erreur lors de la création de la séance");
+        if (!payload?.success) throw new Error(payload?.error || "Erreur lors de la création de la séance");
+        return payload.session_id;
+      }
+
+      // --- STAFF MODE ---
       const sessionData = {
         category_id: categoryId,
         session_date: date,
@@ -905,7 +970,6 @@ export function SessionFormDialog({
       queryClient.invalidateQueries({ queryKey: ["event-participants-edit"] });
       queryClient.invalidateQueries({ queryKey: ["generic_tests", categoryId] });
       queryClient.invalidateQueries({ queryKey: ["generic_tests_discovery", categoryId] });
-      // Invalidate analytics caches
       queryClient.invalidateQueries({ queryKey: ["generic-tests-evolution", categoryId] });
       queryClient.invalidateQueries({ queryKey: ["generic-tests-multi-comparison", categoryId] });
       queryClient.invalidateQueries({ queryKey: ["session-blocks"] });
@@ -915,13 +979,17 @@ export function SessionFormDialog({
       queryClient.invalidateQueries({ queryKey: ["today_sessions_decision", categoryId] });
       queryClient.invalidateQueries({ queryKey: ["tomorrow_sessions_decision", categoryId] });
       queryClient.invalidateQueries({ queryKey: ["today_attendance_decision", categoryId] });
+      if (isAthleteMode) {
+        queryClient.invalidateQueries({ queryKey: ["athlete-calendar-sessions"] });
+        queryClient.invalidateQueries({ queryKey: ["athlete-space-sessions"] });
+      }
       
       const exerciseCount = exercises.filter((e) => e.exercise_name.trim()).length;
       const gpsCount = gpsData.filter(d => d.matchedPlayer).length;
       const testCount = sessionTests.filter(t => t.test_type && Object.values(t.player_results).some(v => v)).length;
       const blockCount = sessionBlocks.filter(b => b.training_type).length;
       
-      let successMessage = editSession ? "Séance modifiée" : "Séance créée";
+      let successMessage = isAthleteMode ? "Séance ajoutée" : (editSession ? "Séance modifiée" : "Séance créée");
       if (blockCount > 0) successMessage += ` avec ${blockCount} bloc(s)`;
       if (exerciseCount > 0) successMessage += ` et ${exerciseCount} exercice(s)`;
       if (testCount > 0) successMessage += ` et ${testCount} test(s)`;
@@ -929,8 +997,8 @@ export function SessionFormDialog({
       
       toast.success(successMessage);
 
-      // 🔔 Send push notifications to participants (creation only)
-      if (!editSession && returnedSessionId) {
+      // 🔔 Send push notifications to participants (creation only, staff mode)
+      if (!isAthleteMode && !editSession && returnedSessionId) {
         const mainType = sessionBlocks.length > 0 ? sessionBlocks[0].training_type : type;
         const participantIds = playerSelectionMode === "specific" && selectedPlayers.length > 0
           ? selectedPlayers
@@ -973,6 +1041,10 @@ export function SessionFormDialog({
     setActiveTab("details");
   };
 
+  const handleTypeChange = (newType: string) => {
+    setType(newType);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -986,13 +1058,20 @@ export function SessionFormDialog({
       return;
     }
 
-    // Validate: must have blocks with valid types
-    const hasValidBlocks = sessionBlocks.length > 0 && sessionBlocks.some(b => b.training_type);
-
-    if (date && hasValidBlocks) {
-      saveSession.mutate();
-    } else if (!hasValidBlocks) {
-      toast.error("Veuillez ajouter au moins un bloc thématique");
+    // Validate: athlete mode uses type, staff mode uses blocks
+    if (isAthleteMode) {
+      if (date && type) {
+        saveSession.mutate();
+      } else if (!type) {
+        toast.error("Veuillez sélectionner un type de séance");
+      }
+    } else {
+      const hasValidBlocks = sessionBlocks.length > 0 && sessionBlocks.some(b => b.training_type);
+      if (date && hasValidBlocks) {
+        saveSession.mutate();
+      } else if (!hasValidBlocks) {
+        toast.error("Veuillez ajouter au moins un bloc thématique");
+      }
     }
   };
 
@@ -2634,17 +2713,20 @@ export function SessionFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[95vh] flex flex-col">
+      <DialogContent className={cn("max-h-[95vh] flex flex-col", isAthleteMode ? "max-w-3xl" : "max-w-6xl")}>
         <DialogHeader>
-          <DialogTitle>{editSession ? "Modifier la séance" : "Nouvelle séance"}</DialogTitle>
+          <DialogTitle>{isAthleteMode ? "Ajouter ma séance" : (editSession ? "Modifier la séance" : "Nouvelle séance")}</DialogTitle>
           <DialogDescription>
-            Remplissez les détails de la séance et ajoutez des exercices si nécessaire.
+            {isAthleteMode 
+              ? "Crée ta séance avec exercices et tests. Elle sera visible par le staff."
+              : "Remplissez les détails de la séance et ajoutez des exercices si nécessaire."
+            }
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
-            <TabsList className="grid w-full grid-cols-4 shrink-0">
+            <TabsList className={cn("grid w-full shrink-0", isAthleteMode ? "grid-cols-3" : "grid-cols-4")}>
               <TabsTrigger value="details">Détails</TabsTrigger>
               <TabsTrigger value="exercises">
                 Exercices
@@ -2662,13 +2744,45 @@ export function SessionFormDialog({
                   </Badge>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="players">Joueurs</TabsTrigger>
+              {!isAthleteMode && <TabsTrigger value="players">Joueurs</TabsTrigger>}
             </TabsList>
 
             <div className="flex-1 overflow-hidden mt-4">
               <TabsContent value="details" className="h-full m-0">
                 <ScrollArea className="h-[50vh] pr-4">
                   <div className="space-y-4">
+                    {/* Athlete quick type selector */}
+                    {isAthleteMode && (
+                      <div className="space-y-2">
+                        <Label>Type de séance *</Label>
+                        <div className="grid grid-cols-3 gap-2">
+                          {[
+                            { value: "musculation", label: "Musculation", icon: "💪" },
+                            { value: "cardio", label: "Cardio / Course", icon: "🏃" },
+                            { value: "test", label: "Test", icon: "📋" },
+                            { value: "physique", label: "Physique", icon: "⚡" },
+                            { value: "recuperation", label: "Récupération", icon: "🧘" },
+                            { value: "autre", label: "Autre", icon: "📌" },
+                          ].map((opt) => (
+                            <Button
+                              key={opt.value}
+                              type="button"
+                              variant={type === opt.value ? "default" : "outline"}
+                              size="sm"
+                              className={cn(
+                                "flex items-center gap-1.5 text-xs h-9",
+                                type === opt.value && "ring-2 ring-primary ring-offset-1"
+                              )}
+                              onClick={() => handleTypeChange(opt.value)}
+                            >
+                              <span>{opt.icon}</span>
+                              {opt.label}
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     <div className="space-y-2">
                       <Label htmlFor="date">Date *</Label>
                       <Input
@@ -2701,15 +2815,17 @@ export function SessionFormDialog({
                       </div>
                     </div>
 
-                    {/* Session Blocks Manager - for multi-theme sessions */}
-                    <SessionBlocksManager
-                      blocks={sessionBlocks}
-                      onBlocksChange={setSessionBlocks}
-                      sportType={sportType}
-                      categoryId={categoryId}
-                      sessionStartTime={startTime}
-                      sessionEndTime={endTime}
-                    />
+                    {/* Session Blocks Manager - staff only */}
+                    {!isAthleteMode && (
+                      <SessionBlocksManager
+                        blocks={sessionBlocks}
+                        onBlocksChange={setSessionBlocks}
+                        sportType={sportType}
+                        categoryId={categoryId}
+                        sessionStartTime={startTime}
+                        sessionEndTime={endTime}
+                      />
+                    )}
 
                     {/* Intensity - only shown if no blocks */}
                     {sessionBlocks.length === 0 && (
@@ -2739,8 +2855,8 @@ export function SessionFormDialog({
                       />
                     </div>
 
-                    {/* GPS Import - Only visible when editing a session for Rugby/Football */}
-                    {showGpsImport && players && (
+                    {/* GPS Import - Only visible when editing a session for Rugby/Football (staff only) */}
+                    {!isAthleteMode && showGpsImport && players && (
                       <div className="pt-4 border-t">
                         <SessionGpsImport
                           players={players.map(p => ({ id: p.id, name: p.name, position: p.position }))}
@@ -2750,8 +2866,8 @@ export function SessionFormDialog({
                       </div>
                     )}
 
-                    {/* GPS Objectives - Only visible when editing a session */}
-                    {showGpsImport && editSession && (
+                    {/* GPS Objectives - Only visible when editing a session (staff only) */}
+                    {!isAthleteMode && showGpsImport && editSession && (
                       <div className="pt-4 border-t">
                         <GpsObjectivesForm
                           categoryId={categoryId}
@@ -2865,20 +2981,22 @@ export function SessionFormDialog({
                     tests={sessionTests}
                     onTestsChange={setSessionTests}
                     sportType={sportType}
-                    players={players?.map(p => ({ 
-                      id: p.id, 
-                      name: p.name, 
-                      position: p.position, 
-                      avatar_url: p.avatar_url 
-                    })) || []}
-                    selectedPlayers={selectedPlayers}
-                    playerSelectionMode={playerSelectionMode}
+                    players={isAthleteMode 
+                      ? (players?.filter(p => p.id === athletePlayerId).map(p => ({ 
+                          id: p.id, name: p.name, position: p.position, avatar_url: p.avatar_url 
+                        })) || [])
+                      : (players?.map(p => ({ 
+                          id: p.id, name: p.name, position: p.position, avatar_url: p.avatar_url 
+                        })) || [])
+                    }
+                    selectedPlayers={isAthleteMode ? (athletePlayerId ? [athletePlayerId] : []) : selectedPlayers}
+                    playerSelectionMode={isAthleteMode ? "specific" : playerSelectionMode}
                     hideResults={true}
                   />
                 </ScrollArea>
               </TabsContent>
 
-              <TabsContent value="players" className="h-full m-0">
+              {!isAthleteMode && <TabsContent value="players" className="h-full m-0">
                 <ScrollArea className="h-[50vh] pr-4">
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
@@ -3023,7 +3141,7 @@ export function SessionFormDialog({
                     )}
                   </div>
                 </ScrollArea>
-              </TabsContent>
+              </TabsContent>}
             </div>
           </Tabs>
 
