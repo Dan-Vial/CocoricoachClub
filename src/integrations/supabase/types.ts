@@ -5926,6 +5926,141 @@ export type Database = {
           },
         ]
       }
+      precision_exercise_types: {
+        Row: {
+          category_id: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          is_system: boolean
+          label: string
+          sport: string
+          sub_discipline: string | null
+          value: string
+        }
+        Insert: {
+          category_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_system?: boolean
+          label: string
+          sport: string
+          sub_discipline?: string | null
+          value: string
+        }
+        Update: {
+          category_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_system?: boolean
+          label?: string
+          sport?: string
+          sub_discipline?: string | null
+          value?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "precision_exercise_types_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      precision_training: {
+        Row: {
+          attempts: number
+          ball_arsenal_id: string | null
+          category_id: string
+          created_at: string
+          exercise_label: string
+          exercise_type_id: string | null
+          id: string
+          notes: string | null
+          player_id: string
+          session_date: string
+          success_rate: number | null
+          successes: number
+          training_session_id: string | null
+        }
+        Insert: {
+          attempts?: number
+          ball_arsenal_id?: string | null
+          category_id: string
+          created_at?: string
+          exercise_label: string
+          exercise_type_id?: string | null
+          id?: string
+          notes?: string | null
+          player_id: string
+          session_date?: string
+          success_rate?: number | null
+          successes?: number
+          training_session_id?: string | null
+        }
+        Update: {
+          attempts?: number
+          ball_arsenal_id?: string | null
+          category_id?: string
+          created_at?: string
+          exercise_label?: string
+          exercise_type_id?: string | null
+          id?: string
+          notes?: string | null
+          player_id?: string
+          session_date?: string
+          success_rate?: number | null
+          successes?: number
+          training_session_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "precision_training_ball_arsenal_id_fkey"
+            columns: ["ball_arsenal_id"]
+            isOneToOne: false
+            referencedRelation: "player_bowling_arsenal"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "precision_training_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "precision_training_exercise_type_id_fkey"
+            columns: ["exercise_type_id"]
+            isOneToOne: false
+            referencedRelation: "precision_exercise_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "precision_training_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "precision_training_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "precision_training_training_session_id_fkey"
+            columns: ["training_session_id"]
+            isOneToOne: false
+            referencedRelation: "training_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string | null
