@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Plus, Trash2, Filter, ClipboardList, CalendarPlus } from "lucide-react";
+import { CreateCustomTestDialog } from "./CreateCustomTestDialog";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
