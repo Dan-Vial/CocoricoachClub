@@ -20,9 +20,17 @@ interface PlayerBowlingArsenalProps {
   isViewer?: boolean;
 }
 
+const BALANCE_TYPES = [
+  { value: "pin_up", label: "Pin Up" },
+  { value: "pin_down", label: "Pin Down" },
+  { value: "pin_left", label: "Pin Left" },
+  { value: "pin_right", label: "Pin Right" },
+];
+
 export function PlayerBowlingArsenal({ playerId, categoryId, isViewer }: PlayerBowlingArsenalProps) {
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isCatalogOpen, setIsCatalogOpen] = useState(false);
+  const [editingBall, setEditingBall] = useState<any>(null);
   const [selectedCatalogBall, setSelectedCatalogBall] = useState<any>(null);
   const [weight, setWeight] = useState<string>("");
   const [purchaseDate, setPurchaseDate] = useState("");
@@ -30,6 +38,10 @@ export function PlayerBowlingArsenal({ playerId, categoryId, isViewer }: PlayerB
   const [gamesPlayed, setGamesPlayed] = useState("0");
   const [customName, setCustomName] = useState("");
   const [customBrand, setCustomBrand] = useState("");
+  const [customRg, setCustomRg] = useState("");
+  const [customDifferential, setCustomDifferential] = useState("");
+  const [customIntermediateDiff, setCustomIntermediateDiff] = useState("");
+  const [balanceType, setBalanceType] = useState("");
   const queryClient = useQueryClient();
 
   const { data: arsenal, isLoading } = useQuery({
@@ -65,6 +77,10 @@ export function PlayerBowlingArsenal({ playerId, categoryId, isViewer }: PlayerB
         purchase_date: purchaseDate || null,
         current_surface: currentSurface || null,
         games_played: parseInt(gamesPlayed) || 0,
+        custom_rg: customRg ? parseFloat(customRg) : null,
+        custom_differential: customDifferential ? parseFloat(customDifferential) : null,
+        custom_intermediate_diff: customIntermediateDiff ? parseFloat(customIntermediateDiff) : null,
+        balance_type: balanceType || null,
       };
 
       if (selectedCatalogBall) {
@@ -85,6 +101,33 @@ export function PlayerBowlingArsenal({ playerId, categoryId, isViewer }: PlayerB
     onError: () => toast.error("Erreur lors de l'ajout"),
   });
 
+  const updateBall = useMutation({
+    mutationFn: async () => {
+      if (!editingBall) return;
+      const updateData: any = {
+        weight_lbs: weight ? parseInt(weight) : null,
+        purchase_date: purchaseDate || null,
+        current_surface: currentSurface || null,
+        games_played: parseInt(gamesPlayed) || 0,
+        custom_rg: customRg ? parseFloat(customRg) : null,
+        custom_differential: customDifferential ? parseFloat(customDifferential) : null,
+        custom_intermediate_diff: customIntermediateDiff ? parseFloat(customIntermediateDiff) : null,
+        balance_type: balanceType || null,
+      };
+      const { error } = await supabase
+        .from("player_bowling_arsenal" as any)
+        .update(updateData)
+        .eq("id", editingBall.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["bowling_arsenal", playerId] });
+      toast.success("Boule mise à jour");
+      resetForm();
+    },
+    onError: () => toast.error("Erreur lors de la mise à jour"),
+  });
+
   const removeBall = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("player_bowling_arsenal" as any).delete().eq("id", id);
@@ -98,6 +141,7 @@ export function PlayerBowlingArsenal({ playerId, categoryId, isViewer }: PlayerB
 
   const resetForm = () => {
     setIsAddOpen(false);
+    setEditingBall(null);
     setSelectedCatalogBall(null);
     setWeight("");
     setPurchaseDate("");
@@ -105,12 +149,35 @@ export function PlayerBowlingArsenal({ playerId, categoryId, isViewer }: PlayerB
     setGamesPlayed("0");
     setCustomName("");
     setCustomBrand("");
+    setCustomRg("");
+    setCustomDifferential("");
+    setCustomIntermediateDiff("");
+    setBalanceType("");
   };
 
   const handleSelectFromCatalog = (ball: any) => {
     setSelectedCatalogBall(ball);
     setCurrentSurface(ball.factory_surface || "");
+    if (ball.rg) setCustomRg(ball.rg.toString());
+    if (ball.differential) setCustomDifferential(ball.differential.toString());
+    if (ball.intermediate_diff) setCustomIntermediateDiff(ball.intermediate_diff.toString());
     setIsCatalogOpen(false);
+  };
+
+  const handleEditBall = (item: any) => {
+    setEditingBall(item);
+    setSelectedCatalogBall(item.catalogBall || null);
+    setWeight(item.weight_lbs?.toString() || "");
+    setPurchaseDate(item.purchase_date || "");
+    setCurrentSurface(item.current_surface || "");
+    setGamesPlayed(item.games_played?.toString() || "0");
+    setCustomName(item.custom_ball_name || "");
+    setCustomBrand(item.custom_ball_brand || "");
+    setCustomRg(item.custom_rg?.toString() || "");
+    setCustomDifferential(item.custom_differential?.toString() || "");
+    setCustomIntermediateDiff(item.custom_intermediate_diff?.toString() || "");
+    setBalanceType(item.balance_type || "");
+    setIsAddOpen(true);
   };
 
   const getBallDisplayName = (item: any) => {
@@ -119,6 +186,128 @@ export function PlayerBowlingArsenal({ playerId, categoryId, isViewer }: PlayerB
     }
     return `${item.custom_ball_brand || ""} ${item.custom_ball_name || "Custom"}`.trim();
   };
+
+  const getCoreType = (item: any) => {
+    return item.catalogBall?.core_type || null;
+  };
+
+  const isFormValid = editingBall || selectedCatalogBall || customName;
+
+  const formContent = (
+    <div className="space-y-4">
+      {/* Ball selection - only for new balls */}
+      {!editingBall && (
+        <>
+          {selectedCatalogBall ? (
+            <div className="p-3 border rounded-lg bg-accent/10">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="font-semibold">{selectedCatalogBall.brand} {selectedCatalogBall.model}</p>
+                  <div className="flex gap-1.5 mt-1">
+                    <Badge variant="secondary" className="text-xs">{getCoverTypeLabel(selectedCatalogBall.cover_type)}</Badge>
+                    <Badge variant="secondary" className="text-xs">{getCoreTypeLabel(selectedCatalogBall.core_type)}</Badge>
+                  </div>
+                </div>
+                <Button size="sm" variant="ghost" onClick={() => setSelectedCatalogBall(null)}>
+                  Changer
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <Button variant="outline" className="w-full" onClick={() => setIsCatalogOpen(true)}>
+                🎳 Choisir dans le catalogue
+              </Button>
+              <p className="text-xs text-center text-muted-foreground">ou saisir manuellement</p>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label className="text-xs">Marque</Label>
+                  <Input value={customBrand} onChange={e => setCustomBrand(e.target.value)} placeholder="Storm..." />
+                </div>
+                <div>
+                  <Label className="text-xs">Modèle</Label>
+                  <Input value={customName} onChange={e => setCustomName(e.target.value)} placeholder="DNA..." />
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {editingBall && (
+        <div className="p-3 border rounded-lg bg-accent/10">
+          <p className="font-semibold">{getBallDisplayName(editingBall)}</p>
+        </div>
+      )}
+
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <Label className="text-xs">Poids</Label>
+          <Select value={weight} onValueChange={setWeight}>
+            <SelectTrigger><SelectValue placeholder="lbs" /></SelectTrigger>
+            <SelectContent>
+              {BALL_WEIGHTS.map(w => (
+                <SelectItem key={w} value={w.toString()}>{w} lbs</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label className="text-xs">Équilibrage</Label>
+          <Select value={balanceType} onValueChange={setBalanceType}>
+            <SelectTrigger><SelectValue placeholder="Layout" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">Aucun</SelectItem>
+              {BALANCE_TYPES.map(b => (
+                <SelectItem key={b.value} value={b.value}>{b.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-3 gap-2">
+        <div>
+          <Label className="text-xs">RG</Label>
+          <Input type="number" step="0.001" value={customRg} onChange={e => setCustomRg(e.target.value)} placeholder="2.540" />
+        </div>
+        <div>
+          <Label className="text-xs">Différentiel</Label>
+          <Input type="number" step="0.001" value={customDifferential} onChange={e => setCustomDifferential(e.target.value)} placeholder="0.050" />
+        </div>
+        <div>
+          <Label className="text-xs">Diff. Int.</Label>
+          <Input type="number" step="0.001" value={customIntermediateDiff} onChange={e => setCustomIntermediateDiff(e.target.value)} placeholder="0.012" />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <Label className="text-xs">Surface actuelle</Label>
+          <Input value={currentSurface} onChange={e => setCurrentSurface(e.target.value)} placeholder="1500 Grit..." />
+        </div>
+        <div>
+          <Label className="text-xs">Date d'achat</Label>
+          <Input type="date" value={purchaseDate} onChange={e => setPurchaseDate(e.target.value)} />
+        </div>
+      </div>
+
+      <div>
+        <Label className="text-xs">Parties jouées</Label>
+        <Input type="number" value={gamesPlayed} onChange={e => setGamesPlayed(e.target.value)} min="0" className="w-32" />
+      </div>
+
+      <Button
+        className="w-full"
+        onClick={() => editingBall ? updateBall.mutate() : addBall.mutate()}
+        disabled={(editingBall ? updateBall.isPending : addBall.isPending) || !isFormValid}
+      >
+        {editingBall
+          ? (updateBall.isPending ? "Mise à jour..." : "Enregistrer les modifications")
+          : (addBall.isPending ? "Ajout..." : "Ajouter à mon arsenal")}
+      </Button>
+    </div>
+  );
 
   return (
     <Card>
@@ -129,7 +318,7 @@ export function PlayerBowlingArsenal({ playerId, categoryId, isViewer }: PlayerB
             Mon Arsenal
           </CardTitle>
           {!isViewer && (
-            <Button size="sm" onClick={() => setIsAddOpen(true)} className="gap-1">
+            <Button size="sm" onClick={() => { resetForm(); setIsAddOpen(true); }} className="gap-1">
               <Plus className="h-4 w-4" />
               Ajouter
             </Button>
@@ -159,19 +348,34 @@ export function PlayerBowlingArsenal({ playerId, categoryId, isViewer }: PlayerB
                         <Badge variant="secondary" className="text-xs">{getCoreTypeLabel(item.catalogBall.core_type)}</Badge>
                       </>
                     )}
+                    {item.balance_type && (
+                      <Badge variant="outline" className="text-xs">
+                        {BALANCE_TYPES.find(b => b.value === item.balance_type)?.label || item.balance_type}
+                      </Badge>
+                    )}
                     {item.current_surface && (
                       <Badge variant="outline" className="text-xs">Surface: {item.current_surface}</Badge>
                     )}
                   </div>
                   <div className="flex gap-3 mt-1 text-xs text-muted-foreground">
+                    {item.custom_rg && <span>RG: {item.custom_rg}</span>}
+                    {item.custom_differential && <span>Diff: {item.custom_differential}</span>}
+                    {item.custom_intermediate_diff && <span>Int: {item.custom_intermediate_diff}</span>}
+                  </div>
+                  <div className="flex gap-3 mt-0.5 text-xs text-muted-foreground">
                     {item.games_played > 0 && <span>{item.games_played} parties</span>}
                     {item.purchase_date && <span>Achat: {format(new Date(item.purchase_date), "dd/MM/yyyy")}</span>}
                   </div>
                 </div>
                 {!isViewer && (
-                  <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => removeBall.mutate(item.id)}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  <div className="flex flex-col gap-1">
+                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handleEditBall(item)}>
+                      <Edit2 className="h-4 w-4" />
+                    </Button>
+                    <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => removeBall.mutate(item.id)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 )}
               </div>
             ))}
@@ -179,91 +383,13 @@ export function PlayerBowlingArsenal({ playerId, categoryId, isViewer }: PlayerB
         )}
       </CardContent>
 
-      {/* Add ball dialog */}
-      <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-        <DialogContent className="max-w-md">
+      {/* Add/Edit ball dialog */}
+      <Dialog open={isAddOpen} onOpenChange={(open) => { if (!open) resetForm(); else setIsAddOpen(true); }}>
+        <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Ajouter une boule</DialogTitle>
+            <DialogTitle>{editingBall ? "Modifier la boule" : "Ajouter une boule"}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
-            {/* Ball selection */}
-            {selectedCatalogBall ? (
-              <div className="p-3 border rounded-lg bg-accent/10">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="font-semibold">{selectedCatalogBall.brand} {selectedCatalogBall.model}</p>
-                    <div className="flex gap-1.5 mt-1">
-                      <Badge variant="secondary" className="text-xs">{getCoverTypeLabel(selectedCatalogBall.cover_type)}</Badge>
-                      <Badge variant="secondary" className="text-xs">{getCoreTypeLabel(selectedCatalogBall.core_type)}</Badge>
-                    </div>
-                    {selectedCatalogBall.rg && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        RG: {selectedCatalogBall.rg} | Diff: {selectedCatalogBall.differential}
-                        {selectedCatalogBall.intermediate_diff && ` | Int: ${selectedCatalogBall.intermediate_diff}`}
-                      </p>
-                    )}
-                  </div>
-                  <Button size="sm" variant="ghost" onClick={() => setSelectedCatalogBall(null)}>
-                    Changer
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <Button variant="outline" className="w-full" onClick={() => setIsCatalogOpen(true)}>
-                  🎳 Choisir dans le catalogue
-                </Button>
-                <p className="text-xs text-center text-muted-foreground">ou saisir manuellement</p>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <Label className="text-xs">Marque</Label>
-                    <Input value={customBrand} onChange={e => setCustomBrand(e.target.value)} placeholder="Storm..." />
-                  </div>
-                  <div>
-                    <Label className="text-xs">Modèle</Label>
-                    <Input value={customName} onChange={e => setCustomName(e.target.value)} placeholder="DNA..." />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label className="text-xs">Poids</Label>
-                <Select value={weight} onValueChange={setWeight}>
-                  <SelectTrigger><SelectValue placeholder="lbs" /></SelectTrigger>
-                  <SelectContent>
-                    {BALL_WEIGHTS.map(w => (
-                      <SelectItem key={w} value={w.toString()}>{w} lbs</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label className="text-xs">Date d'achat</Label>
-                <Input type="date" value={purchaseDate} onChange={e => setPurchaseDate(e.target.value)} />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label className="text-xs">Surface actuelle</Label>
-                <Input value={currentSurface} onChange={e => setCurrentSurface(e.target.value)} placeholder="1500 Grit..." />
-              </div>
-              <div>
-                <Label className="text-xs">Parties jouées</Label>
-                <Input type="number" value={gamesPlayed} onChange={e => setGamesPlayed(e.target.value)} min="0" />
-              </div>
-            </div>
-
-            <Button
-              className="w-full"
-              onClick={() => addBall.mutate()}
-              disabled={addBall.isPending || (!selectedCatalogBall && !customName)}
-            >
-              {addBall.isPending ? "Ajout..." : "Ajouter à mon arsenal"}
-            </Button>
-          </div>
+          {formContent}
         </DialogContent>
       </Dialog>
 
