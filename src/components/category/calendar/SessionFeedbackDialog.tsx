@@ -240,9 +240,23 @@ export function SessionFeedbackDialog({
     if (!open) {
       setRpeValues({});
       setSessionTests([]);
+      setWeightLogs({});
       setActiveTab(sessionType === "test" ? "tests" : "rpe");
     }
   }, [open, sessionType]);
+
+  const handleWeightLogChange = (playerId: string, exerciseName: string, field: "weight" | "sets" | "reps", value: string) => {
+    setWeightLogs((prev) => ({
+      ...prev,
+      [playerId]: {
+        ...prev[playerId],
+        [exerciseName]: {
+          ...(prev[playerId]?.[exerciseName] || { weight: "", sets: "", reps: "" }),
+          [field]: value,
+        },
+      },
+    }));
+  };
 
   // Calculate AWCR for a player
   const calculateAWCR = async (playerId: string, sessionDateStr: string, newLoad: number) => {
