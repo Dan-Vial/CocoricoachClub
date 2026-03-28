@@ -323,6 +323,7 @@ export const ALL_TRAINING_TYPES: TrainingTypeOption[] = [
   { value: "souplesse_mobilite", label: "Souplesse / Mobilité", hasExercises: true, forTeamSports: true, forIndividualSports: true, category: "common" },
   { value: "fitness_game", label: "Fitness Game", hasExercises: false, forTeamSports: true, forIndividualSports: true, category: "common" },
   { value: "repos", label: "Repos", hasExercises: false, forTeamSports: true, forIndividualSports: true, category: "common" },
+  { value: "precision", label: "Entraînement Précision", hasExercises: false, forTeamSports: true, forIndividualSports: true, category: "common" },
   { value: "test", label: "Test", hasExercises: false, forTeamSports: true, forIndividualSports: true, category: "common" },
   { value: "echauffement", label: "Échauffement", hasExercises: false, forTeamSports: true, forIndividualSports: true, category: "common" },
   { value: "recuperation", label: "Récupération Active", hasExercises: false, forTeamSports: true, forIndividualSports: true, category: "common" },
