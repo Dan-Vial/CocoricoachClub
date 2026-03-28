@@ -139,9 +139,10 @@ export function BowlingOilPatternSection({
           .eq("id", data.id);
         if (error) throw error;
       } else {
+        // Use upsert to prevent duplicates per match
         const { error } = await supabase
           .from("bowling_oil_patterns")
-          .insert(payload);
+          .upsert(payload, { onConflict: "match_id" });
         if (error) throw error;
       }
     },
