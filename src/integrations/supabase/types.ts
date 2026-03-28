@@ -4718,12 +4718,16 @@ export type Database = {
       }
       player_bowling_arsenal: {
         Row: {
+          balance_type: string | null
           ball_catalog_id: string | null
           category_id: string
           created_at: string
           current_surface: string | null
           custom_ball_brand: string | null
           custom_ball_name: string | null
+          custom_differential: number | null
+          custom_intermediate_diff: number | null
+          custom_rg: number | null
           games_played: number
           id: string
           is_active: boolean
@@ -4734,12 +4738,16 @@ export type Database = {
           weight_lbs: number | null
         }
         Insert: {
+          balance_type?: string | null
           ball_catalog_id?: string | null
           category_id: string
           created_at?: string
           current_surface?: string | null
           custom_ball_brand?: string | null
           custom_ball_name?: string | null
+          custom_differential?: number | null
+          custom_intermediate_diff?: number | null
+          custom_rg?: number | null
           games_played?: number
           id?: string
           is_active?: boolean
@@ -4750,12 +4758,16 @@ export type Database = {
           weight_lbs?: number | null
         }
         Update: {
+          balance_type?: string | null
           ball_catalog_id?: string | null
           category_id?: string
           created_at?: string
           current_surface?: string | null
           custom_ball_brand?: string | null
           custom_ball_name?: string | null
+          custom_differential?: number | null
+          custom_intermediate_diff?: number | null
+          custom_rg?: number | null
           games_played?: number
           id?: string
           is_active?: boolean
