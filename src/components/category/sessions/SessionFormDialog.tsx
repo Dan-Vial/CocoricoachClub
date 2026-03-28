@@ -93,6 +93,8 @@ interface SessionFormDialogProps {
   categoryId: string;
   editSession?: any | null;
   defaultDate?: string; // Format: "yyyy-MM-dd"
+  /** When set, the dialog runs in "athlete mode": player is pre-selected & locked, session is tagged as athlete-created */
+  athletePlayerId?: string;
 }
 
 // Erg-specific data structure for cardio machines
