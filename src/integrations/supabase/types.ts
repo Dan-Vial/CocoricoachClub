@@ -5299,6 +5299,91 @@ export type Database = {
           },
         ]
       }
+      player_objectives: {
+        Row: {
+          category_id: string
+          created_at: string
+          created_by: string | null
+          current_value: number | null
+          description: string | null
+          goal_type: string
+          id: string
+          metric_name: string | null
+          metric_unit: string | null
+          objective_type: string
+          player_id: string
+          progress_percentage: number | null
+          season_year: number
+          status: string
+          target_date: string | null
+          target_value: number | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          created_by?: string | null
+          current_value?: number | null
+          description?: string | null
+          goal_type?: string
+          id?: string
+          metric_name?: string | null
+          metric_unit?: string | null
+          objective_type?: string
+          player_id: string
+          progress_percentage?: number | null
+          season_year?: number
+          status?: string
+          target_date?: string | null
+          target_value?: number | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          created_by?: string | null
+          current_value?: number | null
+          description?: string | null
+          goal_type?: string
+          id?: string
+          metric_name?: string | null
+          metric_unit?: string | null
+          objective_type?: string
+          player_id?: string
+          progress_percentage?: number | null
+          season_year?: number
+          status?: string
+          target_date?: string | null
+          target_value?: number | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_objectives_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_objectives_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_objectives_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       player_performance_references: {
         Row: {
           category_id: string
