@@ -2702,17 +2702,20 @@ export function SessionFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[95vh] flex flex-col">
+      <DialogContent className={cn("max-h-[95vh] flex flex-col", isAthleteMode ? "max-w-3xl" : "max-w-6xl")}>
         <DialogHeader>
-          <DialogTitle>{editSession ? "Modifier la séance" : "Nouvelle séance"}</DialogTitle>
+          <DialogTitle>{isAthleteMode ? "Ajouter ma séance" : (editSession ? "Modifier la séance" : "Nouvelle séance")}</DialogTitle>
           <DialogDescription>
-            Remplissez les détails de la séance et ajoutez des exercices si nécessaire.
+            {isAthleteMode 
+              ? "Crée ta séance avec exercices et tests. Elle sera visible par le staff."
+              : "Remplissez les détails de la séance et ajoutez des exercices si nécessaire."
+            }
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
-            <TabsList className="grid w-full grid-cols-4 shrink-0">
+            <TabsList className={cn("grid w-full shrink-0", isAthleteMode ? "grid-cols-3" : "grid-cols-4")}>
               <TabsTrigger value="details">Détails</TabsTrigger>
               <TabsTrigger value="exercises">
                 Exercices
@@ -2730,7 +2733,7 @@ export function SessionFormDialog({
                   </Badge>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="players">Joueurs</TabsTrigger>
+              {!isAthleteMode && <TabsTrigger value="players">Joueurs</TabsTrigger>}
             </TabsList>
 
             <div className="flex-1 overflow-hidden mt-4">
