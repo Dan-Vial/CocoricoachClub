@@ -2974,14 +2974,16 @@ export function SessionFormDialog({
                     tests={sessionTests}
                     onTestsChange={setSessionTests}
                     sportType={sportType}
-                    players={players?.map(p => ({ 
-                      id: p.id, 
-                      name: p.name, 
-                      position: p.position, 
-                      avatar_url: p.avatar_url 
-                    })) || []}
-                    selectedPlayers={selectedPlayers}
-                    playerSelectionMode={playerSelectionMode}
+                    players={isAthleteMode 
+                      ? (players?.filter(p => p.id === athletePlayerId).map(p => ({ 
+                          id: p.id, name: p.name, position: p.position, avatar_url: p.avatar_url 
+                        })) || [])
+                      : (players?.map(p => ({ 
+                          id: p.id, name: p.name, position: p.position, avatar_url: p.avatar_url 
+                        })) || [])
+                    }
+                    selectedPlayers={isAthleteMode ? (athletePlayerId ? [athletePlayerId] : []) : selectedPlayers}
+                    playerSelectionMode={isAthleteMode ? "specific" : playerSelectionMode}
                     hideResults={true}
                   />
                 </ScrollArea>
