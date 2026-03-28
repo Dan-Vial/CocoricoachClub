@@ -417,7 +417,7 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
                 <SelectTrigger><SelectValue placeholder="Sélectionner un joueur" /></SelectTrigger>
                 <SelectContent>
                   {players?.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                    <SelectItem key={p.id} value={p.id}>{p.first_name ? `${p.first_name} ${p.name}` : p.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
