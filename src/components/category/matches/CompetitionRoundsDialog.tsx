@@ -1160,12 +1160,13 @@ export function CompetitionRoundsDialog({
                               </div>
 
                               {/* Embedded Bowling Score Sheet */}
-                              <div className={round.isLocked ? "pointer-events-none opacity-80" : ""}>
+                              <div>
                                 <BowlingScoreSheet
                                   key={`bowling-${round.round_number}-${round.isLocked}`}
                                   initialFrames={round.bowlingFrames}
                                   playerId={selectedPlayer.playerId}
                                   categoryId={categoryId}
+                                  readOnly={round.isLocked}
                                   onSave={(stats, frames, ballData) => {
                                     handleBowlingScoreSheetSave(
                                       selectedPlayer.playerId,
