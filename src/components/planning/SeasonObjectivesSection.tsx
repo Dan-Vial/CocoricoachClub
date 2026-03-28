@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { Plus, Target, Flag, CheckCircle2, TrendingUp } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { PlayerObjectivesSection } from "./PlayerObjectivesSection";
 
 interface SeasonObjectivesSectionProps {
   categoryId: string;
