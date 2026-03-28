@@ -104,12 +104,12 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, c
   useEffect(() => {
     if (initialFrames) {
       setFrames(initialFrames);
-      setIsSaved(true); // Mark as saved if we're viewing an existing game
+      setIsSaved(readOnly || false);
     } else {
       setFrames(Array.from({ length: 10 }, () => createEmptyFrame()));
       setIsSaved(false);
     }
-  }, [initialFrames]);
+  }, [initialFrames, readOnly]);
 
   // Calculate score for a frame
   const calculateFrameScore = useCallback((frameIndex: number, allFrames: FrameData[]): number | null => {
@@ -413,9 +413,23 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, c
       if (upperValue === "X") {
         currentThrow.pins = 10;
       } else if (upperValue === "/") {
-        // Spare: 10 minus previous pins in this frame
-        const previousPins = throws.slice(0, throwIndex).reduce((sum, t) => sum + t.pins, 0);
-        currentThrow.pins = 10 - previousPins;
+        // Spare: 10 minus pins from IMMEDIATELY previous throw only
+        // In 10th frame, pins reset after a strike, so only count from last pin-reset point
+        const isTenthFrame = frameIndex === 9;
+        if (isTenthFrame) {
+          // Find the last "reset point" - after a strike or spare, pins reset
+          let pinsInCurrentSet = 0;
+          for (let ti = throwIndex - 1; ti >= 0; ti--) {
+            if (throws[ti]?.value === "X" || throws[ti]?.value === "/") {
+              break; // Pins were reset after this throw
+            }
+            pinsInCurrentSet += throws[ti]?.pins || 0;
+          }
+          currentThrow.pins = 10 - pinsInCurrentSet;
+        } else {
+          const previousPins = throws.slice(0, throwIndex).reduce((sum, t) => sum + t.pins, 0);
+          currentThrow.pins = 10 - previousPins;
+        }
       } else if (upperValue === "-" || upperValue === "") {
         currentThrow.pins = 0;
       } else {
@@ -607,9 +621,9 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, c
                             return (
                               <div 
                                 key={throwIndex} 
-                                className={`${boxSize} border-l border-b border-foreground/20 ${
+                                className={`${boxSize} border-l border-b border-foreground/20 relative ${
                                   throwIndex === 0 && !isTenth ? "border-l-0" : ""
-                                }`}
+                                } ${throwData?.isSplit ? "ring-2 ring-destructive/60 ring-inset" : ""}`}
                               >
                                 <Input
                                   type="text"
@@ -620,6 +634,22 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, c
                                   className={`w-full h-full text-center text-sm font-bold p-0 uppercase rounded-none border-0 focus:ring-1 focus:ring-primary ${getThrowCellStyle(value)} ${isSaved ? "opacity-70" : ""}`}
                                   placeholder=""
                                 />
+                                {/* Split indicator - show on non-strike, non-spare first throws */}
+                                {value && value !== "X" && value !== "/" && isPocketAllowed(frameIndex, throwIndex, frames[frameIndex]) && (
+                                  <button
+                                    type="button"
+                                    disabled={isSaved}
+                                    onClick={() => handleCheckboxChange(frameIndex, throwIndex, "isSplit")}
+                                    className={`absolute -bottom-1 -right-1 z-10 w-3.5 h-3.5 rounded-full text-[7px] font-bold flex items-center justify-center border ${
+                                      throwData?.isSplit 
+                                        ? "bg-destructive text-destructive-foreground border-destructive" 
+                                        : "bg-muted text-muted-foreground border-border hover:bg-destructive/20"
+                                    }`}
+                                    title={throwData?.isSplit ? "Retirer le split" : "Marquer comme split"}
+                                  >
+                                    S
+                                  </button>
+                                )}
                               </div>
                             );
                           })}

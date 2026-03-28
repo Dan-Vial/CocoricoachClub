@@ -235,6 +235,22 @@ export function CompetitionRoundsDialog({
     toast.success(`Partie ${roundNumber} validée et verrouillée`);
   };
 
+  // Unlock a bowling round for re-editing
+  const unlockBowlingRound = (playerId: string, roundNumber: number) => {
+    setPlayerRoundsData(prev => prev.map(p => {
+      if (p.playerId === playerId) {
+        return {
+          ...p,
+          rounds: p.rounds.map(r => 
+            r.round_number === roundNumber ? { ...r, isLocked: false } : r
+          ),
+        };
+      }
+      return p;
+    }));
+    toast.info(`Partie ${roundNumber} déverrouillée pour modification`);
+  };
+
   // Handle bowling score sheet save with frames
   const handleBowlingScoreSheetSave = (
     playerId: string, 
@@ -840,11 +856,16 @@ export function CompetitionRoundsDialog({
                       <Card key={round.round_number} className={`relative ${round.isLocked ? "opacity-80" : ""}`}>
                         {/* Locked indicator */}
                         {round.isLocked && (
-                          <div className="absolute top-2 right-2 z-10">
-                            <Badge variant="secondary" className="gap-1">
+                          <div className="absolute top-2 right-2 z-10 flex items-center gap-1">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-7 text-xs gap-1"
+                              onClick={() => unlockBowlingRound(selectedPlayer.playerId, round.round_number)}
+                            >
                               <Lock className="h-3 w-3" />
-                              Validée
-                            </Badge>
+                              Modifier
+                            </Button>
                           </div>
                         )}
                         <CardHeader className="pb-2">
@@ -1138,23 +1159,14 @@ export function CompetitionRoundsDialog({
                                 </div>
                               </div>
 
-                              {/* Locked state indicator */}
-                              {round.isLocked && (
-                                <div className="flex items-center justify-center gap-2 p-3 rounded-lg bg-muted border border-border">
-                                  <Lock className="h-5 w-5 text-primary" />
-                                  <span className="text-sm font-medium text-foreground">
-                                    Partie validée - Consultation uniquement
-                                  </span>
-                                </div>
-                              )}
-
                               {/* Embedded Bowling Score Sheet */}
-                              <div className={round.isLocked ? "pointer-events-none" : ""}>
+                              <div>
                                 <BowlingScoreSheet
                                   key={`bowling-${round.round_number}-${round.isLocked}`}
                                   initialFrames={round.bowlingFrames}
                                   playerId={selectedPlayer.playerId}
                                   categoryId={categoryId}
+                                  readOnly={round.isLocked}
                                   onSave={(stats, frames, ballData) => {
                                     handleBowlingScoreSheetSave(
                                       selectedPlayer.playerId,
