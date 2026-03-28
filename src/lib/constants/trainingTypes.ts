@@ -613,6 +613,8 @@ export const TRAINING_TYPE_COLORS: Record<string, string> = {
   tennis_jeu_double: "bg-teal-500",
   tennis_panier: "bg-lime-500",
   tennis_mental: "bg-violet-500",
+  // Precision (all sports)
+  precision: "bg-lime-500",
   // Default for custom types
   _default: "bg-gray-500",
 };
