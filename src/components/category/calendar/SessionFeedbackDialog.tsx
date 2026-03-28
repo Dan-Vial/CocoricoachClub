@@ -355,7 +355,31 @@ export function SessionFeedbackDialog({
         if (error) throw error;
       }
 
-      return { rpeCount: playersToSave.length, testCount: testRecords.length };
+      // Save weight logs
+      const weightLogRecords: any[] = [];
+      Object.entries(weightLogs).forEach(([playerId, exercises]) => {
+        Object.entries(exercises).forEach(([exerciseName, vals]) => {
+          if (!vals.weight || parseFloat(vals.weight) <= 0) return;
+          weightLogRecords.push({
+            training_session_id: sessionId,
+            player_id: playerId,
+            category_id: categoryId,
+            exercise_name: exerciseName,
+            actual_weight_kg: parseFloat(vals.weight),
+            actual_sets: vals.sets ? parseInt(vals.sets) : null,
+            actual_reps: vals.reps ? parseInt(vals.reps) : null,
+          });
+        });
+      });
+
+      if (weightLogRecords.length > 0) {
+        const { error } = await supabase.from("athlete_exercise_logs").upsert(weightLogRecords, {
+          onConflict: "training_session_id,player_id,exercise_name",
+        });
+        if (error) throw error;
+      }
+
+      return { rpeCount: playersToSave.length, testCount: testRecords.length, weightCount: weightLogRecords.length };
     },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["awcr_tracking"] });
