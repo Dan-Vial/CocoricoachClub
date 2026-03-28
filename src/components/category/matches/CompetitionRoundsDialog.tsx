@@ -385,6 +385,7 @@ export function CompetitionRoundsDialog({
               isLocked: !!r.id,
               bowlingFrames: bowlingFrames,
               bowlingCategory: bowlingCategory,
+              roundDate: roundDate,
             };
           }),
         };
