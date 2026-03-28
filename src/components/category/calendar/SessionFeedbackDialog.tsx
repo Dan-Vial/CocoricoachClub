@@ -508,6 +508,14 @@ export function SessionFeedbackDialog({
     acc + (t.savedPlayerIds?.size || 0), 0
   );
 
+  const hasWeightLogs = Object.values(weightLogs).some((exercises) =>
+    Object.values(exercises).some((v) => v.weight && parseFloat(v.weight) > 0)
+  );
+  const weightLogCount = Object.values(weightLogs).reduce(
+    (acc, exercises) => acc + Object.values(exercises).filter((v) => v.weight && parseFloat(v.weight) > 0).length,
+    0
+  );
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[90vh] flex flex-col">
