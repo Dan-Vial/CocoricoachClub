@@ -1116,8 +1116,18 @@ export function CompetitionRoundsDialog({
                           {/* Bowling: Category, Phase, Adversaire, then score sheet */}
                           {isBowling && (
                             <div className={`space-y-4 ${round.isLocked ? "opacity-80" : ""}`}>
-                              {/* Category, Phase, and opponent info - always visible */}
-                              <div className={`grid grid-cols-3 gap-3 ${round.isLocked ? "pointer-events-none" : ""}`}>
+                              {/* Date, Category, Phase, and opponent info - always visible */}
+                              <div className={`grid grid-cols-2 sm:grid-cols-4 gap-3 ${round.isLocked ? "pointer-events-none" : ""}`}>
+                                <div>
+                                  <Label className="text-xs">Jour</Label>
+                                  <Input
+                                    type="date"
+                                    value={round.roundDate || matchData?.match_date?.split("T")[0] || ""}
+                                    onChange={(e) => updateRound(selectedPlayer.playerId, round.round_number, { roundDate: e.target.value })}
+                                    className="h-8"
+                                    disabled={round.isLocked}
+                                  />
+                                </div>
                                 <div>
                                   <Label className="text-xs">Catégorie</Label>
                                   <Select
@@ -1161,7 +1171,7 @@ export function CompetitionRoundsDialog({
                                   <Input
                                     value={round.opponent_name}
                                     onChange={(e) => updateRound(selectedPlayer.playerId, round.round_number, { opponent_name: e.target.value })}
-                                    placeholder="Nom de l'adversaire"
+                                    placeholder="Nom adversaire"
                                     className="h-8"
                                     disabled={round.isLocked}
                                   />
