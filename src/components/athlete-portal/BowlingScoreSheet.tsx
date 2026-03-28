@@ -104,12 +104,12 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, c
   useEffect(() => {
     if (initialFrames) {
       setFrames(initialFrames);
-      setIsSaved(true); // Mark as saved if we're viewing an existing game
+      setIsSaved(readOnly || false);
     } else {
       setFrames(Array.from({ length: 10 }, () => createEmptyFrame()));
       setIsSaved(false);
     }
-  }, [initialFrames]);
+  }, [initialFrames, readOnly]);
 
   // Calculate score for a frame
   const calculateFrameScore = useCallback((frameIndex: number, allFrames: FrameData[]): number | null => {
