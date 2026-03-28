@@ -39,6 +39,7 @@ interface GenericTestsSectionProps {
 export function GenericTestsSection({ categoryId, sportType, defaultCategory }: GenericTestsSectionProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isScheduleDialogOpen, setIsScheduleDialogOpen] = useState(false);
+  const [isCreateTestDialogOpen, setIsCreateTestDialogOpen] = useState(false);
   const isRehabMode = defaultCategory === "rehab";
   const isSingleCategoryMode = !!defaultCategory && defaultCategory !== "rehab" && defaultCategory !== "all";
   const [filterCategory, setFilterCategory] = useState<string>(
