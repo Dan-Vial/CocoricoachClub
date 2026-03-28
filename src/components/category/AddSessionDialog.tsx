@@ -630,16 +630,18 @@ export function AddSessionDialog({
               </div>
 
               {/* Session Blocks Manager - for multi-theme sessions (staff only) */}
-              {!isAthleteMode && <SessionBlocksManager
-                blocks={sessionBlocks}
-                onBlocksChange={setSessionBlocks}
-                sportType={sportType}
-                categoryId={categoryId}
-                sessionStartTime={startTime}
-                sessionEndTime={endTime}
-              />
+              {!isAthleteMode && (
+                <SessionBlocksManager
+                  blocks={sessionBlocks}
+                  onBlocksChange={setSessionBlocks}
+                  sportType={sportType}
+                  categoryId={categoryId}
+                  sessionStartTime={startTime}
+                  sessionEndTime={endTime}
+                />
+              )}
 
-              {/* Intensity - only shown if no blocks (blocks have their own RPE) */}
+              {/* Intensity */}
               {sessionBlocks.length === 0 && (
                 <div className="space-y-2">
                   <Label htmlFor="intensity">Intensité (1-10)</Label>
