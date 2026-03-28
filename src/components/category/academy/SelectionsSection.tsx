@@ -17,7 +17,7 @@ import { toast } from "sonner";
 
 interface SelectionsSectionProps {
   categoryId: string;
-  players: { id: string; name: string }[] | undefined;
+  players: { id: string; name: string; first_name?: string | null }[] | undefined;
 }
 
 const SELECTION_TYPES = [
