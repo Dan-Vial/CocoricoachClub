@@ -970,7 +970,6 @@ export function SessionFormDialog({
       queryClient.invalidateQueries({ queryKey: ["event-participants-edit"] });
       queryClient.invalidateQueries({ queryKey: ["generic_tests", categoryId] });
       queryClient.invalidateQueries({ queryKey: ["generic_tests_discovery", categoryId] });
-      // Invalidate analytics caches
       queryClient.invalidateQueries({ queryKey: ["generic-tests-evolution", categoryId] });
       queryClient.invalidateQueries({ queryKey: ["generic-tests-multi-comparison", categoryId] });
       queryClient.invalidateQueries({ queryKey: ["session-blocks"] });
@@ -980,13 +979,17 @@ export function SessionFormDialog({
       queryClient.invalidateQueries({ queryKey: ["today_sessions_decision", categoryId] });
       queryClient.invalidateQueries({ queryKey: ["tomorrow_sessions_decision", categoryId] });
       queryClient.invalidateQueries({ queryKey: ["today_attendance_decision", categoryId] });
+      if (isAthleteMode) {
+        queryClient.invalidateQueries({ queryKey: ["athlete-calendar-sessions"] });
+        queryClient.invalidateQueries({ queryKey: ["athlete-space-sessions"] });
+      }
       
       const exerciseCount = exercises.filter((e) => e.exercise_name.trim()).length;
       const gpsCount = gpsData.filter(d => d.matchedPlayer).length;
       const testCount = sessionTests.filter(t => t.test_type && Object.values(t.player_results).some(v => v)).length;
       const blockCount = sessionBlocks.filter(b => b.training_type).length;
       
-      let successMessage = editSession ? "Séance modifiée" : "Séance créée";
+      let successMessage = isAthleteMode ? "Séance ajoutée" : (editSession ? "Séance modifiée" : "Séance créée");
       if (blockCount > 0) successMessage += ` avec ${blockCount} bloc(s)`;
       if (exerciseCount > 0) successMessage += ` et ${exerciseCount} exercice(s)`;
       if (testCount > 0) successMessage += ` et ${testCount} test(s)`;
@@ -994,8 +997,8 @@ export function SessionFormDialog({
       
       toast.success(successMessage);
 
-      // 🔔 Send push notifications to participants (creation only)
-      if (!editSession && returnedSessionId) {
+      // 🔔 Send push notifications to participants (creation only, staff mode)
+      if (!isAthleteMode && !editSession && returnedSessionId) {
         const mainType = sessionBlocks.length > 0 ? sessionBlocks[0].training_type : type;
         const participantIds = playerSelectionMode === "specific" && selectedPlayers.length > 0
           ? selectedPlayers
