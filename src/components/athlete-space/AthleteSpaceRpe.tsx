@@ -468,6 +468,8 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
       setMaxHr("");
       setShowZones(false);
       setZone1(""); setZone2(""); setZone3(""); setZone4(""); setZone5("");
+      setPrecisionExerciseId(null);
+      setPrecisionExerciseLabel("");
     },
     onError: (error: any) => toast.error(error?.message || "Erreur lors de l'enregistrement"),
   });
