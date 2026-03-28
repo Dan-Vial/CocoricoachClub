@@ -3134,7 +3134,7 @@ export function SessionFormDialog({
                     )}
                   </div>
                 </ScrollArea>
-              </TabsContent>
+              </TabsContent>}
             </div>
           </Tabs>
 

@@ -388,7 +388,7 @@ export function AthleteSpaceCalendar({ playerId, categoryId, sportType }: Props)
         </CardContent>
       </Card>
 
-      <AddSessionDialog
+      <SessionFormDialog
         open={isCreateOpen}
         onOpenChange={setIsCreateOpen}
         categoryId={categoryId}
