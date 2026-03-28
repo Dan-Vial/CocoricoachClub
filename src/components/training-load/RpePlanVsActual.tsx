@@ -233,7 +233,7 @@ export function RpePlanVsActual({ categoryId, onPlayerClick }: RpePlanVsActualPr
     return Array.from(playerAggregates.entries())
       .map(([id, data]) => ({
         playerId: id,
-        name: data.name.split(" ")[0], // First name only for chart
+        name: data.name,
         planned: Math.round((data.avgPlanned / data.count) * 10) / 10,
         actual: Math.round((data.avgActual / data.count) * 10) / 10,
         difference: Math.round(((data.avgActual - data.avgPlanned) / data.count) * 10) / 10,
@@ -309,11 +309,13 @@ export function RpePlanVsActual({ categoryId, onPlayerClick }: RpePlanVsActualPr
                 value={periodDays.toString()} 
                 onValueChange={(v) => setPeriodDays(Number(v))}
               >
-                <SelectTrigger className="w-[120px]">
+              <SelectTrigger className="w-[120px]">
                   <Calendar className="h-3 w-3 mr-1" />
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="1">Hier</SelectItem>
+                  <SelectItem value="3">3 jours</SelectItem>
                   <SelectItem value="7">7 jours</SelectItem>
                   <SelectItem value="14">14 jours</SelectItem>
                   <SelectItem value="28">28 jours</SelectItem>
@@ -386,10 +388,10 @@ export function RpePlanVsActual({ categoryId, onPlayerClick }: RpePlanVsActualPr
           {chartData.length > 0 ? (
             <ResponsiveContainer width="100%" height={280}>
               {chartType === "bar" ? (
-                <BarChart data={chartData} layout="vertical">
+                <BarChart data={chartData} layout="vertical" margin={{ left: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                   <XAxis type="number" domain={[0, 10]} />
-                  <YAxis type="category" dataKey="name" width={80} className="text-xs" />
+                  <YAxis type="category" dataKey="name" width={120} className="text-xs" />
                   <Tooltip content={({ active, payload }) => {
                     if (!active || !payload?.length) return null;
                     const data = payload[0]?.payload;

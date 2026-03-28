@@ -106,7 +106,7 @@ export function TeamLoadComparison({
 
   // Prepare chart data
   const chartData = filteredPlayers.map(p => ({
-    name: p.name.split(" ").pop() || p.name,
+    name: p.name,
     fullName: p.name,
     ratio: p.summary?.ewmaRatio || 0,
     riskLevel: p.summary?.riskLevel || "optimal",
@@ -264,7 +264,7 @@ export function TeamLoadComparison({
               <YAxis 
                 type="category" 
                 dataKey="name" 
-                width={90}
+                width={120}
                 className="text-xs"
                 tick={({ x, y, payload }) => {
                   const player = chartData.find(p => p.name === payload.value);

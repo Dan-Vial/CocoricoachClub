@@ -53,7 +53,11 @@ export const CONTACT_CHARGE_OPTIONS = [
 ] as const;
 
 export function getSessionTypeLabel(value: string): string {
-  return SESSION_TYPES.find(t => t.value === value)?.label || value.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+  const found = SESSION_TYPES.find(t => t.value === value);
+  if (found) return found.label;
+  // Clean up: replace underscores, capitalize first letter only, keep rest lowercase
+  const cleaned = value.replace(/_/g, " ").toLowerCase();
+  return cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
 }
 
 export function getObjectiveLabel(value: string): string {
