@@ -2953,8 +2953,8 @@ export function SessionFormDialog({
                     </DragOverlay>
                   </DndContext>
                 ) : (
-                  <div className="flex h-[50vh]">
-                    <div className="flex-1 pr-4">
+                  <div className="flex flex-col sm:flex-row h-[50vh]">
+                    <div className="flex-1 sm:pr-4 min-h-0">
                       <ScrollArea className="h-full">
                         <div className="space-y-4">
                           <div className="flex items-center justify-between">
@@ -2987,7 +2987,7 @@ export function SessionFormDialog({
                         </div>
                       </ScrollArea>
                     </div>
-                    <div className="w-80 border-l bg-muted/30" />
+                    <div className="hidden sm:block w-80 border-l bg-muted/30" />
                   </div>
                 )}
               </TabsContent>
