@@ -303,7 +303,7 @@ export function useTeamTrainingLoad({
     queryFn: async () => {
       const { data, error } = await supabase
         .from("players")
-        .select("id, name, first_name, position")
+        .select("id, name, first_name, position, discipline")
         .eq("category_id", categoryId);
       if (error) throw error;
       return data || [];
