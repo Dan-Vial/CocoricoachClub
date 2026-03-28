@@ -410,6 +410,8 @@ export default function AthleteSpace() {
 
   if (!athleteInfo) return null;
 
+  const isBowling = (athleteInfo.sport_type || "").toLowerCase().includes("bowling");
+
   const displayName = athleteInfo.player_first_name
     ? `${athleteInfo.player_first_name} ${athleteInfo.player_name}`
     : athleteInfo.player_name;
