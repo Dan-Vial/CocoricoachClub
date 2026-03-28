@@ -116,59 +116,6 @@ export function SuperAdminClients() {
        },
      });
 
-     // Fetch auto-detected club owners (users who created clubs)
-     const { data: clubOwners = [] } = useQuery({
-       queryKey: ["super-admin-club-owners"],
-       queryFn: async () => {
-         // Get all clubs with their owners
-         const { data: clubs, error: clubsError } = await supabase
-           .from("clubs")
-           .select("id, name, sport, user_id, client_id, is_active, created_at")
-           .order("created_at", { ascending: false });
-         if (clubsError) throw clubsError;
-
-         // Group clubs by owner
-         const ownerMap = new Map<string, any[]>();
-         (clubs || []).forEach(club => {
-           if (!ownerMap.has(club.user_id)) ownerMap.set(club.user_id, []);
-           ownerMap.get(club.user_id)!.push(club);
-         });
-
-         // Get unique owner user_ids
-         const ownerIds = Array.from(ownerMap.keys());
-         if (ownerIds.length === 0) return [];
-
-         // Get profiles
-         const { data: profiles } = await supabase
-           .from("profiles")
-           .select("id, full_name, email")
-           .in("id", ownerIds);
-
-         // Get approved_users status
-         const { data: approvedUsers } = await supabase
-           .from("approved_users")
-           .select("user_id, is_free_user")
-           .in("user_id", ownerIds);
-
-         const auMap = new Map<string, boolean | null>();
-         (approvedUsers || []).forEach(au => auMap.set(au.user_id, au.is_free_user));
-
-         return ownerIds.map(userId => {
-           const profile = profiles?.find(p => p.id === userId);
-           const userClubs = ownerMap.get(userId) || [];
-           return {
-             userId,
-             fullName: profile?.full_name || "Inconnu",
-             email: profile?.email || "-",
-             clubs: userClubs,
-             isFreeUser: auMap.get(userId) ?? null,
-             clubCount: userClubs.length,
-             createdAt: userClubs[userClubs.length - 1]?.created_at || null,
-           };
-         });
-       },
-     });
-
      // Toggle free/paid status for a club owner
      const toggleOwnerFreeStatus = useMutation({
        mutationFn: async ({ userId, isFree }: { userId: string; isFree: boolean }) => {
