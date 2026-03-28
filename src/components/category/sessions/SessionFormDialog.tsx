@@ -2740,6 +2740,38 @@ export function SessionFormDialog({
               <TabsContent value="details" className="h-full m-0">
                 <ScrollArea className="h-[50vh] pr-4">
                   <div className="space-y-4">
+                    {/* Athlete quick type selector */}
+                    {isAthleteMode && (
+                      <div className="space-y-2">
+                        <Label>Type de séance *</Label>
+                        <div className="grid grid-cols-3 gap-2">
+                          {[
+                            { value: "musculation", label: "Musculation", icon: "💪" },
+                            { value: "cardio", label: "Cardio / Course", icon: "🏃" },
+                            { value: "test", label: "Test", icon: "📋" },
+                            { value: "physique", label: "Physique", icon: "⚡" },
+                            { value: "recuperation", label: "Récupération", icon: "🧘" },
+                            { value: "autre", label: "Autre", icon: "📌" },
+                          ].map((opt) => (
+                            <Button
+                              key={opt.value}
+                              type="button"
+                              variant={type === opt.value ? "default" : "outline"}
+                              size="sm"
+                              className={cn(
+                                "flex items-center gap-1.5 text-xs h-9",
+                                type === opt.value && "ring-2 ring-primary ring-offset-1"
+                              )}
+                              onClick={() => handleTypeChange(opt.value)}
+                            >
+                              <span>{opt.icon}</span>
+                              {opt.label}
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     <div className="space-y-2">
                       <Label htmlFor="date">Date *</Label>
                       <Input
@@ -2772,15 +2804,17 @@ export function SessionFormDialog({
                       </div>
                     </div>
 
-                    {/* Session Blocks Manager - for multi-theme sessions */}
-                    <SessionBlocksManager
-                      blocks={sessionBlocks}
-                      onBlocksChange={setSessionBlocks}
-                      sportType={sportType}
-                      categoryId={categoryId}
-                      sessionStartTime={startTime}
-                      sessionEndTime={endTime}
-                    />
+                    {/* Session Blocks Manager - staff only */}
+                    {!isAthleteMode && (
+                      <SessionBlocksManager
+                        blocks={sessionBlocks}
+                        onBlocksChange={setSessionBlocks}
+                        sportType={sportType}
+                        categoryId={categoryId}
+                        sessionStartTime={startTime}
+                        sessionEndTime={endTime}
+                      />
+                    )}
 
                     {/* Intensity - only shown if no blocks */}
                     {sessionBlocks.length === 0 && (
@@ -2810,8 +2844,8 @@ export function SessionFormDialog({
                       />
                     </div>
 
-                    {/* GPS Import - Only visible when editing a session for Rugby/Football */}
-                    {showGpsImport && players && (
+                    {/* GPS Import - Only visible when editing a session for Rugby/Football (staff only) */}
+                    {!isAthleteMode && showGpsImport && players && (
                       <div className="pt-4 border-t">
                         <SessionGpsImport
                           players={players.map(p => ({ id: p.id, name: p.name, position: p.position }))}
@@ -2821,8 +2855,8 @@ export function SessionFormDialog({
                       </div>
                     )}
 
-                    {/* GPS Objectives - Only visible when editing a session */}
-                    {showGpsImport && editSession && (
+                    {/* GPS Objectives - Only visible when editing a session (staff only) */}
+                    {!isAthleteMode && showGpsImport && editSession && (
                       <div className="pt-4 border-t">
                         <GpsObjectivesForm
                           categoryId={categoryId}
