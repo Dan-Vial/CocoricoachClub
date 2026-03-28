@@ -678,9 +678,6 @@ export default function AthleteSpace() {
             />
           </TabsContent>
 
-          <TabsContent value="education">
-            <AthleteSpaceEducation sportType={athleteInfo.sport_type} />
-          </TabsContent>
 
           <TabsContent value="messaging">
               <MessagingTab categoryId={athleteInfo.category_id} isAthlete={true} />
