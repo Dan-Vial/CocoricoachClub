@@ -632,7 +632,8 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
                       )}
                     </div>
 
-                    {isPrecisionSession && (
+                    {/* Bowling precision */}
+                    {isBowlingPrecision && (
                       <div className="space-y-3 rounded-lg border border-border p-3">
                         <div>
                           <Label className="text-sm">Exercice précision</Label>
@@ -649,6 +650,57 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
                             </SelectContent>
                           </Select>
                         </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <Label className="text-sm">Tentatives</Label>
+                            <Input
+                              type="number"
+                              min={1}
+                              step={1}
+                              value={spareAttempts}
+                              onChange={(e) => setSpareAttempts(e.target.value)}
+                              placeholder="Ex: 20"
+                              className="mt-1"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-sm">Réussites</Label>
+                            <Input
+                              type="number"
+                              min={0}
+                              step={1}
+                              value={spareSuccesses}
+                              onChange={(e) => setSpareSuccesses(e.target.value)}
+                              placeholder="Ex: 14"
+                              className="mt-1"
+                            />
+                          </div>
+                        </div>
+
+                        {attemptsValue > 0 && successesValue >= 0 && successesValue <= attemptsValue && (
+                          <p className="text-xs text-muted-foreground flex items-center gap-1">
+                            <Target className="h-3 w-3" />
+                            Taux de réussite : {Math.round((successesValue / attemptsValue) * 10000) / 100}%
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Generic precision (all sports except bowling) */}
+                    {isGenericPrecision && (
+                      <div className="space-y-3 rounded-lg border border-accent/30 p-3">
+                        <PrecisionExerciseSelector
+                          categoryId={categoryId}
+                          sportType={sportType}
+                          selectedExerciseId={precisionExerciseId}
+                          onExerciseChange={(id, label) => {
+                            setPrecisionExerciseId(id);
+                            setPrecisionExerciseLabel(label);
+                          }}
+                          allowCreate
+                          compact
+                        />
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           <div>
