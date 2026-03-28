@@ -264,7 +264,7 @@ export function TeamLoadComparison({
               <YAxis 
                 type="category" 
                 dataKey="name" 
-                width={90}
+                width={120}
                 className="text-xs"
                 tick={({ x, y, payload }) => {
                   const player = chartData.find(p => p.name === payload.value);
