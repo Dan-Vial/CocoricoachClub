@@ -1159,18 +1159,8 @@ export function CompetitionRoundsDialog({
                                 </div>
                               </div>
 
-                              {/* Locked state indicator */}
-                              {round.isLocked && (
-                                <div className="flex items-center justify-center gap-2 p-3 rounded-lg bg-muted border border-border">
-                                  <Lock className="h-5 w-5 text-primary" />
-                                  <span className="text-sm font-medium text-foreground">
-                                    Partie validée - Consultation uniquement
-                                  </span>
-                                </div>
-                              )}
-
                               {/* Embedded Bowling Score Sheet */}
-                              <div className={round.isLocked ? "pointer-events-none" : ""}>
+                              <div className={round.isLocked ? "pointer-events-none opacity-80" : ""}>
                                 <BowlingScoreSheet
                                   key={`bowling-${round.round_number}-${round.isLocked}`}
                                   initialFrames={round.bowlingFrames}
