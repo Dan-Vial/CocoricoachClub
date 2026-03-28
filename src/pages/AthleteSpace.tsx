@@ -704,6 +704,7 @@ export default function AthleteSpace() {
               />
             </TabsContent>
           )}
+          <TabsContent value="messaging">
               <MessagingTab categoryId={athleteInfo.category_id} isAthlete={true} />
             </TabsContent>
 
