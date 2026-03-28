@@ -278,7 +278,13 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
     () => todaySessions.find((s) => s.id === selectedSession),
     [todaySessions, selectedSession]
   );
-  const isPrecisionSession = selectedSessionData?.training_type === "bowling_spare";
+  const isBowlingPrecision = selectedSessionData?.training_type === "bowling_spare";
+  const isGenericPrecision = selectedSessionData?.training_type === "precision";
+  const isPrecisionSession = isBowlingPrecision || isGenericPrecision;
+
+  // State for generic precision exercises
+  const [precisionExerciseId, setPrecisionExerciseId] = useState<string | null>(null);
+  const [precisionExerciseLabel, setPrecisionExerciseLabel] = useState("");
 
   const getSpareExerciseLabel = (value: string | null | undefined): string | null => {
     if (!value) return null;
