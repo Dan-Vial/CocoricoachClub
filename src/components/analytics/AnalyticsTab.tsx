@@ -3,11 +3,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PerformanceEvolution } from "./PerformanceEvolution";
-import { MultiAthleteComparison } from "./MultiAthleteComparison";
 import { InjuryRiskPrediction } from "./InjuryRiskPrediction";
 import { PerformanceHeatmap } from "./PerformanceHeatmap";
 import { AIPredictiveDashboard } from "./AIPredictiveDashboard";
-import { IntensityComparisonDashboard } from "./IntensityComparisonDashboard";
 
 interface AnalyticsTabProps {
   categoryId: string;
