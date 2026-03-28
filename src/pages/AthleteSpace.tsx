@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, User, LogOut, Activity, Heart, BarChart3, Target, Video, BookOpen, Shield, ArrowLeft, Search, ChevronRight, MessageSquare, Settings, CalendarDays, FlaskConical } from "lucide-react";
+import { Loader2, User, LogOut, Activity, Heart, BarChart3, Target, Video, Shield, ArrowLeft, Search, ChevronRight, MessageSquare, Settings, CalendarDays, FlaskConical } from "lucide-react";
 import { NAV_COLORS } from "@/components/ui/colored-nav-tabs";
 import { AthletePWAInstallPopup } from "@/components/athlete/AthletePWAInstallPopup";
 import { AthleteSpaceDashboard } from "@/components/athlete-space/AthleteSpaceDashboard";
@@ -17,7 +17,7 @@ import { AthleteSpaceWellness } from "@/components/athlete-space/AthleteSpaceWel
 import { AthleteSpaceProgression } from "@/components/athlete-space/AthleteSpaceProgression";
 import { AthleteSpaceObjectives } from "@/components/athlete-space/AthleteSpaceObjectives";
 import { AthleteSpaceHealth } from "@/components/athlete-space/AthleteSpaceHealth";
-import { AthleteSpaceEducation } from "@/components/athlete-space/AthleteSpaceEducation";
+// AthleteSpaceEducation removed
 import { MessagingTab } from "@/components/messaging/MessagingTab";
 import { AthleteSpaceSettings } from "@/components/athlete-space/AthleteSpaceSettings";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
@@ -580,19 +580,6 @@ export default function AthleteSpace() {
                  <Shield className="h-3.5 w-3.5" />
                  Santé
               </TabsTrigger>
-              <TabsTrigger 
-                value="education"
-                 className="athlete-tab shrink-0 gap-1 px-2 py-1.5 rounded-xl font-semibold text-xs transition-all duration-200 data-[state=active]:shadow-lg"
-                 style={{
-                   color: NAV_COLORS.effectif.base,
-                   backgroundColor: `${NAV_COLORS.effectif.base}15`,
-                   borderBottom: `3px solid ${NAV_COLORS.effectif.base}`,
-                   ["--tab-color" as string]: NAV_COLORS.effectif.base,
-                 }}
-               >
-                <BookOpen className="h-3.5 w-3.5" />
-                  Conseils
-                 </TabsTrigger>
                {(
                   <TabsTrigger 
                     value="messaging"
@@ -691,9 +678,6 @@ export default function AthleteSpace() {
             />
           </TabsContent>
 
-          <TabsContent value="education">
-            <AthleteSpaceEducation sportType={athleteInfo.sport_type} />
-          </TabsContent>
 
           <TabsContent value="messaging">
               <MessagingTab categoryId={athleteInfo.category_id} isAthlete={true} />
