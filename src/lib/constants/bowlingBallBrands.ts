@@ -6,6 +6,10 @@ export const BOWLING_BALL_BRANDS = [
   "Brunswick",
   "Ebonite",
   "Motiv",
+  "DV8",
+  "Columbia 300",
+  "Track",
+  "Radical",
 ] as const;
 
 export const COVER_TYPES = [
