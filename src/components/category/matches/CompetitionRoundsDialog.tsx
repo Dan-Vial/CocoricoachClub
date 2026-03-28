@@ -235,6 +235,22 @@ export function CompetitionRoundsDialog({
     toast.success(`Partie ${roundNumber} validée et verrouillée`);
   };
 
+  // Unlock a bowling round for re-editing
+  const unlockBowlingRound = (playerId: string, roundNumber: number) => {
+    setPlayerRoundsData(prev => prev.map(p => {
+      if (p.playerId === playerId) {
+        return {
+          ...p,
+          rounds: p.rounds.map(r => 
+            r.round_number === roundNumber ? { ...r, isLocked: false } : r
+          ),
+        };
+      }
+      return p;
+    }));
+    toast.info(`Partie ${roundNumber} déverrouillée pour modification`);
+  };
+
   // Handle bowling score sheet save with frames
   const handleBowlingScoreSheetSave = (
     playerId: string, 
