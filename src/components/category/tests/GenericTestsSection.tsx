@@ -343,6 +343,13 @@ export function GenericTestsSection({ categoryId, sportType, defaultCategory }: 
           />
         );
       })()}
+
+      <CreateCustomTestDialog
+        open={isCreateTestDialogOpen}
+        onOpenChange={setIsCreateTestDialogOpen}
+        categoryId={categoryId}
+        sportType={sportType}
+      />
     </Card>
   );
 }
