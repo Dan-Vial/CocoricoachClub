@@ -12,7 +12,7 @@
  import { Textarea } from "@/components/ui/textarea";
  import { Checkbox } from "@/components/ui/checkbox";
  import { toast } from "@/components/ui/sonner";
-import { Plus, Edit, Pause, Play, Trash2, Building2, Mail, Video, MapPin, FolderOpen, User, Gift, DollarSign, Copy, Link, Check, GraduationCap, Search, CreditCard } from "lucide-react";
+import { Plus, Edit, Pause, Play, Trash2, Building2, Mail, Video, MapPin, FolderOpen, Copy, Link, Check, GraduationCap, Search, CreditCard } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { InviteClientDialog } from "./InviteClientDialog";
