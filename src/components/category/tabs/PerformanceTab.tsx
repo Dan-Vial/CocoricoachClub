@@ -1,10 +1,11 @@
 import { Tabs, TabsContent } from "@/components/ui/tabs";
-import { BarChart3, Dumbbell, History, Zap, Lock, Brain } from "lucide-react";
+import { BarChart3, Dumbbell, History, Zap, Lock, Brain, Weight } from "lucide-react";
 import { AnalyticsTab } from "@/components/analytics/AnalyticsTab";
 import { PhysicalPreparationTab } from "@/components/category/PhysicalPreparationTab";
 import { SessionHistoryTimeline } from "@/components/category/history/SessionHistoryTimeline";
 import { TrainingLoadTab } from "@/components/training-load/TrainingLoadTab";
 import { MentalPerformanceSection } from "@/components/category/mental/MentalPerformanceSection";
+import { TonnageDashboard } from "@/components/tonnage/TonnageDashboard";
 import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ColoredSubTabsList, ColoredSubTabsTrigger } from "@/components/ui/colored-subtabs";
@@ -83,6 +84,14 @@ export function PerformanceTab({ categoryId }: PerformanceTabProps) {
             <span className="hidden sm:inline">Performance Mentale</span>
             <span className="sm:hidden">Mental</span>
           </ColoredSubTabsTrigger>
+          <ColoredSubTabsTrigger 
+            value="tonnage" 
+            colorKey="performance"
+            icon={<Weight className="h-4 w-4" />}
+          >
+            <span className="hidden sm:inline">Tonnage Muscu</span>
+            <span className="sm:hidden">Tonnage</span>
+          </ColoredSubTabsTrigger>
         </ColoredSubTabsList>
       </div>
 
@@ -104,6 +113,10 @@ export function PerformanceTab({ categoryId }: PerformanceTabProps) {
 
       <TabsContent value="mental">
         <MentalPerformanceSection categoryId={categoryId} />
+      </TabsContent>
+
+      <TabsContent value="tonnage">
+        <TonnageDashboard categoryId={categoryId} />
       </TabsContent>
     </Tabs>
   );

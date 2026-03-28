@@ -348,6 +348,99 @@ export type Database = {
           },
         ]
       }
+      athlete_exercise_logs: {
+        Row: {
+          actual_reps: number | null
+          actual_sets: number | null
+          actual_weight_kg: number
+          category_id: string
+          created_at: string | null
+          exercise_category: string | null
+          exercise_name: string
+          gym_exercise_id: string | null
+          id: string
+          notes: string | null
+          player_id: string
+          prescribed_percentage_1rm: number | null
+          prescribed_reps: number | null
+          prescribed_sets: number | null
+          tonnage: number | null
+          training_session_id: string
+        }
+        Insert: {
+          actual_reps?: number | null
+          actual_sets?: number | null
+          actual_weight_kg: number
+          category_id: string
+          created_at?: string | null
+          exercise_category?: string | null
+          exercise_name: string
+          gym_exercise_id?: string | null
+          id?: string
+          notes?: string | null
+          player_id: string
+          prescribed_percentage_1rm?: number | null
+          prescribed_reps?: number | null
+          prescribed_sets?: number | null
+          tonnage?: number | null
+          training_session_id: string
+        }
+        Update: {
+          actual_reps?: number | null
+          actual_sets?: number | null
+          actual_weight_kg?: number
+          category_id?: string
+          created_at?: string | null
+          exercise_category?: string | null
+          exercise_name?: string
+          gym_exercise_id?: string | null
+          id?: string
+          notes?: string | null
+          player_id?: string
+          prescribed_percentage_1rm?: number | null
+          prescribed_reps?: number | null
+          prescribed_sets?: number | null
+          tonnage?: number | null
+          training_session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "athlete_exercise_logs_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "athlete_exercise_logs_gym_exercise_id_fkey"
+            columns: ["gym_exercise_id"]
+            isOneToOne: false
+            referencedRelation: "gym_session_exercises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "athlete_exercise_logs_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "athlete_exercise_logs_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "athlete_exercise_logs_training_session_id_fkey"
+            columns: ["training_session_id"]
+            isOneToOne: false
+            referencedRelation: "training_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       athlete_invitations: {
         Row: {
           accepted_at: string | null
