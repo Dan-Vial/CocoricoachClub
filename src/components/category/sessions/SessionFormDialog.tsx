@@ -2900,7 +2900,7 @@ export function SessionFormDialog({
               <TabsContent value="exercises" className="h-full m-0">
                 {activeTab === "exercises" ? (
                   <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-                    <div className="flex h-[50vh]">
+                    <div className="flex flex-col sm:flex-row h-[50vh]">
                       {/* Left side - Exercise list with drop zone */}
                       <div className="flex-1 pr-4">
                         <DroppableExerciseZone>
