@@ -413,9 +413,23 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, c
       if (upperValue === "X") {
         currentThrow.pins = 10;
       } else if (upperValue === "/") {
-        // Spare: 10 minus previous pins in this frame
-        const previousPins = throws.slice(0, throwIndex).reduce((sum, t) => sum + t.pins, 0);
-        currentThrow.pins = 10 - previousPins;
+        // Spare: 10 minus pins from IMMEDIATELY previous throw only
+        // In 10th frame, pins reset after a strike, so only count from last pin-reset point
+        const isTenthFrame = frameIndex === 9;
+        if (isTenthFrame) {
+          // Find the last "reset point" - after a strike or spare, pins reset
+          let pinsInCurrentSet = 0;
+          for (let ti = throwIndex - 1; ti >= 0; ti--) {
+            if (throws[ti]?.value === "X" || throws[ti]?.value === "/") {
+              break; // Pins were reset after this throw
+            }
+            pinsInCurrentSet += throws[ti]?.pins || 0;
+          }
+          currentThrow.pins = 10 - pinsInCurrentSet;
+        } else {
+          const previousPins = throws.slice(0, throwIndex).reduce((sum, t) => sum + t.pins, 0);
+          currentThrow.pins = 10 - previousPins;
+        }
       } else if (upperValue === "-" || upperValue === "") {
         currentThrow.pins = 0;
       } else {
