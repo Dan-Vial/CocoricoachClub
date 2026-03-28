@@ -116,21 +116,6 @@ export function SuperAdminClients() {
        },
      });
 
-     // Toggle free/paid status for a club owner
-     const toggleOwnerFreeStatus = useMutation({
-       mutationFn: async ({ userId, isFree }: { userId: string; isFree: boolean }) => {
-         const { error } = await supabase
-           .from("approved_users")
-           .update({ is_free_user: isFree })
-           .eq("user_id", userId);
-         if (error) throw error;
-       },
-       onSuccess: () => {
-         toast.success("Statut mis à jour");
-         queryClient.invalidateQueries({ queryKey: ["super-admin-club-owners"] });
-         queryClient.invalidateQueries({ queryKey: ["super-admin-approved-users"] });
-       },
-     });
  
    // Create client mutation
     const createClient = useMutation({
