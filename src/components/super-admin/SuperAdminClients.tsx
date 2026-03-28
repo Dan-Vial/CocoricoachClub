@@ -815,13 +815,7 @@ export function SuperAdminClients() {
               ? clients.filter((client: any) => {
                   const nameMatch = client.name?.toLowerCase().includes(query);
                   const emailMatch = client.email?.toLowerCase().includes(query);
-                  // Check if any club linked to this client matches
-                  const clubMatch = clubOwners.some((owner: any) =>
-                    owner.clubs.some((club: any) =>
-                      club.client_id === client.id && club.name.toLowerCase().includes(query)
-                    )
-                  );
-                  return nameMatch || emailMatch || clubMatch;
+                  return nameMatch || emailMatch;
                 })
               : clients;
 
