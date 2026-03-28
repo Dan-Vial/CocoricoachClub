@@ -2989,7 +2989,7 @@ export function SessionFormDialog({
                 </ScrollArea>
               </TabsContent>
 
-              <TabsContent value="players" className="h-full m-0">
+              {!isAthleteMode && <TabsContent value="players" className="h-full m-0">
                 <ScrollArea className="h-[50vh] pr-4">
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
