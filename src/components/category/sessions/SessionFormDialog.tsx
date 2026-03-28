@@ -256,7 +256,9 @@ export function SessionFormDialog({
   categoryId,
   editSession,
   defaultDate,
+  athletePlayerId,
 }: SessionFormDialogProps) {
+  const isAthleteMode = !!athletePlayerId;
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
