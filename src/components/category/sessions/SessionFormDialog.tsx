@@ -2760,10 +2760,10 @@ export function SessionFormDialog({
                           {[
                             { value: "musculation", label: "Musculation", icon: "💪" },
                             { value: "cardio", label: "Cardio / Course", icon: "🏃" },
+                            { value: "precision", label: "Précision", icon: "🎯" },
                             { value: "test", label: "Test", icon: "📋" },
                             { value: "physique", label: "Physique", icon: "⚡" },
                             { value: "recuperation", label: "Récupération", icon: "🧘" },
-                            { value: "autre", label: "Autre", icon: "📌" },
                           ].map((opt) => (
                             <Button
                               key={opt.value}
