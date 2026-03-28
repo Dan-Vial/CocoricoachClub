@@ -551,6 +551,15 @@ export function SessionFeedbackDialog({
                 </Badge>
               )}
             </TabsTrigger>
+            <TabsTrigger value="weights" className="flex-1 gap-2">
+              <Dumbbell className="h-4 w-4" />
+              Charges
+              {weightLogCount > 0 && (
+                <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
+                  {weightLogCount}
+                </Badge>
+              )}
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="rpe" className="flex-1 flex flex-col min-h-0 mt-4">
