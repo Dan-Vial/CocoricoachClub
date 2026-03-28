@@ -563,6 +563,39 @@ export function AddSessionDialog({
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
           <div className="flex-1 overflow-y-auto pr-2">
             <div className="space-y-4 py-4">
+
+              {/* Athlete quick type selector */}
+              {isAthleteMode && (
+                <div className="space-y-2">
+                  <Label>Type de séance *</Label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { value: "musculation", label: "Musculation", icon: "💪" },
+                      { value: "cardio", label: "Cardio / Course", icon: "🏃" },
+                      { value: "test", label: "Test", icon: "📋" },
+                      { value: "physique", label: "Physique", icon: "⚡" },
+                      { value: "recuperation", label: "Récupération", icon: "🧘" },
+                      { value: "autre", label: "Autre", icon: "📌" },
+                    ].map((opt) => (
+                      <Button
+                        key={opt.value}
+                        type="button"
+                        variant={type === opt.value ? "default" : "outline"}
+                        size="sm"
+                        className={cn(
+                          "flex items-center gap-1.5 text-xs h-9",
+                          type === opt.value && "ring-2 ring-primary ring-offset-1"
+                        )}
+                        onClick={() => handleTypeChange(opt.value)}
+                      >
+                        <span>{opt.icon}</span>
+                        {opt.label}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Date and time */}
               <div className="space-y-2">
                 <Label htmlFor="date">Date *</Label>
@@ -596,17 +629,19 @@ export function AddSessionDialog({
                 </div>
               </div>
 
-              {/* Session Blocks Manager - for multi-theme sessions */}
-              <SessionBlocksManager
-                blocks={sessionBlocks}
-                onBlocksChange={setSessionBlocks}
-                sportType={sportType}
-                categoryId={categoryId}
-                sessionStartTime={startTime}
-                sessionEndTime={endTime}
-              />
+              {/* Session Blocks Manager - for multi-theme sessions (staff only) */}
+              {!isAthleteMode && (
+                <SessionBlocksManager
+                  blocks={sessionBlocks}
+                  onBlocksChange={setSessionBlocks}
+                  sportType={sportType}
+                  categoryId={categoryId}
+                  sessionStartTime={startTime}
+                  sessionEndTime={endTime}
+                />
+              )}
 
-              {/* Intensity - only shown if no blocks (blocks have their own RPE) */}
+              {/* Intensity */}
               {sessionBlocks.length === 0 && (
                 <div className="space-y-2">
                   <Label htmlFor="intensity">Intensité (1-10)</Label>
