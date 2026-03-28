@@ -847,7 +847,7 @@ export function CompetitionRoundsDialog({
                   </Button>
                   {isBowling && selectedPlayer.rounds.length === 0 && (
                     <p className="text-xs text-muted-foreground text-center">
-                      Ajoutez autant de parties que nécessaire. Chaque partie peut avoir sa propre phase (qualif, demi, finale) et son format (individuelle, doublette...).
+                      💡 Compétition multi-jours ? Chaque partie peut avoir sa propre date, phase (qualif, demi, finale) et format (individuelle, doublette...). Tout dans la même compétition !
                     </p>
                   )}
 
