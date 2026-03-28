@@ -12,7 +12,7 @@
  import { Textarea } from "@/components/ui/textarea";
  import { Checkbox } from "@/components/ui/checkbox";
  import { toast } from "@/components/ui/sonner";
-import { Plus, Edit, Pause, Play, Trash2, Building2, Mail, Video, MapPin, FolderOpen, User, Gift, DollarSign, Copy, Link, Check, GraduationCap, Search, CreditCard } from "lucide-react";
+import { Plus, Edit, Pause, Play, Trash2, Building2, Mail, Video, MapPin, FolderOpen, Copy, Link, Check, GraduationCap, Search, CreditCard } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { InviteClientDialog } from "./InviteClientDialog";
@@ -116,74 +116,6 @@ export function SuperAdminClients() {
        },
      });
 
-     // Fetch auto-detected club owners (users who created clubs)
-     const { data: clubOwners = [] } = useQuery({
-       queryKey: ["super-admin-club-owners"],
-       queryFn: async () => {
-         // Get all clubs with their owners
-         const { data: clubs, error: clubsError } = await supabase
-           .from("clubs")
-           .select("id, name, sport, user_id, client_id, is_active, created_at")
-           .order("created_at", { ascending: false });
-         if (clubsError) throw clubsError;
-
-         // Group clubs by owner
-         const ownerMap = new Map<string, any[]>();
-         (clubs || []).forEach(club => {
-           if (!ownerMap.has(club.user_id)) ownerMap.set(club.user_id, []);
-           ownerMap.get(club.user_id)!.push(club);
-         });
-
-         // Get unique owner user_ids
-         const ownerIds = Array.from(ownerMap.keys());
-         if (ownerIds.length === 0) return [];
-
-         // Get profiles
-         const { data: profiles } = await supabase
-           .from("profiles")
-           .select("id, full_name, email")
-           .in("id", ownerIds);
-
-         // Get approved_users status
-         const { data: approvedUsers } = await supabase
-           .from("approved_users")
-           .select("user_id, is_free_user")
-           .in("user_id", ownerIds);
-
-         const auMap = new Map<string, boolean | null>();
-         (approvedUsers || []).forEach(au => auMap.set(au.user_id, au.is_free_user));
-
-         return ownerIds.map(userId => {
-           const profile = profiles?.find(p => p.id === userId);
-           const userClubs = ownerMap.get(userId) || [];
-           return {
-             userId,
-             fullName: profile?.full_name || "Inconnu",
-             email: profile?.email || "-",
-             clubs: userClubs,
-             isFreeUser: auMap.get(userId) ?? null,
-             clubCount: userClubs.length,
-             createdAt: userClubs[userClubs.length - 1]?.created_at || null,
-           };
-         });
-       },
-     });
-
-     // Toggle free/paid status for a club owner
-     const toggleOwnerFreeStatus = useMutation({
-       mutationFn: async ({ userId, isFree }: { userId: string; isFree: boolean }) => {
-         const { error } = await supabase
-           .from("approved_users")
-           .update({ is_free_user: isFree })
-           .eq("user_id", userId);
-         if (error) throw error;
-       },
-       onSuccess: () => {
-         toast.success("Statut mis à jour");
-         queryClient.invalidateQueries({ queryKey: ["super-admin-club-owners"] });
-         queryClient.invalidateQueries({ queryKey: ["super-admin-approved-users"] });
-       },
-     });
  
    // Create client mutation
     const createClient = useMutation({
@@ -883,13 +815,7 @@ export function SuperAdminClients() {
               ? clients.filter((client: any) => {
                   const nameMatch = client.name?.toLowerCase().includes(query);
                   const emailMatch = client.email?.toLowerCase().includes(query);
-                  // Check if any club linked to this client matches
-                  const clubMatch = clubOwners.some((owner: any) =>
-                    owner.clubs.some((club: any) =>
-                      club.client_id === client.id && club.name.toLowerCase().includes(query)
-                    )
-                  );
-                  return nameMatch || emailMatch || clubMatch;
+                  return nameMatch || emailMatch;
                 })
               : clients;
 
@@ -1079,80 +1005,6 @@ export function SuperAdminClients() {
            );
           })()}
 
-          {/* Auto-detected Club Owners section */}
-          <div className="mt-8 border-t pt-6">
-            <h3 className="text-lg font-semibold flex items-center gap-2 mb-4">
-              <User className="h-5 w-5" />
-              Propriétaires de clubs (auto-détectés)
-              <Badge variant="secondary" className="ml-2">{clubOwners.length}</Badge>
-            </h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              Utilisateurs ayant créé un ou plusieurs clubs sur la plateforme
-            </p>
-            {clubOwners.length === 0 ? (
-              <p className="text-muted-foreground text-center py-4 text-sm">Aucun propriétaire de club</p>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Propriétaire</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Clubs</TableHead>
-                    <TableHead>Statut</TableHead>
-                    <TableHead>Inscription</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {clubOwners.map((owner: any) => (
-                    <TableRow key={owner.userId}>
-                      <TableCell className="font-medium">{owner.fullName}</TableCell>
-                      <TableCell className="text-sm">{owner.email}</TableCell>
-                      <TableCell>
-                        <div className="flex flex-wrap gap-1">
-                          {owner.clubs.map((club: any) => (
-                            <Badge key={club.id} variant="outline" className="text-xs">
-                              <Building2 className="h-3 w-3 mr-1" />
-                              {club.name}
-                            </Badge>
-                          ))}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {owner.isFreeUser === true ? (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 gap-1 text-purple-600 hover:text-green-600"
-                            onClick={() => toggleOwnerFreeStatus.mutate({ userId: owner.userId, isFree: false })}
-                            title="Cliquer pour passer en Payant"
-                          >
-                            <Gift className="h-3.5 w-3.5" />
-                            <span className="text-xs font-medium">Gratuit</span>
-                          </Button>
-                        ) : owner.isFreeUser === false ? (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 gap-1 text-green-600 hover:text-purple-600"
-                            onClick={() => toggleOwnerFreeStatus.mutate({ userId: owner.userId, isFree: true })}
-                            title="Cliquer pour passer en Gratuit"
-                          >
-                            <DollarSign className="h-3.5 w-3.5" />
-                            <span className="text-xs font-medium">Payant</span>
-                          </Button>
-                        ) : (
-                          <Badge variant="outline" className="text-xs text-muted-foreground">Non défini</Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {owner.createdAt ? format(new Date(owner.createdAt), "dd MMM yyyy", { locale: fr }) : "-"}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </div>
  
          {/* Edit Dialog */}
          <Dialog open={!!editingClient} onOpenChange={(open) => !open && setEditingClient(null)}>
