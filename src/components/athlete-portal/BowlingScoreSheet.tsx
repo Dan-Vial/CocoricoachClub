@@ -621,9 +621,9 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, c
                             return (
                               <div 
                                 key={throwIndex} 
-                                className={`${boxSize} border-l border-b border-foreground/20 ${
+                                className={`${boxSize} border-l border-b border-foreground/20 relative ${
                                   throwIndex === 0 && !isTenth ? "border-l-0" : ""
-                                }`}
+                                } ${throwData?.isSplit ? "ring-2 ring-destructive/60 ring-inset" : ""}`}
                               >
                                 <Input
                                   type="text"
@@ -634,6 +634,22 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, c
                                   className={`w-full h-full text-center text-sm font-bold p-0 uppercase rounded-none border-0 focus:ring-1 focus:ring-primary ${getThrowCellStyle(value)} ${isSaved ? "opacity-70" : ""}`}
                                   placeholder=""
                                 />
+                                {/* Split indicator - show on non-strike, non-spare first throws */}
+                                {value && value !== "X" && value !== "/" && isPocketAllowed(frameIndex, throwIndex, frames[frameIndex]) && (
+                                  <button
+                                    type="button"
+                                    disabled={isSaved}
+                                    onClick={() => handleCheckboxChange(frameIndex, throwIndex, "isSplit")}
+                                    className={`absolute -bottom-1 -right-1 z-10 w-3.5 h-3.5 rounded-full text-[7px] font-bold flex items-center justify-center border ${
+                                      throwData?.isSplit 
+                                        ? "bg-destructive text-destructive-foreground border-destructive" 
+                                        : "bg-muted text-muted-foreground border-border hover:bg-destructive/20"
+                                    }`}
+                                    title={throwData?.isSplit ? "Retirer le split" : "Marquer comme split"}
+                                  >
+                                    S
+                                  </button>
+                                )}
                               </div>
                             );
                           })}
