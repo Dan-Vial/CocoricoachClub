@@ -55,6 +55,21 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
   const today = new Date().toISOString().split("T")[0];
   const endDate = addDays(new Date(), 14).toISOString().split("T")[0];
 
+  // Fetch category sport type for precision exercises
+  const { data: categoryData } = useQuery({
+    queryKey: ["category-sport-for-precision", categoryId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("categories")
+        .select("rugby_type")
+        .eq("id", categoryId)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+  });
+  const sportType = categoryData?.rugby_type;
+
   const enrichSessionsWithBowlingExercise = async (sessions: SessionRow[]): Promise<SessionRow[]> => {
     if (sessions.length === 0) return [];
 
