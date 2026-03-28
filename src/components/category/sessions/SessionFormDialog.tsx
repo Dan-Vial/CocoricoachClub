@@ -2727,7 +2727,7 @@ export function SessionFormDialog({
 
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
-            <TabsList className={cn("grid w-full shrink-0", isAthleteMode ? "grid-cols-3" : "grid-cols-4")}>
+            <TabsList className={cn("grid w-full shrink-0", isAthleteMode ? "grid-cols-3" : "grid-cols-2 sm:grid-cols-4")}>
               <TabsTrigger value="details">Détails</TabsTrigger>
               <TabsTrigger value="exercises">
                 Exercices
