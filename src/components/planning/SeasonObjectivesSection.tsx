@@ -502,6 +502,9 @@ export function SeasonObjectivesSection({ categoryId }: SeasonObjectivesSectionP
           </CardContent>
         </Card>
       </div>
+
+      {/* Individual player objectives */}
+      <PlayerObjectivesSection categoryId={categoryId} />
     </div>
   );
 }
