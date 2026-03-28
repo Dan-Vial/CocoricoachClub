@@ -309,11 +309,13 @@ export function RpePlanVsActual({ categoryId, onPlayerClick }: RpePlanVsActualPr
                 value={periodDays.toString()} 
                 onValueChange={(v) => setPeriodDays(Number(v))}
               >
-                <SelectTrigger className="w-[120px]">
+              <SelectTrigger className="w-[120px]">
                   <Calendar className="h-3 w-3 mr-1" />
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="1">Hier</SelectItem>
+                  <SelectItem value="3">3 jours</SelectItem>
                   <SelectItem value="7">7 jours</SelectItem>
                   <SelectItem value="14">14 jours</SelectItem>
                   <SelectItem value="28">28 jours</SelectItem>
