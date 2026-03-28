@@ -337,6 +337,8 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
     setMaxHr("");
     setShowZones(false);
     setZone1(""); setZone2(""); setZone3(""); setZone4(""); setZone5("");
+    setPrecisionExerciseId(null);
+    setPrecisionExerciseLabel("");
 
     const session = todaySessions.find((s) => s.id === sessionId);
     if (session) {
