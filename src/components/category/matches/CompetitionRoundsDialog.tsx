@@ -839,8 +839,13 @@ export function CompetitionRoundsDialog({
                     className="w-full gap-2"
                   >
                     <Plus className="h-4 w-4" />
-                    Ajouter {isAviron ? "une course" : isJudo ? "un combat" : isBowling ? "une partie" : isAthletics ? "une épreuve" : `un ${roundLabel.toLowerCase()}`}
+                    Ajouter {isBowling ? "une partie (feuille de score)" : isAviron ? "une course" : isJudo ? "un combat" : isAthletics ? "une épreuve" : `un ${roundLabel.toLowerCase()}`}
                   </Button>
+                  {isBowling && selectedPlayer.rounds.length === 0 && (
+                    <p className="text-xs text-muted-foreground text-center">
+                      Ajoutez autant de parties que nécessaire. Chaque partie peut avoir sa propre phase (qualif, demi, finale) et son format (individuelle, doublette...).
+                    </p>
+                  )}
 
                   {selectedPlayer.rounds.length === 0 ? (
                     <div className="text-center py-8 text-muted-foreground space-y-2">
