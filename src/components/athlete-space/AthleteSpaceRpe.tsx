@@ -19,6 +19,7 @@ import { getTestLabel } from "@/lib/constants/testCategories";
 import { getDisplayNotes } from "@/lib/utils/sessionNotes";
 import { SPARE_EXERCISE_TYPES } from "@/lib/constants/bowlingBallBrands";
 import { GroupedExerciseList } from "@/components/category/GroupedExerciseList";
+import { PrecisionExerciseSelector } from "@/components/precision/PrecisionExerciseSelector";
 
 interface Props {
   playerId: string;
@@ -53,6 +54,21 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
   const queryClient = useQueryClient();
   const today = new Date().toISOString().split("T")[0];
   const endDate = addDays(new Date(), 14).toISOString().split("T")[0];
+
+  // Fetch category sport type for precision exercises
+  const { data: categoryData } = useQuery({
+    queryKey: ["category-sport-for-precision", categoryId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("categories")
+        .select("rugby_type")
+        .eq("id", categoryId)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+  });
+  const sportType = categoryData?.rugby_type;
 
   const enrichSessionsWithBowlingExercise = async (sessions: SessionRow[]): Promise<SessionRow[]> => {
     if (sessions.length === 0) return [];
@@ -262,7 +278,13 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
     () => todaySessions.find((s) => s.id === selectedSession),
     [todaySessions, selectedSession]
   );
-  const isPrecisionSession = selectedSessionData?.training_type === "bowling_spare";
+  const isBowlingPrecision = selectedSessionData?.training_type === "bowling_spare";
+  const isGenericPrecision = selectedSessionData?.training_type === "precision";
+  const isPrecisionSession = isBowlingPrecision || isGenericPrecision;
+
+  // State for generic precision exercises
+  const [precisionExerciseId, setPrecisionExerciseId] = useState<string | null>(null);
+  const [precisionExerciseLabel, setPrecisionExerciseLabel] = useState("");
 
   const getSpareExerciseLabel = (value: string | null | undefined): string | null => {
     if (!value) return null;
@@ -315,6 +337,8 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
     setMaxHr("");
     setShowZones(false);
     setZone1(""); setZone2(""); setZone3(""); setZone4(""); setZone5("");
+    setPrecisionExerciseId(null);
+    setPrecisionExerciseLabel("");
 
     const session = todaySessions.find((s) => s.id === sessionId);
     if (session) {
@@ -362,7 +386,7 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
 
       if (awcrError || !awcrRow) throw awcrError || new Error("Erreur AWCR");
 
-      if (isPrecisionSession) {
+      if (isBowlingPrecision) {
         const successRate = Math.round((successesValue / attemptsValue) * 10000) / 100;
         const { error: spareError } = await supabase.from("bowling_spare_training").insert({
           player_id: playerId,
@@ -378,6 +402,23 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
         if (spareError) {
           await supabase.from("awcr_tracking").delete().eq("id", awcrRow.id);
           throw spareError;
+        }
+      } else if (isGenericPrecision && attemptsValue > 0) {
+        // Insert into precision_training table
+        const { error: precisionError } = await supabase.from("precision_training").insert({
+          player_id: playerId,
+          category_id: categoryId,
+          session_date: today,
+          training_session_id: selectedSession,
+          exercise_type_id: precisionExerciseId || null,
+          exercise_label: precisionExerciseLabel || "Précision",
+          attempts: attemptsValue,
+          successes: successesValue,
+        });
+
+        if (precisionError) {
+          await supabase.from("awcr_tracking").delete().eq("id", awcrRow.id);
+          throw precisionError;
         }
       }
       // Insert HRV data if provided
@@ -427,6 +468,8 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
       setMaxHr("");
       setShowZones(false);
       setZone1(""); setZone2(""); setZone3(""); setZone4(""); setZone5("");
+      setPrecisionExerciseId(null);
+      setPrecisionExerciseLabel("");
     },
     onError: (error: any) => toast.error(error?.message || "Erreur lors de l'enregistrement"),
   });
@@ -589,7 +632,8 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
                       )}
                     </div>
 
-                    {isPrecisionSession && (
+                    {/* Bowling precision */}
+                    {isBowlingPrecision && (
                       <div className="space-y-3 rounded-lg border border-border p-3">
                         <div>
                           <Label className="text-sm">Exercice précision</Label>
@@ -606,6 +650,57 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
                             </SelectContent>
                           </Select>
                         </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <Label className="text-sm">Tentatives</Label>
+                            <Input
+                              type="number"
+                              min={1}
+                              step={1}
+                              value={spareAttempts}
+                              onChange={(e) => setSpareAttempts(e.target.value)}
+                              placeholder="Ex: 20"
+                              className="mt-1"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-sm">Réussites</Label>
+                            <Input
+                              type="number"
+                              min={0}
+                              step={1}
+                              value={spareSuccesses}
+                              onChange={(e) => setSpareSuccesses(e.target.value)}
+                              placeholder="Ex: 14"
+                              className="mt-1"
+                            />
+                          </div>
+                        </div>
+
+                        {attemptsValue > 0 && successesValue >= 0 && successesValue <= attemptsValue && (
+                          <p className="text-xs text-muted-foreground flex items-center gap-1">
+                            <Target className="h-3 w-3" />
+                            Taux de réussite : {Math.round((successesValue / attemptsValue) * 10000) / 100}%
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Generic precision (all sports except bowling) */}
+                    {isGenericPrecision && (
+                      <div className="space-y-3 rounded-lg border border-accent/30 p-3">
+                        <PrecisionExerciseSelector
+                          categoryId={categoryId}
+                          sportType={sportType}
+                          selectedExerciseId={precisionExerciseId}
+                          onExerciseChange={(id, label) => {
+                            setPrecisionExerciseId(id);
+                            setPrecisionExerciseLabel(label);
+                          }}
+                          allowCreate
+                          compact
+                        />
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           <div>

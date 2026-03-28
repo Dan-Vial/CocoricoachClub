@@ -86,6 +86,7 @@ import { TrainingMethodBlock } from "./TrainingMethodBlocks";
 import { TrainingMethodSelect } from "./TrainingMethodSelect";
 import { SessionTestBlock, type SessionTest } from "./SessionTestBlock";
 import { SessionBlocksManager, type SessionBlock } from "./SessionBlocksManager";
+import { PrecisionExerciseSelector } from "@/components/precision/PrecisionExerciseSelector";
 
 interface SessionFormDialogProps {
   open: boolean;
@@ -2759,10 +2760,10 @@ export function SessionFormDialog({
                           {[
                             { value: "musculation", label: "Musculation", icon: "💪" },
                             { value: "cardio", label: "Cardio / Course", icon: "🏃" },
+                            { value: "precision", label: "Précision", icon: "🎯" },
                             { value: "test", label: "Test", icon: "📋" },
                             { value: "physique", label: "Physique", icon: "⚡" },
                             { value: "recuperation", label: "Récupération", icon: "🧘" },
-                            { value: "autre", label: "Autre", icon: "📌" },
                           ].map((opt) => (
                             <Button
                               key={opt.value}
@@ -2843,6 +2844,22 @@ export function SessionFormDialog({
                       </div>
                     )}
 
+
+                    {/* Precision exercise selector - when type is "precision" */}
+                    {type === "precision" && (
+                      <div className="rounded-lg border border-accent/30 p-3 space-y-2">
+                        <PrecisionExerciseSelector
+                          categoryId={categoryId}
+                          sportType={sportType}
+                          selectedExerciseId={null}
+                          onExerciseChange={() => {}}
+                          allowCreate={!isAthleteMode}
+                        />
+                        <p className="text-[10px] text-muted-foreground">
+                          Le staff peut ajouter des exercices de précision personnalisés ici. Les athlètes les verront lors de la saisie de leurs stats.
+                        </p>
+                      </div>
+                    )}
 
                     <div className="space-y-2">
                       <Label htmlFor="notes">Notes</Label>

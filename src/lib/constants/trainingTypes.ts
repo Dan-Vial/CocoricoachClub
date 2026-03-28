@@ -323,6 +323,7 @@ export const ALL_TRAINING_TYPES: TrainingTypeOption[] = [
   { value: "souplesse_mobilite", label: "Souplesse / Mobilité", hasExercises: true, forTeamSports: true, forIndividualSports: true, category: "common" },
   { value: "fitness_game", label: "Fitness Game", hasExercises: false, forTeamSports: true, forIndividualSports: true, category: "common" },
   { value: "repos", label: "Repos", hasExercises: false, forTeamSports: true, forIndividualSports: true, category: "common" },
+  { value: "precision", label: "Entraînement Précision", hasExercises: false, forTeamSports: true, forIndividualSports: true, category: "common" },
   { value: "test", label: "Test", hasExercises: false, forTeamSports: true, forIndividualSports: true, category: "common" },
   { value: "echauffement", label: "Échauffement", hasExercises: false, forTeamSports: true, forIndividualSports: true, category: "common" },
   { value: "recuperation", label: "Récupération Active", hasExercises: false, forTeamSports: true, forIndividualSports: true, category: "common" },
@@ -612,6 +613,8 @@ export const TRAINING_TYPE_COLORS: Record<string, string> = {
   tennis_jeu_double: "bg-teal-500",
   tennis_panier: "bg-lime-500",
   tennis_mental: "bg-violet-500",
+  // Precision (all sports)
+  precision: "bg-lime-500",
   // Default for custom types
   _default: "bg-gray-500",
 };
@@ -636,6 +639,7 @@ export const TRAINING_TYPE_LABELS: Record<string, string> = {
   reunion: "Réunion",
   medical: "Médical",
   repos: "Repos",
+  precision: "Entraînement Précision",
   test: "Test",
   video_analyse: "Analyse Vidéo",
   // Football specific
