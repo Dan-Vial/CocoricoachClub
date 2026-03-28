@@ -192,6 +192,9 @@ export function GenericTestsSection({ categoryId, sportType, defaultCategory }: 
             <Button size="sm" onClick={() => setIsDialogOpen(true)}>
               <ClipboardList className="h-4 w-4 mr-1" /> Saisir des résultats
             </Button>
+            <Button size="sm" variant="outline" onClick={() => setIsCreateTestDialogOpen(true)}>
+              <Plus className="h-4 w-4 mr-1" /> Créer un test
+            </Button>
             {filterTestType !== "all" && selectedCategory && (
               <Button size="sm" variant="outline" onClick={() => setIsScheduleDialogOpen(true)}>
                 <CalendarPlus className="h-4 w-4 mr-1" /> Planifier
