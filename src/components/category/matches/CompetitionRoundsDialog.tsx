@@ -856,11 +856,16 @@ export function CompetitionRoundsDialog({
                       <Card key={round.round_number} className={`relative ${round.isLocked ? "opacity-80" : ""}`}>
                         {/* Locked indicator */}
                         {round.isLocked && (
-                          <div className="absolute top-2 right-2 z-10">
-                            <Badge variant="secondary" className="gap-1">
+                          <div className="absolute top-2 right-2 z-10 flex items-center gap-1">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-7 text-xs gap-1"
+                              onClick={() => unlockBowlingRound(selectedPlayer.playerId, round.round_number)}
+                            >
                               <Lock className="h-3 w-3" />
-                              Validée
-                            </Badge>
+                              Modifier
+                            </Button>
                           </div>
                         )}
                         <CardHeader className="pb-2">
