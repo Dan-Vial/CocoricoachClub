@@ -117,7 +117,7 @@ export function TrainingLoadTab({ categoryId }: TrainingLoadTabProps) {
   });
 
   const handlePlayerClick = (playerId: string) => {
-    navigate(`/categories/${categoryId}?tab=effectif&player=${playerId}`);
+    navigate(`/players/${playerId}`);
   };
 
   const periodOptions = [
