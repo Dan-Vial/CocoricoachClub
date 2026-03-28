@@ -114,7 +114,7 @@ export function AddSessionDialog({
   const sportType = category?.rugby_type;
   const trainingTypes = getTrainingTypesForSport(sportType);
   
-  const showExerciseSection = trainingTypeHasExercises(type);
+  const showExerciseSection = isAthleteMode || trainingTypeHasExercises(type);
   const hasValidBlocks = sessionBlocks.some((block) => !!block.training_type);
 
   // When a training type with exercises is selected, ensure UI is ready
