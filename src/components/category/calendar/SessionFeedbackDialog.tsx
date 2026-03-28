@@ -772,6 +772,16 @@ export function SessionFeedbackDialog({
               )}
             </div>
           </TabsContent>
+
+          <TabsContent value="weights" className="flex-1 flex flex-col min-h-0 mt-4">
+            <SessionWeightLogTab
+              sessionId={sessionId}
+              categoryId={categoryId}
+              playersToShow={playersToShow}
+              weightLogs={weightLogs}
+              onWeightLogChange={handleWeightLogChange}
+            />
+          </TabsContent>
         </Tabs>
 
         <div className="flex justify-end gap-2 pt-4 border-t">
