@@ -140,7 +140,7 @@ export function AvailabilityScoreTab({ categoryId }: AvailabilityScoreTabProps) 
 
         return {
           playerId: player.id,
-          playerName: player.name,
+          playerName: player.first_name ? `${player.first_name} ${player.name}` : player.name,
           avatarUrl: player.avatar_url,
           position: player.position,
           awcrScore: Math.round(awcrScore),
