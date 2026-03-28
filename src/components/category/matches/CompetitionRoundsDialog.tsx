@@ -1416,85 +1416,124 @@ export function CompetitionRoundsDialog({
                                   </div>
                                 </div>
 
-                                {/* Games list grouped by phase */}
-                                <div className="space-y-3">
+                                {/* Games list grouped by date then phase */}
+                                <div className="space-y-4">
                                   <h4 className="font-medium">Détail des parties</h4>
                                   {(() => {
-                                    // Group rounds by phase
-                                    const phaseGroups: Record<string, Round[]> = {};
+                                    const defaultDate = matchData?.match_date?.split("T")[0] || "";
+                                    // Group rounds by date first
+                                    const dateGroups: Record<string, Round[]> = {};
                                     selectedPlayer.rounds.forEach(round => {
-                                      const phaseKey = round.phase || "sans_phase";
-                                      if (!phaseGroups[phaseKey]) phaseGroups[phaseKey] = [];
-                                      phaseGroups[phaseKey].push(round);
+                                      const dateKey = round.roundDate || defaultDate || "sans_date";
+                                      if (!dateGroups[dateKey]) dateGroups[dateKey] = [];
+                                      dateGroups[dateKey].push(round);
                                     });
 
-                                    const phaseOrder = ["qualification", "round_robin", "quart", "demi", "petite_finale", "finale", "sans_phase"];
-                                    const sortedPhases = Object.keys(phaseGroups).sort(
-                                      (a, b) => phaseOrder.indexOf(a) - phaseOrder.indexOf(b)
-                                    );
+                                    const sortedDates = Object.keys(dateGroups).sort();
+                                    const hasMultipleDates = sortedDates.length > 1 || (sortedDates.length === 1 && sortedDates[0] !== "sans_date");
 
-                                    return sortedPhases.map(phaseKey => {
-                                      const rounds = phaseGroups[phaseKey];
-                                      const phaseLabel = BOWLING_PHASES.find(p => p.value === phaseKey)?.label || "Autres";
-                                      const phaseTotal = rounds.reduce((sum, r) => sum + (r.stats["gameScore"] || 0), 0);
-                                      const phaseAvg = rounds.length > 0 ? (phaseTotal / rounds.length).toFixed(1) : "0";
+                                    const formatDateLabel = (d: string) => {
+                                      if (d === "sans_date") return "Date non définie";
+                                      try {
+                                        return new Date(d).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+                                      } catch { return d; }
+                                    };
 
-                                      // Group by category within phase
-                                      const categoryGroups: Record<string, Round[]> = {};
-                                      rounds.forEach(r => {
-                                        const cat = r.bowlingCategory || "non_defini";
-                                        if (!categoryGroups[cat]) categoryGroups[cat] = [];
-                                        categoryGroups[cat].push(r);
+                                    return sortedDates.map(dateKey => {
+                                      const dateRounds = dateGroups[dateKey];
+                                      const dateTotal = dateRounds.reduce((sum, r) => sum + (r.stats["gameScore"] || 0), 0);
+                                      const dateAvg = dateRounds.length > 0 ? (dateTotal / dateRounds.length).toFixed(1) : "0";
+
+                                      // Group by phase within date
+                                      const phaseGroups: Record<string, Round[]> = {};
+                                      dateRounds.forEach(round => {
+                                        const phaseKey = round.phase || "sans_phase";
+                                        if (!phaseGroups[phaseKey]) phaseGroups[phaseKey] = [];
+                                        phaseGroups[phaseKey].push(round);
                                       });
 
+                                      const phaseOrder = ["qualification", "round_robin", "quart", "demi", "petite_finale", "finale", "sans_phase"];
+                                      const sortedPhases = Object.keys(phaseGroups).sort(
+                                        (a, b) => phaseOrder.indexOf(a) - phaseOrder.indexOf(b)
+                                      );
+
                                       return (
-                                        <div key={phaseKey} className="space-y-1">
-                                          <div className="flex items-center justify-between px-2 py-1.5 rounded-lg bg-muted/80">
-                                            <div className="flex items-center gap-2">
-                                              <span className="font-semibold text-sm">{phaseLabel}</span>
-                                              <Badge variant="secondary" className="text-xs">
-                                                {rounds.length} partie{rounds.length > 1 ? "s" : ""}
-                                              </Badge>
-                                              {Object.keys(categoryGroups).length > 1 || !categoryGroups["non_defini"] ? (
-                                                Object.entries(categoryGroups).map(([cat, catRounds]) => (
-                                                  <Badge key={cat} variant="outline" className="text-xs">
-                                                    {BOWLING_COMPETITION_CATEGORIES.find(c => c.value === cat)?.label || cat}
-                                                    {catRounds.length > 1 ? ` (${catRounds.length})` : ""}
-                                                  </Badge>
-                                                ))
-                                              ) : null}
-                                            </div>
-                                            <div className="flex items-center gap-3 text-sm">
-                                              <span className="text-muted-foreground">Moy: <strong>{phaseAvg}</strong></span>
-                                              <span className="font-mono font-bold">{phaseTotal} pts</span>
-                                            </div>
-                                          </div>
-                                          {rounds.map(round => (
-                                            <div key={round.round_number} className="flex items-center justify-between p-2 pl-4 rounded border text-sm">
-                                              <div className="flex items-center gap-2">
-                                                <span className="text-muted-foreground text-xs">#{round.round_number}</span>
-                                                {round.bowlingCategory && (
-                                                  <Badge variant="outline" className="text-xs">
-                                                    {BOWLING_COMPETITION_CATEGORIES.find(c => c.value === round.bowlingCategory)?.label || round.bowlingCategory}
-                                                  </Badge>
-                                                )}
-                                                {round.opponent_name && (
-                                                  <span className="text-muted-foreground">vs {round.opponent_name}</span>
-                                                )}
-                                              </div>
-                                              <div className="flex items-center gap-3">
-                                                <span className="font-mono font-bold">{round.stats["gameScore"] || 0}</span>
-                                                <span className="text-xs text-muted-foreground">
-                                                  {round.stats["strikes"] || 0}X / {round.stats["spares"] || 0}/
-                                                </span>
-                                                {round.result && (
-                                                  <Badge variant={round.result === "win" ? "default" : round.result === "loss" ? "destructive" : "secondary"}>
-                                                    {round.result === "win" ? "V" : round.result === "loss" ? "D" : "N"}
-                                                  </Badge>
-                                                )}
+                                        <div key={dateKey} className="space-y-2">
+                                          {hasMultipleDates && (
+                                            <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-primary/10 border border-primary/20">
+                                              <span className="font-semibold text-sm capitalize">{formatDateLabel(dateKey)}</span>
+                                              <div className="flex items-center gap-3 text-sm">
+                                                <Badge variant="secondary">{dateRounds.length} partie{dateRounds.length > 1 ? "s" : ""}</Badge>
+                                                <span className="text-muted-foreground">Moy: <strong>{dateAvg}</strong></span>
+                                                <span className="font-mono font-bold">{dateTotal} pts</span>
                                               </div>
                                             </div>
-                                          ))}
+                                          )}
+                                          {sortedPhases.map(phaseKey => {
+                                            const rounds = phaseGroups[phaseKey];
+                                            const phaseLabel = BOWLING_PHASES.find(p => p.value === phaseKey)?.label || "Autres";
+                                            const phaseTotal = rounds.reduce((sum, r) => sum + (r.stats["gameScore"] || 0), 0);
+                                            const phaseAvg = rounds.length > 0 ? (phaseTotal / rounds.length).toFixed(1) : "0";
+
+                                            // Group by category within phase
+                                            const categoryGroups: Record<string, Round[]> = {};
+                                            rounds.forEach(r => {
+                                              const cat = r.bowlingCategory || "non_defini";
+                                              if (!categoryGroups[cat]) categoryGroups[cat] = [];
+                                              categoryGroups[cat].push(r);
+                                            });
+
+                                            return (
+                                              <div key={phaseKey} className="space-y-1">
+                                                <div className="flex items-center justify-between px-2 py-1.5 rounded-lg bg-muted/80">
+                                                  <div className="flex items-center gap-2">
+                                                    <span className="font-semibold text-sm">{phaseLabel}</span>
+                                                    <Badge variant="secondary" className="text-xs">
+                                                      {rounds.length} partie{rounds.length > 1 ? "s" : ""}
+                                                    </Badge>
+                                                    {Object.keys(categoryGroups).length > 1 || !categoryGroups["non_defini"] ? (
+                                                      Object.entries(categoryGroups).map(([cat, catRounds]) => (
+                                                        <Badge key={cat} variant="outline" className="text-xs">
+                                                          {BOWLING_COMPETITION_CATEGORIES.find(c => c.value === cat)?.label || cat}
+                                                          {catRounds.length > 1 ? ` (${catRounds.length})` : ""}
+                                                        </Badge>
+                                                      ))
+                                                    ) : null}
+                                                  </div>
+                                                  <div className="flex items-center gap-3 text-sm">
+                                                    <span className="text-muted-foreground">Moy: <strong>{phaseAvg}</strong></span>
+                                                    <span className="font-mono font-bold">{phaseTotal} pts</span>
+                                                  </div>
+                                                </div>
+                                                {rounds.map(round => (
+                                                  <div key={round.round_number} className="flex items-center justify-between p-2 pl-4 rounded border text-sm">
+                                                    <div className="flex items-center gap-2">
+                                                      <span className="text-muted-foreground text-xs">#{round.round_number}</span>
+                                                      {round.bowlingCategory && (
+                                                        <Badge variant="outline" className="text-xs">
+                                                          {BOWLING_COMPETITION_CATEGORIES.find(c => c.value === round.bowlingCategory)?.label || round.bowlingCategory}
+                                                        </Badge>
+                                                      )}
+                                                      {round.opponent_name && (
+                                                        <span className="text-muted-foreground">vs {round.opponent_name}</span>
+                                                      )}
+                                                    </div>
+                                                    <div className="flex items-center gap-3">
+                                                      <span className="font-mono font-bold">{round.stats["gameScore"] || 0}</span>
+                                                      <span className="text-xs text-muted-foreground">
+                                                        {round.stats["strikes"] || 0}X / {round.stats["spares"] || 0}/
+                                                      </span>
+                                                      {round.result && (
+                                                        <Badge variant={round.result === "win" ? "default" : round.result === "loss" ? "destructive" : "secondary"}>
+                                                          {round.result === "win" ? "V" : round.result === "loss" ? "D" : "N"}
+                                                        </Badge>
+                                                      )}
+                                                    </div>
+                                                  </div>
+                                                ))}
+                                              </div>
+                                            );
+                                          })}
                                         </div>
                                       );
                                     });
