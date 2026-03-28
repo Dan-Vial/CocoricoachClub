@@ -318,10 +318,7 @@ export function TrainingLoadTab({ categoryId }: TrainingLoadTabProps) {
             </TabsContent>
 
             <TabsContent value="rpe">
-              <RpePlanVsActual
-                categoryId={categoryId}
-                onPlayerClick={handlePlayerClick}
-              />
+              <IntensityComparisonDashboard categoryId={categoryId} />
             </TabsContent>
 
             <TabsContent value="team">
