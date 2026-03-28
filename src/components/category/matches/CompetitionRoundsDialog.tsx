@@ -464,6 +464,7 @@ export function CompetitionRoundsDialog({
             ...round.stats,
             ...(round.bowlingFrames ? { bowlingFrames: round.bowlingFrames } : {}),
             ...(round.bowlingCategory ? { bowlingCategory: round.bowlingCategory } : {}),
+            ...(round.roundDate ? { roundDate: round.roundDate } : {}),
           };
           
           if (Object.keys(statDataToSave).length > 0) {
