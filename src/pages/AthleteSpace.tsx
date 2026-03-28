@@ -17,7 +17,7 @@ import { AthleteSpaceWellness } from "@/components/athlete-space/AthleteSpaceWel
 import { AthleteSpaceProgression } from "@/components/athlete-space/AthleteSpaceProgression";
 import { AthleteSpaceObjectives } from "@/components/athlete-space/AthleteSpaceObjectives";
 import { AthleteSpaceHealth } from "@/components/athlete-space/AthleteSpaceHealth";
-import { AthleteSpaceEducation } from "@/components/athlete-space/AthleteSpaceEducation";
+// AthleteSpaceEducation removed
 import { MessagingTab } from "@/components/messaging/MessagingTab";
 import { AthleteSpaceSettings } from "@/components/athlete-space/AthleteSpaceSettings";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
