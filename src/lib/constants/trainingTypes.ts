@@ -639,6 +639,7 @@ export const TRAINING_TYPE_LABELS: Record<string, string> = {
   reunion: "Réunion",
   medical: "Médical",
   repos: "Repos",
+  precision: "Entraînement Précision",
   test: "Test",
   video_analyse: "Analyse Vidéo",
   // Football specific
