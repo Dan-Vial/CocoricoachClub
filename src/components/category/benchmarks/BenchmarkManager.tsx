@@ -587,7 +587,7 @@ export function BenchmarkManager({ categoryId, sportType }: BenchmarkManagerProp
                       className="bg-background"
                     />
                   </div>
-                  <span className="text-xs w-8 text-muted-foreground">{formUnit}</span>
+                  <span className="text-xs w-8 text-muted-foreground">{formUseBodyWeight ? "x PDC" : formUnit}</span>
                   {formLevels.length > 2 && (
                     <Button type="button" variant="ghost" size="icon" onClick={() => removeLevel(index)} className="h-8 w-8 text-destructive">
                       <Trash2 className="h-3 w-3" />
