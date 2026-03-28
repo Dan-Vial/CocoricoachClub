@@ -86,6 +86,7 @@ import { TrainingMethodBlock } from "./TrainingMethodBlocks";
 import { TrainingMethodSelect } from "./TrainingMethodSelect";
 import { SessionTestBlock, type SessionTest } from "./SessionTestBlock";
 import { SessionBlocksManager, type SessionBlock } from "./SessionBlocksManager";
+import { PrecisionExerciseSelector } from "@/components/precision/PrecisionExerciseSelector";
 
 interface SessionFormDialogProps {
   open: boolean;
