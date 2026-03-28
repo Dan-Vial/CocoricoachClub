@@ -62,6 +62,7 @@ interface Round {
   bowlingCategory?: string;
   isLocked?: boolean;
   bowlingFrames?: FrameData[];
+  roundDate?: string; // Date for multi-day competitions (YYYY-MM-DD)
 }
 
 interface PlayerRounds {
