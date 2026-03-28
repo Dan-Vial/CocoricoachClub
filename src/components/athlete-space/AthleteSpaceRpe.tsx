@@ -19,6 +19,7 @@ import { getTestLabel } from "@/lib/constants/testCategories";
 import { getDisplayNotes } from "@/lib/utils/sessionNotes";
 import { SPARE_EXERCISE_TYPES } from "@/lib/constants/bowlingBallBrands";
 import { GroupedExerciseList } from "@/components/category/GroupedExerciseList";
+import { PrecisionExerciseSelector } from "@/components/precision/PrecisionExerciseSelector";
 
 interface Props {
   playerId: string;
