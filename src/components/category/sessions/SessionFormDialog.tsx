@@ -1058,13 +1058,20 @@ export function SessionFormDialog({
       return;
     }
 
-    // Validate: must have blocks with valid types
-    const hasValidBlocks = sessionBlocks.length > 0 && sessionBlocks.some(b => b.training_type);
-
-    if (date && hasValidBlocks) {
-      saveSession.mutate();
-    } else if (!hasValidBlocks) {
-      toast.error("Veuillez ajouter au moins un bloc thématique");
+    // Validate: athlete mode uses type, staff mode uses blocks
+    if (isAthleteMode) {
+      if (date && type) {
+        saveSession.mutate();
+      } else if (!type) {
+        toast.error("Veuillez sélectionner un type de séance");
+      }
+    } else {
+      const hasValidBlocks = sessionBlocks.length > 0 && sessionBlocks.some(b => b.training_type);
+      if (date && hasValidBlocks) {
+        saveSession.mutate();
+      } else if (!hasValidBlocks) {
+        toast.error("Veuillez ajouter au moins un bloc thématique");
+      }
     }
   };
 
