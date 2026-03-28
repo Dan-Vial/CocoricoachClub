@@ -12,7 +12,7 @@ import { TrainingLoadChart } from "./TrainingLoadChart";
 import { TrainingLoadKPIs } from "./TrainingLoadKPIs";
 import { TrainingLoadAlerts } from "./TrainingLoadAlerts";
 import { TeamLoadComparison } from "./TeamLoadComparison";
-import { RpePlanVsActual } from "./RpePlanVsActual";
+import { IntensityComparisonDashboard } from "@/components/analytics/IntensityComparisonDashboard";
 import { TrainingLoadCalendar } from "./TrainingLoadCalendar";
 import { TrainingDistribution } from "./TrainingDistribution";
 import { HrvAnalysisPanel } from "./HrvAnalysisPanel";
@@ -318,10 +318,7 @@ export function TrainingLoadTab({ categoryId }: TrainingLoadTabProps) {
             </TabsContent>
 
             <TabsContent value="rpe">
-              <RpePlanVsActual
-                categoryId={categoryId}
-                onPlayerClick={handlePlayerClick}
-              />
+              <IntensityComparisonDashboard categoryId={categoryId} />
             </TabsContent>
 
             <TabsContent value="team">
