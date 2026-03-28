@@ -790,7 +790,7 @@ export function SessionFeedbackDialog({
           </Button>
           <Button
             onClick={() => saveData.mutate()}
-            disabled={saveData.isPending || (!hasNewRpeValues && !hasTestResults)}
+            disabled={saveData.isPending || (!hasNewRpeValues && !hasTestResults && !hasWeightLogs)}
           >
             {saveData.isPending ? "Enregistrement..." : "Enregistrer"}
           </Button>
