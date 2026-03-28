@@ -2714,7 +2714,7 @@ export function SessionFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={cn("max-h-[95vh] flex flex-col", isAthleteMode ? "max-w-3xl" : "max-w-6xl")}>
+      <DialogContent className={cn("max-h-[95vh] flex flex-col p-4 sm:p-6", isAthleteMode ? "max-w-3xl" : "max-w-6xl w-[95vw]")}>
         <DialogHeader>
           <DialogTitle>{isAthleteMode ? "Ajouter ma séance" : (editSession ? "Modifier la séance" : "Nouvelle séance")}</DialogTitle>
           <DialogDescription>
@@ -2727,7 +2727,7 @@ export function SessionFormDialog({
 
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
-            <TabsList className={cn("grid w-full shrink-0", isAthleteMode ? "grid-cols-3" : "grid-cols-4")}>
+            <TabsList className={cn("grid w-full shrink-0", isAthleteMode ? "grid-cols-3" : "grid-cols-2 sm:grid-cols-4")}>
               <TabsTrigger value="details">Détails</TabsTrigger>
               <TabsTrigger value="exercises">
                 Exercices
@@ -2900,9 +2900,9 @@ export function SessionFormDialog({
               <TabsContent value="exercises" className="h-full m-0">
                 {activeTab === "exercises" ? (
                   <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-                    <div className="flex h-[50vh]">
+                    <div className="flex flex-col sm:flex-row h-[50vh]">
                       {/* Left side - Exercise list with drop zone */}
-                      <div className="flex-1 pr-4">
+                      <div className="flex-1 sm:pr-4 min-h-0">
                         <DroppableExerciseZone>
                           <ScrollArea className="h-full">
                             <div className="space-y-4">
@@ -2953,8 +2953,8 @@ export function SessionFormDialog({
                     </DragOverlay>
                   </DndContext>
                 ) : (
-                  <div className="flex h-[50vh]">
-                    <div className="flex-1 pr-4">
+                  <div className="flex flex-col sm:flex-row h-[50vh]">
+                    <div className="flex-1 sm:pr-4 min-h-0">
                       <ScrollArea className="h-full">
                         <div className="space-y-4">
                           <div className="flex items-center justify-between">
@@ -2987,7 +2987,7 @@ export function SessionFormDialog({
                         </div>
                       </ScrollArea>
                     </div>
-                    <div className="w-80 border-l bg-muted/30" />
+                    <div className="hidden sm:block w-80 border-l bg-muted/30" />
                   </div>
                 )}
               </TabsContent>

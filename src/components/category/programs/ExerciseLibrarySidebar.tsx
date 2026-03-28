@@ -151,7 +151,7 @@ export function ExerciseLibrarySidebar({ sportType }: ExerciseLibrarySidebarProp
 
   return (
     <>
-      <div className="w-80 border-l bg-muted/30 flex flex-col h-full">
+      <div className="hidden sm:flex w-80 border-l bg-muted/30 flex-col h-full">
         <div className="border-b bg-background">
           <div className="flex items-center justify-between p-3 pb-2">
             <div className="flex items-center gap-2">
