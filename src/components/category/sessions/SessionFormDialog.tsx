@@ -2845,6 +2845,22 @@ export function SessionFormDialog({
                     )}
 
 
+                    {/* Precision exercise selector - when type is "precision" */}
+                    {type === "precision" && (
+                      <div className="rounded-lg border border-accent/30 p-3 space-y-2">
+                        <PrecisionExerciseSelector
+                          categoryId={categoryId}
+                          sportType={sportType}
+                          selectedExerciseId={null}
+                          onExerciseChange={() => {}}
+                          allowCreate={!isAthleteMode}
+                        />
+                        <p className="text-[10px] text-muted-foreground">
+                          Le staff peut ajouter des exercices de précision personnalisés ici. Les athlètes les verront lors de la saisie de leurs stats.
+                        </p>
+                      </div>
+                    )}
+
                     <div className="space-y-2">
                       <Label htmlFor="notes">Notes</Label>
                       <Textarea
