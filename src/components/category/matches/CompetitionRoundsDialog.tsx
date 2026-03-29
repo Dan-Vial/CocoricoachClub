@@ -101,25 +101,7 @@ const JUDO_PHASES = [
   { value: "finale", label: "Finale" },
 ];
 
-// Bowling competition categories
-const BOWLING_COMPETITION_CATEGORIES = [
-  { value: "individuelle", label: "Individuelle" },
-  { value: "doublette", label: "Doublette" },
-  { value: "equipe_4", label: "Équipe de 4" },
-  { value: "masters", label: "Masters" },
-  { value: "practice_officiel", label: "Practice officiel" },
-  { value: "practice_non_officiel", label: "Practice non officiel" },
-];
-
-// Bowling phases (subcategories)
-const BOWLING_PHASES = [
-  { value: "qualification", label: "Qualifications" },
-  { value: "round_robin", label: "Round Robin" },
-  { value: "quart", label: "Quart de finale" },
-  { value: "demi", label: "Demi-finale" },
-  { value: "petite_finale", label: "Petite finale" },
-  { value: "finale", label: "Finale" },
-];
+// Bowling categories and phases are imported from BowlingBlockManager
 
 // Aviron boat types
 const AVIRON_BOAT_TYPES = [
