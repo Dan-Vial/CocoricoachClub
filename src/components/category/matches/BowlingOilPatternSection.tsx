@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Droplet, Save, RotateCcw, Info } from "lucide-react";
+import { Droplet, Save, RotateCcw, Info, Upload, X, Image as ImageIcon } from "lucide-react";
 import {
   ALL_PATTERN_NAMES,
   getPatternPreset,
@@ -51,6 +51,7 @@ interface OilPattern {
   reverse_oil: boolean;
   outside_friction: "low" | "medium" | "high" | null;
   notes: string | null;
+  image_url: string | null;
 }
 
 const defaultPattern: OilPattern = {
@@ -65,6 +66,7 @@ const defaultPattern: OilPattern = {
   reverse_oil: true,
   outside_friction: null,
   notes: null,
+  image_url: null,
 };
 
 export function BowlingOilPatternSection({
@@ -75,6 +77,8 @@ export function BowlingOilPatternSection({
   const [pattern, setPattern] = useState<OilPattern>(defaultPattern);
   const [hasChanges, setHasChanges] = useState(false);
   const [customName, setCustomName] = useState("");
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
 
   // Fetch existing pattern for this match
@@ -108,10 +112,42 @@ export function BowlingOilPatternSection({
         reverse_oil: existingPattern.reverse_oil ?? true,
         outside_friction: existingPattern.outside_friction as OilPattern["outside_friction"],
         notes: existingPattern.notes,
+        image_url: existingPattern.notes ? null : null, // Will be stored in notes as JSON or separate
       });
       setHasChanges(false);
     }
   }, [existingPattern]);
+
+  // Handle image upload
+  const handleImageUpload = async (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      toast.error("Veuillez sélectionner une image");
+      return;
+    }
+    setUploadingImage(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const filePath = `oil-patterns/${matchId}_${Date.now()}.${fileExt}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from("exercise-images")
+        .upload(filePath, file);
+      
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from("exercise-images")
+        .getPublicUrl(filePath);
+
+      updateField("image_url", urlData.publicUrl);
+      toast.success("Image du huilage téléchargée");
+    } catch (err: any) {
+      console.error("Upload error:", err);
+      toast.error("Erreur lors du téléchargement de l'image");
+    } finally {
+      setUploadingImage(false);
+    }
+  };
 
   // Save mutation
   const saveMutation = useMutation({
@@ -133,52 +169,38 @@ export function BowlingOilPatternSection({
         forward_oil: data.forward_oil,
         reverse_oil: data.reverse_oil,
         outside_friction: data.outside_friction,
-        notes: data.notes,
+        notes: data.image_url 
+          ? JSON.stringify({ text: data.notes || "", image_url: data.image_url })
+          : data.notes,
       };
 
       if (data.id) {
-        // Update existing pattern by its ID
         const { error } = await supabase
           .from("bowling_oil_patterns")
           .update(payload)
           .eq("id", data.id);
-        if (error) {
-          console.error("Update by ID error:", error);
-          throw error;
-        }
+        if (error) throw error;
       } else {
-        // Try to find existing pattern for this match first
-        const { data: existing, error: fetchError } = await supabase
+        const { data: existing } = await supabase
           .from("bowling_oil_patterns")
           .select("id")
           .eq("match_id", matchId)
           .maybeSingle();
-
-        if (fetchError) {
-          console.error("Fetch existing error:", fetchError);
-          throw fetchError;
-        }
 
         if (existing) {
           const { error } = await supabase
             .from("bowling_oil_patterns")
             .update(payload)
             .eq("id", existing.id);
-          if (error) {
-            console.error("Update existing error:", error);
-            throw error;
-          }
+          if (error) throw error;
+          setPattern(prev => ({ ...prev, id: existing.id }));
         } else {
           const { data: inserted, error } = await supabase
             .from("bowling_oil_patterns")
             .insert(payload)
             .select("id")
             .single();
-          if (error) {
-            console.error("Insert error:", error);
-            throw error;
-          }
-          // Set the ID so subsequent saves use update
+          if (error) throw error;
           if (inserted) {
             setPattern(prev => ({ ...prev, id: inserted.id }));
           }
@@ -196,12 +218,9 @@ export function BowlingOilPatternSection({
     },
   });
 
-  // Handle pattern selection
   const handlePatternSelect = (name: string) => {
     const preset = getPatternPreset(name);
-    
     if (preset) {
-      // Auto-fill with official data
       setPattern((prev) => ({
         ...prev,
         name,
@@ -217,7 +236,6 @@ export function BowlingOilPatternSection({
       }));
       toast.info(`Données officielles chargées pour ${name}`);
     } else {
-      // Just set the name, no auto-fill
       setPattern((prev) => ({ ...prev, name }));
       if (name !== "Pattern personnel") {
         toast.info("Données officielles non disponibles pour ce pattern");
@@ -246,6 +264,7 @@ export function BowlingOilPatternSection({
         reverse_oil: existingPattern.reverse_oil ?? true,
         outside_friction: existingPattern.outside_friction as OilPattern["outside_friction"],
         notes: existingPattern.notes,
+        image_url: null,
       });
     } else {
       setPattern(defaultPattern);
@@ -271,6 +290,60 @@ export function BowlingOilPatternSection({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* Oil pattern image upload */}
+        <div className="space-y-3">
+          <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
+            Image du huilage
+          </h4>
+          {pattern.image_url ? (
+            <div className="relative" style={{ aspectRatio: "4/5", maxWidth: "280px" }}>
+              <img
+                src={pattern.image_url}
+                alt="Oil pattern"
+                className="w-full h-full object-cover rounded-lg border"
+              />
+              {!readOnly && (
+                <Button
+                  variant="destructive"
+                  size="icon"
+                  className="absolute top-2 right-2 h-7 w-7"
+                  onClick={() => updateField("image_url", null)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          ) : (
+            !readOnly && (
+              <div
+                className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 transition-colors"
+                style={{ aspectRatio: "4/5", maxWidth: "280px" }}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleImageUpload(file);
+                  }}
+                />
+                {uploadingImage ? (
+                  <p className="text-sm text-muted-foreground">Téléchargement...</p>
+                ) : (
+                  <div className="flex flex-col items-center gap-2">
+                    <ImageIcon className="h-8 w-8 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground">Cliquer pour ajouter l'image du huilage</p>
+                    <p className="text-xs text-muted-foreground">Format 4:5 recommandé</p>
+                  </div>
+                )}
+              </div>
+            )
+          )}
+        </div>
+
         {/* Section 1: Identification */}
         <div className="space-y-4">
           <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
@@ -536,7 +609,7 @@ export function BowlingOilPatternSection({
             )}
             <Button
               onClick={() => saveMutation.mutate(pattern)}
-              disabled={saveMutation.isPending || !pattern.name}
+              disabled={saveMutation.isPending}
             >
               <Save className="h-4 w-4 mr-2" />
               {saveMutation.isPending ? "Enregistrement..." : "Enregistrer"}

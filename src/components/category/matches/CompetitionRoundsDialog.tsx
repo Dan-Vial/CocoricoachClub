@@ -361,6 +361,7 @@ export function CompetitionRoundsDialog({
                 phase: r.phase || "",
                 opponent_name: r.opponent_name || "",
                 notes: "",
+                debriefing: (statData.blockDebriefing as string) || "",
                 isCollapsed: false,
               });
             }
@@ -514,6 +515,9 @@ export function CompetitionRoundsDialog({
           if (roundError) throw roundError;
 
           // Insert stats for this round (include bowling frames, ballData, blockId if present)
+          // Find block debriefing for this round
+          const playerBlocks = bowlingBlocks[playerData.playerId] || [];
+          const roundBlock = playerBlocks.find(b => b.id === round.blockId);
           const statDataToSave = {
             ...round.stats,
             ...(round.bowlingFrames ? { bowlingFrames: round.bowlingFrames } : {}),
@@ -521,6 +525,7 @@ export function CompetitionRoundsDialog({
             ...(round.roundDate ? { roundDate: round.roundDate } : {}),
             ...(round.blockId ? { blockId: round.blockId } : {}),
             ...(round.ballData ? { ballData: round.ballData } : {}),
+            ...(roundBlock?.debriefing ? { blockDebriefing: roundBlock.debriefing } : {}),
           };
           
           if (Object.keys(statDataToSave).length > 0) {
