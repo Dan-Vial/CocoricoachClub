@@ -835,34 +835,30 @@ export function CompetitionRoundsDialog({
             <TabsContent value="rounds" className="flex-1 min-h-0 mt-0 overflow-hidden">
               <ScrollArea className="h-[calc(90vh-280px)] pr-4">
                 <div className="space-y-4 pb-4">
-                  {/* Add round button */}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => addRound(selectedPlayer.playerId)}
-                    className="w-full gap-2"
-                  >
-                    <Plus className="h-4 w-4" />
-                    Ajouter {isBowling ? "une partie (feuille de score)" : isAviron ? "une course" : isJudo ? "un combat" : isAthletics ? "une épreuve" : `un ${roundLabel.toLowerCase()}`}
-                  </Button>
-                  {isBowling && selectedPlayer.rounds.length === 0 && (
-                    <p className="text-xs text-muted-foreground text-center">
-                      💡 Compétition multi-jours ? Chaque partie peut avoir sa propre date, phase (qualif, demi, finale) et format (individuelle, doublette...). Tout dans la même compétition !
-                    </p>
-                  )}
-
                   {selectedPlayer.rounds.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground space-y-2">
+                    <div className="text-center py-8 text-muted-foreground space-y-4">
+                      {isBowling && (
+                        <p className="text-xs text-muted-foreground text-center">
+                          💡 Compétition multi-jours ? Chaque partie peut avoir sa propre date, phase (qualif, demi, finale) et format (individuelle, doublette...). Tout dans la même compétition !
+                        </p>
+                      )}
                       <p>Aucun {roundLabel.toLowerCase()} enregistré</p>
                       <p className="text-sm">
-                        {isBowling
-                          ? "Cliquez sur “Ajouter une partie (feuille de score)” pour saisir X / / 0-9."
-                          : `Cliquez sur le bouton ci-dessus pour ajouter ${isAviron ? "une course" : isJudo ? "un combat" : `un ${roundLabel.toLowerCase()}`}.`}
+                        Cliquez sur le bouton ci-dessous pour commencer.
                       </p>
+                      <Button
+                        size="sm"
+                        onClick={() => addRound(selectedPlayer.playerId)}
+                        className="w-full gap-2 bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+                      >
+                        <Plus className="h-4 w-4" />
+                        Ajouter {isBowling ? "une partie (feuille de score)" : isAviron ? "une course" : isJudo ? "un combat" : isAthletics ? "une épreuve" : `un ${roundLabel.toLowerCase()}`}
+                      </Button>
                     </div>
                   ) : (
-                    selectedPlayer.rounds.map((round) => (
-                      <Card key={round.round_number} className={`relative ${round.isLocked ? "opacity-80" : ""}`}>
+                    selectedPlayer.rounds.map((round, roundIdx) => (
+                      <div key={round.round_number} className="space-y-4">
+                      <Card className={`relative ${round.isLocked ? "opacity-80" : ""}`}>
                         {/* Locked indicator */}
                         {round.isLocked && (
                           <div className="absolute top-2 right-2 z-10 flex items-center gap-1">
@@ -1260,6 +1256,16 @@ export function CompetitionRoundsDialog({
                           </div>
                         </CardContent>
                       </Card>
+                      {/* Add game button after each round */}
+                      <Button
+                        size="sm"
+                        onClick={() => addRound(selectedPlayer.playerId)}
+                        className="w-full gap-2 bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+                      >
+                        <Plus className="h-4 w-4" />
+                        Ajouter {isBowling ? "une partie (feuille de score)" : isAviron ? "une course" : isJudo ? "un combat" : isAthletics ? "une épreuve" : `un ${roundLabel.toLowerCase()}`}
+                      </Button>
+                      </div>
                     ))
                   )}
                 </div>

@@ -139,11 +139,25 @@ export function BowlingOilPatternSection({
           .eq("id", data.id);
         if (error) throw error;
       } else {
-        // Use upsert to prevent duplicates per match
-        const { error } = await supabase
+        // Check if a pattern already exists for this match
+        const { data: existing } = await supabase
           .from("bowling_oil_patterns")
-          .upsert(payload, { onConflict: "match_id" });
-        if (error) throw error;
+          .select("id")
+          .eq("match_id", matchId)
+          .maybeSingle();
+
+        if (existing) {
+          const { error } = await supabase
+            .from("bowling_oil_patterns")
+            .update(payload)
+            .eq("id", existing.id);
+          if (error) throw error;
+        } else {
+          const { error } = await supabase
+            .from("bowling_oil_patterns")
+            .insert(payload);
+          if (error) throw error;
+        }
       }
     },
     onSuccess: () => {
@@ -391,22 +405,12 @@ export function BowlingOilPatternSection({
                   </Tooltip>
                 </TooltipProvider>
               </Label>
-              <Select
+              <Input
                 value={pattern.oil_ratio || ""}
-                onValueChange={(v) => updateField("oil_ratio", v)}
+                onChange={(e) => updateField("oil_ratio", e.target.value || null)}
+                placeholder="Ex: 3:1, 5:1, 8:1..."
                 disabled={readOnly}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner" />
-                </SelectTrigger>
-                <SelectContent>
-                  {OIL_RATIOS.map((ratio) => (
-                    <SelectItem key={ratio} value={ratio}>
-                      {ratio}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              />
             </div>
             <div className="space-y-2">
               <Label>Type de profil</Label>
