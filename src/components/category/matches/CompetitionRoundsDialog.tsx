@@ -855,7 +855,6 @@ export function CompetitionRoundsDialog({
                         Ajouter {isBowling ? "une partie (feuille de score)" : isAviron ? "une course" : isJudo ? "un combat" : isAthletics ? "une épreuve" : `un ${roundLabel.toLowerCase()}`}
                       </Button>
                     </div>
-                    </div>
                   ) : (
                     selectedPlayer.rounds.map((round, roundIdx) => (
                       <div key={round.round_number} className="space-y-4">
