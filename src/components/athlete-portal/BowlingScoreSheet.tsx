@@ -917,13 +917,14 @@ interface StatBoxProps {
   detail: string;
   note?: string;
   highlight?: boolean;
+  colorClass?: string;
 }
 
-function StatBox({ label, value, detail, note, highlight }: StatBoxProps) {
+function StatBox({ label, value, detail, note, highlight, colorClass }: StatBoxProps) {
   return (
     <div className={`p-3 rounded-lg ${highlight ? "bg-primary/20 border border-primary/30" : "bg-background border"}`}>
       <div className="text-xs text-muted-foreground">{label}</div>
-      <div className={`text-xl font-bold ${highlight ? "text-primary" : ""}`}>{value}</div>
+      <div className={`text-xl font-bold ${colorClass || (highlight ? "text-primary" : "")}`}>{value}</div>
       <div className="text-xs text-muted-foreground">{detail}</div>
       {note && <div className="text-xs text-muted-foreground">{note}</div>}
     </div>
