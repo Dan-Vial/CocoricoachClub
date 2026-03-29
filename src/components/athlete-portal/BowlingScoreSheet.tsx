@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BowlingBallSelector } from "@/components/bowling/BowlingBallSelector";
 import { Input } from "@/components/ui/input";
