@@ -525,12 +525,13 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, c
     onSave?.(stats, frames, ballData);
   };
 
-  // Get cell background color based on throw value
-  const getThrowCellStyle = (value: string): string => {
-    // Use semantic tokens only (no hard-coded colors)
+  // Get cell background color based on throw value and split status
+  const getThrowCellStyle = (value: string, throwData?: ThrowData): string => {
     if (value === "X") return "bg-primary text-primary-foreground font-bold";
     if (value === "/") return "bg-secondary text-secondary-foreground font-bold";
     if (value === "" || value === "-") return "bg-muted/50";
+    // Red background for splits
+    if (throwData?.isSplit) return "bg-destructive text-destructive-foreground font-bold";
     return "bg-accent text-accent-foreground";
   };
 
