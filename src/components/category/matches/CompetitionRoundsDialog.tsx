@@ -28,6 +28,8 @@ import { useStatPreferences } from "@/hooks/use-stat-preferences";
 import { BowlingOilPatternSection } from "./BowlingOilPatternSection";
 import { BowlingScoreSheet, FrameData, BowlingStats } from "@/components/athlete-portal/BowlingScoreSheet";
 import { isAthletismeCategory } from "@/lib/constants/sportTypes";
+import { BowlingBlockManager, type BowlingBlock, type Round as BowlingRound, BOWLING_COMPETITION_CATEGORIES, BOWLING_PHASES } from "@/components/bowling/BowlingBlockManager";
+import { BowlingCompetitionSummary } from "@/components/bowling/BowlingCompetitionSummary";
 
 const blurOnWheel = (e: React.WheelEvent<HTMLInputElement>) => {
   // Prevent wheel/trackpad from changing number inputs instead of scrolling the dialog
@@ -49,7 +51,6 @@ interface Round {
   result: string;
   notes: string;
   stats: Record<string, number>;
-  // New fields for Aviron/Judo
   phase: string;
   lane?: number;
   wind_conditions?: string;
@@ -58,11 +59,12 @@ interface Round {
   final_time_seconds?: number;
   ranking?: number;
   gap_to_first?: string;
-  // Bowling specific
   bowlingCategory?: string;
   isLocked?: boolean;
   bowlingFrames?: FrameData[];
-  roundDate?: string; // Date for multi-day competitions (YYYY-MM-DD)
+  roundDate?: string;
+  blockId?: string;
+  ballData?: { mode: string; ballId?: string | null; frameBalls?: (string | null)[] };
 }
 
 interface PlayerRounds {
@@ -99,25 +101,7 @@ const JUDO_PHASES = [
   { value: "finale", label: "Finale" },
 ];
 
-// Bowling competition categories
-const BOWLING_COMPETITION_CATEGORIES = [
-  { value: "individuelle", label: "Individuelle" },
-  { value: "doublette", label: "Doublette" },
-  { value: "equipe_4", label: "Équipe de 4" },
-  { value: "masters", label: "Masters" },
-  { value: "practice_officiel", label: "Practice officiel" },
-  { value: "practice_non_officiel", label: "Practice non officiel" },
-];
-
-// Bowling phases (subcategories)
-const BOWLING_PHASES = [
-  { value: "qualification", label: "Qualifications" },
-  { value: "round_robin", label: "Round Robin" },
-  { value: "quart", label: "Quart de finale" },
-  { value: "demi", label: "Demi-finale" },
-  { value: "petite_finale", label: "Petite finale" },
-  { value: "finale", label: "Finale" },
-];
+// Bowling categories and phases are imported from BowlingBlockManager
 
 // Aviron boat types
 const AVIRON_BOAT_TYPES = [
@@ -146,6 +130,7 @@ export function CompetitionRoundsDialog({
   const [playerRoundsData, setPlayerRoundsData] = useState<PlayerRounds[]>([]);
   const [selectedPlayerId, setSelectedPlayerId] = useState<string>("");
   const [isDataInitialized, setIsDataInitialized] = useState(false);
+  const [bowlingBlocks, setBowlingBlocks] = useState<Record<string, BowlingBlock[]>>({});
   const queryClient = useQueryClient();
 
   const { stats: filteredSportStats, hasCustomPreferences } = useStatPreferences({ categoryId, sportType });
@@ -259,7 +244,8 @@ export function CompetitionRoundsDialog({
     playerId: string, 
     roundNumber: number, 
     sheetStats: BowlingStats, 
-    frames: FrameData[]
+    frames: FrameData[],
+    ballData?: any
   ) => {
     setPlayerRoundsData(prev => prev.map(p => {
       if (p.playerId === playerId) {
@@ -271,6 +257,7 @@ export function CompetitionRoundsDialog({
                 ...r,
                 bowlingFrames: frames,
                 isLocked: true,
+                ballData: ballData || r.ballData,
                 stats: {
                   ...r.stats,
                   gameScore: sheetStats.totalScore,
@@ -343,14 +330,80 @@ export function CompetitionRoundsDialog({
 
   // Initialize data only once when lineup and existingRounds are loaded
   useEffect(() => {
-    // Only initialize once to prevent overwriting local state (new rounds added by user)
     if (isDataInitialized) return;
     
     if (lineup && lineup.length > 0) {
+      const newBowlingBlocks: Record<string, BowlingBlock[]> = {};
+      
       const playersData = lineup.map((l) => {
         const player = l.players as { id: string; name: string; first_name?: string; discipline?: string; specialty?: string } | null;
         const playerRounds = existingRounds?.filter(r => r.player_id === l.player_id) || [];
         
+        // For bowling: reconstruct blocks from existing rounds
+        if (isBowling && playerRounds.length > 0) {
+          const blockMap = new Map<string, BowlingBlock>();
+          const roundsWithBlocks = playerRounds.map(r => {
+            const statData = r.competition_round_stats?.[0]?.stat_data as Record<string, any> || {};
+            const bowlingFrames = statData.bowlingFrames as FrameData[] | undefined;
+            const bowlingCategory = statData.bowlingCategory as string | undefined;
+            const roundDate = statData.roundDate as string | undefined;
+            const blockId = statData.blockId as string | undefined;
+            const ballData = statData.ballData as any | undefined;
+            const { bowlingFrames: _, bowlingCategory: _bc, roundDate: _rd, blockId: _bi, ballData: _bd, ...cleanStats } = statData;
+            
+            // Create or find block
+            const effectiveBlockId = blockId || `legacy_${roundDate || "nodate"}_${bowlingCategory || "nocat"}_${r.phase || "nophase"}`;
+            if (!blockMap.has(effectiveBlockId)) {
+              blockMap.set(effectiveBlockId, {
+                id: effectiveBlockId,
+                roundDate: roundDate || matchData?.match_date?.split("T")[0] || "",
+                bowlingCategory: bowlingCategory || "",
+                phase: r.phase || "",
+                opponent_name: r.opponent_name || "",
+                notes: "",
+                isCollapsed: false,
+              });
+            }
+            
+            return {
+              id: r.id,
+              round_number: r.round_number,
+              opponent_name: r.opponent_name || "",
+              result: r.result || "",
+              notes: r.notes || "",
+              stats: cleanStats as Record<string, number>,
+              phase: r.phase || "",
+              lane: r.lane || undefined,
+              wind_conditions: r.wind_conditions || undefined,
+              current_conditions: r.current_conditions || undefined,
+              temperature_celsius: r.temperature_celsius || undefined,
+              final_time_seconds: r.final_time_seconds || undefined,
+              ranking: r.ranking || undefined,
+              gap_to_first: r.gap_to_first || undefined,
+              isLocked: !!r.id,
+              bowlingFrames: bowlingFrames,
+              bowlingCategory: bowlingCategory,
+              roundDate: roundDate,
+              blockId: effectiveBlockId,
+              ballData: ballData,
+            };
+          });
+          
+          newBowlingBlocks[l.player_id] = Array.from(blockMap.values());
+          
+          return {
+            playerId: l.player_id,
+            playerName: [player?.first_name, player?.name].filter(Boolean).join(" ") || "Athlète",
+            discipline: player?.discipline || undefined,
+            specialty: player?.specialty || undefined,
+            boat_type: l.boat_type || undefined,
+            crew_role: l.crew_role || undefined,
+            seat_position: l.seat_position || undefined,
+            rounds: roundsWithBlocks,
+          };
+        }
+        
+        // Non-bowling path (unchanged)
         return {
           playerId: l.player_id,
           playerName: [player?.first_name, player?.name].filter(Boolean).join(" ") || "Athlète",
@@ -361,11 +414,9 @@ export function CompetitionRoundsDialog({
           seat_position: l.seat_position || undefined,
           rounds: playerRounds.map(r => {
             const statData = r.competition_round_stats?.[0]?.stat_data as Record<string, any> || {};
-            // Extract bowling fields stored in stat_data
             const bowlingFrames = statData.bowlingFrames as FrameData[] | undefined;
             const bowlingCategory = statData.bowlingCategory as string | undefined;
             const roundDate = statData.roundDate as string | undefined;
-            // Remove internal fields from stats object for display
             const { bowlingFrames: _, bowlingCategory: _bc, roundDate: _rd, ...cleanStats } = statData;
             
             return {
@@ -383,7 +434,6 @@ export function CompetitionRoundsDialog({
               final_time_seconds: r.final_time_seconds || undefined,
               ranking: r.ranking || undefined,
               gap_to_first: r.gap_to_first || undefined,
-              // For bowling: mark as locked if it has an id (already saved), restore frames
               isLocked: !!r.id,
               bowlingFrames: bowlingFrames,
               bowlingCategory: bowlingCategory,
@@ -393,14 +443,16 @@ export function CompetitionRoundsDialog({
         };
       });
       setPlayerRoundsData(playersData);
+      if (Object.keys(newBowlingBlocks).length > 0) {
+        setBowlingBlocks(newBowlingBlocks);
+      }
       setIsDataInitialized(true);
       
-      // Only set the default selected player if not already set
       if (!selectedPlayerId && playersData.length > 0) {
         setSelectedPlayerId(playersData[0].playerId);
       }
     }
-  }, [lineup, existingRounds, isDataInitialized, selectedPlayerId]);
+  }, [lineup, existingRounds, isDataInitialized, selectedPlayerId, isBowling, matchData]);
 
   // Update crew info for a player
   const updatePlayerCrewInfo = (playerId: string, field: string, value: any) => {
@@ -461,12 +513,14 @@ export function CompetitionRoundsDialog({
 
           if (roundError) throw roundError;
 
-          // Insert stats for this round (include bowling frames if present)
+          // Insert stats for this round (include bowling frames, ballData, blockId if present)
           const statDataToSave = {
             ...round.stats,
             ...(round.bowlingFrames ? { bowlingFrames: round.bowlingFrames } : {}),
             ...(round.bowlingCategory ? { bowlingCategory: round.bowlingCategory } : {}),
             ...(round.roundDate ? { roundDate: round.roundDate } : {}),
+            ...(round.blockId ? { blockId: round.blockId } : {}),
+            ...(round.ballData ? { ballData: round.ballData } : {}),
           };
           
           if (Object.keys(statDataToSave).length > 0) {
@@ -836,14 +890,32 @@ export function CompetitionRoundsDialog({
 
             <TabsContent value="rounds" className="flex-1 min-h-0 mt-0 overflow-hidden">
               <ScrollArea className="h-[calc(90vh-280px)] pr-4">
+                {/* Bowling: use block manager */}
+                {isBowling ? (
+                  <BowlingBlockManager
+                    playerId={selectedPlayer.playerId}
+                    categoryId={categoryId}
+                    rounds={selectedPlayer.rounds}
+                    blocks={bowlingBlocks[selectedPlayer.playerId] || []}
+                    matchDate={matchData?.match_date}
+                    onBlocksChange={(newBlocks) => {
+                      setBowlingBlocks(prev => ({ ...prev, [selectedPlayer.playerId]: newBlocks }));
+                    }}
+                    onRoundsChange={(newRounds) => {
+                      setPlayerRoundsData(prev => prev.map(p =>
+                        p.playerId === selectedPlayer.playerId ? { ...p, rounds: newRounds } : p
+                      ));
+                    }}
+                    onScoreSave={(roundNumber, stats, frames, ballData) => {
+                      handleBowlingScoreSheetSave(selectedPlayer.playerId, roundNumber, stats, frames, ballData);
+                    }}
+                    onLock={(roundNumber) => lockBowlingRound(selectedPlayer.playerId, roundNumber)}
+                    onUnlock={(roundNumber) => unlockBowlingRound(selectedPlayer.playerId, roundNumber)}
+                  />
+                ) : (
                 <div className="space-y-4 pb-4">
                   {selectedPlayer.rounds.length === 0 ? (
                     <div className="text-center py-8 text-muted-foreground space-y-4">
-                      {isBowling && (
-                        <p className="text-xs text-muted-foreground text-center">
-                          💡 Compétition multi-jours ? Chaque partie peut avoir sa propre date, phase (qualif, demi, finale) et format (individuelle, doublette...). Tout dans la même compétition !
-                        </p>
-                      )}
                       <p>Aucun {roundLabel.toLowerCase()} enregistré</p>
                       <p className="text-sm">
                         Cliquez sur le bouton ci-dessous pour commencer.
@@ -854,7 +926,7 @@ export function CompetitionRoundsDialog({
                         className="w-full gap-2 bg-destructive hover:bg-destructive/90 text-destructive-foreground"
                       >
                         <Plus className="h-4 w-4" />
-                        Ajouter {isBowling ? "une partie (feuille de score)" : isAviron ? "une course" : isJudo ? "un combat" : isAthletics ? "une épreuve" : `un ${roundLabel.toLowerCase()}`}
+                        Ajouter {isAviron ? "une course" : isJudo ? "un combat" : isAthletics ? "une épreuve" : `un ${roundLabel.toLowerCase()}`}
                       </Button>
                     </div>
                   ) : (
@@ -1265,17 +1337,29 @@ export function CompetitionRoundsDialog({
                         className="w-full gap-2 bg-destructive hover:bg-destructive/90 text-destructive-foreground"
                       >
                         <Plus className="h-4 w-4" />
-                        Ajouter {isBowling ? "une partie (feuille de score)" : isAviron ? "une course" : isJudo ? "un combat" : isAthletics ? "une épreuve" : `un ${roundLabel.toLowerCase()}`}
+                        Ajouter {isAviron ? "une course" : isJudo ? "un combat" : isAthletics ? "une épreuve" : `un ${roundLabel.toLowerCase()}`}
                       </Button>
                       </div>
                     ))
                   )}
                 </div>
+                )}
               </ScrollArea>
             </TabsContent>
 
             <TabsContent value="summary" className="flex-1 min-h-0 mt-0 overflow-hidden">
               <ScrollArea className="h-[calc(90vh-280px)]">
+              {isBowling ? (
+                <BowlingCompetitionSummary
+                  rounds={selectedPlayer.rounds}
+                  blocks={bowlingBlocks[selectedPlayer.playerId] || []}
+                  playerName={selectedPlayer.playerName}
+                  getBallName={(ballId) => {
+                    // Try to find ball name from arsenals
+                    return ballId;
+                  }}
+                />
+              ) : (
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base flex items-center gap-2">
@@ -1314,254 +1398,6 @@ export function CompetitionRoundsDialog({
                                   </div>
                                 )}
                               </div>
-                            ) : isBowling ? (
-                              // Bowling-specific summary with global stats
-                              <>
-                                {/* Main metrics */}
-                                <div className="grid grid-cols-4 gap-3 text-center">
-                                  <div className="p-3 rounded-lg bg-muted">
-                                    <p className="text-2xl font-bold">{total}</p>
-                                    <p className="text-xs text-muted-foreground">Parties</p>
-                                  </div>
-                                  <div className="p-3 rounded-lg bg-primary/10">
-                                    <p className="text-2xl font-bold text-primary">
-                                      {Math.max(...selectedPlayer.rounds.map(r => r.stats["gameScore"] || 0))}
-                                    </p>
-                                    <p className="text-xs text-muted-foreground">High Game</p>
-                                  </div>
-                                  <div className="p-3 rounded-lg bg-secondary/50">
-                                    <p className="text-2xl font-bold">
-                                      {(selectedPlayer.rounds.reduce((sum, r) => sum + (r.stats["gameScore"] || 0), 0) / total || 0).toFixed(1)}
-                                    </p>
-                                    <p className="text-xs text-muted-foreground">Moyenne</p>
-                                  </div>
-                                  <div className="p-3 rounded-lg bg-muted">
-                                    <p className="text-2xl font-bold">
-                                      {selectedPlayer.rounds.reduce((sum, r) => sum + (r.stats["gameScore"] || 0), 0)}
-                                    </p>
-                                    <p className="text-xs text-muted-foreground">Total Pins</p>
-                                  </div>
-                                </div>
-
-                                {/* Strikes and Spares totals */}
-                                <div className="grid grid-cols-2 gap-4">
-                                  <div className="p-4 rounded-lg border bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-800/10">
-                                    <div className="flex items-center justify-between">
-                                      <div>
-                                        <p className="text-3xl font-bold text-amber-600">
-                                          {selectedPlayer.rounds.reduce((sum, r) => sum + (r.stats["strikes"] || 0), 0)}
-                                        </p>
-                                        <p className="text-sm text-muted-foreground">Strikes totaux</p>
-                                      </div>
-                                      <div className="text-right">
-                                        <p className="text-lg font-semibold">
-                                          {((selectedPlayer.rounds.reduce((sum, r) => sum + (r.stats["strikePercentage"] || 0), 0) / total) || 0).toFixed(1)}%
-                                        </p>
-                                        <p className="text-xs text-muted-foreground">Moy. % strikes</p>
-                                      </div>
-                                    </div>
-                                  </div>
-                                  <div className="p-4 rounded-lg border bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/10">
-                                    <div className="flex items-center justify-between">
-                                      <div>
-                                        <p className="text-3xl font-bold text-blue-600">
-                                          {selectedPlayer.rounds.reduce((sum, r) => sum + (r.stats["spares"] || 0), 0)}
-                                        </p>
-                                        <p className="text-sm text-muted-foreground">Spares (hors splits)</p>
-                                      </div>
-                                      <div className="text-right">
-                                        <p className="text-lg font-semibold">
-                                          {((selectedPlayer.rounds.reduce((sum, r) => sum + (r.stats["sparePercentage"] || 0), 0) / total) || 0).toFixed(1)}%
-                                        </p>
-                                        <p className="text-xs text-muted-foreground">Moy. % spares</p>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-
-                                {/* Split stats */}
-                                <div className="p-3 rounded-lg border border-orange-200 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/10">
-                                  <div className="flex items-center justify-between">
-                                    <div className="flex gap-6">
-                                      <div>
-                                        <p className="text-2xl font-bold text-orange-600">
-                                          {selectedPlayer.rounds.reduce((sum, r) => sum + (r.stats["splitCount"] || 0), 0)}
-                                        </p>
-                                        <p className="text-xs text-muted-foreground">Splits total</p>
-                                      </div>
-                                      <div>
-                                        <p className="text-2xl font-bold text-green-600">
-                                          {selectedPlayer.rounds.reduce((sum, r) => sum + (r.stats["splitConverted"] || 0), 0)}
-                                        </p>
-                                        <p className="text-xs text-muted-foreground">Splits convertis</p>
-                                      </div>
-                                    </div>
-                                    <div className="text-right">
-                                      <p className="text-lg font-semibold">
-                                        {(() => {
-                                          const totalSplits = selectedPlayer.rounds.reduce((sum, r) => sum + (r.stats["splitCount"] || 0), 0);
-                                          const totalConverted = selectedPlayer.rounds.reduce((sum, r) => sum + (r.stats["splitConverted"] || 0), 0);
-                                          return totalSplits > 0 ? ((totalConverted / totalSplits) * 100).toFixed(1) : 0;
-                                        })()}%
-                                      </p>
-                                      <p className="text-xs text-muted-foreground">% Conv. Splits</p>
-                                    </div>
-                                  </div>
-                                  <p className="text-[10px] text-muted-foreground mt-2 italic">
-                                    Splits sur 11e/12e lancer exclus: {selectedPlayer.rounds.reduce((sum, r) => sum + (r.stats["splitOnLastThrow"] || 0), 0)}
-                                  </p>
-                                </div>
-
-                                {/* Single pin & other stats */}
-                                <div className="grid grid-cols-3 gap-3 text-center">
-                                  <div className="p-2 rounded border">
-                                    <p className="text-lg font-bold">
-                                      {(() => {
-                                        const totalSP = selectedPlayer.rounds.reduce((sum, r) => sum + (r.stats["singlePinCount"] || 0), 0);
-                                        const convertedSP = selectedPlayer.rounds.reduce((sum, r) => sum + (r.stats["singlePinConverted"] || 0), 0);
-                                        return totalSP > 0 ? ((convertedSP / totalSP) * 100).toFixed(1) : "0";
-                                      })()}%
-                                    </p>
-                                    <p className="text-xs text-muted-foreground">% QS converties</p>
-                                    <p className="text-[10px] text-muted-foreground">
-                                      {selectedPlayer.rounds.reduce((sum, r) => sum + (r.stats["singlePinConverted"] || 0), 0)}/
-                                      {selectedPlayer.rounds.reduce((sum, r) => sum + (r.stats["singlePinCount"] || 0), 0)}
-                                    </p>
-                                  </div>
-                                  <div className="p-2 rounded border">
-                                    <p className="text-lg font-bold">{selectedPlayer.rounds.reduce((sum, r) => sum + (r.stats["openFrames"] || 0), 0)}</p>
-                                    <p className="text-xs text-muted-foreground">Open Frames</p>
-                                  </div>
-                                  <div className="p-2 rounded border">
-                                    <p className="text-lg font-bold">{wins}/{losses}</p>
-                                    <p className="text-xs text-muted-foreground">V/D</p>
-                                  </div>
-                                </div>
-
-                                {/* Games list grouped by date then phase */}
-                                <div className="space-y-4">
-                                  <h4 className="font-medium">Détail des parties</h4>
-                                  {(() => {
-                                    const defaultDate = matchData?.match_date?.split("T")[0] || "";
-                                    // Group rounds by date first
-                                    const dateGroups: Record<string, Round[]> = {};
-                                    selectedPlayer.rounds.forEach(round => {
-                                      const dateKey = round.roundDate || defaultDate || "sans_date";
-                                      if (!dateGroups[dateKey]) dateGroups[dateKey] = [];
-                                      dateGroups[dateKey].push(round);
-                                    });
-
-                                    const sortedDates = Object.keys(dateGroups).sort();
-                                    const hasMultipleDates = sortedDates.length > 1 || (sortedDates.length === 1 && sortedDates[0] !== "sans_date");
-
-                                    const formatDateLabel = (d: string) => {
-                                      if (d === "sans_date") return "Date non définie";
-                                      try {
-                                        return new Date(d).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
-                                      } catch { return d; }
-                                    };
-
-                                    return sortedDates.map(dateKey => {
-                                      const dateRounds = dateGroups[dateKey];
-                                      const dateTotal = dateRounds.reduce((sum, r) => sum + (r.stats["gameScore"] || 0), 0);
-                                      const dateAvg = dateRounds.length > 0 ? (dateTotal / dateRounds.length).toFixed(1) : "0";
-
-                                      // Group by phase within date
-                                      const phaseGroups: Record<string, Round[]> = {};
-                                      dateRounds.forEach(round => {
-                                        const phaseKey = round.phase || "sans_phase";
-                                        if (!phaseGroups[phaseKey]) phaseGroups[phaseKey] = [];
-                                        phaseGroups[phaseKey].push(round);
-                                      });
-
-                                      const phaseOrder = ["qualification", "round_robin", "quart", "demi", "petite_finale", "finale", "sans_phase"];
-                                      const sortedPhases = Object.keys(phaseGroups).sort(
-                                        (a, b) => phaseOrder.indexOf(a) - phaseOrder.indexOf(b)
-                                      );
-
-                                      return (
-                                        <div key={dateKey} className="space-y-2">
-                                          {hasMultipleDates && (
-                                            <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-primary/10 border border-primary/20">
-                                              <span className="font-semibold text-sm capitalize">{formatDateLabel(dateKey)}</span>
-                                              <div className="flex items-center gap-3 text-sm">
-                                                <Badge variant="secondary">{dateRounds.length} partie{dateRounds.length > 1 ? "s" : ""}</Badge>
-                                                <span className="text-muted-foreground">Moy: <strong>{dateAvg}</strong></span>
-                                                <span className="font-mono font-bold">{dateTotal} pts</span>
-                                              </div>
-                                            </div>
-                                          )}
-                                          {sortedPhases.map(phaseKey => {
-                                            const rounds = phaseGroups[phaseKey];
-                                            const phaseLabel = BOWLING_PHASES.find(p => p.value === phaseKey)?.label || "Autres";
-                                            const phaseTotal = rounds.reduce((sum, r) => sum + (r.stats["gameScore"] || 0), 0);
-                                            const phaseAvg = rounds.length > 0 ? (phaseTotal / rounds.length).toFixed(1) : "0";
-
-                                            // Group by category within phase
-                                            const categoryGroups: Record<string, Round[]> = {};
-                                            rounds.forEach(r => {
-                                              const cat = r.bowlingCategory || "non_defini";
-                                              if (!categoryGroups[cat]) categoryGroups[cat] = [];
-                                              categoryGroups[cat].push(r);
-                                            });
-
-                                            return (
-                                              <div key={phaseKey} className="space-y-1">
-                                                <div className="flex items-center justify-between px-2 py-1.5 rounded-lg bg-muted/80">
-                                                  <div className="flex items-center gap-2">
-                                                    <span className="font-semibold text-sm">{phaseLabel}</span>
-                                                    <Badge variant="secondary" className="text-xs">
-                                                      {rounds.length} partie{rounds.length > 1 ? "s" : ""}
-                                                    </Badge>
-                                                    {Object.keys(categoryGroups).length > 1 || !categoryGroups["non_defini"] ? (
-                                                      Object.entries(categoryGroups).map(([cat, catRounds]) => (
-                                                        <Badge key={cat} variant="outline" className="text-xs">
-                                                          {BOWLING_COMPETITION_CATEGORIES.find(c => c.value === cat)?.label || cat}
-                                                          {catRounds.length > 1 ? ` (${catRounds.length})` : ""}
-                                                        </Badge>
-                                                      ))
-                                                    ) : null}
-                                                  </div>
-                                                  <div className="flex items-center gap-3 text-sm">
-                                                    <span className="text-muted-foreground">Moy: <strong>{phaseAvg}</strong></span>
-                                                    <span className="font-mono font-bold">{phaseTotal} pts</span>
-                                                  </div>
-                                                </div>
-                                                {rounds.map(round => (
-                                                  <div key={round.round_number} className="flex items-center justify-between p-2 pl-4 rounded border text-sm">
-                                                    <div className="flex items-center gap-2">
-                                                      <span className="text-muted-foreground text-xs">#{round.round_number}</span>
-                                                      {round.bowlingCategory && (
-                                                        <Badge variant="outline" className="text-xs">
-                                                          {BOWLING_COMPETITION_CATEGORIES.find(c => c.value === round.bowlingCategory)?.label || round.bowlingCategory}
-                                                        </Badge>
-                                                      )}
-                                                      {round.opponent_name && (
-                                                        <span className="text-muted-foreground">vs {round.opponent_name}</span>
-                                                      )}
-                                                    </div>
-                                                    <div className="flex items-center gap-3">
-                                                      <span className="font-mono font-bold">{round.stats["gameScore"] || 0}</span>
-                                                      <span className="text-xs text-muted-foreground">
-                                                        {round.stats["strikes"] || 0}X / {round.stats["spares"] || 0}/
-                                                      </span>
-                                                      {round.result && (
-                                                        <Badge variant={round.result === "win" ? "default" : round.result === "loss" ? "destructive" : "secondary"}>
-                                                          {round.result === "win" ? "V" : round.result === "loss" ? "D" : "N"}
-                                                        </Badge>
-                                                      )}
-                                                    </div>
-                                                  </div>
-                                                ))}
-                                              </div>
-                                            );
-                                          })}
-                                        </div>
-                                      );
-                                    });
-                                  })()}
-                                </div>
-                              </>
                             ) : isAthletics ? (
                               <div className="space-y-3">
                                 <div className="grid grid-cols-3 gap-3 text-center">
@@ -1695,6 +1531,7 @@ export function CompetitionRoundsDialog({
                   )}
                 </CardContent>
               </Card>
+              )}
               </ScrollArea>
             </TabsContent>
           </Tabs>
