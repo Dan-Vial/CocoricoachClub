@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BowlingBallSelector } from "@/components/bowling/BowlingBallSelector";
 import { Input } from "@/components/ui/input";
@@ -76,6 +76,71 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, c
   const [selectedBallId, setSelectedBallId] = useState<string | null>(null);
   const [frameBalls, setFrameBalls] = useState<(string | null)[]>(Array(10).fill(null));
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const inputRefs = useRef<Map<string, HTMLInputElement>>(new Map());
+
+  const getInputKey = (frameIndex: number, throwIndex: number) => `${frameIndex}-${throwIndex}`;
+
+  const setInputRef = (frameIndex: number, throwIndex: number, el: HTMLInputElement | null) => {
+    const key = getInputKey(frameIndex, throwIndex);
+    if (el) {
+      inputRefs.current.set(key, el);
+    } else {
+      inputRefs.current.delete(key);
+    }
+  };
+
+  // Find the next editable throw position
+  const findNextThrow = useCallback((frameIndex: number, throwIndex: number, currentFrames: FrameData[]): [number, number] | null => {
+    // Try next throw in same frame
+    const nextThrow = throwIndex + 1;
+    const maxThrows = frameIndex < 9 ? 2 : 3;
+    if (nextThrow < maxThrows) {
+      // Check if this throw would be editable
+      const frame = currentFrames[frameIndex];
+      if (frameIndex < 9) {
+        if (nextThrow === 1 && frame.throws[0]?.value === "X") {
+          // Strike in frames 1-9, move to next frame
+          return frameIndex < 9 ? [frameIndex + 1, 0] : null;
+        }
+        return [frameIndex, nextThrow];
+      } else {
+        // 10th frame - always advance within frame up to max
+        return [frameIndex, nextThrow];
+      }
+    }
+    // Move to next frame
+    if (frameIndex < 9) {
+      return [frameIndex + 1, 0];
+    }
+    return null; // End of game
+  }, []);
+
+  // Find the previous editable throw position
+  const findPrevThrow = useCallback((frameIndex: number, throwIndex: number, currentFrames: FrameData[]): [number, number] | null => {
+    if (throwIndex > 0) {
+      return [frameIndex, throwIndex - 1];
+    }
+    if (frameIndex > 0) {
+      const prevFrame = currentFrames[frameIndex - 1];
+      if (prevFrame.throws[0]?.value === "X" && frameIndex - 1 < 9) {
+        return [frameIndex - 1, 0]; // Strike frame, only 1 throw
+      }
+      return [frameIndex - 1, 1]; // Normal frame, go to 2nd throw
+    }
+    return null;
+  }, []);
+
+  const focusInput = useCallback((frameIndex: number, throwIndex: number) => {
+    // Small delay to allow React to render
+    setTimeout(() => {
+      const key = getInputKey(frameIndex, throwIndex);
+      const input = inputRefs.current.get(key);
+      if (input) {
+        input.focus();
+        input.select();
+      }
+    }, 50);
+  }, []);
   const handleFrameBallChange = (frameIndex: number, ballId: string | null) => {
     setFrameBalls(prev => {
       const next = [...prev];
@@ -415,15 +480,12 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, c
       if (upperValue === "X") {
         currentThrow.pins = 10;
       } else if (upperValue === "/") {
-        // Spare: 10 minus pins from IMMEDIATELY previous throw only
-        // In 10th frame, pins reset after a strike, so only count from last pin-reset point
         const isTenthFrame = frameIndex === 9;
         if (isTenthFrame) {
-          // Find the last "reset point" - after a strike or spare, pins reset
           let pinsInCurrentSet = 0;
           for (let ti = throwIndex - 1; ti >= 0; ti--) {
             if (throws[ti]?.value === "X" || throws[ti]?.value === "/") {
-              break; // Pins were reset after this throw
+              break;
             }
             pinsInCurrentSet += throws[ti]?.pins || 0;
           }
@@ -442,8 +504,31 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, c
       frame.throws = throws;
       newFrames[frameIndex] = frame;
 
-      return calculateAllScores(newFrames);
+      const calculated = calculateAllScores(newFrames);
+
+      // Auto-advance to next throw if a valid value was entered
+      if (upperValue !== "") {
+        const next = findNextThrow(frameIndex, throwIndex, calculated);
+        if (next) {
+          focusInput(next[0], next[1]);
+        }
+      }
+
+      return calculated;
     });
+  };
+
+  // Handle keyboard navigation (arrow keys)
+  const handleKeyDown = (frameIndex: number, throwIndex: number, e: React.KeyboardEvent) => {
+    if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+      e.preventDefault();
+      const next = findNextThrow(frameIndex, throwIndex, frames);
+      if (next) focusInput(next[0], next[1]);
+    } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+      e.preventDefault();
+      const prev = findPrevThrow(frameIndex, throwIndex, frames);
+      if (prev) focusInput(prev[0], prev[1]);
+    }
   };
 
   // Handle checkbox changes
@@ -629,10 +714,12 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, c
                                 }`}
                               >
                                 <Input
+                                  ref={(el) => setInputRef(frameIndex, throwIndex, el)}
                                   type="text"
                                   maxLength={1}
                                   value={value}
                                   onChange={(e) => handleThrowInput(frameIndex, throwIndex, e.target.value)}
+                                  onKeyDown={(e) => handleKeyDown(frameIndex, throwIndex, e)}
                                   disabled={!editable || isSaved}
                                   className={`w-full h-full text-center text-sm font-bold p-0 uppercase rounded-none border-0 focus:ring-1 focus:ring-primary ${getThrowCellStyle(value, throwData)} ${isSaved ? "opacity-70" : ""}`}
                                   placeholder=""

@@ -105,6 +105,8 @@ const BOWLING_COMPETITION_CATEGORIES = [
   { value: "doublette", label: "Doublette" },
   { value: "equipe_4", label: "Équipe de 4" },
   { value: "masters", label: "Masters" },
+  { value: "practice_officiel", label: "Practice officiel" },
+  { value: "practice_non_officiel", label: "Practice non officiel" },
 ];
 
 // Bowling phases (subcategories)
