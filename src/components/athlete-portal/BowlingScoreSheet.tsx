@@ -666,78 +666,85 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, c
         </CardContent>
       </Card>
 
-      {/* Throw Details - Pocket, Split, Single Pin */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-lg">Détails des lancers</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <div className="space-y-3 min-w-max">
-              {frames.map((frame, frameIndex) => (
-                <div key={frameIndex} className="flex items-center gap-3">
-                  <div className="w-16 text-sm font-medium text-muted-foreground shrink-0">
-                    Frame {frameIndex + 1}
-                  </div>
-                  <div className="flex gap-4 flex-wrap">
-                    {frame.throws.map((throwData, throwIndex) => {
-                      if (!throwData.value) return null;
-                      
-                      const pocketAllowed = isPocketAllowed(frameIndex, throwIndex, frame);
-                      const isBonusThrow = frameIndex === 9 && throwIndex >= 1 && 
-                        frame.throws.slice(0, throwIndex).every(t => t.value === "X");
-                      
-                      return (
-                        <div 
-                          key={throwIndex} 
-                          className="flex items-center gap-3 p-2 rounded-lg bg-muted/50"
-                        >
-                          <Badge variant="outline" className="shrink-0">
-                            L{throwIndex + 1}: {throwData.value}
-                          </Badge>
+      {/* Throw Details - Collapsible */}
+      <Collapsible open={detailsOpen} onOpenChange={setDetailsOpen}>
+        <Card>
+          <CollapsibleTrigger asChild>
+            <CardHeader className="pb-2 cursor-pointer hover:bg-muted/50 transition-colors">
+              <CardTitle className="text-lg flex items-center justify-between">
+                <span>Détails des lancers</span>
+                <ChevronDown className={`h-5 w-5 transition-transform duration-200 ${detailsOpen ? "rotate-180" : ""}`} />
+              </CardTitle>
+            </CardHeader>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <div className="space-y-3 min-w-max">
+                  {frames.map((frame, frameIndex) => (
+                    <div key={frameIndex} className="flex items-center gap-3">
+                      <div className="w-16 text-sm font-medium text-muted-foreground shrink-0">
+                        Frame {frameIndex + 1}
+                      </div>
+                      <div className="flex gap-4 flex-wrap">
+                        {frame.throws.map((throwData, throwIndex) => {
+                          if (!throwData.value) return null;
                           
-                          {/* Pocket checkbox - only on first throw contexts */}
-                          {pocketAllowed && (
-                            <div className="flex items-center gap-2">
-                              <Checkbox
-                                id={`pocket-${frameIndex}-${throwIndex}`}
-                                checked={throwData.isPocket}
-                                disabled={isSaved}
-                                onCheckedChange={() => handleCheckboxChange(frameIndex, throwIndex, "isPocket")}
-                              />
-                              <Label htmlFor={`pocket-${frameIndex}-${throwIndex}`} className="text-xs">
-                                Boule en poche
-                              </Label>
-                            </div>
-                          )}
+                          const pocketAllowed = isPocketAllowed(frameIndex, throwIndex, frame);
+                          
+                          return (
+                            <div 
+                              key={throwIndex} 
+                              className="flex items-center gap-3 p-2 rounded-lg bg-muted/50"
+                            >
+                              <Badge variant="outline" className="shrink-0">
+                                L{throwIndex + 1}: {throwData.value}
+                              </Badge>
+                              
+                              {/* Pocket checkbox - only on first throw contexts */}
+                              {pocketAllowed && (
+                                <div className="flex items-center gap-2">
+                                  <Checkbox
+                                    id={`pocket-${frameIndex}-${throwIndex}`}
+                                    checked={throwData.isPocket}
+                                    disabled={isSaved}
+                                    onCheckedChange={() => handleCheckboxChange(frameIndex, throwIndex, "isPocket")}
+                                  />
+                                  <Label htmlFor={`pocket-${frameIndex}-${throwIndex}`} className="text-xs">
+                                    Boule en poche
+                                  </Label>
+                                </div>
+                              )}
 
-                          {/* Split checkbox - same logic as pocket: first throw contexts */}
-                          {pocketAllowed && throwData.value !== "X" && throwData.value !== "/" && (
-                            <div className="flex items-center gap-2">
-                              <Checkbox
-                                id={`split-${frameIndex}-${throwIndex}`}
-                                checked={throwData.isSplit}
-                                disabled={isSaved}
-                                onCheckedChange={() => handleCheckboxChange(frameIndex, throwIndex, "isSplit")}
-                              />
-                              <Label 
-                                htmlFor={`split-${frameIndex}-${throwIndex}`} 
-                                className="text-xs"
-                              >
-                                Split
-                              </Label>
+                              {/* Split checkbox - same logic as pocket: first throw contexts */}
+                              {pocketAllowed && throwData.value !== "X" && throwData.value !== "/" && (
+                                <div className="flex items-center gap-2">
+                                  <Checkbox
+                                    id={`split-${frameIndex}-${throwIndex}`}
+                                    checked={throwData.isSplit}
+                                    disabled={isSaved}
+                                    onCheckedChange={() => handleCheckboxChange(frameIndex, throwIndex, "isSplit")}
+                                  />
+                                  <Label 
+                                    htmlFor={`split-${frameIndex}-${throwIndex}`} 
+                                    className="text-xs"
+                                  >
+                                    Split
+                                  </Label>
+                                </div>
+                              )}
                             </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+              </div>
+            </CardContent>
+          </CollapsibleContent>
+        </Card>
+      </Collapsible>
 
       {/* Statistics Summary */}
       <Card className="bg-gradient-to-br from-primary/5 to-primary/10">
