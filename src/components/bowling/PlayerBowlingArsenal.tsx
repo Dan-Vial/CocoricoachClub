@@ -382,9 +382,9 @@ export function PlayerBowlingArsenal({ playerId, categoryId, isViewer }: PlayerB
                         <Badge variant="secondary" className="text-xs">{getCoreTypeLabel(item.catalogBall.core_type)}</Badge>
                       </>
                     )}
-                    {item.balance_type && (
+                    {(item.drilling_layout || item.balance_type) && (
                       <Badge variant="outline" className="text-xs">
-                        {BALANCE_TYPES.find(b => b.value === item.balance_type)?.label || item.balance_type}
+                        🎯 {item.drilling_layout || item.balance_type}
                       </Badge>
                     )}
                     {item.current_surface && (
