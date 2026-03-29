@@ -244,7 +244,8 @@ export function CompetitionRoundsDialog({
     playerId: string, 
     roundNumber: number, 
     sheetStats: BowlingStats, 
-    frames: FrameData[]
+    frames: FrameData[],
+    ballData?: any
   ) => {
     setPlayerRoundsData(prev => prev.map(p => {
       if (p.playerId === playerId) {
@@ -256,6 +257,7 @@ export function CompetitionRoundsDialog({
                 ...r,
                 bowlingFrames: frames,
                 isLocked: true,
+                ballData: ballData || r.ballData,
                 stats: {
                   ...r.stats,
                   gameScore: sheetStats.totalScore,
