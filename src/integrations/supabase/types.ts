@@ -4728,6 +4728,7 @@ export type Database = {
           custom_differential: number | null
           custom_intermediate_diff: number | null
           custom_rg: number | null
+          drilling_layout: string | null
           games_played: number
           id: string
           is_active: boolean
@@ -4748,6 +4749,7 @@ export type Database = {
           custom_differential?: number | null
           custom_intermediate_diff?: number | null
           custom_rg?: number | null
+          drilling_layout?: string | null
           games_played?: number
           id?: string
           is_active?: boolean
@@ -4768,6 +4770,7 @@ export type Database = {
           custom_differential?: number | null
           custom_intermediate_diff?: number | null
           custom_rg?: number | null
+          drilling_layout?: string | null
           games_played?: number
           id?: string
           is_active?: boolean
