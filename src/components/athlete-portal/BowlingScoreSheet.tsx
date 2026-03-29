@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Target, TrendingUp, Save, X, CheckCircle } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Target, TrendingUp, Save, X, CheckCircle, ChevronDown } from "lucide-react";
 
 export interface ThrowData {
   value: string; // "X", "/", "0"-"9", "-" (miss)

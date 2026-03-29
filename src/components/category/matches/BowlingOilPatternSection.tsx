@@ -405,22 +405,12 @@ export function BowlingOilPatternSection({
                   </Tooltip>
                 </TooltipProvider>
               </Label>
-              <Select
+              <Input
                 value={pattern.oil_ratio || ""}
-                onValueChange={(v) => updateField("oil_ratio", v)}
+                onChange={(e) => updateField("oil_ratio", e.target.value || null)}
+                placeholder="Ex: 3:1, 5:1, 8:1..."
                 disabled={readOnly}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner" />
-                </SelectTrigger>
-                <SelectContent>
-                  {OIL_RATIOS.map((ratio) => (
-                    <SelectItem key={ratio} value={ratio}>
-                      {ratio}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              />
             </div>
             <div className="space-y-2">
               <Label>Type de profil</Label>
