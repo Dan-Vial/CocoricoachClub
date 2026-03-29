@@ -714,10 +714,12 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, c
                                 }`}
                               >
                                 <Input
+                                  ref={(el) => setInputRef(frameIndex, throwIndex, el)}
                                   type="text"
                                   maxLength={1}
                                   value={value}
                                   onChange={(e) => handleThrowInput(frameIndex, throwIndex, e.target.value)}
+                                  onKeyDown={(e) => handleKeyDown(frameIndex, throwIndex, e)}
                                   disabled={!editable || isSaved}
                                   className={`w-full h-full text-center text-sm font-bold p-0 uppercase rounded-none border-0 focus:ring-1 focus:ring-primary ${getThrowCellStyle(value, throwData)} ${isSaved ? "opacity-70" : ""}`}
                                   placeholder=""
