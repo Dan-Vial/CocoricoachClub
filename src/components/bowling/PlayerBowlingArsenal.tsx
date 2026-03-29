@@ -153,7 +153,9 @@ export function PlayerBowlingArsenal({ playerId, categoryId, isViewer }: PlayerB
     setCustomRg("");
     setCustomDifferential("");
     setCustomIntermediateDiff("");
-    setBalanceType("");
+    setDrillingAngle("");
+    setPinPapDistance("");
+    setValAngle("");
   };
 
   const handleSelectFromCatalog = (ball: any) => {
