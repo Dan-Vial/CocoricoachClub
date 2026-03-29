@@ -1337,12 +1337,13 @@ export function CompetitionRoundsDialog({
                         className="w-full gap-2 bg-destructive hover:bg-destructive/90 text-destructive-foreground"
                       >
                         <Plus className="h-4 w-4" />
-                        Ajouter {isBowling ? "une partie (feuille de score)" : isAviron ? "une course" : isJudo ? "un combat" : isAthletics ? "une épreuve" : `un ${roundLabel.toLowerCase()}`}
+                        Ajouter {isAviron ? "une course" : isJudo ? "un combat" : isAthletics ? "une épreuve" : `un ${roundLabel.toLowerCase()}`}
                       </Button>
                       </div>
                     ))
                   )}
                 </div>
+                )}
               </ScrollArea>
             </TabsContent>
 
