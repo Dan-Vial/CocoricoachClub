@@ -361,6 +361,7 @@ export function CompetitionRoundsDialog({
                 phase: r.phase || "",
                 opponent_name: r.opponent_name || "",
                 notes: "",
+                debriefing: (statData.blockDebriefing as string) || "",
                 isCollapsed: false,
               });
             }
