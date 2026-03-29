@@ -179,7 +179,12 @@ export function PlayerBowlingArsenal({ playerId, categoryId, isViewer }: PlayerB
     setCustomRg(item.custom_rg?.toString() || "");
     setCustomDifferential(item.custom_differential?.toString() || "");
     setCustomIntermediateDiff(item.custom_intermediate_diff?.toString() || "");
-    setBalanceType(item.balance_type || "");
+    // Parse drilling_layout "XXxXXxXX"
+    const layout = item.drilling_layout || item.balance_type || "";
+    const parts = layout.split("x");
+    setDrillingAngle(parts[0] && parts[0] !== "?" ? parts[0] : "");
+    setPinPapDistance(parts[1] && parts[1] !== "?" ? parts[1] : "");
+    setValAngle(parts[2] && parts[2] !== "?" ? parts[2] : "");
     setIsAddOpen(true);
   };
 
