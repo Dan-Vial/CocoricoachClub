@@ -330,14 +330,80 @@ export function CompetitionRoundsDialog({
 
   // Initialize data only once when lineup and existingRounds are loaded
   useEffect(() => {
-    // Only initialize once to prevent overwriting local state (new rounds added by user)
     if (isDataInitialized) return;
     
     if (lineup && lineup.length > 0) {
+      const newBowlingBlocks: Record<string, BowlingBlock[]> = {};
+      
       const playersData = lineup.map((l) => {
         const player = l.players as { id: string; name: string; first_name?: string; discipline?: string; specialty?: string } | null;
         const playerRounds = existingRounds?.filter(r => r.player_id === l.player_id) || [];
         
+        // For bowling: reconstruct blocks from existing rounds
+        if (isBowling && playerRounds.length > 0) {
+          const blockMap = new Map<string, BowlingBlock>();
+          const roundsWithBlocks = playerRounds.map(r => {
+            const statData = r.competition_round_stats?.[0]?.stat_data as Record<string, any> || {};
+            const bowlingFrames = statData.bowlingFrames as FrameData[] | undefined;
+            const bowlingCategory = statData.bowlingCategory as string | undefined;
+            const roundDate = statData.roundDate as string | undefined;
+            const blockId = statData.blockId as string | undefined;
+            const ballData = statData.ballData as any | undefined;
+            const { bowlingFrames: _, bowlingCategory: _bc, roundDate: _rd, blockId: _bi, ballData: _bd, ...cleanStats } = statData;
+            
+            // Create or find block
+            const effectiveBlockId = blockId || `legacy_${roundDate || "nodate"}_${bowlingCategory || "nocat"}_${r.phase || "nophase"}`;
+            if (!blockMap.has(effectiveBlockId)) {
+              blockMap.set(effectiveBlockId, {
+                id: effectiveBlockId,
+                roundDate: roundDate || matchData?.match_date?.split("T")[0] || "",
+                bowlingCategory: bowlingCategory || "",
+                phase: r.phase || "",
+                opponent_name: r.opponent_name || "",
+                notes: "",
+                isCollapsed: false,
+              });
+            }
+            
+            return {
+              id: r.id,
+              round_number: r.round_number,
+              opponent_name: r.opponent_name || "",
+              result: r.result || "",
+              notes: r.notes || "",
+              stats: cleanStats as Record<string, number>,
+              phase: r.phase || "",
+              lane: r.lane || undefined,
+              wind_conditions: r.wind_conditions || undefined,
+              current_conditions: r.current_conditions || undefined,
+              temperature_celsius: r.temperature_celsius || undefined,
+              final_time_seconds: r.final_time_seconds || undefined,
+              ranking: r.ranking || undefined,
+              gap_to_first: r.gap_to_first || undefined,
+              isLocked: !!r.id,
+              bowlingFrames: bowlingFrames,
+              bowlingCategory: bowlingCategory,
+              roundDate: roundDate,
+              blockId: effectiveBlockId,
+              ballData: ballData,
+            };
+          });
+          
+          newBowlingBlocks[l.player_id] = Array.from(blockMap.values());
+          
+          return {
+            playerId: l.player_id,
+            playerName: [player?.first_name, player?.name].filter(Boolean).join(" ") || "Athlète",
+            discipline: player?.discipline || undefined,
+            specialty: player?.specialty || undefined,
+            boat_type: l.boat_type || undefined,
+            crew_role: l.crew_role || undefined,
+            seat_position: l.seat_position || undefined,
+            rounds: roundsWithBlocks,
+          };
+        }
+        
+        // Non-bowling path (unchanged)
         return {
           playerId: l.player_id,
           playerName: [player?.first_name, player?.name].filter(Boolean).join(" ") || "Athlète",
@@ -348,11 +414,9 @@ export function CompetitionRoundsDialog({
           seat_position: l.seat_position || undefined,
           rounds: playerRounds.map(r => {
             const statData = r.competition_round_stats?.[0]?.stat_data as Record<string, any> || {};
-            // Extract bowling fields stored in stat_data
             const bowlingFrames = statData.bowlingFrames as FrameData[] | undefined;
             const bowlingCategory = statData.bowlingCategory as string | undefined;
             const roundDate = statData.roundDate as string | undefined;
-            // Remove internal fields from stats object for display
             const { bowlingFrames: _, bowlingCategory: _bc, roundDate: _rd, ...cleanStats } = statData;
             
             return {
@@ -370,7 +434,6 @@ export function CompetitionRoundsDialog({
               final_time_seconds: r.final_time_seconds || undefined,
               ranking: r.ranking || undefined,
               gap_to_first: r.gap_to_first || undefined,
-              // For bowling: mark as locked if it has an id (already saved), restore frames
               isLocked: !!r.id,
               bowlingFrames: bowlingFrames,
               bowlingCategory: bowlingCategory,
@@ -380,14 +443,16 @@ export function CompetitionRoundsDialog({
         };
       });
       setPlayerRoundsData(playersData);
+      if (Object.keys(newBowlingBlocks).length > 0) {
+        setBowlingBlocks(newBowlingBlocks);
+      }
       setIsDataInitialized(true);
       
-      // Only set the default selected player if not already set
       if (!selectedPlayerId && playersData.length > 0) {
         setSelectedPlayerId(playersData[0].playerId);
       }
     }
-  }, [lineup, existingRounds, isDataInitialized, selectedPlayerId]);
+  }, [lineup, existingRounds, isDataInitialized, selectedPlayerId, isBowling, matchData]);
 
   // Update crew info for a player
   const updatePlayerCrewInfo = (playerId: string, field: string, value: any) => {
