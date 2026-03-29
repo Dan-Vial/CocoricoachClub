@@ -14,11 +14,12 @@ import {
 
 interface TonnageDashboardProps {
   categoryId: string;
+  playerId?: string;
 }
 
-export function TonnageDashboard({ categoryId }: TonnageDashboardProps) {
+export function TonnageDashboard({ categoryId, playerId }: TonnageDashboardProps) {
   const [dateRange, setDateRange] = useState("90");
-  const [selectedPlayer, setSelectedPlayer] = useState<string>("all");
+  const [selectedPlayer, setSelectedPlayer] = useState<string>(playerId || "all");
 
   const startDate = format(subDays(new Date(), parseInt(dateRange)), "yyyy-MM-dd");
 
