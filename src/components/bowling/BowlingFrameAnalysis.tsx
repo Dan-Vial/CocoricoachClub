@@ -57,6 +57,7 @@ export function BowlingFrameAnalysis({ games }: BowlingFrameAnalysisProps) {
       });
 
       const total = gamesWithFrames.length;
+      const spareOpportunities = total - strikes; // non-strike games for this frame
       stats.push({
         frameNumber: i + 1,
         strikeCount: strikes,
@@ -64,8 +65,8 @@ export function BowlingFrameAnalysis({ games }: BowlingFrameAnalysisProps) {
         openCount: opens,
         totalGames: total,
         strikeRate: total > 0 ? (strikes / total) * 100 : 0,
-        spareRate: total > 0 ? (spares / total) * 100 : 0,
-        openRate: total > 0 ? (opens / total) * 100 : 0,
+        spareRate: spareOpportunities > 0 ? Math.min(100, (spares / spareOpportunities) * 100) : 0,
+        openRate: spareOpportunities > 0 ? Math.min(100, (opens / spareOpportunities) * 100) : 0,
         avgFirstThrowPins: total > 0 ? totalFirstPins / total : 0,
       });
     }
