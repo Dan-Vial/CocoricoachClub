@@ -513,12 +513,14 @@ export function CompetitionRoundsDialog({
 
           if (roundError) throw roundError;
 
-          // Insert stats for this round (include bowling frames if present)
+          // Insert stats for this round (include bowling frames, ballData, blockId if present)
           const statDataToSave = {
             ...round.stats,
             ...(round.bowlingFrames ? { bowlingFrames: round.bowlingFrames } : {}),
             ...(round.bowlingCategory ? { bowlingCategory: round.bowlingCategory } : {}),
             ...(round.roundDate ? { roundDate: round.roundDate } : {}),
+            ...(round.blockId ? { blockId: round.blockId } : {}),
+            ...(round.ballData ? { ballData: round.ballData } : {}),
           };
           
           if (Object.keys(statDataToSave).length > 0) {
