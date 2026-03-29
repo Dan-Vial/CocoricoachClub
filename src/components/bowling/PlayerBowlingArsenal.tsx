@@ -261,17 +261,43 @@ export function PlayerBowlingArsenal({ playerId, categoryId, isViewer }: PlayerB
           </Select>
         </div>
         <div>
-          <Label className="text-xs">Équilibrage</Label>
-          <Select value={balanceType} onValueChange={setBalanceType}>
-            <SelectTrigger><SelectValue placeholder="Layout" /></SelectTrigger>
+          <Label className="text-xs">Poids</Label>
+          <Select value={weight} onValueChange={setWeight}>
+            <SelectTrigger><SelectValue placeholder="lbs" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="none">Aucun</SelectItem>
-              {BALANCE_TYPES.map(b => (
-                <SelectItem key={b.value} value={b.value}>{b.label}</SelectItem>
+              {BALL_WEIGHTS.map(w => (
+                <SelectItem key={w} value={w.toString()}>{w} lbs</SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
+      </div>
+
+      <div>
+        <Label className="text-xs">Layout de perçage</Label>
+        <div className="flex items-center gap-1.5 mt-1">
+          <Input
+            value={drillingAngle}
+            onChange={e => setDrillingAngle(e.target.value)}
+            placeholder="50"
+            className="w-16 text-center text-sm"
+          />
+          <span className="text-xs font-medium text-muted-foreground">×</span>
+          <Input
+            value={pinPapDistance}
+            onChange={e => setPinPapDistance(e.target.value)}
+            placeholder={'4"½'}
+            className="w-16 text-center text-sm"
+          />
+          <span className="text-xs font-medium text-muted-foreground">×</span>
+          <Input
+            value={valAngle}
+            onChange={e => setValAngle(e.target.value)}
+            placeholder="40"
+            className="w-16 text-center text-sm"
+          />
+        </div>
+        <p className="text-[10px] text-muted-foreground mt-1">Angle perçage × Pin-PAP × Angle VAL</p>
       </div>
 
       <div className="grid grid-cols-3 gap-2">
