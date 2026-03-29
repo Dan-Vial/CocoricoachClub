@@ -367,18 +367,23 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, c
     if (tenthFrame.throws[0]?.value === "X") pocketOpportunities++; // 2nd throw after strike
     if (tenthFrame.throws[1]?.value === "X") pocketOpportunities++; // 3rd throw after strike
 
-    // Count unconverted splits to exclude from spare opportunities
-    let unconvertedSplits = splitCount - splitConverted;
-    
     // Calculate percentages
     const strikePercentage = (strikes / 12) * 100;
     
-    // Spare % = spares / (opportunités de spare - splits non convertis)
-    // Les splits non convertis ne comptent pas dans le calcul
-    const baseSpareOpportunities = Math.max(0, 10 - strikes + (strikes > 10 ? 2 : 0));
-    const totalSpareOpportunities = Math.max(0, baseSpareOpportunities - unconvertedSplits);
-    const sparePercentage = totalSpareOpportunities > 0 
-      ? (spares / totalSpareOpportunities) * 100 
+    // Spare % = spares réussis / opportunités de spare (frames 1-9 sans strike)
+    // Une opportunité de spare = une frame (1-9) où le 1er lancer n'est PAS un strike
+    let spareOpportunities = 0;
+    let sparesConverted = 0;
+    for (let i = 0; i < 9; i++) {
+      const f = allFrames[i];
+      if (f.throws.length === 0 || f.throws[0].value === "" || f.throws[0].value === "X") continue;
+      spareOpportunities++;
+      if (f.throws[1]?.value === "/") {
+        sparesConverted++;
+      }
+    }
+    const sparePercentage = spareOpportunities > 0 
+      ? Math.min(100, (sparesConverted / spareOpportunities) * 100)
       : 0;
 
     const splitPercentage = splitCount > 0 
