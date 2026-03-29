@@ -129,7 +129,7 @@ export function BowlingCompetitionSummary({
           // Check if this frame was a strike
           if (round.bowlingFrames && round.bowlingFrames[frameIdx]) {
             const frame = round.bowlingFrames[frameIdx];
-            if (frame.throws[0] === "X") entry.strikes += 1;
+            if (frame.throws[0]?.value === "X") entry.strikes += 1;
           }
         });
       }
