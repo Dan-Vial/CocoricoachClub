@@ -116,10 +116,14 @@ export function BowlingOilPatternSection({
   // Save mutation
   const saveMutation = useMutation({
     mutationFn: async (data: OilPattern) => {
+      const patternName = data.name === "Pattern personnel" 
+        ? (customName || "Pattern personnalisé") 
+        : (data.name || "Pattern personnalisé");
+      
       const payload = {
         category_id: categoryId,
         match_id: matchId,
-        name: data.name || customName || "Pattern personnalisé",
+        name: patternName,
         length_feet: data.length_feet,
         buff_distance_feet: data.buff_distance_feet,
         width_boards: data.width_boards,
@@ -133,30 +137,51 @@ export function BowlingOilPatternSection({
       };
 
       if (data.id) {
+        // Update existing pattern by its ID
         const { error } = await supabase
           .from("bowling_oil_patterns")
           .update(payload)
           .eq("id", data.id);
-        if (error) throw error;
+        if (error) {
+          console.error("Update by ID error:", error);
+          throw error;
+        }
       } else {
-        // Check if a pattern already exists for this match
-        const { data: existing } = await supabase
+        // Try to find existing pattern for this match first
+        const { data: existing, error: fetchError } = await supabase
           .from("bowling_oil_patterns")
           .select("id")
           .eq("match_id", matchId)
           .maybeSingle();
+
+        if (fetchError) {
+          console.error("Fetch existing error:", fetchError);
+          throw fetchError;
+        }
 
         if (existing) {
           const { error } = await supabase
             .from("bowling_oil_patterns")
             .update(payload)
             .eq("id", existing.id);
-          if (error) throw error;
+          if (error) {
+            console.error("Update existing error:", error);
+            throw error;
+          }
         } else {
-          const { error } = await supabase
+          const { data: inserted, error } = await supabase
             .from("bowling_oil_patterns")
-            .insert(payload);
-          if (error) throw error;
+            .insert(payload)
+            .select("id")
+            .single();
+          if (error) {
+            console.error("Insert error:", error);
+            throw error;
+          }
+          // Set the ID so subsequent saves use update
+          if (inserted) {
+            setPattern(prev => ({ ...prev, id: inserted.id }));
+          }
         }
       }
     },
@@ -165,9 +190,9 @@ export function BowlingOilPatternSection({
       queryClient.invalidateQueries({ queryKey: ["bowling_oil_pattern", matchId] });
       setHasChanges(false);
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error("Save oil pattern error:", error);
-      toast.error("Erreur lors de l'enregistrement");
+      toast.error(`Erreur: ${error?.message || "Impossible d'enregistrer le huilage"}`);
     },
   });
 
