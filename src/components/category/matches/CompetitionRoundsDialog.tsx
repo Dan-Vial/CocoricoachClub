@@ -857,8 +857,9 @@ export function CompetitionRoundsDialog({
                     </div>
                     </div>
                   ) : (
-                    selectedPlayer.rounds.map((round) => (
-                      <Card key={round.round_number} className={`relative ${round.isLocked ? "opacity-80" : ""}`}>
+                    selectedPlayer.rounds.map((round, roundIdx) => (
+                      <div key={round.round_number} className="space-y-4">
+                      <Card className={`relative ${round.isLocked ? "opacity-80" : ""}`}>
                         {/* Locked indicator */}
                         {round.isLocked && (
                           <div className="absolute top-2 right-2 z-10 flex items-center gap-1">
