@@ -36,7 +36,9 @@ export function PlayerBowlingArsenal({ playerId, categoryId, isViewer }: PlayerB
   const [customRg, setCustomRg] = useState("");
   const [customDifferential, setCustomDifferential] = useState("");
   const [customIntermediateDiff, setCustomIntermediateDiff] = useState("");
-  const [balanceType, setBalanceType] = useState("");
+  const [drillingAngle, setDrillingAngle] = useState("");
+  const [pinPapDistance, setPinPapDistance] = useState("");
+  const [valAngle, setValAngle] = useState("");
   const queryClient = useQueryClient();
 
   const { data: arsenal, isLoading } = useQuery({
