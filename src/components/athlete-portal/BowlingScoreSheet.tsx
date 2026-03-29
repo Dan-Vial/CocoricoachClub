@@ -75,6 +75,7 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, c
   const [ballMode, setBallMode] = useState<"simple" | "advanced">("simple");
   const [selectedBallId, setSelectedBallId] = useState<string | null>(null);
   const [frameBalls, setFrameBalls] = useState<(string | null)[]>(Array(10).fill(null));
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const handleFrameBallChange = (frameIndex: number, ballId: string | null) => {
     setFrameBalls(prev => {
       const next = [...prev];
