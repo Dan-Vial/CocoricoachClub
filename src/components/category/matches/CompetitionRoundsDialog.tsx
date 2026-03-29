@@ -28,6 +28,8 @@ import { useStatPreferences } from "@/hooks/use-stat-preferences";
 import { BowlingOilPatternSection } from "./BowlingOilPatternSection";
 import { BowlingScoreSheet, FrameData, BowlingStats } from "@/components/athlete-portal/BowlingScoreSheet";
 import { isAthletismeCategory } from "@/lib/constants/sportTypes";
+import { BowlingBlockManager, type BowlingBlock, type Round as BowlingRound, BOWLING_COMPETITION_CATEGORIES, BOWLING_PHASES } from "@/components/bowling/BowlingBlockManager";
+import { BowlingCompetitionSummary } from "@/components/bowling/BowlingCompetitionSummary";
 
 const blurOnWheel = (e: React.WheelEvent<HTMLInputElement>) => {
   // Prevent wheel/trackpad from changing number inputs instead of scrolling the dialog
