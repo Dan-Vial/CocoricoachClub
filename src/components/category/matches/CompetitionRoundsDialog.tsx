@@ -130,6 +130,7 @@ export function CompetitionRoundsDialog({
   const [playerRoundsData, setPlayerRoundsData] = useState<PlayerRounds[]>([]);
   const [selectedPlayerId, setSelectedPlayerId] = useState<string>("");
   const [isDataInitialized, setIsDataInitialized] = useState(false);
+  const [bowlingBlocks, setBowlingBlocks] = useState<Record<string, BowlingBlock[]>>({});
   const queryClient = useQueryClient();
 
   const { stats: filteredSportStats, hasCustomPreferences } = useStatPreferences({ categoryId, sportType });
