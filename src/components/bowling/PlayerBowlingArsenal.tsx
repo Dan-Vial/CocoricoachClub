@@ -77,7 +77,9 @@ export function PlayerBowlingArsenal({ playerId, categoryId, isViewer }: PlayerB
         custom_rg: customRg ? parseFloat(customRg) : null,
         custom_differential: customDifferential ? parseFloat(customDifferential) : null,
         custom_intermediate_diff: customIntermediateDiff ? parseFloat(customIntermediateDiff) : null,
-        balance_type: balanceType || null,
+        drilling_layout: (drillingAngle || pinPapDistance || valAngle)
+          ? `${drillingAngle || "?"}x${pinPapDistance || "?"}x${valAngle || "?"}`
+          : null,
       };
 
       if (selectedCatalogBall) {
