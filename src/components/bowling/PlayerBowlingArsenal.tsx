@@ -20,12 +20,7 @@ interface PlayerBowlingArsenalProps {
   isViewer?: boolean;
 }
 
-const BALANCE_TYPES = [
-  { value: "pin_up", label: "Pin Up" },
-  { value: "pin_down", label: "Pin Down" },
-  { value: "pin_left", label: "Pin Left" },
-  { value: "pin_right", label: "Pin Right" },
-];
+// Drilling layout: drilling_angle x pin_pap_distance x val_angle
 
 export function PlayerBowlingArsenal({ playerId, categoryId, isViewer }: PlayerBowlingArsenalProps) {
   const [isAddOpen, setIsAddOpen] = useState(false);
