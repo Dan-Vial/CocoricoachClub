@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -12,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Trash2, Circle, Lock, ChevronDown, ChevronRight, Package } from "lucide-react";
+import { Plus, Trash2, Circle, Lock, ChevronDown, ChevronRight, Package, ArrowRightLeft } from "lucide-react";
 import { BowlingScoreSheet, FrameData, BowlingStats } from "@/components/athlete-portal/BowlingScoreSheet";
 
 const blurOnWheel = (e: React.WheelEvent<HTMLInputElement>) => {
@@ -48,6 +49,7 @@ export interface BowlingBlock {
   phase: string;
   opponent_name: string;
   notes: string;
+  debriefing: string;
   isCollapsed: boolean;
 }
 
@@ -107,6 +109,7 @@ export function BowlingBlockManager({
       phase: "",
       opponent_name: "",
       notes: "",
+      debriefing: "",
       isCollapsed: false,
     };
     onBlocksChange([...blocks, newBlock]);
@@ -166,6 +169,24 @@ export function BowlingBlockManager({
     onRoundsChange(rounds.filter(r => r.round_number !== roundNumber));
   };
 
+  const moveGameToBlock = (roundNumber: number, newBlockId: string) => {
+    const targetBlock = blocks.find(b => b.id === newBlockId);
+    if (!targetBlock) return;
+    onRoundsChange(rounds.map(r => {
+      if (r.round_number === roundNumber) {
+        return {
+          ...r,
+          blockId: newBlockId,
+          roundDate: targetBlock.roundDate,
+          bowlingCategory: targetBlock.bowlingCategory,
+          phase: targetBlock.phase,
+          opponent_name: targetBlock.opponent_name,
+        };
+      }
+      return r;
+    }));
+  };
+
   const getBlockRounds = (blockId: string) => {
     return rounds.filter(r => r.blockId === blockId).sort((a, b) => a.round_number - b.round_number);
   };
@@ -185,7 +206,21 @@ export function BowlingBlockManager({
             {orphanRounds.map(round => (
               <div key={round.round_number} className="p-2 rounded border text-sm flex items-center justify-between">
                 <span>Partie #{round.round_number} — Score: {round.stats["gameScore"] || 0}</span>
-                {round.isLocked && <Lock className="h-3 w-3 text-muted-foreground" />}
+                <div className="flex items-center gap-2">
+                  {blocks.length > 0 && (
+                    <Select onValueChange={(v) => moveGameToBlock(round.round_number, v)}>
+                      <SelectTrigger className="h-7 w-32 text-xs">
+                        <SelectValue placeholder="Déplacer..." />
+                      </SelectTrigger>
+                      <SelectContent className="z-[200]">
+                        {blocks.map((b, i) => (
+                          <SelectItem key={b.id} value={b.id}>Bloc {i + 1}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                  {round.isLocked && <Lock className="h-3 w-3 text-muted-foreground" />}
+                </div>
               </div>
             ))}
           </CardContent>
@@ -331,11 +366,30 @@ export function BowlingBlockManager({
                                   </Badge>
                                 )}
                               </CardTitle>
-                              {!round.isLocked && (
-                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => removeGame(round.round_number)}>
-                                  <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                                </Button>
-                              )}
+                              <div className="flex items-center gap-1">
+                                {/* Move to another block */}
+                                {blocks.length > 1 && (
+                                  <Select onValueChange={(v) => moveGameToBlock(round.round_number, v)}>
+                                    <SelectTrigger className="h-7 w-28 text-xs">
+                                      <ArrowRightLeft className="h-3 w-3 mr-1" />
+                                      <span className="text-[10px]">Déplacer</span>
+                                    </SelectTrigger>
+                                    <SelectContent className="z-[200]">
+                                      {blocks.filter(b => b.id !== block.id).map((b, i) => {
+                                        const bIdx = blocks.findIndex(bl => bl.id === b.id);
+                                        return (
+                                          <SelectItem key={b.id} value={b.id}>Bloc {bIdx + 1}</SelectItem>
+                                        );
+                                      })}
+                                    </SelectContent>
+                                  </Select>
+                                )}
+                                {!round.isLocked && (
+                                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => removeGame(round.round_number)}>
+                                    <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                                  </Button>
+                                )}
+                              </div>
                             </div>
                           </CardHeader>
                           <CardContent className="pt-0">
@@ -357,6 +411,20 @@ export function BowlingBlockManager({
                       ))}
                     </div>
                   )}
+
+                  {/* Debriefing section */}
+                  <div className="space-y-2 p-3 rounded-lg border border-primary/10 bg-primary/5">
+                    <Label className="text-xs font-medium flex items-center gap-1.5">
+                      📝 Débriefing du bloc {blockIdx + 1}
+                    </Label>
+                    <Textarea
+                      value={block.debriefing || ""}
+                      onChange={(e) => updateBlock(block.id, { debriefing: e.target.value })}
+                      placeholder="Compte-rendu de la journée, axes de travail identifiés, observations du coach..."
+                      rows={3}
+                      className="text-sm"
+                    />
+                  </div>
 
                   {/* Add game button */}
                   <Button

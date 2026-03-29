@@ -1,7 +1,8 @@
 import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Target, TrendingDown, TrendingUp, Minus } from "lucide-react";
+import { Target, TrendingDown, TrendingUp, Minus, Info } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import type { FrameData } from "@/components/athlete-portal/BowlingScoreSheet";
 
 interface BowlingGameData {
@@ -20,11 +21,29 @@ interface FrameStats {
   strikeCount: number;
   spareCount: number;
   openCount: number;
+  singlePinCount: number;
+  singlePinConverted: number;
   totalGames: number;
   strikeRate: number;
   spareRate: number;
   openRate: number;
+  singlePinConvRate: number;
   avgFirstThrowPins: number;
+}
+
+function StatInfoIcon({ text }: { text: string }) {
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Info className="h-3 w-3 text-muted-foreground cursor-help inline-block ml-0.5" />
+        </TooltipTrigger>
+        <TooltipContent className="max-w-xs text-xs">
+          {text}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
 }
 
 export function BowlingFrameAnalysis({ games }: BowlingFrameAnalysisProps) {
@@ -36,6 +55,7 @@ export function BowlingFrameAnalysis({ games }: BowlingFrameAnalysisProps) {
     const stats: FrameStats[] = [];
     for (let i = 0; i < 10; i++) {
       let strikes = 0, spares = 0, opens = 0, totalFirstPins = 0;
+      let singlePinCount = 0, singlePinConverted = 0;
       
       gamesWithFrames.forEach(game => {
         const frame = game.frames![i];
@@ -47,7 +67,14 @@ export function BowlingFrameAnalysis({ games }: BowlingFrameAnalysisProps) {
         if (firstThrow?.value === "X") {
           strikes++;
         } else if (i < 9) {
-          // Frames 1-9 only: spare opportunity exists when first throw is not a strike
+          // Check single pin spare opportunity
+          const pinsLeft = 10 - (firstThrow?.pins || 0);
+          if (pinsLeft === 1) {
+            singlePinCount++;
+            if (frame.throws[1]?.value === "/") {
+              singlePinConverted++;
+            }
+          }
           if (frame.throws[1]?.value === "/") {
             spares++;
           } else {
@@ -57,23 +84,25 @@ export function BowlingFrameAnalysis({ games }: BowlingFrameAnalysisProps) {
       });
 
       const total = gamesWithFrames.length;
-      const spareOpportunities = total - strikes; // non-strike games for this frame
+      const spareOpportunities = total - strikes;
       stats.push({
         frameNumber: i + 1,
         strikeCount: strikes,
         spareCount: spares,
         openCount: opens,
+        singlePinCount,
+        singlePinConverted,
         totalGames: total,
         strikeRate: total > 0 ? (strikes / total) * 100 : 0,
         spareRate: spareOpportunities > 0 ? Math.min(100, (spares / spareOpportunities) * 100) : 0,
         openRate: spareOpportunities > 0 ? Math.min(100, (opens / spareOpportunities) * 100) : 0,
+        singlePinConvRate: singlePinCount > 0 ? (singlePinConverted / singlePinCount) * 100 : 0,
         avgFirstThrowPins: total > 0 ? totalFirstPins / total : 0,
       });
     }
     return stats;
   }, [gamesWithFrames]);
 
-  // Identify best and worst frames
   const bestFrame = useMemo(() => {
     if (frameStats.length === 0) return null;
     return frameStats.reduce((best, f) => f.strikeRate > best.strikeRate ? f : best);
@@ -84,24 +113,31 @@ export function BowlingFrameAnalysis({ games }: BowlingFrameAnalysisProps) {
     return frameStats.reduce((worst, f) => f.strikeRate < worst.strikeRate ? f : worst);
   }, [frameStats]);
 
-  // Divide into thirds: frames 1-3 (début), 4-7 (milieu), 8-10 (fin)
   const thirds = useMemo(() => {
     if (frameStats.length === 0) return null;
     const start = frameStats.slice(0, 3);
     const mid = frameStats.slice(3, 7);
     const end = frameStats.slice(7, 10);
     
-    const avgStrikeRate = (frames: FrameStats[]) => 
-      frames.reduce((s, f) => s + f.strikeRate, 0) / frames.length;
-    const avgSpareRate = (frames: FrameStats[]) => 
-      frames.reduce((s, f) => s + f.spareRate, 0) / frames.length;
-    const avgOpenRate = (frames: FrameStats[]) => 
-      frames.reduce((s, f) => s + f.openRate, 0) / frames.length;
+    const avgRate = (frames: FrameStats[], key: keyof FrameStats) => 
+      frames.reduce((s, f) => s + (f[key] as number), 0) / frames.length;
+
+    const computePhase = (frames: FrameStats[], label: string) => ({
+      label,
+      strikeRate: avgRate(frames, "strikeRate"),
+      spareRate: avgRate(frames, "spareRate"),
+      openRate: avgRate(frames, "openRate"),
+      singlePinConvRate: (() => {
+        const totalSP = frames.reduce((s, f) => s + f.singlePinCount, 0);
+        const convSP = frames.reduce((s, f) => s + f.singlePinConverted, 0);
+        return totalSP > 0 ? (convSP / totalSP) * 100 : 0;
+      })(),
+    });
 
     return {
-      start: { label: "Début (1-3)", strikeRate: avgStrikeRate(start), spareRate: avgSpareRate(start), openRate: avgOpenRate(start) },
-      mid: { label: "Milieu (4-7)", strikeRate: avgStrikeRate(mid), spareRate: avgSpareRate(mid), openRate: avgOpenRate(mid) },
-      end: { label: "Fin (8-10)", strikeRate: avgStrikeRate(end), spareRate: avgSpareRate(end), openRate: avgOpenRate(end) },
+      start: computePhase(start, "Début (1-3)"),
+      mid: computePhase(mid, "Milieu (4-7)"),
+      end: computePhase(end, "Fin (8-10)"),
     };
   }, [frameStats]);
 
@@ -154,10 +190,23 @@ export function BowlingFrameAnalysis({ games }: BowlingFrameAnalysisProps) {
                     <p className={`text-2xl font-bold ${isHighest ? "text-green-600" : isLowest ? "text-red-600" : ""}`}>
                       {phase.strikeRate.toFixed(1)}%
                     </p>
-                    <p className="text-[10px] text-muted-foreground">Strike</p>
-                    <div className="mt-2 flex justify-center gap-3 text-[10px]">
-                      <span>Spare: {phase.spareRate.toFixed(0)}%</span>
-                      <span>Open: {phase.openRate.toFixed(0)}%</span>
+                    <p className="text-[10px] text-muted-foreground">
+                      % Strike
+                      <StatInfoIcon text="Le % de strikes correspond au pourcentage de frames où le premier lancer abat les 10 quilles." />
+                    </p>
+                    <div className="mt-2 space-y-0.5 text-[10px]">
+                      <div className="flex justify-center items-center gap-0.5">
+                        <span>Spare: {phase.spareRate.toFixed(0)}%</span>
+                        <StatInfoIcon text="Le % Spare correspond au pourcentage de frames fermées lorsque le premier lancer n'est pas un strike." />
+                      </div>
+                      <div className="flex justify-center items-center gap-0.5">
+                        <span>Open: {phase.openRate.toFixed(0)}%</span>
+                        <StatInfoIcon text="Le % Open correspond au pourcentage de frames non fermées lorsque le premier lancer n'est pas un strike." />
+                      </div>
+                      <div className="flex justify-center items-center gap-0.5">
+                        <span>QS: {phase.singlePinConvRate.toFixed(0)}%</span>
+                        <StatInfoIcon text="Le % de quilles seules converties correspond au pourcentage de spares réussis lorsqu'il ne reste qu'une seule quille après le premier lancer." />
+                      </div>
                     </div>
                   </div>
                 );
