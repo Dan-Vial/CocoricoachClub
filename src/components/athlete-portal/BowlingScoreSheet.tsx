@@ -76,6 +76,71 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, c
   const [selectedBallId, setSelectedBallId] = useState<string | null>(null);
   const [frameBalls, setFrameBalls] = useState<(string | null)[]>(Array(10).fill(null));
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const inputRefs = useRef<Map<string, HTMLInputElement>>(new Map());
+
+  const getInputKey = (frameIndex: number, throwIndex: number) => `${frameIndex}-${throwIndex}`;
+
+  const setInputRef = (frameIndex: number, throwIndex: number, el: HTMLInputElement | null) => {
+    const key = getInputKey(frameIndex, throwIndex);
+    if (el) {
+      inputRefs.current.set(key, el);
+    } else {
+      inputRefs.current.delete(key);
+    }
+  };
+
+  // Find the next editable throw position
+  const findNextThrow = useCallback((frameIndex: number, throwIndex: number, currentFrames: FrameData[]): [number, number] | null => {
+    // Try next throw in same frame
+    const nextThrow = throwIndex + 1;
+    const maxThrows = frameIndex < 9 ? 2 : 3;
+    if (nextThrow < maxThrows) {
+      // Check if this throw would be editable
+      const frame = currentFrames[frameIndex];
+      if (frameIndex < 9) {
+        if (nextThrow === 1 && frame.throws[0]?.value === "X") {
+          // Strike in frames 1-9, move to next frame
+          return frameIndex < 9 ? [frameIndex + 1, 0] : null;
+        }
+        return [frameIndex, nextThrow];
+      } else {
+        // 10th frame - always advance within frame up to max
+        return [frameIndex, nextThrow];
+      }
+    }
+    // Move to next frame
+    if (frameIndex < 9) {
+      return [frameIndex + 1, 0];
+    }
+    return null; // End of game
+  }, []);
+
+  // Find the previous editable throw position
+  const findPrevThrow = useCallback((frameIndex: number, throwIndex: number, currentFrames: FrameData[]): [number, number] | null => {
+    if (throwIndex > 0) {
+      return [frameIndex, throwIndex - 1];
+    }
+    if (frameIndex > 0) {
+      const prevFrame = currentFrames[frameIndex - 1];
+      if (prevFrame.throws[0]?.value === "X" && frameIndex - 1 < 9) {
+        return [frameIndex - 1, 0]; // Strike frame, only 1 throw
+      }
+      return [frameIndex - 1, 1]; // Normal frame, go to 2nd throw
+    }
+    return null;
+  }, []);
+
+  const focusInput = useCallback((frameIndex: number, throwIndex: number) => {
+    // Small delay to allow React to render
+    setTimeout(() => {
+      const key = getInputKey(frameIndex, throwIndex);
+      const input = inputRefs.current.get(key);
+      if (input) {
+        input.focus();
+        input.select();
+      }
+    }, 50);
+  }, []);
   const handleFrameBallChange = (frameIndex: number, ballId: string | null) => {
     setFrameBalls(prev => {
       const next = [...prev];
