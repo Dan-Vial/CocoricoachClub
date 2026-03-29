@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, User, LogOut, Activity, Heart, BarChart3, Target, Video, Shield, ArrowLeft, Search, ChevronRight, MessageSquare, Settings, CalendarDays, FlaskConical, CircleDot } from "lucide-react";
+import { Loader2, User, LogOut, Activity, Heart, BarChart3, Target, Video, Shield, ArrowLeft, Search, ChevronRight, MessageSquare, Settings, CalendarDays, FlaskConical, CircleDot, Weight } from "lucide-react";
 import { PlayerBowlingArsenal } from "@/components/bowling/PlayerBowlingArsenal";
 import { NAV_COLORS } from "@/components/ui/colored-nav-tabs";
 import { AthletePWAInstallPopup } from "@/components/athlete/AthletePWAInstallPopup";
@@ -24,6 +24,7 @@ import { AthleteSpaceSettings } from "@/components/athlete-space/AthleteSpaceSet
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 import { AthleteSpaceCalendar } from "@/components/athlete-space/AthleteSpaceCalendar";
 import { AthleteSpaceTests } from "@/components/athlete-space/AthleteSpaceTests";
+import { TonnageDashboard } from "@/components/tonnage/TonnageDashboard";
 
 interface AthleteInfo {
   player_id: string;
@@ -543,7 +544,20 @@ export default function AthleteSpace() {
               >
                 <FlaskConical className="h-3.5 w-3.5" />
                 Tests
-              </TabsTrigger>
+               </TabsTrigger>
+              <TabsTrigger 
+                value="tonnage"
+                 className="athlete-tab shrink-0 gap-1 px-2 py-1.5 rounded-xl font-semibold text-xs transition-all duration-200 data-[state=active]:shadow-lg"
+                 style={{
+                   color: NAV_COLORS.performance.base,
+                  backgroundColor: `${NAV_COLORS.performance.base}15`,
+                  borderBottom: `3px solid ${NAV_COLORS.performance.base}`,
+                  ["--tab-color" as string]: NAV_COLORS.performance.base,
+                }}
+              >
+                <Weight className="h-3.5 w-3.5" />
+                Tonnage
+               </TabsTrigger>
               <TabsTrigger 
                 value="progression"
                  className="athlete-tab shrink-0 gap-1 px-2 py-1.5 rounded-xl font-semibold text-xs transition-all duration-200 data-[state=active]:shadow-lg"
@@ -671,6 +685,13 @@ export default function AthleteSpace() {
               playerId={athleteInfo.player_id}
               categoryId={athleteInfo.category_id}
               sportType={athleteInfo.sport_type}
+            />
+          </TabsContent>
+
+          <TabsContent value="tonnage">
+            <TonnageDashboard
+              categoryId={athleteInfo.category_id}
+              playerId={athleteInfo.player_id}
             />
           </TabsContent>
 
