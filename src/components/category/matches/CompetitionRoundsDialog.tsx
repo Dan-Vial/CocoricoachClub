@@ -1410,8 +1410,22 @@ export function CompetitionRoundsDialog({
                                   </p>
                                 </div>
 
-                                {/* Other stats */}
-                                <div className="grid grid-cols-2 gap-3 text-center">
+                                {/* Single pin & other stats */}
+                                <div className="grid grid-cols-3 gap-3 text-center">
+                                  <div className="p-2 rounded border">
+                                    <p className="text-lg font-bold">
+                                      {(() => {
+                                        const totalSP = selectedPlayer.rounds.reduce((sum, r) => sum + (r.stats["singlePinCount"] || 0), 0);
+                                        const convertedSP = selectedPlayer.rounds.reduce((sum, r) => sum + (r.stats["singlePinConverted"] || 0), 0);
+                                        return totalSP > 0 ? ((convertedSP / totalSP) * 100).toFixed(1) : "0";
+                                      })()}%
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">% QS converties</p>
+                                    <p className="text-[10px] text-muted-foreground">
+                                      {selectedPlayer.rounds.reduce((sum, r) => sum + (r.stats["singlePinConverted"] || 0), 0)}/
+                                      {selectedPlayer.rounds.reduce((sum, r) => sum + (r.stats["singlePinCount"] || 0), 0)}
+                                    </p>
+                                  </div>
                                   <div className="p-2 rounded border">
                                     <p className="text-lg font-bold">{selectedPlayer.rounds.reduce((sum, r) => sum + (r.stats["openFrames"] || 0), 0)}</p>
                                     <p className="text-xs text-muted-foreground">Open Frames</p>
