@@ -853,11 +853,13 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, c
               label="% Strikes" 
               value={`${stats.strikePercentage}%`}
               detail={`${stats.strikes} strikes`}
+              colorClass={getStatTextColor("strike", stats.strikePercentage)}
             />
             <StatBox 
               label="% Spares" 
               value={`${stats.sparePercentage}%`}
               detail={`${stats.spares} spares (hors splits)`}
+              colorClass={getStatTextColor("spare", stats.sparePercentage)}
             />
             <StatBox 
               label="% Splits conv." 
@@ -869,11 +871,13 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, c
               label="% QS converties" 
               value={`${stats.singlePinConversionRate}%`}
               detail={`${stats.singlePinConverted}/${stats.singlePinCount}`}
+              colorClass={getStatTextColor("singlePin", stats.singlePinConversionRate)}
             />
             <StatBox 
               label="% Boules en poche" 
               value={`${stats.pocketPercentage}%`}
               detail={`${stats.pocketCount} lancers`}
+              colorClass={getStatTextColor("pocket", stats.pocketPercentage)}
             />
             <StatBox 
               label="Open frames" 
