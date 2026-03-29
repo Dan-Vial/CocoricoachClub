@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { BarChart3, Target, Trophy, Circle, TrendingUp, Zap, Info, MessageSquareText } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import type { Round, BowlingBlock } from "./BowlingBlockManager";
+import { getStatTextColor } from "@/lib/bowling/statColors";
 import { BOWLING_COMPETITION_CATEGORIES, BOWLING_PHASES } from "./BowlingBlockManager";
 
 interface BowlingCompetitionSummaryProps {
