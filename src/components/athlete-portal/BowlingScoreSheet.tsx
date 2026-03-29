@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Target, TrendingUp, Save, X, CheckCircle, ChevronDown } from "lucide-react";
+import { getStatTextColor } from "@/lib/bowling/statColors";
 
 export interface ThrowData {
   value: string; // "X", "/", "0"-"9", "-" (miss)
@@ -852,11 +853,13 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, c
               label="% Strikes" 
               value={`${stats.strikePercentage}%`}
               detail={`${stats.strikes} strikes`}
+              colorClass={getStatTextColor("strike", stats.strikePercentage)}
             />
             <StatBox 
               label="% Spares" 
               value={`${stats.sparePercentage}%`}
               detail={`${stats.spares} spares (hors splits)`}
+              colorClass={getStatTextColor("spare", stats.sparePercentage)}
             />
             <StatBox 
               label="% Splits conv." 
@@ -868,11 +871,13 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, c
               label="% QS converties" 
               value={`${stats.singlePinConversionRate}%`}
               detail={`${stats.singlePinConverted}/${stats.singlePinCount}`}
+              colorClass={getStatTextColor("singlePin", stats.singlePinConversionRate)}
             />
             <StatBox 
               label="% Boules en poche" 
               value={`${stats.pocketPercentage}%`}
               detail={`${stats.pocketCount} lancers`}
+              colorClass={getStatTextColor("pocket", stats.pocketPercentage)}
             />
             <StatBox 
               label="Open frames" 
@@ -912,13 +917,14 @@ interface StatBoxProps {
   detail: string;
   note?: string;
   highlight?: boolean;
+  colorClass?: string;
 }
 
-function StatBox({ label, value, detail, note, highlight }: StatBoxProps) {
+function StatBox({ label, value, detail, note, highlight, colorClass }: StatBoxProps) {
   return (
     <div className={`p-3 rounded-lg ${highlight ? "bg-primary/20 border border-primary/30" : "bg-background border"}`}>
       <div className="text-xs text-muted-foreground">{label}</div>
-      <div className={`text-xl font-bold ${highlight ? "text-primary" : ""}`}>{value}</div>
+      <div className={`text-xl font-bold ${colorClass || (highlight ? "text-primary" : "")}`}>{value}</div>
       <div className="text-xs text-muted-foreground">{detail}</div>
       {note && <div className="text-xs text-muted-foreground">{note}</div>}
     </div>
