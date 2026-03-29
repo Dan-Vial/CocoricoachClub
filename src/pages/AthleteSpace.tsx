@@ -24,6 +24,7 @@ import { AthleteSpaceSettings } from "@/components/athlete-space/AthleteSpaceSet
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 import { AthleteSpaceCalendar } from "@/components/athlete-space/AthleteSpaceCalendar";
 import { AthleteSpaceTests } from "@/components/athlete-space/AthleteSpaceTests";
+import { TonnageDashboard } from "@/components/tonnage/TonnageDashboard";
 
 interface AthleteInfo {
   player_id: string;
