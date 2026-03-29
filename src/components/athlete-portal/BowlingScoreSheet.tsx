@@ -480,15 +480,12 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, c
       if (upperValue === "X") {
         currentThrow.pins = 10;
       } else if (upperValue === "/") {
-        // Spare: 10 minus pins from IMMEDIATELY previous throw only
-        // In 10th frame, pins reset after a strike, so only count from last pin-reset point
         const isTenthFrame = frameIndex === 9;
         if (isTenthFrame) {
-          // Find the last "reset point" - after a strike or spare, pins reset
           let pinsInCurrentSet = 0;
           for (let ti = throwIndex - 1; ti >= 0; ti--) {
             if (throws[ti]?.value === "X" || throws[ti]?.value === "/") {
-              break; // Pins were reset after this throw
+              break;
             }
             pinsInCurrentSet += throws[ti]?.pins || 0;
           }
@@ -507,8 +504,31 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, c
       frame.throws = throws;
       newFrames[frameIndex] = frame;
 
-      return calculateAllScores(newFrames);
+      const calculated = calculateAllScores(newFrames);
+
+      // Auto-advance to next throw if a valid value was entered
+      if (upperValue !== "") {
+        const next = findNextThrow(frameIndex, throwIndex, calculated);
+        if (next) {
+          focusInput(next[0], next[1]);
+        }
+      }
+
+      return calculated;
     });
+  };
+
+  // Handle keyboard navigation (arrow keys)
+  const handleKeyDown = (frameIndex: number, throwIndex: number, e: React.KeyboardEvent) => {
+    if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+      e.preventDefault();
+      const next = findNextThrow(frameIndex, throwIndex, frames);
+      if (next) focusInput(next[0], next[1]);
+    } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+      e.preventDefault();
+      const prev = findPrevThrow(frameIndex, throwIndex, frames);
+      if (prev) focusInput(prev[0], prev[1]);
+    }
   };
 
   // Handle checkbox changes
