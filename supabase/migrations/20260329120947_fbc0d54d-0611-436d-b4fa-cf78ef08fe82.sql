@@ -1,0 +1,1 @@
+ALTER TABLE public.player_bowling_arsenal ADD COLUMN IF NOT EXISTS drilling_layout text;

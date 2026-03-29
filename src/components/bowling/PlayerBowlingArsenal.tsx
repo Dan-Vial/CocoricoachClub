@@ -20,12 +20,7 @@ interface PlayerBowlingArsenalProps {
   isViewer?: boolean;
 }
 
-const BALANCE_TYPES = [
-  { value: "pin_up", label: "Pin Up" },
-  { value: "pin_down", label: "Pin Down" },
-  { value: "pin_left", label: "Pin Left" },
-  { value: "pin_right", label: "Pin Right" },
-];
+// Drilling layout: drilling_angle x pin_pap_distance x val_angle
 
 export function PlayerBowlingArsenal({ playerId, categoryId, isViewer }: PlayerBowlingArsenalProps) {
   const [isAddOpen, setIsAddOpen] = useState(false);
@@ -41,7 +36,9 @@ export function PlayerBowlingArsenal({ playerId, categoryId, isViewer }: PlayerB
   const [customRg, setCustomRg] = useState("");
   const [customDifferential, setCustomDifferential] = useState("");
   const [customIntermediateDiff, setCustomIntermediateDiff] = useState("");
-  const [balanceType, setBalanceType] = useState("");
+  const [drillingAngle, setDrillingAngle] = useState("");
+  const [pinPapDistance, setPinPapDistance] = useState("");
+  const [valAngle, setValAngle] = useState("");
   const queryClient = useQueryClient();
 
   const { data: arsenal, isLoading } = useQuery({
@@ -80,7 +77,9 @@ export function PlayerBowlingArsenal({ playerId, categoryId, isViewer }: PlayerB
         custom_rg: customRg ? parseFloat(customRg) : null,
         custom_differential: customDifferential ? parseFloat(customDifferential) : null,
         custom_intermediate_diff: customIntermediateDiff ? parseFloat(customIntermediateDiff) : null,
-        balance_type: balanceType || null,
+        drilling_layout: (drillingAngle || pinPapDistance || valAngle)
+          ? `${drillingAngle || "?"}x${pinPapDistance || "?"}x${valAngle || "?"}`
+          : null,
       };
 
       if (selectedCatalogBall) {
@@ -112,7 +111,9 @@ export function PlayerBowlingArsenal({ playerId, categoryId, isViewer }: PlayerB
         custom_rg: customRg ? parseFloat(customRg) : null,
         custom_differential: customDifferential ? parseFloat(customDifferential) : null,
         custom_intermediate_diff: customIntermediateDiff ? parseFloat(customIntermediateDiff) : null,
-        balance_type: balanceType || null,
+        drilling_layout: (drillingAngle || pinPapDistance || valAngle)
+          ? `${drillingAngle || "?"}x${pinPapDistance || "?"}x${valAngle || "?"}`
+          : null,
       };
       const { error } = await supabase
         .from("player_bowling_arsenal" as any)
@@ -152,7 +153,9 @@ export function PlayerBowlingArsenal({ playerId, categoryId, isViewer }: PlayerB
     setCustomRg("");
     setCustomDifferential("");
     setCustomIntermediateDiff("");
-    setBalanceType("");
+    setDrillingAngle("");
+    setPinPapDistance("");
+    setValAngle("");
   };
 
   const handleSelectFromCatalog = (ball: any) => {
@@ -176,7 +179,12 @@ export function PlayerBowlingArsenal({ playerId, categoryId, isViewer }: PlayerB
     setCustomRg(item.custom_rg?.toString() || "");
     setCustomDifferential(item.custom_differential?.toString() || "");
     setCustomIntermediateDiff(item.custom_intermediate_diff?.toString() || "");
-    setBalanceType(item.balance_type || "");
+    // Parse drilling_layout "XXxXXxXX"
+    const layout = item.drilling_layout || item.balance_type || "";
+    const parts = layout.split("x");
+    setDrillingAngle(parts[0] && parts[0] !== "?" ? parts[0] : "");
+    setPinPapDistance(parts[1] && parts[1] !== "?" ? parts[1] : "");
+    setValAngle(parts[2] && parts[2] !== "?" ? parts[2] : "");
     setIsAddOpen(true);
   };
 
@@ -253,17 +261,43 @@ export function PlayerBowlingArsenal({ playerId, categoryId, isViewer }: PlayerB
           </Select>
         </div>
         <div>
-          <Label className="text-xs">Équilibrage</Label>
-          <Select value={balanceType} onValueChange={setBalanceType}>
-            <SelectTrigger><SelectValue placeholder="Layout" /></SelectTrigger>
+          <Label className="text-xs">Poids</Label>
+          <Select value={weight} onValueChange={setWeight}>
+            <SelectTrigger><SelectValue placeholder="lbs" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="none">Aucun</SelectItem>
-              {BALANCE_TYPES.map(b => (
-                <SelectItem key={b.value} value={b.value}>{b.label}</SelectItem>
+              {BALL_WEIGHTS.map(w => (
+                <SelectItem key={w} value={w.toString()}>{w} lbs</SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
+      </div>
+
+      <div>
+        <Label className="text-xs">Layout de perçage</Label>
+        <div className="flex items-center gap-1.5 mt-1">
+          <Input
+            value={drillingAngle}
+            onChange={e => setDrillingAngle(e.target.value)}
+            placeholder="50"
+            className="w-16 text-center text-sm"
+          />
+          <span className="text-xs font-medium text-muted-foreground">×</span>
+          <Input
+            value={pinPapDistance}
+            onChange={e => setPinPapDistance(e.target.value)}
+            placeholder={'4"½'}
+            className="w-16 text-center text-sm"
+          />
+          <span className="text-xs font-medium text-muted-foreground">×</span>
+          <Input
+            value={valAngle}
+            onChange={e => setValAngle(e.target.value)}
+            placeholder="40"
+            className="w-16 text-center text-sm"
+          />
+        </div>
+        <p className="text-[10px] text-muted-foreground mt-1">Angle perçage × Pin-PAP × Angle VAL</p>
       </div>
 
       <div className="grid grid-cols-3 gap-2">
@@ -348,9 +382,9 @@ export function PlayerBowlingArsenal({ playerId, categoryId, isViewer }: PlayerB
                         <Badge variant="secondary" className="text-xs">{getCoreTypeLabel(item.catalogBall.core_type)}</Badge>
                       </>
                     )}
-                    {item.balance_type && (
+                    {(item.drilling_layout || item.balance_type) && (
                       <Badge variant="outline" className="text-xs">
-                        {BALANCE_TYPES.find(b => b.value === item.balance_type)?.label || item.balance_type}
+                        🎯 {item.drilling_layout || item.balance_type}
                       </Badge>
                     )}
                     {item.current_surface && (
