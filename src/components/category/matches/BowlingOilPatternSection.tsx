@@ -190,9 +190,9 @@ export function BowlingOilPatternSection({
       queryClient.invalidateQueries({ queryKey: ["bowling_oil_pattern", matchId] });
       setHasChanges(false);
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error("Save oil pattern error:", error);
-      toast.error("Erreur lors de l'enregistrement");
+      toast.error(`Erreur: ${error?.message || "Impossible d'enregistrer le huilage"}`);
     },
   });
 
