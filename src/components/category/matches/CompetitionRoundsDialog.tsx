@@ -1531,6 +1531,7 @@ export function CompetitionRoundsDialog({
                   )}
                 </CardContent>
               </Card>
+              )}
               </ScrollArea>
             </TabsContent>
           </Tabs>
