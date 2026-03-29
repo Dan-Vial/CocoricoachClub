@@ -890,14 +890,32 @@ export function CompetitionRoundsDialog({
 
             <TabsContent value="rounds" className="flex-1 min-h-0 mt-0 overflow-hidden">
               <ScrollArea className="h-[calc(90vh-280px)] pr-4">
+                {/* Bowling: use block manager */}
+                {isBowling ? (
+                  <BowlingBlockManager
+                    playerId={selectedPlayer.playerId}
+                    categoryId={categoryId}
+                    rounds={selectedPlayer.rounds}
+                    blocks={bowlingBlocks[selectedPlayer.playerId] || []}
+                    matchDate={matchData?.match_date}
+                    onBlocksChange={(newBlocks) => {
+                      setBowlingBlocks(prev => ({ ...prev, [selectedPlayer.playerId]: newBlocks }));
+                    }}
+                    onRoundsChange={(newRounds) => {
+                      setPlayerRoundsData(prev => prev.map(p =>
+                        p.playerId === selectedPlayer.playerId ? { ...p, rounds: newRounds } : p
+                      ));
+                    }}
+                    onScoreSave={(roundNumber, stats, frames, ballData) => {
+                      handleBowlingScoreSheetSave(selectedPlayer.playerId, roundNumber, stats, frames, ballData);
+                    }}
+                    onLock={(roundNumber) => lockBowlingRound(selectedPlayer.playerId, roundNumber)}
+                    onUnlock={(roundNumber) => unlockBowlingRound(selectedPlayer.playerId, roundNumber)}
+                  />
+                ) : (
                 <div className="space-y-4 pb-4">
                   {selectedPlayer.rounds.length === 0 ? (
                     <div className="text-center py-8 text-muted-foreground space-y-4">
-                      {isBowling && (
-                        <p className="text-xs text-muted-foreground text-center">
-                          💡 Compétition multi-jours ? Chaque partie peut avoir sa propre date, phase (qualif, demi, finale) et format (individuelle, doublette...). Tout dans la même compétition !
-                        </p>
-                      )}
                       <p>Aucun {roundLabel.toLowerCase()} enregistré</p>
                       <p className="text-sm">
                         Cliquez sur le bouton ci-dessous pour commencer.
@@ -908,7 +926,7 @@ export function CompetitionRoundsDialog({
                         className="w-full gap-2 bg-destructive hover:bg-destructive/90 text-destructive-foreground"
                       >
                         <Plus className="h-4 w-4" />
-                        Ajouter {isBowling ? "une partie (feuille de score)" : isAviron ? "une course" : isJudo ? "un combat" : isAthletics ? "une épreuve" : `un ${roundLabel.toLowerCase()}`}
+                        Ajouter {isAviron ? "une course" : isJudo ? "un combat" : isAthletics ? "une épreuve" : `un ${roundLabel.toLowerCase()}`}
                       </Button>
                     </div>
                   ) : (
