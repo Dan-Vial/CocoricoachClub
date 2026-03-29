@@ -688,6 +688,13 @@ export default function AthleteSpace() {
             />
           </TabsContent>
 
+          <TabsContent value="tonnage">
+            <TonnageDashboard
+              categoryId={athleteInfo.category_id}
+              playerId={athleteInfo.player_id}
+            />
+          </TabsContent>
+
           <TabsContent value="progression">
             <AthleteSpaceProgression
               playerId={athleteInfo.player_id}
