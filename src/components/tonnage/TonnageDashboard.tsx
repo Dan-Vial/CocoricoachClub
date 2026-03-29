@@ -123,19 +123,21 @@ export function TonnageDashboard({ categoryId, playerId }: TonnageDashboardProps
     <div className="space-y-4">
       {/* Filters */}
       <div className="flex flex-wrap gap-3">
-        <Select value={selectedPlayer} onValueChange={setSelectedPlayer}>
-          <SelectTrigger className="w-48">
-            <SelectValue placeholder="Tous les athlètes" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Tous les athlètes</SelectItem>
-            {players?.map((p) => (
-              <SelectItem key={p.id} value={p.id}>
-                {p.first_name ? `${p.first_name} ${p.name}` : p.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {!playerId && (
+          <Select value={selectedPlayer} onValueChange={setSelectedPlayer}>
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="Tous les athlètes" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tous les athlètes</SelectItem>
+              {players?.map((p) => (
+                <SelectItem key={p.id} value={p.id}>
+                  {p.first_name ? `${p.first_name} ${p.name}` : p.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
 
         <Select value={dateRange} onValueChange={setDateRange}>
           <SelectTrigger className="w-40">
