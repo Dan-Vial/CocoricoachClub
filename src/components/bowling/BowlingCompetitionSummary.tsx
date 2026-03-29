@@ -91,9 +91,9 @@ function StatsGrid({ stats, compact = false }: { stats: DetailedStats; compact?:
     { label: "High", value: String(stats.high), color: "text-amber-600" },
     { label: "Low", value: String(stats.low), color: "text-red-500" },
     { label: "Moy", value: stats.average.toFixed(1), color: "text-blue-600" },
-    { label: "% Strike", value: `${stats.avgStrikeRate.toFixed(1)}%`, color: "text-amber-600" },
-    { label: "% Spare", value: `${stats.avgSpareRate.toFixed(1)}%`, color: "text-blue-600" },
-    { label: "% QS conv.", value: `${stats.singlePinConvRate.toFixed(0)}%`, color: "" },
+    { label: "% Strike", value: `${stats.avgStrikeRate.toFixed(1)}%`, color: getStatTextColor("strike", stats.avgStrikeRate) },
+    { label: "% Spare", value: `${stats.avgSpareRate.toFixed(1)}%`, color: getStatTextColor("spare", stats.avgSpareRate) },
+    { label: "% QS conv.", value: `${stats.singlePinConvRate.toFixed(0)}%`, color: getStatTextColor("singlePin", stats.singlePinConvRate) },
     { label: "% Split conv.", value: `${stats.splitConvRate.toFixed(0)}%`, color: "text-orange-600" },
   ];
 
