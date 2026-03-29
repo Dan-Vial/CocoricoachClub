@@ -345,15 +345,29 @@ export function BowlingCumulativeStats({ categoryId }: BowlingCumulativeStatsPro
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="flex items-end gap-1 h-32">
+                    <div className="flex items-end justify-center gap-[3px] h-40">
                       {playerGames.map((game, i) => {
+                        // Use min 100 as baseline so differences are visible
+                        const minBase = 100;
                         const maxScore = Math.max(...playerGames.map(g => g.score), 300);
-                        const height = (game.score / maxScore) * 100;
+                        const range = maxScore - minBase;
+                        const clampedScore = Math.max(game.score, minBase);
+                        const height = range > 0 ? ((clampedScore - minBase) / range) * 100 : 50;
+                        
+                        // Color by score range
+                        const getBarColor = (score: number) => {
+                          if (score >= 240) return "bg-yellow-400"; // Gold
+                          if (score >= 210) return "bg-green-400"; // Green flash
+                          if (score >= 180) return "bg-green-600"; // Green
+                          if (score >= 151) return "bg-orange-500"; // Orange
+                          return "bg-red-500"; // Red
+                        };
+                        
                         return (
                           <div
                             key={game.roundId}
-                            className="flex-1 bg-primary/80 rounded-t hover:bg-primary transition-colors relative group"
-                            style={{ height: `${height}%`, minWidth: "4px" }}
+                            className={`${getBarColor(game.score)} rounded-t hover:opacity-80 transition-colors relative group`}
+                            style={{ height: `${Math.max(height, 5)}%`, width: "12px", maxWidth: "20px" }}
                             title={`${game.matchOpponent} - Partie ${game.roundNumber}: ${game.score}`}
                           >
                             <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-[9px] font-bold opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
@@ -363,11 +377,16 @@ export function BowlingCumulativeStats({ categoryId }: BowlingCumulativeStatsPro
                         );
                       })}
                     </div>
-                    <div className="mt-1 border-t pt-1">
-                      <p className="text-[10px] text-muted-foreground text-center">
-                        {playerGames.length} parties • Survol pour détails
-                      </p>
+                    <div className="mt-2 border-t pt-2 flex items-center justify-center gap-3 flex-wrap text-[9px] text-muted-foreground">
+                      <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded bg-red-500" />&lt;150</div>
+                      <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded bg-orange-500" />151-179</div>
+                      <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded bg-green-600" />180-209</div>
+                      <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded bg-green-400" />210-239</div>
+                      <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded bg-yellow-400" />240+</div>
                     </div>
+                    <p className="text-[10px] text-muted-foreground text-center mt-1">
+                      {playerGames.length} parties • Survol pour détails
+                    </p>
                   </CardContent>
                 </Card>
               )}
