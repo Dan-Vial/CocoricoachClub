@@ -51,7 +51,6 @@ interface Round {
   result: string;
   notes: string;
   stats: Record<string, number>;
-  // New fields for Aviron/Judo
   phase: string;
   lane?: number;
   wind_conditions?: string;
@@ -60,11 +59,12 @@ interface Round {
   final_time_seconds?: number;
   ranking?: number;
   gap_to_first?: string;
-  // Bowling specific
   bowlingCategory?: string;
   isLocked?: boolean;
   bowlingFrames?: FrameData[];
-  roundDate?: string; // Date for multi-day competitions (YYYY-MM-DD)
+  roundDate?: string;
+  blockId?: string;
+  ballData?: { mode: string; ballId?: string | null; frameBalls?: (string | null)[] };
 }
 
 interface PlayerRounds {
