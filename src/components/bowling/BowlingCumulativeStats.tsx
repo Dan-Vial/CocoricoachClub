@@ -310,7 +310,7 @@ export function BowlingCumulativeStats({ categoryId }: BowlingCumulativeStatsPro
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-muted-foreground">% Single pin conv.</span>
-                      <span className="font-bold">{cumulativeStats.singlePinConversionRate.toFixed(1)}%</span>
+                      <span className={`font-bold ${getStatTextColor("singlePin", cumulativeStats.singlePinConversionRate)}`}>{cumulativeStats.singlePinConversionRate.toFixed(1)}%</span>
                     </div>
                   </CardContent>
                 </Card>

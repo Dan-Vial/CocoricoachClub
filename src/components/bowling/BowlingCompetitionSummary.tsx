@@ -227,24 +227,24 @@ export function BowlingCompetitionSummary({
 
           {/* Detailed stats */}
           <div className="grid grid-cols-3 sm:grid-cols-7 gap-2 text-center">
-            <div className="p-2 rounded-lg border bg-amber-50 dark:bg-amber-900/15">
-              <p className="text-lg font-bold text-amber-600">{overall.avgStrikeRate.toFixed(1)}%</p>
+            <div className="p-2 rounded-lg border">
+              <p className={`text-lg font-bold ${getStatTextColor("strike", overall.avgStrikeRate)}`}>{overall.avgStrikeRate.toFixed(1)}%</p>
               <p className="text-[9px] text-muted-foreground">% Strike</p>
             </div>
-            <div className="p-2 rounded-lg border bg-blue-50 dark:bg-blue-900/15">
-              <p className="text-lg font-bold text-blue-600">{overall.avgSpareRate.toFixed(1)}%</p>
+            <div className="p-2 rounded-lg border">
+              <p className={`text-lg font-bold ${getStatTextColor("spare", overall.avgSpareRate)}`}>{overall.avgSpareRate.toFixed(1)}%</p>
               <p className="text-[9px] text-muted-foreground">% Spare</p>
             </div>
             <div className="p-2 rounded-lg border">
-              <p className="text-lg font-bold">{overall.singlePinConvRate.toFixed(0)}%</p>
+              <p className={`text-lg font-bold ${getStatTextColor("singlePin", overall.singlePinConvRate)}`}>{overall.singlePinConvRate.toFixed(0)}%</p>
               <p className="text-[9px] text-muted-foreground">% QS conv.</p>
             </div>
             <div className="p-2 rounded-lg border">
               <p className="text-lg font-bold text-orange-600">{overall.splitConvRate.toFixed(0)}%</p>
               <p className="text-[9px] text-muted-foreground">% Split conv.</p>
             </div>
-            <div className="p-2 rounded-lg border bg-green-50 dark:bg-green-900/15">
-              <p className="text-lg font-bold text-green-600">{overall.pocketPct.toFixed(0)}%</p>
+            <div className="p-2 rounded-lg border">
+              <p className={`text-lg font-bold ${getStatTextColor("pocket", overall.pocketPct)}`}>{overall.pocketPct.toFixed(0)}%</p>
               <p className="text-[9px] text-muted-foreground">% Pocket</p>
             </div>
             <div className="p-2 rounded-lg border">
