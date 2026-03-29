@@ -11,6 +11,7 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { BowlingFrameAnalysis } from "./BowlingFrameAnalysis";
 import { BowlingGameHistory } from "./BowlingGameHistory";
+import { getStatTextColor } from "@/lib/bowling/statColors";
 import type { FrameData } from "@/components/athlete-portal/BowlingScoreSheet";
 
 interface BowlingCumulativeStatsProps {
@@ -241,7 +242,7 @@ export function BowlingCumulativeStats({ categoryId }: BowlingCumulativeStatsPro
                 <Card className="bg-gradient-to-br from-amber-500/10 to-amber-500/5">
                   <CardContent className="pt-4 pb-3">
                     <div className="text-center">
-                      <p className="text-3xl font-bold text-amber-600">{cumulativeStats.avgStrikeRate.toFixed(1)}%</p>
+                      <p className={`text-3xl font-bold ${getStatTextColor("strike", cumulativeStats.avgStrikeRate)}`}>{cumulativeStats.avgStrikeRate.toFixed(1)}%</p>
                       <p className="text-xs text-muted-foreground">% Strike</p>
                     </div>
                   </CardContent>
@@ -265,7 +266,7 @@ export function BowlingCumulativeStats({ categoryId }: BowlingCumulativeStatsPro
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-muted-foreground">% Strike moyen</span>
-                      <span className="font-bold">{cumulativeStats.avgStrikeRate.toFixed(1)}%</span>
+                      <span className={`font-bold ${getStatTextColor("strike", cumulativeStats.avgStrikeRate)}`}>{cumulativeStats.avgStrikeRate.toFixed(1)}%</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-muted-foreground">Spares totaux</span>
@@ -273,7 +274,7 @@ export function BowlingCumulativeStats({ categoryId }: BowlingCumulativeStatsPro
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-muted-foreground">% Spare moyen</span>
-                      <span className="font-bold">{cumulativeStats.avgSpareRate.toFixed(1)}%</span>
+                      <span className={`font-bold ${getStatTextColor("spare", cumulativeStats.avgSpareRate)}`}>{cumulativeStats.avgSpareRate.toFixed(1)}%</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-muted-foreground">Open Frames totaux</span>
@@ -309,7 +310,7 @@ export function BowlingCumulativeStats({ categoryId }: BowlingCumulativeStatsPro
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-muted-foreground">% Single pin conv.</span>
-                      <span className="font-bold">{cumulativeStats.singlePinConversionRate.toFixed(1)}%</span>
+                      <span className={`font-bold ${getStatTextColor("singlePin", cumulativeStats.singlePinConversionRate)}`}>{cumulativeStats.singlePinConversionRate.toFixed(1)}%</span>
                     </div>
                   </CardContent>
                 </Card>

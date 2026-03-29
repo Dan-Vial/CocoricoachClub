@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Target, TrendingDown, TrendingUp, Minus, Info } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import type { FrameData } from "@/components/athlete-portal/BowlingScoreSheet";
+import { getStatTextColor } from "@/lib/bowling/statColors";
 
 interface BowlingGameData {
   roundId: string;
@@ -187,7 +188,7 @@ export function BowlingFrameAnalysis({ games }: BowlingFrameAnalysisProps) {
                       {!isHighest && !isLowest && <Minus className="h-3 w-3 text-muted-foreground" />}
                       <span className="text-xs font-medium">{phase.label}</span>
                     </div>
-                    <p className={`text-2xl font-bold ${isHighest ? "text-green-600" : isLowest ? "text-red-600" : ""}`}>
+                    <p className={`text-2xl font-bold ${getStatTextColor("strike", phase.strikeRate)}`}>
                       {phase.strikeRate.toFixed(1)}%
                     </p>
                     <p className="text-[10px] text-muted-foreground">
@@ -196,7 +197,7 @@ export function BowlingFrameAnalysis({ games }: BowlingFrameAnalysisProps) {
                     </p>
                     <div className="mt-2 space-y-0.5 text-[10px]">
                       <div className="flex justify-center items-center gap-0.5">
-                        <span>Spare: {phase.spareRate.toFixed(0)}%</span>
+                        <span className={getStatTextColor("spare", phase.spareRate)}>Spare: {phase.spareRate.toFixed(0)}%</span>
                         <StatInfoIcon text="Le % Spare correspond au pourcentage de frames fermées lorsque le premier lancer n'est pas un strike." />
                       </div>
                       <div className="flex justify-center items-center gap-0.5">
@@ -204,7 +205,7 @@ export function BowlingFrameAnalysis({ games }: BowlingFrameAnalysisProps) {
                         <StatInfoIcon text="Le % Open correspond au pourcentage de frames non fermées lorsque le premier lancer n'est pas un strike." />
                       </div>
                       <div className="flex justify-center items-center gap-0.5">
-                        <span>QS: {phase.singlePinConvRate.toFixed(0)}%</span>
+                        <span className={getStatTextColor("singlePin", phase.singlePinConvRate)}>QS: {phase.singlePinConvRate.toFixed(0)}%</span>
                         <StatInfoIcon text="Le % de quilles seules converties correspond au pourcentage de spares réussis lorsqu'il ne reste qu'une seule quille après le premier lancer." />
                       </div>
                     </div>

@@ -7,6 +7,7 @@ import { Calendar, Eye, Trophy } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { BowlingScoreSheet, type FrameData, type BowlingStats } from "@/components/athlete-portal/BowlingScoreSheet";
+import { getStatTextColor } from "@/lib/bowling/statColors";
 
 interface BowlingGameData {
   roundId: string;
@@ -110,8 +111,13 @@ export function BowlingGameHistory({ games, categoryId }: BowlingGameHistoryProp
                         <span className="text-2xl font-bold tabular-nums">{game.score}</span>
                       </div>
                       <div className="flex items-center gap-3">
-                        <div className="text-right text-xs text-muted-foreground hidden sm:block">
-                          <div>{game.strikes}X / {game.spares}/ / {game.openFrames} open</div>
+                         <div className="text-right text-xs text-muted-foreground hidden sm:block">
+                          <div>
+                            <span className={getStatTextColor("strike", game.strikePercentage)}>{game.strikes}X</span>
+                            {" / "}
+                            <span className={getStatTextColor("spare", game.sparePercentage)}>{game.spares}/</span>
+                            {" / "}{game.openFrames} open
+                          </div>
                           <div>Splits: {game.splitCount} ({game.splitConverted} conv.)</div>
                         </div>
                         {game.frames && (
