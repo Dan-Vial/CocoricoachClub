@@ -44,20 +44,11 @@ export function BowlingFrameAnalysis({ games }: BowlingFrameAnalysisProps) {
         const firstThrow = frame.throws[0];
         totalFirstPins += firstThrow?.pins || 0;
 
-        if (i < 9) {
-          // Frames 1-9
-          if (firstThrow?.value === "X") {
-            strikes++;
-          } else if (frame.throws[1]?.value === "/") {
-            spares++;
-          } else {
-            opens++;
-          }
-        } else {
-          // Frame 10: count strikes on first throw
-          if (firstThrow?.value === "X") {
-            strikes++;
-          } else if (frame.throws[1]?.value === "/") {
+        if (firstThrow?.value === "X") {
+          strikes++;
+        } else if (i < 9) {
+          // Frames 1-9 only: spare opportunity exists when first throw is not a strike
+          if (frame.throws[1]?.value === "/") {
             spares++;
           } else {
             opens++;
@@ -66,6 +57,7 @@ export function BowlingFrameAnalysis({ games }: BowlingFrameAnalysisProps) {
       });
 
       const total = gamesWithFrames.length;
+      const spareOpportunities = total - strikes; // non-strike games for this frame
       stats.push({
         frameNumber: i + 1,
         strikeCount: strikes,
@@ -73,8 +65,8 @@ export function BowlingFrameAnalysis({ games }: BowlingFrameAnalysisProps) {
         openCount: opens,
         totalGames: total,
         strikeRate: total > 0 ? (strikes / total) * 100 : 0,
-        spareRate: total > 0 ? (spares / total) * 100 : 0,
-        openRate: total > 0 ? (opens / total) * 100 : 0,
+        spareRate: spareOpportunities > 0 ? Math.min(100, (spares / spareOpportunities) * 100) : 0,
+        openRate: spareOpportunities > 0 ? Math.min(100, (opens / spareOpportunities) * 100) : 0,
         avgFirstThrowPins: total > 0 ? totalFirstPins / total : 0,
       });
     }
