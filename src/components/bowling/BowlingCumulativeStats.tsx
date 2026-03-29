@@ -266,7 +266,7 @@ export function BowlingCumulativeStats({ categoryId }: BowlingCumulativeStatsPro
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-muted-foreground">% Strike moyen</span>
-                      <span className="font-bold">{cumulativeStats.avgStrikeRate.toFixed(1)}%</span>
+                      <span className={`font-bold ${getStatTextColor("strike", cumulativeStats.avgStrikeRate)}`}>{cumulativeStats.avgStrikeRate.toFixed(1)}%</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-muted-foreground">Spares totaux</span>
@@ -274,7 +274,7 @@ export function BowlingCumulativeStats({ categoryId }: BowlingCumulativeStatsPro
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-muted-foreground">% Spare moyen</span>
-                      <span className="font-bold">{cumulativeStats.avgSpareRate.toFixed(1)}%</span>
+                      <span className={`font-bold ${getStatTextColor("spare", cumulativeStats.avgSpareRate)}`}>{cumulativeStats.avgSpareRate.toFixed(1)}%</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-muted-foreground">Open Frames totaux</span>
