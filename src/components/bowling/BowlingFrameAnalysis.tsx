@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Target, TrendingDown, TrendingUp, Minus, Info } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import type { FrameData } from "@/components/athlete-portal/BowlingScoreSheet";
+import { getStatTextColor } from "@/lib/bowling/statColors";
 
 interface BowlingGameData {
   roundId: string;
