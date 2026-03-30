@@ -656,6 +656,26 @@ export function ProtocolManager({ categoryId }: ProtocolManagerProps) {
                       />
                       <span className="text-xs text-muted-foreground">jours</span>
                     </div>
+                   </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">🩹 Soins</Label>
+                    <Textarea
+                      value={(phase.care_instructions || []).join('\n')}
+                      onChange={(e) => updatePhase(index, 'care_instructions', e.target.value.split('\n').filter((c: string) => c.trim()))}
+                      placeholder="Bain froid, étirements..."
+                      rows={2}
+                      className="text-sm"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">🏷️ Tape</Label>
+                    <Textarea
+                      value={(phase.taping_instructions || []).join('\n')}
+                      onChange={(e) => updatePhase(index, 'taping_instructions', e.target.value.split('\n').filter((c: string) => c.trim()))}
+                      placeholder="Tape de soutien..."
+                      rows={2}
+                      className="text-sm"
+                    />
                   </div>
                 </div>
               ))}
