@@ -312,7 +312,7 @@ export function ActiveProtocolsDashboard({ categoryId }: ActiveProtocolsDashboar
                     <div
                       key={injury.id}
                       className="p-4 border border-dashed border-amber-300 rounded-lg hover:bg-accent/5 transition-colors cursor-pointer"
-                      onClick={() => navigate(`/player/${player?.id}`)}
+                      onClick={() => navigate(`/players/${player?.id}`)}
                     >
                       <div className="flex items-start gap-3">
                         <Avatar className="h-10 w-10">
