@@ -6614,6 +6614,7 @@ export type Database = {
       }
       protocol_phases: {
         Row: {
+          care_instructions: string[] | null
           created_at: string
           description: string | null
           duration_days_max: number | null
@@ -6624,8 +6625,10 @@ export type Database = {
           objectives: string[] | null
           phase_number: number
           protocol_id: string
+          taping_instructions: string[] | null
         }
         Insert: {
+          care_instructions?: string[] | null
           created_at?: string
           description?: string | null
           duration_days_max?: number | null
@@ -6636,8 +6639,10 @@ export type Database = {
           objectives?: string[] | null
           phase_number: number
           protocol_id: string
+          taping_instructions?: string[] | null
         }
         Update: {
+          care_instructions?: string[] | null
           created_at?: string
           description?: string | null
           duration_days_max?: number | null
@@ -6648,6 +6653,7 @@ export type Database = {
           objectives?: string[] | null
           phase_number?: number
           protocol_id?: string
+          taping_instructions?: string[] | null
         }
         Relationships: [
           {
