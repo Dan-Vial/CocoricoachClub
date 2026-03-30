@@ -378,7 +378,7 @@ export function ActiveProtocolsDashboard({ categoryId }: ActiveProtocolsDashboar
                     <div
                       key={event.id}
                       className="flex items-center gap-3 p-3 border rounded-lg hover:bg-accent/5 transition-colors cursor-pointer"
-                      onClick={() => navigate(`/player/${player?.id}`)}
+                      onClick={() => navigate(`/players/${player?.id}`)}
                     >
                       <div className={`p-2 rounded-lg ${
                         event.event_type === 'checkpoint' 
