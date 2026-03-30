@@ -59,10 +59,10 @@ interface Phase {
 }
 
 const DEFAULT_PHASES: Phase[] = [
-  { phase_number: 1, name: "Réhabilitation", description: "Phase de récupération initiale et traitement", duration_days_min: 7, duration_days_max: 14, objectives: [], exit_criteria: [] },
-  { phase_number: 2, name: "Retour au terrain", description: "Reprise progressive de l'activité physique", duration_days_min: 7, duration_days_max: 14, objectives: [], exit_criteria: [] },
-  { phase_number: 3, name: "Retour à la compétition", description: "Réintégration aux entraînements collectifs", duration_days_min: 7, duration_days_max: 14, objectives: [], exit_criteria: [] },
-  { phase_number: 4, name: "Retour à la performance", description: "Validation complète pour la compétition", duration_days_min: 7, duration_days_max: 14, objectives: [], exit_criteria: [] },
+  { phase_number: 1, name: "Réhabilitation", description: "Phase de récupération initiale et traitement", duration_days_min: 7, duration_days_max: 14, objectives: [], exit_criteria: [], care_instructions: ["Bain froid (cryothérapie)", "Électrostimulation"], taping_instructions: [] },
+  { phase_number: 2, name: "Retour au terrain", description: "Reprise progressive de l'activité physique", duration_days_min: 7, duration_days_max: 14, objectives: [], exit_criteria: [], care_instructions: ["Étirements passifs", "Bain chaud/froid alternés"], taping_instructions: ["Tape de soutien articulaire"] },
+  { phase_number: 3, name: "Retour à la compétition", description: "Réintégration aux entraînements collectifs", duration_days_min: 7, duration_days_max: 14, objectives: [], exit_criteria: [], care_instructions: ["Étirements actifs", "Automassage / foam roller"], taping_instructions: ["Tape de prévention"] },
+  { phase_number: 4, name: "Retour à la performance", description: "Validation complète pour la compétition", duration_days_min: 7, duration_days_max: 14, objectives: [], exit_criteria: [], care_instructions: [], taping_instructions: [] },
 ];
 
 export function ProtocolManager({ categoryId }: ProtocolManagerProps) {
