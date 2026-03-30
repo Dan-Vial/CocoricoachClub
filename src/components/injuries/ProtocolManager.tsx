@@ -54,6 +54,8 @@ interface Phase {
   duration_days_max: number;
   objectives: string[];
   exit_criteria: string[];
+  care_instructions: string[];
+  taping_instructions: string[];
 }
 
 const DEFAULT_PHASES: Phase[] = [
