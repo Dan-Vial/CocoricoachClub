@@ -273,6 +273,8 @@ export function ProtocolManager({ categoryId }: ProtocolManagerProps) {
               duration_days_max: phase.duration_days_max,
               objectives: phase.objectives,
               exit_criteria: phase.exit_criteria,
+              care_instructions: phase.care_instructions,
+              taping_instructions: phase.taping_instructions,
             });
 
           if (phaseError) throw phaseError;
