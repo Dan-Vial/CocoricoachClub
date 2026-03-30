@@ -335,6 +335,8 @@ export function ProtocolManager({ categoryId }: ProtocolManagerProps) {
       duration_days_max: 14,
       objectives: [],
       exit_criteria: [],
+      care_instructions: [],
+      taping_instructions: [],
     }]);
   };
 
