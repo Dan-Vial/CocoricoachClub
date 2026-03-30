@@ -318,6 +318,8 @@ export function ProtocolManager({ categoryId }: ProtocolManagerProps) {
         duration_days_max: p.duration_days_max || 14,
         objectives: p.objectives || [],
         exit_criteria: p.exit_criteria || [],
+        care_instructions: p.care_instructions || [],
+        taping_instructions: p.taping_instructions || [],
       })));
     } else {
       setPhases(DEFAULT_PHASES);
