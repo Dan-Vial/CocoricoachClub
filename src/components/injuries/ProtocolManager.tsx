@@ -54,13 +54,15 @@ interface Phase {
   duration_days_max: number;
   objectives: string[];
   exit_criteria: string[];
+  care_instructions: string[];
+  taping_instructions: string[];
 }
 
 const DEFAULT_PHASES: Phase[] = [
-  { phase_number: 1, name: "Réhabilitation", description: "Phase de récupération initiale et traitement", duration_days_min: 7, duration_days_max: 14, objectives: [], exit_criteria: [] },
-  { phase_number: 2, name: "Retour au terrain", description: "Reprise progressive de l'activité physique", duration_days_min: 7, duration_days_max: 14, objectives: [], exit_criteria: [] },
-  { phase_number: 3, name: "Retour à la compétition", description: "Réintégration aux entraînements collectifs", duration_days_min: 7, duration_days_max: 14, objectives: [], exit_criteria: [] },
-  { phase_number: 4, name: "Retour à la performance", description: "Validation complète pour la compétition", duration_days_min: 7, duration_days_max: 14, objectives: [], exit_criteria: [] },
+  { phase_number: 1, name: "Réhabilitation", description: "Phase de récupération initiale et traitement", duration_days_min: 7, duration_days_max: 14, objectives: [], exit_criteria: [], care_instructions: ["Bain froid (cryothérapie)", "Électrostimulation"], taping_instructions: [] },
+  { phase_number: 2, name: "Retour au terrain", description: "Reprise progressive de l'activité physique", duration_days_min: 7, duration_days_max: 14, objectives: [], exit_criteria: [], care_instructions: ["Étirements passifs", "Bain chaud/froid alternés"], taping_instructions: ["Tape de soutien articulaire"] },
+  { phase_number: 3, name: "Retour à la compétition", description: "Réintégration aux entraînements collectifs", duration_days_min: 7, duration_days_max: 14, objectives: [], exit_criteria: [], care_instructions: ["Étirements actifs", "Automassage / foam roller"], taping_instructions: ["Tape de prévention"] },
+  { phase_number: 4, name: "Retour à la performance", description: "Validation complète pour la compétition", duration_days_min: 7, duration_days_max: 14, objectives: [], exit_criteria: [], care_instructions: [], taping_instructions: [] },
 ];
 
 export function ProtocolManager({ categoryId }: ProtocolManagerProps) {
@@ -131,6 +133,8 @@ export function ProtocolManager({ categoryId }: ProtocolManagerProps) {
             duration_days_max: phase.duration_days_max,
             objectives: phase.objectives,
             exit_criteria: phase.exit_criteria,
+            care_instructions: phase.care_instructions,
+            taping_instructions: phase.taping_instructions,
           });
 
         if (phaseError) throw phaseError;
@@ -199,6 +203,8 @@ export function ProtocolManager({ categoryId }: ProtocolManagerProps) {
             duration_days_max: phase.duration_days_max,
             objectives: phase.objectives,
             exit_criteria: phase.exit_criteria,
+            care_instructions: phase.care_instructions,
+            taping_instructions: phase.taping_instructions,
           });
 
         if (phaseError) throw phaseError;
@@ -267,6 +273,8 @@ export function ProtocolManager({ categoryId }: ProtocolManagerProps) {
               duration_days_max: phase.duration_days_max,
               objectives: phase.objectives,
               exit_criteria: phase.exit_criteria,
+              care_instructions: phase.care_instructions,
+              taping_instructions: phase.taping_instructions,
             });
 
           if (phaseError) throw phaseError;
@@ -316,6 +324,8 @@ export function ProtocolManager({ categoryId }: ProtocolManagerProps) {
         duration_days_max: p.duration_days_max || 14,
         objectives: p.objectives || [],
         exit_criteria: p.exit_criteria || [],
+        care_instructions: p.care_instructions || [],
+        taping_instructions: p.taping_instructions || [],
       })));
     } else {
       setPhases(DEFAULT_PHASES);
@@ -333,6 +343,8 @@ export function ProtocolManager({ categoryId }: ProtocolManagerProps) {
       duration_days_max: 14,
       objectives: [],
       exit_criteria: [],
+      care_instructions: [],
+      taping_instructions: [],
     }]);
   };
 
@@ -644,6 +656,26 @@ export function ProtocolManager({ categoryId }: ProtocolManagerProps) {
                       />
                       <span className="text-xs text-muted-foreground">jours</span>
                     </div>
+                   </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">🩹 Soins</Label>
+                    <Textarea
+                      value={(phase.care_instructions || []).join('\n')}
+                      onChange={(e) => updatePhase(index, 'care_instructions', e.target.value.split('\n').filter((c: string) => c.trim()))}
+                      placeholder="Bain froid, étirements..."
+                      rows={2}
+                      className="text-sm"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">🏷️ Tape</Label>
+                    <Textarea
+                      value={(phase.taping_instructions || []).join('\n')}
+                      onChange={(e) => updatePhase(index, 'taping_instructions', e.target.value.split('\n').filter((c: string) => c.trim()))}
+                      placeholder="Tape de soutien..."
+                      rows={2}
+                      className="text-sm"
+                    />
                   </div>
                 </div>
               ))}
@@ -836,6 +868,26 @@ export function ProtocolManager({ categoryId }: ProtocolManagerProps) {
                     onChange={(e) => updatePhase(index, 'exit_criteria', e.target.value.split('\n').filter(c => c.trim()))}
                     placeholder="Ex: Douleur < 3/10 au repos&#10;Mobilité passive indolore"
                     rows={3}
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-xs">🩹 Soins (un par ligne)</Label>
+                  <Textarea
+                    value={(phase.care_instructions || []).join('\n')}
+                    onChange={(e) => updatePhase(index, 'care_instructions', e.target.value.split('\n').filter(c => c.trim()))}
+                    placeholder="Ex: Bain froid (cryothérapie)&#10;Étirements passifs&#10;Électrostimulation"
+                    rows={3}
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-xs">🏷️ Tape (un par ligne)</Label>
+                  <Textarea
+                    value={(phase.taping_instructions || []).join('\n')}
+                    onChange={(e) => updatePhase(index, 'taping_instructions', e.target.value.split('\n').filter(c => c.trim()))}
+                    placeholder="Ex: Tape de soutien cheville&#10;Kinesiotape décharge musculaire"
+                    rows={2}
                   />
                 </div>
               </div>

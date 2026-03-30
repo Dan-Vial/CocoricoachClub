@@ -316,6 +316,34 @@ export function PlayerRehabTracker({
                   </ul>
                 </div>
               )}
+
+              {currentPhase.care_instructions && (currentPhase.care_instructions as string[]).length > 0 && (
+                <div className="mt-3">
+                  <p className="text-xs font-medium text-muted-foreground mb-1">🩹 Soins:</p>
+                  <ul className="text-sm space-y-1">
+                    {(currentPhase.care_instructions as string[]).map((care, i) => (
+                      <li key={i} className="flex items-center gap-2">
+                        <span className="text-primary">•</span>
+                        {care}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {currentPhase.taping_instructions && (currentPhase.taping_instructions as string[]).length > 0 && (
+                <div className="mt-3">
+                  <p className="text-xs font-medium text-muted-foreground mb-1">🏷️ Tape:</p>
+                  <ul className="text-sm space-y-1">
+                    {(currentPhase.taping_instructions as string[]).map((tape, i) => (
+                      <li key={i} className="flex items-center gap-2">
+                        <span className="text-accent">•</span>
+                        {tape}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           )}
 
