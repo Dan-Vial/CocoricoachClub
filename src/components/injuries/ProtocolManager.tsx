@@ -305,10 +305,10 @@ export function ProtocolManager({ categoryId }: ProtocolManagerProps) {
 
       if (protocolError) throw protocolError;
 
-      // Copy phases
+      // Copy phases with exercises
       if (protocol.protocol_phases) {
         for (const phase of protocol.protocol_phases) {
-          const { error: phaseError } = await supabase
+          const { data: newPhase, error: phaseError } = await supabase
             .from("protocol_phases")
             .insert({
               protocol_id: newProtocol.id,
@@ -321,9 +321,34 @@ export function ProtocolManager({ categoryId }: ProtocolManagerProps) {
               exit_criteria: phase.exit_criteria,
               care_instructions: phase.care_instructions,
               taping_instructions: phase.taping_instructions,
-            });
+            })
+            .select()
+            .single();
 
           if (phaseError) throw phaseError;
+
+          // Copy exercises from original phase
+          const { data: originalExercises } = await supabase
+            .from("protocol_exercises")
+            .select("*")
+            .eq("phase_id", phase.id)
+            .order("exercise_order");
+
+          if (originalExercises && originalExercises.length > 0) {
+            const exercisesToInsert = originalExercises.map((ex: any) => ({
+              phase_id: newPhase.id,
+              name: ex.name,
+              description: ex.description,
+              sets: ex.sets,
+              reps: ex.reps,
+              frequency: ex.frequency,
+              exercise_order: ex.exercise_order,
+              image_url: ex.image_url,
+              video_url: ex.video_url,
+              notes: ex.notes,
+            }));
+            await supabase.from("protocol_exercises").insert(exercisesToInsert);
+          }
         }
       }
 
