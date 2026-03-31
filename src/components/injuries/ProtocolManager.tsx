@@ -214,9 +214,9 @@ export function ProtocolManager({ categoryId }: ProtocolManagerProps) {
 
       if (deleteError) throw deleteError;
 
-      // Create new phases
+      // Create new phases with exercises
       for (const phase of phases) {
-        const { error: phaseError } = await supabase
+        const { data: newPhase, error: phaseError } = await supabase
           .from("protocol_phases")
           .insert({
             protocol_id: selectedProtocol?.id,
@@ -229,9 +229,31 @@ export function ProtocolManager({ categoryId }: ProtocolManagerProps) {
             exit_criteria: phase.exit_criteria,
             care_instructions: phase.care_instructions,
             taping_instructions: phase.taping_instructions,
-          });
+          })
+          .select()
+          .single();
 
         if (phaseError) throw phaseError;
+
+        // Create exercises for this phase
+        if (phase.exercises.length > 0) {
+          const exercisesToInsert = phase.exercises.map((ex, i) => ({
+            phase_id: newPhase.id,
+            name: ex.name,
+            description: ex.description || null,
+            sets: ex.sets,
+            reps: ex.reps || null,
+            frequency: ex.frequency || null,
+            exercise_order: i,
+            image_url: ex.image_url || null,
+            video_url: ex.video_url || null,
+            notes: ex.notes || null,
+          }));
+          const { error: exError } = await supabase
+            .from("protocol_exercises")
+            .insert(exercisesToInsert);
+          if (exError) throw exError;
+        }
       }
     },
     onSuccess: () => {
