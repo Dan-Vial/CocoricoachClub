@@ -966,6 +966,11 @@ export function ProtocolManager({ categoryId }: ProtocolManagerProps) {
                     rows={2}
                   />
                 </div>
+
+                <ProtocolPhaseExercises
+                  exercises={phase.exercises || []}
+                  onChange={(exercises) => updatePhase(index, 'exercises', exercises)}
+                />
               </div>
             ))}
           </div>
