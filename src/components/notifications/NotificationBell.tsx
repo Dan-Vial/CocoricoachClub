@@ -297,7 +297,38 @@ export function NotificationBell({ variant = "hero" }: { variant?: "hero" | "def
                         <p className="text-xs font-medium text-primary">
                           +{pendingCount - 3} autre{pendingCount - 3 > 1 ? "s" : ""}
                         </p>
+          )}
+
+          {/* Accepted ambassador invitations for super admins */}
+          {isSuperAdmin && acceptedCount > 0 && (
+            <div className="border-b">
+              {acceptedInvitations?.map(inv => (
+                <div
+                  key={inv.id}
+                  className="p-4 hover:bg-accent/50 transition-colors bg-accent/20"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <Building2 className="h-5 w-5 text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-semibold text-sm">
+                        🎉 Nouveau client connecté !
+                      </h4>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        <span className="font-medium text-foreground">{inv.name || inv.email}</span> a accepté l'invitation et s'est connecté pour la première fois.
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">{inv.email}</p>
+                      {inv.accepted_at && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {formatDistanceToNow(new Date(inv.accepted_at), { addSuffix: true, locale: fr })}
+                        </p>
                       )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
                     </div>
                   </div>
                 </div>
