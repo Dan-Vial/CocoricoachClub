@@ -297,6 +297,12 @@ export function NotificationBell({ variant = "hero" }: { variant?: "hero" | "def
                         <p className="text-xs font-medium text-primary">
                           +{pendingCount - 3} autre{pendingCount - 3 > 1 ? "s" : ""}
                         </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </button>
+            </div>
           )}
 
           {/* Accepted ambassador invitations for super admins */}
@@ -328,11 +334,6 @@ export function NotificationBell({ variant = "hero" }: { variant?: "hero" | "def
                   </div>
                 </div>
               ))}
-            </div>
-                    </div>
-                  </div>
-                </div>
-              </button>
             </div>
           )}
 
