@@ -112,9 +112,27 @@ export function NotificationBell({ variant = "hero" }: { variant?: "hero" | "def
     refetchInterval: 30000,
   });
 
+  // Fetch recently accepted ambassador invitations - for super admin notification
+  const { data: acceptedInvitations } = useQuery({
+    queryKey: ["accepted-ambassador-invitations"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("ambassador_invitations")
+        .select("*")
+        .eq("status", "accepted")
+        .order("accepted_at", { ascending: false })
+        .limit(10);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!isSuperAdmin,
+    refetchInterval: 30000,
+  });
+
+  const acceptedCount = acceptedInvitations?.length || 0;
   const unreadCount = notifications?.filter(n => !n.is_read).length || 0;
   const pendingCount = pendingUsers?.length || 0;
-  const totalBadge = unreadCount + pendingCount;
+  const totalBadge = unreadCount + pendingCount + acceptedCount;
 
   const markAsRead = useMutation({
     mutationFn: async (notificationId: string) => {
