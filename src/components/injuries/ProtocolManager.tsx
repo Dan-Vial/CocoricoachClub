@@ -40,6 +40,7 @@ import {
   Settings2
 } from "lucide-react";
 import { INJURY_CATEGORIES } from "@/lib/constants/rugbyInjuries";
+import { ProtocolPhaseExercises, ProtocolExercise } from "./ProtocolPhaseExercises";
 
 interface ProtocolManagerProps {
   categoryId: string;
@@ -56,13 +57,14 @@ interface Phase {
   exit_criteria: string[];
   care_instructions: string[];
   taping_instructions: string[];
+  exercises: ProtocolExercise[];
 }
 
 const DEFAULT_PHASES: Phase[] = [
-  { phase_number: 1, name: "Réhabilitation", description: "Phase de récupération initiale et traitement", duration_days_min: 7, duration_days_max: 14, objectives: [], exit_criteria: [], care_instructions: ["Bain froid (cryothérapie)", "Électrostimulation"], taping_instructions: [] },
-  { phase_number: 2, name: "Retour au terrain", description: "Reprise progressive de l'activité physique", duration_days_min: 7, duration_days_max: 14, objectives: [], exit_criteria: [], care_instructions: ["Étirements passifs", "Bain chaud/froid alternés"], taping_instructions: ["Tape de soutien articulaire"] },
-  { phase_number: 3, name: "Retour à la compétition", description: "Réintégration aux entraînements collectifs", duration_days_min: 7, duration_days_max: 14, objectives: [], exit_criteria: [], care_instructions: ["Étirements actifs", "Automassage / foam roller"], taping_instructions: ["Tape de prévention"] },
-  { phase_number: 4, name: "Retour à la performance", description: "Validation complète pour la compétition", duration_days_min: 7, duration_days_max: 14, objectives: [], exit_criteria: [], care_instructions: [], taping_instructions: [] },
+  { phase_number: 1, name: "Réhabilitation", description: "Phase de récupération initiale et traitement", duration_days_min: 7, duration_days_max: 14, objectives: [], exit_criteria: [], care_instructions: ["Bain froid (cryothérapie)", "Électrostimulation"], taping_instructions: [], exercises: [] },
+  { phase_number: 2, name: "Retour au terrain", description: "Reprise progressive de l'activité physique", duration_days_min: 7, duration_days_max: 14, objectives: [], exit_criteria: [], care_instructions: ["Étirements passifs", "Bain chaud/froid alternés"], taping_instructions: ["Tape de soutien articulaire"], exercises: [] },
+  { phase_number: 3, name: "Retour à la compétition", description: "Réintégration aux entraînements collectifs", duration_days_min: 7, duration_days_max: 14, objectives: [], exit_criteria: [], care_instructions: ["Étirements actifs", "Automassage / foam roller"], taping_instructions: ["Tape de prévention"], exercises: [] },
+  { phase_number: 4, name: "Retour à la performance", description: "Validation complète pour la compétition", duration_days_min: 7, duration_days_max: 14, objectives: [], exit_criteria: [], care_instructions: [], taping_instructions: [], exercises: [] },
 ];
 
 export function ProtocolManager({ categoryId }: ProtocolManagerProps) {
@@ -120,9 +122,9 @@ export function ProtocolManager({ categoryId }: ProtocolManagerProps) {
 
       if (protocolError) throw protocolError;
 
-      // Create phases
+      // Create phases with exercises
       for (const phase of phases) {
-        const { error: phaseError } = await supabase
+        const { data: newPhase, error: phaseError } = await supabase
           .from("protocol_phases")
           .insert({
             protocol_id: newProtocol.id,
@@ -135,9 +137,31 @@ export function ProtocolManager({ categoryId }: ProtocolManagerProps) {
             exit_criteria: phase.exit_criteria,
             care_instructions: phase.care_instructions,
             taping_instructions: phase.taping_instructions,
-          });
+          })
+          .select()
+          .single();
 
         if (phaseError) throw phaseError;
+
+        // Create exercises for this phase
+        if (phase.exercises.length > 0) {
+          const exercisesToInsert = phase.exercises.map((ex, i) => ({
+            phase_id: newPhase.id,
+            name: ex.name,
+            description: ex.description || null,
+            sets: ex.sets,
+            reps: ex.reps || null,
+            frequency: ex.frequency || null,
+            exercise_order: i,
+            image_url: ex.image_url || null,
+            video_url: ex.video_url || null,
+            notes: ex.notes || null,
+          }));
+          const { error: exError } = await supabase
+            .from("protocol_exercises")
+            .insert(exercisesToInsert);
+          if (exError) throw exError;
+        }
       }
 
       return newProtocol;
@@ -190,9 +214,9 @@ export function ProtocolManager({ categoryId }: ProtocolManagerProps) {
 
       if (deleteError) throw deleteError;
 
-      // Create new phases
+      // Create new phases with exercises
       for (const phase of phases) {
-        const { error: phaseError } = await supabase
+        const { data: newPhase, error: phaseError } = await supabase
           .from("protocol_phases")
           .insert({
             protocol_id: selectedProtocol?.id,
@@ -205,9 +229,31 @@ export function ProtocolManager({ categoryId }: ProtocolManagerProps) {
             exit_criteria: phase.exit_criteria,
             care_instructions: phase.care_instructions,
             taping_instructions: phase.taping_instructions,
-          });
+          })
+          .select()
+          .single();
 
         if (phaseError) throw phaseError;
+
+        // Create exercises for this phase
+        if (phase.exercises.length > 0) {
+          const exercisesToInsert = phase.exercises.map((ex, i) => ({
+            phase_id: newPhase.id,
+            name: ex.name,
+            description: ex.description || null,
+            sets: ex.sets,
+            reps: ex.reps || null,
+            frequency: ex.frequency || null,
+            exercise_order: i,
+            image_url: ex.image_url || null,
+            video_url: ex.video_url || null,
+            notes: ex.notes || null,
+          }));
+          const { error: exError } = await supabase
+            .from("protocol_exercises")
+            .insert(exercisesToInsert);
+          if (exError) throw exError;
+        }
       }
     },
     onSuccess: () => {
@@ -259,10 +305,10 @@ export function ProtocolManager({ categoryId }: ProtocolManagerProps) {
 
       if (protocolError) throw protocolError;
 
-      // Copy phases
+      // Copy phases with exercises
       if (protocol.protocol_phases) {
         for (const phase of protocol.protocol_phases) {
-          const { error: phaseError } = await supabase
+          const { data: newPhase, error: phaseError } = await supabase
             .from("protocol_phases")
             .insert({
               protocol_id: newProtocol.id,
@@ -275,9 +321,34 @@ export function ProtocolManager({ categoryId }: ProtocolManagerProps) {
               exit_criteria: phase.exit_criteria,
               care_instructions: phase.care_instructions,
               taping_instructions: phase.taping_instructions,
-            });
+            })
+            .select()
+            .single();
 
           if (phaseError) throw phaseError;
+
+          // Copy exercises from original phase
+          const { data: originalExercises } = await supabase
+            .from("protocol_exercises")
+            .select("*")
+            .eq("phase_id", phase.id)
+            .order("exercise_order");
+
+          if (originalExercises && originalExercises.length > 0) {
+            const exercisesToInsert = originalExercises.map((ex: any) => ({
+              phase_id: newPhase.id,
+              name: ex.name,
+              description: ex.description,
+              sets: ex.sets,
+              reps: ex.reps,
+              frequency: ex.frequency,
+              exercise_order: ex.exercise_order,
+              image_url: ex.image_url,
+              video_url: ex.video_url,
+              notes: ex.notes,
+            }));
+            await supabase.from("protocol_exercises").insert(exercisesToInsert);
+          }
         }
       }
 
@@ -312,21 +383,46 @@ export function ProtocolManager({ categoryId }: ProtocolManagerProps) {
     setIsEditDialogOpen(true);
   };
 
-  const handleEditPhases = (protocol: any) => {
+  const handleEditPhases = async (protocol: any) => {
     setSelectedProtocol(protocol);
     if (protocol.protocol_phases && protocol.protocol_phases.length > 0) {
-      setPhases(protocol.protocol_phases.sort((a: any, b: any) => a.phase_number - b.phase_number).map((p: any) => ({
-        id: p.id,
-        phase_number: p.phase_number,
-        name: p.name,
-        description: p.description || "",
-        duration_days_min: p.duration_days_min || 7,
-        duration_days_max: p.duration_days_max || 14,
-        objectives: p.objectives || [],
-        exit_criteria: p.exit_criteria || [],
-        care_instructions: p.care_instructions || [],
-        taping_instructions: p.taping_instructions || [],
-      })));
+      // Load exercises for each phase
+      const sortedPhases = protocol.protocol_phases.sort((a: any, b: any) => a.phase_number - b.phase_number);
+      const phasesWithExercises: Phase[] = [];
+      
+      for (const p of sortedPhases) {
+        const { data: exercisesData } = await supabase
+          .from("protocol_exercises")
+          .select("*")
+          .eq("phase_id", p.id)
+          .order("exercise_order");
+        
+        phasesWithExercises.push({
+          id: p.id,
+          phase_number: p.phase_number,
+          name: p.name,
+          description: p.description || "",
+          duration_days_min: p.duration_days_min || 7,
+          duration_days_max: p.duration_days_max || 14,
+          objectives: p.objectives || [],
+          exit_criteria: p.exit_criteria || [],
+          care_instructions: p.care_instructions || [],
+          taping_instructions: p.taping_instructions || [],
+          exercises: (exercisesData || []).map((e: any) => ({
+            id: e.id,
+            name: e.name,
+            description: e.description || "",
+            sets: e.sets,
+            reps: e.reps || "",
+            frequency: e.frequency || "",
+            exercise_order: e.exercise_order || 0,
+            image_url: e.image_url,
+            video_url: e.video_url,
+            notes: e.notes,
+          })),
+        });
+      }
+      setPhases(phasesWithExercises);
     } else {
       setPhases(DEFAULT_PHASES);
     }
@@ -345,6 +441,7 @@ export function ProtocolManager({ categoryId }: ProtocolManagerProps) {
       exit_criteria: [],
       care_instructions: [],
       taping_instructions: [],
+      exercises: [],
     }]);
   };
 
@@ -677,6 +774,10 @@ export function ProtocolManager({ categoryId }: ProtocolManagerProps) {
                       className="text-sm"
                     />
                   </div>
+                  <ProtocolPhaseExercises
+                    exercises={phase.exercises || []}
+                    onChange={(exercises) => updatePhase(index, 'exercises', exercises)}
+                  />
                 </div>
               ))}
             </div>
@@ -890,6 +991,11 @@ export function ProtocolManager({ categoryId }: ProtocolManagerProps) {
                     rows={2}
                   />
                 </div>
+
+                <ProtocolPhaseExercises
+                  exercises={phase.exercises || []}
+                  onChange={(exercises) => updatePhase(index, 'exercises', exercises)}
+                />
               </div>
             ))}
           </div>
