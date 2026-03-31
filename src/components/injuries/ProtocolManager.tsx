@@ -40,6 +40,7 @@ import {
   Settings2
 } from "lucide-react";
 import { INJURY_CATEGORIES } from "@/lib/constants/rugbyInjuries";
+import { ProtocolPhaseExercises, ProtocolExercise } from "./ProtocolPhaseExercises";
 
 interface ProtocolManagerProps {
   categoryId: string;
@@ -56,6 +57,7 @@ interface Phase {
   exit_criteria: string[];
   care_instructions: string[];
   taping_instructions: string[];
+  exercises: ProtocolExercise[];
 }
 
 const DEFAULT_PHASES: Phase[] = [
