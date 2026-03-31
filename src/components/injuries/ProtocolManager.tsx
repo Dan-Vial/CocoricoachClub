@@ -749,6 +749,10 @@ export function ProtocolManager({ categoryId }: ProtocolManagerProps) {
                       className="text-sm"
                     />
                   </div>
+                  <ProtocolPhaseExercises
+                    exercises={phase.exercises || []}
+                    onChange={(exercises) => updatePhase(index, 'exercises', exercises)}
+                  />
                 </div>
               ))}
             </div>
