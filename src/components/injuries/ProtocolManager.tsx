@@ -314,21 +314,46 @@ export function ProtocolManager({ categoryId }: ProtocolManagerProps) {
     setIsEditDialogOpen(true);
   };
 
-  const handleEditPhases = (protocol: any) => {
+  const handleEditPhases = async (protocol: any) => {
     setSelectedProtocol(protocol);
     if (protocol.protocol_phases && protocol.protocol_phases.length > 0) {
-      setPhases(protocol.protocol_phases.sort((a: any, b: any) => a.phase_number - b.phase_number).map((p: any) => ({
-        id: p.id,
-        phase_number: p.phase_number,
-        name: p.name,
-        description: p.description || "",
-        duration_days_min: p.duration_days_min || 7,
-        duration_days_max: p.duration_days_max || 14,
-        objectives: p.objectives || [],
-        exit_criteria: p.exit_criteria || [],
-        care_instructions: p.care_instructions || [],
-        taping_instructions: p.taping_instructions || [],
-      })));
+      // Load exercises for each phase
+      const sortedPhases = protocol.protocol_phases.sort((a: any, b: any) => a.phase_number - b.phase_number);
+      const phasesWithExercises: Phase[] = [];
+      
+      for (const p of sortedPhases) {
+        const { data: exercisesData } = await supabase
+          .from("protocol_exercises")
+          .select("*")
+          .eq("phase_id", p.id)
+          .order("exercise_order");
+        
+        phasesWithExercises.push({
+          id: p.id,
+          phase_number: p.phase_number,
+          name: p.name,
+          description: p.description || "",
+          duration_days_min: p.duration_days_min || 7,
+          duration_days_max: p.duration_days_max || 14,
+          objectives: p.objectives || [],
+          exit_criteria: p.exit_criteria || [],
+          care_instructions: p.care_instructions || [],
+          taping_instructions: p.taping_instructions || [],
+          exercises: (exercisesData || []).map((e: any) => ({
+            id: e.id,
+            name: e.name,
+            description: e.description || "",
+            sets: e.sets,
+            reps: e.reps || "",
+            frequency: e.frequency || "",
+            exercise_order: e.exercise_order || 0,
+            image_url: e.image_url,
+            video_url: e.video_url,
+            notes: e.notes,
+          })),
+        });
+      }
+      setPhases(phasesWithExercises);
     } else {
       setPhases(DEFAULT_PHASES);
     }
