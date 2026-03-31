@@ -48,7 +48,8 @@ export default function Clubs() {
       const { data: ownedClubs, error: ownedError } = await supabase
         .from("clubs")
         .select("*")
-        .eq("user_id", user.id);
+        .eq("user_id", user.id)
+        .is("client_id", null);
       if (ownedError) throw ownedError;
 
       // Fetch clubs the user is a MEMBER of (but doesn't own)
