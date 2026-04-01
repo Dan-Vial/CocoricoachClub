@@ -25,13 +25,14 @@ interface PlayerReportSectionProps {
   sportType?: string;
 }
 
-type ReportSection = "tests" | "biometrics" | "wellness" | "matches" | "ewma";
+type ReportSection = "tests" | "biometrics" | "wellness" | "matches" | "training_stats" | "ewma";
 
 const SECTION_LABELS: Record<ReportSection, string> = {
   tests: "Tests de performance",
   biometrics: "Données biométriques",
   wellness: "Wellness",
-  matches: "Statistiques matchs",
+  matches: "Statistiques compétitions",
+  training_stats: "Statistiques entraînement",
   ewma: "Charge d'entraînement (EWMA)",
 };
 
