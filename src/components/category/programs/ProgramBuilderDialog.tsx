@@ -153,6 +153,9 @@ export function ProgramBuilderDialog({
   programId,
   open,
   onOpenChange,
+  rehabMode,
+  rehabPhaseName,
+  onProgramSaved,
 }: ProgramBuilderDialogProps) {
   const queryClient = useQueryClient();
   const [name, setName] = useState("");
