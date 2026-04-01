@@ -310,7 +310,13 @@ export function BowlingOilPatternSection({
                 variant="destructive"
                 size="icon"
                 className="absolute top-2 right-2 h-7 w-7"
-                onClick={(e) => { e.stopPropagation(); updateField(fieldKey, null); }}
+                onClick={(e) => { 
+                  e.stopPropagation(); 
+                  const updatedPattern = { ...pattern, [fieldKey]: null };
+                  setPattern(updatedPattern);
+                  setHasChanges(true);
+                  saveMutation.mutate(updatedPattern);
+                }}
               >
                 <X className="h-4 w-4" />
               </Button>
