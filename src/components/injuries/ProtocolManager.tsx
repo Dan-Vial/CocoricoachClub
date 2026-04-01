@@ -58,6 +58,7 @@ interface Phase {
   exit_criteria: string[];
   care_instructions: string[];
   taping_instructions: string[];
+  taping_diagram_url?: string | null;
   exercises: ProtocolExercise[];
 }
 
