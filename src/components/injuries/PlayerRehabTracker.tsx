@@ -103,7 +103,7 @@ export function PlayerRehabTracker({
     },
   });
 
-  // Fetch protocol phases and exercises
+  // Fetch protocol phases (for structure/metadata only)
   const { data: phases } = useQuery({
     queryKey: ["protocol-phases", rehabProtocol?.protocol_id],
     queryFn: async () => {
@@ -111,10 +111,7 @@ export function PlayerRehabTracker({
       
       const { data, error } = await supabase
         .from("protocol_phases")
-        .select(`
-          *,
-          protocol_exercises (*)
-        `)
+        .select("*")
         .eq("protocol_id", rehabProtocol.protocol_id)
         .order("phase_number");
       
@@ -122,6 +119,24 @@ export function PlayerRehabTracker({
       return data;
     },
     enabled: !!rehabProtocol?.protocol_id,
+  });
+
+  // Fetch player-specific exercises (per phase)
+  const { data: playerExercises } = useQuery({
+    queryKey: ["player-rehab-exercises-all", rehabProtocol?.id],
+    queryFn: async () => {
+      if (!rehabProtocol?.id) return [];
+      
+      const { data, error } = await supabase
+        .from("player_rehab_exercises")
+        .select("*")
+        .eq("player_rehab_protocol_id", rehabProtocol.id)
+        .order("exercise_order");
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!rehabProtocol?.id,
   });
 
   // Fetch exercise logs
