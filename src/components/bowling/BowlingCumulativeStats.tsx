@@ -273,7 +273,10 @@ export function BowlingCumulativeStats({ categoryId }: BowlingCumulativeStatsPro
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-muted-foreground">% Strike moyen</span>
-                      <span className={`font-bold ${getStatTextColor("strike", cumulativeStats.avgStrikeRate)}`}>{cumulativeStats.avgStrikeRate.toFixed(1)}%</span>
+                      {(() => {
+                        const color = getStatColor("strike", cumulativeStats.avgStrikeRate);
+                        return <span className={`font-bold px-2 py-0.5 rounded ${color.bg} text-white`}>{cumulativeStats.avgStrikeRate.toFixed(1)}%</span>;
+                      })()}
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-muted-foreground">Spares totaux</span>
