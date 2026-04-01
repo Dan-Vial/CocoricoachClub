@@ -239,7 +239,7 @@ export function SkiConditionsForm({ matchId, trainingSessionId, categoryId, isVi
         const { error } = await supabase.from("ski_conditions").update(payload).eq("id", existing.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("ski_conditions" as any).insert(payload);
+        const { error } = await supabase.from("ski_conditions").insert(payload);
         if (error) throw error;
       }
     },

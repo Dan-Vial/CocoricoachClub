@@ -128,7 +128,7 @@ export function PlayerSkiEquipment({ playerId, categoryId, isViewer }: PlayerSki
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("player_ski_equipment" as any).delete().eq("id", id);
+      const { error } = await supabase.from("player_ski_equipment").delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
