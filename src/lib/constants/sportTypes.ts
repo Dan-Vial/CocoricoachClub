@@ -519,6 +519,7 @@ export const SPORT_TYPES: SportTypeOption[] = [
   { value: "padel_club", label: "Padel - Club", category: "individual" },
   { value: "natation_club", label: "Natation - Club", category: "individual" },
   { value: "ski_club", label: "Sports de Glisse - Club", category: "individual" },
+  { value: "surf_club", label: "Surf - Club", category: "individual" },
   { value: "triathlon_club", label: "Triathlon - Club", category: "individual" },
   { value: "tennis_club", label: "Tennis - Club", category: "individual" },
   // Individual sports - Académie
