@@ -1041,6 +1041,16 @@ export function getStatCategories(sportType: SportType | string): { key: string;
     ];
   }
 
+  // Surf
+  if (baseSport === "surf") {
+    return [
+      { key: "scoring", label: "Score & Classement" },
+      { key: "attack", label: "Manœuvres" },
+      { key: "defense", label: "Tactique & Priorité" },
+      { key: "general", label: "Conditions" },
+    ];
+  }
+
   // Triathlon
   if (baseSport === "triathlon") {
     return [
