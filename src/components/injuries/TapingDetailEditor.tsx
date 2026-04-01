@@ -60,6 +60,7 @@ export function TapingDetailEditor({
           injuryType: injuryType || "blessure",
           tapingType: TAPING_TYPES.find(t => t.value === tapingType)?.label || tapingType,
           phaseDescription: phaseDescription || "",
+          language: navigator.language || "fr",
         },
       });
 
