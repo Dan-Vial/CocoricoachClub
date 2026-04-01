@@ -67,7 +67,7 @@ export function PlayerSkiEquipment({ playerId, categoryId, isViewer }: PlayerSki
     queryKey: ["ski_equipment", playerId, categoryId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("player_ski_equipment" as any)
+        .from("player_ski_equipment")
         .select("*")
         .eq("player_id", playerId)
         .eq("category_id", categoryId)
