@@ -5829,6 +5829,106 @@ export type Database = {
           },
         ]
       }
+      player_surf_equipment: {
+        Row: {
+          board_brand: string | null
+          board_length_feet: number | null
+          board_model: string | null
+          board_shaper: string | null
+          board_thickness_inches: number | null
+          board_type: string | null
+          board_volume_liters: number | null
+          board_width_inches: number | null
+          category_id: string
+          created_at: string
+          equipment_type: string
+          fins_brand: string | null
+          fins_model: string | null
+          fins_type: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean
+          notes: string | null
+          player_id: string
+          purchase_date: string | null
+          updated_at: string
+          wetsuit_brand: string | null
+          wetsuit_thickness: string | null
+        }
+        Insert: {
+          board_brand?: string | null
+          board_length_feet?: number | null
+          board_model?: string | null
+          board_shaper?: string | null
+          board_thickness_inches?: number | null
+          board_type?: string | null
+          board_volume_liters?: number | null
+          board_width_inches?: number | null
+          category_id: string
+          created_at?: string
+          equipment_type?: string
+          fins_brand?: string | null
+          fins_model?: string | null
+          fins_type?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          notes?: string | null
+          player_id: string
+          purchase_date?: string | null
+          updated_at?: string
+          wetsuit_brand?: string | null
+          wetsuit_thickness?: string | null
+        }
+        Update: {
+          board_brand?: string | null
+          board_length_feet?: number | null
+          board_model?: string | null
+          board_shaper?: string | null
+          board_thickness_inches?: number | null
+          board_type?: string | null
+          board_volume_liters?: number | null
+          board_width_inches?: number | null
+          category_id?: string
+          created_at?: string
+          equipment_type?: string
+          fins_brand?: string | null
+          fins_model?: string | null
+          fins_type?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          notes?: string | null
+          player_id?: string
+          purchase_date?: string | null
+          updated_at?: string
+          wetsuit_brand?: string | null
+          wetsuit_thickness?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_surf_equipment_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_surf_equipment_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_surf_equipment_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       player_transfers: {
         Row: {
           created_at: string
@@ -8003,6 +8103,160 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      surf_conditions: {
+        Row: {
+          bottom_notes: string | null
+          bottom_type: string | null
+          category_id: string
+          created_at: string
+          id: string
+          match_id: string | null
+          notes: string | null
+          spot_name: string | null
+          spot_quality: number | null
+          swell_direction: string | null
+          swell_height_m: number | null
+          swell_period_s: number | null
+          tide_coefficient: number | null
+          tide_level: string | null
+          tide_phase: string | null
+          training_session_id: string | null
+          updated_at: string
+          wave_quality: number | null
+          wind_direction: string | null
+          wind_speed_kmh: number | null
+        }
+        Insert: {
+          bottom_notes?: string | null
+          bottom_type?: string | null
+          category_id: string
+          created_at?: string
+          id?: string
+          match_id?: string | null
+          notes?: string | null
+          spot_name?: string | null
+          spot_quality?: number | null
+          swell_direction?: string | null
+          swell_height_m?: number | null
+          swell_period_s?: number | null
+          tide_coefficient?: number | null
+          tide_level?: string | null
+          tide_phase?: string | null
+          training_session_id?: string | null
+          updated_at?: string
+          wave_quality?: number | null
+          wind_direction?: string | null
+          wind_speed_kmh?: number | null
+        }
+        Update: {
+          bottom_notes?: string | null
+          bottom_type?: string | null
+          category_id?: string
+          created_at?: string
+          id?: string
+          match_id?: string | null
+          notes?: string | null
+          spot_name?: string | null
+          spot_quality?: number | null
+          swell_direction?: string | null
+          swell_height_m?: number | null
+          swell_period_s?: number | null
+          tide_coefficient?: number | null
+          tide_level?: string | null
+          tide_phase?: string | null
+          training_session_id?: string | null
+          updated_at?: string
+          wave_quality?: number | null
+          wind_direction?: string | null
+          wind_speed_kmh?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "surf_conditions_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "surf_conditions_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "surf_conditions_training_session_id_fkey"
+            columns: ["training_session_id"]
+            isOneToOne: false
+            referencedRelation: "training_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      surf_session_equipment: {
+        Row: {
+          created_at: string
+          equipment_id: string
+          id: string
+          match_id: string | null
+          player_id: string
+          training_session_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          equipment_id: string
+          id?: string
+          match_id?: string | null
+          player_id: string
+          training_session_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          equipment_id?: string
+          id?: string
+          match_id?: string | null
+          player_id?: string
+          training_session_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "surf_session_equipment_equipment_id_fkey"
+            columns: ["equipment_id"]
+            isOneToOne: false
+            referencedRelation: "player_surf_equipment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "surf_session_equipment_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "surf_session_equipment_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "surf_session_equipment_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "surf_session_equipment_training_session_id_fkey"
+            columns: ["training_session_id"]
+            isOneToOne: false
+            referencedRelation: "training_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       team_trips: {
         Row: {
