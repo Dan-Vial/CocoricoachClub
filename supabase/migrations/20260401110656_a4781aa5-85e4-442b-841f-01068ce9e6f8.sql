@@ -1,0 +1,1 @@
+ALTER TABLE public.protocol_phases ADD COLUMN IF NOT EXISTS taping_diagram_url text;

@@ -6634,6 +6634,7 @@ export type Database = {
           objectives: string[] | null
           phase_number: number
           protocol_id: string
+          taping_diagram_url: string | null
           taping_instructions: string[] | null
         }
         Insert: {
@@ -6648,6 +6649,7 @@ export type Database = {
           objectives?: string[] | null
           phase_number: number
           protocol_id: string
+          taping_diagram_url?: string | null
           taping_instructions?: string[] | null
         }
         Update: {
@@ -6662,6 +6664,7 @@ export type Database = {
           objectives?: string[] | null
           phase_number?: number
           protocol_id?: string
+          taping_diagram_url?: string | null
           taping_instructions?: string[] | null
         }
         Relationships: [

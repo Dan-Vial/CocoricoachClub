@@ -342,6 +342,22 @@ export function PlayerRehabTracker({
                       </li>
                     ))}
                   </ul>
+                  {(currentPhase as any).taping_diagram_url && (
+                    <div className="mt-2">
+                      <img
+                        src={(currentPhase as any).taping_diagram_url}
+                        alt="Schéma de taping"
+                        className="w-full max-h-64 object-contain rounded-lg border cursor-pointer hover:opacity-90 transition-opacity"
+                        onClick={() => {
+                          const img = (currentPhase as any).taping_diagram_url;
+                          if (img) window.open(img, '_blank');
+                        }}
+                      />
+                      <p className="text-xs text-muted-foreground mt-1 text-center">
+                        Cliquez pour agrandir le schéma
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

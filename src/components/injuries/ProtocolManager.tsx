@@ -41,6 +41,7 @@ import {
 } from "lucide-react";
 import { INJURY_CATEGORIES } from "@/lib/constants/rugbyInjuries";
 import { ProtocolPhaseExercises, ProtocolExercise } from "./ProtocolPhaseExercises";
+import { TapingDetailEditor } from "./TapingDetailEditor";
 
 interface ProtocolManagerProps {
   categoryId: string;
@@ -57,14 +58,15 @@ interface Phase {
   exit_criteria: string[];
   care_instructions: string[];
   taping_instructions: string[];
+  taping_diagram_url?: string | null;
   exercises: ProtocolExercise[];
 }
 
 const DEFAULT_PHASES: Phase[] = [
-  { phase_number: 1, name: "Réhabilitation", description: "Phase de récupération initiale et traitement", duration_days_min: 7, duration_days_max: 14, objectives: [], exit_criteria: [], care_instructions: ["Bain froid (cryothérapie)", "Électrostimulation"], taping_instructions: [], exercises: [] },
-  { phase_number: 2, name: "Retour au terrain", description: "Reprise progressive de l'activité physique", duration_days_min: 7, duration_days_max: 14, objectives: [], exit_criteria: [], care_instructions: ["Étirements passifs", "Bain chaud/froid alternés"], taping_instructions: ["Tape de soutien articulaire"], exercises: [] },
-  { phase_number: 3, name: "Retour à la compétition", description: "Réintégration aux entraînements collectifs", duration_days_min: 7, duration_days_max: 14, objectives: [], exit_criteria: [], care_instructions: ["Étirements actifs", "Automassage / foam roller"], taping_instructions: ["Tape de prévention"], exercises: [] },
-  { phase_number: 4, name: "Retour à la performance", description: "Validation complète pour la compétition", duration_days_min: 7, duration_days_max: 14, objectives: [], exit_criteria: [], care_instructions: [], taping_instructions: [], exercises: [] },
+  { phase_number: 1, name: "Réhabilitation", description: "Phase de récupération initiale et traitement", duration_days_min: 7, duration_days_max: 14, objectives: [], exit_criteria: [], care_instructions: ["Bain froid (cryothérapie)", "Électrostimulation"], taping_instructions: [], taping_diagram_url: null, exercises: [] },
+  { phase_number: 2, name: "Retour au terrain", description: "Reprise progressive de l'activité physique", duration_days_min: 7, duration_days_max: 14, objectives: [], exit_criteria: [], care_instructions: ["Étirements passifs", "Bain chaud/froid alternés"], taping_instructions: ["Tape de soutien articulaire"], taping_diagram_url: null, exercises: [] },
+  { phase_number: 3, name: "Retour à la compétition", description: "Réintégration aux entraînements collectifs", duration_days_min: 7, duration_days_max: 14, objectives: [], exit_criteria: [], care_instructions: ["Étirements actifs", "Automassage / foam roller"], taping_instructions: ["Tape de prévention"], taping_diagram_url: null, exercises: [] },
+  { phase_number: 4, name: "Retour à la performance", description: "Validation complète pour la compétition", duration_days_min: 7, duration_days_max: 14, objectives: [], exit_criteria: [], care_instructions: [], taping_instructions: [], taping_diagram_url: null, exercises: [] },
 ];
 
 export function ProtocolManager({ categoryId }: ProtocolManagerProps) {
@@ -137,6 +139,7 @@ export function ProtocolManager({ categoryId }: ProtocolManagerProps) {
             exit_criteria: phase.exit_criteria,
             care_instructions: phase.care_instructions,
             taping_instructions: phase.taping_instructions,
+            taping_diagram_url: phase.taping_diagram_url || null,
           })
           .select()
           .single();
@@ -229,6 +232,7 @@ export function ProtocolManager({ categoryId }: ProtocolManagerProps) {
             exit_criteria: phase.exit_criteria,
             care_instructions: phase.care_instructions,
             taping_instructions: phase.taping_instructions,
+            taping_diagram_url: phase.taping_diagram_url || null,
           })
           .select()
           .single();
@@ -321,6 +325,7 @@ export function ProtocolManager({ categoryId }: ProtocolManagerProps) {
               exit_criteria: phase.exit_criteria,
               care_instructions: phase.care_instructions,
               taping_instructions: phase.taping_instructions,
+              taping_diagram_url: (phase as any).taping_diagram_url || null,
             })
             .select()
             .single();
@@ -408,6 +413,7 @@ export function ProtocolManager({ categoryId }: ProtocolManagerProps) {
           exit_criteria: p.exit_criteria || [],
           care_instructions: p.care_instructions || [],
           taping_instructions: p.taping_instructions || [],
+          taping_diagram_url: (p as any).taping_diagram_url || null,
           exercises: (exercisesData || []).map((e: any) => ({
             id: e.id,
             name: e.name,
@@ -441,6 +447,7 @@ export function ProtocolManager({ categoryId }: ProtocolManagerProps) {
       exit_criteria: [],
       care_instructions: [],
       taping_instructions: [],
+      taping_diagram_url: null,
       exercises: [],
     }]);
   };
@@ -764,16 +771,14 @@ export function ProtocolManager({ categoryId }: ProtocolManagerProps) {
                       className="text-sm"
                     />
                   </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">🏷️ Tape</Label>
-                    <Textarea
-                      value={(phase.taping_instructions || []).join('\n')}
-                      onChange={(e) => updatePhase(index, 'taping_instructions', e.target.value.split('\n').filter((c: string) => c.trim()))}
-                      placeholder="Tape de soutien..."
-                      rows={2}
-                      className="text-sm"
-                    />
-                  </div>
+                   <TapingDetailEditor
+                     tapingInstructions={phase.taping_instructions || []}
+                     tapingDiagramUrl={phase.taping_diagram_url}
+                     onInstructionsChange={(instructions) => updatePhase(index, 'taping_instructions', instructions)}
+                     onDiagramUrlChange={(url) => updatePhase(index, 'taping_diagram_url', url)}
+                     injuryType={protocolCategory}
+                     phaseDescription={phase.description}
+                   />
                   <ProtocolPhaseExercises
                     exercises={phase.exercises || []}
                     onChange={(exercises) => updatePhase(index, 'exercises', exercises)}
@@ -982,15 +987,14 @@ export function ProtocolManager({ categoryId }: ProtocolManagerProps) {
                   />
                 </div>
 
-                <div className="space-y-1">
-                  <Label className="text-xs">🏷️ Tape (un par ligne)</Label>
-                  <Textarea
-                    value={(phase.taping_instructions || []).join('\n')}
-                    onChange={(e) => updatePhase(index, 'taping_instructions', e.target.value.split('\n').filter(c => c.trim()))}
-                    placeholder="Ex: Tape de soutien cheville&#10;Kinesiotape décharge musculaire"
-                    rows={2}
-                  />
-                </div>
+                <TapingDetailEditor
+                  tapingInstructions={phase.taping_instructions || []}
+                  tapingDiagramUrl={phase.taping_diagram_url}
+                  onInstructionsChange={(instructions) => updatePhase(index, 'taping_instructions', instructions)}
+                  onDiagramUrlChange={(url) => updatePhase(index, 'taping_diagram_url', url)}
+                  injuryType={protocolCategory}
+                  phaseDescription={phase.description}
+                />
 
                 <ProtocolPhaseExercises
                   exercises={phase.exercises || []}
