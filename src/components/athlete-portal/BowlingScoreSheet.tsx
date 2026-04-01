@@ -918,9 +918,20 @@ interface StatBoxProps {
   note?: string;
   highlight?: boolean;
   colorClass?: string;
+  bgColorClass?: string;
 }
 
-function StatBox({ label, value, detail, note, highlight, colorClass }: StatBoxProps) {
+function StatBox({ label, value, detail, note, highlight, colorClass, bgColorClass }: StatBoxProps) {
+  if (bgColorClass) {
+    return (
+      <div className={`p-3 rounded-lg ${bgColorClass} text-white`}>
+        <div className="text-xs opacity-80">{label}</div>
+        <div className="text-xl font-bold">{value}</div>
+        <div className="text-xs opacity-80">{detail}</div>
+        {note && <div className="text-xs opacity-70">{note}</div>}
+      </div>
+    );
+  }
   return (
     <div className={`p-3 rounded-lg ${highlight ? "bg-primary/20 border border-primary/30" : "bg-background border"}`}>
       <div className="text-xs text-muted-foreground">{label}</div>
