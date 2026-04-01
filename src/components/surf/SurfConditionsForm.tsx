@@ -73,9 +73,10 @@ export function SurfConditionsForm({ matchId, trainingSessionId, categoryId, isV
       if (matchId) query = query.eq("match_id", matchId);
       else if (trainingSessionId) query = query.eq("training_session_id", trainingSessionId);
       else return null;
-      const { data, error } = await query.maybeSingle();
+      const { data, error } = await (query as any).maybeSingle();
       if (error) throw error;
-      return data;
+      return data as any;
+    },
     },
     enabled: !!(matchId || trainingSessionId),
   });
