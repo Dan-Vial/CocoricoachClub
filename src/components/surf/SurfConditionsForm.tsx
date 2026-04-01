@@ -77,7 +77,6 @@ export function SurfConditionsForm({ matchId, trainingSessionId, categoryId, isV
       if (error) throw error;
       return data as any;
     },
-    },
     enabled: !!(matchId || trainingSessionId),
   });
 
