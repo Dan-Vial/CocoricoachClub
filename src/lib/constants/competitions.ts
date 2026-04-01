@@ -1341,14 +1341,14 @@ export const getCompetitionsBySport = (sportType: string): CompetitionCategory[]
     case "ski":
     case "snow":
       return SKI_COMPETITIONS;
+    case "surf":
+      return SURF_COMPETITIONS;
     case "triathlon":
       return TRIATHLON_COMPETITIONS;
     default:
       return RUGBY_COMPETITIONS;
   }
 };
-
-// Competition stages by sport category
 export interface CompetitionStage {
   value: string;
   label: string;
