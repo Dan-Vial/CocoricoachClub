@@ -89,7 +89,7 @@ export interface SportTypeOption {
 }
 
 // Main sport categories for the first dropdown
-export type MainSportCategory = "rugby" | "football" | "handball" | "volleyball" | "basketball" | "judo" | "bowling" | "aviron" | "athletisme" | "crossfit" | "padel" | "natation" | "ski" | "triathlon" | "tennis";
+export type MainSportCategory = "rugby" | "football" | "handball" | "volleyball" | "basketball" | "judo" | "bowling" | "aviron" | "athletisme" | "crossfit" | "padel" | "natation" | "ski" | "surf" | "triathlon" | "tennis";
 
 export interface MainSportOption {
   value: MainSportCategory;
