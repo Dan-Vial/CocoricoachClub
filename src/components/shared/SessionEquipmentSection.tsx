@@ -28,8 +28,9 @@ export function SessionEquipmentSection({
   const [isOpen, setIsOpen] = useState(false);
   const isSurf = isSurfCategory(sportType);
   const isSki = isSkiCategory(sportType);
+  const isPadel = isPadelCategory(sportType);
 
-  if (!isSurf && !isSki) return null;
+  if (!isSurf && !isSki && !isPadel) return null;
 
   const { data: players = [] } = useQuery({
     queryKey: ["category-players-equipment", categoryId],
