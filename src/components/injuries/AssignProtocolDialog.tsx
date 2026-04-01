@@ -179,6 +179,9 @@ export function AssignProtocolDialog({
 
       if (assignError) throw assignError;
 
+      // Copy exercises from protocol template to player-specific table
+      await copyProtocolExercisesToPlayer(rehabProtocol.id, selectedProtocolId);
+
       // Create calendar events for each phase
       if (phases.length > 0) {
         await createCalendarEvents(
