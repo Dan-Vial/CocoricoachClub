@@ -161,13 +161,13 @@ export function SkiConditionsForm({ matchId, trainingSessionId, categoryId, isVi
   const { data: existing } = useQuery({
     queryKey,
     queryFn: async () => {
-      let query = supabase.from("ski_conditions" as any).select("*").eq("category_id", categoryId);
+      let query = supabase.from("ski_conditions").select("*").eq("category_id", categoryId);
       if (matchId) query = query.eq("match_id", matchId);
       else if (trainingSessionId) query = query.eq("training_session_id", trainingSessionId);
       else return null;
-      const { data, error } = await (query as any).maybeSingle();
+      const { data, error } = await query.maybeSingle();
       if (error) throw error;
-      return data as any;
+      return data;
     },
     enabled: !!(matchId || trainingSessionId),
   });
@@ -236,10 +236,10 @@ export function SkiConditionsForm({ matchId, trainingSessionId, categoryId, isVi
         notes: notes || null,
       };
       if (existing) {
-        const { error } = await supabase.from("ski_conditions" as any).update(payload).eq("id", existing.id);
+        const { error } = await supabase.from("ski_conditions").update(payload).eq("id", existing.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("ski_conditions" as any).insert(payload);
+        const { error } = await supabase.from("ski_conditions").insert(payload);
         if (error) throw error;
       }
     },

@@ -82,7 +82,7 @@ export function PlayerSurfEquipment({ playerId, categoryId, isViewer }: PlayerSu
     queryKey: ["surf_equipment", playerId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("player_surf_equipment" as any)
+        .from("player_surf_equipment")
         .select("*")
         .eq("player_id", playerId)
         .eq("category_id", categoryId)
@@ -146,10 +146,10 @@ export function PlayerSurfEquipment({ playerId, categoryId, isViewer }: PlayerSu
         purchase_date: purchaseDate || null,
       };
       if (editingItem) {
-        const { error } = await supabase.from("player_surf_equipment" as any).update(payload).eq("id", editingItem.id);
+        const { error } = await supabase.from("player_surf_equipment").update(payload).eq("id", editingItem.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("player_surf_equipment" as any).insert(payload);
+        const { error } = await supabase.from("player_surf_equipment").insert(payload);
         if (error) throw error;
       }
     },
@@ -164,7 +164,7 @@ export function PlayerSurfEquipment({ playerId, categoryId, isViewer }: PlayerSu
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("player_surf_equipment" as any).delete().eq("id", id);
+      const { error } = await supabase.from("player_surf_equipment").delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {

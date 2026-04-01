@@ -20,7 +20,7 @@ export function SkiEquipmentSelector({ playerId, categoryId, matchId, trainingSe
     queryKey: ["ski_equipment", playerId, categoryId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("player_ski_equipment" as any)
+        .from("player_ski_equipment")
         .select("*")
         .eq("player_id", playerId)
         .eq("category_id", categoryId)
@@ -34,7 +34,7 @@ export function SkiEquipmentSelector({ playerId, categoryId, matchId, trainingSe
   const { data: selected = [] } = useQuery({
     queryKey: ["ski_session_equipment", playerId, matchId || trainingSessionId],
     queryFn: async () => {
-      let query = supabase.from("ski_session_equipment" as any).select("*, player_ski_equipment(*)").eq("player_id", playerId);
+      let query = supabase.from("ski_session_equipment").select("*, player_ski_equipment(*)").eq("player_id", playerId);
       if (matchId) query = query.eq("match_id", matchId);
       else if (trainingSessionId) query = query.eq("training_session_id", trainingSessionId);
       else return [];
@@ -47,7 +47,7 @@ export function SkiEquipmentSelector({ playerId, categoryId, matchId, trainingSe
 
   const addEquipment = useMutation({
     mutationFn: async (equipmentId: string) => {
-      const { error } = await supabase.from("ski_session_equipment" as any).insert({
+      const { error } = await supabase.from("ski_session_equipment").insert({
         player_id: playerId,
         equipment_id: equipmentId,
         match_id: matchId || null,
@@ -60,7 +60,7 @@ export function SkiEquipmentSelector({ playerId, categoryId, matchId, trainingSe
 
   const removeEquipment = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("ski_session_equipment" as any).delete().eq("id", id);
+      const { error } = await supabase.from("ski_session_equipment").delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["ski_session_equipment", playerId, matchId || trainingSessionId] }),
