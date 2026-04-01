@@ -41,6 +41,7 @@ import {
 } from "lucide-react";
 import { INJURY_CATEGORIES } from "@/lib/constants/rugbyInjuries";
 import { ProtocolPhaseExercises, ProtocolExercise } from "./ProtocolPhaseExercises";
+import { TapingDetailEditor } from "./TapingDetailEditor";
 
 interface ProtocolManagerProps {
   categoryId: string;
