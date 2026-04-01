@@ -84,6 +84,7 @@ import { GpsObjectivesForm } from "@/components/category/gps/GpsObjectivesForm";
 import { isRugbyType, isSkiCategory, isSurfCategory } from "@/lib/constants/sportTypes";
 import { SurfConditionsForm } from "@/components/surf/SurfConditionsForm";
 import { SkiConditionsForm } from "@/components/ski/SkiConditionsForm";
+import { SessionEquipmentSection } from "@/components/shared/SessionEquipmentSection";
 import { TrainingMethodBlock } from "./TrainingMethodBlocks";
 import { TrainingMethodSelect } from "./TrainingMethodSelect";
 import { SessionTestBlock, type SessionTest } from "./SessionTestBlock";
