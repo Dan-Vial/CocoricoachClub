@@ -12,6 +12,7 @@ import { Loader2, User, LogOut, Activity, Heart, BarChart3, Target, Video, Shiel
 import { PlayerBowlingArsenal } from "@/components/bowling/PlayerBowlingArsenal";
 import { PlayerSurfEquipment } from "@/components/surf/PlayerSurfEquipment";
 import { PlayerSkiEquipment } from "@/components/ski/PlayerSkiEquipment";
+import { PlayerPadelEquipment } from "@/components/padel/PlayerPadelEquipment";
 import { NAV_COLORS } from "@/components/ui/colored-nav-tabs";
 import { AthletePWAInstallPopup } from "@/components/athlete/AthletePWAInstallPopup";
 import { AthleteSpaceDashboard } from "@/components/athlete-space/AthleteSpaceDashboard";
