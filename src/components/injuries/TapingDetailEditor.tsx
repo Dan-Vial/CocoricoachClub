@@ -74,10 +74,12 @@ export function TapingDetailEditor({
       if (data?.instructions) {
         const newInstructions = data.instructions
           .split("\n")
-          .filter((l: string) => l.trim())
-          .slice(0, 10);
-        if (newInstructions.length > 0 && tapingInstructions.length === 0) {
+          .map((l: string) => l.trim())
+          .filter((l: string) => l.length > 0)
+          .slice(0, 15);
+        if (newInstructions.length > 0) {
           onInstructionsChange(newInstructions);
+          toast.success("Consignes générées avec succès");
         }
       }
     } catch (err: any) {
