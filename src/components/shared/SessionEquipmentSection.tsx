@@ -105,6 +105,7 @@ export function SessionEquipmentSection({
                       disabled={isViewer}
                     />
                   )}
+                  {isSki && (
                     <SkiEquipmentSelector
                       playerId={player.id}
                       categoryId={categoryId}
