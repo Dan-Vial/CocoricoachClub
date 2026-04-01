@@ -37,7 +37,7 @@ import { ViewerModeProvider, useViewerModeContext } from "@/contexts/ViewerModeC
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getPositionsForSport } from "@/lib/constants/sportPositions";
-import { isIndividualSport, ATHLETISME_DISCIPLINES, ATHLETISME_SPECIALTIES, JUDO_WEIGHT_CATEGORIES, isAthletismeCategory, isJudoCategory, AVIRON_ROLES } from "@/lib/constants/sportTypes";
+import { isIndividualSport, ATHLETISME_DISCIPLINES, ATHLETISME_SPECIALTIES, JUDO_WEIGHT_CATEGORIES, isAthletismeCategory, isJudoCategory, isSkiCategory, AVIRON_ROLES } from "@/lib/constants/sportTypes";
 import { getDisciplineLabel, getSpecialtyLabel } from "@/lib/constants/athleticProfiles";
 import { toast } from "sonner";
 
