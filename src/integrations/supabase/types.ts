@@ -4403,6 +4403,69 @@ export type Database = {
           },
         ]
       }
+      padel_session_equipment: {
+        Row: {
+          created_at: string
+          equipment_id: string
+          id: string
+          match_id: string | null
+          player_id: string
+          training_session_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          equipment_id: string
+          id?: string
+          match_id?: string | null
+          player_id: string
+          training_session_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          equipment_id?: string
+          id?: string
+          match_id?: string | null
+          player_id?: string
+          training_session_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "padel_session_equipment_equipment_id_fkey"
+            columns: ["equipment_id"]
+            isOneToOne: false
+            referencedRelation: "player_padel_equipment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "padel_session_equipment_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "padel_session_equipment_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "padel_session_equipment_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "padel_session_equipment_training_session_id_fkey"
+            columns: ["training_session_id"]
+            isOneToOne: false
+            referencedRelation: "training_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_history: {
         Row: {
           amount: number
@@ -5494,6 +5557,94 @@ export type Database = {
           },
           {
             foreignKeyName: "player_objectives_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      player_padel_equipment: {
+        Row: {
+          accessory_brand: string | null
+          accessory_description: string | null
+          accessory_type: string | null
+          category_id: string
+          created_at: string
+          equipment_type: string
+          id: string
+          is_active: boolean
+          notes: string | null
+          player_id: string
+          racket_balance: string | null
+          racket_brand: string | null
+          racket_model: string | null
+          racket_shape: string | null
+          racket_surface: string | null
+          racket_weight_g: number | null
+          shoe_brand: string | null
+          shoe_model: string | null
+          updated_at: string
+        }
+        Insert: {
+          accessory_brand?: string | null
+          accessory_description?: string | null
+          accessory_type?: string | null
+          category_id: string
+          created_at?: string
+          equipment_type?: string
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          player_id: string
+          racket_balance?: string | null
+          racket_brand?: string | null
+          racket_model?: string | null
+          racket_shape?: string | null
+          racket_surface?: string | null
+          racket_weight_g?: number | null
+          shoe_brand?: string | null
+          shoe_model?: string | null
+          updated_at?: string
+        }
+        Update: {
+          accessory_brand?: string | null
+          accessory_description?: string | null
+          accessory_type?: string | null
+          category_id?: string
+          created_at?: string
+          equipment_type?: string
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          player_id?: string
+          racket_balance?: string | null
+          racket_brand?: string | null
+          racket_model?: string | null
+          racket_shape?: string | null
+          racket_surface?: string | null
+          racket_weight_g?: number | null
+          shoe_brand?: string | null
+          shoe_model?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_padel_equipment_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_padel_equipment_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_padel_equipment_player_id_fkey"
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players_safe"

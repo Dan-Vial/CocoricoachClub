@@ -12,6 +12,7 @@ import { Loader2, User, LogOut, Activity, Heart, BarChart3, Target, Video, Shiel
 import { PlayerBowlingArsenal } from "@/components/bowling/PlayerBowlingArsenal";
 import { PlayerSurfEquipment } from "@/components/surf/PlayerSurfEquipment";
 import { PlayerSkiEquipment } from "@/components/ski/PlayerSkiEquipment";
+import { PlayerPadelEquipment } from "@/components/padel/PlayerPadelEquipment";
 import { NAV_COLORS } from "@/components/ui/colored-nav-tabs";
 import { AthletePWAInstallPopup } from "@/components/athlete/AthletePWAInstallPopup";
 import { AthleteSpaceDashboard } from "@/components/athlete-space/AthleteSpaceDashboard";
@@ -416,6 +417,7 @@ export default function AthleteSpace() {
   const isBowling = (athleteInfo.sport_type || "").toLowerCase().includes("bowling");
   const isSurf = (athleteInfo.sport_type || "").toLowerCase().includes("surf");
   const isSki = (athleteInfo.sport_type || "").toLowerCase().includes("ski") || (athleteInfo.sport_type || "").toLowerCase().includes("snow");
+  const isPadel = (athleteInfo.sport_type || "").toLowerCase().includes("padel");
 
   const displayName = athleteInfo.player_first_name
     ? `${athleteInfo.player_first_name} ${athleteInfo.player_name}`
@@ -646,6 +648,21 @@ export default function AthleteSpace() {
                    Matériel
                  </TabsTrigger>
                )}
+               {isPadel && (
+                 <TabsTrigger 
+                   value="padel-equipment"
+                   className="athlete-tab shrink-0 gap-1 px-2 py-1.5 rounded-xl font-semibold text-xs transition-all duration-200 data-[state=active]:shadow-lg"
+                   style={{
+                     color: NAV_COLORS.programmation.base,
+                     backgroundColor: `${NAV_COLORS.programmation.base}15`,
+                     borderBottom: `3px solid ${NAV_COLORS.programmation.base}`,
+                     ["--tab-color" as string]: NAV_COLORS.programmation.base,
+                   }}
+                 >
+                   🏓
+                   Matériel
+                 </TabsTrigger>
+               )}
                {(
                   <TabsTrigger 
                     value="messaging"
@@ -770,6 +787,14 @@ export default function AthleteSpace() {
           {isSki && (
             <TabsContent value="ski-equipment">
               <PlayerSkiEquipment
+                playerId={athleteInfo.player_id}
+                categoryId={athleteInfo.category_id}
+              />
+            </TabsContent>
+          )}
+          {isPadel && (
+            <TabsContent value="padel-equipment">
+              <PlayerPadelEquipment
                 playerId={athleteInfo.player_id}
                 categoryId={athleteInfo.category_id}
               />

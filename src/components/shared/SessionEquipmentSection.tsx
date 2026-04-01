@@ -7,7 +7,8 @@ import { Mountain, Waves } from "lucide-react";
 import { useState } from "react";
 import { SurfEquipmentSelector } from "@/components/surf/SurfEquipmentSelector";
 import { SkiEquipmentSelector } from "@/components/ski/SkiEquipmentSelector";
-import { isSurfCategory, isSkiCategory } from "@/lib/constants/sportTypes";
+import { PadelEquipmentSelector } from "@/components/padel/PadelEquipmentSelector";
+import { isSurfCategory, isSkiCategory, isPadelCategory } from "@/lib/constants/sportTypes";
 
 interface SessionEquipmentSectionProps {
   categoryId: string;
@@ -27,8 +28,9 @@ export function SessionEquipmentSection({
   const [isOpen, setIsOpen] = useState(false);
   const isSurf = isSurfCategory(sportType);
   const isSki = isSkiCategory(sportType);
+  const isPadel = isPadelCategory(sportType);
 
-  if (!isSurf && !isSki) return null;
+  if (!isSurf && !isSki && !isPadel) return null;
 
   const { data: players = [] } = useQuery({
     queryKey: ["category-players-equipment", categoryId],
@@ -45,8 +47,8 @@ export function SessionEquipmentSection({
 
   if (players.length === 0) return null;
 
-  const icon = isSurf ? <Waves className="h-4 w-4" /> : <Mountain className="h-4 w-4" />;
-  const title = isSurf ? "Matériel surf par athlète" : "Matériel ski/snow par athlète";
+  const icon = isSurf ? <Waves className="h-4 w-4" /> : isPadel ? null : <Mountain className="h-4 w-4" />;
+  const title = isSurf ? "Matériel surf par athlète" : isPadel ? "Matériel padel par athlète" : "Matériel ski/snow par athlète";
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
@@ -78,6 +80,24 @@ export function SessionEquipmentSection({
                   </p>
                   {isSurf && (
                     <SurfEquipmentSelector
+                      playerId={player.id}
+                      categoryId={categoryId}
+                      matchId={matchId}
+                      trainingSessionId={trainingSessionId}
+                      disabled={isViewer}
+                    />
+                  )}
+                  {isSki && (
+                    <SkiEquipmentSelector
+                      playerId={player.id}
+                      categoryId={categoryId}
+                      matchId={matchId}
+                      trainingSessionId={trainingSessionId}
+                      disabled={isViewer}
+                    />
+                  )}
+                  {isPadel && (
+                    <PadelEquipmentSelector
                       playerId={player.id}
                       categoryId={categoryId}
                       matchId={matchId}

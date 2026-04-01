@@ -33,11 +33,12 @@ import { PlayerReferenceCard } from "@/components/player/PlayerReferenceCard";
 import { PlayerBowlingArsenal } from "@/components/bowling/PlayerBowlingArsenal";
 import { PlayerSurfEquipment } from "@/components/surf/PlayerSurfEquipment";
 import { PlayerSkiEquipment } from "@/components/ski/PlayerSkiEquipment";
+import { PlayerPadelEquipment } from "@/components/padel/PlayerPadelEquipment";
 import { ViewerModeProvider, useViewerModeContext } from "@/contexts/ViewerModeContext";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getPositionsForSport } from "@/lib/constants/sportPositions";
-import { isIndividualSport, ATHLETISME_DISCIPLINES, ATHLETISME_SPECIALTIES, JUDO_WEIGHT_CATEGORIES, isAthletismeCategory, isJudoCategory, isSkiCategory, AVIRON_ROLES } from "@/lib/constants/sportTypes";
+import { isIndividualSport, ATHLETISME_DISCIPLINES, ATHLETISME_SPECIALTIES, JUDO_WEIGHT_CATEGORIES, isAthletismeCategory, isJudoCategory, isSkiCategory, isPadelCategory, AVIRON_ROLES } from "@/lib/constants/sportTypes";
 import { getDisciplineLabel, getSpecialtyLabel } from "@/lib/constants/athleticProfiles";
 import { toast } from "sonner";
 
@@ -106,6 +107,7 @@ function PlayerDetailsContent() {
   const isBowling = sportType.toLowerCase().includes("bowling");
   const isSurf = sportType.toLowerCase().includes("surf");
   const isSki = isSkiCategory(sportType);
+  const isPadel = isPadelCategory(sportType);
   const positions = getPositionsForSport(sportType);
 
   // Get display label for discipline/position/role
@@ -482,7 +484,7 @@ function PlayerDetailsContent() {
                 <PlayerDetailTab value="academy" label="Académie" icon={GraduationCap} color="hsl(200 85% 50%)" />
               )}
               <PlayerDetailTab value="injuries" label="Blessures" icon={Bandage} color="hsl(10 80% 55%)" />
-              {(isBowling || isSurf || isSki) && (
+              {(isBowling || isSurf || isSki || isPadel) && (
                 <PlayerDetailTab value="equipment" label={isBowling ? "Arsenal" : "Matériel"} icon={Mountain} color="hsl(190 70% 50%)" />
               )}
             </ColoredNavTabsList>
@@ -540,7 +542,7 @@ function PlayerDetailsContent() {
             <PlayerInjuriesTab playerId={playerId!} categoryId={player.category_id} playerName={fullName} />
           </TabsContent>
 
-          {(isBowling || isSurf || isSki) && (
+          {(isBowling || isSurf || isSki || isPadel) && (
             <TabsContent value="equipment">
               {isBowling && (
                 <PlayerBowlingArsenal playerId={playerId!} categoryId={player.category_id} isViewer={isViewer} />
@@ -550,6 +552,9 @@ function PlayerDetailsContent() {
               )}
               {isSki && (
                 <PlayerSkiEquipment playerId={playerId!} categoryId={player.category_id} isViewer={isViewer} />
+              )}
+              {isPadel && (
+                <PlayerPadelEquipment playerId={playerId!} categoryId={player.category_id} isViewer={isViewer} />
               )}
             </TabsContent>
           )}
