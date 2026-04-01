@@ -415,6 +415,7 @@ export default function AthleteSpace() {
 
   const isBowling = (athleteInfo.sport_type || "").toLowerCase().includes("bowling");
   const isSurf = (athleteInfo.sport_type || "").toLowerCase().includes("surf");
+  const isSki = (athleteInfo.sport_type || "").toLowerCase().includes("ski") || (athleteInfo.sport_type || "").toLowerCase().includes("snow");
 
   const displayName = athleteInfo.player_first_name
     ? `${athleteInfo.player_first_name} ${athleteInfo.player_name}`
