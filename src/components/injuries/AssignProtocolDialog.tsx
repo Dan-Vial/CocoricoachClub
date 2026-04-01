@@ -25,6 +25,7 @@ import { RUGBY_INJURY_TYPES, DEFAULT_REHAB_PHASES, INJURY_CATEGORIES } from "@/l
 import { Badge } from "@/components/ui/badge";
 import { Clock, Dumbbell, FileText, Sparkles, Calendar } from "lucide-react";
 import { addDays, format } from "date-fns";
+import { copyProtocolExercisesToPlayer } from "@/lib/helpers/copyProtocolExercises";
 
 interface AssignProtocolDialogProps {
   open: boolean;
@@ -178,6 +179,9 @@ export function AssignProtocolDialog({
 
       if (assignError) throw assignError;
 
+      // Copy exercises from protocol template to player-specific table
+      await copyProtocolExercisesToPlayer(rehabProtocol.id, selectedProtocolId);
+
       // Create calendar events for each phase
       if (phases.length > 0) {
         await createCalendarEvents(
@@ -305,6 +309,9 @@ export function AssignProtocolDialog({
         .single();
 
       if (assignError) throw assignError;
+
+      // Copy exercises from protocol template to player-specific table
+      await copyProtocolExercisesToPlayer(rehabProtocol.id, protocolId);
 
       // Create calendar events for each phase
       if (phases.length > 0) {

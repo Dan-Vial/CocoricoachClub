@@ -5589,6 +5589,101 @@ export type Database = {
           },
         ]
       }
+      player_rehab_exercises: {
+        Row: {
+          created_at: string
+          description: string | null
+          duration: string | null
+          exercise_library_id: string | null
+          exercise_order: number
+          frequency: string | null
+          id: string
+          image_url: string | null
+          is_completed: boolean
+          name: string
+          notes: string | null
+          phase_id: string | null
+          phase_number: number
+          player_rehab_protocol_id: string
+          reps: string | null
+          sets: number | null
+          source_exercise_id: string | null
+          updated_at: string
+          video_url: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          duration?: string | null
+          exercise_library_id?: string | null
+          exercise_order?: number
+          frequency?: string | null
+          id?: string
+          image_url?: string | null
+          is_completed?: boolean
+          name: string
+          notes?: string | null
+          phase_id?: string | null
+          phase_number?: number
+          player_rehab_protocol_id: string
+          reps?: string | null
+          sets?: number | null
+          source_exercise_id?: string | null
+          updated_at?: string
+          video_url?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          duration?: string | null
+          exercise_library_id?: string | null
+          exercise_order?: number
+          frequency?: string | null
+          id?: string
+          image_url?: string | null
+          is_completed?: boolean
+          name?: string
+          notes?: string | null
+          phase_id?: string | null
+          phase_number?: number
+          player_rehab_protocol_id?: string
+          reps?: string | null
+          sets?: number | null
+          source_exercise_id?: string | null
+          updated_at?: string
+          video_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_rehab_exercises_exercise_library_id_fkey"
+            columns: ["exercise_library_id"]
+            isOneToOne: false
+            referencedRelation: "exercise_library"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_rehab_exercises_phase_id_fkey"
+            columns: ["phase_id"]
+            isOneToOne: false
+            referencedRelation: "protocol_phases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_rehab_exercises_player_rehab_protocol_id_fkey"
+            columns: ["player_rehab_protocol_id"]
+            isOneToOne: false
+            referencedRelation: "player_rehab_protocols"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_rehab_exercises_source_exercise_id_fkey"
+            columns: ["source_exercise_id"]
+            isOneToOne: false
+            referencedRelation: "protocol_exercises"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       player_rehab_protocols: {
         Row: {
           category_id: string

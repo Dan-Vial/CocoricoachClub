@@ -41,6 +41,7 @@ import {
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useAuth } from "@/contexts/AuthContext";
+import { PlayerRehabExerciseEditor } from "./PlayerRehabExerciseEditor";
 
 // Phase colors configuration
 const PHASE_COLORS = {
@@ -102,7 +103,7 @@ export function PlayerRehabTracker({
     },
   });
 
-  // Fetch protocol phases and exercises
+  // Fetch protocol phases (for structure/metadata only)
   const { data: phases } = useQuery({
     queryKey: ["protocol-phases", rehabProtocol?.protocol_id],
     queryFn: async () => {
@@ -110,10 +111,7 @@ export function PlayerRehabTracker({
       
       const { data, error } = await supabase
         .from("protocol_phases")
-        .select(`
-          *,
-          protocol_exercises (*)
-        `)
+        .select("*")
         .eq("protocol_id", rehabProtocol.protocol_id)
         .order("phase_number");
       
@@ -121,6 +119,24 @@ export function PlayerRehabTracker({
       return data;
     },
     enabled: !!rehabProtocol?.protocol_id,
+  });
+
+  // Fetch player-specific exercises (per phase)
+  const { data: playerExercises } = useQuery({
+    queryKey: ["player-rehab-exercises-all", rehabProtocol?.id],
+    queryFn: async () => {
+      if (!rehabProtocol?.id) return [];
+      
+      const { data, error } = await supabase
+        .from("player_rehab_exercises")
+        .select("*")
+        .eq("player_rehab_protocol_id", rehabProtocol.id)
+        .order("exercise_order");
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!rehabProtocol?.id,
   });
 
   // Fetch exercise logs
@@ -447,44 +463,14 @@ export function PlayerRehabTracker({
                 </AccordionTrigger>
                 <AccordionContent>
                   <div className="space-y-3 pt-2">
-                    {(phase.protocol_exercises as any[])?.sort((a, b) => a.exercise_order - b.exercise_order).map((exercise) => {
-                      const completionCount = getExerciseCompletionCount(exercise.id);
-                      return (
-                        <div
-                          key={exercise.id}
-                          className="flex items-center justify-between p-3 bg-muted/30 rounded-lg"
-                        >
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                              <p className="font-medium">{exercise.name}</p>
-                              {completionCount > 0 && (
-                                <Badge variant="secondary" className="text-xs">
-                                  {completionCount}x fait
-                                </Badge>
-                              )}
-                            </div>
-                            <p className="text-sm text-muted-foreground">
-                              {exercise.description}
-                            </p>
-                            <div className="flex gap-4 mt-1 text-xs text-muted-foreground">
-                              {exercise.sets && <span>{exercise.sets} séries</span>}
-                              {exercise.reps && <span>{exercise.reps}</span>}
-                              {exercise.frequency && <span>{exercise.frequency}</span>}
-                            </div>
-                          </div>
-                          {phase.phase_number === currentPhaseNumber && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleLogExercise(exercise)}
-                            >
-                              <CheckCircle2 className="h-4 w-4 mr-1" />
-                              Log
-                            </Button>
-                          )}
-                        </div>
-                      );
-                    })}
+                    {/* Player-specific exercise editor/viewer */}
+                    <PlayerRehabExerciseEditor
+                      playerRehabProtocolId={rehabProtocol.id}
+                      phaseId={phase.id}
+                      phaseNumber={phase.phase_number}
+                      categoryId={categoryId}
+                      disabled={rehabProtocol.status === "completed"}
+                    />
 
                     {phase.exit_criteria && (phase.exit_criteria as string[]).length > 0 && (
                       <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-200 dark:border-amber-800">
