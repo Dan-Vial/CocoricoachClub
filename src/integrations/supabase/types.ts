@@ -6725,6 +6725,7 @@ export type Database = {
           duration_days_min: number | null
           exit_criteria: string[] | null
           id: string
+          linked_program_id: string | null
           name: string
           objectives: string[] | null
           phase_number: number
@@ -6740,6 +6741,7 @@ export type Database = {
           duration_days_min?: number | null
           exit_criteria?: string[] | null
           id?: string
+          linked_program_id?: string | null
           name: string
           objectives?: string[] | null
           phase_number: number
@@ -6755,6 +6757,7 @@ export type Database = {
           duration_days_min?: number | null
           exit_criteria?: string[] | null
           id?: string
+          linked_program_id?: string | null
           name?: string
           objectives?: string[] | null
           phase_number?: number
@@ -6763,6 +6766,13 @@ export type Database = {
           taping_instructions?: string[] | null
         }
         Relationships: [
+          {
+            foreignKeyName: "protocol_phases_linked_program_id_fkey"
+            columns: ["linked_program_id"]
+            isOneToOne: false
+            referencedRelation: "training_programs"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "protocol_phases_protocol_id_fkey"
             columns: ["protocol_id"]
