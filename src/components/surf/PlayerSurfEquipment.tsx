@@ -164,7 +164,7 @@ export function PlayerSurfEquipment({ playerId, categoryId, isViewer }: PlayerSu
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("player_surf_equipment" as any).delete().eq("id", id);
+      const { error } = await supabase.from("player_surf_equipment").delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
