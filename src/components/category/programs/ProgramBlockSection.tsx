@@ -141,13 +141,25 @@ export function ProgramBlockSection({
 
   const totalSessions = block.weeks.reduce((sum, w) => sum + w.sessions.length, 0);
 
+  const BLOCK_COLORS = [
+    { border: "border-blue-400/40", bg: "bg-blue-500/5", icon: "text-blue-500", label: "text-blue-600" },
+    { border: "border-emerald-400/40", bg: "bg-emerald-500/5", icon: "text-emerald-500", label: "text-emerald-600" },
+    { border: "border-amber-400/40", bg: "bg-amber-500/5", icon: "text-amber-500", label: "text-amber-600" },
+    { border: "border-purple-400/40", bg: "bg-purple-500/5", icon: "text-purple-500", label: "text-purple-600" },
+    { border: "border-rose-400/40", bg: "bg-rose-500/5", icon: "text-rose-500", label: "text-rose-600" },
+    { border: "border-cyan-400/40", bg: "bg-cyan-500/5", icon: "text-cyan-500", label: "text-cyan-600" },
+    { border: "border-orange-400/40", bg: "bg-orange-500/5", icon: "text-orange-500", label: "text-orange-600" },
+    { border: "border-indigo-400/40", bg: "bg-indigo-500/5", icon: "text-indigo-500", label: "text-indigo-600" },
+  ];
+  const color = BLOCK_COLORS[blockIndex % BLOCK_COLORS.length];
+
   return (
-    <div className="border-2 rounded-xl bg-card border-primary/20">
+    <div className={`border-2 rounded-xl bg-card ${color.border} ${color.bg}`}>
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
         <CollapsibleTrigger asChild>
           <div className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/50 rounded-t-xl">
             <div className="flex items-center gap-3">
-              <Layers className="h-5 w-5 text-primary" />
+              <Layers className={`h-5 w-5 ${color.icon}`} />
               <ChevronDown
                 className={`h-4 w-4 transition-transform ${isOpen ? "" : "-rotate-90"}`}
               />
@@ -163,7 +175,7 @@ export function ProgramBlockSection({
                 />
               ) : (
                 <span
-                  className="font-semibold text-primary cursor-text"
+                  className={`font-semibold cursor-text ${color.label}`}
                   onClick={(e) => {
                     e.stopPropagation();
                     setIsEditingName(true);
