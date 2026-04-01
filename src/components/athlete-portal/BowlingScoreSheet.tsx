@@ -430,12 +430,12 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, c
     }
     
     // 10th frame:
-    // - 1st throw: always allowed
+    // - 1st throw: always allowed (first ball)
     // - 2nd throw: only if 1st was a strike (fresh pins)
-    // - 3rd throw: only if 2nd was a strike (fresh pins)
+    // - 3rd throw: if 2nd was a strike (fresh pins) OR if 2nd was a spare (fresh pins after spare)
     if (throwIndex === 0) return true;
     if (throwIndex === 1) return frame.throws[0]?.value === "X";
-    if (throwIndex === 2) return frame.throws[1]?.value === "X";
+    if (throwIndex === 2) return frame.throws[1]?.value === "X" || frame.throws[1]?.value === "/";
     
     return false;
   };

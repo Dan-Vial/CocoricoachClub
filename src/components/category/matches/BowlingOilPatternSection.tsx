@@ -15,14 +15,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { ColoredSubTabsList, ColoredSubTabsTrigger } from "@/components/ui/colored-subtabs";
 import { toast } from "sonner";
-import { Droplet, Save, RotateCcw, Info, Upload, X, Image as ImageIcon } from "lucide-react";
+import { Droplet, Save, RotateCcw, Info, X, Image as ImageIcon } from "lucide-react";
 import {
   ALL_PATTERN_NAMES,
   getPatternPreset,
   PROFILE_TYPES,
   FRICTION_LEVELS,
-  OIL_RATIOS,
   type OilPatternPreset,
 } from "@/lib/constants/bowlingOilPatterns";
 import {
@@ -51,7 +52,8 @@ interface OilPattern {
   reverse_oil: boolean;
   outside_friction: "low" | "medium" | "high" | null;
   notes: string | null;
-  image_url: string | null;
+  image_url_male: string | null;
+  image_url_female: string | null;
 }
 
 const defaultPattern: OilPattern = {
@@ -66,7 +68,8 @@ const defaultPattern: OilPattern = {
   reverse_oil: true,
   outside_friction: null,
   notes: null,
-  image_url: null,
+  image_url_male: null,
+  image_url_female: null,
 };
 
 export function BowlingOilPatternSection({
@@ -77,11 +80,12 @@ export function BowlingOilPatternSection({
   const [pattern, setPattern] = useState<OilPattern>(defaultPattern);
   const [hasChanges, setHasChanges] = useState(false);
   const [customName, setCustomName] = useState("");
-  const [uploadingImage, setUploadingImage] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingMale, setUploadingMale] = useState(false);
+  const [uploadingFemale, setUploadingFemale] = useState(false);
+  const fileInputMaleRef = useRef<HTMLInputElement>(null);
+  const fileInputFemaleRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
 
-  // Fetch existing pattern for this match
   const { data: existingPattern, isLoading } = useQuery({
     queryKey: ["bowling_oil_pattern", matchId],
     queryFn: async () => {
@@ -96,9 +100,19 @@ export function BowlingOilPatternSection({
     enabled: !!matchId,
   });
 
-  // Initialize pattern from existing data
   useEffect(() => {
     if (existingPattern) {
+      // Parse old notes format for backward compat
+      let notesText = existingPattern.notes;
+      let legacyImageUrl: string | null = null;
+      if (notesText) {
+        try {
+          const parsed = JSON.parse(notesText);
+          if (parsed.image_url) legacyImageUrl = parsed.image_url;
+          if (parsed.text !== undefined) notesText = parsed.text;
+        } catch {}
+      }
+
       setPattern({
         id: existingPattern.id,
         name: existingPattern.name || "",
@@ -111,23 +125,24 @@ export function BowlingOilPatternSection({
         forward_oil: existingPattern.forward_oil ?? true,
         reverse_oil: existingPattern.reverse_oil ?? true,
         outside_friction: existingPattern.outside_friction as OilPattern["outside_friction"],
-        notes: existingPattern.notes,
-        image_url: existingPattern.notes ? null : null, // Will be stored in notes as JSON or separate
+        notes: notesText,
+        image_url_male: (existingPattern as any).image_url_male || legacyImageUrl || null,
+        image_url_female: (existingPattern as any).image_url_female || null,
       });
       setHasChanges(false);
     }
   }, [existingPattern]);
 
-  // Handle image upload
-  const handleImageUpload = async (file: File) => {
+  const handleImageUpload = async (file: File, gender: "male" | "female") => {
     if (!file.type.startsWith("image/")) {
       toast.error("Veuillez sélectionner une image");
       return;
     }
-    setUploadingImage(true);
+    const setUploading = gender === "male" ? setUploadingMale : setUploadingFemale;
+    setUploading(true);
     try {
       const fileExt = file.name.split('.').pop();
-      const filePath = `oil-patterns/${matchId}_${Date.now()}.${fileExt}`;
+      const filePath = `oil-patterns/${matchId}_${gender}_${Date.now()}.${fileExt}`;
       
       const { error: uploadError } = await supabase.storage
         .from("exercise-images")
@@ -139,17 +154,17 @@ export function BowlingOilPatternSection({
         .from("exercise-images")
         .getPublicUrl(filePath);
 
-      updateField("image_url", urlData.publicUrl);
-      toast.success("Image du huilage téléchargée");
+      const field = gender === "male" ? "image_url_male" : "image_url_female";
+      updateField(field, urlData.publicUrl);
+      toast.success(`Image huilage ${gender === "male" ? "garçons" : "filles"} téléchargée`);
     } catch (err: any) {
       console.error("Upload error:", err);
       toast.error("Erreur lors du téléchargement de l'image");
     } finally {
-      setUploadingImage(false);
+      setUploading(false);
     }
   };
 
-  // Save mutation
   const saveMutation = useMutation({
     mutationFn: async (data: OilPattern) => {
       const patternName = data.name === "Pattern personnel" 
@@ -169,9 +184,9 @@ export function BowlingOilPatternSection({
         forward_oil: data.forward_oil,
         reverse_oil: data.reverse_oil,
         outside_friction: data.outside_friction,
-        notes: data.image_url 
-          ? JSON.stringify({ text: data.notes || "", image_url: data.image_url })
-          : data.notes,
+        notes: data.notes,
+        image_url_male: data.image_url_male,
+        image_url_female: data.image_url_female,
       };
 
       if (data.id) {
@@ -251,6 +266,11 @@ export function BowlingOilPatternSection({
 
   const resetPattern = () => {
     if (existingPattern) {
+      let notesText = existingPattern.notes;
+      try {
+        const parsed = JSON.parse(notesText || "");
+        if (parsed.text !== undefined) notesText = parsed.text;
+      } catch {}
       setPattern({
         id: existingPattern.id,
         name: existingPattern.name || "",
@@ -263,8 +283,9 @@ export function BowlingOilPatternSection({
         forward_oil: existingPattern.forward_oil ?? true,
         reverse_oil: existingPattern.reverse_oil ?? true,
         outside_friction: existingPattern.outside_friction as OilPattern["outside_friction"],
-        notes: existingPattern.notes,
-        image_url: null,
+        notes: notesText,
+        image_url_male: (existingPattern as any).image_url_male || null,
+        image_url_female: (existingPattern as any).image_url_female || null,
       });
     } else {
       setPattern(defaultPattern);
@@ -275,6 +296,65 @@ export function BowlingOilPatternSection({
   if (isLoading) {
     return <div className="text-muted-foreground text-sm">Chargement...</div>;
   }
+
+  const renderImageUpload = (gender: "male" | "female", label: string) => {
+    const imageUrl = gender === "male" ? pattern.image_url_male : pattern.image_url_female;
+    const uploading = gender === "male" ? uploadingMale : uploadingFemale;
+    const fileRef = gender === "male" ? fileInputMaleRef : fileInputFemaleRef;
+    const fieldKey = gender === "male" ? "image_url_male" : "image_url_female" as const;
+
+    return (
+      <div className="space-y-2">
+        <p className="text-sm font-medium">{label}</p>
+        {imageUrl ? (
+          <div className="relative" style={{ aspectRatio: "4/5", maxWidth: "220px" }}>
+            <img
+              src={imageUrl}
+              alt={`Oil pattern ${label}`}
+              className="w-full h-full object-cover rounded-lg border"
+            />
+            {!readOnly && (
+              <Button
+                variant="destructive"
+                size="icon"
+                className="absolute top-2 right-2 h-7 w-7"
+                onClick={() => updateField(fieldKey, null)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+        ) : (
+          !readOnly && (
+            <div
+              className="border-2 border-dashed rounded-lg p-4 text-center cursor-pointer hover:border-primary/50 transition-colors"
+              style={{ aspectRatio: "4/5", maxWidth: "220px" }}
+              onClick={() => fileRef.current?.click()}
+            >
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleImageUpload(file, gender);
+                }}
+              />
+              {uploading ? (
+                <p className="text-sm text-muted-foreground">Téléchargement...</p>
+              ) : (
+                <div className="flex flex-col items-center gap-2 pt-4">
+                  <ImageIcon className="h-6 w-6 text-muted-foreground" />
+                  <p className="text-xs text-muted-foreground">Cliquer pour ajouter</p>
+                </div>
+              )}
+            </div>
+          )
+        )}
+      </div>
+    );
+  };
 
   return (
     <Card className="bg-gradient-card">
@@ -290,58 +370,15 @@ export function BowlingOilPatternSection({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Oil pattern image upload */}
+        {/* Oil pattern images - Male & Female */}
         <div className="space-y-3">
           <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
-            Image du huilage
+            Images du huilage
           </h4>
-          {pattern.image_url ? (
-            <div className="relative" style={{ aspectRatio: "4/5", maxWidth: "280px" }}>
-              <img
-                src={pattern.image_url}
-                alt="Oil pattern"
-                className="w-full h-full object-cover rounded-lg border"
-              />
-              {!readOnly && (
-                <Button
-                  variant="destructive"
-                  size="icon"
-                  className="absolute top-2 right-2 h-7 w-7"
-                  onClick={() => updateField("image_url", null)}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
-          ) : (
-            !readOnly && (
-              <div
-                className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 transition-colors"
-                style={{ aspectRatio: "4/5", maxWidth: "280px" }}
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) handleImageUpload(file);
-                  }}
-                />
-                {uploadingImage ? (
-                  <p className="text-sm text-muted-foreground">Téléchargement...</p>
-                ) : (
-                  <div className="flex flex-col items-center gap-2">
-                    <ImageIcon className="h-8 w-8 text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground">Cliquer pour ajouter l'image du huilage</p>
-                    <p className="text-xs text-muted-foreground">Format 4:5 recommandé</p>
-                  </div>
-                )}
-              </div>
-            )
-          )}
+          <div className="grid grid-cols-2 gap-4">
+            {renderImageUpload("male", "🧑 Garçons")}
+            {renderImageUpload("female", "👧 Filles")}
+          </div>
         </div>
 
         {/* Section 1: Identification */}

@@ -11,7 +11,7 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { BowlingFrameAnalysis } from "./BowlingFrameAnalysis";
 import { BowlingGameHistory } from "./BowlingGameHistory";
-import { getStatTextColor } from "@/lib/bowling/statColors";
+import { getStatColor } from "@/lib/bowling/statColors";
 import type { FrameData } from "@/components/athlete-portal/BowlingScoreSheet";
 
 interface BowlingCumulativeStatsProps {
