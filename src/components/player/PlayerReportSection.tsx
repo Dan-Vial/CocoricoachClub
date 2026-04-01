@@ -362,6 +362,42 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
         if (dateTo) q = q.lte("matches.match_date", dateTo);
         return q.order("created_at", { ascending: false });
       })(),
+      // Bowling spare training
+      (() => {
+        let q = supabase.from("bowling_spare_training" as any).select("*").eq("player_id", playerId);
+        if (dateFrom) q = q.gte("session_date", dateFrom);
+        if (dateTo) q = q.lte("session_date", dateTo);
+        return q.order("session_date", { ascending: false });
+      })(),
+      // Tennis drill training
+      (() => {
+        let q = supabase.from("tennis_drill_training" as any).select("*").eq("player_id", playerId);
+        if (dateFrom) q = q.gte("session_date", dateFrom);
+        if (dateTo) q = q.lte("session_date", dateTo);
+        return q.order("session_date", { ascending: false });
+      })(),
+      // Precision training (generic)
+      (() => {
+        let q = supabase.from("precision_training").select("*").eq("player_id", playerId);
+        if (dateFrom) q = q.gte("session_date", dateFrom);
+        if (dateTo) q = q.lte("session_date", dateTo);
+        return q.order("session_date", { ascending: false });
+      })(),
+      // Training competition rounds (bowling training games)
+      (() => {
+        const subQ = supabase.from("matches").select("id").eq("category_id", categoryId).eq("event_type", "training");
+        return subQ.then(async (matchRes) => {
+          if (!matchRes.data || matchRes.data.length === 0) return { data: [], error: null };
+          const matchIds = matchRes.data.map(m => m.id);
+          let q = supabase.from("competition_rounds")
+            .select("*, competition_round_stats(stat_data), matches!inner(match_date)")
+            .eq("player_id", playerId)
+            .in("match_id", matchIds);
+          if (dateFrom) q = q.gte("matches.match_date", dateFrom);
+          if (dateTo) q = q.lte("matches.match_date", dateTo);
+          return q.order("created_at", { ascending: false });
+        });
+      })(),
     ]);
 
     return {
@@ -376,6 +412,10 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
       injuries: injuriesRes.data || [],
       awcr: awcrRes.data || [],
       competitionRounds: competitionRoundsRes.data || [],
+      bowlingSpareTraining: (bowlingSpareRes as any)?.data || [],
+      tennisDrillTraining: (tennisDrillRes as any)?.data || [],
+      precisionTraining: (precisionRes as any)?.data || [],
+      trainingRounds: (trainingRoundsRes as any)?.data || [],
     };
   };
 
