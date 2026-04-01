@@ -542,7 +542,7 @@ function PlayerDetailsContent() {
             <PlayerInjuriesTab playerId={playerId!} categoryId={player.category_id} playerName={fullName} />
           </TabsContent>
 
-          {(isBowling || isSurf || isSki) && (
+          {(isBowling || isSurf || isSki || isPadel) && (
             <TabsContent value="equipment">
               {isBowling && (
                 <PlayerBowlingArsenal playerId={playerId!} categoryId={player.category_id} isViewer={isViewer} />
@@ -552,6 +552,9 @@ function PlayerDetailsContent() {
               )}
               {isSki && (
                 <PlayerSkiEquipment playerId={playerId!} categoryId={player.category_id} isViewer={isViewer} />
+              )}
+              {isPadel && (
+                <PlayerPadelEquipment playerId={playerId!} categoryId={player.category_id} isViewer={isViewer} />
               )}
             </TabsContent>
           )}
