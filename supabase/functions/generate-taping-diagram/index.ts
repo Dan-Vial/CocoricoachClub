@@ -33,9 +33,10 @@ serve(async (req) => {
       ? "IMPORTANT: All text labels, step descriptions, numbered instructions, and any text in the image MUST be written in French."
       : "IMPORTANT: All text labels, step descriptions, numbered instructions, and any text in the image MUST be written in English.";
 
+    const stepLabel = isFrench ? "Étape" : "Step";
     const responseLanguageInstruction = isFrench
-      ? "Respond with step-by-step taping instructions entirely in French. Each step should be a clear, concise instruction."
-      : "Respond with step-by-step taping instructions entirely in English. Each step should be a clear, concise instruction.";
+      ? `Dans le texte de ta réponse, fournis des consignes de taping numérotées et détaillées en français, sous la forme:\n${stepLabel} 1 : ...\n${stepLabel} 2 : ...\netc.\nChaque étape doit être claire, concise et actionnable pour un praticien.`
+      : `In the text of your response, provide numbered, detailed taping instructions in English, in the form:\n${stepLabel} 1: ...\n${stepLabel} 2: ...\netc.\nEach step must be clear, concise and actionable for a practitioner.`;
 
     const prompt = `Generate a clean, professional medical illustration showing how to apply ${tapingType} taping/strapping on a ${bodyPart} for ${injuryType || "injury rehabilitation"}. 
 Phase context: ${phaseDescription || "rehabilitation"}.
