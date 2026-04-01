@@ -242,8 +242,15 @@ export function BowlingCumulativeStats({ categoryId }: BowlingCumulativeStatsPro
                 <Card className="bg-gradient-to-br from-amber-500/10 to-amber-500/5">
                   <CardContent className="pt-4 pb-3">
                     <div className="text-center">
-                      <p className={`text-3xl font-bold ${getStatTextColor("strike", cumulativeStats.avgStrikeRate)}`}>{cumulativeStats.avgStrikeRate.toFixed(1)}%</p>
-                      <p className="text-xs text-muted-foreground">% Strike</p>
+                      {(() => {
+                        const color = getStatColor("strike", cumulativeStats.avgStrikeRate);
+                        return (
+                          <p className={`text-3xl font-bold px-2 py-1 rounded-md inline-block ${color.bg} text-white`}>
+                            {cumulativeStats.avgStrikeRate.toFixed(1)}%
+                          </p>
+                        );
+                      })()}
+                      <p className="text-xs text-muted-foreground mt-1">% Strike</p>
                     </div>
                   </CardContent>
                 </Card>
