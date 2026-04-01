@@ -18,6 +18,7 @@ export type SportType =
   | "padel"
   | "natation"
   | "ski"
+  | "surf"
   | "triathlon"
   | "tennis"
   | "football_club"
