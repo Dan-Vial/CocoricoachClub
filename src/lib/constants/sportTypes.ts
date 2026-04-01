@@ -101,7 +101,7 @@ export const MAIN_SPORTS: MainSportOption[] = [
   { value: "tennis", label: "Tennis" },
   { value: "padel", label: "Padel" },
   { value: "natation", label: "Natation" },
-  { value: "ski", label: "Sports de Glisse (Ski / Snow)" },
+  { value: "ski", label: "Sports de Glisse (Ski / Snow / Surf)" },
   { value: "triathlon", label: "Triathlon" },
   { value: "judo", label: "Judo" },
   { value: "bowling", label: "Bowling" },
