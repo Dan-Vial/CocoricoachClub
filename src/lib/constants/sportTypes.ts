@@ -324,7 +324,7 @@ export const NATATION_SPECIALTIES: Record<string, SpecialtyOption[]> = {
   ],
 };
 
-// Disciplines for Sports de Glisse (Ski/Snow)
+// Disciplines for Sports de Glisse (Ski/Snow/Surf)
 export const SKI_DISCIPLINES: PlayerAttributeOption[] = [
   // Ski Alpin
   { value: "ski_descente", label: "Ski Alpin - Descente" },
@@ -354,6 +354,12 @@ export const SKI_DISCIPLINES: PlayerAttributeOption[] = [
   { value: "ski_saut", label: "Saut à ski" },
   // Combiné nordique
   { value: "ski_combine_nordique", label: "Combiné nordique" },
+  // Surf
+  { value: "surf_shortboard", label: "Surf - Shortboard" },
+  { value: "surf_longboard", label: "Surf - Longboard" },
+  { value: "surf_bodyboard", label: "Surf - Bodyboard" },
+  { value: "surf_big_wave", label: "Surf - Big Wave" },
+  { value: "surf_sup", label: "Surf - Stand Up Paddle (SUP)" },
 ];
 
 // Disciplines for Triathlon
