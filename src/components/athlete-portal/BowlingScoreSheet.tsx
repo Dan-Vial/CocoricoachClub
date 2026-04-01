@@ -889,7 +889,7 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, c
             <StatBox 
               label="% Strikes" 
               value={`${stats.strikePercentage}%`}
-              detail={`${stats.strikes} strikes`}
+              detail={`${stats.strikes}/${stats.totalFrames} frames`}
               bgColorClass={getStatColor("strike", stats.strikePercentage).bg}
             />
             <StatBox 
