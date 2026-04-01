@@ -236,7 +236,7 @@ export function SkiConditionsForm({ matchId, trainingSessionId, categoryId, isVi
         notes: notes || null,
       };
       if (existing) {
-        const { error } = await supabase.from("ski_conditions" as any).update(payload).eq("id", existing.id);
+        const { error } = await supabase.from("ski_conditions").update(payload).eq("id", existing.id);
         if (error) throw error;
       } else {
         const { error } = await supabase.from("ski_conditions" as any).insert(payload);
