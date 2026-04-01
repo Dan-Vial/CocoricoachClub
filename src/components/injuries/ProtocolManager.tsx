@@ -453,6 +453,7 @@ export function ProtocolManager({ categoryId }: ProtocolManagerProps) {
       care_instructions: [],
       taping_instructions: [],
       taping_diagram_url: null,
+      linked_program_id: null,
       exercises: [],
     }]);
   };
