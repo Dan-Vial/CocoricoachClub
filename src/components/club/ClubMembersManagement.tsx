@@ -78,6 +78,13 @@ export function ClubMembersManagement({ clubId, categories, canManage }: ClubMem
   const { data: members = [], isLoading } = useQuery({
     queryKey: ["club-members-full", clubId],
     queryFn: async () => {
+      // First get the club to know the owner
+      const { data: clubData } = await supabase
+        .from("clubs")
+        .select("user_id")
+        .eq("id", clubId)
+        .single();
+
       const { data, error } = await supabase
         .from("club_members")
         .select("*")
@@ -85,15 +92,20 @@ export function ClubMembersManagement({ clubId, categories, canManage }: ClubMem
         .order("created_at", { ascending: false });
       if (error) throw error;
 
-      if (data && data.length > 0) {
-        const userIds = data.map((m: any) => m.user_id);
+      // Filter out the owner (shown separately)
+      const filteredData = (data || []).filter(
+        (m: any) => m.user_id !== clubData?.user_id
+      );
+
+      if (filteredData.length > 0) {
+        const userIds = filteredData.map((m: any) => m.user_id);
         const { data: profiles } = await supabase
           .from("profiles")
           .select("id, email, full_name")
           .in("id", userIds);
 
         // Count how many categories each member has access to
-        return data.map((member: any) => {
+        return filteredData.map((member: any) => {
           const assignedCount = member.assigned_categories?.length || 0;
           const totalCategories = categories.length;
           const accessibleCategories = assignedCount === 0 ? totalCategories : assignedCount;
@@ -106,7 +118,7 @@ export function ClubMembersManagement({ clubId, categories, canManage }: ClubMem
         });
       }
 
-      return data;
+      return filteredData;
     },
   });
 
