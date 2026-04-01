@@ -101,6 +101,7 @@ export function AddMatchCalendarDialog({
   
   const baseSport = sportType.split('_')[0].toLowerCase();
   const ageCategories = AGE_CATEGORIES[baseSport] || AGE_CATEGORIES.default;
+  const [opponent, setOpponent] = useState("");
   const [competition, setCompetition] = useState("");
   const [customCompetition, setCustomCompetition] = useState("");
   const [competitionStage, setCompetitionStage] = useState("");
