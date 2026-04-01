@@ -99,15 +99,17 @@ export function BulkAddPlayersDialog({
   const isJudo = isJudoCategory(sportType);
   const isNatation = isNatationCategory(sportType);
   const isSki = isSkiCategory(sportType);
+  const isSurf = isSurfCategory(sportType);
   const isTriathlon = isTriathlonCategory(sportType);
   const isTeamSport = !isIndividualSport(sportType);
   const positions = getPositionsForSport(sportType);
-  const hasDisciplines = isAthletics || isNatation || isSki || isTriathlon;
+  const hasDisciplines = isAthletics || isNatation || isSki || isSurf || isTriathlon;
 
   const getDisciplineOptions = () => {
     if (isAthletics) return ATHLETISME_DISCIPLINES;
     if (isNatation) return NATATION_DISCIPLINES;
     if (isSki) return SKI_DISCIPLINES;
+    if (isSurf) return SURF_DISCIPLINES;
     if (isTriathlon) return TRIATHLON_DISCIPLINES;
     if (isJudo) return JUDO_WEIGHT_CATEGORIES.map(c => ({ value: c.value, label: c.label }));
     return [];
