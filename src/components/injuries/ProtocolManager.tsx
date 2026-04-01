@@ -771,16 +771,14 @@ export function ProtocolManager({ categoryId }: ProtocolManagerProps) {
                       className="text-sm"
                     />
                   </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">🏷️ Tape</Label>
-                    <Textarea
-                      value={(phase.taping_instructions || []).join('\n')}
-                      onChange={(e) => updatePhase(index, 'taping_instructions', e.target.value.split('\n').filter((c: string) => c.trim()))}
-                      placeholder="Tape de soutien..."
-                      rows={2}
-                      className="text-sm"
-                    />
-                  </div>
+                   <TapingDetailEditor
+                     tapingInstructions={phase.taping_instructions || []}
+                     tapingDiagramUrl={phase.taping_diagram_url}
+                     onInstructionsChange={(instructions) => updatePhase(index, 'taping_instructions', instructions)}
+                     onDiagramUrlChange={(url) => updatePhase(index, 'taping_diagram_url', url)}
+                     injuryType={protocolCategory}
+                     phaseDescription={phase.description}
+                   />
                   <ProtocolPhaseExercises
                     exercises={phase.exercises || []}
                     onChange={(exercises) => updatePhase(index, 'exercises', exercises)}
