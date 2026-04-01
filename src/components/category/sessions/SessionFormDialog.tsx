@@ -2749,7 +2749,7 @@ export function SessionFormDialog({
                   </Badge>
                 )}
               </TabsTrigger>
-              {!isAthleteMode && <TabsTrigger value="players">Joueurs</TabsTrigger>}
+              {!isAthleteMode && <TabsTrigger value="players">{isIndividualSport(sportType || "") ? "Athlètes" : "Joueurs"}</TabsTrigger>}
             </TabsList>
 
             <div className="flex-1 overflow-hidden mt-4">
