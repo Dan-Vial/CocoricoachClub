@@ -36,6 +36,7 @@ export interface BowlingStats {
   singlePinConverted: number;
   pocketCount: number;
   totalThrows: number;
+  totalFrames: number;
   strikePercentage: number;
   sparePercentage: number;
   splitPercentage: number;
