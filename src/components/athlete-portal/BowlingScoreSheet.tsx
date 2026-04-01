@@ -361,12 +361,12 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, c
     const totalScore = allFrames[9].cumulativeScore || 0;
 
     // First throw contexts count (for pocket %)
-    // Frames 1-9: 1 each = 9, plus up to 3 in 10th frame depending on strikes
+    // Frames 1-9: 1 each = 9, plus up to 3 in 10th frame depending on strikes/spares
     let pocketOpportunities = 9; // frames 1-9
     const tenthFrame = allFrames[9];
     pocketOpportunities++; // 1st throw of 10th
     if (tenthFrame.throws[0]?.value === "X") pocketOpportunities++; // 2nd throw after strike
-    if (tenthFrame.throws[1]?.value === "X") pocketOpportunities++; // 3rd throw after strike
+    if (tenthFrame.throws[1]?.value === "X" || tenthFrame.throws[1]?.value === "/") pocketOpportunities++; // 3rd throw after strike or spare
 
     // Calculate percentages
     const strikePercentage = (strikes / 12) * 100;
