@@ -149,7 +149,7 @@ export function PlayerSurfEquipment({ playerId, categoryId, isViewer }: PlayerSu
         const { error } = await supabase.from("player_surf_equipment").update(payload).eq("id", editingItem.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("player_surf_equipment" as any).insert(payload);
+        const { error } = await supabase.from("player_surf_equipment").insert(payload);
         if (error) throw error;
       }
     },
