@@ -42,6 +42,7 @@ import {
 import { INJURY_CATEGORIES } from "@/lib/constants/rugbyInjuries";
 import { ProtocolPhaseExercises, ProtocolExercise } from "./ProtocolPhaseExercises";
 import { TapingDetailEditor } from "./TapingDetailEditor";
+import { ProtocolPhaseProgramLink } from "./ProtocolPhaseProgramLink";
 
 interface ProtocolManagerProps {
   categoryId: string;
