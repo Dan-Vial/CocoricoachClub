@@ -34,6 +34,9 @@ interface ProgramBuilderDialogProps {
   programId?: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  rehabMode?: boolean;
+  rehabPhaseName?: string;
+  onProgramSaved?: (programId: string) => void;
 }
 
 interface DropSet {
