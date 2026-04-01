@@ -659,6 +659,37 @@ export const SNOWBOARD_STATS: StatField[] = [
   { key: "falls", label: "Chutes", shortLabel: "Chutes", category: "defense", type: "number" },
 ];
 
+// ==================== SURF STATS ====================
+export const SURF_STATS: StatField[] = [
+  // Scoring
+  { key: "heatScore", label: "Score du heat", shortLabel: "Score", category: "scoring", type: "number" },
+  { key: "ranking", label: "Classement", shortLabel: "Place", category: "scoring", type: "number" },
+  { key: "bestWaveScore", label: "Meilleure vague", shortLabel: "Best", category: "scoring", type: "number" },
+  { key: "secondBestWaveScore", label: "2e meilleure vague", shortLabel: "2nd", category: "scoring", type: "number" },
+  { key: "combinedScore", label: "Score combiné (2 meilleures)", shortLabel: "Combiné", category: "scoring", type: "number" },
+  // Attaque (manœuvres)
+  { key: "wavesRidden", label: "Vagues surfées", shortLabel: "Vagues", category: "attack", type: "number" },
+  { key: "wavesCaught", label: "Vagues prises", shortLabel: "Prises", category: "attack", type: "number" },
+  { key: "tubeRides", label: "Tubes", shortLabel: "Tubes", category: "attack", type: "number" },
+  { key: "aerials", label: "Aériens", shortLabel: "Aériens", category: "attack", type: "number" },
+  { key: "cutbacks", label: "Cutbacks", shortLabel: "Cutback", category: "attack", type: "number" },
+  { key: "carves", label: "Bottom/Top turns", shortLabel: "Turns", category: "attack", type: "number" },
+  { key: "snaps", label: "Snaps", shortLabel: "Snaps", category: "attack", type: "number" },
+  { key: "floaters", label: "Floaters", shortLabel: "Float", category: "attack", type: "number" },
+  // Défense / Conditions
+  { key: "interferencesCalled", label: "Interférences reçues", shortLabel: "Interf.", category: "defense", type: "number" },
+  { key: "priorityCalls", label: "Priorités obtenues", shortLabel: "Priorité", category: "defense", type: "number" },
+  { key: "falls", label: "Chutes", shortLabel: "Chutes", category: "defense", type: "number" },
+  { key: "paddleBackOuts", label: "Paddle-outs difficiles", shortLabel: "P.Out", category: "defense", type: "number" },
+  // Général / Conditions
+  { key: "heatDuration", label: "Durée du heat (min)", shortLabel: "Durée", category: "general", type: "number" },
+  { key: "waveHeight", label: "Taille vagues (m)", shortLabel: "Hauteur", category: "general", type: "number" },
+  { key: "windCondition", label: "Vent (1=offshore, 2=cross, 3=onshore)", shortLabel: "Vent", category: "general", type: "number" },
+  { key: "swellPeriod", label: "Période houle (sec)", shortLabel: "Période", category: "general", type: "number" },
+  { key: "waterTemp", label: "Temp. eau (°C)", shortLabel: "T°eau", category: "general", type: "number" },
+  { key: "heatResult", label: "Résultat (1=avance, 0=éliminé)", shortLabel: "Résultat", category: "general", type: "number", max: 1 },
+];
+
 // ==================== TRIATHLON STATS ====================
 export const TRIATHLON_STATS: StatField[] = [
   { key: "totalTime", label: "Temps total (min)", shortLabel: "Total", category: "scoring", type: "number" },
@@ -750,6 +781,7 @@ function getBaseSport(sportType: string): string {
 function getSkiStatsForDiscipline(discipline?: string): StatField[] {
   if (!discipline) return SKI_ALPIN_STATS;
   const d = discipline.toLowerCase();
+  if (d.includes("surf") || d.includes("bodyboard") || d.includes("sup") || d.includes("big_wave")) return SURF_STATS;
   if (d.includes("biathlon")) return SKI_BIATHLON_STATS;
   if (d.includes("fond") || d.includes("skiathlon") || d.includes("relais") || d.includes("sprint") && d.includes("fond")) return SKI_FOND_STATS;
   if (d.includes("freestyle") || d.includes("bosses") || d.includes("slopestyle") || d.includes("halfpipe") || d.includes("half-pipe") || d.includes("skicross")) return SKI_FREESTYLE_STATS;
