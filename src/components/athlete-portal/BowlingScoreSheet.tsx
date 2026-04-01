@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Target, TrendingUp, Save, X, CheckCircle, ChevronDown } from "lucide-react";
-import { getStatTextColor } from "@/lib/bowling/statColors";
+import { getStatTextColor, getStatColor } from "@/lib/bowling/statColors";
 
 export interface ThrowData {
   value: string; // "X", "/", "0"-"9", "-" (miss)
