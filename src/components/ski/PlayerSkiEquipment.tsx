@@ -110,7 +110,7 @@ export function PlayerSkiEquipment({ playerId, categoryId, isViewer }: PlayerSki
         notes: form.notes || null,
       };
       if (editingItem) {
-        const { error } = await supabase.from("player_ski_equipment" as any).update(payload).eq("id", editingItem.id);
+        const { error } = await supabase.from("player_ski_equipment").update(payload).eq("id", editingItem.id);
         if (error) throw error;
       } else {
         const { error } = await supabase.from("player_ski_equipment" as any).insert(payload);
