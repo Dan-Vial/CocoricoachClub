@@ -63,15 +63,28 @@ const TENNIS_FORMATS = [
   { value: "double_mixte", label: "Double Mixte" },
 ];
 
-// Age categories
-const AGE_CATEGORIES = [
-  { value: "U15", label: "U15 (Cadet)" },
-  { value: "U17", label: "U17 (Junior)" },
-  { value: "U19", label: "U19" },
-  { value: "U23", label: "U23 (Espoir)" },
-  { value: "senior", label: "Senior" },
-  { value: "master", label: "Master" },
-];
+// Age categories per sport
+const AGE_CATEGORIES: Record<string, { value: string; label: string }[]> = {
+  default: [
+    { value: "U15", label: "U15 (Cadet)" },
+    { value: "U17", label: "U17 (Junior)" },
+    { value: "U19", label: "U19" },
+    { value: "U23", label: "U23 (Espoir)" },
+    { value: "senior", label: "Senior" },
+    { value: "master", label: "Master" },
+  ],
+  surf: [
+    { value: "grom_u12", label: "Grom (U12)" },
+    { value: "benjamin_u14", label: "Benjamin (U14)" },
+    { value: "minime_u16", label: "Minime (U16)" },
+    { value: "cadet_u18", label: "Cadet (U18)" },
+    { value: "junior", label: "Junior" },
+    { value: "espoir", label: "Espoir" },
+    { value: "open", label: "Open" },
+    { value: "master", label: "Master" },
+    { value: "grand_master", label: "Grand Master" },
+  ],
+};
 
 export function AddMatchCalendarDialog({
   open,
@@ -82,9 +95,12 @@ export function AddMatchCalendarDialog({
 }: AddMatchCalendarDialogProps) {
   const competitions = getCompetitionsBySport(sportType);
   const isIndividual = isIndividualSport(sportType);
+  const isSurf = sportType.toLowerCase().includes("surf");
   const isAviron = sportType.toLowerCase().includes("aviron");
   const isTennis = sportType.toLowerCase().includes("tennis");
   
+  const baseSport = sportType.split('_')[0].toLowerCase();
+  const ageCategories = AGE_CATEGORIES[baseSport] || AGE_CATEGORIES.default;
   const [opponent, setOpponent] = useState("");
   const [competition, setCompetition] = useState("");
   const [customCompetition, setCustomCompetition] = useState("");
@@ -255,7 +271,7 @@ export function AddMatchCalendarDialog({
                   <SelectValue placeholder="Sélectionner une catégorie" />
                 </SelectTrigger>
                 <SelectContent>
-                  {AGE_CATEGORIES.map((cat) => (
+                  {ageCategories.map((cat) => (
                     <SelectItem key={cat.value} value={cat.value}>
                       {cat.label}
                     </SelectItem>
@@ -370,7 +386,7 @@ export function AddMatchCalendarDialog({
                 id="opponent"
                 value={opponent}
                 onChange={(e) => setOpponent(e.target.value)}
-                placeholder="Ex: Tournoi de Paris, Régates Nationales..."
+                placeholder={isSurf ? "Ex: Lacanau Pro, Biarritz Surf Festival..." : "Ex: Tournoi de Paris, Régates Nationales..."}
               />
             </div>
           )}
@@ -403,7 +419,7 @@ export function AddMatchCalendarDialog({
               id="location"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
-              placeholder={isAviron ? "Plan d'eau, bassin..." : isIndividual ? "Salle, bowling, dojo..." : "Stade, ville..."}
+              placeholder={isAviron ? "Plan d'eau, bassin..." : isSurf ? "Spot, plage..." : isIndividual ? "Salle, bowling, dojo..." : "Stade, ville..."}
             />
           </div>
 

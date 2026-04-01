@@ -952,6 +952,70 @@ export const TENNIS_STAGES: CompetitionStage[] = [
   { value: "finale", label: "Finale" },
 ];
 
+// Surf competitions
+export const SURF_COMPETITIONS: CompetitionCategory[] = [
+  {
+    label: "Circuits Professionnels",
+    options: [
+      "WSL Championship Tour (CT)",
+      "WSL Challenger Series (CS)",
+      "WSL Qualifying Series (QS)",
+      "WSL Big Wave Tour",
+      "WSL Longboard Tour",
+    ],
+  },
+  {
+    label: "Championnats Nationaux",
+    options: [
+      "Championnat de France",
+      "Coupe de France",
+      "Championnat Régional",
+      "Championnat Départemental",
+    ],
+  },
+  {
+    label: "Compétitions Internationales",
+    options: [
+      "ISA World Surfing Games",
+      "Jeux Olympiques",
+      "Championnats d'Europe",
+      "Pro Junior",
+    ],
+  },
+  {
+    label: "Compétitions Jeunes",
+    options: [
+      "Championnat de France Espoirs",
+      "Championnat de France Cadets",
+      "Coupe de France Jeunes",
+      "Grom Series",
+    ],
+  },
+  {
+    label: "Événements Locaux",
+    options: [
+      "Contest Club",
+      "Open Régional",
+      "Expression Session",
+      "Tow-in Session",
+    ],
+  },
+];
+
+// Surf competition stages
+export const SURF_STAGES: CompetitionStage[] = [
+  { value: "", label: "Aucune" },
+  { value: "round_1", label: "Round 1" },
+  { value: "round_2", label: "Round 2" },
+  { value: "round_3", label: "Round 3" },
+  { value: "round_4", label: "Round 4" },
+  { value: "round_5", label: "Round 5" },
+  { value: "huitiemes", label: "8èmes de finale" },
+  { value: "quarts", label: "Quarts de finale" },
+  { value: "demies", label: "Demi-finales" },
+  { value: "finale", label: "Finale" },
+];
+
 // Padel competitions
 export const PADEL_COMPETITIONS: CompetitionCategory[] = [
   {
@@ -1277,6 +1341,8 @@ export const getCompetitionsBySport = (sportType: string): CompetitionCategory[]
     case "ski":
     case "snow":
       return SKI_COMPETITIONS;
+    case "surf":
+      return SURF_COMPETITIONS;
     case "triathlon":
       return TRIATHLON_COMPETITIONS;
     default:
@@ -1393,6 +1459,8 @@ export const getCompetitionStagesBySport = (sportType: string): CompetitionStage
     case "ski":
     case "snow":
       return SKI_STAGES;
+    case "surf":
+      return SURF_STAGES;
     case "crossfit":
       return CROSSFIT_STAGES;
     case "triathlon":
@@ -1452,6 +1520,12 @@ export const getCompetitionStageLabel = (stage: string): string => {
     premier_tour: "1er tour",
     deuxieme_tour: "2ème tour",
     troisieme_tour: "3ème tour",
+    // Surf
+    round_1: "Round 1",
+    round_2: "Round 2",
+    round_3: "Round 3",
+    round_4: "Round 4",
+    round_5: "Round 5",
   };
   return allStages[stage] || stage;
 };
