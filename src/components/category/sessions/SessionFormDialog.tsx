@@ -81,7 +81,7 @@ import {
 } from "@/lib/constants/trainingStyles";
 import { SessionGpsImport, type GpsPlayerData } from "@/components/category/gps/SessionGpsImport";
 import { GpsObjectivesForm } from "@/components/category/gps/GpsObjectivesForm";
-import { isRugbyType, isSkiCategory, isSurfCategory } from "@/lib/constants/sportTypes";
+import { isRugbyType, isSkiCategory, isSurfCategory, isIndividualSport } from "@/lib/constants/sportTypes";
 import { SurfConditionsForm } from "@/components/surf/SurfConditionsForm";
 import { SkiConditionsForm } from "@/components/ski/SkiConditionsForm";
 import { SessionEquipmentSection } from "@/components/shared/SessionEquipmentSection";
@@ -2749,7 +2749,7 @@ export function SessionFormDialog({
                   </Badge>
                 )}
               </TabsTrigger>
-              {!isAthleteMode && <TabsTrigger value="players">Joueurs</TabsTrigger>}
+              {!isAthleteMode && <TabsTrigger value="players">{isIndividualSport(sportType || "") ? "Athlètes" : "Joueurs"}</TabsTrigger>}
             </TabsList>
 
             <div className="flex-1 overflow-hidden mt-4">
