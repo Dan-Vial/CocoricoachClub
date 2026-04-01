@@ -779,11 +779,17 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, c
           </div>
 
           {/* Total Score Display */}
-          <div className="mt-4 flex items-center justify-center">
+          <div className="mt-4 flex items-center justify-center gap-4">
             <div className="bg-primary/10 rounded-xl px-8 py-4 border border-primary/20">
               <div className="text-center">
                 <div className="text-sm text-muted-foreground font-medium">Score Total</div>
                 <div className="text-4xl font-bold text-primary">{stats.totalScore}</div>
+              </div>
+            </div>
+            <div className="bg-muted rounded-xl px-4 py-4 border border-border">
+              <div className="text-center">
+                <div className="text-sm text-muted-foreground font-medium">Frames</div>
+                <div className="text-2xl font-bold text-foreground">{stats.totalFrames}</div>
               </div>
             </div>
           </div>
