@@ -1161,6 +1161,17 @@ export function getCompetitionPhasesForSport(sportType: string): { value: string
     ];
   }
 
+  if (baseSport === "surf") {
+    return [
+      { value: "round_1", label: "Round 1" },
+      { value: "round_2", label: "Round 2" },
+      { value: "round_3", label: "Round 3" },
+      { value: "quarts", label: "Quarts de finale" },
+      { value: "demies", label: "Demi-finales" },
+      { value: "finale", label: "Finale" },
+    ];
+  }
+
   if (baseSport === "triathlon") {
     return [
       { value: "course", label: "Course" },
