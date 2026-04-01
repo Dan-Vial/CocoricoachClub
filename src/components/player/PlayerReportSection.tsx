@@ -1703,6 +1703,112 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
         });
       }
 
+      // ===== FEUILLE STATS ENTRAÎNEMENT =====
+      if (selectedSections.includes("training_stats")) {
+        const allTrainingExercises: { exercise: string; date: string; attempts: number; successes: number; rate: number }[] = [];
+
+        (data.bowlingSpareTraining || []).forEach((t: any) => {
+          allTrainingExercises.push({ exercise: t.exercise_type || '-', date: t.session_date, attempts: t.attempts || 0, successes: t.successes || 0, rate: t.success_rate || 0 });
+        });
+        (data.tennisDrillTraining || []).forEach((t: any) => {
+          allTrainingExercises.push({ exercise: t.exercise_type || '-', date: t.session_date, attempts: t.attempts || 0, successes: t.successes || 0, rate: t.success_rate || 0 });
+        });
+        (data.precisionTraining || []).forEach((t: any) => {
+          allTrainingExercises.push({ exercise: t.exercise_label || '-', date: t.session_date, attempts: t.attempts || 0, successes: t.successes || 0, rate: t.success_rate || 0 });
+        });
+
+        if (allTrainingExercises.length > 0) {
+          const sheet = workbook.addWorksheet('Stats Entraînement');
+          let rowIdx = addSheetHeader(sheet, 'STATISTIQUES ENTRAÎNEMENT');
+
+          // Cumulative summary section
+          const exerciseTotals = new Map<string, { attempts: number; successes: number }>();
+          allTrainingExercises.forEach(t => {
+            const existing = exerciseTotals.get(t.exercise) || { attempts: 0, successes: 0 };
+            existing.attempts += t.attempts;
+            existing.successes += t.successes;
+            exerciseTotals.set(t.exercise, existing);
+          });
+
+          // Summary header
+          const summRow = sheet.getRow(rowIdx);
+          summRow.getCell(1).value = 'RÉSUMÉ CUMULÉ';
+          summRow.getCell(1).font = { bold: true, size: 11, color: { argb: 'FF224378' } };
+          rowIdx++;
+
+          const summHeaders = ['Exercice', 'Tentatives', 'Réussites', '% Réussite'];
+          sheet.columns = [{ width: 30 }, { width: 14 }, { width: 14 }, { width: 14 }, { width: 14 }];
+          const shRow = sheet.getRow(rowIdx);
+          summHeaders.forEach((h, i) => { shRow.getCell(i + 1).value = h; });
+          styleHeaderRow(sheet, rowIdx, summHeaders.length);
+          rowIdx++;
+
+          exerciseTotals.forEach((totals, exercise) => {
+            const row = sheet.getRow(rowIdx);
+            const rate = totals.attempts > 0 ? Math.round((totals.successes / totals.attempts) * 10000) / 100 : 0;
+            row.getCell(1).value = exercise;
+            row.getCell(2).value = totals.attempts;
+            row.getCell(3).value = totals.successes;
+            row.getCell(4).value = rate;
+            row.getCell(4).numFmt = '0.0"%"';
+            row.getCell(4).font = { bold: true, color: { argb: rate >= 70 ? 'FF27AE60' : rate >= 40 ? 'FFEAB308' : 'FFEF4444' } };
+            if (rowIdx % 2 === 0) {
+              for (let i = 1; i <= 4; i++) {
+                row.getCell(i).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
+              }
+            }
+            rowIdx++;
+          });
+
+          // Overall total
+          const totalAttempts = allTrainingExercises.reduce((sum, t) => sum + t.attempts, 0);
+          const totalSuccesses = allTrainingExercises.reduce((sum, t) => sum + t.successes, 0);
+          const overallRate = totalAttempts > 0 ? Math.round((totalSuccesses / totalAttempts) * 10000) / 100 : 0;
+          rowIdx++;
+          const totRow = sheet.getRow(rowIdx);
+          totRow.getCell(1).value = 'TOTAL';
+          totRow.getCell(1).font = { bold: true, color: { argb: 'FF224378' } };
+          totRow.getCell(2).value = totalAttempts;
+          totRow.getCell(2).font = { bold: true };
+          totRow.getCell(3).value = totalSuccesses;
+          totRow.getCell(3).font = { bold: true };
+          totRow.getCell(4).value = overallRate;
+          totRow.getCell(4).font = { bold: true, size: 12, color: { argb: overallRate >= 70 ? 'FF27AE60' : 'FFEAB308' } };
+          for (let i = 1; i <= 4; i++) {
+            totRow.getCell(i).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2E8F0' } };
+          }
+          rowIdx += 2;
+
+          // Detail section
+          const detailTitleRow = sheet.getRow(rowIdx);
+          detailTitleRow.getCell(1).value = 'DÉTAIL PAR SESSION';
+          detailTitleRow.getCell(1).font = { bold: true, size: 11, color: { argb: 'FF224378' } };
+          rowIdx++;
+
+          const detailHeaders = ['Date', 'Exercice', 'Tentatives', 'Réussites', '% Réussite'];
+          const dhRow = sheet.getRow(rowIdx);
+          detailHeaders.forEach((h, i) => { dhRow.getCell(i + 1).value = h; });
+          styleHeaderRow(sheet, rowIdx, detailHeaders.length);
+          rowIdx++;
+
+          allTrainingExercises.forEach((t) => {
+            const row = sheet.getRow(rowIdx);
+            row.getCell(1).value = t.date ? format(new Date(t.date), "dd/MM/yyyy") : '-';
+            row.getCell(2).value = t.exercise;
+            row.getCell(3).value = t.attempts;
+            row.getCell(4).value = t.successes;
+            row.getCell(5).value = t.rate;
+            row.getCell(5).font = { color: { argb: t.rate >= 70 ? 'FF27AE60' : t.rate >= 40 ? 'FFEAB308' : 'FFEF4444' } };
+            if (rowIdx % 2 === 0) {
+              for (let i = 1; i <= 5; i++) {
+                row.getCell(i).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
+              }
+            }
+            rowIdx++;
+          });
+        }
+      }
+
       // ===== FEUILLE BLESSURES =====
       if (data.injuries.length > 0) {
         const sheet = workbook.addWorksheet('Blessures');
