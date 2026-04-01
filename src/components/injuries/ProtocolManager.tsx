@@ -447,6 +447,7 @@ export function ProtocolManager({ categoryId }: ProtocolManagerProps) {
       exit_criteria: [],
       care_instructions: [],
       taping_instructions: [],
+      taping_diagram_url: null,
       exercises: [],
     }]);
   };
