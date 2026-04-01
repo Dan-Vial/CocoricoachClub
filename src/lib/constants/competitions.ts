@@ -1459,6 +1459,8 @@ export const getCompetitionStagesBySport = (sportType: string): CompetitionStage
     case "ski":
     case "snow":
       return SKI_STAGES;
+    case "surf":
+      return SURF_STAGES;
     case "crossfit":
       return CROSSFIT_STAGES;
     case "triathlon":
