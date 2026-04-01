@@ -16,7 +16,7 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const { bodyPart, injuryType, tapingType, phaseDescription } = await req.json();
+    const { bodyPart, injuryType, tapingType, phaseDescription, language } = await req.json();
 
     if (!bodyPart || !tapingType) {
       return new Response(
@@ -24,6 +24,18 @@ serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    // Determine language for instructions
+    const lang = (language || "fr").toLowerCase();
+    const isFrench = lang.startsWith("fr");
+
+    const languageInstruction = isFrench
+      ? "IMPORTANT: All text labels, step descriptions, numbered instructions, and any text in the image MUST be written in French."
+      : "IMPORTANT: All text labels, step descriptions, numbered instructions, and any text in the image MUST be written in English.";
+
+    const responseLanguageInstruction = isFrench
+      ? "Respond with step-by-step taping instructions entirely in French. Each step should be a clear, concise instruction."
+      : "Respond with step-by-step taping instructions entirely in English. Each step should be a clear, concise instruction.";
 
     const prompt = `Generate a clean, professional medical illustration showing how to apply ${tapingType} taping/strapping on a ${bodyPart} for ${injuryType || "injury rehabilitation"}. 
 Phase context: ${phaseDescription || "rehabilitation"}.
@@ -34,7 +46,10 @@ The illustration should be:
 - Show the body part from the most useful angle for tape application
 - Professional medical illustration style, not cartoonish
 - Include numbered steps if multiple tape strips are needed
-- Clean, minimal style suitable for medical/sports rehabilitation documentation`;
+- Clean, minimal style suitable for medical/sports rehabilitation documentation
+${languageInstruction}
+
+${responseLanguageInstruction}`;
 
     const response = await fetch(
       "https://ai.gateway.lovable.dev/v1/chat/completions",
