@@ -622,7 +622,7 @@ export const getMainSportFromType = (type: string): MainSportCategory => {
 export const isIndividualSport = (type: string): boolean => {
   const individualSports = [
     "judo", "bowling", "aviron", "athletisme", "crossfit",
-    "padel", "natation", "ski", "triathlon", "tennis",
+    "padel", "natation", "ski", "surf", "triathlon", "tennis",
     "judo_club", "judo_academie", "judo_national",
     "bowling_club", "bowling_academie", "bowling_national",
     "aviron_club", "aviron_academie", "aviron_national",
