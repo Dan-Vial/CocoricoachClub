@@ -107,6 +107,7 @@ function PlayerDetailsContent() {
   const isBowling = sportType.toLowerCase().includes("bowling");
   const isSurf = sportType.toLowerCase().includes("surf");
   const isSki = isSkiCategory(sportType);
+  const isPadel = isPadelCategory(sportType);
   const positions = getPositionsForSport(sportType);
 
   // Get display label for discipline/position/role
