@@ -57,7 +57,6 @@ export function BowlingGameHistory({ games, categoryId }: BowlingGameHistoryProp
     );
   }
 
-  // Group games by match (competition)
   const groupedByMatch = games.reduce<Record<string, { matchDate: string; opponent: string; games: BowlingGameData[] }>>((acc, game) => {
     if (!acc[game.matchId]) {
       acc[game.matchId] = { matchDate: game.matchDate, opponent: game.matchOpponent, games: [] };
@@ -140,7 +139,7 @@ export function BowlingGameHistory({ games, categoryId }: BowlingGameHistoryProp
         })}
       </div>
 
-      {/* Read-only score sheet dialog */}
+      {/* Read-only score sheet dialog - interactive for viewing details */}
       <Dialog open={!!viewingGame} onOpenChange={(open) => !open && setViewingGame(null)}>
         <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -151,13 +150,12 @@ export function BowlingGameHistory({ games, categoryId }: BowlingGameHistoryProp
             </DialogTitle>
           </DialogHeader>
           {viewingGame?.frames && (
-            <div className="pointer-events-none opacity-90">
-              <BowlingScoreSheet
-                initialFrames={viewingGame.frames}
-                onSave={() => {}}
-                onCancel={() => {}}
-              />
-            </div>
+            <BowlingScoreSheet
+              initialFrames={viewingGame.frames}
+              onSave={() => {}}
+              onCancel={() => setViewingGame(null)}
+              readOnly
+            />
           )}
         </DialogContent>
       </Dialog>

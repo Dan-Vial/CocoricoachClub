@@ -361,23 +361,25 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, c
     const totalScore = allFrames[9].cumulativeScore || 0;
 
     // First throw contexts count (for pocket %)
-    // Frames 1-9: 1 each = 9, plus up to 3 in 10th frame depending on strikes
+    // Frames 1-9: 1 each = 9, plus up to 3 in 10th frame depending on strikes/spares
     let pocketOpportunities = 9; // frames 1-9
     const tenthFrame = allFrames[9];
     pocketOpportunities++; // 1st throw of 10th
     if (tenthFrame.throws[0]?.value === "X") pocketOpportunities++; // 2nd throw after strike
-    if (tenthFrame.throws[1]?.value === "X") pocketOpportunities++; // 3rd throw after strike
+    if (tenthFrame.throws[1]?.value === "X" || tenthFrame.throws[1]?.value === "/") pocketOpportunities++; // 3rd throw after strike or spare
 
     // Calculate percentages
     const strikePercentage = (strikes / 12) * 100;
     
-    // Spare % = spares réussis / opportunités de spare (frames 1-9 sans strike)
-    // Une opportunité de spare = une frame (1-9) où le 1er lancer n'est PAS un strike
+    // Spare % = spares réussis / opportunités de spare (frames sans strike)
+    // Un split fermé COMPTE comme spare. Un split non fermé N'EST PAS une opportunité de spare.
     let spareOpportunities = 0;
     let sparesConverted = 0;
     for (let i = 0; i < 9; i++) {
       const f = allFrames[i];
       if (f.throws.length === 0 || f.throws[0].value === "" || f.throws[0].value === "X") continue;
+      // Si c'est un split non converti, ne pas compter comme opportunité de spare
+      if (f.throws[0].isSplit && f.throws[1]?.value !== "/") continue;
       spareOpportunities++;
       if (f.throws[1]?.value === "/") {
         sparesConverted++;

@@ -6,9 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { ColoredSubTabsList, ColoredSubTabsTrigger } from "@/components/ui/colored-subtabs";
-import { BarChart3, Trophy, Target, TrendingUp, Eye, Calendar, ChevronDown, ChevronUp } from "lucide-react";
-import { format } from "date-fns";
-import { fr } from "date-fns/locale";
+import { BarChart3, Trophy, Target, TrendingUp, Calendar } from "lucide-react";
 import { BowlingFrameAnalysis } from "./BowlingFrameAnalysis";
 import { BowlingGameHistory } from "./BowlingGameHistory";
 import { getStatColor } from "@/lib/bowling/statColors";
@@ -43,14 +41,30 @@ interface BowlingGameData {
   frames?: FrameData[];
 }
 
+function ColoredStatRow({ label, value, statType, percentage }: { label: string; value: string; statType?: "pocket" | "strike" | "spare" | "singlePin" | "firstBallGte8"; percentage?: number }) {
+  if (statType && percentage !== undefined) {
+    const color = getStatColor(statType, percentage);
+    return (
+      <div className="flex justify-between items-center">
+        <span className="text-sm text-muted-foreground">{label}</span>
+        <span className={`font-bold px-2.5 py-0.5 rounded ${color.bg} text-white text-sm`}>{value}</span>
+      </div>
+    );
+  }
+  return (
+    <div className="flex justify-between items-center">
+      <span className="text-sm text-muted-foreground">{label}</span>
+      <span className="font-bold text-sm">{value}</span>
+    </div>
+  );
+}
+
 export function BowlingCumulativeStats({ categoryId }: BowlingCumulativeStatsProps) {
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
 
-  // Fetch all bowling games from competition_rounds + competition_round_stats
   const { data: allGames, isLoading } = useQuery({
     queryKey: ["bowling_cumulative_stats", categoryId],
     queryFn: async () => {
-      // Get all matches for this category
       const { data: matches, error: matchError } = await supabase
         .from("matches")
         .select("id, match_date, opponent")
@@ -62,7 +76,6 @@ export function BowlingCumulativeStats({ categoryId }: BowlingCumulativeStatsPro
       const matchIds = matches.map(m => m.id);
       const matchMap = Object.fromEntries(matches.map(m => [m.id, m]));
 
-      // Get all competition rounds with stats
       const { data: rounds, error: roundError } = await supabase
         .from("competition_rounds")
         .select("*, competition_round_stats(*), players(id, name, first_name)")
@@ -78,7 +91,6 @@ export function BowlingCumulativeStats({ categoryId }: BowlingCumulativeStatsPro
         const statData = (round.competition_round_stats as any[])?.[0]?.stat_data as Record<string, any> || {};
         const bowlingFrames = statData.bowlingFrames as FrameData[] | undefined;
 
-        // Only include rounds that have bowling stats (gameScore exists)
         if (statData.gameScore !== undefined || bowlingFrames) {
           games.push({
             roundId: round.id,
@@ -111,7 +123,6 @@ export function BowlingCumulativeStats({ categoryId }: BowlingCumulativeStatsPro
     },
   });
 
-  // Get unique players
   const players = useMemo(() => {
     if (!allGames) return [];
     const map = new Map<string, string>();
@@ -119,14 +130,12 @@ export function BowlingCumulativeStats({ categoryId }: BowlingCumulativeStatsPro
     return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
   }, [allGames]);
 
-  // Auto-select first player
   const activePlayerId = selectedPlayerId || players[0]?.id;
   const playerGames = useMemo(() => {
     if (!allGames || !activePlayerId) return [];
     return allGames.filter(g => g.playerId === activePlayerId);
   }, [allGames, activePlayerId]);
 
-  // Compute cumulative stats for selected player
   const cumulativeStats = useMemo(() => {
     if (playerGames.length === 0) return null;
     const totalGames = playerGames.length;
@@ -144,13 +153,18 @@ export function BowlingCumulativeStats({ categoryId }: BowlingCumulativeStatsPro
     const avgScore = totalScore / totalGames;
     const avgStrikeRate = playerGames.reduce((s, g) => s + g.strikePercentage, 0) / totalGames;
     const avgSpareRate = playerGames.reduce((s, g) => s + g.sparePercentage, 0) / totalGames;
+    const avgPocketRate = playerGames.reduce((s, g) => s + g.pocketPercentage, 0) / totalGames;
+    // Total frames = 10 per game (simplified)
+    const totalFrames = totalGames * 10;
+    const openFramePercentage = totalFrames > 0 ? (totalOpenFrames / totalFrames) * 100 : 0;
 
     return {
       totalGames, totalScore, highGame, lowGame, avgScore,
       totalStrikes, totalSpares, totalOpenFrames,
       totalSplits, totalSplitsConverted,
       totalPocket, totalSinglePin, totalSinglePinConverted,
-      avgStrikeRate, avgSpareRate,
+      avgStrikeRate, avgSpareRate, avgPocketRate,
+      openFramePercentage,
       splitConversionRate: totalSplits > 0 ? (totalSplitsConverted / totalSplits) * 100 : 0,
       singlePinConversionRate: totalSinglePin > 0 ? (totalSinglePinConverted / totalSinglePin) * 100 : 0,
     };
@@ -231,128 +245,52 @@ export function BowlingCumulativeStats({ categoryId }: BowlingCumulativeStatsPro
                     </div>
                   </CardContent>
                 </Card>
-                <Card className="bg-gradient-to-br from-green-500/10 to-green-500/5">
+                <Card className="bg-gradient-to-br from-primary/10 to-primary/5">
                   <CardContent className="pt-4 pb-3">
                     <div className="text-center">
-                      <p className="text-3xl font-bold text-green-600">{cumulativeStats.highGame}</p>
+                      <p className="text-3xl font-bold text-primary">{cumulativeStats.highGame}</p>
                       <p className="text-xs text-muted-foreground">High Game</p>
                     </div>
                   </CardContent>
                 </Card>
-                <Card className="bg-gradient-to-br from-amber-500/10 to-amber-500/5">
+                <Card className="bg-gradient-to-br from-primary/10 to-primary/5">
                   <CardContent className="pt-4 pb-3">
                     <div className="text-center">
-                      {(() => {
-                        const color = getStatColor("strike", cumulativeStats.avgStrikeRate);
-                        return (
-                          <p className={`text-3xl font-bold px-2 py-1 rounded-md inline-block ${color.bg} text-white`}>
-                            {cumulativeStats.avgStrikeRate.toFixed(1)}%
-                          </p>
-                        );
-                      })()}
-                      <p className="text-xs text-muted-foreground mt-1">% Strike</p>
+                      <p className="text-3xl font-bold text-destructive">{cumulativeStats.lowGame}</p>
+                      <p className="text-xs text-muted-foreground">Low Game</p>
                     </div>
                   </CardContent>
                 </Card>
               </div>
 
-              {/* Detailed stats */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Strikes & Spares */}
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm flex items-center gap-2">
-                      <Trophy className="h-4 w-4 text-amber-500" />
-                      Strikes & Spares
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Strikes totaux</span>
-                      <span className="font-bold">{cumulativeStats.totalStrikes}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">% Strike moyen</span>
-                      {(() => {
-                        const color = getStatColor("strike", cumulativeStats.avgStrikeRate);
-                        return <span className={`font-bold px-2 py-0.5 rounded ${color.bg} text-white`}>{cumulativeStats.avgStrikeRate.toFixed(1)}%</span>;
-                      })()}
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Spares totaux</span>
-                      <span className="font-bold">{cumulativeStats.totalSpares}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">% Spare moyen</span>
-                      {(() => {
-                        const color = getStatColor("spare", cumulativeStats.avgSpareRate);
-                        return <span className={`font-bold px-2 py-0.5 rounded ${color.bg} text-white`}>{cumulativeStats.avgSpareRate.toFixed(1)}%</span>;
-                      })()}
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Open Frames totaux</span>
-                      <span className="font-bold">{cumulativeStats.totalOpenFrames}</span>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Splits & Precision */}
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm flex items-center gap-2">
-                      <Target className="h-4 w-4 text-orange-500" />
-                      Splits & Précision
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Splits totaux</span>
-                      <span className="font-bold">{cumulativeStats.totalSplits}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Splits convertis</span>
-                      <span className="font-bold">{cumulativeStats.totalSplitsConverted}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">% Conversion splits</span>
-                      <span className="font-bold">{cumulativeStats.splitConversionRate.toFixed(1)}%</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Pocket count</span>
-                      <span className="font-bold">{cumulativeStats.totalPocket}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">% Single pin conv.</span>
-                      {(() => {
-                        const color = getStatColor("singlePin", cumulativeStats.singlePinConversionRate);
-                        return <span className={`font-bold px-2 py-0.5 rounded ${color.bg} text-white`}>{cumulativeStats.singlePinConversionRate.toFixed(1)}%</span>;
-                      })()}
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Score range */}
+              {/* All stats in one card */}
               <Card>
-                <CardContent className="pt-4">
-                  <div className="grid grid-cols-3 gap-4 text-center">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Low Game</p>
-                      <p className="text-2xl font-bold text-destructive">{cumulativeStats.lowGame}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Moyenne</p>
-                      <p className="text-2xl font-bold">{cumulativeStats.avgScore.toFixed(1)}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">High Game</p>
-                      <p className="text-2xl font-bold text-green-600">{cumulativeStats.highGame}</p>
-                    </div>
-                  </div>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <Trophy className="h-4 w-4 text-amber-500" />
+                    Statistiques détaillées
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {/* Percentages first */}
+                  <ColoredStatRow label="% Strikes" value={`${cumulativeStats.avgStrikeRate.toFixed(1)}%`} statType="strike" percentage={cumulativeStats.avgStrikeRate} />
+                  <ColoredStatRow label="% Spares" value={`${cumulativeStats.avgSpareRate.toFixed(1)}%`} statType="spare" percentage={cumulativeStats.avgSpareRate} />
+                  <ColoredStatRow label="% Poches" value={`${cumulativeStats.avgPocketRate.toFixed(1)}%`} statType="pocket" percentage={cumulativeStats.avgPocketRate} />
+                  <ColoredStatRow label="% Quilles seules" value={`${cumulativeStats.singlePinConversionRate.toFixed(1)}%`} statType="singlePin" percentage={cumulativeStats.singlePinConversionRate} />
+                  <ColoredStatRow label="% Conversion splits" value={`${cumulativeStats.splitConversionRate.toFixed(1)}%`} />
+                  <ColoredStatRow label="% Frames non fermées" value={`${cumulativeStats.openFramePercentage.toFixed(1)}%`} />
+                  
+                  <div className="border-t pt-3 mt-3" />
+                  
+                  {/* Counts */}
+                  <ColoredStatRow label="Nombre de strikes total" value={String(cumulativeStats.totalStrikes)} />
+                  <ColoredStatRow label="Nombre de spares total" value={String(cumulativeStats.totalSpares)} />
+                  <ColoredStatRow label="Nombre de splits" value={String(cumulativeStats.totalSplits)} />
+                  <ColoredStatRow label="Nombre de frames non fermées" value={String(cumulativeStats.totalOpenFrames)} />
                 </CardContent>
               </Card>
 
-              {/* Evolution chart - score per game */}
+              {/* Evolution chart */}
               {playerGames.length >= 2 && (
                 <Card>
                   <CardHeader className="pb-2">
@@ -363,21 +301,19 @@ export function BowlingCumulativeStats({ categoryId }: BowlingCumulativeStatsPro
                   </CardHeader>
                   <CardContent>
                     <div className="flex items-end justify-center gap-[3px] h-40">
-                      {playerGames.map((game, i) => {
-                        // Use min 100 as baseline so differences are visible
+                      {playerGames.map((game) => {
                         const minBase = 100;
                         const maxScore = Math.max(...playerGames.map(g => g.score), 300);
                         const range = maxScore - minBase;
                         const clampedScore = Math.max(game.score, minBase);
                         const height = range > 0 ? ((clampedScore - minBase) / range) * 100 : 50;
                         
-                        // Color by score range
                         const getBarColor = (score: number) => {
-                          if (score >= 240) return "bg-yellow-400"; // Gold
-                          if (score >= 210) return "bg-green-400"; // Green flash
-                          if (score >= 180) return "bg-green-600"; // Green
-                          if (score >= 151) return "bg-orange-500"; // Orange
-                          return "bg-red-500"; // Red
+                          if (score >= 240) return "bg-yellow-400";
+                          if (score >= 210) return "bg-green-400";
+                          if (score >= 180) return "bg-green-600";
+                          if (score >= 151) return "bg-orange-500";
+                          return "bg-red-500";
                         };
                         
                         return (
