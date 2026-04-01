@@ -31,6 +31,7 @@ import { PlayerAdditionalInfoSection } from "@/components/player/PlayerAdditiona
 import { PlayerPersonalInfoSection } from "@/components/player/PlayerPersonalInfoSection";
 import { PlayerReferenceCard } from "@/components/player/PlayerReferenceCard";
 import { PlayerBowlingArsenal } from "@/components/bowling/PlayerBowlingArsenal";
+import { PlayerSurfEquipment } from "@/components/surf/PlayerSurfEquipment";
 import { ViewerModeProvider, useViewerModeContext } from "@/contexts/ViewerModeContext";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
