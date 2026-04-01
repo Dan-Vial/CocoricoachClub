@@ -362,31 +362,58 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, c
     // Calculate last frame cumulative score as total
     const totalScore = allFrames[9].cumulativeScore || 0;
 
-    // First throw contexts count (for pocket %)
-    // Frames 1-9: 1 each = 9, plus up to 3 in 10th frame depending on strikes/spares
-    let pocketOpportunities = 9; // frames 1-9
+    // Calculate total frames played (10, 11 or 12)
     const tenthFrame = allFrames[9];
-    pocketOpportunities++; // 1st throw of 10th
-    if (tenthFrame.throws[0]?.value === "X") pocketOpportunities++; // 2nd throw after strike
-    if (tenthFrame.throws[1]?.value === "X" || tenthFrame.throws[1]?.value === "/") pocketOpportunities++; // 3rd throw after strike or spare
+    let totalFrames = 10;
+    if (tenthFrame.throws.length >= 2) {
+      const first10 = tenthFrame.throws[0];
+      const second10 = tenthFrame.throws[1];
+      if (first10?.value === "X") {
+        totalFrames = 11; // Strike on 10th = bonus 11th frame
+        if (second10?.value === "X" && tenthFrame.throws[2]?.value) {
+          totalFrames = 12; // Two strikes = bonus 12th frame
+        }
+      } else if (second10?.value === "/") {
+        totalFrames = 11; // Spare on 10th = bonus 11th frame
+      }
+    }
 
-    // Calculate percentages
-    const strikePercentage = (strikes / 12) * 100;
+    // First throw contexts count (for pocket %)
+    let pocketOpportunities = 9; // frames 1-9
+    pocketOpportunities++; // 1st throw of 10th
+    if (tenthFrame.throws[0]?.value === "X") pocketOpportunities++; // 11th frame
+    if (tenthFrame.throws[1]?.value === "X" || tenthFrame.throws[1]?.value === "/") pocketOpportunities++; // 12th frame
+
+    // Calculate percentages - strike % based on actual frames played
+    const strikePercentage = totalFrames > 0 ? (strikes / totalFrames) * 100 : 0;
     
     // Spare % = spares réussis / opportunités de spare (frames sans strike)
-    // Un split fermé COMPTE comme spare. Un split non fermé N'EST PAS une opportunité de spare.
     let spareOpportunities = 0;
     let sparesConverted = 0;
     for (let i = 0; i < 9; i++) {
       const f = allFrames[i];
       if (f.throws.length === 0 || f.throws[0].value === "" || f.throws[0].value === "X") continue;
-      // Si c'est un split non converti, ne pas compter comme opportunité de spare
       if (f.throws[0].isSplit && f.throws[1]?.value !== "/") continue;
       spareOpportunities++;
       if (f.throws[1]?.value === "/") {
         sparesConverted++;
       }
     }
+    // 10th frame spare opportunities for bonus throws
+    if (tenthFrame.throws[0]?.value !== "X" && tenthFrame.throws[0]?.value !== "") {
+      if (!(tenthFrame.throws[0]?.isSplit && tenthFrame.throws[1]?.value !== "/")) {
+        spareOpportunities++;
+        if (tenthFrame.throws[1]?.value === "/") sparesConverted++;
+      }
+    }
+    // 11th frame (2nd throw of 10th after strike): check spare opportunity on 12th
+    if (tenthFrame.throws[0]?.value === "X" && tenthFrame.throws[1]?.value !== "X" && tenthFrame.throws[1]?.value !== "") {
+      if (!(tenthFrame.throws[1]?.isSplit && tenthFrame.throws[2]?.value !== "/")) {
+        spareOpportunities++;
+        if (tenthFrame.throws[2]?.value === "/") sparesConverted++;
+      }
+    }
+    
     const sparePercentage = spareOpportunities > 0 
       ? Math.min(100, (sparesConverted / spareOpportunities) * 100)
       : 0;
@@ -395,7 +422,6 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, c
       ? (splitConverted / splitCount) * 100 
       : 0;
 
-    // Single pin conversion rate = of single pin situations, how many were converted
     const singlePinConversionRate = singlePinCount > 0 
       ? (singlePinConverted / singlePinCount) * 100 
       : 0;
@@ -415,6 +441,7 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, c
       singlePinConverted,
       pocketCount,
       totalThrows,
+      totalFrames,
       strikePercentage: Math.round(strikePercentage * 10) / 10,
       sparePercentage: Math.round(sparePercentage * 10) / 10,
       splitPercentage: Math.round(splitPercentage * 10) / 10,
