@@ -88,22 +88,22 @@ function computeDetailedStats(roundsWithScores: Round[]): DetailedStats | null {
 
 function StatsGrid({ stats, compact = false }: { stats: DetailedStats; compact?: boolean }) {
   const items = [
-    { label: "High", value: String(stats.high), color: "text-amber-600" },
-    { label: "Low", value: String(stats.low), color: "text-red-500" },
-    { label: "Moy", value: stats.average.toFixed(1), color: "text-blue-600" },
-    { label: "% Strike", value: `${stats.avgStrikeRate.toFixed(1)}%`, color: getStatTextColor("strike", stats.avgStrikeRate) },
-    { label: "% Spare", value: `${stats.avgSpareRate.toFixed(1)}%`, color: getStatTextColor("spare", stats.avgSpareRate) },
-    { label: "% QS conv.", value: `${stats.singlePinConvRate.toFixed(0)}%`, color: getStatTextColor("singlePin", stats.singlePinConvRate) },
-    { label: "% Split conv.", value: `${stats.splitConvRate.toFixed(0)}%`, color: "text-orange-600" },
+    { label: "High", value: String(stats.high), bgClass: null as string | null },
+    { label: "Low", value: String(stats.low), bgClass: null },
+    { label: "Moy", value: stats.average.toFixed(1), bgClass: null },
+    { label: "% Strike", value: `${stats.avgStrikeRate.toFixed(1)}%`, bgClass: getStatColor("strike", stats.avgStrikeRate).bg },
+    { label: "% Spare", value: `${stats.avgSpareRate.toFixed(1)}%`, bgClass: getStatColor("spare", stats.avgSpareRate).bg },
+    { label: "% QS conv.", value: `${stats.singlePinConvRate.toFixed(0)}%`, bgClass: getStatColor("singlePin", stats.singlePinConvRate).bg },
+    { label: "% Split conv.", value: `${stats.splitConvRate.toFixed(0)}%`, bgClass: null },
   ];
 
   if (compact) {
     return (
       <div className="grid grid-cols-7 gap-1 text-center">
         {items.map(item => (
-          <div key={item.label} className="p-1 rounded bg-muted/50">
-            <p className={`text-xs font-bold ${item.color}`}>{item.value}</p>
-            <p className="text-[8px] text-muted-foreground leading-tight">{item.label}</p>
+          <div key={item.label} className={`p-1 rounded ${item.bgClass ? `${item.bgClass} text-white` : "bg-muted/50"}`}>
+            <p className="text-xs font-bold">{item.value}</p>
+            <p className={`text-[8px] leading-tight ${item.bgClass ? "opacity-80" : "text-muted-foreground"}`}>{item.label}</p>
           </div>
         ))}
       </div>
@@ -113,9 +113,9 @@ function StatsGrid({ stats, compact = false }: { stats: DetailedStats; compact?:
   return (
     <div className="grid grid-cols-4 gap-2 text-center">
       {items.map(item => (
-        <div key={item.label} className="p-2 rounded-lg border">
-          <p className={`text-lg font-bold ${item.color}`}>{item.value}</p>
-          <p className="text-[10px] text-muted-foreground">{item.label}</p>
+        <div key={item.label} className={`p-2 rounded-lg ${item.bgClass ? `${item.bgClass} text-white` : "border"}`}>
+          <p className="text-lg font-bold">{item.value}</p>
+          <p className={`text-[10px] ${item.bgClass ? "opacity-80" : "text-muted-foreground"}`}>{item.label}</p>
         </div>
       ))}
     </div>
