@@ -2851,10 +2851,9 @@ export function SessionFormDialog({
                     )}
 
 
-                    {/* Precision exercise selector - when type is "precision" or sport-specific training */}
+                    {/* Precision exercise selector - shown for "precision" type or any sport-specific training type */}
                     {(type === "precision" || (
-                      (isSurfCategory(sportType || "") || isSkiCategory(sportType || "")) && 
-                      type && !["musculation", "cardio", "repos", "test", "echauffement", "recuperation", "video_analyse", "physique", "fitness_game"].includes(type)
+                      type && !["musculation", "cardio", "repos", "test", "echauffement", "recuperation", "video_analyse", "physique", "fitness_game", "match_preparation", "tactique"].includes(type)
                     )) && (
                       <div className="rounded-lg border border-accent/30 p-3 space-y-2">
                         <PrecisionExerciseSelector
@@ -2865,8 +2864,8 @@ export function SessionFormDialog({
                           allowCreate={!isAthleteMode}
                         />
                         <p className="text-[10px] text-muted-foreground">
-                          📊 Les athlètes pourront saisir leurs stats de précision (réussites / tentatives) lors de la saisie RPE. 
-                          {type !== "precision" && " Astuce : le type « Entraînement Précision » active aussi cette fonctionnalité."}
+                          📊 Les athlètes pourront saisir leurs stats de précision (réussites / tentatives) lors de la saisie RPE.
+                          Le staff peut créer des exercices personnalisés via le bouton « + ».
                         </p>
                       </div>
                     )}
