@@ -161,6 +161,7 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, c
     singlePinConverted: 0,
     pocketCount: 0,
     totalThrows: 0,
+    totalFrames: 10,
     strikePercentage: 0,
     sparePercentage: 0,
     splitPercentage: 0,
