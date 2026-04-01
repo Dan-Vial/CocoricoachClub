@@ -42,6 +42,10 @@ export function NotificationBell({ variant = "hero" }: { variant?: "hero" | "def
   const navigate = useNavigate();
   const { user } = useAuth();
 
+  // Track when user last opened the notification panel to dismiss admin badges
+  const getLastSeenTimestamp = () => localStorage.getItem("notif_admin_last_seen") || "1970-01-01T00:00:00Z";
+  const updateLastSeen = () => localStorage.setItem("notif_admin_last_seen", new Date().toISOString());
+
   const { data: isSuperAdmin } = useQuery({
     queryKey: ["is-super-admin", user?.id],
     queryFn: async () => {
