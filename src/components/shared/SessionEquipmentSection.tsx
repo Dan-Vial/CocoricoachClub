@@ -7,7 +7,8 @@ import { Mountain, Waves } from "lucide-react";
 import { useState } from "react";
 import { SurfEquipmentSelector } from "@/components/surf/SurfEquipmentSelector";
 import { SkiEquipmentSelector } from "@/components/ski/SkiEquipmentSelector";
-import { isSurfCategory, isSkiCategory } from "@/lib/constants/sportTypes";
+import { PadelEquipmentSelector } from "@/components/padel/PadelEquipmentSelector";
+import { isSurfCategory, isSkiCategory, isPadelCategory } from "@/lib/constants/sportTypes";
 
 interface SessionEquipmentSectionProps {
   categoryId: string;
