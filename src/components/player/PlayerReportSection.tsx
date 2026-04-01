@@ -301,6 +301,10 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
       injuriesRes,
       awcrRes,
       competitionRoundsRes,
+      bowlingSpareRes,
+      tennisDrillRes,
+      precisionRes,
+      trainingRoundsRes,
     ] = await Promise.all([
       supabase.from("player_measurements").select("*").eq("player_id", playerId).order("measurement_date", { ascending: false }),
       supabase.from("body_composition").select("*").eq("player_id", playerId).order("measurement_date", { ascending: false }),
