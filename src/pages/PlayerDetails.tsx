@@ -452,26 +452,6 @@ function PlayerDetailsContent() {
           />
         </div>
 
-        {/* Bowling Arsenal - below biometrics */}
-        {isBowling && (
-          <div className="mb-6">
-            <PlayerBowlingArsenal playerId={playerId!} categoryId={player.category_id} isViewer={isViewer} />
-          </div>
-        )}
-
-        {/* Surf Equipment */}
-        {isSurf && (
-          <div className="mb-6">
-            <PlayerSurfEquipment playerId={playerId!} categoryId={player.category_id} isViewer={isViewer} />
-          </div>
-        )}
-
-        {/* Ski Equipment */}
-        {isSki && (
-          <div className="mb-6">
-            <PlayerSkiEquipment playerId={playerId!} categoryId={player.category_id} isViewer={isViewer} />
-          </div>
-        )}
 
         {/* Personal Info Section (Email, Phone, Birth date) */}
         <div className="mb-6">
