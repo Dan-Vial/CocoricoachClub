@@ -419,7 +419,7 @@ export function AddMatchCalendarDialog({
               id="location"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
-              placeholder={isAviron ? "Plan d'eau, bassin..." : isIndividual ? "Salle, bowling, dojo..." : "Stade, ville..."}
+              placeholder={isAviron ? "Plan d'eau, bassin..." : isSurf ? "Spot, plage..." : isIndividual ? "Salle, bowling, dojo..." : "Stade, ville..."}
             />
           </div>
 
