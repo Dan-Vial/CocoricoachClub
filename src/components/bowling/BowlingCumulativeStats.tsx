@@ -284,7 +284,10 @@ export function BowlingCumulativeStats({ categoryId }: BowlingCumulativeStatsPro
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-muted-foreground">% Spare moyen</span>
-                      <span className={`font-bold ${getStatTextColor("spare", cumulativeStats.avgSpareRate)}`}>{cumulativeStats.avgSpareRate.toFixed(1)}%</span>
+                      {(() => {
+                        const color = getStatColor("spare", cumulativeStats.avgSpareRate);
+                        return <span className={`font-bold px-2 py-0.5 rounded ${color.bg} text-white`}>{cumulativeStats.avgSpareRate.toFixed(1)}%</span>;
+                      })()}
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-muted-foreground">Open Frames totaux</span>
