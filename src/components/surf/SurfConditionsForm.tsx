@@ -125,7 +125,7 @@ export function SurfConditionsForm({ matchId, trainingSessionId, categoryId, isV
         const { error } = await supabase.from("surf_conditions").update(payload).eq("id", existing.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("surf_conditions" as any).insert(payload);
+        const { error } = await supabase.from("surf_conditions").insert(payload);
         if (error) throw error;
       }
     },
