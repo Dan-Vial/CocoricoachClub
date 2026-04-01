@@ -717,7 +717,7 @@ export const DUATHLON_STATS: StatField[] = [
   { key: "gapToFirst", label: "Écart au 1er (sec)", shortLabel: "Écart", category: "scoring", type: "number" },
 ];
 
-export type SportType = "XV" | "7" | "XIII" | "football" | "handball" | "volleyball" | "basketball" | "judo" | "aviron" | "bowling" | "academie" | "national_team" | "athletisme" | "padel" | "natation" | "ski" | "triathlon";
+export type SportType = "XV" | "7" | "XIII" | "football" | "handball" | "volleyball" | "basketball" | "judo" | "aviron" | "bowling" | "academie" | "national_team" | "athletisme" | "padel" | "natation" | "ski" | "surf" | "triathlon";
 // Tennis stats
 export const TENNIS_STATS: StatField[] = [
   // Scoring

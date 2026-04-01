@@ -299,6 +299,16 @@ export const ALL_TRAINING_TYPES: TrainingTypeOption[] = [
   { value: "ski_tir", label: "Tir (Biathlon)", hasExercises: false, forSports: ["ski"], category: "ski" },
   { value: "ski_hors_saison", label: "Hors-saison / Roller-ski", hasExercises: false, forSports: ["ski"], category: "ski" },
 
+  // Surf specific
+  { value: "surf_session_libre", label: "Session libre", hasExercises: false, forSports: ["surf"], category: "surf" },
+  { value: "surf_technique", label: "Technique / Manœuvres", hasExercises: false, forSports: ["surf"], category: "surf" },
+  { value: "surf_competition", label: "Heat / Compétition", hasExercises: false, forSports: ["surf"], category: "surf" },
+  { value: "surf_paddle", label: "Rame / Paddling", hasExercises: false, forSports: ["surf"], category: "surf" },
+  { value: "surf_apnea", label: "Apnée / Hold-down", hasExercises: false, forSports: ["surf"], category: "surf" },
+  { value: "surf_video", label: "Analyse Vidéo Surf", hasExercises: false, forSports: ["surf"], category: "surf" },
+  { value: "surf_dry_land", label: "Dry Land / Préparation hors eau", hasExercises: true, forSports: ["surf"], category: "surf" },
+  { value: "surf_balance", label: "Équilibre / Balance Board", hasExercises: false, forSports: ["surf"], category: "surf" },
+
   // Triathlon specific
   { value: "triathlon_natation", label: "Entraînement Natation", hasExercises: false, forSports: ["triathlon"], category: "triathlon" },
   { value: "triathlon_velo", label: "Entraînement Vélo", hasExercises: false, forSports: ["triathlon"], category: "triathlon" },
