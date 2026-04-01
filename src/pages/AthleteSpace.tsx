@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Loader2, User, LogOut, Activity, Heart, BarChart3, Target, Video, Shield, ArrowLeft, Search, ChevronRight, MessageSquare, Settings, CalendarDays, FlaskConical, CircleDot, Weight } from "lucide-react";
 import { PlayerBowlingArsenal } from "@/components/bowling/PlayerBowlingArsenal";
+import { PlayerSurfEquipment } from "@/components/surf/PlayerSurfEquipment";
 import { NAV_COLORS } from "@/components/ui/colored-nav-tabs";
 import { AthletePWAInstallPopup } from "@/components/athlete/AthletePWAInstallPopup";
 import { AthleteSpaceDashboard } from "@/components/athlete-space/AthleteSpaceDashboard";
