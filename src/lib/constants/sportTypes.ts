@@ -529,6 +529,7 @@ export const SPORT_TYPES: SportTypeOption[] = [
   { value: "padel_academie", label: "Padel - Académie", category: "individual" },
   { value: "natation_academie", label: "Natation - Académie", category: "individual" },
   { value: "ski_academie", label: "Sports de Glisse - Académie", category: "individual" },
+  { value: "surf_academie", label: "Surf - Académie", category: "individual" },
   { value: "triathlon_academie", label: "Triathlon - Académie", category: "individual" },
   { value: "tennis_academie", label: "Tennis - Académie", category: "individual" },
   // Individual sports - National
