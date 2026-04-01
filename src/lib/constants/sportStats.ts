@@ -667,7 +667,7 @@ export const SURF_STATS: StatField[] = [
   { key: "bestWaveScore", label: "Meilleure vague", shortLabel: "Best", category: "scoring", type: "number" },
   { key: "secondBestWaveScore", label: "2e meilleure vague", shortLabel: "2nd", category: "scoring", type: "number" },
   { key: "combinedScore", label: "Score combiné (2 meilleures)", shortLabel: "Combiné", category: "scoring", type: "number" },
-  // Attaque (manœuvres)
+  // Manœuvres (attack)
   { key: "wavesRidden", label: "Vagues surfées", shortLabel: "Vagues", category: "attack", type: "number" },
   { key: "wavesCaught", label: "Vagues prises", shortLabel: "Prises", category: "attack", type: "number" },
   { key: "tubeRides", label: "Tubes", shortLabel: "Tubes", category: "attack", type: "number" },
@@ -676,17 +676,22 @@ export const SURF_STATS: StatField[] = [
   { key: "carves", label: "Bottom/Top turns", shortLabel: "Turns", category: "attack", type: "number" },
   { key: "snaps", label: "Snaps", shortLabel: "Snaps", category: "attack", type: "number" },
   { key: "floaters", label: "Floaters", shortLabel: "Float", category: "attack", type: "number" },
-  // Défense / Conditions
+  { key: "reentries", label: "Re-entries", shortLabel: "Re-entry", category: "attack", type: "number" },
+  { key: "laybacks", label: "Layback turns", shortLabel: "Layback", category: "attack", type: "number" },
+  // Tactique & Priorité (defense)
   { key: "interferencesCalled", label: "Interférences reçues", shortLabel: "Interf.", category: "defense", type: "number" },
   { key: "priorityCalls", label: "Priorités obtenues", shortLabel: "Priorité", category: "defense", type: "number" },
   { key: "falls", label: "Chutes", shortLabel: "Chutes", category: "defense", type: "number" },
   { key: "paddleBackOuts", label: "Paddle-outs difficiles", shortLabel: "P.Out", category: "defense", type: "number" },
-  // Général / Conditions
+  { key: "waveSelection", label: "Sélection de vague (1-10)", shortLabel: "Sélection", category: "defense", type: "number", max: 10 },
+  { key: "positioning", label: "Positionnement (1-10)", shortLabel: "Position", category: "defense", type: "number", max: 10 },
+  // Conditions (general)
   { key: "heatDuration", label: "Durée du heat (min)", shortLabel: "Durée", category: "general", type: "number" },
   { key: "waveHeight", label: "Taille vagues (m)", shortLabel: "Hauteur", category: "general", type: "number" },
   { key: "windCondition", label: "Vent (1=offshore, 2=cross, 3=onshore)", shortLabel: "Vent", category: "general", type: "number" },
   { key: "swellPeriod", label: "Période houle (sec)", shortLabel: "Période", category: "general", type: "number" },
   { key: "waterTemp", label: "Temp. eau (°C)", shortLabel: "T°eau", category: "general", type: "number" },
+  { key: "spotName", label: "Spot", shortLabel: "Spot", category: "general", type: "number" },
   { key: "heatResult", label: "Résultat (1=avance, 0=éliminé)", shortLabel: "Résultat", category: "general", type: "number", max: 1 },
 ];
 
@@ -1041,6 +1046,16 @@ export function getStatCategories(sportType: SportType | string): { key: string;
     ];
   }
 
+  // Surf
+  if (baseSport === "surf") {
+    return [
+      { key: "scoring", label: "Score & Classement" },
+      { key: "attack", label: "Manœuvres" },
+      { key: "defense", label: "Tactique & Priorité" },
+      { key: "general", label: "Conditions" },
+    ];
+  }
+
   // Triathlon
   if (baseSport === "triathlon") {
     return [
@@ -1122,7 +1137,7 @@ export function getStatCategories(sportType: SportType | string): { key: string;
 // Check if sport supports multi-round competition (like Judo, Bowling, Athletics)
 export function supportsCompetitionRounds(sportType: string): boolean {
   const baseSport = getBaseSport(sportType);
-  return ["judo", "bowling", "aviron", "athletisme", "athlétisme", "natation", "ski", "snow", "triathlon"].includes(baseSport);
+  return ["judo", "bowling", "aviron", "athletisme", "athlétisme", "natation", "ski", "snow", "surf", "triathlon"].includes(baseSport);
 }
 
 // Get phase options for a sport
@@ -1147,6 +1162,17 @@ export function getCompetitionPhasesForSport(sportType: string): { value: string
       { value: "qualification", label: "Qualification" },
       { value: "manche_1", label: "Manche 1" },
       { value: "manche_2", label: "Manche 2" },
+      { value: "finale", label: "Finale" },
+    ];
+  }
+
+  if (baseSport === "surf") {
+    return [
+      { value: "round_1", label: "Round 1" },
+      { value: "round_2", label: "Round 2" },
+      { value: "round_3", label: "Round 3" },
+      { value: "quarts", label: "Quarts de finale" },
+      { value: "demies", label: "Demi-finales" },
       { value: "finale", label: "Finale" },
     ];
   }

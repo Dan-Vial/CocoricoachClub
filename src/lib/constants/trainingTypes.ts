@@ -86,6 +86,7 @@ function getBaseSport(sportType: string): string {
   if (normalizedSport.startsWith('crossfit')) return 'crossfit';
   if (normalizedSport.startsWith('padel')) return 'padel';
   if (normalizedSport.startsWith('natation')) return 'natation';
+  if (normalizedSport.startsWith('surf')) return 'surf';
   if (normalizedSport.startsWith('ski') || normalizedSport.startsWith('snow')) return 'ski';
   if (normalizedSport.startsWith('triathlon')) return 'triathlon';
   if (normalizedSport.startsWith('tennis')) return 'tennis';
@@ -308,6 +309,13 @@ export const ALL_TRAINING_TYPES: TrainingTypeOption[] = [
   { value: "surf_video", label: "Analyse Vidéo Surf", hasExercises: false, forSports: ["surf"], category: "surf" },
   { value: "surf_dry_land", label: "Dry Land / Préparation hors eau", hasExercises: true, forSports: ["surf"], category: "surf" },
   { value: "surf_balance", label: "Équilibre / Balance Board", hasExercises: false, forSports: ["surf"], category: "surf" },
+  { value: "surf_skate", label: "Surf-Skate", hasExercises: false, forSports: ["surf"], category: "surf" },
+  { value: "surf_reading", label: "Lecture de vagues / Océanographie", hasExercises: false, forSports: ["surf"], category: "surf" },
+  { value: "surf_big_wave_training", label: "Entraînement Big Wave", hasExercises: false, forSports: ["surf"], category: "surf" },
+  { value: "surf_tube_riding", label: "Travail de Tube", hasExercises: false, forSports: ["surf"], category: "surf" },
+  { value: "surf_aerial_training", label: "Travail Aérien", hasExercises: false, forSports: ["surf"], category: "surf" },
+  { value: "surf_yoga_stretching", label: "Yoga / Stretching Surf", hasExercises: false, forSports: ["surf"], category: "surf" },
+  { value: "surf_mental", label: "Préparation Mentale", hasExercises: false, forSports: ["surf"], category: "surf" },
 
   // Triathlon specific
   { value: "triathlon_natation", label: "Entraînement Natation", hasExercises: false, forSports: ["triathlon"], category: "triathlon" },
