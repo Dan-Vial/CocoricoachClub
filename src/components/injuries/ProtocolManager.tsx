@@ -785,10 +785,16 @@ export function ProtocolManager({ categoryId }: ProtocolManagerProps) {
                      injuryType={protocolCategory}
                      phaseDescription={phase.description}
                    />
-                  <ProtocolPhaseExercises
-                    exercises={phase.exercises || []}
-                    onChange={(exercises) => updatePhase(index, 'exercises', exercises)}
-                  />
+                   <ProtocolPhaseProgramLink
+                     categoryId={categoryId}
+                     linkedProgramId={phase.linked_program_id}
+                     phaseName={phase.name}
+                     onProgramLinked={(programId) => updatePhase(index, 'linked_program_id', programId)}
+                   />
+                   <ProtocolPhaseExercises
+                     exercises={phase.exercises || []}
+                     onChange={(exercises) => updatePhase(index, 'exercises', exercises)}
+                   />
                 </div>
               ))}
             </div>
