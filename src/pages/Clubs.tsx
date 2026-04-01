@@ -11,6 +11,7 @@ import { AddClubDialog } from "@/components/clubs/AddClubDialog";
 import { ClubCard } from "@/components/clubs/ClubCard";
 import { useAuth } from "@/contexts/AuthContext";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
+import { SuperAdminShieldButton } from "@/components/notifications/SuperAdminShieldButton";
 import { InjuryReturnAlerts } from "@/components/injuries/InjuryReturnAlerts";
 
 export default function Clubs() {
@@ -228,9 +229,7 @@ export default function Clubs() {
                   <Button variant="ghost" size="icon" onClick={() => navigate("/athlete-space")} className="text-primary-foreground hover:bg-primary-foreground/10" title="Espace Athlète">
                     <User className="h-5 w-5" />
                   </Button>
-                  <Button variant="ghost" size="icon" onClick={() => navigate("/super-admin")} className="text-primary-foreground hover:bg-primary-foreground/10" title="Super Admin">
-                    <Shield className="h-5 w-5" />
-                  </Button>
+                  <SuperAdminShieldButton variant="hero" />
                 </>
               )}
               <Button variant="ghost" size="icon" onClick={signOut} className="text-primary-foreground hover:bg-primary-foreground/10">
