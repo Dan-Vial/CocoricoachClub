@@ -630,6 +630,7 @@ export const isIndividualSport = (type: string): boolean => {
     "padel_club", "padel_academie", "padel_national",
     "natation_club", "natation_academie", "natation_national",
     "ski_club", "ski_academie", "ski_national",
+    "surf_club", "surf_academie", "surf_national",
     "triathlon_club", "triathlon_academie", "triathlon_national",
     "tennis_club", "tennis_academie", "tennis_national",
     "athletisme_sprints", "athletisme_haies", "athletisme_demi_fond",
