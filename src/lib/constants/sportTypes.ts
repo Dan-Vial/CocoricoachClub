@@ -574,6 +574,7 @@ export const SPORT_TYPES: SportTypeOption[] = [
   { value: "padel", label: "Padel", category: "individual" },
   { value: "natation", label: "Natation", category: "individual" },
   { value: "ski", label: "Sports de Glisse", category: "individual" },
+  { value: "surf", label: "Surf", category: "individual" },
   { value: "triathlon", label: "Triathlon", category: "individual" },
   { value: "tennis", label: "Tennis", category: "individual" },
 ];
