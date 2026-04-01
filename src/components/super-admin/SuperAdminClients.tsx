@@ -707,8 +707,6 @@ export function SuperAdminClients() {
            <CreateClientCategoriesSection
              clubName={clubName}
              onClubNameChange={setClubName}
-             clubSport={clubSport}
-             onClubSportChange={setClubSport}
              categories={categoryDrafts}
              onCategoriesChange={setCategoryDrafts}
            />
