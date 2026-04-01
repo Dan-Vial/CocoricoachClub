@@ -139,6 +139,7 @@ export function ProtocolManager({ categoryId }: ProtocolManagerProps) {
             exit_criteria: phase.exit_criteria,
             care_instructions: phase.care_instructions,
             taping_instructions: phase.taping_instructions,
+            taping_diagram_url: phase.taping_diagram_url || null,
           })
           .select()
           .single();
