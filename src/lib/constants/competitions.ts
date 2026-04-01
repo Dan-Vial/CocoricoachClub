@@ -1520,6 +1520,12 @@ export const getCompetitionStageLabel = (stage: string): string => {
     premier_tour: "1er tour",
     deuxieme_tour: "2ème tour",
     troisieme_tour: "3ème tour",
+    // Surf
+    round_1: "Round 1",
+    round_2: "Round 2",
+    round_3: "Round 3",
+    round_4: "Round 4",
+    round_5: "Round 5",
   };
   return allStages[stage] || stage;
 };

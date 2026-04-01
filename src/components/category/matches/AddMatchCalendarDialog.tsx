@@ -63,15 +63,28 @@ const TENNIS_FORMATS = [
   { value: "double_mixte", label: "Double Mixte" },
 ];
 
-// Age categories
-const AGE_CATEGORIES = [
-  { value: "U15", label: "U15 (Cadet)" },
-  { value: "U17", label: "U17 (Junior)" },
-  { value: "U19", label: "U19" },
-  { value: "U23", label: "U23 (Espoir)" },
-  { value: "senior", label: "Senior" },
-  { value: "master", label: "Master" },
-];
+// Age categories per sport
+const AGE_CATEGORIES: Record<string, { value: string; label: string }[]> = {
+  default: [
+    { value: "U15", label: "U15 (Cadet)" },
+    { value: "U17", label: "U17 (Junior)" },
+    { value: "U19", label: "U19" },
+    { value: "U23", label: "U23 (Espoir)" },
+    { value: "senior", label: "Senior" },
+    { value: "master", label: "Master" },
+  ],
+  surf: [
+    { value: "grom_u12", label: "Grom (U12)" },
+    { value: "benjamin_u14", label: "Benjamin (U14)" },
+    { value: "minime_u16", label: "Minime (U16)" },
+    { value: "cadet_u18", label: "Cadet (U18)" },
+    { value: "junior", label: "Junior" },
+    { value: "espoir", label: "Espoir" },
+    { value: "open", label: "Open" },
+    { value: "master", label: "Master" },
+    { value: "grand_master", label: "Grand Master" },
+  ],
+};
 
 export function AddMatchCalendarDialog({
   open,
