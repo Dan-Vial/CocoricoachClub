@@ -379,6 +379,11 @@ export function ProgramBuilderDialog({
       const loadedBlocks = weeksToBlocks(loadedWeeks);
       setBlocks(loadedBlocks.length > 0 ? loadedBlocks : [createEmptyBlock(1)]);
     } else if (!programId) {
+      // Set defaults for rehab mode
+      if (rehabMode && !name) {
+        setName(`Programme réathléthisation - ${rehabPhaseName || "Phase"}`);
+        setTheme("reathletisation");
+      }
       setBlocks([createEmptyBlock(1)]);
     }
   }, [existingProgram, programId]);
