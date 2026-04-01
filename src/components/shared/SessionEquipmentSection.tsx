@@ -67,7 +67,6 @@ export function SessionEquipmentSection({
             {players.map((player) => (
               <div key={player.id} className="flex items-start gap-3 p-2 rounded-lg border bg-muted/20">
                 <Avatar className="h-7 w-7 mt-0.5">
-                  <AvatarImage src={player.photo_url || undefined} />
                   <AvatarFallback className="text-[10px]">
                     {(player.first_name?.[0] || "").toUpperCase()}
                     {(player.name?.[0] || "").toUpperCase()}
