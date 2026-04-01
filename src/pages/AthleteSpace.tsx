@@ -759,9 +759,17 @@ export default function AthleteSpace() {
               />
             </TabsContent>
           )}
-          {isSurf && (
+           {isSurf && (
             <TabsContent value="equipment">
               <PlayerSurfEquipment
+                playerId={athleteInfo.player_id}
+                categoryId={athleteInfo.category_id}
+              />
+            </TabsContent>
+          )}
+          {isSki && (
+            <TabsContent value="ski-equipment">
+              <PlayerSkiEquipment
                 playerId={athleteInfo.player_id}
                 categoryId={athleteInfo.category_id}
               />
