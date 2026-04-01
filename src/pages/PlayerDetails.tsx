@@ -484,7 +484,7 @@ function PlayerDetailsContent() {
                 <PlayerDetailTab value="academy" label="Académie" icon={GraduationCap} color="hsl(200 85% 50%)" />
               )}
               <PlayerDetailTab value="injuries" label="Blessures" icon={Bandage} color="hsl(10 80% 55%)" />
-              {(isBowling || isSurf || isSki) && (
+              {(isBowling || isSurf || isSki || isPadel) && (
                 <PlayerDetailTab value="equipment" label={isBowling ? "Arsenal" : "Matériel"} icon={Mountain} color="hsl(190 70% 50%)" />
               )}
             </ColoredNavTabsList>
