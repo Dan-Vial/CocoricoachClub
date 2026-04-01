@@ -1,4 +1,5 @@
  import { useState } from "react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
  import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
  import { supabase } from "@/integrations/supabase/client";
  import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -915,90 +916,124 @@ export function SuperAdminClients() {
                    <TableCell>
                      {format(new Date(client.created_at), "dd MMM yyyy", { locale: fr })}
                    </TableCell>
-                     <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                       <div className="flex justify-end gap-1">
-                         <Button
-                           variant="ghost"
-                           size="icon"
-                           title="Assigner un abonnement"
-                           onClick={() => {
-                             resetSubForm();
-                             setAssignSubClientId(client.id);
-                           }}
-                         >
-                           <CreditCard className="h-4 w-4 text-primary" />
-                         </Button>
-                         <Button
-                           variant="ghost"
-                           size="icon"
-                           title="Copier le lien d'invitation"
-                           onClick={async () => {
-                            if (!client.email) {
-                              toast.error("Pas d'email pour ce client");
-                              return;
-                            }
-                            const { data: inv } = await supabase
-                              .from("ambassador_invitations")
-                              .select("token")
-                              .eq("email", client.email)
-                              .order("created_at", { ascending: false })
-                              .limit(1)
-                              .maybeSingle();
-                            if (inv?.token) {
-                              const link = `${window.location.origin}/ambassador-invitation?token=${inv.token}`;
-                              await navigator.clipboard.writeText(link);
-                              toast.success("Lien d'invitation copié !");
-                            } else {
-                              toast.error("Aucune invitation trouvée pour ce client");
-                            }
-                          }}
-                        >
-                          <Link className="h-4 w-4 text-muted-foreground" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          title="Options des catégories"
-                          onClick={() => setCategoryOptionsClient(client)}
-                        >
-                          <FolderOpen className="h-4 w-4 text-primary" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => openEditDialog(client)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        {client.status === "suspended" ? (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => toggleStatus.mutate({ id: client.id, status: "active" })}
-                          >
-                            <Play className="h-4 w-4 text-green-600" />
-                          </Button>
-                        ) : (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => toggleStatus.mutate({ id: client.id, status: "suspended" })}
-                          >
-                            <Pause className="h-4 w-4 text-amber-600" />
-                          </Button>
-                        )}
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => {
-                            if (confirm("Supprimer ce client ?")) {
-                              deleteClient.mutate(client.id);
-                            }
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </div>
+                      <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                        <TooltipProvider delayDuration={300}>
+                        <div className="flex justify-end gap-1">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => {
+                                  resetSubForm();
+                                  setAssignSubClientId(client.id);
+                                }}
+                              >
+                                <CreditCard className="h-4 w-4 text-primary" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Assigner un abonnement</TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={async () => {
+                                  if (!client.email) {
+                                    toast.error("Pas d'email pour ce client");
+                                    return;
+                                  }
+                                  const { data: inv } = await supabase
+                                    .from("ambassador_invitations")
+                                    .select("token")
+                                    .eq("email", client.email)
+                                    .order("created_at", { ascending: false })
+                                    .limit(1)
+                                    .maybeSingle();
+                                  if (inv?.token) {
+                                    const link = `${window.location.origin}/ambassador-invitation?token=${inv.token}`;
+                                    await navigator.clipboard.writeText(link);
+                                    toast.success("Lien d'invitation copié !");
+                                  } else {
+                                    toast.error("Aucune invitation trouvée pour ce client");
+                                  }
+                                }}
+                              >
+                                <Link className="h-4 w-4 text-muted-foreground" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Copier le lien d'invitation</TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setCategoryOptionsClient(client)}
+                              >
+                                <FolderOpen className="h-4 w-4 text-primary" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Options des catégories</TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => openEditDialog(client)}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Modifier le client</TooltipContent>
+                          </Tooltip>
+                          {client.status === "suspended" ? (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => toggleStatus.mutate({ id: client.id, status: "active" })}
+                                >
+                                  <Play className="h-4 w-4 text-green-600" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Réactiver le client</TooltipContent>
+                            </Tooltip>
+                          ) : (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => toggleStatus.mutate({ id: client.id, status: "suspended" })}
+                                >
+                                  <Pause className="h-4 w-4 text-amber-600" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Suspendre le client</TooltipContent>
+                            </Tooltip>
+                          )}
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => {
+                                  if (confirm("Supprimer ce client ?")) {
+                                    deleteClient.mutate(client.id);
+                                  }
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Supprimer le client</TooltipContent>
+                          </Tooltip>
+                        </div>
+                        </TooltipProvider>
                     </TableCell>
                  </TableRow>
                ))}
