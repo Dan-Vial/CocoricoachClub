@@ -459,10 +459,17 @@ function PlayerDetailsContent() {
           </div>
         )}
 
-        {/* Surf Equipment - below biometrics */}
+        {/* Surf Equipment */}
         {isSurf && (
           <div className="mb-6">
             <PlayerSurfEquipment playerId={playerId!} categoryId={player.category_id} isViewer={isViewer} />
+          </div>
+        )}
+
+        {/* Ski Equipment */}
+        {isSki && (
+          <div className="mb-6">
+            <PlayerSkiEquipment playerId={playerId!} categoryId={player.category_id} isViewer={isViewer} />
           </div>
         )}
 
