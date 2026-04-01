@@ -1132,7 +1132,7 @@ export function getStatCategories(sportType: SportType | string): { key: string;
 // Check if sport supports multi-round competition (like Judo, Bowling, Athletics)
 export function supportsCompetitionRounds(sportType: string): boolean {
   const baseSport = getBaseSport(sportType);
-  return ["judo", "bowling", "aviron", "athletisme", "athlétisme", "natation", "ski", "snow", "triathlon"].includes(baseSport);
+  return ["judo", "bowling", "aviron", "athletisme", "athlétisme", "natation", "ski", "snow", "surf", "triathlon"].includes(baseSport);
 }
 
 // Get phase options for a sport
