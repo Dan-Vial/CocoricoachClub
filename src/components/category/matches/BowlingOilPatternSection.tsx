@@ -369,8 +369,8 @@ export function BowlingOilPatternSection({
               Images du huilage
             </h4>
             <div className="grid grid-cols-2 gap-4">
-              {renderImageUpload("male", "🧑 Garçons")}
-              {renderImageUpload("female", "👧 Filles")}
+              {renderImageUpload("male", "Garçons")}
+              {renderImageUpload("female", "Filles")}
             </div>
           </div>
 
