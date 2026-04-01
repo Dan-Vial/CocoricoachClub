@@ -347,9 +347,14 @@ export function NotificationBell({ variant = "hero" }: { variant?: "hero" | "def
               {notifications?.map((notification) => (
                 <div
                   key={notification.id}
-                  className={`p-4 hover:bg-accent/50 transition-colors ${
+                  className={`p-4 hover:bg-accent/50 transition-colors cursor-pointer ${
                     !notification.is_read ? "bg-accent/20" : ""
                   }`}
+                  onClick={() => {
+                    if (!notification.is_read) {
+                      markAsRead.mutate(notification.id);
+                    }
+                  }}
                 >
                   <div className="flex items-start gap-3">
                     <span className="text-2xl flex-shrink-0">
