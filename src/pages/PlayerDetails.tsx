@@ -32,11 +32,12 @@ import { PlayerPersonalInfoSection } from "@/components/player/PlayerPersonalInf
 import { PlayerReferenceCard } from "@/components/player/PlayerReferenceCard";
 import { PlayerBowlingArsenal } from "@/components/bowling/PlayerBowlingArsenal";
 import { PlayerSurfEquipment } from "@/components/surf/PlayerSurfEquipment";
+import { PlayerSkiEquipment } from "@/components/ski/PlayerSkiEquipment";
 import { ViewerModeProvider, useViewerModeContext } from "@/contexts/ViewerModeContext";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getPositionsForSport } from "@/lib/constants/sportPositions";
-import { isIndividualSport, ATHLETISME_DISCIPLINES, ATHLETISME_SPECIALTIES, JUDO_WEIGHT_CATEGORIES, isAthletismeCategory, isJudoCategory, AVIRON_ROLES } from "@/lib/constants/sportTypes";
+import { isIndividualSport, ATHLETISME_DISCIPLINES, ATHLETISME_SPECIALTIES, JUDO_WEIGHT_CATEGORIES, isAthletismeCategory, isJudoCategory, isSkiCategory, AVIRON_ROLES } from "@/lib/constants/sportTypes";
 import { getDisciplineLabel, getSpecialtyLabel } from "@/lib/constants/athleticProfiles";
 import { toast } from "sonner";
 
@@ -104,6 +105,7 @@ function PlayerDetailsContent() {
   const isAviron = sportType.toLowerCase().includes("aviron");
   const isBowling = sportType.toLowerCase().includes("bowling");
   const isSurf = sportType.toLowerCase().includes("surf");
+  const isSki = isSkiCategory(sportType);
   const positions = getPositionsForSport(sportType);
 
   // Get display label for discipline/position/role
@@ -457,10 +459,17 @@ function PlayerDetailsContent() {
           </div>
         )}
 
-        {/* Surf Equipment - below biometrics */}
+        {/* Surf Equipment */}
         {isSurf && (
           <div className="mb-6">
             <PlayerSurfEquipment playerId={playerId!} categoryId={player.category_id} isViewer={isViewer} />
+          </div>
+        )}
+
+        {/* Ski Equipment */}
+        {isSki && (
+          <div className="mb-6">
+            <PlayerSkiEquipment playerId={playerId!} categoryId={player.category_id} isViewer={isViewer} />
           </div>
         )}
 

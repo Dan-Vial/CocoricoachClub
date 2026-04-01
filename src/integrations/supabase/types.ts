@@ -5829,6 +5829,103 @@ export type Database = {
           },
         ]
       }
+      player_ski_equipment: {
+        Row: {
+          boot_brand: string | null
+          boot_flex: number | null
+          boot_model: string | null
+          camber_type: string | null
+          category_id: string
+          created_at: string
+          equipment_type: string
+          id: string
+          is_active: boolean
+          notes: string | null
+          player_id: string
+          ski_brand: string | null
+          ski_length_cm: number | null
+          ski_model: string | null
+          ski_radius_m: number | null
+          ski_stiffness: string | null
+          sole_structure: string | null
+          updated_at: string
+          wax_brand: string | null
+          wax_humidity_range: string | null
+          wax_temp_range: string | null
+          wax_type: string | null
+        }
+        Insert: {
+          boot_brand?: string | null
+          boot_flex?: number | null
+          boot_model?: string | null
+          camber_type?: string | null
+          category_id: string
+          created_at?: string
+          equipment_type?: string
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          player_id: string
+          ski_brand?: string | null
+          ski_length_cm?: number | null
+          ski_model?: string | null
+          ski_radius_m?: number | null
+          ski_stiffness?: string | null
+          sole_structure?: string | null
+          updated_at?: string
+          wax_brand?: string | null
+          wax_humidity_range?: string | null
+          wax_temp_range?: string | null
+          wax_type?: string | null
+        }
+        Update: {
+          boot_brand?: string | null
+          boot_flex?: number | null
+          boot_model?: string | null
+          camber_type?: string | null
+          category_id?: string
+          created_at?: string
+          equipment_type?: string
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          player_id?: string
+          ski_brand?: string | null
+          ski_length_cm?: number | null
+          ski_model?: string | null
+          ski_radius_m?: number | null
+          ski_stiffness?: string | null
+          sole_structure?: string | null
+          updated_at?: string
+          wax_brand?: string | null
+          wax_humidity_range?: string | null
+          wax_temp_range?: string | null
+          wax_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_ski_equipment_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_ski_equipment_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_ski_equipment_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       player_surf_equipment: {
         Row: {
           board_brand: string | null
@@ -7789,15 +7886,23 @@ export type Database = {
           avalanche_risk: number | null
           category_id: string
           created_at: string
+          gate_setup: string | null
           id: string
           match_id: string | null
           notes: string | null
           piste_condition: string | null
+          piste_evolution: string | null
+          precipitation: string | null
           slope_difficulty: string | null
+          slope_hardness: string | null
           slope_name: string | null
+          snow_evolution: string | null
+          snow_granulometry: string | null
+          snow_humidity: string | null
           snow_quality: number | null
           snow_temperature_celsius: number | null
           snow_type: string | null
+          sunshine: string | null
           training_session_id: string | null
           updated_at: string
           visibility: string | null
@@ -7811,15 +7916,23 @@ export type Database = {
           avalanche_risk?: number | null
           category_id: string
           created_at?: string
+          gate_setup?: string | null
           id?: string
           match_id?: string | null
           notes?: string | null
           piste_condition?: string | null
+          piste_evolution?: string | null
+          precipitation?: string | null
           slope_difficulty?: string | null
+          slope_hardness?: string | null
           slope_name?: string | null
+          snow_evolution?: string | null
+          snow_granulometry?: string | null
+          snow_humidity?: string | null
           snow_quality?: number | null
           snow_temperature_celsius?: number | null
           snow_type?: string | null
+          sunshine?: string | null
           training_session_id?: string | null
           updated_at?: string
           visibility?: string | null
@@ -7833,15 +7946,23 @@ export type Database = {
           avalanche_risk?: number | null
           category_id?: string
           created_at?: string
+          gate_setup?: string | null
           id?: string
           match_id?: string | null
           notes?: string | null
           piste_condition?: string | null
+          piste_evolution?: string | null
+          precipitation?: string | null
           slope_difficulty?: string | null
+          slope_hardness?: string | null
           slope_name?: string | null
+          snow_evolution?: string | null
+          snow_granulometry?: string | null
+          snow_humidity?: string | null
           snow_quality?: number | null
           snow_temperature_celsius?: number | null
           snow_type?: string | null
+          sunshine?: string | null
           training_session_id?: string | null
           updated_at?: string
           visibility?: string | null
@@ -7866,6 +7987,69 @@ export type Database = {
           },
           {
             foreignKeyName: "ski_conditions_training_session_id_fkey"
+            columns: ["training_session_id"]
+            isOneToOne: false
+            referencedRelation: "training_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ski_session_equipment: {
+        Row: {
+          created_at: string
+          equipment_id: string
+          id: string
+          match_id: string | null
+          player_id: string
+          training_session_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          equipment_id: string
+          id?: string
+          match_id?: string | null
+          player_id: string
+          training_session_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          equipment_id?: string
+          id?: string
+          match_id?: string | null
+          player_id?: string
+          training_session_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ski_session_equipment_equipment_id_fkey"
+            columns: ["equipment_id"]
+            isOneToOne: false
+            referencedRelation: "player_ski_equipment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ski_session_equipment_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ski_session_equipment_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ski_session_equipment_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ski_session_equipment_training_session_id_fkey"
             columns: ["training_session_id"]
             isOneToOne: false
             referencedRelation: "training_sessions"
