@@ -7782,6 +7782,97 @@ export type Database = {
           },
         ]
       }
+      ski_conditions: {
+        Row: {
+          air_temperature_celsius: number | null
+          altitude_m: number | null
+          avalanche_risk: number | null
+          category_id: string
+          created_at: string
+          id: string
+          match_id: string | null
+          notes: string | null
+          piste_condition: string | null
+          slope_difficulty: string | null
+          slope_name: string | null
+          snow_quality: number | null
+          snow_temperature_celsius: number | null
+          snow_type: string | null
+          training_session_id: string | null
+          updated_at: string
+          visibility: string | null
+          weather: string | null
+          wind_direction: string | null
+          wind_speed_kmh: number | null
+        }
+        Insert: {
+          air_temperature_celsius?: number | null
+          altitude_m?: number | null
+          avalanche_risk?: number | null
+          category_id: string
+          created_at?: string
+          id?: string
+          match_id?: string | null
+          notes?: string | null
+          piste_condition?: string | null
+          slope_difficulty?: string | null
+          slope_name?: string | null
+          snow_quality?: number | null
+          snow_temperature_celsius?: number | null
+          snow_type?: string | null
+          training_session_id?: string | null
+          updated_at?: string
+          visibility?: string | null
+          weather?: string | null
+          wind_direction?: string | null
+          wind_speed_kmh?: number | null
+        }
+        Update: {
+          air_temperature_celsius?: number | null
+          altitude_m?: number | null
+          avalanche_risk?: number | null
+          category_id?: string
+          created_at?: string
+          id?: string
+          match_id?: string | null
+          notes?: string | null
+          piste_condition?: string | null
+          slope_difficulty?: string | null
+          slope_name?: string | null
+          snow_quality?: number | null
+          snow_temperature_celsius?: number | null
+          snow_type?: string | null
+          training_session_id?: string | null
+          updated_at?: string
+          visibility?: string | null
+          weather?: string | null
+          wind_direction?: string | null
+          wind_speed_kmh?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ski_conditions_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ski_conditions_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ski_conditions_training_session_id_fkey"
+            columns: ["training_session_id"]
+            isOneToOne: false
+            referencedRelation: "training_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       smart_alerts: {
         Row: {
           alert_type: string

@@ -81,7 +81,9 @@ import {
 } from "@/lib/constants/trainingStyles";
 import { SessionGpsImport, type GpsPlayerData } from "@/components/category/gps/SessionGpsImport";
 import { GpsObjectivesForm } from "@/components/category/gps/GpsObjectivesForm";
-import { isRugbyType } from "@/lib/constants/sportTypes";
+import { isRugbyType, isSkiCategory, isSurfCategory } from "@/lib/constants/sportTypes";
+import { SurfConditionsForm } from "@/components/surf/SurfConditionsForm";
+import { SkiConditionsForm } from "@/components/ski/SkiConditionsForm";
 import { TrainingMethodBlock } from "./TrainingMethodBlocks";
 import { TrainingMethodSelect } from "./TrainingMethodSelect";
 import { SessionTestBlock, type SessionTest } from "./SessionTestBlock";
@@ -2891,6 +2893,28 @@ export function SessionFormDialog({
                           categoryId={categoryId}
                           trainingSessionId={editSession.id}
                           sportType={sportType || "XV"}
+                        />
+                      </div>
+                    )}
+
+                    {/* Surf Conditions - Only when editing for surf sports */}
+                    {editSession && isSurfCategory(sportType || "") && (
+                      <div className="pt-4 border-t">
+                        <SurfConditionsForm
+                          trainingSessionId={editSession.id}
+                          categoryId={categoryId}
+                          isViewer={isAthleteMode}
+                        />
+                      </div>
+                    )}
+
+                    {/* Ski Conditions - Only when editing for ski sports */}
+                    {editSession && isSkiCategory(sportType || "") && (
+                      <div className="pt-4 border-t">
+                        <SkiConditionsForm
+                          trainingSessionId={editSession.id}
+                          categoryId={categoryId}
+                          isViewer={isAthleteMode}
                         />
                       </div>
                     )}
