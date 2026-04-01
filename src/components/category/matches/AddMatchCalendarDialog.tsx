@@ -271,7 +271,7 @@ export function AddMatchCalendarDialog({
                   <SelectValue placeholder="Sélectionner une catégorie" />
                 </SelectTrigger>
                 <SelectContent>
-                  {AGE_CATEGORIES.map((cat) => (
+                  {ageCategories.map((cat) => (
                     <SelectItem key={cat.value} value={cat.value}>
                       {cat.label}
                     </SelectItem>
