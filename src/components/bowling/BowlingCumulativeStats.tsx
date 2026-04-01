@@ -11,7 +11,7 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { BowlingFrameAnalysis } from "./BowlingFrameAnalysis";
 import { BowlingGameHistory } from "./BowlingGameHistory";
-import { getStatTextColor } from "@/lib/bowling/statColors";
+import { getStatColor } from "@/lib/bowling/statColors";
 import type { FrameData } from "@/components/athlete-portal/BowlingScoreSheet";
 
 interface BowlingCumulativeStatsProps {
@@ -242,8 +242,15 @@ export function BowlingCumulativeStats({ categoryId }: BowlingCumulativeStatsPro
                 <Card className="bg-gradient-to-br from-amber-500/10 to-amber-500/5">
                   <CardContent className="pt-4 pb-3">
                     <div className="text-center">
-                      <p className={`text-3xl font-bold ${getStatTextColor("strike", cumulativeStats.avgStrikeRate)}`}>{cumulativeStats.avgStrikeRate.toFixed(1)}%</p>
-                      <p className="text-xs text-muted-foreground">% Strike</p>
+                      {(() => {
+                        const color = getStatColor("strike", cumulativeStats.avgStrikeRate);
+                        return (
+                          <p className={`text-3xl font-bold px-2 py-1 rounded-md inline-block ${color.bg} text-white`}>
+                            {cumulativeStats.avgStrikeRate.toFixed(1)}%
+                          </p>
+                        );
+                      })()}
+                      <p className="text-xs text-muted-foreground mt-1">% Strike</p>
                     </div>
                   </CardContent>
                 </Card>
@@ -266,7 +273,10 @@ export function BowlingCumulativeStats({ categoryId }: BowlingCumulativeStatsPro
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-muted-foreground">% Strike moyen</span>
-                      <span className={`font-bold ${getStatTextColor("strike", cumulativeStats.avgStrikeRate)}`}>{cumulativeStats.avgStrikeRate.toFixed(1)}%</span>
+                      {(() => {
+                        const color = getStatColor("strike", cumulativeStats.avgStrikeRate);
+                        return <span className={`font-bold px-2 py-0.5 rounded ${color.bg} text-white`}>{cumulativeStats.avgStrikeRate.toFixed(1)}%</span>;
+                      })()}
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-muted-foreground">Spares totaux</span>
@@ -274,7 +284,10 @@ export function BowlingCumulativeStats({ categoryId }: BowlingCumulativeStatsPro
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-muted-foreground">% Spare moyen</span>
-                      <span className={`font-bold ${getStatTextColor("spare", cumulativeStats.avgSpareRate)}`}>{cumulativeStats.avgSpareRate.toFixed(1)}%</span>
+                      {(() => {
+                        const color = getStatColor("spare", cumulativeStats.avgSpareRate);
+                        return <span className={`font-bold px-2 py-0.5 rounded ${color.bg} text-white`}>{cumulativeStats.avgSpareRate.toFixed(1)}%</span>;
+                      })()}
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-muted-foreground">Open Frames totaux</span>
@@ -310,7 +323,10 @@ export function BowlingCumulativeStats({ categoryId }: BowlingCumulativeStatsPro
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-muted-foreground">% Single pin conv.</span>
-                      <span className={`font-bold ${getStatTextColor("singlePin", cumulativeStats.singlePinConversionRate)}`}>{cumulativeStats.singlePinConversionRate.toFixed(1)}%</span>
+                      {(() => {
+                        const color = getStatColor("singlePin", cumulativeStats.singlePinConversionRate);
+                        return <span className={`font-bold px-2 py-0.5 rounded ${color.bg} text-white`}>{cumulativeStats.singlePinConversionRate.toFixed(1)}%</span>;
+                      })()}
                     </div>
                   </CardContent>
                 </Card>

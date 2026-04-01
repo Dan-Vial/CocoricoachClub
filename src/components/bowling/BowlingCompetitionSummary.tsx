@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { BarChart3, Target, Trophy, Circle, TrendingUp, Zap, Info, MessageSquareText } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import type { Round, BowlingBlock } from "./BowlingBlockManager";
-import { getStatTextColor } from "@/lib/bowling/statColors";
+import { getStatTextColor, getStatColor } from "@/lib/bowling/statColors";
 import { BOWLING_COMPETITION_CATEGORIES, BOWLING_PHASES } from "./BowlingBlockManager";
 
 interface BowlingCompetitionSummaryProps {
@@ -88,22 +88,22 @@ function computeDetailedStats(roundsWithScores: Round[]): DetailedStats | null {
 
 function StatsGrid({ stats, compact = false }: { stats: DetailedStats; compact?: boolean }) {
   const items = [
-    { label: "High", value: String(stats.high), color: "text-amber-600" },
-    { label: "Low", value: String(stats.low), color: "text-red-500" },
-    { label: "Moy", value: stats.average.toFixed(1), color: "text-blue-600" },
-    { label: "% Strike", value: `${stats.avgStrikeRate.toFixed(1)}%`, color: getStatTextColor("strike", stats.avgStrikeRate) },
-    { label: "% Spare", value: `${stats.avgSpareRate.toFixed(1)}%`, color: getStatTextColor("spare", stats.avgSpareRate) },
-    { label: "% QS conv.", value: `${stats.singlePinConvRate.toFixed(0)}%`, color: getStatTextColor("singlePin", stats.singlePinConvRate) },
-    { label: "% Split conv.", value: `${stats.splitConvRate.toFixed(0)}%`, color: "text-orange-600" },
+    { label: "High", value: String(stats.high), bgClass: null as string | null },
+    { label: "Low", value: String(stats.low), bgClass: null },
+    { label: "Moy", value: stats.average.toFixed(1), bgClass: null },
+    { label: "% Strike", value: `${stats.avgStrikeRate.toFixed(1)}%`, bgClass: getStatColor("strike", stats.avgStrikeRate).bg },
+    { label: "% Spare", value: `${stats.avgSpareRate.toFixed(1)}%`, bgClass: getStatColor("spare", stats.avgSpareRate).bg },
+    { label: "% QS conv.", value: `${stats.singlePinConvRate.toFixed(0)}%`, bgClass: getStatColor("singlePin", stats.singlePinConvRate).bg },
+    { label: "% Split conv.", value: `${stats.splitConvRate.toFixed(0)}%`, bgClass: null },
   ];
 
   if (compact) {
     return (
       <div className="grid grid-cols-7 gap-1 text-center">
         {items.map(item => (
-          <div key={item.label} className="p-1 rounded bg-muted/50">
-            <p className={`text-xs font-bold ${item.color}`}>{item.value}</p>
-            <p className="text-[8px] text-muted-foreground leading-tight">{item.label}</p>
+          <div key={item.label} className={`p-1 rounded ${item.bgClass ? `${item.bgClass} text-white` : "bg-muted/50"}`}>
+            <p className="text-xs font-bold">{item.value}</p>
+            <p className={`text-[8px] leading-tight ${item.bgClass ? "opacity-80" : "text-muted-foreground"}`}>{item.label}</p>
           </div>
         ))}
       </div>
@@ -113,9 +113,9 @@ function StatsGrid({ stats, compact = false }: { stats: DetailedStats; compact?:
   return (
     <div className="grid grid-cols-4 gap-2 text-center">
       {items.map(item => (
-        <div key={item.label} className="p-2 rounded-lg border">
-          <p className={`text-lg font-bold ${item.color}`}>{item.value}</p>
-          <p className="text-[10px] text-muted-foreground">{item.label}</p>
+        <div key={item.label} className={`p-2 rounded-lg ${item.bgClass ? `${item.bgClass} text-white` : "border"}`}>
+          <p className="text-lg font-bold">{item.value}</p>
+          <p className={`text-[10px] ${item.bgClass ? "opacity-80" : "text-muted-foreground"}`}>{item.label}</p>
         </div>
       ))}
     </div>
@@ -227,25 +227,25 @@ export function BowlingCompetitionSummary({
 
           {/* Detailed stats */}
           <div className="grid grid-cols-3 sm:grid-cols-7 gap-2 text-center">
-            <div className="p-2 rounded-lg border">
-              <p className={`text-lg font-bold ${getStatTextColor("strike", overall.avgStrikeRate)}`}>{overall.avgStrikeRate.toFixed(1)}%</p>
-              <p className="text-[9px] text-muted-foreground">% Strike</p>
+            <div className={`p-2 rounded-lg ${getStatColor("strike", overall.avgStrikeRate).bg} text-white`}>
+              <p className="text-lg font-bold">{overall.avgStrikeRate.toFixed(1)}%</p>
+              <p className="text-[9px] opacity-80">% Strike</p>
             </div>
-            <div className="p-2 rounded-lg border">
-              <p className={`text-lg font-bold ${getStatTextColor("spare", overall.avgSpareRate)}`}>{overall.avgSpareRate.toFixed(1)}%</p>
-              <p className="text-[9px] text-muted-foreground">% Spare</p>
+            <div className={`p-2 rounded-lg ${getStatColor("spare", overall.avgSpareRate).bg} text-white`}>
+              <p className="text-lg font-bold">{overall.avgSpareRate.toFixed(1)}%</p>
+              <p className="text-[9px] opacity-80">% Spare</p>
             </div>
-            <div className="p-2 rounded-lg border">
-              <p className={`text-lg font-bold ${getStatTextColor("singlePin", overall.singlePinConvRate)}`}>{overall.singlePinConvRate.toFixed(0)}%</p>
-              <p className="text-[9px] text-muted-foreground">% QS conv.</p>
+            <div className={`p-2 rounded-lg ${getStatColor("singlePin", overall.singlePinConvRate).bg} text-white`}>
+              <p className="text-lg font-bold">{overall.singlePinConvRate.toFixed(0)}%</p>
+              <p className="text-[9px] opacity-80">% QS conv.</p>
             </div>
             <div className="p-2 rounded-lg border">
               <p className="text-lg font-bold text-orange-600">{overall.splitConvRate.toFixed(0)}%</p>
               <p className="text-[9px] text-muted-foreground">% Split conv.</p>
             </div>
-            <div className="p-2 rounded-lg border">
-              <p className={`text-lg font-bold ${getStatTextColor("pocket", overall.pocketPct)}`}>{overall.pocketPct.toFixed(0)}%</p>
-              <p className="text-[9px] text-muted-foreground">% Pocket</p>
+            <div className={`p-2 rounded-lg ${getStatColor("pocket", overall.pocketPct).bg} text-white`}>
+              <p className="text-lg font-bold">{overall.pocketPct.toFixed(0)}%</p>
+              <p className="text-[9px] opacity-80">% Pocket</p>
             </div>
             <div className="p-2 rounded-lg border">
               <p className="text-lg font-bold text-red-500">{overall.low}</p>

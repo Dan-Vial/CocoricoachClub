@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Target, TrendingUp, Save, X, CheckCircle, ChevronDown } from "lucide-react";
-import { getStatTextColor } from "@/lib/bowling/statColors";
+import { getStatTextColor, getStatColor } from "@/lib/bowling/statColors";
 
 export interface ThrowData {
   value: string; // "X", "/", "0"-"9", "-" (miss)
@@ -430,12 +430,12 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, c
     }
     
     // 10th frame:
-    // - 1st throw: always allowed
+    // - 1st throw: always allowed (first ball)
     // - 2nd throw: only if 1st was a strike (fresh pins)
-    // - 3rd throw: only if 2nd was a strike (fresh pins)
+    // - 3rd throw: if 2nd was a strike (fresh pins) OR if 2nd was a spare (fresh pins after spare)
     if (throwIndex === 0) return true;
     if (throwIndex === 1) return frame.throws[0]?.value === "X";
-    if (throwIndex === 2) return frame.throws[1]?.value === "X";
+    if (throwIndex === 2) return frame.throws[1]?.value === "X" || frame.throws[1]?.value === "/";
     
     return false;
   };
@@ -853,13 +853,13 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, c
               label="% Strikes" 
               value={`${stats.strikePercentage}%`}
               detail={`${stats.strikes} strikes`}
-              colorClass={getStatTextColor("strike", stats.strikePercentage)}
+              bgColorClass={getStatColor("strike", stats.strikePercentage).bg}
             />
             <StatBox 
               label="% Spares" 
               value={`${stats.sparePercentage}%`}
               detail={`${stats.spares} spares (hors splits)`}
-              colorClass={getStatTextColor("spare", stats.sparePercentage)}
+              bgColorClass={getStatColor("spare", stats.sparePercentage).bg}
             />
             <StatBox 
               label="% Splits conv." 
@@ -871,13 +871,13 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, c
               label="% QS converties" 
               value={`${stats.singlePinConversionRate}%`}
               detail={`${stats.singlePinConverted}/${stats.singlePinCount}`}
-              colorClass={getStatTextColor("singlePin", stats.singlePinConversionRate)}
+              bgColorClass={getStatColor("singlePin", stats.singlePinConversionRate).bg}
             />
             <StatBox 
               label="% Boules en poche" 
               value={`${stats.pocketPercentage}%`}
               detail={`${stats.pocketCount} lancers`}
-              colorClass={getStatTextColor("pocket", stats.pocketPercentage)}
+              bgColorClass={getStatColor("pocket", stats.pocketPercentage).bg}
             />
             <StatBox 
               label="Open frames" 
@@ -918,9 +918,20 @@ interface StatBoxProps {
   note?: string;
   highlight?: boolean;
   colorClass?: string;
+  bgColorClass?: string;
 }
 
-function StatBox({ label, value, detail, note, highlight, colorClass }: StatBoxProps) {
+function StatBox({ label, value, detail, note, highlight, colorClass, bgColorClass }: StatBoxProps) {
+  if (bgColorClass) {
+    return (
+      <div className={`p-3 rounded-lg ${bgColorClass} text-white`}>
+        <div className="text-xs opacity-80">{label}</div>
+        <div className="text-xl font-bold">{value}</div>
+        <div className="text-xs opacity-80">{detail}</div>
+        {note && <div className="text-xs opacity-70">{note}</div>}
+      </div>
+    );
+  }
   return (
     <div className={`p-3 rounded-lg ${highlight ? "bg-primary/20 border border-primary/30" : "bg-background border"}`}>
       <div className="text-xs text-muted-foreground">{label}</div>
