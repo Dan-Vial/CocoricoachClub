@@ -39,7 +39,7 @@ const SECTION_LABELS: Record<ReportSection, string> = {
 export function PlayerReportSection({ playerId, categoryId, playerName, sportType }: PlayerReportSectionProps) {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
-  const [selectedSections, setSelectedSections] = useState<ReportSection[]>(["tests", "biometrics", "wellness", "matches", "ewma"]);
+  const [selectedSections, setSelectedSections] = useState<ReportSection[]>(["tests", "biometrics", "wellness", "matches", "training_stats", "ewma"]);
   const [generating, setGenerating] = useState<"pdf" | "csv" | null>(null);
 
   const { data: player } = useQuery({
