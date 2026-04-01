@@ -457,6 +457,13 @@ function PlayerDetailsContent() {
           </div>
         )}
 
+        {/* Surf Equipment - below biometrics */}
+        {isSurf && (
+          <div className="mb-6">
+            <PlayerSurfEquipment playerId={playerId!} categoryId={player.category_id} isViewer={isViewer} />
+          </div>
+        )}
+
         {/* Personal Info Section (Email, Phone, Birth date) */}
         <div className="mb-6">
           <PlayerPersonalInfoSection 
