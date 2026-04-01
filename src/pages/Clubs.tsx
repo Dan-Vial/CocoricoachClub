@@ -11,6 +11,7 @@ import { AddClubDialog } from "@/components/clubs/AddClubDialog";
 import { ClubCard } from "@/components/clubs/ClubCard";
 import { useAuth } from "@/contexts/AuthContext";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
+import { SuperAdminShieldButton } from "@/components/notifications/SuperAdminShieldButton";
 import { InjuryReturnAlerts } from "@/components/injuries/InjuryReturnAlerts";
 
 export default function Clubs() {
