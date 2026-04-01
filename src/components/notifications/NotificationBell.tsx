@@ -236,7 +236,7 @@ export function NotificationBell({ variant = "hero" }: { variant?: "hero" | "def
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
+      <PopoverTrigger asChild onClick={() => { updateLastSeen(); }}>
         <Button
           variant="ghost"
           size="icon"
