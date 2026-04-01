@@ -53,6 +53,8 @@ import {
   Repeat,
   ArrowUp,
   ArrowDown,
+  Waves,
+  Mountain,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getCategoryLabel, getCategoriesForSport, isCategoryForSport, isErgCategory, isSledCategory, isRunningCategory, hasSpecialMetrics } from "@/lib/constants/exerciseCategories";
@@ -2898,25 +2900,39 @@ export function SessionFormDialog({
                       </div>
                     )}
 
-                    {/* Surf Conditions - Only when editing for surf sports */}
-                    {editSession && isSurfCategory(sportType || "") && (
+                    {/* Surf Conditions */}
+                    {isSurfCategory(sportType || "") && (
                       <div className="pt-4 border-t">
-                        <SurfConditionsForm
-                          trainingSessionId={editSession.id}
-                          categoryId={categoryId}
-                          isViewer={isAthleteMode}
-                        />
+                        {editSession ? (
+                          <SurfConditionsForm
+                            trainingSessionId={editSession.id}
+                            categoryId={categoryId}
+                            isViewer={isAthleteMode}
+                          />
+                        ) : (
+                          <div className="flex items-center gap-2 p-3 rounded-lg border border-dashed text-muted-foreground text-sm">
+                            <Waves className="h-4 w-4 shrink-0" />
+                            <span>Les conditions de surf et le matériel seront disponibles après la création de la séance.</span>
+                          </div>
+                        )}
                       </div>
                     )}
 
-                    {/* Ski Conditions - Only when editing for ski sports */}
-                    {editSession && isSkiCategory(sportType || "") && (
+                    {/* Ski Conditions */}
+                    {isSkiCategory(sportType || "") && (
                       <div className="pt-4 border-t">
-                        <SkiConditionsForm
-                          trainingSessionId={editSession.id}
-                          categoryId={categoryId}
-                          isViewer={isAthleteMode}
-                        />
+                        {editSession ? (
+                          <SkiConditionsForm
+                            trainingSessionId={editSession.id}
+                            categoryId={categoryId}
+                            isViewer={isAthleteMode}
+                          />
+                        ) : (
+                          <div className="flex items-center gap-2 p-3 rounded-lg border border-dashed text-muted-foreground text-sm">
+                            <Mountain className="h-4 w-4 shrink-0" />
+                            <span>Les conditions neige et le matériel seront disponibles après la création de la séance.</span>
+                          </div>
+                        )}
                       </div>
                     )}
 
