@@ -31,6 +31,7 @@ import { MatchLineupDialog } from "./MatchLineupDialog";
 import { isSurfCategory, isSkiCategory } from "@/lib/constants/sportTypes";
 import { SurfConditionsForm } from "@/components/surf/SurfConditionsForm";
 import { SkiConditionsForm } from "@/components/ski/SkiConditionsForm";
+import { SessionEquipmentSection } from "@/components/shared/SessionEquipmentSection";
 import { SportMatchStatsDialog } from "./SportMatchStatsDialog";
 import { CompetitionRoundsDialog } from "./CompetitionRoundsDialog";
 import { AggregatedRoundStatsDialog } from "./AggregatedRoundStatsDialog";
@@ -539,6 +540,17 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
         {isSkiCategory(sportType) && (
           <div className="mt-3">
             <SkiConditionsForm matchId={match.id} categoryId={categoryId} />
+          </div>
+        )}
+
+        {/* Equipment selection per player */}
+        {(isSurfCategory(sportType) || isSkiCategory(sportType)) && (
+          <div className="mt-3">
+            <SessionEquipmentSection
+              categoryId={categoryId}
+              sportType={sportType}
+              matchId={match.id}
+            />
           </div>
         )}
 
