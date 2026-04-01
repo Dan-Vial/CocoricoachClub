@@ -2896,6 +2896,28 @@ export function SessionFormDialog({
                         />
                       </div>
                     )}
+
+                    {/* Surf Conditions - Only when editing for surf sports */}
+                    {editSession && isSurfCategory(sportType || "") && (
+                      <div className="pt-4 border-t">
+                        <SurfConditionsForm
+                          trainingSessionId={editSession.id}
+                          categoryId={categoryId}
+                          isViewer={isAthleteMode}
+                        />
+                      </div>
+                    )}
+
+                    {/* Ski Conditions - Only when editing for ski sports */}
+                    {editSession && isSkiCategory(sportType || "") && (
+                      <div className="pt-4 border-t">
+                        <SkiConditionsForm
+                          trainingSessionId={editSession.id}
+                          categoryId={categoryId}
+                          isViewer={isAthleteMode}
+                        />
+                      </div>
+                    )}
                   </div>
                 </ScrollArea>
               </TabsContent>
