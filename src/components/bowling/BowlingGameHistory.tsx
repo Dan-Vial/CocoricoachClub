@@ -7,7 +7,7 @@ import { Calendar, Eye, Trophy } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { BowlingScoreSheet, type FrameData, type BowlingStats } from "@/components/athlete-portal/BowlingScoreSheet";
-import { getStatTextColor } from "@/lib/bowling/statColors";
+import { getStatColor } from "@/lib/bowling/statColors";
 
 interface BowlingGameData {
   roundId: string;
