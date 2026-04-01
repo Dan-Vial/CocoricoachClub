@@ -66,7 +66,7 @@ export function SuperAdminClients() {
     const [subAmount, setSubAmount] = useState("");
     const [subPaymentMethod, setSubPaymentMethod] = useState("");
     const [clubName, setClubName] = useState("");
-    const [clubSport, setClubSport] = useState<MainSportCategory>("rugby");
+    const [clubSport, setClubSport] = useState<MainSportCategory>("rugby"); // kept for resetForm
      const [categoryDrafts, setCategoryDrafts] = useState<CategoryDraft[]>([]);
       const [generatedInviteLink, setGeneratedInviteLink] = useState<string | null>(null);
       const [linkCopied, setLinkCopied] = useState(false);
@@ -152,11 +152,15 @@ export function SuperAdminClients() {
           const { data: { user } } = await supabase.auth.getUser();
           if (!user) throw new Error("Non authentifié");
 
+          // Derive club sport from categories (use first category's sport or "multi" if mixed)
+          const uniqueSports = [...new Set(categoryDrafts.map(c => c.sport))];
+          const derivedSport = uniqueSports.length === 1 ? uniqueSports[0] : (uniqueSports.length > 1 ? "multi" : "rugby");
+
           const { data: clubData, error: clubError } = await supabase
             .from("clubs")
             .insert({
               name: clubName.trim(),
-              sport: clubSport,
+              sport: derivedSport,
               user_id: user.id,
               client_id: clientData.id,
             })
@@ -707,8 +711,6 @@ export function SuperAdminClients() {
            <CreateClientCategoriesSection
              clubName={clubName}
              onClubNameChange={setClubName}
-             clubSport={clubSport}
-             onClubSportChange={setClubSport}
              categories={categoryDrafts}
              onCategoriesChange={setCategoryDrafts}
            />

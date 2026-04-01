@@ -170,12 +170,12 @@ export function SuperAdminClubs() {
             ) : (
               <ChevronRight className="h-5 w-5 text-muted-foreground" />
             )}
-            <div className="flex items-center gap-2">
-              <span className="font-medium">{club.name}</span>
-              <span className="text-muted-foreground text-sm">
-                ({club.sport || "rugby"})
-              </span>
-            </div>
+              <div className="flex items-center gap-2">
+                <span className="font-medium">{club.name}</span>
+                <span className="text-muted-foreground text-sm">
+                  ({club.sport === "multi" ? "Multi-sports" : club.sport || "rugby"})
+                </span>
+              </div>
           </button>
 
           <div className="flex items-center gap-3 flex-wrap">
