@@ -610,7 +610,12 @@ export function ProgramBuilderDialog({
 
       toast.success(programId ? "Programme mis à jour" : "Programme créé");
       queryClient.invalidateQueries({ queryKey: ["training-programs"] });
-      onOpenChange(false);
+      queryClient.invalidateQueries({ queryKey: ["linked-program"] });
+      if (onProgramSaved && programIdToUse) {
+        onProgramSaved(programIdToUse);
+      } else {
+        onOpenChange(false);
+      }
     } catch (error: any) {
       console.error("Save error:", error);
       toast.error("Erreur lors de la sauvegarde: " + error.message);
