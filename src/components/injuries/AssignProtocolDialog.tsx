@@ -25,6 +25,7 @@ import { RUGBY_INJURY_TYPES, DEFAULT_REHAB_PHASES, INJURY_CATEGORIES } from "@/l
 import { Badge } from "@/components/ui/badge";
 import { Clock, Dumbbell, FileText, Sparkles, Calendar } from "lucide-react";
 import { addDays, format } from "date-fns";
+import { copyProtocolExercisesToPlayer } from "@/lib/helpers/copyProtocolExercises";
 
 interface AssignProtocolDialogProps {
   open: boolean;
