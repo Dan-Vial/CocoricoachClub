@@ -2919,6 +2919,18 @@ export function SessionFormDialog({
                         />
                       </div>
                     )}
+
+                    {/* Equipment selection per player */}
+                    {editSession && (isSurfCategory(sportType || "") || isSkiCategory(sportType || "")) && (
+                      <div className="pt-4 border-t">
+                        <SessionEquipmentSection
+                          categoryId={categoryId}
+                          sportType={sportType || ""}
+                          trainingSessionId={editSession.id}
+                          isViewer={isAthleteMode}
+                        />
+                      </div>
+                    )}
                   </div>
                 </ScrollArea>
               </TabsContent>

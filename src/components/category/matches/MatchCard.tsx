@@ -543,6 +543,17 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
           </div>
         )}
 
+        {/* Equipment selection per player */}
+        {(isSurfCategory(sportType) || isSkiCategory(sportType)) && (
+          <div className="mt-3">
+            <SessionEquipmentSection
+              categoryId={categoryId}
+              sportType={sportType}
+              matchId={match.id}
+            />
+          </div>
+        )}
+
         {/* Sub-matches section */}
         {hasSubMatches && (
           <Collapsible open={isSubMatchesExpanded} onOpenChange={setIsSubMatchesExpanded}>
