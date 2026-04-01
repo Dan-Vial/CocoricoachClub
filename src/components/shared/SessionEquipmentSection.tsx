@@ -35,11 +35,11 @@ export function SessionEquipmentSection({
     queryFn: async () => {
       const { data, error } = await supabase
         .from("players")
-        .select("id, name, first_name, photo_url")
+        .select("id, name, first_name")
         .eq("category_id", categoryId)
         .order("name");
       if (error) throw error;
-      return data || [];
+      return (data || []) as { id: string; name: string; first_name: string | null }[];
     },
   });
 
