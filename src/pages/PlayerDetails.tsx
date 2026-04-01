@@ -31,6 +31,7 @@ import { PlayerAdditionalInfoSection } from "@/components/player/PlayerAdditiona
 import { PlayerPersonalInfoSection } from "@/components/player/PlayerPersonalInfoSection";
 import { PlayerReferenceCard } from "@/components/player/PlayerReferenceCard";
 import { PlayerBowlingArsenal } from "@/components/bowling/PlayerBowlingArsenal";
+import { PlayerSurfEquipment } from "@/components/surf/PlayerSurfEquipment";
 import { ViewerModeProvider, useViewerModeContext } from "@/contexts/ViewerModeContext";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -102,6 +103,7 @@ function PlayerDetailsContent() {
   const isJudo = isJudoCategory(sportType);
   const isAviron = sportType.toLowerCase().includes("aviron");
   const isBowling = sportType.toLowerCase().includes("bowling");
+  const isSurf = sportType.toLowerCase().includes("surf");
   const positions = getPositionsForSport(sportType);
 
   // Get display label for discipline/position/role
@@ -452,6 +454,13 @@ function PlayerDetailsContent() {
         {isBowling && (
           <div className="mb-6">
             <PlayerBowlingArsenal playerId={playerId!} categoryId={player.category_id} isViewer={isViewer} />
+          </div>
+        )}
+
+        {/* Surf Equipment - below biometrics */}
+        {isSurf && (
+          <div className="mb-6">
+            <PlayerSurfEquipment playerId={playerId!} categoryId={player.category_id} isViewer={isViewer} />
           </div>
         )}
 
