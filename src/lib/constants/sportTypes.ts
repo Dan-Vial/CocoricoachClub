@@ -539,6 +539,7 @@ export const SPORT_TYPES: SportTypeOption[] = [
   { value: "padel_national", label: "Padel - Équipe Nationale", category: "individual" },
   { value: "natation_national", label: "Natation - Équipe Nationale", category: "individual" },
   { value: "ski_national", label: "Sports de Glisse - Équipe Nationale", category: "individual" },
+  { value: "surf_national", label: "Surf - Équipe Nationale", category: "individual" },
   { value: "triathlon_national", label: "Triathlon - Équipe Nationale", category: "individual" },
   { value: "tennis_national", label: "Tennis - Équipe Nationale", category: "individual" },
   // CrossFit / Hyrox / Musculation
