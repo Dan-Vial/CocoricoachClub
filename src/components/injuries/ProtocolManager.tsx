@@ -60,6 +60,7 @@ interface Phase {
   care_instructions: string[];
   taping_instructions: string[];
   taping_diagram_url?: string | null;
+  linked_program_id?: string | null;
   exercises: ProtocolExercise[];
 }
 
