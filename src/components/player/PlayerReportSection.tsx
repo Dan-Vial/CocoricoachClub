@@ -1103,6 +1103,129 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
         yPos += 8;
       }
 
+      // ===== TRAINING STATS SECTION =====
+      if (selectedSections.includes("training_stats")) {
+        const allTrainingExercises: { exercise: string; date: string; attempts: number; successes: number; rate: number }[] = [];
+
+        // Bowling spare training
+        (data.bowlingSpareTraining || []).forEach((t: any) => {
+          allTrainingExercises.push({
+            exercise: t.exercise_type || '-',
+            date: t.session_date,
+            attempts: t.attempts || 0,
+            successes: t.successes || 0,
+            rate: t.success_rate || 0,
+          });
+        });
+
+        // Tennis drill training
+        (data.tennisDrillTraining || []).forEach((t: any) => {
+          allTrainingExercises.push({
+            exercise: t.exercise_type || '-',
+            date: t.session_date,
+            attempts: t.attempts || 0,
+            successes: t.successes || 0,
+            rate: t.success_rate || 0,
+          });
+        });
+
+        // Precision training (generic)
+        (data.precisionTraining || []).forEach((t: any) => {
+          allTrainingExercises.push({
+            exercise: t.exercise_label || '-',
+            date: t.session_date,
+            attempts: t.attempts || 0,
+            successes: t.successes || 0,
+            rate: t.success_rate || 0,
+          });
+        });
+
+        if (allTrainingExercises.length > 0) {
+          yPos = localCheckPageBreak(pdf, yPos, 40, pdfSettings);
+          pdf.setFillColor(...colors.light);
+          pdf.rect(margin, yPos, contentWidth, 8, 'F');
+          pdf.setTextColor(...colors.primary);
+          pdf.setFontSize(11);
+          pdf.setFont("helvetica", "bold");
+          pdf.text("STATISTIQUES ENTRAÎNEMENT", margin + 3, yPos + 5.5);
+          pdf.setFont("helvetica", "normal");
+          pdf.setTextColor(...colors.dark);
+          yPos += 12;
+
+          // Cumulative by exercise type
+          const exerciseTotals = new Map<string, { attempts: number; successes: number }>();
+          allTrainingExercises.forEach(t => {
+            const existing = exerciseTotals.get(t.exercise) || { attempts: 0, successes: 0 };
+            existing.attempts += t.attempts;
+            existing.successes += t.successes;
+            exerciseTotals.set(t.exercise, existing);
+          });
+
+          // Summary table
+          const summHeaders = ["Exercice", "Tentatives", "Réussites", "% Réussite"];
+          const summColWidths = [60, 35, 35, 35];
+          yPos = drawTableHeaderPdf(pdf, summHeaders, summColWidths, yPos, margin);
+
+          let idx = 0;
+          exerciseTotals.forEach((totals, exercise) => {
+            yPos = localCheckPageBreak(pdf, yPos, 10, pdfSettings);
+            const rate = totals.attempts > 0 ? Math.round((totals.successes / totals.attempts) * 10000) / 100 : 0;
+            const rateColor: [number, number, number] = rate >= 70 ? colors.success : rate >= 40 ? colors.warning : colors.danger;
+            yPos = drawTableRowPdf(pdf, [
+              exercise,
+              String(totals.attempts),
+              String(totals.successes),
+              `${rate.toFixed(1)}%`,
+            ], summColWidths, yPos, idx % 2 === 1, margin, [null, null, null, rateColor]);
+            idx++;
+          });
+          yPos += 6;
+
+          // Overall totals
+          const totalAttempts = allTrainingExercises.reduce((sum, t) => sum + t.attempts, 0);
+          const totalSuccesses = allTrainingExercises.reduce((sum, t) => sum + t.successes, 0);
+          const overallRate = totalAttempts > 0 ? Math.round((totalSuccesses / totalAttempts) * 10000) / 100 : 0;
+
+          pdf.setFontSize(9);
+          pdf.setFont("helvetica", "bold");
+          pdf.setTextColor(...colors.primary);
+          pdf.text(`Total: ${totalAttempts} tentatives, ${totalSuccesses} réussites, ${overallRate.toFixed(1)}% de réussite`, margin, yPos);
+          pdf.setFont("helvetica", "normal");
+          pdf.setTextColor(...colors.dark);
+          yPos += 8;
+
+          // Detail table (recent entries)
+          const detailHeaders = ["Date", "Exercice", "Tentatives", "Réussites", "% Réussite"];
+          const detailColWidths = [28, 52, 30, 30, 30];
+          yPos = localCheckPageBreak(pdf, yPos, 15, pdfSettings);
+          yPos = drawTableHeaderPdf(pdf, detailHeaders, detailColWidths, yPos, margin);
+
+          allTrainingExercises.slice(0, 20).forEach((t, index) => {
+            yPos = localCheckPageBreak(pdf, yPos, 10, pdfSettings);
+            const rateColor: [number, number, number] = t.rate >= 70 ? colors.success : t.rate >= 40 ? colors.warning : colors.danger;
+            yPos = drawTableRowPdf(pdf, [
+              t.date ? format(new Date(t.date), "dd/MM/yy") : '-',
+              t.exercise,
+              String(t.attempts),
+              String(t.successes),
+              `${t.rate.toFixed(1)}%`,
+            ], detailColWidths, yPos, index % 2 === 1, margin, [null, null, null, null, rateColor]);
+          });
+          yPos += 8;
+
+          // Bar chart of success rates by exercise
+          const chartData = Array.from(exerciseTotals.entries()).map(([exercise, totals]) => ({
+            label: exercise,
+            value: totals.attempts > 0 ? Math.round((totals.successes / totals.attempts) * 100) : 0,
+            color: colors.primary,
+          }));
+          if (chartData.length >= 2) {
+            yPos = localCheckPageBreak(pdf, yPos, 55, pdfSettings);
+            yPos = drawBarChart(pdf, chartData, margin, yPos, contentWidth, 35, "% Réussite par exercice");
+          }
+        }
+      }
+
       // ===== EWMA / CHARGE SECTION =====
       if (selectedSections.includes("ewma")) {
         yPos = localCheckPageBreak(pdf, yPos, 50, pdfSettings);
