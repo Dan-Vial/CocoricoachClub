@@ -96,6 +96,23 @@ export function SessionEquipmentSection({
                       disabled={isViewer}
                     />
                   )}
+                  {isPadel && (
+                    <PadelEquipmentSelector
+                      playerId={player.id}
+                      categoryId={categoryId}
+                      matchId={matchId}
+                      trainingSessionId={trainingSessionId}
+                      disabled={isViewer}
+                    />
+                  )}
+                    <SkiEquipmentSelector
+                      playerId={player.id}
+                      categoryId={categoryId}
+                      matchId={matchId}
+                      trainingSessionId={trainingSessionId}
+                      disabled={isViewer}
+                    />
+                  )}
                 </div>
               </div>
             ))}
