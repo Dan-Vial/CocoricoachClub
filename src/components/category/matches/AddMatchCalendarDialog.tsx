@@ -95,10 +95,12 @@ export function AddMatchCalendarDialog({
 }: AddMatchCalendarDialogProps) {
   const competitions = getCompetitionsBySport(sportType);
   const isIndividual = isIndividualSport(sportType);
+  const isSurf = sportType.toLowerCase().includes("surf");
   const isAviron = sportType.toLowerCase().includes("aviron");
   const isTennis = sportType.toLowerCase().includes("tennis");
   
-  const [opponent, setOpponent] = useState("");
+  const baseSport = sportType.split('_')[0].toLowerCase();
+  const ageCategories = AGE_CATEGORIES[baseSport] || AGE_CATEGORIES.default;
   const [competition, setCompetition] = useState("");
   const [customCompetition, setCustomCompetition] = useState("");
   const [competitionStage, setCompetitionStage] = useState("");
