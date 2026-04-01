@@ -121,15 +121,18 @@ export function AddPlayerDialogWithInvite({
   const isTeamSport = !isIndividualSport(sportType);
   const positions = getPositionsForSport(sportType);
   
+  const isSurf = categoryData?.rugby_type ? isSurfCategory(categoryData.rugby_type) : false;
+  
   // Determine which discipline list to use
   const getDisciplineOptions = () => {
     if (isAthletics) return ATHLETISME_DISCIPLINES;
     if (isNatation) return NATATION_DISCIPLINES;
     if (isSki) return SKI_DISCIPLINES;
+    if (isSurf) return SURF_DISCIPLINES;
     if (isTriathlon) return TRIATHLON_DISCIPLINES;
     return [];
   };
-  const hasDisciplines = isAthletics || isNatation || isSki || isTriathlon;
+  const hasDisciplines = isAthletics || isNatation || isSki || isSurf || isTriathlon;
   const disciplineOptions = getDisciplineOptions();
   
   // Determine specialties
