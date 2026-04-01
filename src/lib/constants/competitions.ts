@@ -1349,6 +1349,8 @@ export const getCompetitionsBySport = (sportType: string): CompetitionCategory[]
       return RUGBY_COMPETITIONS;
   }
 };
+
+// Competition stages by sport category
 export interface CompetitionStage {
   value: string;
   label: string;
