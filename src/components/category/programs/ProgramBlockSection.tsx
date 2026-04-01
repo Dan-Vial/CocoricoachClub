@@ -175,7 +175,7 @@ export function ProgramBlockSection({
                 />
               ) : (
                 <span
-                  className="font-semibold text-primary cursor-text"
+                  className={`font-semibold cursor-text ${color.label}`}
                   onClick={(e) => {
                     e.stopPropagation();
                     setIsEditingName(true);
