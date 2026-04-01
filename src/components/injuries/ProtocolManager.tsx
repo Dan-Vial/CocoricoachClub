@@ -413,6 +413,7 @@ export function ProtocolManager({ categoryId }: ProtocolManagerProps) {
           exit_criteria: p.exit_criteria || [],
           care_instructions: p.care_instructions || [],
           taping_instructions: p.taping_instructions || [],
+          taping_diagram_url: (p as any).taping_diagram_url || null,
           exercises: (exercisesData || []).map((e: any) => ({
             id: e.id,
             name: e.name,
