@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
-import { ArrowLeft, ArrowRightLeft, Edit2, Check, X, User, Activity, FlaskConical, Swords, CalendarDays, Heart, Utensils, GraduationCap, Bandage, CircleDot } from "lucide-react";
+import { ArrowLeft, ArrowRightLeft, Edit2, Check, X, User, Activity, FlaskConical, Swords, CalendarDays, Heart, Utensils, GraduationCap, Bandage, CircleDot, Mountain } from "lucide-react";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { ColoredNavTabsList } from "@/components/ui/colored-nav-tabs";
 import * as TabsPrimitive from "@radix-ui/react-tabs";
@@ -452,26 +452,6 @@ function PlayerDetailsContent() {
           />
         </div>
 
-        {/* Bowling Arsenal - below biometrics */}
-        {isBowling && (
-          <div className="mb-6">
-            <PlayerBowlingArsenal playerId={playerId!} categoryId={player.category_id} isViewer={isViewer} />
-          </div>
-        )}
-
-        {/* Surf Equipment */}
-        {isSurf && (
-          <div className="mb-6">
-            <PlayerSurfEquipment playerId={playerId!} categoryId={player.category_id} isViewer={isViewer} />
-          </div>
-        )}
-
-        {/* Ski Equipment */}
-        {isSki && (
-          <div className="mb-6">
-            <PlayerSkiEquipment playerId={playerId!} categoryId={player.category_id} isViewer={isViewer} />
-          </div>
-        )}
 
         {/* Personal Info Section (Email, Phone, Birth date) */}
         <div className="mb-6">
@@ -502,6 +482,9 @@ function PlayerDetailsContent() {
                 <PlayerDetailTab value="academy" label="Académie" icon={GraduationCap} color="hsl(200 85% 50%)" />
               )}
               <PlayerDetailTab value="injuries" label="Blessures" icon={Bandage} color="hsl(10 80% 55%)" />
+              {(isBowling || isSurf || isSki) && (
+                <PlayerDetailTab value="equipment" label={isBowling ? "Arsenal" : "Matériel"} icon={Mountain} color="hsl(190 70% 50%)" />
+              )}
             </ColoredNavTabsList>
             <ScrollBar orientation="horizontal" />
           </ScrollArea>
@@ -556,6 +539,20 @@ function PlayerDetailsContent() {
           <TabsContent value="injuries">
             <PlayerInjuriesTab playerId={playerId!} categoryId={player.category_id} playerName={fullName} />
           </TabsContent>
+
+          {(isBowling || isSurf || isSki) && (
+            <TabsContent value="equipment">
+              {isBowling && (
+                <PlayerBowlingArsenal playerId={playerId!} categoryId={player.category_id} isViewer={isViewer} />
+              )}
+              {isSurf && (
+                <PlayerSurfEquipment playerId={playerId!} categoryId={player.category_id} isViewer={isViewer} />
+              )}
+              {isSki && (
+                <PlayerSkiEquipment playerId={playerId!} categoryId={player.category_id} isViewer={isViewer} />
+              )}
+            </TabsContent>
+          )}
 
         </Tabs>
 
