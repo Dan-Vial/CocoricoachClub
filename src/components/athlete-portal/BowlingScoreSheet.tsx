@@ -371,13 +371,15 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, c
     // Calculate percentages
     const strikePercentage = (strikes / 12) * 100;
     
-    // Spare % = spares réussis / opportunités de spare (frames 1-9 sans strike)
-    // Une opportunité de spare = une frame (1-9) où le 1er lancer n'est PAS un strike
+    // Spare % = spares réussis / opportunités de spare (frames sans strike)
+    // Un split fermé COMPTE comme spare. Un split non fermé N'EST PAS une opportunité de spare.
     let spareOpportunities = 0;
     let sparesConverted = 0;
     for (let i = 0; i < 9; i++) {
       const f = allFrames[i];
       if (f.throws.length === 0 || f.throws[0].value === "" || f.throws[0].value === "X") continue;
+      // Si c'est un split non converti, ne pas compter comme opportunité de spare
+      if (f.throws[0].isSplit && f.throws[1]?.value !== "/") continue;
       spareOpportunities++;
       if (f.throws[1]?.value === "/") {
         sparesConverted++;
