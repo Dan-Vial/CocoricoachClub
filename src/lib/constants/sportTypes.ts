@@ -423,6 +423,7 @@ export const getOtherSportSubtypes = (sport: MainSportCategory): SportSubTypeOpt
     padel: "Padel",
     natation: "Natation",
     ski: "Sports de Glisse",
+    surf: "Surf",
     triathlon: "Triathlon",
     tennis: "Tennis",
   };
