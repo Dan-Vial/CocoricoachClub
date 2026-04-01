@@ -81,7 +81,9 @@ import {
 } from "@/lib/constants/trainingStyles";
 import { SessionGpsImport, type GpsPlayerData } from "@/components/category/gps/SessionGpsImport";
 import { GpsObjectivesForm } from "@/components/category/gps/GpsObjectivesForm";
-import { isRugbyType } from "@/lib/constants/sportTypes";
+import { isRugbyType, isSkiCategory, isSurfCategory } from "@/lib/constants/sportTypes";
+import { SurfConditionsForm } from "@/components/surf/SurfConditionsForm";
+import { SkiConditionsForm } from "@/components/ski/SkiConditionsForm";
 import { TrainingMethodBlock } from "./TrainingMethodBlocks";
 import { TrainingMethodSelect } from "./TrainingMethodSelect";
 import { SessionTestBlock, type SessionTest } from "./SessionTestBlock";
