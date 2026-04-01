@@ -69,13 +69,13 @@ export function SurfConditionsForm({ matchId, trainingSessionId, categoryId, isV
   const { data: existing } = useQuery({
     queryKey,
     queryFn: async () => {
-      let query = supabase.from("surf_conditions" as any).select("*").eq("category_id", categoryId);
+      let query = supabase.from("surf_conditions").select("*").eq("category_id", categoryId);
       if (matchId) query = query.eq("match_id", matchId);
       else if (trainingSessionId) query = query.eq("training_session_id", trainingSessionId);
       else return null;
-      const { data, error } = await (query as any).maybeSingle();
+      const { data, error } = await query.maybeSingle();
       if (error) throw error;
-      return data as any;
+      return data;
     },
     enabled: !!(matchId || trainingSessionId),
   });
