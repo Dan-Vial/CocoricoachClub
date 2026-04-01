@@ -717,7 +717,7 @@ export const DUATHLON_STATS: StatField[] = [
   { key: "gapToFirst", label: "Écart au 1er (sec)", shortLabel: "Écart", category: "scoring", type: "number" },
 ];
 
-export type SportType = "XV" | "7" | "XIII" | "football" | "handball" | "volleyball" | "basketball" | "judo" | "aviron" | "bowling" | "academie" | "national_team" | "athletisme" | "padel" | "natation" | "ski" | "triathlon";
+export type SportType = "XV" | "7" | "XIII" | "football" | "handball" | "volleyball" | "basketball" | "judo" | "aviron" | "bowling" | "academie" | "national_team" | "athletisme" | "padel" | "natation" | "ski" | "surf" | "triathlon";
 // Tennis stats
 export const TENNIS_STATS: StatField[] = [
   // Scoring
@@ -781,7 +781,7 @@ function getBaseSport(sportType: string): string {
 function getSkiStatsForDiscipline(discipline?: string): StatField[] {
   if (!discipline) return SKI_ALPIN_STATS;
   const d = discipline.toLowerCase();
-  if (d.includes("surf") || d.includes("bodyboard") || d.includes("sup") || d.includes("big_wave")) return SURF_STATS;
+  if (d.includes("biathlon")) return SKI_BIATHLON_STATS;
   if (d.includes("biathlon")) return SKI_BIATHLON_STATS;
   if (d.includes("fond") || d.includes("skiathlon") || d.includes("relais") || d.includes("sprint") && d.includes("fond")) return SKI_FOND_STATS;
   if (d.includes("freestyle") || d.includes("bosses") || d.includes("slopestyle") || d.includes("halfpipe") || d.includes("half-pipe") || d.includes("skicross")) return SKI_FREESTYLE_STATS;
@@ -836,6 +836,8 @@ export function getStatsForSport(sportType: SportType | string, isGoalkeeper: bo
     case "ski":
     case "snow":
       return getSkiStatsForDiscipline(discipline);
+    case "surf":
+      return SURF_STATS;
     case "triathlon":
       return getTriathlonStatsForDiscipline(discipline);
     case "tennis":

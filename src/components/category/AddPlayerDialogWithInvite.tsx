@@ -21,7 +21,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { playerSchema } from "@/lib/validations";
-import { ATHLETISME_DISCIPLINES, ATHLETISME_SPECIALTIES, JUDO_WEIGHT_CATEGORIES, AVIRON_ROLES, NATATION_DISCIPLINES, NATATION_SPECIALTIES, SKI_DISCIPLINES, TRIATHLON_DISCIPLINES, PADEL_POSITIONS, isAthletismeCategory, isJudoCategory, isNatationCategory, isSkiCategory, isTriathlonCategory, isPadelCategory, isIndividualSport } from "@/lib/constants/sportTypes";
+import { ATHLETISME_DISCIPLINES, ATHLETISME_SPECIALTIES, JUDO_WEIGHT_CATEGORIES, AVIRON_ROLES, NATATION_DISCIPLINES, NATATION_SPECIALTIES, SKI_DISCIPLINES, SURF_DISCIPLINES, TRIATHLON_DISCIPLINES, PADEL_POSITIONS, isAthletismeCategory, isJudoCategory, isNatationCategory, isSkiCategory, isSurfCategory, isTriathlonCategory, isPadelCategory, isIndividualSport } from "@/lib/constants/sportTypes";
 import { getPositionsForSport } from "@/lib/constants/sportPositions";
 import { Loader2, Send, UserPlus, Copy, Check, AlertTriangle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -121,15 +121,18 @@ export function AddPlayerDialogWithInvite({
   const isTeamSport = !isIndividualSport(sportType);
   const positions = getPositionsForSport(sportType);
   
+  const isSurf = categoryData?.rugby_type ? isSurfCategory(categoryData.rugby_type) : false;
+  
   // Determine which discipline list to use
   const getDisciplineOptions = () => {
     if (isAthletics) return ATHLETISME_DISCIPLINES;
     if (isNatation) return NATATION_DISCIPLINES;
     if (isSki) return SKI_DISCIPLINES;
+    if (isSurf) return SURF_DISCIPLINES;
     if (isTriathlon) return TRIATHLON_DISCIPLINES;
     return [];
   };
-  const hasDisciplines = isAthletics || isNatation || isSki || isTriathlon;
+  const hasDisciplines = isAthletics || isNatation || isSki || isSurf || isTriathlon;
   const disciplineOptions = getDisciplineOptions();
   
   // Determine specialties

@@ -18,6 +18,7 @@ export type SportType =
   | "padel"
   | "natation"
   | "ski"
+  | "surf"
   | "triathlon"
   | "tennis"
   | "football_club"
@@ -56,6 +57,9 @@ export type SportType =
   | "ski_club"
   | "ski_academie"
   | "ski_national"
+  | "surf_club"
+  | "surf_academie"
+  | "surf_national"
   | "triathlon_club"
   | "triathlon_academie"
   | "triathlon_national"
@@ -85,7 +89,7 @@ export interface SportTypeOption {
 }
 
 // Main sport categories for the first dropdown
-export type MainSportCategory = "rugby" | "football" | "handball" | "volleyball" | "basketball" | "judo" | "bowling" | "aviron" | "athletisme" | "crossfit" | "padel" | "natation" | "ski" | "triathlon" | "tennis";
+export type MainSportCategory = "rugby" | "football" | "handball" | "volleyball" | "basketball" | "judo" | "bowling" | "aviron" | "athletisme" | "crossfit" | "padel" | "natation" | "ski" | "surf" | "triathlon" | "tennis";
 
 export interface MainSportOption {
   value: MainSportCategory;
@@ -101,7 +105,8 @@ export const MAIN_SPORTS: MainSportOption[] = [
   { value: "tennis", label: "Tennis" },
   { value: "padel", label: "Padel" },
   { value: "natation", label: "Natation" },
-  { value: "ski", label: "Sports de Glisse (Ski / Snow / Surf)" },
+  { value: "ski", label: "Sports de Glisse (Ski / Snow)" },
+  { value: "surf", label: "Surf" },
   { value: "triathlon", label: "Triathlon" },
   { value: "judo", label: "Judo" },
   { value: "bowling", label: "Bowling" },
@@ -324,7 +329,7 @@ export const NATATION_SPECIALTIES: Record<string, SpecialtyOption[]> = {
   ],
 };
 
-// Disciplines for Sports de Glisse (Ski/Snow/Surf)
+// Disciplines for Sports de Glisse (Ski/Snow)
 export const SKI_DISCIPLINES: PlayerAttributeOption[] = [
   // Ski Alpin
   { value: "ski_descente", label: "Ski Alpin - Descente" },
@@ -354,12 +359,17 @@ export const SKI_DISCIPLINES: PlayerAttributeOption[] = [
   { value: "ski_saut", label: "Saut à ski" },
   // Combiné nordique
   { value: "ski_combine_nordique", label: "Combiné nordique" },
-  // Surf
-  { value: "surf_shortboard", label: "Surf - Shortboard" },
-  { value: "surf_longboard", label: "Surf - Longboard" },
-  { value: "surf_bodyboard", label: "Surf - Bodyboard" },
-  { value: "surf_big_wave", label: "Surf - Big Wave" },
-  { value: "surf_sup", label: "Surf - Stand Up Paddle (SUP)" },
+];
+
+// Disciplines for Surf
+export const SURF_DISCIPLINES: PlayerAttributeOption[] = [
+  { value: "surf_shortboard", label: "Shortboard" },
+  { value: "surf_longboard", label: "Longboard" },
+  { value: "surf_bodyboard", label: "Bodyboard" },
+  { value: "surf_big_wave", label: "Big Wave" },
+  { value: "surf_sup", label: "Stand Up Paddle (SUP)" },
+  { value: "surf_tow_in", label: "Tow-in" },
+  { value: "surf_foil", label: "Surf Foil" },
 ];
 
 // Disciplines for Triathlon
@@ -413,6 +423,7 @@ export const getOtherSportSubtypes = (sport: MainSportCategory): SportSubTypeOpt
     padel: "Padel",
     natation: "Natation",
     ski: "Sports de Glisse",
+    surf: "Surf",
     triathlon: "Triathlon",
     tennis: "Tennis",
   };
@@ -443,7 +454,12 @@ export const isNatationCategory = (rugbyType: string): boolean => {
 
 // Helper to check if a category is ski/snow
 export const isSkiCategory = (rugbyType: string): boolean => {
-  return rugbyType?.startsWith("ski") || rugbyType?.startsWith("snow") || rugbyType === "ski";
+  return (rugbyType?.startsWith("ski") || rugbyType?.startsWith("snow") || rugbyType === "ski") && !rugbyType?.startsWith("surf");
+};
+
+// Helper to check if a category is surf
+export const isSurfCategory = (rugbyType: string): boolean => {
+  return rugbyType?.startsWith("surf") || rugbyType === "surf";
 };
 
 // Helper to check if a category is triathlon
@@ -503,6 +519,7 @@ export const SPORT_TYPES: SportTypeOption[] = [
   { value: "padel_club", label: "Padel - Club", category: "individual" },
   { value: "natation_club", label: "Natation - Club", category: "individual" },
   { value: "ski_club", label: "Sports de Glisse - Club", category: "individual" },
+  { value: "surf_club", label: "Surf - Club", category: "individual" },
   { value: "triathlon_club", label: "Triathlon - Club", category: "individual" },
   { value: "tennis_club", label: "Tennis - Club", category: "individual" },
   // Individual sports - Académie
@@ -512,6 +529,7 @@ export const SPORT_TYPES: SportTypeOption[] = [
   { value: "padel_academie", label: "Padel - Académie", category: "individual" },
   { value: "natation_academie", label: "Natation - Académie", category: "individual" },
   { value: "ski_academie", label: "Sports de Glisse - Académie", category: "individual" },
+  { value: "surf_academie", label: "Surf - Académie", category: "individual" },
   { value: "triathlon_academie", label: "Triathlon - Académie", category: "individual" },
   { value: "tennis_academie", label: "Tennis - Académie", category: "individual" },
   // Individual sports - National
@@ -521,6 +539,7 @@ export const SPORT_TYPES: SportTypeOption[] = [
   { value: "padel_national", label: "Padel - Équipe Nationale", category: "individual" },
   { value: "natation_national", label: "Natation - Équipe Nationale", category: "individual" },
   { value: "ski_national", label: "Sports de Glisse - Équipe Nationale", category: "individual" },
+  { value: "surf_national", label: "Surf - Équipe Nationale", category: "individual" },
   { value: "triathlon_national", label: "Triathlon - Équipe Nationale", category: "individual" },
   { value: "tennis_national", label: "Tennis - Équipe Nationale", category: "individual" },
   // CrossFit / Hyrox / Musculation
@@ -555,6 +574,7 @@ export const SPORT_TYPES: SportTypeOption[] = [
   { value: "padel", label: "Padel", category: "individual" },
   { value: "natation", label: "Natation", category: "individual" },
   { value: "ski", label: "Sports de Glisse", category: "individual" },
+  { value: "surf", label: "Surf", category: "individual" },
   { value: "triathlon", label: "Triathlon", category: "individual" },
   { value: "tennis", label: "Tennis", category: "individual" },
 ];
@@ -596,7 +616,8 @@ export const getMainSportFromType = (type: string): MainSportCategory => {
   if (type.startsWith("crossfit")) return "crossfit";
   if (type.startsWith("padel")) return "padel";
   if (type.startsWith("natation")) return "natation";
-  if (type.startsWith("ski") || type.startsWith("snow") || type.startsWith("surf")) return "ski";
+  if (type.startsWith("surf")) return "surf";
+  if (type.startsWith("ski") || type.startsWith("snow")) return "ski";
   if (type.startsWith("triathlon")) return "triathlon";
   if (type.startsWith("tennis")) return "tennis";
   return "rugby"; // default
@@ -605,7 +626,7 @@ export const getMainSportFromType = (type: string): MainSportCategory => {
 export const isIndividualSport = (type: string): boolean => {
   const individualSports = [
     "judo", "bowling", "aviron", "athletisme", "crossfit",
-    "padel", "natation", "ski", "triathlon", "tennis",
+    "padel", "natation", "ski", "surf", "triathlon", "tennis",
     "judo_club", "judo_academie", "judo_national",
     "bowling_club", "bowling_academie", "bowling_national",
     "aviron_club", "aviron_academie", "aviron_national",
@@ -613,6 +634,7 @@ export const isIndividualSport = (type: string): boolean => {
     "padel_club", "padel_academie", "padel_national",
     "natation_club", "natation_academie", "natation_national",
     "ski_club", "ski_academie", "ski_national",
+    "surf_club", "surf_academie", "surf_national",
     "triathlon_club", "triathlon_academie", "triathlon_national",
     "tennis_club", "tennis_academie", "tennis_national",
     "athletisme_sprints", "athletisme_haies", "athletisme_demi_fond",
