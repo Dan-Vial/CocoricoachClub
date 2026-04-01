@@ -386,7 +386,7 @@ export function AddMatchCalendarDialog({
                 id="opponent"
                 value={opponent}
                 onChange={(e) => setOpponent(e.target.value)}
-                placeholder="Ex: Tournoi de Paris, Régates Nationales..."
+                placeholder={isSurf ? "Ex: Lacanau Pro, Biarritz Surf Festival..." : "Ex: Tournoi de Paris, Régates Nationales..."}
               />
             </div>
           )}
