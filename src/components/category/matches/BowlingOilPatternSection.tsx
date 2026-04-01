@@ -143,8 +143,16 @@ export function BowlingOilPatternSection({
         .getPublicUrl(filePath);
 
       const field = gender === "male" ? "image_url_male" : "image_url_female" as const;
-      updateField(field, urlData.publicUrl);
-      toast.success(`Image huilage ${gender === "male" ? "garçons" : "filles"} téléchargée`);
+      const newUrl = urlData.publicUrl;
+      
+      // Update state and auto-save immediately with the new image
+      const updatedPattern = { ...pattern, [field]: newUrl };
+      setPattern(updatedPattern);
+      setHasChanges(true);
+      
+      // Auto-save so the image persists immediately
+      saveMutation.mutate(updatedPattern);
+      toast.success(`Image huilage ${gender === "male" ? "garçons" : "filles"} téléchargée et enregistrée`);
     } catch (err: any) {
       console.error("Upload error:", err);
       toast.error("Erreur lors du téléchargement de l'image");
@@ -302,7 +310,13 @@ export function BowlingOilPatternSection({
                 variant="destructive"
                 size="icon"
                 className="absolute top-2 right-2 h-7 w-7"
-                onClick={(e) => { e.stopPropagation(); updateField(fieldKey, null); }}
+                onClick={(e) => { 
+                  e.stopPropagation(); 
+                  const updatedPattern = { ...pattern, [fieldKey]: null };
+                  setPattern(updatedPattern);
+                  setHasChanges(true);
+                  saveMutation.mutate(updatedPattern);
+                }}
               >
                 <X className="h-4 w-4" />
               </Button>
@@ -361,8 +375,8 @@ export function BowlingOilPatternSection({
               Images du huilage
             </h4>
             <div className="grid grid-cols-2 gap-4">
-              {renderImageUpload("male", "🧑 Garçons")}
-              {renderImageUpload("female", "👧 Filles")}
+              {renderImageUpload("male", "Garçons")}
+              {renderImageUpload("female", "Filles")}
             </div>
           </div>
 
