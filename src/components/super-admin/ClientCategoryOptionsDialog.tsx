@@ -404,11 +404,14 @@ export function ClientCategoryOptionsDialog({
               ))}
             </div>
           )}
-        </ScrollArea>
+        </div>
 
-        <div className="flex justify-end pt-4 border-t">
+        <div className="flex justify-end gap-2 pt-4 border-t">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Fermer
+          </Button>
+          <Button onClick={() => { toast.success("Modifications enregistrées"); onOpenChange(false); }}>
+            Valider
           </Button>
         </div>
       </DialogContent>
