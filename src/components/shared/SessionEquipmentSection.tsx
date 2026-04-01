@@ -47,8 +47,8 @@ export function SessionEquipmentSection({
 
   if (players.length === 0) return null;
 
-  const icon = isSurf ? <Waves className="h-4 w-4" /> : <Mountain className="h-4 w-4" />;
-  const title = isSurf ? "Matériel surf par athlète" : "Matériel ski/snow par athlète";
+  const icon = isSurf ? <Waves className="h-4 w-4" /> : isPadel ? null : <Mountain className="h-4 w-4" />;
+  const title = isSurf ? "Matériel surf par athlète" : isPadel ? "Matériel padel par athlète" : "Matériel ski/snow par athlète";
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
