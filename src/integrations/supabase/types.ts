@@ -842,7 +842,10 @@ export type Database = {
           category_id: string
           created_at: string
           forward_oil: boolean | null
+          gender: string | null
           id: string
+          image_url_female: string | null
+          image_url_male: string | null
           is_preset: boolean | null
           length_feet: number | null
           match_id: string | null
@@ -861,7 +864,10 @@ export type Database = {
           category_id: string
           created_at?: string
           forward_oil?: boolean | null
+          gender?: string | null
           id?: string
+          image_url_female?: string | null
+          image_url_male?: string | null
           is_preset?: boolean | null
           length_feet?: number | null
           match_id?: string | null
@@ -880,7 +886,10 @@ export type Database = {
           category_id?: string
           created_at?: string
           forward_oil?: boolean | null
+          gender?: string | null
           id?: string
+          image_url_female?: string | null
+          image_url_male?: string | null
           is_preset?: boolean | null
           length_feet?: number | null
           match_id?: string | null
