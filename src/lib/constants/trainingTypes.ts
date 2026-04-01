@@ -44,6 +44,8 @@ export const SPORT_TRAINING_CATEGORIES: TrainingTypeCategory[] = [
   { key: "natation", label: "Natation", forSports: ["natation"] },
   // Ski / Sports de Glisse
   { key: "ski", label: "Sports de Glisse", forSports: ["ski"] },
+  // Surf
+  { key: "surf", label: "Surf", forSports: ["surf"] },
   // Triathlon
   { key: "triathlon", label: "Triathlon", forSports: ["triathlon"] },
   // CrossFit / Hyrox / Musculation categories
