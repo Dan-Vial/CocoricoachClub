@@ -612,7 +612,8 @@ export const getMainSportFromType = (type: string): MainSportCategory => {
   if (type.startsWith("crossfit")) return "crossfit";
   if (type.startsWith("padel")) return "padel";
   if (type.startsWith("natation")) return "natation";
-  if (type.startsWith("ski") || type.startsWith("snow") || type.startsWith("surf")) return "ski";
+  if (type.startsWith("surf")) return "surf";
+  if (type.startsWith("ski") || type.startsWith("snow")) return "ski";
   if (type.startsWith("triathlon")) return "triathlon";
   if (type.startsWith("tennis")) return "tennis";
   return "rugby"; // default
