@@ -168,6 +168,7 @@ serve(async (req) => {
     return json({ success: true, session_id: session.id });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Erreur inconnue";
+    console.error("[athlete-create-session] Error:", message);
     return json({ success: false, error: message }, 500);
   }
 });
