@@ -113,7 +113,7 @@ export function PlayerSkiEquipment({ playerId, categoryId, isViewer }: PlayerSki
         const { error } = await supabase.from("player_ski_equipment").update(payload).eq("id", editingItem.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("player_ski_equipment" as any).insert(payload);
+        const { error } = await supabase.from("player_ski_equipment").insert(payload);
         if (error) throw error;
       }
     },
