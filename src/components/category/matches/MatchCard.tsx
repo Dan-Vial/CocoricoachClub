@@ -528,6 +528,20 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
           </div>
         </div>
 
+        {/* Surf conditions */}
+        {isSurfCategory(sportType) && (
+          <div className="mt-3">
+            <SurfConditionsForm matchId={match.id} categoryId={categoryId} />
+          </div>
+        )}
+
+        {/* Ski conditions */}
+        {isSkiCategory(sportType) && (
+          <div className="mt-3">
+            <SkiConditionsForm matchId={match.id} categoryId={categoryId} />
+          </div>
+        )}
+
         {/* Sub-matches section */}
         {hasSubMatches && (
           <Collapsible open={isSubMatchesExpanded} onOpenChange={setIsSubMatchesExpanded}>
