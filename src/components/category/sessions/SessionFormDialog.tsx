@@ -1018,8 +1018,9 @@ export function SessionFormDialog({
 
       onOpenChange(false);
     },
-    onError: () => {
-      toast.error("Erreur lors de l'enregistrement");
+    onError: (error: Error) => {
+      console.error("[SessionFormDialog] Save error:", error);
+      toast.error(error.message || "Erreur lors de l'enregistrement");
     },
   });
 
