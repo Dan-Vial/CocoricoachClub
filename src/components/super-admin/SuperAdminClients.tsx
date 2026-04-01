@@ -66,7 +66,7 @@ export function SuperAdminClients() {
     const [subAmount, setSubAmount] = useState("");
     const [subPaymentMethod, setSubPaymentMethod] = useState("");
     const [clubName, setClubName] = useState("");
-    const [clubSport, setClubSport] = useState<MainSportCategory>("rugby");
+    const [clubSport, setClubSport] = useState<MainSportCategory>("rugby"); // kept for resetForm
      const [categoryDrafts, setCategoryDrafts] = useState<CategoryDraft[]>([]);
       const [generatedInviteLink, setGeneratedInviteLink] = useState<string | null>(null);
       const [linkCopied, setLinkCopied] = useState(false);
