@@ -1008,6 +1008,13 @@ export function ProtocolManager({ categoryId }: ProtocolManagerProps) {
                   phaseDescription={phase.description}
                 />
 
+                <ProtocolPhaseProgramLink
+                  categoryId={categoryId}
+                  linkedProgramId={phase.linked_program_id}
+                  phaseName={phase.name}
+                  onProgramLinked={(programId) => updatePhase(index, 'linked_program_id', programId)}
+                />
+
                 <ProtocolPhaseExercises
                   exercises={phase.exercises || []}
                   onChange={(exercises) => updatePhase(index, 'exercises', exercises)}
