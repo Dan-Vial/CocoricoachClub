@@ -53,6 +53,8 @@ import {
   Repeat,
   ArrowUp,
   ArrowDown,
+  Waves,
+  Mountain,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getCategoryLabel, getCategoriesForSport, isCategoryForSport, isErgCategory, isSledCategory, isRunningCategory, hasSpecialMetrics } from "@/lib/constants/exerciseCategories";
