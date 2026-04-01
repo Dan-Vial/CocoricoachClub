@@ -133,9 +133,10 @@ export function NotificationBell({ variant = "hero" }: { variant?: "hero" | "def
     refetchInterval: 30000,
   });
 
-  const acceptedCount = acceptedInvitations?.length || 0;
+  const lastSeen = getLastSeenTimestamp();
+  const acceptedCount = acceptedInvitations?.filter(inv => inv.accepted_at && inv.accepted_at > lastSeen).length || 0;
   const unreadCount = notifications?.filter(n => !n.is_read).length || 0;
-  const pendingCount = pendingUsers?.length || 0;
+  const pendingCount = pendingUsers?.filter(p => p.created_at && p.created_at > lastSeen).length || 0;
   const totalBadge = unreadCount + pendingCount + acceptedCount;
 
   const markAsRead = useMutation({
