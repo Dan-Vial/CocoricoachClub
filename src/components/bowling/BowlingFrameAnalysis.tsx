@@ -174,42 +174,42 @@ export function BowlingFrameAnalysis({ games }: BowlingFrameAnalysisProps) {
                 const isHighest = phase.strikeRate === Math.max(thirds.start.strikeRate, thirds.mid.strikeRate, thirds.end.strikeRate);
                 const isLowest = phase.strikeRate === Math.min(thirds.start.strikeRate, thirds.mid.strikeRate, thirds.end.strikeRate);
                 return (
-                  <div
-                    key={idx}
-                    className={`p-3 rounded-lg border text-center ${
-                      isHighest ? "border-green-300 bg-green-50 dark:bg-green-900/20" :
-                      isLowest ? "border-red-300 bg-red-50 dark:bg-red-900/20" :
-                      "border-border"
-                    }`}
-                  >
-                    <div className="flex items-center justify-center gap-1 mb-1">
-                      {isHighest && <TrendingUp className="h-3 w-3 text-green-600" />}
-                      {isLowest && <TrendingDown className="h-3 w-3 text-red-600" />}
-                      {!isHighest && !isLowest && <Minus className="h-3 w-3 text-muted-foreground" />}
-                      <span className="text-xs font-medium">{phase.label}</span>
-                    </div>
-                    <p className={`text-2xl font-bold px-2 py-0.5 rounded ${getStatColor("strike", phase.strikeRate).bg} text-white inline-block`}>
-                      {phase.strikeRate.toFixed(1)}%
-                    </p>
-                    <p className="text-[10px] text-muted-foreground">
-                      % Strike
-                      <StatInfoIcon text="Le % de strikes correspond au pourcentage de frames où le premier lancer abat les 10 quilles." />
-                    </p>
-                    <div className="mt-2 space-y-0.5 text-[10px]">
-                      <div className="flex justify-center items-center gap-0.5">
-                        <span className={`px-1.5 py-0.5 rounded ${getStatColor("spare", phase.spareRate).bg} text-white`}>Spare: {phase.spareRate.toFixed(0)}%</span>
-                        <StatInfoIcon text="Le % Spare correspond au pourcentage de frames fermées lorsque le premier lancer n'est pas un strike." />
-                      </div>
-                      <div className="flex justify-center items-center gap-0.5">
-                        <span>Open: {phase.openRate.toFixed(0)}%</span>
-                        <StatInfoIcon text="Le % Open correspond au pourcentage de frames non fermées lorsque le premier lancer n'est pas un strike." />
-                      </div>
-                      <div className="flex justify-center items-center gap-0.5">
-                        <span className={`px-1.5 py-0.5 rounded ${getStatColor("singlePin", phase.singlePinConvRate).bg} text-white`}>QS: {phase.singlePinConvRate.toFixed(0)}%</span>
-                        <StatInfoIcon text="Le % de quilles seules converties correspond au pourcentage de spares réussis lorsqu'il ne reste qu'une seule quille après le premier lancer." />
-                      </div>
-                    </div>
-                  </div>
+                   <div
+                     key={idx}
+                     className={`p-3 rounded-lg border text-center transition-colors ${
+                       isHighest ? "border-primary/40 bg-primary/5" :
+                       isLowest ? "border-muted-foreground/30 bg-muted/40" :
+                       "border-border bg-card"
+                     }`}
+                   >
+                     <div className="flex items-center justify-center gap-1 mb-1">
+                       {isHighest && <TrendingUp className="h-3 w-3 text-primary" />}
+                       {isLowest && <TrendingDown className="h-3 w-3 text-muted-foreground" />}
+                       {!isHighest && !isLowest && <Minus className="h-3 w-3 text-muted-foreground" />}
+                       <span className="text-xs font-semibold">{phase.label}</span>
+                     </div>
+                     <p className="text-2xl font-bold text-foreground">
+                       {phase.strikeRate.toFixed(1)}%
+                     </p>
+                     <p className="text-[10px] text-muted-foreground">
+                       % Strike
+                       <StatInfoIcon text="Le % de strikes correspond au pourcentage de frames où le premier lancer abat les 10 quilles." />
+                     </p>
+                     <div className="mt-2 space-y-1 text-[10px]">
+                       <div className="flex justify-between items-center px-1">
+                         <span className="text-muted-foreground">Spare</span>
+                         <span className="font-semibold text-foreground">{phase.spareRate.toFixed(0)}%</span>
+                       </div>
+                       <div className="flex justify-between items-center px-1">
+                         <span className="text-muted-foreground">Open</span>
+                         <span className="font-semibold text-foreground">{phase.openRate.toFixed(0)}%</span>
+                       </div>
+                       <div className="flex justify-between items-center px-1">
+                         <span className="text-muted-foreground">QS</span>
+                         <span className="font-semibold text-foreground">{phase.singlePinConvRate.toFixed(0)}%</span>
+                       </div>
+                     </div>
+                   </div>
                 );
               })}
             </div>
