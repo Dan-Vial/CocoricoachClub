@@ -308,13 +308,13 @@ export function BowlingCumulativeStats({ categoryId }: BowlingCumulativeStatsPro
                         const clampedScore = Math.max(game.score, minBase);
                         const height = range > 0 ? ((clampedScore - minBase) / range) * 100 : 50;
                         
-                        const getBarColor = (score: number) => {
-                          if (score >= 240) return "bg-yellow-400";
-                          if (score >= 210) return "bg-green-400";
-                          if (score >= 180) return "bg-green-600";
-                          if (score >= 151) return "bg-orange-500";
-                          return "bg-red-500";
-                        };
+                         const getBarColor = (score: number) => {
+                           if (score >= 240) return "bg-yellow-400";
+                           if (score >= 210) return "bg-green-600";
+                           if (score >= 180) return "bg-green-400";
+                           if (score >= 151) return "bg-orange-500";
+                           return "bg-red-500";
+                         };
                         
                         return (
                           <div
