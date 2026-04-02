@@ -278,7 +278,12 @@ export function BowlingCumulativeStats({ categoryId }: BowlingCumulativeStatsPro
                   <ColoredStatRow label="% Poches" value={`${cumulativeStats.avgPocketRate.toFixed(1)}%`} statType="pocket" percentage={cumulativeStats.avgPocketRate} />
                   <ColoredStatRow label="% Quilles seules" value={`${cumulativeStats.singlePinConversionRate.toFixed(1)}%`} statType="singlePin" percentage={cumulativeStats.singlePinConversionRate} />
                   <ColoredStatRow label="% Conversion splits" value={`${cumulativeStats.splitConversionRate.toFixed(1)}%`} />
-                  <ColoredStatRow label="% Frames non fermées" value={`${cumulativeStats.openFramePercentage.toFixed(1)}%`} />
+                   <div>
+                     <ColoredStatRow label="% Frames non fermées" value={`${cumulativeStats.openFramePercentage.toFixed(1)}%`} />
+                     <p className="text-[10px] text-muted-foreground mt-0.5 italic">
+                       Frames où ni strike ni spare n'a été réalisé (splits non convertis inclus).
+                     </p>
+                   </div>
                   
                   <div className="border-t pt-3 mt-3" />
                   

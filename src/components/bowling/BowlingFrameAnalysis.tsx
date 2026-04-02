@@ -234,55 +234,63 @@ export function BowlingFrameAnalysis({ games }: BowlingFrameAnalysisProps) {
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            {frameStats.map(f => {
-              const isBest = bestFrame && f.frameNumber === bestFrame.frameNumber;
-              const isWorst = worstFrame && f.frameNumber === worstFrame.frameNumber;
-              return (
-                <div key={f.frameNumber} className="flex items-center gap-3">
-                  <div className="w-16 text-sm font-medium">
-                    Frame {f.frameNumber}
-                    {isBest && <span className="ml-1 text-green-600">★</span>}
-                    {isWorst && <span className="ml-1 text-red-600">▼</span>}
-                  </div>
-                  <div className="flex-1 h-6 bg-muted rounded-full overflow-hidden flex">
-                    <div
-                      className="h-full bg-amber-500 transition-all"
-                      style={{ width: `${f.strikeRate}%` }}
-                      title={`Strike: ${f.strikeRate.toFixed(1)}%`}
-                    />
-                    <div
-                      className="h-full bg-blue-500 transition-all"
-                      style={{ width: `${f.spareRate}%` }}
-                      title={`Spare: ${f.spareRate.toFixed(1)}%`}
-                    />
-                    <div
-                      className="h-full bg-red-400/50 transition-all"
-                      style={{ width: `${f.openRate}%` }}
-                      title={`Open: ${f.openRate.toFixed(1)}%`}
-                    />
-                  </div>
-                  <div className="w-20 text-right">
-                    <span className="text-sm font-bold">{f.strikeRate.toFixed(0)}%</span>
-                    <span className="text-[10px] text-muted-foreground ml-1">X</span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-          <div className="flex items-center justify-center gap-4 mt-3 text-xs text-muted-foreground">
-            <div className="flex items-center gap-1">
-              <div className="w-3 h-3 rounded bg-amber-500" />
-              Strike
-            </div>
-            <div className="flex items-center gap-1">
-              <div className="w-3 h-3 rounded bg-blue-500" />
-              Spare
-            </div>
-            <div className="flex items-center gap-1">
-              <div className="w-3 h-3 rounded bg-red-400/50" />
-              Open
-            </div>
-          </div>
+             {frameStats.map(f => {
+               const isBest = bestFrame && f.frameNumber === bestFrame.frameNumber;
+               const isWorst = worstFrame && f.frameNumber === worstFrame.frameNumber;
+               // Recalculate as % of total games so strike + spare + open = 100%
+               const total = f.totalGames;
+               const strikePercent = total > 0 ? (f.strikeCount / total) * 100 : 0;
+               const sparePercent = total > 0 ? (f.spareCount / total) * 100 : 0;
+               const openPercent = total > 0 ? (f.openCount / total) * 100 : 0;
+               return (
+                 <div key={f.frameNumber} className="flex items-center gap-3">
+                   <div className="w-16 text-sm font-medium">
+                     Frame {f.frameNumber}
+                     {isBest && <span className="ml-1 text-primary">★</span>}
+                     {isWorst && <span className="ml-1 text-destructive">▼</span>}
+                   </div>
+                   <div className="flex-1 h-6 bg-muted rounded-full overflow-hidden flex">
+                     <div
+                       className="h-full bg-yellow-500 transition-all"
+                       style={{ width: `${strikePercent}%` }}
+                       title={`Strike: ${strikePercent.toFixed(1)}%`}
+                     />
+                     <div
+                       className="h-full bg-emerald-500 transition-all"
+                       style={{ width: `${sparePercent}%` }}
+                       title={`Spare: ${sparePercent.toFixed(1)}%`}
+                     />
+                     <div
+                       className="h-full bg-rose-500 transition-all"
+                       style={{ width: `${openPercent}%` }}
+                       title={`Open: ${openPercent.toFixed(1)}%`}
+                     />
+                   </div>
+                   <div className="w-20 text-right">
+                     <span className="text-sm font-bold">{strikePercent.toFixed(0)}%</span>
+                     <span className="text-[10px] text-muted-foreground ml-1">X</span>
+                   </div>
+                 </div>
+               );
+             })}
+           </div>
+           <div className="flex items-center justify-center gap-4 mt-3 text-xs text-muted-foreground">
+             <div className="flex items-center gap-1">
+               <div className="w-3 h-3 rounded bg-yellow-500" />
+               Strike
+             </div>
+             <div className="flex items-center gap-1">
+               <div className="w-3 h-3 rounded bg-emerald-500" />
+               Spare
+             </div>
+             <div className="flex items-center gap-1">
+               <div className="w-3 h-3 rounded bg-rose-500" />
+               Open
+             </div>
+           </div>
+           <p className="text-[10px] text-muted-foreground text-center mt-2 italic">
+             Les « Frames non fermées » (Open) comptent toutes les frames où le joueur n'a réussi ni strike ni spare, y compris les splits non convertis. Total = Strike% + Spare% + Open% = 100%.
+           </p>
         </CardContent>
       </Card>
     </div>
