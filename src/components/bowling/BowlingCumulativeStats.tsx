@@ -333,8 +333,8 @@ export function BowlingCumulativeStats({ categoryId }: BowlingCumulativeStatsPro
                     <div className="mt-2 border-t pt-2 flex items-center justify-center gap-3 flex-wrap text-[9px] text-muted-foreground">
                       <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded bg-red-500" />&lt;150</div>
                       <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded bg-orange-500" />151-179</div>
-                      <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded bg-green-600" />180-209</div>
-                      <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded bg-green-400" />210-239</div>
+                       <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded bg-green-400" />180-209</div>
+                       <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded bg-green-600" />210-239</div>
                       <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded bg-yellow-400" />240+</div>
                     </div>
                     <p className="text-[10px] text-muted-foreground text-center mt-1">
