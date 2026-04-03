@@ -949,7 +949,10 @@ export const TENNIS_STAGES: CompetitionStage[] = [
   { value: "huitiemes", label: "8èmes de finale" },
   { value: "quarts", label: "Quarts de finale" },
   { value: "demies", label: "Demi-finales" },
+  { value: "petite_finale", label: "Match pour la 3ème place" },
   { value: "finale", label: "Finale" },
+  { value: "classement_5", label: "Match de classement (5ème-8ème)" },
+  { value: "classement_9", label: "Match de classement (9ème-12ème)" },
 ];
 
 // Surf competitions
