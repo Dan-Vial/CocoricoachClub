@@ -71,6 +71,7 @@ interface Match {
   age_category?: string | null;
   distance_meters?: number | null;
   parent_match_id?: string | null;
+  end_date?: string | null;
 }
 
 interface MatchCardProps {
@@ -327,6 +328,9 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
             <div className="text-sm text-muted-foreground mt-1 space-y-1">
               <p>
                 {format(matchDate, "EEEE d MMMM yyyy", { locale: fr })}
+                {match.end_date && match.end_date !== match.match_date && (
+                  <> → {format(new Date(match.end_date), "EEEE d MMMM yyyy", { locale: fr })}</>
+                )}
                 {match.match_time && ` à ${match.match_time.slice(0, 5)}`}
               </p>
               {/* For individual sports, show event name if different from competition */}

@@ -98,6 +98,8 @@ export function AddMatchCalendarDialog({
   const isSurf = sportType.toLowerCase().includes("surf");
   const isAviron = sportType.toLowerCase().includes("aviron");
   const isTennis = sportType.toLowerCase().includes("tennis");
+  const isPadel = sportType.toLowerCase().includes("padel");
+  const hasTournamentBracket = isPadel || isTennis;
   
   const baseSport = sportType.split('_')[0].toLowerCase();
   const ageCategories = AGE_CATEGORIES[baseSport] || AGE_CATEGORIES.default;
@@ -106,6 +108,7 @@ export function AddMatchCalendarDialog({
   const [customCompetition, setCustomCompetition] = useState("");
   const [competitionStage, setCompetitionStage] = useState("");
   const [matchDate, setMatchDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [matchTime, setMatchTime] = useState("");
   const [location, setLocation] = useState("");
   const [isHome, setIsHome] = useState(true);
@@ -130,10 +133,11 @@ export function AddMatchCalendarDialog({
     mutationFn: async () => {
       const { error } = await supabase.from("matches").insert({
         category_id: categoryId,
-        opponent: isIndividual ? (opponent || "Compétition") : opponent,
+        opponent: isIndividual ? (opponent || (hasTournamentBracket ? "Tournoi" : "Compétition")) : opponent,
         competition: finalCompetition || null,
         competition_stage: competitionStage === "none" ? null : (competitionStage || null),
         match_date: matchDate,
+        end_date: endDate || null,
         match_time: matchTime || null,
         location: location || null,
         is_home: isHome,
@@ -149,7 +153,7 @@ export function AddMatchCalendarDialog({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["matches", categoryId] });
-      toast.success(isIndividual ? "Compétition ajoutée avec succès" : "Match ajouté avec succès");
+      toast.success(hasTournamentBracket ? "Tournoi ajouté avec succès" : (isIndividual ? "Compétition ajoutée avec succès" : "Match ajouté avec succès"));
       resetForm();
       onOpenChange(false);
     },
@@ -171,6 +175,7 @@ export function AddMatchCalendarDialog({
     setCustomCompetition("");
     setCompetitionStage("");
     setMatchDate(defaultDate ? format(defaultDate, "yyyy-MM-dd") : "");
+    setEndDate("");
     setMatchTime("");
     setLocation("");
     setIsHome(true);
@@ -205,7 +210,7 @@ export function AddMatchCalendarDialog({
       <DialogContent className="sm:max-w-[500px] max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {isIndividual ? "Ajouter une compétition" : "Ajouter un match"}
+            {hasTournamentBracket ? "Ajouter un tournoi" : (isIndividual ? "Ajouter une compétition" : "Ajouter un match")}
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -381,19 +386,19 @@ export function AddMatchCalendarDialog({
 
           {isIndividual && (
             <div className="space-y-2">
-              <Label htmlFor="opponent">Nom de l'événement</Label>
+              <Label htmlFor="opponent">{hasTournamentBracket ? "Nom du tournoi" : "Nom de l'événement"}</Label>
               <Input
                 id="opponent"
                 value={opponent}
                 onChange={(e) => setOpponent(e.target.value)}
-                placeholder={isSurf ? "Ex: Lacanau Pro, Biarritz Surf Festival..." : "Ex: Tournoi de Paris, Régates Nationales..."}
+                placeholder={hasTournamentBracket ? "Ex: Open de France, Tournoi du Club..." : (isSurf ? "Ex: Lacanau Pro, Biarritz Surf Festival..." : "Ex: Tournoi de Paris, Régates Nationales...")}
               />
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className={hasTournamentBracket ? "grid grid-cols-3 gap-4" : "grid grid-cols-2 gap-4"}>
             <div className="space-y-2">
-              <Label htmlFor="matchDate">Date *</Label>
+              <Label htmlFor="matchDate">{hasTournamentBracket ? "Date début *" : "Date *"}</Label>
               <Input
                 id="matchDate"
                 type="date"
@@ -402,6 +407,18 @@ export function AddMatchCalendarDialog({
                 required
               />
             </div>
+            {hasTournamentBracket && (
+              <div className="space-y-2">
+                <Label htmlFor="endDate">Date fin</Label>
+                <Input
+                  id="endDate"
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  min={matchDate}
+                />
+              </div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="matchTime">Heure</Label>
               <Input

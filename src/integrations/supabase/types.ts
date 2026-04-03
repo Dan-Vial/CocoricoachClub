@@ -3445,6 +3445,7 @@ export type Database = {
           created_at: string
           distance_meters: number | null
           effective_play_time: number | null
+          end_date: string | null
           event_type: string | null
           id: string
           is_finalized: boolean | null
@@ -3470,6 +3471,7 @@ export type Database = {
           created_at?: string
           distance_meters?: number | null
           effective_play_time?: number | null
+          end_date?: string | null
           event_type?: string | null
           id?: string
           is_finalized?: boolean | null
@@ -3495,6 +3497,7 @@ export type Database = {
           created_at?: string
           distance_meters?: number | null
           effective_play_time?: number | null
+          end_date?: string | null
           event_type?: string | null
           id?: string
           is_finalized?: boolean | null
