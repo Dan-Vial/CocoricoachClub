@@ -551,7 +551,7 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
         )}
 
         {/* Equipment selection per player */}
-        {(isSurfCategory(sportType) || isSkiCategory(sportType)) && (
+        {(isSurfCategory(sportType) || isSkiCategory(sportType) || isPadel) && (
           <div className="mt-3">
             <SessionEquipmentSection
               categoryId={categoryId}

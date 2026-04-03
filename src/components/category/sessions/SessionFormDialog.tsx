@@ -2940,7 +2940,7 @@ export function SessionFormDialog({
                     )}
 
                     {/* Equipment selection per player */}
-                    {editSession && (isSurfCategory(sportType || "") || isSkiCategory(sportType || "")) && (
+                    {editSession && (isSurfCategory(sportType || "") || isSkiCategory(sportType || "") || isPadelCategory(sportType || "")) && (
                       <div className="pt-4 border-t">
                         <SessionEquipmentSection
                           categoryId={categoryId}
