@@ -386,12 +386,12 @@ export function AddMatchCalendarDialog({
 
           {isIndividual && (
             <div className="space-y-2">
-              <Label htmlFor="opponent">Nom de l'événement</Label>
+              <Label htmlFor="opponent">{hasTournamentBracket ? "Nom du tournoi" : "Nom de l'événement"}</Label>
               <Input
                 id="opponent"
                 value={opponent}
                 onChange={(e) => setOpponent(e.target.value)}
-                placeholder={isSurf ? "Ex: Lacanau Pro, Biarritz Surf Festival..." : "Ex: Tournoi de Paris, Régates Nationales..."}
+                placeholder={hasTournamentBracket ? "Ex: Open de France, Tournoi du Club..." : (isSurf ? "Ex: Lacanau Pro, Biarritz Surf Festival..." : "Ex: Tournoi de Paris, Régates Nationales...")}
               />
             </div>
           )}
