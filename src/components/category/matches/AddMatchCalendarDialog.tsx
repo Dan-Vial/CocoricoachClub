@@ -98,6 +98,8 @@ export function AddMatchCalendarDialog({
   const isSurf = sportType.toLowerCase().includes("surf");
   const isAviron = sportType.toLowerCase().includes("aviron");
   const isTennis = sportType.toLowerCase().includes("tennis");
+  const isPadel = sportType.toLowerCase().includes("padel");
+  const hasTournamentBracket = isPadel || isTennis;
   
   const baseSport = sportType.split('_')[0].toLowerCase();
   const ageCategories = AGE_CATEGORIES[baseSport] || AGE_CATEGORIES.default;
@@ -106,6 +108,7 @@ export function AddMatchCalendarDialog({
   const [customCompetition, setCustomCompetition] = useState("");
   const [competitionStage, setCompetitionStage] = useState("");
   const [matchDate, setMatchDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [matchTime, setMatchTime] = useState("");
   const [location, setLocation] = useState("");
   const [isHome, setIsHome] = useState(true);
