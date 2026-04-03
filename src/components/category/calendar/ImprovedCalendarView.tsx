@@ -52,6 +52,7 @@ interface Match {
   opponent: string;
   location: string | null;
   is_home: boolean | null;
+  end_date?: string | null;
 }
 
 interface ImprovedCalendarViewProps {
