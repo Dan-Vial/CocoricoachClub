@@ -91,9 +91,17 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
 
   // Get matches for a specific date
   const getMatchesForDate = (date: Date) => {
-    return matches?.filter((match) =>
-      isSameDay(new Date(match.match_date), date)
-    ) || [];
+    return matches?.filter((match) => {
+      const matchStart = new Date(match.match_date);
+      if (match.end_date && match.end_date !== match.match_date) {
+        const matchEnd = new Date(match.end_date);
+        const dayOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+        const startOnly = new Date(matchStart.getFullYear(), matchStart.getMonth(), matchStart.getDate());
+        const endOnly = new Date(matchEnd.getFullYear(), matchEnd.getMonth(), matchEnd.getDate());
+        return dayOnly >= startOnly && dayOnly <= endOnly;
+      }
+      return isSameDay(matchStart, date);
+    }) || [];
   };
 
   // Get planning items for a specific date
