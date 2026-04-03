@@ -1530,6 +1530,10 @@ export const getCompetitionStageLabel = (stage: string): string => {
     round_3: "Round 3",
     round_4: "Round 4",
     round_5: "Round 5",
+    // Padel classement
+    classement_5: "Classement 5ème-8ème",
+    classement_9: "Classement 9ème-12ème",
+    classement_13: "Classement 13ème-16ème",
   };
   return allStages[stage] || stage;
 };
