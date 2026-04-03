@@ -230,9 +230,18 @@ export function ImprovedCalendarView({
   };
 
   const getMatchesForDay = (day: Date) => {
-    return filteredMatches.filter((match) => 
-      isSameDay(new Date(match.match_date), day)
-    );
+    return filteredMatches.filter((match) => {
+      const matchStart = new Date(match.match_date);
+      // If multi-day tournament, show on all days in range
+      if (match.end_date && match.end_date !== match.match_date) {
+        const matchEnd = new Date(match.end_date);
+        const dayOnly = new Date(day.getFullYear(), day.getMonth(), day.getDate());
+        const startOnly = new Date(matchStart.getFullYear(), matchStart.getMonth(), matchStart.getDate());
+        const endOnly = new Date(matchEnd.getFullYear(), matchEnd.getMonth(), matchEnd.getDate());
+        return dayOnly >= startOnly && dayOnly <= endOnly;
+      }
+      return isSameDay(matchStart, day);
+    });
   };
 
   // Toggle event type filter
