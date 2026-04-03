@@ -564,7 +564,7 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
               <Button variant="ghost" size="sm" className="w-full mt-3 gap-2 justify-between">
                 <span className="flex items-center gap-2">
                   <Trophy className="h-4 w-4" />
-                  {subMatches?.length} match{subMatches && subMatches.length > 1 ? "s" : ""} dans cette compétition
+                  {subMatches?.length} match{subMatches && subMatches.length > 1 ? "s" : ""} dans ce {hasTournamentBracket ? "tournoi" : "cette compétition"}
                 </span>
                 {isSubMatchesExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
               </Button>
