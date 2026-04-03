@@ -83,7 +83,7 @@ import {
 } from "@/lib/constants/trainingStyles";
 import { SessionGpsImport, type GpsPlayerData } from "@/components/category/gps/SessionGpsImport";
 import { GpsObjectivesForm } from "@/components/category/gps/GpsObjectivesForm";
-import { isRugbyType, isSkiCategory, isSurfCategory, isIndividualSport } from "@/lib/constants/sportTypes";
+import { isRugbyType, isSkiCategory, isSurfCategory, isPadelCategory, isIndividualSport } from "@/lib/constants/sportTypes";
 import { SurfConditionsForm } from "@/components/surf/SurfConditionsForm";
 import { SkiConditionsForm } from "@/components/ski/SkiConditionsForm";
 import { SessionEquipmentSection } from "@/components/shared/SessionEquipmentSection";
