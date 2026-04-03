@@ -175,6 +175,7 @@ export function AddMatchCalendarDialog({
     setCustomCompetition("");
     setCompetitionStage("");
     setMatchDate(defaultDate ? format(defaultDate, "yyyy-MM-dd") : "");
+    setEndDate("");
     setMatchTime("");
     setLocation("");
     setIsHome(true);
