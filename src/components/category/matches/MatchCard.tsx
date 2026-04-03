@@ -163,8 +163,11 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
 
   const sportType = category?.rugby_type || "XV";
   const isIndividual = isIndividualSport(sportType);
+  const isPadel = sportType.toLowerCase().includes("padel");
+  const isTennis = sportType.toLowerCase().includes("tennis");
+  const hasTournamentBracket = isPadel || isTennis;
   const hasSubMatches = subMatches && subMatches.length > 0;
-  const canHaveSubMatches = !isIndividual && !isSubMatch && !match.parent_match_id;
+  const canHaveSubMatches = (!isIndividual || hasTournamentBracket) && !isSubMatch && !match.parent_match_id;
   
   // Check if this is a sport that uses rounds (Judo, Bowling, Aviron, Athletics)
   const hasRoundBasedStats = sportType.toLowerCase().includes("judo") || 
