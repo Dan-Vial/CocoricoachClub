@@ -153,7 +153,7 @@ export function AddMatchCalendarDialog({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["matches", categoryId] });
-      toast.success(isIndividual ? "Compétition ajoutée avec succès" : "Match ajouté avec succès");
+      toast.success(hasTournamentBracket ? "Tournoi ajouté avec succès" : (isIndividual ? "Compétition ajoutée avec succès" : "Match ajouté avec succès"));
       resetForm();
       onOpenChange(false);
     },
