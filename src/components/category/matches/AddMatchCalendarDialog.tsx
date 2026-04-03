@@ -210,7 +210,7 @@ export function AddMatchCalendarDialog({
       <DialogContent className="sm:max-w-[500px] max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {isIndividual ? "Ajouter une compétition" : "Ajouter un match"}
+            {hasTournamentBracket ? "Ajouter un tournoi" : (isIndividual ? "Ajouter une compétition" : "Ajouter un match")}
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
