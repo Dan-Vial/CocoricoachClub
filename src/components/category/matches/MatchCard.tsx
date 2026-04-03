@@ -71,6 +71,7 @@ interface Match {
   age_category?: string | null;
   distance_meters?: number | null;
   parent_match_id?: string | null;
+  end_date?: string | null;
 }
 
 interface MatchCardProps {
