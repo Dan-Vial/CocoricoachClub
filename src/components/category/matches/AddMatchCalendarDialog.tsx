@@ -133,10 +133,11 @@ export function AddMatchCalendarDialog({
     mutationFn: async () => {
       const { error } = await supabase.from("matches").insert({
         category_id: categoryId,
-        opponent: isIndividual ? (opponent || "Compétition") : opponent,
+        opponent: isIndividual ? (opponent || (hasTournamentBracket ? "Tournoi" : "Compétition")) : opponent,
         competition: finalCompetition || null,
         competition_stage: competitionStage === "none" ? null : (competitionStage || null),
         match_date: matchDate,
+        end_date: endDate || null,
         match_time: matchTime || null,
         location: location || null,
         is_home: isHome,
