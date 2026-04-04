@@ -154,9 +154,37 @@ export function BowlingCumulativeStats({ categoryId }: BowlingCumulativeStatsPro
     const avgStrikeRate = playerGames.reduce((s, g) => s + g.strikePercentage, 0) / totalGames;
     const avgSpareRate = playerGames.reduce((s, g) => s + g.sparePercentage, 0) / totalGames;
     const avgPocketRate = playerGames.reduce((s, g) => s + g.pocketPercentage, 0) / totalGames;
-    // Total frames = 10 per game (simplified)
     const totalFrames = totalGames * 10;
     const openFramePercentage = totalFrames > 0 ? (totalOpenFrames / totalFrames) * 100 : 0;
+
+    // firstBallGte8 - compute from frames data if available
+    let totalFBGte8 = 0;
+    let totalFBGte8Opp = 0;
+    playerGames.forEach(g => {
+      if (g.frames) {
+        g.frames.forEach((frame, fi) => {
+          const isTenth = fi === 9;
+          frame.throws.forEach((t, ti) => {
+            if (t.value === "") return;
+            // First throw contexts
+            const isFirst = ti === 0 || (isTenth && (
+              (ti === 1 && frame.throws[0]?.value === "X") ||
+              (ti === 2 && (frame.throws[1]?.value === "X" || frame.throws[1]?.value === "/"))
+            ));
+            if (!isFirst) return;
+            // Exclude last throw with no conversion
+            const isLast = isTenth && ti === 2 && (
+              (frame.throws[0]?.value === "X" && frame.throws[1]?.value === "X") ||
+              (frame.throws[0]?.value !== "X" && frame.throws[1]?.value === "/")
+            );
+            if (isLast) return;
+            totalFBGte8Opp++;
+            if (t.pins >= 8) totalFBGte8++;
+          });
+        });
+      }
+    });
+    const firstBallGte8Percentage = totalFBGte8Opp > 0 ? (totalFBGte8 / totalFBGte8Opp) * 100 : 0;
 
     return {
       totalGames, totalScore, highGame, lowGame, avgScore,
@@ -167,6 +195,7 @@ export function BowlingCumulativeStats({ categoryId }: BowlingCumulativeStatsPro
       openFramePercentage,
       splitConversionRate: totalSplits > 0 ? (totalSplitsConverted / totalSplits) * 100 : 0,
       singlePinConversionRate: totalSinglePin > 0 ? (totalSinglePinConverted / totalSinglePin) * 100 : 0,
+      firstBallGte8Percentage,
     };
   }, [playerGames]);
 

@@ -77,7 +77,8 @@ export function BowlingFrameAnalysis({ games }: BowlingFrameAnalysisProps) {
           }
           if (frame.throws[1]?.value === "/") {
             spares++;
-          } else {
+          } else if (!firstThrow?.isSplit) {
+            // Exclude unconverted splits from open frames
             opens++;
           }
         }
