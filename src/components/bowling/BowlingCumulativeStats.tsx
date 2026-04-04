@@ -249,7 +249,7 @@ export function BowlingCumulativeStats({ categoryId }: BowlingCumulativeStatsPro
                   <CardContent className="pt-4 pb-3">
                     <div className="text-center">
                       <p className="text-3xl font-bold text-primary">{cumulativeStats.highGame}</p>
-                      <p className="text-xs text-muted-foreground">High Game</p>
+                      <p className="text-xs text-muted-foreground">Partie la plus haute</p>
                     </div>
                   </CardContent>
                 </Card>
@@ -257,7 +257,7 @@ export function BowlingCumulativeStats({ categoryId }: BowlingCumulativeStatsPro
                   <CardContent className="pt-4 pb-3">
                     <div className="text-center">
                       <p className="text-3xl font-bold text-destructive">{cumulativeStats.lowGame}</p>
-                      <p className="text-xs text-muted-foreground">Low Game</p>
+                      <p className="text-xs text-muted-foreground">Partie la plus basse</p>
                     </div>
                   </CardContent>
                 </Card>
