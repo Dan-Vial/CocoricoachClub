@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,8 +16,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
-import { Droplet, Save, RotateCcw, Info, X, Image as ImageIcon } from "lucide-react";
+import { Droplet, Save, Plus, Trash2, Info, X, Image as ImageIcon, ChevronDown } from "lucide-react";
 import {
   ALL_PATTERN_NAMES,
   getPatternPreset,
@@ -37,9 +38,10 @@ interface BowlingOilPatternSectionProps {
   readOnly?: boolean;
 }
 
-interface OilPattern {
+interface OilPatternData {
   id?: string;
   name: string;
+  gender: string;
   length_feet: number | null;
   buff_distance_feet: number | null;
   width_boards: number | null;
@@ -50,12 +52,14 @@ interface OilPattern {
   reverse_oil: boolean;
   outside_friction: "low" | "medium" | "high" | null;
   notes: string | null;
-  image_url_male: string | null;
-  image_url_female: string | null;
+  image_url: string | null;
+  isCollapsed: boolean;
+  hasChanges: boolean;
 }
 
-const defaultPattern: OilPattern = {
+const createEmptyPattern = (): OilPatternData => ({
   name: "",
+  gender: "",
   length_feet: null,
   buff_distance_feet: null,
   width_boards: null,
@@ -66,604 +70,412 @@ const defaultPattern: OilPattern = {
   reverse_oil: true,
   outside_friction: null,
   notes: null,
-  image_url_male: null,
-  image_url_female: null,
-};
+  image_url: null,
+  isCollapsed: false,
+  hasChanges: true,
+});
 
 export function BowlingOilPatternSection({
   matchId,
   categoryId,
   readOnly = false,
 }: BowlingOilPatternSectionProps) {
-  const [pattern, setPattern] = useState<OilPattern>(defaultPattern);
-  const [hasChanges, setHasChanges] = useState(false);
-  const [customName, setCustomName] = useState("");
-  const [uploadingMale, setUploadingMale] = useState(false);
-  const [uploadingFemale, setUploadingFemale] = useState(false);
+  const [patterns, setPatterns] = useState<OilPatternData[]>([]);
   const [enlargedImage, setEnlargedImage] = useState<string | null>(null);
-  const fileInputMaleRef = useRef<HTMLInputElement>(null);
-  const fileInputFemaleRef = useRef<HTMLInputElement>(null);
+  const [initialized, setInitialized] = useState(false);
+  const fileInputRefs = useRef<Record<number, HTMLInputElement | null>>({});
   const queryClient = useQueryClient();
 
-  const { data: existingPattern, isLoading } = useQuery({
-    queryKey: ["bowling_oil_pattern", matchId],
+  const { data: existingPatterns, isLoading } = useQuery({
+    queryKey: ["bowling_oil_patterns", matchId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("bowling_oil_patterns")
         .select("*")
         .eq("match_id", matchId)
-        .maybeSingle();
+        .order("created_at");
       if (error) throw error;
-      return data;
+      return data || [];
     },
     enabled: !!matchId,
   });
 
-  useEffect(() => {
-    if (existingPattern) {
-      setPattern({
-        id: existingPattern.id,
-        name: existingPattern.name || "",
-        length_feet: existingPattern.length_feet,
-        buff_distance_feet: existingPattern.buff_distance_feet,
-        width_boards: existingPattern.width_boards,
-        total_volume_ml: existingPattern.total_volume_ml,
-        oil_ratio: existingPattern.oil_ratio,
-        profile_type: existingPattern.profile_type as OilPattern["profile_type"],
-        forward_oil: existingPattern.forward_oil ?? true,
-        reverse_oil: existingPattern.reverse_oil ?? true,
-        outside_friction: existingPattern.outside_friction as OilPattern["outside_friction"],
-        notes: existingPattern.notes,
-        image_url_male: existingPattern.image_url_male || null,
-        image_url_female: existingPattern.image_url_female || null,
-      });
-      setHasChanges(false);
+  // Initialize patterns from DB data
+  if (existingPatterns && !initialized) {
+    if (existingPatterns.length > 0) {
+      setPatterns(existingPatterns.map(ep => ({
+        id: ep.id,
+        name: ep.name || "",
+        gender: ep.gender || "",
+        length_feet: ep.length_feet,
+        buff_distance_feet: ep.buff_distance_feet,
+        width_boards: ep.width_boards,
+        total_volume_ml: ep.total_volume_ml,
+        oil_ratio: ep.oil_ratio,
+        profile_type: ep.profile_type as OilPatternData["profile_type"],
+        forward_oil: ep.forward_oil ?? true,
+        reverse_oil: ep.reverse_oil ?? true,
+        outside_friction: ep.outside_friction as OilPatternData["outside_friction"],
+        notes: ep.notes,
+        image_url: ep.image_url_male || ep.image_url_female || null,
+        isCollapsed: true,
+        hasChanges: false,
+      })));
     }
-  }, [existingPattern]);
+    setInitialized(true);
+  }
 
-  const handleImageUpload = async (file: File, gender: "male" | "female") => {
+  const addPattern = () => {
+    setPatterns(prev => [...prev, createEmptyPattern()]);
+  };
+
+  const updatePattern = (index: number, updates: Partial<OilPatternData>) => {
+    setPatterns(prev => prev.map((p, i) => i === index ? { ...p, ...updates, hasChanges: true } : p));
+  };
+
+  const removePattern = async (index: number) => {
+    const pattern = patterns[index];
+    if (pattern.id) {
+      const { error } = await supabase
+        .from("bowling_oil_patterns")
+        .delete()
+        .eq("id", pattern.id);
+      if (error) {
+        toast.error("Erreur lors de la suppression");
+        return;
+      }
+      queryClient.invalidateQueries({ queryKey: ["bowling_oil_patterns", matchId] });
+    }
+    setPatterns(prev => prev.filter((_, i) => i !== index));
+    toast.success("Huilage supprimé");
+  };
+
+  const handlePatternSelect = (index: number, name: string) => {
+    const preset = getPatternPreset(name);
+    if (preset) {
+      updatePattern(index, {
+        name,
+        length_feet: preset.length_feet ?? patterns[index].length_feet,
+        buff_distance_feet: preset.buff_distance_feet ?? patterns[index].buff_distance_feet,
+        width_boards: preset.width_boards ?? patterns[index].width_boards,
+        total_volume_ml: preset.total_volume_ml ?? patterns[index].total_volume_ml,
+        oil_ratio: preset.oil_ratio ?? patterns[index].oil_ratio,
+        profile_type: preset.profile_type ?? patterns[index].profile_type,
+        forward_oil: preset.forward_oil ?? patterns[index].forward_oil,
+        reverse_oil: preset.reverse_oil ?? patterns[index].reverse_oil,
+        outside_friction: preset.outside_friction ?? patterns[index].outside_friction,
+      });
+      toast.info(`Données officielles chargées pour ${name}`);
+    } else {
+      updatePattern(index, { name });
+    }
+  };
+
+  const handleImageUpload = async (index: number, file: File) => {
     if (!file.type.startsWith("image/")) {
       toast.error("Veuillez sélectionner une image");
       return;
     }
-    const setUploading = gender === "male" ? setUploadingMale : setUploadingFemale;
-    setUploading(true);
     try {
       const fileExt = file.name.split('.').pop();
-      const filePath = `oil-patterns/${matchId}_${gender}_${Date.now()}.${fileExt}`;
-      
+      const filePath = `oil-patterns/${matchId}_${index}_${Date.now()}.${fileExt}`;
       const { error: uploadError } = await supabase.storage
         .from("exercise-images")
         .upload(filePath, file);
-      
       if (uploadError) throw uploadError;
-
       const { data: urlData } = supabase.storage
         .from("exercise-images")
         .getPublicUrl(filePath);
-
-      const field = gender === "male" ? "image_url_male" : "image_url_female" as const;
-      const newUrl = urlData.publicUrl;
-      
-      // Update state and auto-save immediately with the new image
-      const updatedPattern = { ...pattern, [field]: newUrl };
-      setPattern(updatedPattern);
-      setHasChanges(true);
-      
-      // Auto-save so the image persists immediately
-      saveMutation.mutate(updatedPattern);
-      toast.success(`Image huilage ${gender === "male" ? "garçons" : "filles"} téléchargée et enregistrée`);
-    } catch (err: any) {
-      console.error("Upload error:", err);
-      toast.error("Erreur lors du téléchargement de l'image");
-    } finally {
-      setUploading(false);
+      updatePattern(index, { image_url: urlData.publicUrl });
+      toast.success("Image téléchargée");
+    } catch {
+      toast.error("Erreur lors du téléchargement");
     }
   };
 
-  const saveMutation = useMutation({
-    mutationFn: async (data: OilPattern) => {
-      const patternName = data.name === "Pattern personnel" 
-        ? (customName || "Pattern personnalisé") 
-        : (data.name || "Pattern personnalisé");
-      
-      const payload = {
-        category_id: categoryId,
-        match_id: matchId,
-        name: patternName,
-        length_feet: data.length_feet,
-        buff_distance_feet: data.buff_distance_feet,
-        width_boards: data.width_boards,
-        total_volume_ml: data.total_volume_ml,
-        oil_ratio: data.oil_ratio,
-        profile_type: data.profile_type,
-        forward_oil: data.forward_oil,
-        reverse_oil: data.reverse_oil,
-        outside_friction: data.outside_friction,
-        notes: data.notes,
-        image_url_male: data.image_url_male,
-        image_url_female: data.image_url_female,
-      };
+  const savePattern = async (index: number) => {
+    const p = patterns[index];
+    const patternName = p.name || "Pattern personnalisé";
+    
+    const payload = {
+      category_id: categoryId,
+      match_id: matchId,
+      name: patternName,
+      gender: p.gender || null,
+      length_feet: p.length_feet,
+      buff_distance_feet: p.buff_distance_feet,
+      width_boards: p.width_boards,
+      total_volume_ml: p.total_volume_ml,
+      oil_ratio: p.oil_ratio,
+      profile_type: p.profile_type,
+      forward_oil: p.forward_oil,
+      reverse_oil: p.reverse_oil,
+      outside_friction: p.outside_friction,
+      notes: p.notes,
+      image_url_male: p.gender === "female" ? null : p.image_url,
+      image_url_female: p.gender === "female" ? p.image_url : null,
+    };
 
-      if (data.id) {
-        const { error } = await supabase
-          .from("bowling_oil_patterns")
-          .update(payload)
-          .eq("id", data.id);
+    try {
+      if (p.id) {
+        const { error } = await supabase.from("bowling_oil_patterns").update(payload).eq("id", p.id);
         if (error) throw error;
       } else {
-        const { data: existing } = await supabase
-          .from("bowling_oil_patterns")
-          .select("id")
-          .eq("match_id", matchId)
-          .maybeSingle();
-
-        if (existing) {
-          const { error } = await supabase
-            .from("bowling_oil_patterns")
-            .update(payload)
-            .eq("id", existing.id);
-          if (error) throw error;
-          setPattern(prev => ({ ...prev, id: existing.id }));
-        } else {
-          const { data: inserted, error } = await supabase
-            .from("bowling_oil_patterns")
-            .insert(payload)
-            .select("id")
-            .single();
-          if (error) throw error;
-          if (inserted) {
-            setPattern(prev => ({ ...prev, id: inserted.id }));
-          }
+        const { data: inserted, error } = await supabase.from("bowling_oil_patterns").insert(payload).select("id").single();
+        if (error) throw error;
+        if (inserted) {
+          setPatterns(prev => prev.map((pat, i) => i === index ? { ...pat, id: inserted.id, hasChanges: false } : pat));
         }
       }
-    },
-    onSuccess: () => {
-      toast.success("Pattern de huilage enregistré");
-      queryClient.invalidateQueries({ queryKey: ["bowling_oil_pattern", matchId] });
-      setHasChanges(false);
-    },
-    onError: (error: any) => {
-      console.error("Save oil pattern error:", error);
-      toast.error(`Erreur: ${error?.message || "Impossible d'enregistrer le huilage"}`);
-    },
-  });
-
-  const handlePatternSelect = (name: string) => {
-    const preset = getPatternPreset(name);
-    if (preset) {
-      setPattern((prev) => ({
-        ...prev,
-        name,
-        length_feet: preset.length_feet ?? prev.length_feet,
-        buff_distance_feet: preset.buff_distance_feet ?? prev.buff_distance_feet,
-        width_boards: preset.width_boards ?? prev.width_boards,
-        total_volume_ml: preset.total_volume_ml ?? prev.total_volume_ml,
-        oil_ratio: preset.oil_ratio ?? prev.oil_ratio,
-        profile_type: preset.profile_type ?? prev.profile_type,
-        forward_oil: preset.forward_oil ?? prev.forward_oil,
-        reverse_oil: preset.reverse_oil ?? prev.reverse_oil,
-        outside_friction: preset.outside_friction ?? prev.outside_friction,
-      }));
-      toast.info(`Données officielles chargées pour ${name}`);
-    } else {
-      setPattern((prev) => ({ ...prev, name }));
-      if (name !== "Pattern personnel") {
-        toast.info("Données officielles non disponibles pour ce pattern");
-      }
+      setPatterns(prev => prev.map((pat, i) => i === index ? { ...pat, hasChanges: false } : pat));
+      queryClient.invalidateQueries({ queryKey: ["bowling_oil_patterns", matchId] });
+      toast.success("Huilage enregistré");
+    } catch (err: any) {
+      toast.error(`Erreur: ${err?.message || "Impossible d'enregistrer"}`);
     }
-    setHasChanges(true);
-  };
-
-  const updateField = <K extends keyof OilPattern>(field: K, value: OilPattern[K]) => {
-    setPattern((prev) => ({ ...prev, [field]: value }));
-    setHasChanges(true);
-  };
-
-  const resetPattern = () => {
-    if (existingPattern) {
-      setPattern({
-        id: existingPattern.id,
-        name: existingPattern.name || "",
-        length_feet: existingPattern.length_feet,
-        buff_distance_feet: existingPattern.buff_distance_feet,
-        width_boards: existingPattern.width_boards,
-        total_volume_ml: existingPattern.total_volume_ml,
-        oil_ratio: existingPattern.oil_ratio,
-        profile_type: existingPattern.profile_type as OilPattern["profile_type"],
-        forward_oil: existingPattern.forward_oil ?? true,
-        reverse_oil: existingPattern.reverse_oil ?? true,
-        outside_friction: existingPattern.outside_friction as OilPattern["outside_friction"],
-        notes: existingPattern.notes,
-        image_url_male: existingPattern.image_url_male || null,
-        image_url_female: existingPattern.image_url_female || null,
-      });
-    } else {
-      setPattern(defaultPattern);
-    }
-    setHasChanges(false);
   };
 
   if (isLoading) {
     return <div className="text-muted-foreground text-sm">Chargement...</div>;
   }
 
-  const renderImageUpload = (gender: "male" | "female", label: string) => {
-    const imageUrl = gender === "male" ? pattern.image_url_male : pattern.image_url_female;
-    const uploading = gender === "male" ? uploadingMale : uploadingFemale;
-    const fileRef = gender === "male" ? fileInputMaleRef : fileInputFemaleRef;
-    const fieldKey = gender === "male" ? "image_url_male" : "image_url_female" as const;
-
-    return (
-      <div className="space-y-2">
-        <p className="text-sm font-medium">{label}</p>
-        {imageUrl ? (
-          <div className="relative" style={{ aspectRatio: "4/5", maxWidth: "220px" }}>
-            <img
-              src={imageUrl}
-              alt={`Oil pattern ${label}`}
-              className="w-full h-full object-cover rounded-lg border cursor-pointer hover:opacity-90 transition-opacity"
-              onClick={() => setEnlargedImage(imageUrl)}
-            />
-            {!readOnly && (
-              <Button
-                variant="destructive"
-                size="icon"
-                className="absolute top-2 right-2 h-7 w-7"
-                onClick={(e) => { 
-                  e.stopPropagation(); 
-                  const updatedPattern = { ...pattern, [fieldKey]: null };
-                  setPattern(updatedPattern);
-                  setHasChanges(true);
-                  saveMutation.mutate(updatedPattern);
-                }}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            )}
-          </div>
-        ) : (
-          !readOnly && (
-            <div
-              className="border-2 border-dashed rounded-lg p-4 text-center cursor-pointer hover:border-primary/50 transition-colors"
-              style={{ aspectRatio: "4/5", maxWidth: "220px" }}
-              onClick={() => fileRef.current?.click()}
-            >
-              <input
-                ref={fileRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) handleImageUpload(file, gender);
-                }}
-              />
-              {uploading ? (
-                <p className="text-sm text-muted-foreground">Téléchargement...</p>
-              ) : (
-                <div className="flex flex-col items-center gap-2 pt-4">
-                  <ImageIcon className="h-6 w-6 text-muted-foreground" />
-                  <p className="text-xs text-muted-foreground">Cliquer pour ajouter</p>
-                </div>
-              )}
-            </div>
-          )
-        )}
-      </div>
-    );
-  };
-
   return (
     <>
-      <Card className="bg-gradient-card">
-        <CardHeader className="pb-4">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Droplet className="h-5 w-5 text-blue-500" />
-            Huilage de la piste
-            {existingPattern && (
-              <Badge variant="secondary" className="ml-2">
-                Enregistré
-              </Badge>
-            )}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Oil pattern images - Male & Female */}
-          <div className="space-y-3">
-            <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
-              Images du huilage
-            </h4>
-            <div className="grid grid-cols-2 gap-4">
-              {renderImageUpload("male", "Garçons")}
-              {renderImageUpload("female", "Filles")}
-            </div>
-          </div>
-
-          {/* Section 1: Identification */}
-          <div className="space-y-4">
-            <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
-              Identification du huilage
-            </h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Nom du huilage</Label>
-                <Select
-                  value={pattern.name || ""}
-                  onValueChange={handlePatternSelect}
-                  disabled={readOnly}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner un pattern" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
-                      Patterns PBA officiels
-                    </div>
-                    {ALL_PATTERN_NAMES.filter(n => n.startsWith("PBA")).map((name) => (
-                      <SelectItem key={name} value={name}>
-                        {name}
-                        {getPatternPreset(name) && (
-                          <span className="ml-2 text-xs text-green-600">✓ Données officielles</span>
-                        )}
-                      </SelectItem>
-                    ))}
-                    <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground border-t mt-1 pt-2">
-                      Autres patterns
-                    </div>
-                    {ALL_PATTERN_NAMES.filter(n => !n.startsWith("PBA")).map((name) => (
-                      <SelectItem key={name} value={name}>
-                        {name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+      <div className="space-y-4 pb-4">
+        {patterns.length === 0 && (
+          <Card className="bg-gradient-card">
+            <CardContent className="py-8">
+              <div className="text-center text-muted-foreground">
+                <Droplet className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>Aucun huilage configuré pour cette compétition.</p>
+                <p className="text-sm mt-2">Ajoutez un huilage pour chaque genre si nécessaire.</p>
               </div>
-              {pattern.name === "Pattern personnel" && (
-                <div className="space-y-2">
-                  <Label>Nom personnalisé</Label>
-                  <Input
-                    value={customName}
-                    onChange={(e) => setCustomName(e.target.value)}
-                    placeholder="Nom du pattern"
-                    disabled={readOnly}
-                  />
+            </CardContent>
+          </Card>
+        )}
+
+        {patterns.map((pattern, idx) => (
+          <Card key={idx} className="border-blue-500/20">
+            <Collapsible open={!pattern.isCollapsed} onOpenChange={() => updatePattern(idx, { isCollapsed: !pattern.isCollapsed, hasChanges: pattern.hasChanges })}>
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <CollapsibleTrigger asChild>
+                    <button className="flex items-center gap-2 text-left hover:opacity-80">
+                      <ChevronDown className={`h-4 w-4 transition-transform ${pattern.isCollapsed ? "-rotate-90" : ""}`} />
+                      <Droplet className="h-4 w-4 text-blue-500" />
+                      <span className="font-semibold text-sm">
+                        {pattern.name || `Huilage ${idx + 1}`}
+                      </span>
+                      {pattern.gender && (
+                        <Badge variant="secondary" className="text-xs">
+                          {pattern.gender === "male" ? "Garçons" : "Filles"}
+                        </Badge>
+                      )}
+                      {pattern.id && !pattern.hasChanges && (
+                        <Badge variant="outline" className="text-xs text-green-600">Enregistré</Badge>
+                      )}
+                    </button>
+                  </CollapsibleTrigger>
+                  {!readOnly && (
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => removePattern(idx)}>
+                      <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                    </Button>
+                  )}
                 </div>
-              )}
-            </div>
-          </div>
+              </CardHeader>
 
-          {/* Section 2: Dimensions */}
-          <div className="space-y-4">
-            <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
-              Dimensions du huilage
-            </h4>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label className="flex items-center gap-1">
-                  Longueur (feet)
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Info className="h-3.5 w-3.5 text-muted-foreground" />
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        Distance de la ligne de faute jusqu'à la fin du huilage
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </Label>
-                <Input
-                  type="number"
-                  value={pattern.length_feet ?? ""}
-                  onChange={(e) => updateField("length_feet", e.target.value ? Number(e.target.value) : null)}
-                  placeholder="Ex: 40"
-                  disabled={readOnly}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="flex items-center gap-1">
-                  Distance de buff (feet)
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Info className="h-3.5 w-3.5 text-muted-foreground" />
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        Zone de transition entre la fin du huilage et les quilles
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </Label>
-                <Input
-                  type="number"
-                  value={pattern.buff_distance_feet ?? ""}
-                  onChange={(e) => updateField("buff_distance_feet", e.target.value ? Number(e.target.value) : null)}
-                  placeholder="Ex: 3"
-                  disabled={readOnly}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="flex items-center gap-1">
-                  Largeur (boards)
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Info className="h-3.5 w-3.5 text-muted-foreground" />
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        Nombre de lattes couvertes par l'huile (max 39)
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </Label>
-                <Input
-                  type="number"
-                  value={pattern.width_boards ?? ""}
-                  onChange={(e) => updateField("width_boards", e.target.value ? Number(e.target.value) : null)}
-                  placeholder="Ex: 31"
-                  max={39}
-                  disabled={readOnly}
-                />
-              </div>
-            </div>
-          </div>
+              <CollapsibleContent>
+                <CardContent className="space-y-5 pt-0">
+                  {/* Gender + Name */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label>Genre</Label>
+                      <Select
+                        value={pattern.gender || ""}
+                        onValueChange={(v) => updatePattern(idx, { gender: v })}
+                        disabled={readOnly}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Sélectionner..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="male">Garçons</SelectItem>
+                          <SelectItem value="female">Filles</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2 md:col-span-2">
+                      <Label>Nom du huilage</Label>
+                      <Select
+                        value={pattern.name || ""}
+                        onValueChange={(v) => handlePatternSelect(idx, v)}
+                        disabled={readOnly}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Sélectionner un pattern" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">PBA officiels</div>
+                          {ALL_PATTERN_NAMES.filter(n => n.startsWith("PBA")).map((name) => (
+                            <SelectItem key={name} value={name}>
+                              {name}
+                              {getPatternPreset(name) && <span className="ml-2 text-xs text-green-600">✓</span>}
+                            </SelectItem>
+                          ))}
+                          <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground border-t mt-1 pt-2">Autres</div>
+                          {ALL_PATTERN_NAMES.filter(n => !n.startsWith("PBA")).map((name) => (
+                            <SelectItem key={name} value={name}>{name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
 
-          {/* Section 3: Volume et répartition */}
-          <div className="space-y-4">
-            <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
-              Volume et répartition
-            </h4>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label>Volume total (mL)</Label>
-                <Input
-                  type="number"
-                  value={pattern.total_volume_ml ?? ""}
-                  onChange={(e) => updateField("total_volume_ml", e.target.value ? Number(e.target.value) : null)}
-                  placeholder="Ex: 25"
-                  disabled={readOnly}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="flex items-center gap-1">
-                  Ratio d'huile
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Info className="h-3.5 w-3.5 text-muted-foreground" />
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        Rapport entre le volume d'huile au centre vs extérieur
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </Label>
-                <Input
-                  value={pattern.oil_ratio || ""}
-                  onChange={(e) => updateField("oil_ratio", e.target.value || null)}
-                  placeholder="Ex: 3:1, 5:1, 8:1..."
-                  disabled={readOnly}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Type de profil</Label>
-                <Select
-                  value={pattern.profile_type || ""}
-                  onValueChange={(v) => updateField("profile_type", v as OilPattern["profile_type"])}
-                  disabled={readOnly}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {PROFILE_TYPES.map((type) => (
-                      <SelectItem key={type.value} value={type.value}>
-                        {type.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </div>
+                  {/* Image */}
+                  <div className="space-y-2">
+                    <Label>Image du huilage</Label>
+                    {pattern.image_url ? (
+                      <div className="relative inline-block" style={{ maxWidth: "220px" }}>
+                        <img
+                          src={pattern.image_url}
+                          alt="Oil pattern"
+                          className="w-full rounded-lg border cursor-pointer hover:opacity-90"
+                          style={{ aspectRatio: "4/5" }}
+                          onClick={() => setEnlargedImage(pattern.image_url)}
+                        />
+                        {!readOnly && (
+                          <Button
+                            variant="destructive"
+                            size="icon"
+                            className="absolute top-2 right-2 h-7 w-7"
+                            onClick={() => updatePattern(idx, { image_url: null })}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    ) : !readOnly ? (
+                      <div
+                        className="border-2 border-dashed rounded-lg p-4 text-center cursor-pointer hover:border-primary/50 inline-block"
+                        style={{ width: "220px", aspectRatio: "4/5" }}
+                        onClick={() => fileInputRefs.current[idx]?.click()}
+                      >
+                        <input
+                          ref={(el) => { fileInputRefs.current[idx] = el; }}
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleImageUpload(idx, file);
+                          }}
+                        />
+                        <div className="flex flex-col items-center gap-2 pt-8">
+                          <ImageIcon className="h-6 w-6 text-muted-foreground" />
+                          <p className="text-xs text-muted-foreground">Cliquer pour ajouter</p>
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
 
-          {/* Section 4: Distribution */}
-          <div className="space-y-4">
-            <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
-              Distribution de l'huile
-            </h4>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
-                <Label htmlFor="forward-oil" className="cursor-pointer">
-                  Forward oil
-                </Label>
-                <Switch
-                  id="forward-oil"
-                  checked={pattern.forward_oil}
-                  onCheckedChange={(v) => updateField("forward_oil", v)}
-                  disabled={readOnly}
-                />
-              </div>
-              <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
-                <Label htmlFor="reverse-oil" className="cursor-pointer">
-                  Reverse oil
-                </Label>
-                <Switch
-                  id="reverse-oil"
-                  checked={pattern.reverse_oil}
-                  onCheckedChange={(v) => updateField("reverse_oil", v)}
-                  disabled={readOnly}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Niveau de friction extérieure</Label>
-                <Select
-                  value={pattern.outside_friction || ""}
-                  onValueChange={(v) => updateField("outside_friction", v as OilPattern["outside_friction"])}
-                  disabled={readOnly}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {FRICTION_LEVELS.map((level) => (
-                      <SelectItem key={level.value} value={level.value}>
-                        {level.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </div>
+                  {/* Dimensions */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label className="flex items-center gap-1">
+                        Longueur (feet)
+                        <TooltipProvider><Tooltip><TooltipTrigger asChild><Info className="h-3.5 w-3.5 text-muted-foreground" /></TooltipTrigger><TooltipContent>Distance de la ligne de faute</TooltipContent></Tooltip></TooltipProvider>
+                      </Label>
+                      <Input type="number" value={pattern.length_feet ?? ""} onChange={(e) => updatePattern(idx, { length_feet: e.target.value ? Number(e.target.value) : null })} placeholder="Ex: 40" disabled={readOnly} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Distance de buff (feet)</Label>
+                      <Input type="number" value={pattern.buff_distance_feet ?? ""} onChange={(e) => updatePattern(idx, { buff_distance_feet: e.target.value ? Number(e.target.value) : null })} placeholder="Ex: 3" disabled={readOnly} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Largeur (boards)</Label>
+                      <Input type="number" value={pattern.width_boards ?? ""} onChange={(e) => updatePattern(idx, { width_boards: e.target.value ? Number(e.target.value) : null })} placeholder="Ex: 31" max={39} disabled={readOnly} />
+                    </div>
+                  </div>
 
-          {/* Notes */}
-          <div className="space-y-2">
-            <Label>Notes</Label>
-            <Textarea
-              value={pattern.notes ?? ""}
-              onChange={(e) => updateField("notes", e.target.value || null)}
-              placeholder="Observations, ajustements recommandés..."
-              rows={2}
-              disabled={readOnly}
-            />
-          </div>
+                  {/* Volume */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label>Volume total (mL)</Label>
+                      <Input type="number" value={pattern.total_volume_ml ?? ""} onChange={(e) => updatePattern(idx, { total_volume_ml: e.target.value ? Number(e.target.value) : null })} placeholder="Ex: 25" disabled={readOnly} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Ratio d'huile</Label>
+                      <Input value={pattern.oil_ratio || ""} onChange={(e) => updatePattern(idx, { oil_ratio: e.target.value || null })} placeholder="Ex: 3:1" disabled={readOnly} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Type de profil</Label>
+                      <Select value={pattern.profile_type || ""} onValueChange={(v) => updatePattern(idx, { profile_type: v as OilPatternData["profile_type"] })} disabled={readOnly}>
+                        <SelectTrigger><SelectValue placeholder="Sélectionner" /></SelectTrigger>
+                        <SelectContent>
+                          {PROFILE_TYPES.map((type) => (
+                            <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
 
-          {/* Actions */}
-          {!readOnly && (
-            <div className="flex justify-end gap-2 pt-2">
-              {hasChanges && (
-                <Button
-                  variant="outline"
-                  onClick={resetPattern}
-                  disabled={saveMutation.isPending}
-                >
-                  <RotateCcw className="h-4 w-4 mr-2" />
-                  Annuler
-                </Button>
-              )}
-              <Button
-                onClick={() => saveMutation.mutate(pattern)}
-                disabled={saveMutation.isPending}
-              >
-                <Save className="h-4 w-4 mr-2" />
-                {saveMutation.isPending ? "Enregistrement..." : "Enregistrer"}
-              </Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                  {/* Distribution */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
+                      <Label className="cursor-pointer">Forward oil</Label>
+                      <Switch checked={pattern.forward_oil} onCheckedChange={(v) => updatePattern(idx, { forward_oil: v })} disabled={readOnly} />
+                    </div>
+                    <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
+                      <Label className="cursor-pointer">Reverse oil</Label>
+                      <Switch checked={pattern.reverse_oil} onCheckedChange={(v) => updatePattern(idx, { reverse_oil: v })} disabled={readOnly} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Friction extérieure</Label>
+                      <Select value={pattern.outside_friction || ""} onValueChange={(v) => updatePattern(idx, { outside_friction: v as OilPatternData["outside_friction"] })} disabled={readOnly}>
+                        <SelectTrigger><SelectValue placeholder="Sélectionner" /></SelectTrigger>
+                        <SelectContent>
+                          {FRICTION_LEVELS.map((level) => (
+                            <SelectItem key={level.value} value={level.value}>{level.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
 
-      {/* Enlarged image dialog */}
+                  {/* Notes */}
+                  <div className="space-y-2">
+                    <Label>Notes</Label>
+                    <Textarea value={pattern.notes ?? ""} onChange={(e) => updatePattern(idx, { notes: e.target.value || null })} placeholder="Observations..." rows={2} disabled={readOnly} />
+                  </div>
+
+                  {/* Save */}
+                  {!readOnly && pattern.hasChanges && (
+                    <div className="flex justify-end">
+                      <Button onClick={() => savePattern(idx)}>
+                        <Save className="h-4 w-4 mr-2" />
+                        Enregistrer ce huilage
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </CollapsibleContent>
+            </Collapsible>
+          </Card>
+        ))}
+
+        {!readOnly && (
+          <Button variant="outline" className="w-full gap-2 border-dashed" onClick={addPattern}>
+            <Plus className="h-4 w-4" />
+            Ajouter un huilage
+          </Button>
+        )}
+      </div>
+
       <Dialog open={!!enlargedImage} onOpenChange={(open) => !open && setEnlargedImage(null)}>
         <DialogContent className="sm:max-w-[90vw] max-h-[90vh] p-2">
           {enlargedImage && (
-            <img
-              src={enlargedImage}
-              alt="Huilage agrandi"
-              className="w-full h-full object-contain max-h-[85vh] rounded-lg"
-            />
+            <img src={enlargedImage} alt="Huilage agrandi" className="w-full h-full object-contain max-h-[85vh] rounded-lg" />
           )}
         </DialogContent>
       </Dialog>
