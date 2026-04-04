@@ -240,8 +240,55 @@ export function MatchLineupDialog({
 
         <div className="flex-1 min-h-0 overflow-y-auto">
           <div className="pr-2">
-            {/* Individual sports: simple checkbox list */}
-            {isIndividual ? (
+            {/* Doubles match: pair selection (max 2) */}
+            {isDoublesMatch ? (
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground mb-3">
+                  Sélectionnez les 2 joueurs qui forment la paire pour ce match.
+                  {isPadel && " Le Padel se joue toujours en paire."}
+                </p>
+                {lineupData && lineupData.length > 0 ? lineupData.map((player) => {
+                  const canSelect = player.isSelected || selectedCount < 2;
+                  return (
+                    <div
+                      key={player.playerId}
+                      className={`p-3 rounded-lg border transition-colors ${
+                        player.isSelected
+                          ? "bg-primary/5 border-primary/20"
+                          : canSelect ? "bg-card" : "bg-muted/50 opacity-50"
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <Checkbox
+                          id={player.playerId}
+                          checked={player.isSelected}
+                          disabled={!canSelect}
+                          onCheckedChange={(checked) =>
+                            updatePlayer(player.playerId, {
+                              isSelected: !!checked,
+                              isStarter: true,
+                            })
+                          }
+                        />
+                        <label
+                          htmlFor={player.playerId}
+                          className={`font-medium cursor-pointer flex-1 ${!canSelect ? "cursor-not-allowed" : ""}`}
+                        >
+                          {player.playerName}
+                        </label>
+                        {player.isSelected && (
+                          <Badge variant="default" className="text-xs">
+                            Paire
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  );
+                }) : (
+                  <p className="text-center text-muted-foreground py-4">Aucun athlète dans cette catégorie</p>
+                )}
+              </div>
+            ) : isIndividual ? (
               <div className="space-y-2">
                 {lineupData && lineupData.length > 0 ? lineupData.map((player) => (
                   <div
