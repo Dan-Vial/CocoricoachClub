@@ -72,6 +72,7 @@ interface Match {
   distance_meters?: number | null;
   parent_match_id?: string | null;
   end_date?: string | null;
+  match_format?: string | null;
 }
 
 interface MatchCardProps {
@@ -116,6 +117,19 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
         .eq("match_id", match.id);
       if (error) throw error;
       return count || 0;
+    },
+  });
+
+  // Fetch lineup player names for pair display (Padel/Tennis doubles)
+  const { data: lineupPlayers } = useQuery({
+    queryKey: ["match_lineup_players", match.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("match_lineups")
+        .select("player_id, players(id, name, first_name)")
+        .eq("match_id", match.id);
+      if (error) throw error;
+      return data;
     },
   });
 
@@ -167,6 +181,7 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
   const isPadel = sportType.toLowerCase().includes("padel");
   const isTennis = sportType.toLowerCase().includes("tennis");
   const hasTournamentBracket = isPadel || isTennis;
+  const isDoublesMatch = isPadel || (isTennis && (match.match_format === "double" || match.match_format === "double_mixte"));
   const hasSubMatches = subMatches && subMatches.length > 0;
   const canHaveSubMatches = (!isIndividual || hasTournamentBracket) && !isSubMatch && !match.parent_match_id;
   
@@ -367,9 +382,25 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
                   {match.location}
                 </p>
               )}
+              {/* Pair display for Padel / Tennis doubles */}
+              {isDoublesMatch && lineupPlayers && lineupPlayers.length > 0 && (
+                <p className="flex items-center gap-1">
+                  <Users className="h-3 w-3" />
+                  <span className="font-medium">
+                    Paire : {lineupPlayers.map((lp: any) => {
+                      const p = lp.players;
+                      return [p?.first_name, p?.name].filter(Boolean).join(" ");
+                    }).join(" & ")}
+                  </span>
+                </p>
+              )}
+              {/* Tennis format badge */}
+              {isTennis && match.match_format && (
+                <Badge variant="outline" className="text-xs w-fit">
+                  {match.match_format === "simple" ? "Simple" : match.match_format === "double" ? "Double" : "Double Mixte"}
+                </Badge>
+              )}
             </div>
-
-            {/* Score - Only for team sports */}
             {!isIndividual && (
               <div className="mt-3">
                 {isEditingScore ? (
@@ -448,7 +479,7 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setIsLineupOpen(true)}>
                   <Users className="h-4 w-4 mr-2" />
-                  {isIndividual ? `Participants (${lineupCount})` : `Composition (${lineupCount})`}
+                  {isDoublesMatch ? `Paire (${lineupCount}/2)` : isIndividual ? `Participants (${lineupCount})` : `Composition (${lineupCount})`}
                 </DropdownMenuItem>
                 {/* Statistiques button - for round-based sports, only enabled when finalized */}
                 {hasRoundBasedStats ? (
@@ -599,6 +630,7 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
         onOpenChange={setIsLineupOpen}
         matchId={match.id}
         categoryId={categoryId}
+        matchFormat={match.match_format}
       />
 
       {/* For non-round-based sports, use SportMatchStatsDialog */}
@@ -643,6 +675,7 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
             id: match.id,
             category_id: match.category_id,
             competition: match.competition,
+            match_format: match.match_format,
           }}
         />
       )}
