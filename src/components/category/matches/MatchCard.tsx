@@ -630,6 +630,7 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
         onOpenChange={setIsLineupOpen}
         matchId={match.id}
         categoryId={categoryId}
+        matchFormat={match.match_format}
       />
 
       {/* For non-round-based sports, use SportMatchStatsDialog */}
