@@ -76,6 +76,7 @@ export function AddSubMatchDialog({
         location: location || null,
         is_home: isHome,
         notes: notes || null,
+        match_format: parentMatch.match_format || null,
       } as any);
       if (error) throw error;
     },
