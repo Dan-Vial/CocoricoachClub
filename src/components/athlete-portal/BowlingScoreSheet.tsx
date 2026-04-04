@@ -171,6 +171,9 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, c
     singlePinConversionRate: 0,
     pocketPercentage: 0,
     openFrames: 0,
+    firstBallGte8Count: 0,
+    firstBallGte8Opportunities: 0,
+    firstBallGte8Percentage: 0,
   });
 
   // Reset frames when initialFrames changes (for editing existing games)
