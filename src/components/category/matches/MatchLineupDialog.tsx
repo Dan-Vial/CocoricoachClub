@@ -143,6 +143,7 @@ export function MatchLineupDialog({
       // Keep counts/UI in sync immediately
       queryClient.setQueryData(["match_lineup_count", matchId], selectedCount);
       queryClient.invalidateQueries({ queryKey: ["match_lineup", matchId] });
+      queryClient.invalidateQueries({ queryKey: ["match_lineup_players", matchId] });
       queryClient.invalidateQueries({ queryKey: ["competition_match_lineup", matchId] });
       queryClient.invalidateQueries({ queryKey: ["match_lineup_count", matchId] });
       queryClient.invalidateQueries({ queryKey: ["matches", categoryId] });
