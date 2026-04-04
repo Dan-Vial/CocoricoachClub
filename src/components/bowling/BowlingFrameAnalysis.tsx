@@ -176,37 +176,30 @@ export function BowlingFrameAnalysis({ games }: BowlingFrameAnalysisProps) {
                 return (
                    <div
                      key={idx}
-                     className={`p-3 rounded-lg border text-center transition-colors ${
-                       isHighest ? "border-primary/40 bg-primary/5" :
-                       isLowest ? "border-muted-foreground/30 bg-muted/40" :
-                       "border-border bg-card"
-                     }`}
+                     className="p-4 rounded-lg border border-border bg-card text-center"
                    >
-                     <div className="flex items-center justify-center gap-1 mb-1">
-                       {isHighest && <TrendingUp className="h-3 w-3 text-primary" />}
-                       {isLowest && <TrendingDown className="h-3 w-3 text-muted-foreground" />}
-                       {!isHighest && !isLowest && <Minus className="h-3 w-3 text-muted-foreground" />}
-                       <span className="text-xs font-semibold">{phase.label}</span>
+                     <div className="flex items-center justify-center gap-1 mb-2">
+                       <span className="text-sm font-semibold">{phase.label}</span>
                      </div>
-                     <p className="text-2xl font-bold text-foreground">
+                     <p className="text-3xl font-bold text-foreground">
                        {phase.strikeRate.toFixed(1)}%
                      </p>
-                     <p className="text-[10px] text-muted-foreground">
+                     <p className="text-xs text-muted-foreground">
                        % Strike
                        <StatInfoIcon text="Le % de strikes correspond au pourcentage de frames où le premier lancer abat les 10 quilles." />
                      </p>
-                     <div className="mt-2 space-y-1 text-[10px]">
+                     <div className="mt-3 space-y-1.5 text-sm">
                        <div className="flex justify-between items-center px-1">
                          <span className="text-muted-foreground">Spare</span>
-                         <span className="font-semibold text-foreground">{phase.spareRate.toFixed(0)}%</span>
+                         <span className="font-bold text-foreground text-lg">{phase.spareRate.toFixed(0)}%</span>
                        </div>
                        <div className="flex justify-between items-center px-1">
                          <span className="text-muted-foreground">Open</span>
-                         <span className="font-semibold text-foreground">{phase.openRate.toFixed(0)}%</span>
+                         <span className="font-bold text-foreground text-lg">{phase.openRate.toFixed(0)}%</span>
                        </div>
                        <div className="flex justify-between items-center px-1">
                          <span className="text-muted-foreground">QS</span>
-                         <span className="font-semibold text-foreground">{phase.singlePinConvRate.toFixed(0)}%</span>
+                         <span className="font-bold text-foreground text-lg">{phase.singlePinConvRate.toFixed(0)}%</span>
                        </div>
                      </div>
                    </div>
