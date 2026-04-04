@@ -43,6 +43,9 @@ export interface BowlingStats {
   singlePinConversionRate: number;
   pocketPercentage: number;
   openFrames: number;
+  firstBallGte8Count: number;
+  firstBallGte8Opportunities: number;
+  firstBallGte8Percentage: number;
 }
 
 interface BowlingScoreSheetProps {
