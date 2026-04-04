@@ -181,6 +181,7 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
   const isPadel = sportType.toLowerCase().includes("padel");
   const isTennis = sportType.toLowerCase().includes("tennis");
   const hasTournamentBracket = isPadel || isTennis;
+  const isDoublesMatch = isPadel || (isTennis && (match.match_format === "double" || match.match_format === "double_mixte"));
   const hasSubMatches = subMatches && subMatches.length > 0;
   const canHaveSubMatches = (!isIndividual || hasTournamentBracket) && !isSubMatch && !match.parent_match_id;
   
