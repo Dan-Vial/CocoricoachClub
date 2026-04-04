@@ -43,6 +43,9 @@ export interface BowlingStats {
   singlePinConversionRate: number;
   pocketPercentage: number;
   openFrames: number;
+  firstBallGte8Count: number;
+  firstBallGte8Opportunities: number;
+  firstBallGte8Percentage: number;
 }
 
 interface BowlingScoreSheetProps {
@@ -168,6 +171,9 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, c
     singlePinConversionRate: 0,
     pocketPercentage: 0,
     openFrames: 0,
+    firstBallGte8Count: 0,
+    firstBallGte8Opportunities: 0,
+    firstBallGte8Percentage: 0,
   });
 
   // Reset frames when initialFrames changes (for editing existing games)
@@ -272,6 +278,8 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, c
     let totalThrows = 0;
     let openFrames = 0;
     let firstThrowCount = 0;
+    let firstBallGte8Count = 0;
+    let firstBallGte8Opportunities = 0;
 
     allFrames.forEach((frame, frameIndex) => {
       const isTenthFrame = frameIndex === 9;
@@ -281,11 +289,24 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, c
         
         totalThrows++;
         
-        // Pocket count - only on "first throws" of frames
-        // In 10th frame: throw 0, throw 1 if throw 0 was strike, throw 2 if throw 1 was strike
         const isFirstThrowContext = isPocketAllowed(frameIndex, throwIndex, frame);
         if (throwData.isPocket && isFirstThrowContext) {
           pocketCount++;
+        }
+
+        // Count first ball >= 8 pins (on first throw contexts only)
+        if (isFirstThrowContext && throwData.value !== "") {
+          // Check if this is the last possible throw (12th throw with no conversion chance)
+          const isLastThrowNoConversion = isTenthFrame && throwIndex === 2 && (
+            (frame.throws[0]?.value === "X" && frame.throws[1]?.value === "X") ||
+            (frame.throws[0]?.value !== "X" && frame.throws[1]?.value === "/")
+          );
+          if (!isLastThrowNoConversion) {
+            firstBallGte8Opportunities++;
+            if (throwData.pins >= 8) {
+              firstBallGte8Count++;
+            }
+          }
         }
 
         // Count strikes
@@ -294,37 +315,26 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, c
           if (!isTenthFrame || throwIndex === 0) {
             firstThrowCount++;
           } else if (isTenthFrame && throwIndex === 1) {
-            // 2nd throw of 10th frame being a strike counts as first throw context
             firstThrowCount++;
           } else if (isTenthFrame && throwIndex === 2 && frame.throws[1]?.value === "X") {
-            // 3rd throw after 2nd was strike counts as first throw context
             firstThrowCount++;
           }
         }
 
-        // Count spares (not including the original strike throws)
+        // Count spares
         if (throwData.value === "/") {
-          // Check if this spare was a split conversion
           const previousThrow = frame.throws[throwIndex - 1];
           if (previousThrow?.isSplit) {
             splitConverted++;
-            spares++; // Split converti compte dans les spares
+            spares++;
           } else {
-            spares++; // Spare normal
-          }
-        } else if (throwIndex > 0) {
-          // Check if previous throw was a split that was NOT converted
-          const previousThrow = frame.throws[throwIndex - 1];
-          if (previousThrow?.isSplit && throwData.value !== "/") {
-            // Split non converti - ne compte pas dans les opportunités de spare
-            // On va ajuster en soustrayant des opportunités totales
+            spares++;
           }
         }
 
-        // Count splits - exclude 11th and 12th throws (10th frame bonus throws after strikes)
+        // Count splits
         if (throwData.isSplit) {
           if (isTenthFrame && throwIndex >= 1) {
-            // In 10th frame, if previous throws are strikes, this is a bonus throw
             const previousThrows = frame.throws.slice(0, throwIndex);
             const hasStrikeSequence = previousThrows.every(t => t.value === "X");
             if (hasStrikeSequence) {
@@ -337,57 +347,57 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, c
           }
         }
 
-        // Count single pins automatically - when first throw = 9 (leaving 1 pin)
-        // Reuse the existing isFirstThrowContext variable
+        // Count single pins (first throw = 9, leaving 1 pin)
+        // Exclude the last possible throw (12th) where no conversion is possible
         if (isFirstThrowContext && throwData.value === "9") {
-          singlePinCount++;
-          // Check if next throw is a spare (conversion)
-          const nextThrow = frame.throws[throwIndex + 1];
-          if (nextThrow?.value === "/") {
-            singlePinConverted++;
+          const isLastThrowNoConversion = isTenthFrame && throwIndex === 2 && (
+            (frame.throws[0]?.value === "X" && frame.throws[1]?.value === "X") ||
+            (frame.throws[0]?.value !== "X" && frame.throws[1]?.value === "/")
+          );
+          if (!isLastThrowNoConversion) {
+            singlePinCount++;
+            const nextThrow = frame.throws[throwIndex + 1];
+            if (nextThrow?.value === "/") {
+              singlePinConverted++;
+            }
           }
         }
       });
 
-      // Count open frames (frames 1-9)
+      // Count open frames (frames 1-9) - exclude unconverted splits
       if (!isTenthFrame && frame.throws.length >= 2) {
         const first = frame.throws[0];
         const second = frame.throws[1];
-        if (first.value !== "X" && second.value !== "/") {
+        if (first.value !== "X" && second.value !== "/" && !first.isSplit) {
           openFrames++;
         }
       }
     });
 
-    // Calculate last frame cumulative score as total
     const totalScore = allFrames[9].cumulativeScore || 0;
 
-    // Calculate total frames played (10, 11 or 12)
     const tenthFrame = allFrames[9];
     let totalFrames = 10;
     if (tenthFrame.throws.length >= 2) {
       const first10 = tenthFrame.throws[0];
       const second10 = tenthFrame.throws[1];
       if (first10?.value === "X") {
-        totalFrames = 11; // Strike on 10th = bonus 11th frame
+        totalFrames = 11;
         if (second10?.value === "X" && tenthFrame.throws[2]?.value) {
-          totalFrames = 12; // Two strikes = bonus 12th frame
+          totalFrames = 12;
         }
       } else if (second10?.value === "/") {
-        totalFrames = 11; // Spare on 10th = bonus 11th frame
+        totalFrames = 11;
       }
     }
 
-    // First throw contexts count (for pocket %)
-    let pocketOpportunities = 9; // frames 1-9
-    pocketOpportunities++; // 1st throw of 10th
-    if (tenthFrame.throws[0]?.value === "X") pocketOpportunities++; // 11th frame
-    if (tenthFrame.throws[1]?.value === "X" || tenthFrame.throws[1]?.value === "/") pocketOpportunities++; // 12th frame
+    let pocketOpportunities = 9;
+    pocketOpportunities++;
+    if (tenthFrame.throws[0]?.value === "X") pocketOpportunities++;
+    if (tenthFrame.throws[1]?.value === "X" || tenthFrame.throws[1]?.value === "/") pocketOpportunities++;
 
-    // Calculate percentages - strike % based on actual frames played
     const strikePercentage = totalFrames > 0 ? (strikes / totalFrames) * 100 : 0;
     
-    // Spare % = spares réussis / opportunités de spare (frames sans strike)
     let spareOpportunities = 0;
     let sparesConverted = 0;
     for (let i = 0; i < 9; i++) {
@@ -399,14 +409,13 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, c
         sparesConverted++;
       }
     }
-    // 10th frame spare opportunities for bonus throws
     if (tenthFrame.throws[0]?.value !== "X" && tenthFrame.throws[0]?.value !== "") {
       if (!(tenthFrame.throws[0]?.isSplit && tenthFrame.throws[1]?.value !== "/")) {
         spareOpportunities++;
         if (tenthFrame.throws[1]?.value === "/") sparesConverted++;
       }
     }
-    // 11th frame (2nd throw of 10th after strike): check spare opportunity on 12th
+    // 11th frame spare opportunity - but NOT if 12th throw has no subsequent throw for conversion
     if (tenthFrame.throws[0]?.value === "X" && tenthFrame.throws[1]?.value !== "X" && tenthFrame.throws[1]?.value !== "") {
       if (!(tenthFrame.throws[1]?.isSplit && tenthFrame.throws[2]?.value !== "/")) {
         spareOpportunities++;
@@ -430,6 +439,10 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, c
       ? (pocketCount / pocketOpportunities) * 100 
       : 0;
 
+    const firstBallGte8Percentage = firstBallGte8Opportunities > 0
+      ? (firstBallGte8Count / firstBallGte8Opportunities) * 100
+      : 0;
+
     return {
       totalScore,
       strikes,
@@ -448,6 +461,9 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, c
       singlePinConversionRate: Math.round(singlePinConversionRate * 10) / 10,
       pocketPercentage: Math.round(pocketPercentage * 10) / 10,
       openFrames,
+      firstBallGte8Count,
+      firstBallGte8Opportunities,
+      firstBallGte8Percentage: Math.round(firstBallGte8Percentage * 10) / 10,
     };
   }, []);
 
@@ -886,7 +902,7 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, c
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-            <StatBox 
+             <StatBox 
               label="% Strikes" 
               value={`${stats.strikePercentage}%`}
               detail={`${stats.strikes}/${stats.totalFrames} frames`}
@@ -911,15 +927,21 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, c
               bgColorClass={getStatColor("singlePin", stats.singlePinConversionRate).bg}
             />
             <StatBox 
-              label="% Boules en poche" 
+              label="% Poches" 
               value={`${stats.pocketPercentage}%`}
               detail={`${stats.pocketCount} lancers`}
               bgColorClass={getStatColor("pocket", stats.pocketPercentage).bg}
             />
             <StatBox 
-              label="Open frames" 
+              label="% Boules ≥8" 
+              value={`${stats.firstBallGte8Percentage}%`}
+              detail={`${stats.firstBallGte8Count}/${stats.firstBallGte8Opportunities}`}
+              bgColorClass={getStatColor("firstBallGte8", stats.firstBallGte8Percentage).bg}
+            />
+            <StatBox 
+              label="Frames non fermées" 
               value={stats.openFrames.toString()}
-              detail="frames sans strike/spare"
+              detail="hors splits non convertis"
             />
             <StatBox 
               label="Score total" 

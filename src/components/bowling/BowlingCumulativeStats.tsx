@@ -154,9 +154,37 @@ export function BowlingCumulativeStats({ categoryId }: BowlingCumulativeStatsPro
     const avgStrikeRate = playerGames.reduce((s, g) => s + g.strikePercentage, 0) / totalGames;
     const avgSpareRate = playerGames.reduce((s, g) => s + g.sparePercentage, 0) / totalGames;
     const avgPocketRate = playerGames.reduce((s, g) => s + g.pocketPercentage, 0) / totalGames;
-    // Total frames = 10 per game (simplified)
     const totalFrames = totalGames * 10;
     const openFramePercentage = totalFrames > 0 ? (totalOpenFrames / totalFrames) * 100 : 0;
+
+    // firstBallGte8 - compute from frames data if available
+    let totalFBGte8 = 0;
+    let totalFBGte8Opp = 0;
+    playerGames.forEach(g => {
+      if (g.frames) {
+        g.frames.forEach((frame, fi) => {
+          const isTenth = fi === 9;
+          frame.throws.forEach((t, ti) => {
+            if (t.value === "") return;
+            // First throw contexts
+            const isFirst = ti === 0 || (isTenth && (
+              (ti === 1 && frame.throws[0]?.value === "X") ||
+              (ti === 2 && (frame.throws[1]?.value === "X" || frame.throws[1]?.value === "/"))
+            ));
+            if (!isFirst) return;
+            // Exclude last throw with no conversion
+            const isLast = isTenth && ti === 2 && (
+              (frame.throws[0]?.value === "X" && frame.throws[1]?.value === "X") ||
+              (frame.throws[0]?.value !== "X" && frame.throws[1]?.value === "/")
+            );
+            if (isLast) return;
+            totalFBGte8Opp++;
+            if (t.pins >= 8) totalFBGte8++;
+          });
+        });
+      }
+    });
+    const firstBallGte8Percentage = totalFBGte8Opp > 0 ? (totalFBGte8 / totalFBGte8Opp) * 100 : 0;
 
     return {
       totalGames, totalScore, highGame, lowGame, avgScore,
@@ -167,6 +195,7 @@ export function BowlingCumulativeStats({ categoryId }: BowlingCumulativeStatsPro
       openFramePercentage,
       splitConversionRate: totalSplits > 0 ? (totalSplitsConverted / totalSplits) * 100 : 0,
       singlePinConversionRate: totalSinglePin > 0 ? (totalSinglePinConverted / totalSinglePin) * 100 : 0,
+      firstBallGte8Percentage,
     };
   }, [playerGames]);
 
@@ -249,7 +278,7 @@ export function BowlingCumulativeStats({ categoryId }: BowlingCumulativeStatsPro
                   <CardContent className="pt-4 pb-3">
                     <div className="text-center">
                       <p className="text-3xl font-bold text-primary">{cumulativeStats.highGame}</p>
-                      <p className="text-xs text-muted-foreground">High Game</p>
+                      <p className="text-xs text-muted-foreground">Partie la plus haute</p>
                     </div>
                   </CardContent>
                 </Card>
@@ -257,7 +286,7 @@ export function BowlingCumulativeStats({ categoryId }: BowlingCumulativeStatsPro
                   <CardContent className="pt-4 pb-3">
                     <div className="text-center">
                       <p className="text-3xl font-bold text-destructive">{cumulativeStats.lowGame}</p>
-                      <p className="text-xs text-muted-foreground">Low Game</p>
+                      <p className="text-xs text-muted-foreground">Partie la plus basse</p>
                     </div>
                   </CardContent>
                 </Card>
@@ -278,10 +307,11 @@ export function BowlingCumulativeStats({ categoryId }: BowlingCumulativeStatsPro
                   <ColoredStatRow label="% Poches" value={`${cumulativeStats.avgPocketRate.toFixed(1)}%`} statType="pocket" percentage={cumulativeStats.avgPocketRate} />
                   <ColoredStatRow label="% Quilles seules" value={`${cumulativeStats.singlePinConversionRate.toFixed(1)}%`} statType="singlePin" percentage={cumulativeStats.singlePinConversionRate} />
                   <ColoredStatRow label="% Conversion splits" value={`${cumulativeStats.splitConversionRate.toFixed(1)}%`} />
+                  <ColoredStatRow label="% Boules ≥8" value={`${cumulativeStats.firstBallGte8Percentage.toFixed(1)}%`} statType="firstBallGte8" percentage={cumulativeStats.firstBallGte8Percentage} />
                    <div>
                      <ColoredStatRow label="% Frames non fermées" value={`${cumulativeStats.openFramePercentage.toFixed(1)}%`} />
                      <p className="text-[10px] text-muted-foreground mt-0.5 italic">
-                       Frames où ni strike ni spare n'a été réalisé (splits non convertis inclus).
+                       Frames où ni strike ni spare n'a été réalisé (splits non convertis exclus).
                      </p>
                    </div>
                   

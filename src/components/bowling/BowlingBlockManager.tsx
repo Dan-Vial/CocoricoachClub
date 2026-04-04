@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -74,11 +76,13 @@ export interface Round {
   roundDate?: string;
   blockId?: string;
   ballData?: { mode: string; ballId?: string | null; frameBalls?: (string | null)[] };
+  oilPatternId?: string;
 }
 
 interface BowlingBlockManagerProps {
   playerId: string;
   categoryId: string;
+  matchId: string;
   rounds: Round[];
   blocks: BowlingBlock[];
   matchDate?: string;
@@ -92,6 +96,7 @@ interface BowlingBlockManagerProps {
 export function BowlingBlockManager({
   playerId,
   categoryId,
+  matchId,
   rounds,
   blocks,
   matchDate,
@@ -101,6 +106,20 @@ export function BowlingBlockManager({
   onLock,
   onUnlock,
 }: BowlingBlockManagerProps) {
+  // Load oil patterns for the match
+  const { data: oilPatterns } = useQuery({
+    queryKey: ["bowling_oil_patterns", matchId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("bowling_oil_patterns")
+        .select("id, name, gender")
+        .eq("match_id", matchId)
+        .order("created_at");
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!matchId,
+  });
   const addBlock = () => {
     const newBlock: BowlingBlock = {
       id: `block_${Date.now()}`,
@@ -341,7 +360,7 @@ export function BowlingBlockManager({
                   ) : (
                     <div className="space-y-3">
                       {blockRounds.map((round, gameIdx) => (
-                        <Card key={round.round_number} className={`relative ${round.isLocked ? "opacity-80" : ""}`}>
+                        <Card key={round.round_number} className={`relative ${round.isLocked ? "border-muted-foreground/30" : ""}`}>
                           {round.isLocked && (
                             <div className="absolute top-2 right-2 z-10">
                               <Button
@@ -392,6 +411,34 @@ export function BowlingBlockManager({
                               </div>
                             </div>
                           </CardHeader>
+                          {/* Oil pattern selector */}
+                          {oilPatterns && oilPatterns.length > 0 && (
+                            <div className="px-3 pb-2">
+                              <div className="flex items-center gap-2">
+                                <Label className="text-xs font-medium whitespace-nowrap">Huilage :</Label>
+                                <Select
+                                  value={round.oilPatternId || ""}
+                                  onValueChange={(v) => {
+                                    onRoundsChange(rounds.map(r =>
+                                      r.round_number === round.round_number ? { ...r, oilPatternId: v } : r
+                                    ));
+                                  }}
+                                  disabled={round.isLocked}
+                                >
+                                  <SelectTrigger className="h-7 text-xs flex-1">
+                                    <SelectValue placeholder="Sélectionner un huilage..." />
+                                  </SelectTrigger>
+                                  <SelectContent className="z-[200]">
+                                    {oilPatterns.map((op) => (
+                                      <SelectItem key={op.id} value={op.id}>
+                                        {op.name}{op.gender ? ` (${op.gender === "male" ? "G" : "F"})` : ""}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </div>
+                          )}
                           <CardContent className="pt-0">
                             <BowlingScoreSheet
                               key={`bowling-${round.round_number}-${round.isLocked}`}
