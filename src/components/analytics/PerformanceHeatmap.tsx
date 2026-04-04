@@ -6,6 +6,7 @@ import React, { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval } from "date-fns";
 import { fr } from "date-fns/locale";
+import { getRiskLevel } from "@/lib/trainingLoadCalculations";
 
 interface PerformanceHeatmapProps {
   categoryId: string;
@@ -88,9 +89,9 @@ export function PerformanceHeatmap({ categoryId }: PerformanceHeatmapProps) {
   const getMetricDescription = (metric: MetricType): string => {
     switch (metric) {
       case "awcr":
-        return "Ratio AWCR (Gabbett) : Charge Aiguë / Charge Chronique. Zone optimale : 0.80 – 1.30.";
+        return "Ratio AWCR (Gabbett) : Charge Aiguë / Charge Chronique. Zone optimale : 0.85 – 1.30.";
       case "ewma_ratio":
-        return "Ratio EWMA : Moyenne mobile pondérée exponentiellement (λ=0.25 aiguë, λ=0.069 chronique). Zone optimale : 0.80 – 1.30.";
+        return "Ratio EWMA : Moyenne mobile pondérée exponentiellement (λ=0.25 aiguë, λ=0.069 chronique). Zone optimale : 0.85 – 1.30.";
       case "training_load":
         return "Charge d'entraînement quotidienne (sRPE = RPE × Durée en minutes).";
       case "wellness":
@@ -105,24 +106,25 @@ export function PerformanceHeatmap({ categoryId }: PerformanceHeatmapProps) {
 
     switch (metric) {
       case "awcr":
-      case "ewma_ratio":
-        if (value < 0.8) return "bg-destructive";
-        if (value > 1.3) return "bg-destructive/80";
-        if (value >= 0.8 && value <= 1.0) return "bg-success";
-        return "bg-warning";
-      
+      case "ewma_ratio": {
+        const riskLevel = getRiskLevel(value);
+        if (riskLevel === "danger") return "bg-destructive";
+        if (riskLevel === "warning") return "bg-warning";
+        return "bg-success";
+      }
+
       case "training_load":
         if (value < 200) return "bg-success/40";
         if (value < 400) return "bg-success";
         if (value < 600) return "bg-warning";
         if (value < 800) return "bg-destructive/60";
         return "bg-destructive";
-      
+
       case "wellness":
         if (value <= 2) return "bg-success";
         if (value <= 3) return "bg-warning";
         return "bg-destructive";
-      
+
       case "soreness":
         if (value <= 2) return "bg-success";
         if (value <= 3.5) return "bg-warning";
