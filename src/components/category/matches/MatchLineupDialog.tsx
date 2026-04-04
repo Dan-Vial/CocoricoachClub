@@ -63,6 +63,10 @@ export function MatchLineupDialog({
   const sportType = category?.rugby_type || "XV";
   const fieldConfig = getSportFieldConfig(sportType);
   const isIndividual = isIndividualSport(sportType);
+  const isPadel = sportType.toLowerCase().includes("padel");
+  const isTennis = sportType.toLowerCase().includes("tennis");
+  const isDoublesMatch = isPadel || (isTennis && (matchFormat === "double" || matchFormat === "double_mixte"));
+  const maxPairSize = isDoublesMatch ? 2 : undefined;
 
   const { data: players } = useQuery({
     queryKey: ["players", categoryId],
