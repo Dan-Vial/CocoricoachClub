@@ -282,7 +282,7 @@ export function BowlingFrameAnalysis({ games }: BowlingFrameAnalysisProps) {
              </div>
            </div>
            <p className="text-[10px] text-muted-foreground text-center mt-2 italic">
-             Les « Frames non fermées » (Open) comptent toutes les frames où le joueur n'a réussi ni strike ni spare, y compris les splits non convertis. Total = Strike% + Spare% + Open% = 100%.
+             Les « Frames non fermées » (Open) comptent toutes les frames où le joueur n'a réussi ni strike ni spare, hors splits non convertis. Total = Strike% + Spare% + Open% = 100%.
            </p>
         </CardContent>
       </Card>
