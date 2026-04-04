@@ -72,6 +72,7 @@ interface Match {
   distance_meters?: number | null;
   parent_match_id?: string | null;
   end_date?: string | null;
+  match_format?: string | null;
 }
 
 interface MatchCardProps {
