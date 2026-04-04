@@ -120,6 +120,19 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
     },
   });
 
+  // Fetch lineup player names for pair display (Padel/Tennis doubles)
+  const { data: lineupPlayers } = useQuery({
+    queryKey: ["match_lineup_players", match.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("match_lineups")
+        .select("player_id, players(id, name, first_name)")
+        .eq("match_id", match.id);
+      if (error) throw error;
+      return data;
+    },
+  });
+
   // Fetch competition rounds count for Judo/Bowling/Aviron/Athletics
   const { data: roundsCount } = useQuery({
     queryKey: ["competition_rounds_count", match.id],
