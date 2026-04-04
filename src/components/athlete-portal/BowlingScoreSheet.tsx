@@ -902,7 +902,7 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, c
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-            <StatBox 
+             <StatBox 
               label="% Strikes" 
               value={`${stats.strikePercentage}%`}
               detail={`${stats.strikes}/${stats.totalFrames} frames`}
@@ -927,15 +927,21 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, c
               bgColorClass={getStatColor("singlePin", stats.singlePinConversionRate).bg}
             />
             <StatBox 
-              label="% Boules en poche" 
+              label="% Poches" 
               value={`${stats.pocketPercentage}%`}
               detail={`${stats.pocketCount} lancers`}
               bgColorClass={getStatColor("pocket", stats.pocketPercentage).bg}
             />
             <StatBox 
-              label="Open frames" 
+              label="% Boules ≥8" 
+              value={`${stats.firstBallGte8Percentage}%`}
+              detail={`${stats.firstBallGte8Count}/${stats.firstBallGte8Opportunities}`}
+              bgColorClass={getStatColor("firstBallGte8", stats.firstBallGte8Percentage).bg}
+            />
+            <StatBox 
+              label="Frames non fermées" 
               value={stats.openFrames.toString()}
-              detail="frames sans strike/spare"
+              detail="hors splits non convertis"
             />
             <StatBox 
               label="Score total" 

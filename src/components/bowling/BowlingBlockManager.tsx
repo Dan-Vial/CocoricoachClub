@@ -341,7 +341,7 @@ export function BowlingBlockManager({
                   ) : (
                     <div className="space-y-3">
                       {blockRounds.map((round, gameIdx) => (
-                        <Card key={round.round_number} className={`relative ${round.isLocked ? "opacity-80" : ""}`}>
+                        <Card key={round.round_number} className={`relative ${round.isLocked ? "border-muted-foreground/30" : ""}`}>
                           {round.isLocked && (
                             <div className="absolute top-2 right-2 z-10">
                               <Button
