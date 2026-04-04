@@ -24,6 +24,7 @@ interface MatchLineupDialogProps {
   onOpenChange: (open: boolean) => void;
   matchId: string;
   categoryId: string;
+  matchFormat?: string | null;
 }
 
 interface LineupPlayer {
