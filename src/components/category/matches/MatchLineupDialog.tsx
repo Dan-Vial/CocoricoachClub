@@ -41,6 +41,7 @@ export function MatchLineupDialog({
   onOpenChange,
   matchId,
   categoryId,
+  matchFormat,
 }: MatchLineupDialogProps) {
   const [lineupData, setLineupData] = useState<LineupPlayer[]>([]);
   const [viewMode, setViewMode] = useState<"list" | "field">("field");
