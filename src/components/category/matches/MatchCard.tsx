@@ -382,9 +382,25 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
                   {match.location}
                 </p>
               )}
+              {/* Pair display for Padel / Tennis doubles */}
+              {isDoublesMatch && lineupPlayers && lineupPlayers.length > 0 && (
+                <p className="flex items-center gap-1">
+                  <Users className="h-3 w-3" />
+                  <span className="font-medium">
+                    Paire : {lineupPlayers.map((lp: any) => {
+                      const p = lp.players;
+                      return [p?.first_name, p?.name].filter(Boolean).join(" ");
+                    }).join(" & ")}
+                  </span>
+                </p>
+              )}
+              {/* Tennis format badge */}
+              {isTennis && match.match_format && (
+                <Badge variant="outline" className="text-xs w-fit">
+                  {match.match_format === "simple" ? "Simple" : match.match_format === "double" ? "Double" : "Double Mixte"}
+                </Badge>
+              )}
             </div>
-
-            {/* Score - Only for team sports */}
             {!isIndividual && (
               <div className="mt-3">
                 {isEditingScore ? (
