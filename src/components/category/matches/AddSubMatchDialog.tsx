@@ -28,6 +28,7 @@ interface AddSubMatchDialogProps {
     id: string;
     category_id: string;
     competition: string | null;
+    match_format?: string | null;
   };
 }
 
