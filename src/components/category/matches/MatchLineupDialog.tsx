@@ -204,9 +204,11 @@ export function MatchLineupDialog({
           <DialogTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Users className="h-5 w-5" />
-              {isIndividual ? "Participants" : `Composition - ${fieldConfig.label}`}
+              {isDoublesMatch 
+                ? `Paire${isPadel ? " de Padel" : " de Double"}`
+                : isIndividual ? "Participants" : `Composition - ${fieldConfig.label}`}
             </div>
-            {hasFieldLayout && !isIndividual && (
+            {hasFieldLayout && !isIndividual && !isDoublesMatch && (
               <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as "list" | "field")}>
                 <TabsList className="h-8">
                   <TabsTrigger value="field" className="px-2 h-7">
@@ -224,9 +226,11 @@ export function MatchLineupDialog({
         <div className="flex gap-4 text-sm text-muted-foreground mb-2 flex-shrink-0 flex-wrap">
           <span className="flex items-center gap-1">
             <UserCheck className="h-4 w-4" />
-            {selectedCount} {isIndividual ? "participants" : "athlètes"}
+            {isDoublesMatch 
+              ? `${selectedCount}/2 joueurs sélectionnés`
+              : `${selectedCount} ${isIndividual ? "participants" : "athlètes"}`}
           </span>
-          {!isIndividual && (
+          {!isIndividual && !isDoublesMatch && (
             <>
               <span>{starterCount}/{fieldConfig.starters} titulaires</span>
               <span>{substituteCount}/{fieldConfig.substitutes} remplaçants</span>
