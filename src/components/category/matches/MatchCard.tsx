@@ -675,6 +675,7 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
             id: match.id,
             category_id: match.category_id,
             competition: match.competition,
+            match_format: match.match_format,
           }}
         />
       )}
