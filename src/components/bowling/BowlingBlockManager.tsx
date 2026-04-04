@@ -411,6 +411,34 @@ export function BowlingBlockManager({
                               </div>
                             </div>
                           </CardHeader>
+                          {/* Oil pattern selector */}
+                          {oilPatterns && oilPatterns.length > 0 && (
+                            <div className="px-3 pb-2">
+                              <div className="flex items-center gap-2">
+                                <Label className="text-xs font-medium whitespace-nowrap">Huilage :</Label>
+                                <Select
+                                  value={round.oilPatternId || ""}
+                                  onValueChange={(v) => {
+                                    onRoundsChange(rounds.map(r =>
+                                      r.round_number === round.round_number ? { ...r, oilPatternId: v } : r
+                                    ));
+                                  }}
+                                  disabled={round.isLocked}
+                                >
+                                  <SelectTrigger className="h-7 text-xs flex-1">
+                                    <SelectValue placeholder="Sélectionner un huilage..." />
+                                  </SelectTrigger>
+                                  <SelectContent className="z-[200]">
+                                    {oilPatterns.map((op) => (
+                                      <SelectItem key={op.id} value={op.id}>
+                                        {op.name}{op.gender ? ` (${op.gender === "male" ? "G" : "F"})` : ""}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </div>
+                          )}
                           <CardContent className="pt-0">
                             <BowlingScoreSheet
                               key={`bowling-${round.round_number}-${round.isLocked}`}
