@@ -82,6 +82,7 @@ export interface Round {
 interface BowlingBlockManagerProps {
   playerId: string;
   categoryId: string;
+  matchId: string;
   rounds: Round[];
   blocks: BowlingBlock[];
   matchDate?: string;
