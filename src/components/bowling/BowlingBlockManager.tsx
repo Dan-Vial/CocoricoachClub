@@ -76,6 +76,7 @@ export interface Round {
   roundDate?: string;
   blockId?: string;
   ballData?: { mode: string; ballId?: string | null; frameBalls?: (string | null)[] };
+  oilPatternId?: string;
 }
 
 interface BowlingBlockManagerProps {
