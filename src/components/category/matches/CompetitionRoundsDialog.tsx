@@ -900,6 +900,7 @@ export function CompetitionRoundsDialog({
                   <BowlingBlockManager
                     playerId={selectedPlayer.playerId}
                     categoryId={categoryId}
+                    matchId={matchId}
                     rounds={selectedPlayer.rounds}
                     blocks={bowlingBlocks[selectedPlayer.playerId] || []}
                     matchDate={matchData?.match_date}
