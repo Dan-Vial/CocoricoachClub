@@ -479,7 +479,7 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setIsLineupOpen(true)}>
                   <Users className="h-4 w-4 mr-2" />
-                  {isIndividual ? `Participants (${lineupCount})` : `Composition (${lineupCount})`}
+                  {isDoublesMatch ? `Paire (${lineupCount}/2)` : isIndividual ? `Participants (${lineupCount})` : `Composition (${lineupCount})`}
                 </DropdownMenuItem>
                 {/* Statistiques button - for round-based sports, only enabled when finalized */}
                 {hasRoundBasedStats ? (
