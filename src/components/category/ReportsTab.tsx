@@ -1562,7 +1562,8 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
         yPos += 20;
       }
 
-      // Playing Time
+      // Playing Time - Only for team sports
+      if (isTeamSport) {
       checkPageBreak(60);
       pdf.setFontSize(12);
       pdf.setFont("helvetica", "bold");
