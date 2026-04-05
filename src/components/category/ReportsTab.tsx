@@ -1425,42 +1425,65 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
         }
       });
 
-      // Comparative table - EWMA instead of AWCR
-      const compHeaders = ["Joueur", "Pos.", "Bless.", "EWMA", "40m", "CMJ", "Matchs", "Min."];
-      const compColWidths = [45, 25, 20, 25, 22, 22, 22, 22];
-      yPos = drawTableHeader(compHeaders, compColWidths, yPos);
+      // Comparative table - Adapted per sport
+      if (isIndividualSport) {
+        const compHeaders = [isIndividualSport ? "Athlète" : "Joueur", "Spécialité", "Bless.", "EWMA", "Compét."];
+        const compColWidths = [50, 40, 25, 30, 30];
+        yPos = drawTableHeader(compHeaders, compColWidths, yPos);
 
-      players.forEach((player, index) => {
-        checkPageBreak(10);
-        
-        const playerInjuries = allInjuries.filter(i => i.player_id === player.id && i.status === 'active').length;
-        const playerAwcr = latestAwcrByPlayer[player.id]?.awcr;
-        const playerSprint = bestSprintByPlayer[player.id];
-        const playerCmj = bestCmjByPlayer[player.id];
-        const playerMatches = matchesByPlayer[player.id];
-        
-        const values = [
-          [player.first_name, player.name].filter(Boolean).join(" "),
-          player.position || '-',
-          String(playerInjuries),
-          playerAwcr ? playerAwcr.toFixed(2) : '-',
-          playerSprint ? `${playerSprint.toFixed(2)}s` : '-',
-          playerCmj ? `${playerCmj}cm` : '-',
-          playerMatches ? String(playerMatches.matches) : '0',
-          playerMatches ? String(playerMatches.minutes) : '0',
-        ];
+        players.forEach((player, index) => {
+          checkPageBreak(10);
+          const playerInjuries = allInjuries.filter(i => i.player_id === player.id && i.status === 'active').length;
+          const playerAwcr = latestAwcrByPlayer[player.id]?.awcr;
+          const playerMatches = matchesByPlayer[player.id];
+          const values = [
+            [player.first_name, player.name].filter(Boolean).join(" "),
+            (player as any).specialty || (player as any).discipline || player.position || '-',
+            String(playerInjuries),
+            playerAwcr ? playerAwcr.toFixed(2) : '-',
+            playerMatches ? String(playerMatches.matches) : '0',
+          ];
+          const rowColors: ([number, number, number] | null)[] = [
+            null, null,
+            playerInjuries > 0 ? colors.danger : null,
+            playerAwcr ? (playerAwcr > 1.5 ? colors.danger : playerAwcr < 0.85 ? colors.warning : colors.success) : null,
+            null,
+          ];
+          yPos = drawTableRow(values, compColWidths, yPos, index % 2 === 1, rowColors);
+        });
+      } else {
+        const compHeaders = ["Joueur", "Pos.", "Bless.", "EWMA", "40m", "CMJ", "Matchs", "Min."];
+        const compColWidths = [45, 25, 20, 25, 22, 22, 22, 22];
+        yPos = drawTableHeader(compHeaders, compColWidths, yPos);
 
-        const rowColors: ([number, number, number] | null)[] = [
-          null, null,
-          playerInjuries > 0 ? colors.danger : null,
-          playerAwcr ? (playerAwcr > 1.5 ? colors.danger : playerAwcr < 0.85 ? colors.warning : colors.success) : null,
-          playerSprint ? (playerSprint < 5.2 ? colors.success : playerSprint > 5.8 ? colors.danger : null) : null,
-          playerCmj ? (playerCmj > 40 ? colors.success : playerCmj < 30 ? colors.danger : null) : null,
-          null, null,
-        ];
-
-        yPos = drawTableRow(values, compColWidths, yPos, index % 2 === 1, rowColors);
-      });
+        players.forEach((player, index) => {
+          checkPageBreak(10);
+          const playerInjuries = allInjuries.filter(i => i.player_id === player.id && i.status === 'active').length;
+          const playerAwcr = latestAwcrByPlayer[player.id]?.awcr;
+          const playerSprint = bestSprintByPlayer[player.id];
+          const playerCmj = bestCmjByPlayer[player.id];
+          const playerMatches = matchesByPlayer[player.id];
+          const values = [
+            [player.first_name, player.name].filter(Boolean).join(" "),
+            player.position || '-',
+            String(playerInjuries),
+            playerAwcr ? playerAwcr.toFixed(2) : '-',
+            playerSprint ? `${playerSprint.toFixed(2)}s` : '-',
+            playerCmj ? `${playerCmj}cm` : '-',
+            playerMatches ? String(playerMatches.matches) : '0',
+            playerMatches ? String(playerMatches.minutes) : '0',
+          ];
+          const rowColors: ([number, number, number] | null)[] = [
+            null, null,
+            playerInjuries > 0 ? colors.danger : null,
+            playerAwcr ? (playerAwcr > 1.5 ? colors.danger : playerAwcr < 0.85 ? colors.warning : colors.success) : null,
+            playerSprint ? (playerSprint < 5.2 ? colors.success : playerSprint > 5.8 ? colors.danger : null) : null,
+            playerCmj ? (playerCmj > 40 ? colors.success : playerCmj < 30 ? colors.danger : null) : null,
+            null, null,
+          ];
+          yPos = drawTableRow(values, compColWidths, yPos, index % 2 === 1, rowColors);
+        });
+      }
 
       yPos += 15;
 
