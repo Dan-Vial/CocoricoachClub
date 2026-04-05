@@ -2208,7 +2208,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
             </CardTitle>
             <CardDescription>
               {isIndividualSport 
-                ? "Synthèse globale : blessures, wellness, ratio EWMA"
+                ? "Synthèse : blessures, wellness, ratio EWMA"
                 : "Synthèse globale avec Ratio EWMA"}
             </CardDescription>
           </CardHeader>
@@ -2243,73 +2243,51 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
             </div>
           </CardContent>
         </Card>
-              >
-                {generatingReport === "squad" ? (
-                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                ) : (
-                  <FileText className="h-4 w-4 mr-1" />
-                )}
-                PDF
-              </Button>
-              <Button 
-                onClick={generateSquadCsv}
-                variant="outline"
-                className="flex-1"
-                disabled={generatingReport === "squad" || generatingReport === "squad-csv"}
-              >
-                {generatingReport === "squad-csv" ? (
-                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                ) : (
-                  <FileSpreadsheet className="h-4 w-4 mr-1" />
-                )}
-                Excel
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
 
-        {/* Suivi Temps de Jeu (TDJ) */}
-        <Card className="border-primary/20 bg-primary/5">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Trophy className="h-5 w-5" />
-              Suivi Temps de Jeu
-            </CardTitle>
-            <CardDescription>
-              Minutes, titularisations, remplacements, hors-groupe
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {renderDateRange(tdjDateFrom, tdjDateTo, setTdjDateFrom, setTdjDateTo)}
-            <div className="flex gap-2">
-              <Button 
-                onClick={generateTdjReport} 
-                className="flex-1"
-                disabled={generatingReport === "tdj" || generatingReport === "tdj-csv"}
-              >
-                {generatingReport === "tdj" ? (
-                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                ) : (
-                  <FileText className="h-4 w-4 mr-1" />
-                )}
-                PDF
-              </Button>
-              <Button 
-                onClick={generateTdjCsv}
-                variant="outline"
-                className="flex-1"
-                disabled={generatingReport === "tdj" || generatingReport === "tdj-csv"}
-              >
-                {generatingReport === "tdj-csv" ? (
-                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                ) : (
-                  <FileSpreadsheet className="h-4 w-4 mr-1" />
-                )}
-                Excel
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Suivi Temps de Jeu (TDJ) - Only for team sports */}
+        {hasTdj && (
+          <Card className="border-primary/20 bg-primary/5">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Trophy className="h-5 w-5" />
+                Suivi Temps de Jeu
+              </CardTitle>
+              <CardDescription>
+                Minutes, titularisations, remplacements, hors-groupe
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {renderDateRange(tdjDateFrom, tdjDateTo, setTdjDateFrom, setTdjDateTo)}
+              <div className="flex gap-2">
+                <Button 
+                  onClick={generateTdjReport} 
+                  className="flex-1"
+                  disabled={generatingReport === "tdj" || generatingReport === "tdj-csv"}
+                >
+                  {generatingReport === "tdj" ? (
+                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  ) : (
+                    <FileText className="h-4 w-4 mr-1" />
+                  )}
+                  PDF
+                </Button>
+                <Button 
+                  onClick={generateTdjCsv}
+                  variant="outline"
+                  className="flex-1"
+                  disabled={generatingReport === "tdj" || generatingReport === "tdj-csv"}
+                >
+                  {generatingReport === "tdj-csv" ? (
+                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  ) : (
+                    <FileSpreadsheet className="h-4 w-4 mr-1" />
+                  )}
+                  Excel
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Season Report */}
         <Card>
@@ -2319,7 +2297,11 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
               Bilan de Saison
             </CardTitle>
             <CardDescription>
-              Résumé complet de la saison en cours
+              {isIndividualSport 
+                ? "Résumé des compétitions et performances"
+                : isRacketSport
+                ? "Résumé des matchs et performances"
+                : "Résumé complet de la saison en cours"}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -2327,7 +2309,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
               Saison {new Date().getFullYear()}/{new Date().getFullYear() + 1}
             </p>
             <p className="text-sm">
-              {players.length} joueurs • {matches.length} matchs
+              {players.length} {athleteLabel.toLowerCase()} • {matches.length} {competitionLabel.toLowerCase()}
             </p>
             <div className="flex gap-2">
               <Button 
@@ -2359,26 +2341,28 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
           </CardContent>
         </Card>
 
-        {/* Match Report */}
+        {/* Match / Competition Report */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Trophy className="h-5 w-5" />
-              Rapport de Match
+              {isIndividualSport ? "Rapport de Compétition" : "Rapport de Match"}
             </CardTitle>
             <CardDescription>
-              Stats dynamiques selon vos préférences
+              {isIndividualSport 
+                ? "Détail par compétition et par athlète"
+                : "Stats dynamiques selon vos préférences"}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <Select value={selectedMatch} onValueChange={setSelectedMatch}>
               <SelectTrigger>
-                <SelectValue placeholder="Sélectionner un match" />
+                <SelectValue placeholder={isIndividualSport ? "Sélectionner une compétition" : "Sélectionner un match"} />
               </SelectTrigger>
               <SelectContent>
                 {matches.map((match) => (
                   <SelectItem key={match.id} value={match.id}>
-                    vs {match.opponent} ({format(new Date(match.match_date), "d MMM", { locale: fr })})
+                    {isIndividualSport ? "" : "vs "}{match.opponent} ({format(new Date(match.match_date), "d MMM", { locale: fr })})
                   </SelectItem>
                 ))}
               </SelectContent>
