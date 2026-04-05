@@ -1549,15 +1549,15 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
         pdf.roundedRect(margin, yPos, barWidth, 12, 2, 2, 'F');
         pdf.setTextColor(...colors.white);
         pdf.setFontSize(9);
-        pdf.text(`< 0.85: ${lowEwma} joueurs`, margin + 5, yPos + 8);
+        pdf.text(`< 0.85: ${lowEwma} ${isIndividualSport ? 'athlètes' : 'joueurs'}`, margin + 5, yPos + 8);
         
         pdf.setFillColor(...colors.success);
         pdf.roundedRect(margin + barWidth + 5, yPos, barWidth, 12, 2, 2, 'F');
-        pdf.text(`0.85-1.3: ${optimalEwma} joueurs`, margin + barWidth + 10, yPos + 8);
+        pdf.text(`0.85-1.3: ${optimalEwma} ${isIndividualSport ? 'athlètes' : 'joueurs'}`, margin + barWidth + 10, yPos + 8);
         
         pdf.setFillColor(...colors.danger);
         pdf.roundedRect(margin + (barWidth + 5) * 2, yPos, barWidth, 12, 2, 2, 'F');
-        pdf.text(`> 1.5: ${highEwma} joueurs`, margin + (barWidth + 5) * 2 + 5, yPos + 8);
+        pdf.text(`> 1.5: ${highEwma} ${isIndividualSport ? 'athlètes' : 'joueurs'}`, margin + (barWidth + 5) * 2 + 5, yPos + 8);
         
         yPos += 20;
       }
