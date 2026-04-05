@@ -478,20 +478,12 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
     try {
       const { settings: pdfSettings, logoBase64, seasonName: sName, clubName: cn2, categoryName: catName2 } = await preparePdfWithSettings(categoryId);
 
-      const fetchList: Promise<any>[] = [
+      const [matchesRes, injuriesRes, goalsRes, awcrRes] = await Promise.all([
         supabase.from("matches").select("*").eq("category_id", categoryId).order("match_date"),
         supabase.from("injuries").select("*, players(name, first_name)").eq("category_id", categoryId),
         supabase.from("season_goals").select("*").eq("category_id", categoryId).eq("season_year", new Date().getFullYear()),
         supabase.from("awcr_tracking").select("*, players(name)").eq("category_id", categoryId).order("session_date", { ascending: false }),
-      ];
-      // For individual sports, also fetch competition rounds
-      if (isIndividualSport) {
-        fetchList.push(
-          supabase.from("competition_rounds").select("*, players(name, first_name, specialty, discipline)").eq("match_id", categoryId).order("round_number")
-        );
-      }
-
-      const [matchesRes, injuriesRes, goalsRes, awcrRes] = await Promise.all(fetchList);
+      ]);
 
       const matchesData = matchesRes.data || [];
       const allInjuries = injuriesRes.data || [];
