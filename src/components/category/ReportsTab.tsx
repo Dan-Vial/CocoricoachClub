@@ -1393,7 +1393,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
       pdf.setTextColor(...colors.white);
       pdf.setFontSize(16);
       pdf.setFont("helvetica", "bold");
-      pdf.text("TABLEAU COMPARATIF DES JOUEURS", margin, 16);
+      pdf.text(isIndividualSport ? "TABLEAU COMPARATIF DES ATHLÈTES" : "TABLEAU COMPARATIF DES JOUEURS", margin, 16);
       
       yPos = 35;
       pdf.setTextColor(...colors.dark);
