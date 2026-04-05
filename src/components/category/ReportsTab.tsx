@@ -1293,7 +1293,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
       pdf.text(String(players.length), margin + cardWidth / 2 - 5, cardY + 12);
       pdf.setFontSize(8);
       pdf.setFont("helvetica", "normal");
-      pdf.text("JOUEURS", margin + cardWidth / 2 - 12, cardY + 20);
+      pdf.text(isIndividualSport ? "ATHLÈTES" : "JOUEURS", margin + cardWidth / 2 - 12, cardY + 20);
 
       // Card 2: Active Injuries
       const injuryColor = activeInjuries.length > 0 ? colors.danger : colors.success;
