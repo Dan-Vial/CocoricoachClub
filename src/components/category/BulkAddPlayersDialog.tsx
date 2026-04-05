@@ -131,7 +131,7 @@ export function BulkAddPlayersDialog({
     reader.onload = (evt) => {
       try {
         const data = new Uint8Array(evt.target?.result as ArrayBuffer);
-        const workbook = XLSX.read(data, { type: "array" });
+        const workbook = XLSX.read(data, { type: "array", raw: false });
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
         const rows = XLSX.utils.sheet_to_json<Record<string, any>>(sheet, { defval: "" });
 
