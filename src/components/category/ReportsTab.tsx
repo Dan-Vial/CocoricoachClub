@@ -14,7 +14,7 @@ import jsPDF from "jspdf";
 import ExcelJS from "exceljs";
 import { getExcelBranding, addBrandedHeader, styleDataHeaderRow, addZebraRows, addFooter, downloadWorkbook } from "@/lib/excelExport";
 import { preparePdfWithSettings, drawPdfHeader as drawPdfHeaderCustom, drawSectionTitle, drawTableHeader as drawTableHeaderLib, drawTableRow as drawTableRowLib, checkPageBreak as checkPageBreakLib, type PdfCustomSettings } from "@/lib/pdfExport";
-import { getStatsForSport, supportsCompetitionRounds, type StatField } from "@/lib/constants/sportStats";
+import { getStatsForSport, supportsCompetitionRounds, getBaseSport, type StatField } from "@/lib/constants/sportStats";
 import { TEST_CATEGORIES, getTestLabel } from "@/lib/constants/testCategories";
 
 interface ReportsTabProps {
