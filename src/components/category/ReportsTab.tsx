@@ -1588,6 +1588,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
           yPos = drawTableRow([p.name, String(p.matches), String(p.minutes), avgMinPerMatch], timeColWidths, yPos, index % 2 === 1);
         });
       }
+      } // end isTeamSport
 
       pdf.save(`effectif_${(catName3 || category?.name || 'rapport')?.replace(/\s+/g, '_')}_${format(new Date(), "yyyy-MM-dd")}.pdf`);
       toast.success("Rapport d'effectif généré");
