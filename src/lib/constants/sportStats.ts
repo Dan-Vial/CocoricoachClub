@@ -769,7 +769,7 @@ export const TENNIS_STATS: StatField[] = [
 ];
 
 // Helper function to extract base sport from subtypes like "aviron_club", "judo_academie"
-function getBaseSport(sportType: string): string {
+export function getBaseSport(sportType: string): string {
   // Handle exact rugby types first
   if (["XV", "7", "XIII", "academie", "national_team"].includes(sportType)) {
     return "rugby";
