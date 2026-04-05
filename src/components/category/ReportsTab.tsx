@@ -2207,7 +2207,9 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
               Vue d'Ensemble Effectif
             </CardTitle>
             <CardDescription>
-              Synthèse globale avec Ratio EWMA
+              {isIndividualSport 
+                ? "Synthèse globale : blessures, wellness, ratio EWMA"
+                : "Synthèse globale avec Ratio EWMA"}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -2217,6 +2219,30 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
                 onClick={generateSquadReport} 
                 className="flex-1"
                 disabled={generatingReport === "squad" || generatingReport === "squad-csv"}
+              >
+                {generatingReport === "squad" ? (
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                ) : (
+                  <FileText className="h-4 w-4 mr-1" />
+                )}
+                PDF
+              </Button>
+              <Button 
+                onClick={generateSquadCsv}
+                variant="outline"
+                className="flex-1"
+                disabled={generatingReport === "squad" || generatingReport === "squad-csv"}
+              >
+                {generatingReport === "squad-csv" ? (
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                ) : (
+                  <FileSpreadsheet className="h-4 w-4 mr-1" />
+                )}
+                Excel
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
               >
                 {generatingReport === "squad" ? (
                   <Loader2 className="h-4 w-4 mr-1 animate-spin" />
