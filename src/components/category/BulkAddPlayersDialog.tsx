@@ -131,7 +131,7 @@ export function BulkAddPlayersDialog({
     reader.onload = (evt) => {
       try {
         const data = new Uint8Array(evt.target?.result as ArrayBuffer);
-        const workbook = XLSX.read(data, { type: "array" });
+        const workbook = XLSX.read(data, { type: "array", raw: false });
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
         const rows = XLSX.utils.sheet_to_json<Record<string, any>>(sheet, { defval: "" });
 
@@ -155,7 +155,11 @@ export function BulkAddPlayersDialog({
           const nom = get(["nom", "name", "last_name", "lastname"]);
           const prenom = get(["prenom", "prénom", "firstname", "first_name", "first name"]);
           const email = get(["mail", "email", "e-mail", "courriel"]);
-          const tel = get(["tel", "telephone", "téléphone", "phone", "mobile"]);
+          let tel = get(["tel", "telephone", "téléphone", "phone", "mobile"]);
+          // Fix leading zero lost by Excel for French phone numbers
+          if (tel && /^\d{9}$/.test(tel)) {
+            tel = "0" + tel; // e.g. 612345678 -> 0612345678
+          }
           const rawDate = get(["date de naissance", "date_naissance", "datenaissance", "birth_date", "birthdate", "dob", "naissance"]);
 
           // Parse date: try Excel serial number or string
