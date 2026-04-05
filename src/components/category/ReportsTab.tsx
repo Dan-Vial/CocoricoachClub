@@ -46,6 +46,18 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
     },
   });
 
+  const INDIVIDUAL_SPORTS = ["athletisme", "athlétisme", "judo", "aviron", "bowling", "natation", "ski", "snow", "surf", "triathlon", "hyrox"];
+  const RACKET_SPORTS = ["tennis", "padel"];
+  const sport = ((category?.clubs as any)?.sport || "rugby").toLowerCase();
+  const baseSport = getBaseSport(sport);
+  const isIndividualSport = INDIVIDUAL_SPORTS.some(s => baseSport.includes(s));
+  const isRacketSport = RACKET_SPORTS.some(s => baseSport.includes(s));
+  const isTeamSport = !isIndividualSport && !isRacketSport;
+  const hasTdj = isTeamSport; // Only team sports have meaningful TDJ (starters/subs/minutes)
+  const athleteLabel = isIndividualSport ? "Athlètes" : isRacketSport ? "Joueurs" : "Joueurs";
+  const athleteLabelSingular = isIndividualSport ? "Athlète" : "Joueur";
+  const competitionLabel = isIndividualSport ? "Compétitions" : isRacketSport ? "Matchs" : "Matchs";
+
   const { data: players = [] } = useQuery({
     queryKey: ["players", categoryId],
     queryFn: async () => {
