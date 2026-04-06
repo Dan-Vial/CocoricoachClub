@@ -1229,6 +1229,378 @@ export const ATHLETIC_PROFILES: Record<string, AthleticProfileConfig> = {
       },
     },
   },
+  ski: {
+    sport: "ski",
+    label: "Ski / Snowboard",
+    tests: [
+      {
+        key: "cmj",
+        label: "Counter Movement Jump",
+        shortLabel: "CMJ",
+        unit: "cm",
+        testType: "cmj",
+        tableSource: "jump_tests",
+        higherIsBetter: true,
+      },
+      {
+        key: "isometric_squat",
+        label: "Force Isométrique Squat",
+        shortLabel: "Iso Squat",
+        unit: "N/kg",
+        testType: "isometric_squat",
+        tableSource: "generic_tests",
+        higherIsBetter: true,
+      },
+    ],
+    profileDescription: "Puissance explosive / Force isométrique",
+    profileTypes: {
+      primary: {
+        label: "Profil Explosif",
+        description: "Excellente puissance et détente",
+        recommendations: [
+          "Développer la force isométrique des membres inférieurs",
+          "Travail de gainage et stabilité",
+          "Maintenir la puissance explosive",
+        ],
+      },
+      balanced: {
+        label: "Profil Skieur Complet",
+        description: "Bon équilibre puissance/force/stabilité",
+        recommendations: [
+          "Maintenir l'équilibre actuel",
+          "Travail proprioceptif avancé",
+          "Développement harmonieux",
+        ],
+      },
+      secondary: {
+        label: "Profil Force-Endurance",
+        description: "Excellente force isométrique et résistance",
+        recommendations: [
+          "Développer la puissance explosive",
+          "Travail pliométrique",
+          "Renforcement de la réactivité musculaire",
+        ],
+      },
+      insufficientData: {
+        label: "Données insuffisantes",
+        description: "Tests CMJ et force isométrique requis",
+        recommendations: [
+          "Effectuer un test de CMJ",
+          "Effectuer un test de force isométrique squat",
+        ],
+      },
+    },
+  },
+  surf: {
+    sport: "surf",
+    label: "Surf",
+    tests: [
+      {
+        key: "paddleTest",
+        label: "Test Rame 200m",
+        shortLabel: "Rame",
+        unit: "s",
+        testType: "paddle_200m",
+        tableSource: "generic_tests",
+        higherIsBetter: false,
+      },
+      {
+        key: "popupSpeed",
+        label: "Vitesse Pop-up",
+        shortLabel: "Pop-up",
+        unit: "s",
+        testType: "popup_speed",
+        tableSource: "generic_tests",
+        higherIsBetter: false,
+      },
+    ],
+    profileDescription: "Endurance rame / Explosivité pop-up",
+    profileTypes: {
+      primary: {
+        label: "Profil Endurant Rame",
+        description: "Excellente endurance de rame et cardio",
+        recommendations: [
+          "Développer la vitesse de pop-up",
+          "Travail d'explosivité du haut du corps",
+          "Maintenir l'endurance de rame",
+        ],
+      },
+      balanced: {
+        label: "Profil Surfeur Complet",
+        description: "Bon équilibre endurance/explosivité",
+        recommendations: [
+          "Maintenir l'équilibre actuel",
+          "Travail de mobilité et souplesse",
+          "Développement harmonieux",
+        ],
+      },
+      secondary: {
+        label: "Profil Explosif",
+        description: "Excellent pop-up et réactivité",
+        recommendations: [
+          "Améliorer l'endurance de rame",
+          "Travail cardio spécifique surf",
+          "Natation longue distance",
+        ],
+      },
+      insufficientData: {
+        label: "Données insuffisantes",
+        description: "Tests rame et pop-up requis",
+        recommendations: [
+          "Effectuer un test de rame 200m",
+          "Effectuer un test de vitesse pop-up",
+        ],
+      },
+    },
+  },
+  padel: {
+    sport: "padel",
+    label: "Padel",
+    tests: [
+      {
+        key: "navette",
+        label: "Test Navette 5-10-5m",
+        shortLabel: "Navette",
+        unit: "s",
+        testType: "sprint_5_10_5",
+        tableSource: "generic_tests",
+        higherIsBetter: false,
+      },
+      {
+        key: "cmj",
+        label: "Counter Movement Jump",
+        shortLabel: "CMJ",
+        unit: "cm",
+        testType: "cmj",
+        tableSource: "jump_tests",
+        higherIsBetter: true,
+      },
+    ],
+    profileDescription: "Agilité / Explosivité verticale",
+    profileTypes: {
+      primary: {
+        label: "Profil Agilité",
+        description: "Excellent changement de direction",
+        recommendations: [
+          "Développer la puissance verticale",
+          "Travail pliométrique",
+          "Maintenir la vitesse latérale",
+        ],
+      },
+      balanced: {
+        label: "Profil Padel Complet",
+        description: "Bon équilibre agilité/explosivité",
+        recommendations: [
+          "Maintenir l'équilibre actuel",
+          "Travail de coordination",
+          "Développement harmonieux",
+        ],
+      },
+      secondary: {
+        label: "Profil Explosif",
+        description: "Excellente détente verticale",
+        recommendations: [
+          "Améliorer la vitesse latérale",
+          "Travail de changements de direction",
+          "Exercices de déplacement court",
+        ],
+      },
+      insufficientData: {
+        label: "Données insuffisantes",
+        description: "Tests navette et CMJ requis",
+        recommendations: [
+          "Effectuer un test de navette 5-10-5",
+          "Effectuer un test de CMJ",
+        ],
+      },
+    },
+  },
+  natation: {
+    sport: "natation",
+    label: "Natation",
+    tests: [
+      {
+        key: "css",
+        label: "Critical Swim Speed (CSS)",
+        shortLabel: "CSS",
+        unit: "m/s",
+        testType: "css_test",
+        tableSource: "generic_tests",
+        higherIsBetter: true,
+      },
+      {
+        key: "sprint25",
+        label: "Sprint 25m",
+        shortLabel: "Sprint 25m",
+        unit: "s",
+        testType: "sprint_25m",
+        tableSource: "generic_tests",
+        higherIsBetter: false,
+      },
+    ],
+    profileDescription: "Endurance spécifique / Vitesse maximale",
+    profileTypes: {
+      primary: {
+        label: "Profil Endurant",
+        description: "Excellente vitesse critique de nage",
+        recommendations: [
+          "Développer la vitesse de sprint",
+          "Travail de puissance départ/virage",
+          "Maintenir l'endurance aérobie",
+        ],
+      },
+      balanced: {
+        label: "Profil Nageur Complet",
+        description: "Bon équilibre endurance/vitesse",
+        recommendations: [
+          "Maintenir l'équilibre actuel",
+          "Travail technique spécifique",
+          "Développement harmonieux",
+        ],
+      },
+      secondary: {
+        label: "Profil Sprinter",
+        description: "Excellente vitesse de nage",
+        recommendations: [
+          "Améliorer l'endurance",
+          "Travail aérobie de base",
+          "Séries longues régulières",
+        ],
+      },
+      insufficientData: {
+        label: "Données insuffisantes",
+        description: "Tests CSS et sprint 25m requis",
+        recommendations: [
+          "Effectuer un test de CSS",
+          "Effectuer un test de sprint 25m",
+        ],
+      },
+    },
+  },
+  triathlon: {
+    sport: "triathlon",
+    label: "Triathlon",
+    tests: [
+      {
+        key: "vma",
+        label: "VMA",
+        shortLabel: "VMA",
+        unit: "km/h",
+        testType: "1600m_run",
+        tableSource: "speed_tests",
+        higherIsBetter: true,
+      },
+      {
+        key: "ftp",
+        label: "FTP Vélo (Functional Threshold Power)",
+        shortLabel: "FTP",
+        unit: "W/kg",
+        testType: "ftp_test",
+        tableSource: "generic_tests",
+        higherIsBetter: true,
+      },
+    ],
+    profileDescription: "Capacité aérobie course / Puissance cycliste",
+    profileTypes: {
+      primary: {
+        label: "Profil Coureur",
+        description: "Excellente capacité aérobie en course",
+        recommendations: [
+          "Développer la puissance vélo",
+          "Travail spécifique cycliste",
+          "Maintenir l'endurance course",
+        ],
+      },
+      balanced: {
+        label: "Profil Triathlète Complet",
+        description: "Bon équilibre entre les disciplines",
+        recommendations: [
+          "Maintenir l'équilibre actuel",
+          "Optimiser les transitions",
+          "Développement harmonieux",
+        ],
+      },
+      secondary: {
+        label: "Profil Cycliste",
+        description: "Excellente puissance au seuil vélo",
+        recommendations: [
+          "Améliorer la VMA",
+          "Travail fractionné course à pied",
+          "Développer l'endurance course",
+        ],
+      },
+      insufficientData: {
+        label: "Données insuffisantes",
+        description: "Tests VMA et FTP requis",
+        recommendations: [
+          "Effectuer un test de VMA",
+          "Effectuer un test FTP vélo",
+        ],
+      },
+    },
+  },
+  crossfit: {
+    sport: "crossfit",
+    label: "CrossFit / Hyrox",
+    tests: [
+      {
+        key: "fran",
+        label: "Benchmark Fran / Temps référence",
+        shortLabel: "Benchmark",
+        unit: "s",
+        testType: "benchmark_wod",
+        tableSource: "generic_tests",
+        higherIsBetter: false,
+      },
+      {
+        key: "deadlift1rm",
+        label: "Deadlift 1RM",
+        shortLabel: "Deadlift",
+        unit: "kg",
+        testType: "deadlift_1rm",
+        tableSource: "generic_tests",
+        higherIsBetter: true,
+      },
+    ],
+    profileDescription: "Capacité métabolique / Force maximale",
+    profileTypes: {
+      primary: {
+        label: "Profil Métabolique",
+        description: "Excellente endurance et tolérance à l'effort",
+        recommendations: [
+          "Développer la force maximale",
+          "Travail de force lourde",
+          "Maintenir la capacité métabolique",
+        ],
+      },
+      balanced: {
+        label: "Profil Athlète Complet",
+        description: "Bon équilibre force/endurance",
+        recommendations: [
+          "Maintenir l'équilibre actuel",
+          "Travail de skills gymniques",
+          "Développement harmonieux",
+        ],
+      },
+      secondary: {
+        label: "Profil Force",
+        description: "Excellente force maximale",
+        recommendations: [
+          "Améliorer la capacité métabolique",
+          "Travail cardio haute intensité",
+          "WODs longs réguliers",
+        ],
+      },
+      insufficientData: {
+        label: "Données insuffisantes",
+        description: "Tests benchmark et deadlift requis",
+        recommendations: [
+          "Effectuer un WOD benchmark",
+          "Effectuer un test de deadlift 1RM",
+        ],
+      },
+    },
+  },
 };
 
 export function getAthleticProfileConfig(sportType: string, playerDiscipline?: string | null): AthleticProfileConfig {
