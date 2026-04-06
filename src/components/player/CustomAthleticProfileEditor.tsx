@@ -139,8 +139,8 @@ export function CustomAthleticProfileEditor({ open, onOpenChange, categoryId }: 
         category_id: categoryId,
         name,
         description,
-        tests: processedTests as unknown as Record<string, unknown>[],
-        profile_types: { profiles } as unknown as Record<string, unknown>,
+        tests: JSON.parse(JSON.stringify(processedTests)),
+        profile_types: JSON.parse(JSON.stringify({ profiles })),
         is_active: true,
       };
 
