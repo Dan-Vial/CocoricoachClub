@@ -57,6 +57,7 @@ import { SeasonManager } from "@/components/club/SeasonManager";
      const [isEditingSettings, setIsEditingSettings] = useState(false);
      const [editClubName, setEditClubName] = useState("");
      const [editClubSport, setEditClubSport] = useState("");
+     const [editClubTimezone, setEditClubTimezone] = useState("Europe/Paris");
      const [pdfOpen, setPdfOpen] = useState(false);
  
    // Fetch club data
