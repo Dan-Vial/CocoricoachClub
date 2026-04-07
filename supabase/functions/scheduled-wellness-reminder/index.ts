@@ -13,6 +13,17 @@ serve(async (req) => {
   }
 
   try {
+    // Timezone guard: only execute if it's 8h in Europe/Paris
+    const nowParis = new Date().toLocaleString("en-US", { timeZone: "Europe/Paris" });
+    const parisHour = new Date(nowParis).getHours();
+    console.log(`[wellness-reminder] Paris hour: ${parisHour}`);
+    if (parisHour !== 8) {
+      console.log(`[wellness-reminder] Skipping — not 8h in Paris (currently ${parisHour}h)`);
+      return new Response(
+        JSON.stringify({ skipped: true, reason: `Paris hour is ${parisHour}, not 8` }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const oneSignalAppId = Deno.env.get("ONESIGNAL_APP_ID");
