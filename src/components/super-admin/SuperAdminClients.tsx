@@ -377,9 +377,10 @@ export function SuperAdminClients() {
          max_staff_users: 5,
          max_athletes: 50,
          notes: "",
-          video_enabled: false,
-          gps_data_enabled: false,
-          academy_enabled: false,
+           video_enabled: false,
+           gps_data_enabled: false,
+           academy_enabled: false,
+           timezone: "Europe/Paris",
        });
        setClubName("");
        setClubSport("rugby");
@@ -457,8 +458,9 @@ export function SuperAdminClients() {
        max_athletes: client.max_athletes,
        notes: client.notes || "",
         video_enabled: client.video_enabled || false,
-        gps_data_enabled: client.gps_data_enabled || false,
-        academy_enabled: (client as any).academy_enabled || false,
+         gps_data_enabled: client.gps_data_enabled || false,
+         academy_enabled: (client as any).academy_enabled || false,
+         timezone: (client as any).timezone || "Europe/Paris",
      });
    };
  
