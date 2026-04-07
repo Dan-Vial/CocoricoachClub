@@ -31,7 +31,9 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const today = new Date().toISOString().split("T")[0];
+    // Use Paris timezone for "today" to avoid midnight UTC issues
+    const parisNow = new Date().toLocaleString("en-CA", { timeZone: "Europe/Paris" });
+    const today = parisNow.split(",")[0].trim();
 
     console.log(`[auto-fill-wellness] Processing for ${today}`);
 
