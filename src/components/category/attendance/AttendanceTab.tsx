@@ -220,6 +220,7 @@ export function AttendanceTab({ categoryId }: AttendanceTabProps) {
               <Input
                 type="date"
                 value={endDate}
+                min={startDate || undefined}
                 onChange={(e) => setEndDate(e.target.value)}
                 className="w-40"
               />

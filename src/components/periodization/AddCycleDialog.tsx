@@ -205,6 +205,7 @@ export function AddCycleDialog({ open, onOpenChange, categoryId, editingCycle }:
               <Input
                 id="end_date"
                 type="date"
+                min={form.watch("start_date") || undefined}
                 {...form.register("end_date")}
               />
               {form.formState.errors.end_date && (

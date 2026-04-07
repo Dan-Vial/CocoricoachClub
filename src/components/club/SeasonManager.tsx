@@ -371,6 +371,7 @@ export function SeasonManager({ clubId, categories }: SeasonManagerProps) {
                       mode="single"
                       selected={endDate}
                       onSelect={setEndDate}
+                      disabled={(date) => startDate ? date < startDate : false}
                       className={cn("p-3 pointer-events-auto")}
                     />
                   </PopoverContent>

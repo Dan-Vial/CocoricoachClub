@@ -201,7 +201,7 @@ export function SelectionsSection({ categoryId, players }: SelectionsSectionProp
               </div>
               <div>
                 <Label>Date fin (optionnel)</Label>
-                <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+                <Input type="date" value={endDate} min={selectionDate || undefined} onChange={(e) => setEndDate(e.target.value)} />
               </div>
             </div>
             <div>

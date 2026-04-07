@@ -1977,6 +1977,7 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
             <Input
               type="date"
               value={dateTo}
+              min={dateFrom || undefined}
               onChange={e => setDateTo(e.target.value)}
               className="h-9"
             />

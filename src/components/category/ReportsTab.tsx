@@ -2303,7 +2303,7 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
       </div>
       <div>
         <Label className="text-xs text-muted-foreground">Au</Label>
-        <Input type="date" value={to} onChange={e => onToChange(e.target.value)} className="h-8 text-xs" />
+        <Input type="date" value={to} min={from || undefined} onChange={e => onToChange(e.target.value)} className="h-8 text-xs" />
       </div>
     </div>
   );
