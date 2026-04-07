@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { dateRangeRefinement } from "@/lib/validations";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -20,7 +21,7 @@ const cycleSchema = z.object({
   period_id: z.string().optional(),
   target_intensity: z.number().min(0).max(100).optional(),
   notes: z.string().optional(),
-});
+}).superRefine(dateRangeRefinement("start_date", "end_date"));
 
 type CycleForm = z.infer<typeof cycleSchema>;
 
@@ -204,6 +205,7 @@ export function AddCycleDialog({ open, onOpenChange, categoryId, editingCycle }:
               <Input
                 id="end_date"
                 type="date"
+                min={form.watch("start_date") || undefined}
                 {...form.register("end_date")}
               />
               {form.formState.errors.end_date && (

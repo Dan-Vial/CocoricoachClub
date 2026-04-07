@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { dateRangeRefinement } from "@/lib/validations";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -19,7 +20,7 @@ const periodSchema = z.object({
   end_date: z.string().min(1, "La date de fin est requise"),
   target_load_percentage: z.number().min(0).max(100).optional(),
   description: z.string().optional(),
-});
+}).superRefine(dateRangeRefinement("start_date", "end_date"));
 
 type PeriodForm = z.infer<typeof periodSchema>;
 
@@ -171,6 +172,7 @@ export function AddPeriodDialog({ open, onOpenChange, categoryId, editingPeriod 
               <Input
                 id="end_date"
                 type="date"
+                min={form.watch("start_date") || undefined}
                 {...form.register("end_date")}
               />
               {form.formState.errors.end_date && (

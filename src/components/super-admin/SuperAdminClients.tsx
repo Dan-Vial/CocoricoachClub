@@ -712,6 +712,7 @@ export function SuperAdminClients() {
                     <Input
                       type="date"
                       value={subEndDate}
+                      min={subStartDate || undefined}
                       onChange={(e) => setSubEndDate(e.target.value)}
                     />
                   </div>
@@ -1161,6 +1162,7 @@ export function SuperAdminClients() {
                       <Input
                         type="date"
                         value={subEndDate}
+                        min={subStartDate || undefined}
                         onChange={(e) => setSubEndDate(e.target.value)}
                       />
                     </div>

@@ -201,6 +201,7 @@ export function TripsSection({ categoryId }: TripsSectionProps) {
                   <Label>Date retour</Label>
                   <Input
                     type="date"
+                    min={formData.departure_date || undefined}
                     value={formData.return_date}
                     onChange={(e) => setFormData({ ...formData, return_date: e.target.value })}
                   />
