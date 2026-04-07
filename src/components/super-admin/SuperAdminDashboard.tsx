@@ -95,7 +95,7 @@ export function SuperAdminDashboard() {
       const activeClubs = clubs?.filter(c => c.is_active).length || 0;
 
       const totalUsers = users?.length || 0;
-      const pendingUsers = totalUsers - (approvedUsers?.length || 0);
+      const pendingUsers = (users || []).filter(u => !activeUserIds.has(u.id)).length;
 
       const revenueThisMonth = payments?.reduce((sum, p) => sum + Number(p.amount || 0), 0) || 0;
 
