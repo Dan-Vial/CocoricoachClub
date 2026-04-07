@@ -17,21 +17,55 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Use Paris timezone for "today"
-    const parisNow = new Date().toLocaleString("en-CA", { timeZone: "Europe/Paris" });
-    const today = parisNow.split(",")[0].trim();
+    // Get all clubs with their timezone
+    const { data: allClubs, error: clubsError } = await supabase
+      .from("clubs")
+      .select("id, name, timezone");
 
-    console.log(`[ewma-rest-decay] Processing rest day decay for ${today}`);
+    if (clubsError) throw clubsError;
+    if (!allClubs || allClubs.length === 0) {
+      return new Response(
+        JSON.stringify({ message: "No clubs found", inserted: 0 }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
-    // Get all categories
+    // Filter clubs where it's currently 23h in their timezone
+    const eligibleClubIds: string[] = [];
+    const clubDateMap: Record<string, string> = {};
+    for (const club of allClubs) {
+      try {
+        const tz = club.timezone || "Europe/Paris";
+        const nowInTz = new Date().toLocaleString("en-US", { timeZone: tz });
+        const localHour = new Date(nowInTz).getHours();
+        if (localHour === 23) {
+          eligibleClubIds.push(club.id);
+          const localDate = new Date().toLocaleString("en-CA", { timeZone: tz });
+          clubDateMap[club.id] = localDate.split(",")[0].trim();
+          console.log(`[ewma-rest-decay] Club "${club.name}" (${tz}) → 23h local ✓`);
+        }
+      } catch (e) {
+        console.error(`[ewma-rest-decay] Invalid timezone for club "${club.name}": ${club.timezone}`, e);
+      }
+    }
+
+    if (eligibleClubIds.length === 0) {
+      return new Response(
+        JSON.stringify({ skipped: true, reason: "No clubs at 23h local", inserted: 0 }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Get categories for eligible clubs
     const { data: categories, error: catError } = await supabase
       .from("categories")
-      .select("id");
+      .select("id, club_id")
+      .in("club_id", eligibleClubIds);
 
     if (catError) throw catError;
     if (!categories || categories.length === 0) {
       return new Response(
-        JSON.stringify({ message: "No categories", inserted: 0 }),
+        JSON.stringify({ message: "No categories for eligible clubs", inserted: 0 }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -39,7 +73,9 @@ serve(async (req) => {
     let totalInserted = 0;
 
     for (const category of categories) {
-      // Get all players in this category
+      const today = clubDateMap[category.club_id];
+      if (!today) continue;
+
       const { data: players } = await supabase
         .from("players")
         .select("id")
@@ -49,7 +85,6 @@ serve(async (req) => {
 
       const playerIds = players.map((p) => p.id);
 
-      // Find players who already have an EWMA entry today (from a real session or already decayed)
       const { data: existingToday } = await supabase
         .from("awcr_tracking")
         .select("player_id")
@@ -59,8 +94,6 @@ serve(async (req) => {
 
       const alreadyHasEntry = new Set(existingToday?.map((e) => e.player_id) || []);
 
-      // Find players who have at least one previous EWMA entry (active in the system)
-      // We only want to decay players who are being tracked
       const { data: activePlayers } = await supabase
         .from("awcr_tracking")
         .select("player_id")
@@ -71,7 +104,6 @@ serve(async (req) => {
 
       const activePlayerIds = new Set(activePlayers?.map((a) => a.player_id) || []);
 
-      // Players who are actively tracked but have no entry today = rest day
       const restDayPlayerIds = playerIds.filter(
         (id) => activePlayerIds.has(id) && !alreadyHasEntry.has(id)
       );
@@ -79,10 +111,9 @@ serve(async (req) => {
       if (restDayPlayerIds.length === 0) continue;
 
       console.log(
-        `[ewma-rest-decay] Category ${category.id}: ${restDayPlayerIds.length} players on rest day`
+        `[ewma-rest-decay] Category ${category.id} (date=${today}): ${restDayPlayerIds.length} players on rest day`
       );
 
-      // Insert zero-load entries — the compute_ewma_loads trigger will handle decay
       const inserts = restDayPlayerIds.map((playerId) => ({
         player_id: playerId,
         category_id: category.id,
@@ -109,7 +140,7 @@ serve(async (req) => {
     console.log(`[ewma-rest-decay] Done. Total rest-day entries: ${totalInserted}`);
 
     return new Response(
-      JSON.stringify({ success: true, inserted: totalInserted }),
+      JSON.stringify({ success: true, inserted: totalInserted, eligibleClubs: eligibleClubIds.length }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error: any) {
