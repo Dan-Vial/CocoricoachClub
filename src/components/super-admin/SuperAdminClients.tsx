@@ -46,7 +46,7 @@ export function SuperAdminClients() {
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [categoryOptionsClient, setCategoryOptionsClient] = useState<Client | null>(null);
-   const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState({
       name: "",
       email: "",
       phone: "",
@@ -60,6 +60,7 @@ export function SuperAdminClients() {
        video_enabled: false,
        gps_data_enabled: false,
        academy_enabled: false,
+       timezone: "Europe/Paris",
     });
     const [selectedPlanId, setSelectedPlanId] = useState<string>("");
     const [subStartDate, setSubStartDate] = useState(new Date().toISOString().split("T")[0]);
