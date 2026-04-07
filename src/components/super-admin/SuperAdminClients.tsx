@@ -46,7 +46,7 @@ export function SuperAdminClients() {
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [categoryOptionsClient, setCategoryOptionsClient] = useState<Client | null>(null);
-   const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState({
       name: "",
       email: "",
       phone: "",
@@ -60,6 +60,7 @@ export function SuperAdminClients() {
        video_enabled: false,
        gps_data_enabled: false,
        academy_enabled: false,
+       timezone: "Europe/Paris",
     });
     const [selectedPlanId, setSelectedPlanId] = useState<string>("");
     const [subStartDate, setSubStartDate] = useState(new Date().toISOString().split("T")[0]);
@@ -164,6 +165,7 @@ export function SuperAdminClients() {
               sport: derivedSport,
               user_id: user.id,
               client_id: clientData.id,
+              timezone: data.timezone || "Europe/Paris",
             })
             .select("id")
             .single();
@@ -376,9 +378,10 @@ export function SuperAdminClients() {
          max_staff_users: 5,
          max_athletes: 50,
          notes: "",
-          video_enabled: false,
-          gps_data_enabled: false,
-          academy_enabled: false,
+           video_enabled: false,
+           gps_data_enabled: false,
+           academy_enabled: false,
+           timezone: "Europe/Paris",
        });
        setClubName("");
        setClubSport("rugby");
@@ -456,8 +459,9 @@ export function SuperAdminClients() {
        max_athletes: client.max_athletes,
        notes: client.notes || "",
         video_enabled: client.video_enabled || false,
-        gps_data_enabled: client.gps_data_enabled || false,
-        academy_enabled: (client as any).academy_enabled || false,
+         gps_data_enabled: client.gps_data_enabled || false,
+         academy_enabled: (client as any).academy_enabled || false,
+         timezone: (client as any).timezone || "Europe/Paris",
      });
    };
  
@@ -526,14 +530,50 @@ export function SuperAdminClients() {
          </div>
        </div>
  
-       <div className="space-y-2">
-         <Label>Adresse</Label>
-         <Input
-           value={formData.address}
-           onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-           placeholder="Adresse complète"
-         />
-       </div>
+        <div className="space-y-2">
+          <Label>Adresse</Label>
+          <Input
+            value={formData.address}
+            onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+            placeholder="Adresse complète"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label>Pays / Fuseau horaire</Label>
+          <Select value={formData.timezone} onValueChange={(v) => setFormData({ ...formData, timezone: v })}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Pacific/Auckland">🇳🇿 Nouvelle-Zélande</SelectItem>
+              <SelectItem value="Australia/Sydney">🇦🇺 Australie (Sydney)</SelectItem>
+              <SelectItem value="Asia/Tokyo">🇯🇵 Japon</SelectItem>
+              <SelectItem value="Asia/Shanghai">🇨🇳 Chine</SelectItem>
+              <SelectItem value="Asia/Dubai">🇦🇪 Émirats Arabes Unis</SelectItem>
+              <SelectItem value="Europe/Moscow">🇷🇺 Russie (Moscou)</SelectItem>
+              <SelectItem value="Europe/Paris">🇫🇷 France</SelectItem>
+              <SelectItem value="Europe/London">🇬🇧 Royaume-Uni</SelectItem>
+              <SelectItem value="Atlantic/Reykjavik">🇮🇸 Islande (UTC)</SelectItem>
+              <SelectItem value="America/Sao_Paulo">🇧🇷 Brésil</SelectItem>
+              <SelectItem value="America/New_York">🇺🇸 USA Est</SelectItem>
+              <SelectItem value="America/Chicago">🇺🇸 USA Centre</SelectItem>
+              <SelectItem value="America/Denver">🇺🇸 USA Montagne</SelectItem>
+              <SelectItem value="America/Los_Angeles">🇺🇸 USA Ouest</SelectItem>
+              <SelectItem value="America/Montreal">🇨🇦 Canada Est</SelectItem>
+              <SelectItem value="America/Vancouver">🇨🇦 Canada Ouest</SelectItem>
+              <SelectItem value="Indian/Reunion">🇷🇪 La Réunion</SelectItem>
+              <SelectItem value="Pacific/Noumea">🇳🇨 Nouvelle-Calédonie</SelectItem>
+              <SelectItem value="Pacific/Tahiti">🇵🇫 Polynésie française</SelectItem>
+              <SelectItem value="Europe/Brussels">🇧🇪 Belgique</SelectItem>
+              <SelectItem value="Europe/Zurich">🇨🇭 Suisse</SelectItem>
+              <SelectItem value="Africa/Casablanca">🇲🇦 Maroc</SelectItem>
+              <SelectItem value="Africa/Tunis">🇹🇳 Tunisie</SelectItem>
+              <SelectItem value="Africa/Dakar">🇸🇳 Sénégal</SelectItem>
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground">Les rappels Wellness seront envoyés à 8h dans ce fuseau horaire</p>
+        </div>
  
        <div className="grid grid-cols-2 gap-4">
          <div className="space-y-2">
