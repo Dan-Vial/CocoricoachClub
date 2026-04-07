@@ -794,7 +794,7 @@ import { SeasonManager } from "@/components/club/SeasonManager";
                             onClick={async () => {
                               const { error } = await supabase
                                 .from("clubs")
-                                .update({ name: editClubName, sport: editClubSport })
+                                .update({ name: editClubName, sport: editClubSport, timezone: editClubTimezone })
                                 .eq("id", clubId);
                               if (error) {
                                 toast.error("Erreur lors de la mise à jour");
@@ -819,6 +819,10 @@ import { SeasonManager } from "@/components/club/SeasonManager";
                         <div className="flex items-center justify-between">
                           <span className="text-muted-foreground">Sport</span>
                           <span className="font-medium">{club?.sport || "Rugby"}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-muted-foreground">Fuseau horaire</span>
+                          <span className="font-medium">{(club as any)?.timezone || "Europe/Paris"}</span>
                         </div>
                         <div className="flex items-center justify-between">
                           <span className="text-muted-foreground">Créé le</span>
