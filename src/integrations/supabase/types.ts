@@ -1446,6 +1446,7 @@ export type Database = {
           logo_url: string | null
           name: string
           sport: string
+          timezone: string
           user_id: string
         }
         Insert: {
@@ -1456,6 +1457,7 @@ export type Database = {
           logo_url?: string | null
           name: string
           sport?: string
+          timezone?: string
           user_id: string
         }
         Update: {
@@ -1466,6 +1468,7 @@ export type Database = {
           logo_url?: string | null
           name?: string
           sport?: string
+          timezone?: string
           user_id?: string
         }
         Relationships: [

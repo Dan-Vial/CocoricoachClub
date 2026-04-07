@@ -57,6 +57,7 @@ import { SeasonManager } from "@/components/club/SeasonManager";
      const [isEditingSettings, setIsEditingSettings] = useState(false);
      const [editClubName, setEditClubName] = useState("");
      const [editClubSport, setEditClubSport] = useState("");
+     const [editClubTimezone, setEditClubTimezone] = useState("Europe/Paris");
      const [pdfOpen, setPdfOpen] = useState(false);
  
    // Fetch club data
@@ -743,6 +744,38 @@ import { SeasonManager } from "@/components/club/SeasonManager";
                             </SelectContent>
                           </Select>
                         </div>
+                        <div className="space-y-2">
+                          <Label>Fuseau horaire</Label>
+                          <Select value={editClubTimezone} onValueChange={setEditClubTimezone}>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Pacific/Auckland">Nouvelle-Zélande (Auckland)</SelectItem>
+                              <SelectItem value="Australia/Sydney">Australie (Sydney)</SelectItem>
+                              <SelectItem value="Asia/Tokyo">Japon (Tokyo)</SelectItem>
+                              <SelectItem value="Asia/Shanghai">Chine (Shanghai)</SelectItem>
+                              <SelectItem value="Asia/Dubai">Émirats (Dubai)</SelectItem>
+                              <SelectItem value="Europe/Moscow">Russie (Moscou)</SelectItem>
+                              <SelectItem value="Europe/Paris">France (Paris)</SelectItem>
+                              <SelectItem value="Europe/London">Royaume-Uni (Londres)</SelectItem>
+                              <SelectItem value="Atlantic/Reykjavik">Islande (UTC)</SelectItem>
+                              <SelectItem value="America/Sao_Paulo">Brésil (São Paulo)</SelectItem>
+                              <SelectItem value="America/New_York">USA Est (New York)</SelectItem>
+                              <SelectItem value="America/Chicago">USA Centre (Chicago)</SelectItem>
+                              <SelectItem value="America/Denver">USA Montagne (Denver)</SelectItem>
+                              <SelectItem value="America/Los_Angeles">USA Ouest (Los Angeles)</SelectItem>
+                              <SelectItem value="America/Anchorage">Alaska (Anchorage)</SelectItem>
+                              <SelectItem value="Pacific/Honolulu">Hawaï (Honolulu)</SelectItem>
+                              <SelectItem value="America/Montreal">Canada Est (Montréal)</SelectItem>
+                              <SelectItem value="America/Vancouver">Canada Ouest (Vancouver)</SelectItem>
+                              <SelectItem value="Indian/Reunion">La Réunion</SelectItem>
+                              <SelectItem value="Pacific/Noumea">Nouvelle-Calédonie</SelectItem>
+                              <SelectItem value="Pacific/Tahiti">Polynésie (Tahiti)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <p className="text-xs text-muted-foreground">Les rappels Wellness seront envoyés à 8h dans ce fuseau horaire</p>
+                        </div>
                         <div className="flex items-center justify-between">
                           <span className="text-muted-foreground">Créé le</span>
                           <span>{club?.created_at && format(new Date(club.created_at), "dd/MM/yyyy")}</span>
@@ -761,7 +794,7 @@ import { SeasonManager } from "@/components/club/SeasonManager";
                             onClick={async () => {
                               const { error } = await supabase
                                 .from("clubs")
-                                .update({ name: editClubName, sport: editClubSport })
+                                .update({ name: editClubName, sport: editClubSport, timezone: editClubTimezone })
                                 .eq("id", clubId);
                               if (error) {
                                 toast.error("Erreur lors de la mise à jour");
@@ -788,6 +821,10 @@ import { SeasonManager } from "@/components/club/SeasonManager";
                           <span className="font-medium">{club?.sport || "Rugby"}</span>
                         </div>
                         <div className="flex items-center justify-between">
+                          <span className="text-muted-foreground">Fuseau horaire</span>
+                          <span className="font-medium">{(club as any)?.timezone || "Europe/Paris"}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
                           <span className="text-muted-foreground">Créé le</span>
                           <span>{club?.created_at && format(new Date(club.created_at), "dd/MM/yyyy")}</span>
                         </div>
@@ -798,6 +835,7 @@ import { SeasonManager } from "@/components/club/SeasonManager";
                           onClick={() => {
                             setEditClubName(club?.name || "");
                             setEditClubSport(club?.sport || "Rugby");
+                            setEditClubTimezone((club as any)?.timezone || "Europe/Paris");
                             setIsEditingSettings(true);
                           }}
                         >
