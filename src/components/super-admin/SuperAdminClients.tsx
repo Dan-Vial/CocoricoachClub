@@ -165,6 +165,7 @@ export function SuperAdminClients() {
               sport: derivedSport,
               user_id: user.id,
               client_id: clientData.id,
+              timezone: data.timezone || "Europe/Paris",
             })
             .select("id")
             .single();
