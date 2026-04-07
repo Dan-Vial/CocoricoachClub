@@ -33,7 +33,21 @@ export function SuperAdminDashboard() {
 
       const { data: approvedUsers } = await supabase
         .from("approved_users")
-        .select("id, is_free_user");
+        .select("id, is_free_user, user_id");
+
+      // Get users who already have an active role (club or category member)
+      const { data: activeClubMembers } = await supabase
+        .from("club_members")
+        .select("user_id");
+      const { data: activeCategoryMembers } = await supabase
+        .from("category_members")
+        .select("user_id");
+
+      const activeUserIds = new Set([
+        ...(approvedUsers || []).map(a => a.user_id),
+        ...(activeClubMembers || []).map(m => m.user_id),
+        ...(activeCategoryMembers || []).map(m => m.user_id),
+      ]);
 
       // Payments this month
       const startOfMonth = new Date();
