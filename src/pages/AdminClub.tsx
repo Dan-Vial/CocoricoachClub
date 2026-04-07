@@ -835,6 +835,7 @@ import { SeasonManager } from "@/components/club/SeasonManager";
                           onClick={() => {
                             setEditClubName(club?.name || "");
                             setEditClubSport(club?.sport || "Rugby");
+                            setEditClubTimezone((club as any)?.timezone || "Europe/Paris");
                             setIsEditingSettings(true);
                           }}
                         >
