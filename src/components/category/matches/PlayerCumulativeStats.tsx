@@ -699,14 +699,20 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
                             <TableRow key={p.playerId}>
                               <TableCell className="font-medium">{p.playerName}</TableCell>
                               <TableCell className="text-center">{p.matchesPlayed}</TableCell>
-                              {categoryStats.slice(0, 6).map(stat => (
-                                <TableCell key={stat.key} className="text-center">
-                                  {stat.computedFrom 
-                                    ? `${p.sportData[stat.key] || 0}%`
-                                    : (p.sportData[stat.key] || 0)
-                                  }
-                                </TableCell>
-                              ))}
+                              {categoryStats.slice(0, 6).map(stat => {
+                                const val = p.sportData[stat.key] || 0;
+                                const prog = playerProgressions[p.playerId]?.[stat.key] || 0;
+                                return (
+                                  <TableCell key={stat.key} className="text-center">
+                                    <div className="flex flex-col items-center gap-0.5">
+                                      <span>{stat.computedFrom ? `${val}%` : val}</span>
+                                      {matchesDataForCharts.length >= 2 && (
+                                        <ProgressionIndicator value={prog} />
+                                      )}
+                                    </div>
+                                  </TableCell>
+                                );
+                              })}
                             </TableRow>
                           ))}
                       </TableBody>
