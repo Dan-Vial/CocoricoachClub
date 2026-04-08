@@ -478,79 +478,92 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
     <div className="space-y-6">
       {/* Match filter + Export */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <Popover open={filterOpen} onOpenChange={setFilterOpen}>
-          <PopoverTrigger asChild>
-            <Button variant="outline" size="sm" className="gap-2">
-              <Filter className="h-4 w-4" />
-              Filtrer les matchs
-              <Badge variant="secondary" className="ml-1 h-5 min-w-[20px] px-1.5">
-                {selectedCount}/{allMatches.length}
-              </Badge>
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-[360px] p-0" align="start">
-            <div className="p-3 border-b">
-              <p className="text-sm font-medium">Sélectionner les matchs</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Choisissez les matchs à inclure dans le cumul
-              </p>
-              <div className="flex gap-2 mt-2">
-                <Button variant="outline" size="sm" className="text-xs h-7" onClick={selectAllMatches}>
-                  <CheckSquare className="h-3 w-3 mr-1" />
-                  Tous
-                </Button>
-                <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setSelectedMatchIds([])}>
-                  Réinitialiser
-                </Button>
+        <div className="flex items-center gap-3 flex-wrap">
+          <Popover open={filterOpen} onOpenChange={setFilterOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-2">
+                <Filter className="h-4 w-4" />
+                Filtrer les matchs
+                <Badge variant="secondary" className="ml-1 h-5 min-w-[20px] px-1.5">
+                  {selectedCount}/{allMatches.length}
+                </Badge>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[360px] p-0" align="start">
+              <div className="p-3 border-b">
+                <p className="text-sm font-medium">Sélectionner les matchs</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Choisissez les matchs à inclure dans le cumul
+                </p>
+                <div className="flex gap-2 mt-2">
+                  <Button variant="outline" size="sm" className="text-xs h-7" onClick={selectAllMatches}>
+                    <CheckSquare className="h-3 w-3 mr-1" />
+                    Tous
+                  </Button>
+                  <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setSelectedMatchIds([])}>
+                    Réinitialiser
+                  </Button>
+                </div>
               </div>
-            </div>
-            <ScrollArea className="max-h-[300px]">
-              <div className="p-2 space-y-1">
-                {allMatches.map(match => {
-                  const isSelected = selectedMatchIds.length === 0 || selectedMatchIds.includes(match.id);
-                  return (
-                    <button
-                      key={match.id}
-                      onClick={() => toggleMatch(match.id)}
-                      className={`w-full flex items-center gap-3 p-2 rounded-md text-left transition-colors hover:bg-muted ${
-                        isSelected ? 'bg-primary/5' : 'opacity-50'
-                      }`}
-                    >
-                      <Checkbox
-                        checked={isSelected}
-                        className="pointer-events-none"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">
-                          vs {match.opponent || "Adversaire inconnu"}
-                        </p>
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <Calendar className="h-3 w-3" />
-                          {format(new Date(match.match_date), "dd MMM yyyy", { locale: fr })}
+              <ScrollArea className="max-h-[300px]">
+                <div className="p-2 space-y-1">
+                  {allMatches.map(match => {
+                    const isSelected = selectedMatchIds.length === 0 || selectedMatchIds.includes(match.id);
+                    return (
+                      <button
+                        key={match.id}
+                        onClick={() => toggleMatch(match.id)}
+                        className={`w-full flex items-center gap-3 p-2 rounded-md text-left transition-colors hover:bg-muted ${
+                          isSelected ? 'bg-primary/5' : 'opacity-50'
+                        }`}
+                      >
+                        <Checkbox
+                          checked={isSelected}
+                          className="pointer-events-none"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">
+                            vs {match.opponent || "Adversaire inconnu"}
+                          </p>
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <Calendar className="h-3 w-3" />
+                            {format(new Date(match.match_date), "dd MMM yyyy", { locale: fr })}
+                          </div>
                         </div>
-                      </div>
-                    </button>
-                  );
-                })}
-                {allMatches.length === 0 && (
-                  <p className="text-sm text-muted-foreground text-center py-4">Aucun match</p>
-                )}
-              </div>
-            </ScrollArea>
-          </PopoverContent>
-        </Popover>
+                      </button>
+                    );
+                  })}
+                  {allMatches.length === 0 && (
+                    <p className="text-sm text-muted-foreground text-center py-4">Aucun match</p>
+                  )}
+                </div>
+              </ScrollArea>
+            </PopoverContent>
+          </Popover>
 
-        {selectedMatchIds.length > 0 && (
-          <Badge variant="outline" className="gap-1">
-            <Trophy className="h-3 w-3" />
-            {selectedMatchIds.length} match{selectedMatchIds.length > 1 ? 's' : ''} sélectionné{selectedMatchIds.length > 1 ? 's' : ''}
-          </Badge>
-        )}
-        {selectedMatchIds.length === 0 && allMatches.length > 0 && (
-          <Badge variant="secondary" className="gap-1">
-            Tous les matchs ({allMatches.length})
-          </Badge>
-        )}
+          {selectedMatchIds.length > 0 && (
+            <Badge variant="outline" className="gap-1">
+              <Trophy className="h-3 w-3" />
+              {selectedMatchIds.length} match{selectedMatchIds.length > 1 ? 's' : ''} sélectionné{selectedMatchIds.length > 1 ? 's' : ''}
+            </Badge>
+          )}
+          {selectedMatchIds.length === 0 && allMatches.length > 0 && (
+            <Badge variant="secondary" className="gap-1">
+              Tous les matchs ({allMatches.length})
+            </Badge>
+          )}
+        </div>
+
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={handleExportExcel} className="gap-1">
+            <FileSpreadsheet className="h-4 w-4" />
+            <span className="hidden sm:inline">Excel</span>
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleExportPdf} className="gap-1">
+            <Download className="h-4 w-4" />
+            <span className="hidden sm:inline">PDF</span>
+          </Button>
+        </div>
       </div>
 
       {/* Charts section */}
