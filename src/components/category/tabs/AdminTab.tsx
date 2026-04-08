@@ -49,7 +49,7 @@ export function AdminTab({ categoryId }: AdminTabProps) {
             <span className="hidden sm:inline">Présences</span>
             <span className="sm:hidden">Prés</span>
           </ColoredSubTabsTrigger>
-          {!isIndividualSport && (
+          {hasMatchSheets && (
             <ColoredSubTabsTrigger 
               value="matchsheets" 
               colorKey="admin"
@@ -106,7 +106,7 @@ export function AdminTab({ categoryId }: AdminTabProps) {
         <AttendanceTab categoryId={categoryId} />
       </TabsContent>
 
-      {!isIndividualSport && (
+      {hasMatchSheets && (
         <TabsContent value="matchsheets">
           <MatchSheetsSection categoryId={categoryId} />
         </TabsContent>
