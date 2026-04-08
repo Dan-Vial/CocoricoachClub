@@ -305,29 +305,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
     }
   };
 
-  // Compute per-player progression (first match vs last match)
-  const playerProgressions = useMemo(() => {
-    if (!matchesDataForCharts || matchesDataForCharts.length < 2 || !stats) return {};
-    const progressions: Record<string, Record<string, number>> = {};
-    
-    stats.forEach(player => {
-      const playerMatchData = matchesDataForCharts
-        .filter(m => m.players[player.playerId])
-        .map(m => m.players[player.playerId].sportData);
-      
-      if (playerMatchData.length < 2) return;
-      const first = playerMatchData[0];
-      const last = playerMatchData[playerMatchData.length - 1];
-      
-      progressions[player.playerId] = {};
-      sportStats.forEach(stat => {
-        const firstVal = first[stat.key] || 0;
-        const lastVal = last[stat.key] || 0;
-        progressions[player.playerId][stat.key] = lastVal - firstVal;
-      });
-    });
-    return progressions;
-  }, [matchesDataForCharts, stats, sportStats]);
+
 
   // Export Excel
   const handleExportExcel = async () => {
