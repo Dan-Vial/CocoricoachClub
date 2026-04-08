@@ -7,14 +7,20 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { BarChart3, Trophy, Target, Shield, Activity, Dumbbell, Filter, CheckSquare, Calendar } from "lucide-react";
+import { BarChart3, Trophy, Target, Shield, Activity, Dumbbell, Filter, CheckSquare, Calendar, Download, FileSpreadsheet, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { getStatCategories, type StatField } from "@/lib/constants/sportStats";
 import { useStatPreferences } from "@/hooks/use-stat-preferences";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+import ExcelJS from "exceljs";
+import jsPDF from "jspdf";
 import { CumulativeStatsCharts } from "./CumulativeStatsCharts";
+import { getExcelBranding, addBrandedHeader, styleDataHeaderRow, addZebraRows, addFooter, downloadWorkbook } from "@/lib/excelExport";
+import { preparePdfWithSettings } from "@/lib/pdfExport";
 
 interface PlayerCumulativeStatsProps {
   categoryId: string;
