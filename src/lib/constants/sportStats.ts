@@ -52,11 +52,21 @@ export const RUGBY_STATS: StatField[] = [
   { key: "defenseCollisions", label: "Nombre de collisions", shortLabel: "Collisions", category: "defense", type: "number" },
   { key: "defenseCollisionsOver5m", label: "Collision +5m", shortLabel: "Coll. +5m", category: "defense", type: "number" },
   { key: "defenseCollisionsUnder5m", label: "Collision -5m", shortLabel: "Coll. -5m", category: "defense", type: "number" },
-  // Scrum & Lineout
-  { key: "scrumWon", label: "Mêlées gagnées", shortLabel: "Mêlées", category: "attack", type: "number" },
+  // Scrum & Lineout - Attack (our scrums/lineouts)
+  { key: "scrumTotal", label: "Mêlées introduites", shortLabel: "Mêl. intro.", category: "attack", type: "number" },
+  { key: "scrumWon", label: "Mêlées conservées", shortLabel: "Mêl. cons.", category: "attack", type: "number" },
+  { key: "scrumSuccessRate", label: "% Mêlées conservées", shortLabel: "% Mêl.", category: "attack", type: "percentage", max: 100, computedFrom: { successKey: "scrumWon", totalKey: "scrumTotal" } },
   { key: "scrumPenaltiesWon", label: "Pén. mêlées gagnées", shortLabel: "Pén. mêl.", category: "attack", type: "number" },
-  { key: "lineoutWon", label: "Touches gagnées", shortLabel: "Touches", category: "attack", type: "number" },
-  { key: "lineoutSteals", label: "Touches volées", shortLabel: "T. volées", category: "defense", type: "number" },
+  { key: "lineoutTotal", label: "Touches introduites", shortLabel: "T. intro.", category: "attack", type: "number" },
+  { key: "lineoutWon", label: "Touches conservées", shortLabel: "T. cons.", category: "attack", type: "number" },
+  { key: "lineoutSuccessRate", label: "% Touches conservées", shortLabel: "% Touch.", category: "attack", type: "percentage", max: 100, computedFrom: { successKey: "lineoutWon", totalKey: "lineoutTotal" } },
+  // Scrum & Lineout - Defense (opponent scrums/lineouts)
+  { key: "scrumDefenseTotal", label: "Mêlées adverses", shortLabel: "Mêl. adv.", category: "defense", type: "number" },
+  { key: "scrumDefenseWon", label: "Mêlées adverses gagnées", shortLabel: "Mêl. adv. G.", category: "defense", type: "number" },
+  { key: "scrumDefenseRate", label: "% Mêlées adverses gagnées", shortLabel: "% Mêl. D.", category: "defense", type: "percentage", max: 100, computedFrom: { successKey: "scrumDefenseWon", totalKey: "scrumDefenseTotal" } },
+  { key: "lineoutDefenseTotal", label: "Touches adverses", shortLabel: "T. adv.", category: "defense", type: "number" },
+  { key: "lineoutSteals", label: "Touches adverses volées", shortLabel: "T. volées", category: "defense", type: "number" },
+  { key: "lineoutDefenseRate", label: "% Touches adverses volées", shortLabel: "% T. vol.", category: "defense", type: "percentage", max: 100, computedFrom: { successKey: "lineoutSteals", totalKey: "lineoutDefenseTotal" } },
   // Individual Stats - General
   { key: "minutesPlayed", label: "Minutes jouées", shortLabel: "Min.", category: "general", type: "number" },
   { key: "starts", label: "Titularisations", shortLabel: "Titu.", category: "general", type: "number" },
