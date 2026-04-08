@@ -17,7 +17,7 @@ interface AdminTabProps {
   categoryId: string;
 }
 
-const INDIVIDUAL_SPORTS = ["athletisme", "athlétisme", "judo", "aviron", "bowling", "padel", "natation", "ski", "snow", "triathlon"];
+const TEAM_SPORTS_WITH_MATCH_SHEETS = ["rugby", "football", "basketball", "handball", "volleyball"];
 
 export function AdminTab({ categoryId }: AdminTabProps) {
   const { data: category } = useQuery({
@@ -35,7 +35,7 @@ export function AdminTab({ categoryId }: AdminTabProps) {
   });
 
   const sport = ((category?.clubs as any)?.sport || "rugby").toLowerCase();
-  const isIndividualSport = INDIVIDUAL_SPORTS.some(s => sport.includes(s));
+  const hasMatchSheets = TEAM_SPORTS_WITH_MATCH_SHEETS.some(s => sport.includes(s));
 
   return (
     <Tabs defaultValue="attendance" className="space-y-4">
@@ -49,7 +49,7 @@ export function AdminTab({ categoryId }: AdminTabProps) {
             <span className="hidden sm:inline">Présences</span>
             <span className="sm:hidden">Prés</span>
           </ColoredSubTabsTrigger>
-          {!isIndividualSport && (
+          {hasMatchSheets && (
             <ColoredSubTabsTrigger 
               value="matchsheets" 
               colorKey="admin"
@@ -106,7 +106,7 @@ export function AdminTab({ categoryId }: AdminTabProps) {
         <AttendanceTab categoryId={categoryId} />
       </TabsContent>
 
-      {!isIndividualSport && (
+      {hasMatchSheets && (
         <TabsContent value="matchsheets">
           <MatchSheetsSection categoryId={categoryId} />
         </TabsContent>
