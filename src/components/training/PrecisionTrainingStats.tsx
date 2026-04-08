@@ -234,7 +234,7 @@ export function PrecisionTrainingStats({ categoryId }: PrecisionTrainingStatsPro
   // Export PDF
   const handleExportPdf = async () => {
     try {
-      const { settings, clubName, categoryName, seasonName, logoDataUrl } = await preparePdfWithSettings(categoryId);
+      const { settings, logoBase64, clubName, categoryName, seasonName } = await preparePdfWithSettings(categoryId);
       const doc = new jsPDF({ orientation: "landscape" });
       const pageW = doc.internal.pageSize.getWidth();
 
