@@ -284,10 +284,201 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
     }
   };
 
+  // Compute per-player progression (first match vs last match)
+  const playerProgressions = useMemo(() => {
+    if (!matchesDataForCharts || matchesDataForCharts.length < 2 || !stats) return {};
+    const progressions: Record<string, Record<string, number>> = {};
+    
+    stats.forEach(player => {
+      const playerMatchData = matchesDataForCharts
+        .filter(m => m.players[player.playerId])
+        .map(m => m.players[player.playerId].sportData);
+      
+      if (playerMatchData.length < 2) return;
+      const first = playerMatchData[0];
+      const last = playerMatchData[playerMatchData.length - 1];
+      
+      progressions[player.playerId] = {};
+      sportStats.forEach(stat => {
+        const firstVal = first[stat.key] || 0;
+        const lastVal = last[stat.key] || 0;
+        progressions[player.playerId][stat.key] = lastVal - firstVal;
+      });
+    });
+    return progressions;
+  }, [matchesDataForCharts, stats, sportStats]);
+
+  // Export Excel
+  const handleExportExcel = async () => {
+    if (!stats || stats.length === 0) return;
+    try {
+      const branding = await getExcelBranding(categoryId);
+      const wb = new ExcelJS.Workbook();
+
+      statCategories.forEach(cat => {
+        const categoryStats = sportStats.filter(s => s.category === cat.key);
+        if (categoryStats.length === 0) return;
+        
+        const ws = wb.addWorksheet(cat.label);
+        const colCount = 2 + categoryStats.length * 2; // Name, Matchs, then stat + progression pairs
+        ws.columns = [
+          { header: "Athlète", key: "name", width: 22 },
+          { header: "Matchs", key: "matches", width: 10 },
+          ...categoryStats.flatMap(s => [
+            { header: s.shortLabel, key: s.key, width: 12 },
+            { header: `+/-`, key: `${s.key}_prog`, width: 10 },
+          ]),
+        ];
+        const startRow = addBrandedHeader(ws, `Stats cumulées - ${cat.label}`, branding, [
+          ["Matchs sélectionnés", `${selectedCount}/${allMatches.length}`],
+        ]);
+        styleDataHeaderRow(ws, startRow, colCount, branding.headerColor);
+        const headerRow = ws.getRow(startRow);
+        headerRow.getCell(1).value = "Athlète";
+        headerRow.getCell(2).value = "Matchs";
+        categoryStats.forEach((s, i) => {
+          headerRow.getCell(3 + i * 2).value = s.shortLabel;
+          headerRow.getCell(4 + i * 2).value = "+/-";
+        });
+
+        const sorted = [...stats].sort((a, b) => {
+          const firstStat = categoryStats[0]?.key;
+          return firstStat ? (b.sportData[firstStat] || 0) - (a.sportData[firstStat] || 0) : 0;
+        });
+
+        sorted.forEach((p, idx) => {
+          const row = ws.getRow(startRow + 1 + idx);
+          row.getCell(1).value = p.playerName;
+          row.getCell(2).value = p.matchesPlayed;
+          categoryStats.forEach((s, i) => {
+            const val = p.sportData[s.key] || 0;
+            row.getCell(3 + i * 2).value = s.computedFrom ? `${val}%` : val;
+            const prog = playerProgressions[p.playerId]?.[s.key] || 0;
+            const progCell = row.getCell(4 + i * 2);
+            progCell.value = prog > 0 ? `+${prog}` : String(prog);
+            progCell.font = { color: { argb: prog > 0 ? "FF16A34A" : prog < 0 ? "FFDC2626" : "FF64748B" } };
+          });
+        });
+        addZebraRows(ws, startRow + 1, startRow + sorted.length, colCount);
+        addFooter(ws, startRow + sorted.length + 1, colCount, branding.footerText);
+      });
+
+      await downloadWorkbook(wb, `stats-competition-${format(new Date(), "yyyy-MM-dd")}.xlsx`);
+      toast.success("Export Excel téléchargé !");
+    } catch (e) {
+      toast.error("Erreur lors de l'export Excel");
+    }
+  };
+
+  // Export PDF
+  const handleExportPdf = async () => {
+    if (!stats || stats.length === 0) return;
+    try {
+      const { settings, clubName, categoryName, seasonName } = await preparePdfWithSettings(categoryId);
+      const doc = new jsPDF({ orientation: "landscape" });
+      const pageW = doc.internal.pageSize.getWidth();
+      const pageH = doc.internal.pageSize.getHeight();
+
+      // Header
+      if (settings?.header_color) {
+        const hc = settings.header_color.replace("#", "");
+        doc.setFillColor(parseInt(hc.substring(0, 2), 16), parseInt(hc.substring(2, 4), 16), parseInt(hc.substring(4, 6), 16));
+      } else {
+        doc.setFillColor(34, 67, 120);
+      }
+      doc.rect(0, 0, pageW, 28, "F");
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(16);
+      doc.text("Stats compétition cumulées", 14, 12);
+      doc.setFontSize(10);
+      doc.text(`${clubName || ""} • ${categoryName || ""} • ${seasonName || ""}`, 14, 20);
+      doc.text(`${selectedCount} matchs • ${format(new Date(), "dd/MM/yyyy")}`, pageW - 14, 20, { align: "right" });
+
+      let y = 36;
+
+      statCategories.forEach((cat, catIdx) => {
+        const categoryStats = sportStats.filter(s => s.category === cat.key).slice(0, 5);
+        if (categoryStats.length === 0) return;
+
+        if (catIdx > 0 && y > pageH - 50) {
+          doc.addPage();
+          y = 15;
+        }
+
+        doc.setTextColor(30, 41, 59);
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "bold");
+        doc.text(cat.label, 14, y);
+        y += 6;
+
+        // Table header
+        const colWidths = [60, 20, ...categoryStats.flatMap(() => [22, 18])];
+        const headers = ["Athlète", "M", ...categoryStats.flatMap(s => [s.shortLabel, "+/-"])];
+        doc.setFillColor(241, 245, 249);
+        doc.rect(14, y, pageW - 28, 7, "F");
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "bold");
+        let x = 14;
+        headers.forEach((h, i) => {
+          doc.text(h, x + 1, y + 5);
+          x += colWidths[i] || 20;
+        });
+        y += 9;
+        doc.setFont("helvetica", "normal");
+
+        const sorted = [...stats].sort((a, b) => {
+          const firstStat = categoryStats[0]?.key;
+          return firstStat ? (b.sportData[firstStat] || 0) - (a.sportData[firstStat] || 0) : 0;
+        });
+
+        sorted.forEach((p) => {
+          if (y > pageH - 15) {
+            doc.addPage();
+            y = 15;
+          }
+          x = 14;
+          doc.setTextColor(30, 41, 59);
+          doc.setFontSize(8);
+          doc.text(p.playerName.substring(0, 20), x + 1, y + 4);
+          x += colWidths[0];
+          doc.text(String(p.matchesPlayed), x + 1, y + 4);
+          x += colWidths[1];
+
+          categoryStats.forEach((s, i) => {
+            const val = p.sportData[s.key] || 0;
+            doc.setTextColor(30, 41, 59);
+            doc.text(s.computedFrom ? `${val}%` : String(val), x + 1, y + 4);
+            x += colWidths[2 + i * 2];
+            
+            const prog = playerProgressions[p.playerId]?.[s.key] || 0;
+            if (prog > 0) doc.setTextColor(22, 163, 74);
+            else if (prog < 0) doc.setTextColor(220, 38, 38);
+            else doc.setTextColor(100, 116, 139);
+            doc.text(prog > 0 ? `+${prog}` : String(prog), x + 1, y + 4);
+            x += colWidths[3 + i * 2] || 18;
+          });
+          y += 7;
+        });
+        y += 6;
+      });
+
+      doc.save(`stats-competition-${format(new Date(), "yyyy-MM-dd")}.pdf`);
+      toast.success("Export PDF téléchargé !");
+    } catch (e) {
+      toast.error("Erreur lors de l'export PDF");
+    }
+  };
+
+  const ProgressionIndicator = ({ value }: { value: number }) => {
+    if (value > 0) return <span className="text-emerald-600 dark:text-emerald-400 text-xs font-medium flex items-center gap-0.5"><TrendingUp className="h-3 w-3" />+{value}</span>;
+    if (value < 0) return <span className="text-destructive text-xs font-medium flex items-center gap-0.5"><TrendingDown className="h-3 w-3" />{value}</span>;
+    return <span className="text-muted-foreground text-xs"><Minus className="h-3 w-3 inline" /></span>;
+  };
+
   return (
     <div className="space-y-6">
-      {/* Match filter */}
-      <div className="flex items-center gap-3 flex-wrap">
+      {/* Match filter + Export */}
+      <div className="flex items-center justify-between gap-3 flex-wrap">
         <Popover open={filterOpen} onOpenChange={setFilterOpen}>
           <PopoverTrigger asChild>
             <Button variant="outline" size="sm" className="gap-2">
