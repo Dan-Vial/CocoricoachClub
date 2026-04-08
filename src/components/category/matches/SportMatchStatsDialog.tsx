@@ -374,6 +374,9 @@ export function SportMatchStatsDialog({
       queryClient.invalidateQueries({ queryKey: ["match", matchId] });
       queryClient.invalidateQueries({ queryKey: ["awcr_tracking"] });
       queryClient.invalidateQueries({ queryKey: ["today_rpe_decision", categoryId] });
+      queryClient.invalidateQueries({ queryKey: ["matches-list-cumulative", categoryId] });
+      queryClient.invalidateQueries({ queryKey: ["cumulative_player_stats", categoryId] });
+      queryClient.invalidateQueries({ queryKey: ["player_all_match_stats"] });
       toast.success("Statistiques et charge match enregistrées");
       onOpenChange(false);
     },
