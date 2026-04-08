@@ -8,6 +8,7 @@ import { PlayerCumulativeStats } from "./matches/PlayerCumulativeStats";
 import { BowlingCumulativeStats } from "@/components/bowling/BowlingCumulativeStats";
 import { BowlingTrainingStats } from "@/components/bowling/BowlingTrainingStats";
 import { TennisTrainingStats } from "@/components/tennis/TennisTrainingStats";
+import { PrecisionTrainingStats } from "@/components/training/PrecisionTrainingStats";
 import { isFuture, isPast, format } from "date-fns";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { ColoredSubTabsList, ColoredSubTabsTrigger } from "@/components/ui/colored-subtabs";
@@ -34,7 +35,7 @@ export function MatchesTab({ categoryId, sportType }: MatchesTabProps) {
   const isIndividual = isIndividualSport(sportType || "");
   const isBowling = (sportType || "").toLowerCase().includes("bowling");
   const isTennis = (sportType || "").toLowerCase().includes("tennis");
-  const hasTrainingStats = isBowling || isTennis;
+  const hasTrainingStats = true; // Available for all sports
   
   // Labels adaptés selon le sport
   const itemLabel = isIndividual ? "compétition" : "match";
@@ -191,12 +192,15 @@ export function MatchesTab({ categoryId, sportType }: MatchesTabProps) {
           )}
         </TabsContent>
 
-        {hasTrainingStats && (
-          <TabsContent value="training_stats">
-            {isBowling && <BowlingTrainingStats categoryId={categoryId} />}
-            {isTennis && <TennisTrainingStats categoryId={categoryId} />}
-          </TabsContent>
-        )}
+        <TabsContent value="training_stats">
+          {isBowling ? (
+            <BowlingTrainingStats categoryId={categoryId} />
+          ) : isTennis ? (
+            <TennisTrainingStats categoryId={categoryId} />
+          ) : (
+            <PrecisionTrainingStats categoryId={categoryId} />
+          )}
+        </TabsContent>
       </Tabs>
 
       <AddMatchCalendarDialog
