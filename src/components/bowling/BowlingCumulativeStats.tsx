@@ -245,10 +245,35 @@ export function BowlingCumulativeStats({ categoryId }: BowlingCumulativeStatsPro
           <Button
             variant="outline"
             size="sm"
-            onClick={() => exportBowlingPdf(
-              players.find(p => p.id === activePlayerId)?.name || "Athlète",
-              playerGames
-            )}
+            onClick={async () => {
+              const avatarUrl = playerGames[0]?.playerAvatarUrl || null;
+              
+              // Fetch oil patterns for the matches of this player
+              const matchIds = [...new Set(playerGames.map(g => g.matchId))];
+              let oilPatternImageUrl: string | null = null;
+              let oilPatternName: string | null = null;
+              
+              try {
+                const { data: oilPatterns } = await supabase
+                  .from("bowling_oil_patterns")
+                  .select("name, image_url_male, image_url_female")
+                  .in("match_id", matchIds)
+                  .limit(1);
+                
+                if (oilPatterns && oilPatterns.length > 0) {
+                  oilPatternName = oilPatterns[0].name;
+                  oilPatternImageUrl = oilPatterns[0].image_url_male || oilPatterns[0].image_url_female || null;
+                }
+              } catch {
+                // ignore
+              }
+              
+              await exportBowlingPdf(
+                players.find(p => p.id === activePlayerId)?.name || "Athlète",
+                playerGames,
+                { playerAvatarUrl: avatarUrl, oilPatternImageUrl, oilPatternName }
+              );
+            }}
             className="gap-2"
           >
             <FileDown className="h-4 w-4" />
