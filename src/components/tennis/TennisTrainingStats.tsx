@@ -392,6 +392,19 @@ export function TennisTrainingStats({ categoryId }: TennisTrainingStatsProps) {
                 Réinitialiser
               </Button>
             )}
+            </div>
+            {(hasDrillData || hasMatchData) && (
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={handleExportExcel} className="gap-1">
+                  <FileSpreadsheet className="h-4 w-4" />
+                  <span className="hidden sm:inline">Excel</span>
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleExportPdf} className="gap-1">
+                  <Download className="h-4 w-4" />
+                  <span className="hidden sm:inline">PDF</span>
+                </Button>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
