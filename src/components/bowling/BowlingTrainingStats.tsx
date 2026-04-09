@@ -8,12 +8,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { BarChart3, Target, Trophy, CalendarIcon, Circle, Users } from "lucide-react";
+import { BarChart3, Target, Trophy, CalendarIcon, Circle, Users, Download, FileSpreadsheet } from "lucide-react";
 import { format, isAfter, isBefore, startOfDay, endOfDay } from "date-fns";
 import { fr } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+import ExcelJS from "exceljs";
+import jsPDF from "jspdf";
 import { SPARE_EXERCISE_TYPES } from "@/lib/constants/bowlingBallBrands";
 import { BowlingFrameAnalysis } from "./BowlingFrameAnalysis";
+import { getExcelBranding, addBrandedHeader, styleDataHeaderRow, addZebraRows, addFooter, downloadWorkbook } from "@/lib/excelExport";
+import { preparePdfWithSettings } from "@/lib/pdfExport";
 import type { FrameData } from "@/components/athlete-portal/BowlingScoreSheet";
 
 interface BowlingTrainingStatsProps {
@@ -193,6 +198,158 @@ export function BowlingTrainingStats({ categoryId }: BowlingTrainingStatsProps) 
     return allArsenals;
   }, [allArsenals]);
 
+  const handleExportExcel = async () => {
+    try {
+      const branding = await getExcelBranding(categoryId);
+      const wb = new ExcelJS.Workbook();
+
+      // Sheet 1: Game stats per player
+      if (playerGameStats.length > 0) {
+        const ws1 = wb.addWorksheet("Stats parties");
+        ws1.columns = [
+          { header: "Athlète", key: "name", width: 22 },
+          { header: "Parties", key: "total", width: 10 },
+          { header: "Moyenne", key: "avg", width: 12 },
+          { header: "High", key: "high", width: 10 },
+          { header: "% Strike", key: "strike", width: 12 },
+          { header: "% Spare", key: "spare", width: 12 },
+        ];
+        const sr = addBrandedHeader(ws1, "Stats entraînement bowling - Parties", branding, [
+          ["Période", `${dateFrom ? format(dateFrom, "dd/MM/yyyy") : "Début"} → ${dateTo ? format(dateTo, "dd/MM/yyyy") : "Fin"}`],
+        ]);
+        styleDataHeaderRow(ws1, sr, 6, branding.headerColor);
+        ws1.getRow(sr).values = ["Athlète", "Parties", "Moyenne", "High", "% Strike", "% Spare"];
+        playerGameStats.forEach((p, i) => {
+          const row = ws1.getRow(sr + 1 + i);
+          row.values = [p.player.name, p.stats!.total, p.stats!.avgScore.toFixed(1), p.stats!.high, `${p.stats!.avgStrike.toFixed(1)}%`, `${p.stats!.avgSpare.toFixed(1)}%`];
+        });
+        addZebraRows(ws1, sr + 1, sr + playerGameStats.length, 6);
+        addFooter(ws1, sr + playerGameStats.length + 1, 6, branding.footerText);
+      }
+
+      // Sheet 2: Spare training per player
+      if (playerSpareStats.length > 0) {
+        const ws2 = wb.addWorksheet("Stats spécifiques");
+        const exerciseTypes = [...new Set(playerSpareStats.flatMap(p => Object.keys(p.byType)))];
+        ws2.columns = [
+          { header: "Athlète", key: "name", width: 22 },
+          { header: "Taux global", key: "global", width: 14 },
+          ...exerciseTypes.map(t => ({ header: SPARE_EXERCISE_TYPES.find(e => e.value === t)?.label || t, key: t, width: 16 })),
+        ];
+        const sr = addBrandedHeader(ws2, "Stats entraînement bowling - Exercices", branding);
+        styleDataHeaderRow(ws2, sr, 2 + exerciseTypes.length, branding.headerColor);
+        ws2.getRow(sr).values = ["Athlète", "Taux global", ...exerciseTypes.map(t => SPARE_EXERCISE_TYPES.find(e => e.value === t)?.label || t)];
+        playerSpareStats.forEach((p, i) => {
+          const row = ws2.getRow(sr + 1 + i);
+          row.getCell(1).value = p.player.name;
+          row.getCell(2).value = `${p.total!.rate.toFixed(1)}%`;
+          exerciseTypes.forEach((t, j) => {
+            const d = p.byType[t];
+            row.getCell(3 + j).value = d ? `${(d.attempts > 0 ? (d.successes / d.attempts) * 100 : 0).toFixed(1)}%` : "-";
+          });
+        });
+        addZebraRows(ws2, sr + 1, sr + playerSpareStats.length, 2 + exerciseTypes.length);
+      }
+
+      await downloadWorkbook(wb, `stats-entrainement-bowling-${format(new Date(), "yyyy-MM-dd")}.xlsx`);
+      toast.success("Export Excel téléchargé !");
+    } catch (e) {
+      toast.error("Erreur lors de l'export Excel");
+    }
+  };
+
+  const handleExportPdf = async () => {
+    try {
+      const { settings, clubName, categoryName, seasonName } = await preparePdfWithSettings(categoryId);
+      const doc = new jsPDF({ orientation: "landscape" });
+      const pageW = doc.internal.pageSize.getWidth();
+      const pageH = doc.internal.pageSize.getHeight();
+
+      // Header
+      if (settings?.header_color) {
+        const hc = settings.header_color.replace("#", "");
+        doc.setFillColor(parseInt(hc.substring(0, 2), 16), parseInt(hc.substring(2, 4), 16), parseInt(hc.substring(4, 6), 16));
+      } else {
+        doc.setFillColor(34, 67, 120);
+      }
+      doc.rect(0, 0, pageW, 28, "F");
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(16);
+      doc.text("Stats entraînement bowling", 14, 12);
+      doc.setFontSize(10);
+      doc.text(`${clubName || ""} • ${categoryName || ""} • ${seasonName || ""}`, 14, 20);
+      doc.text(format(new Date(), "dd/MM/yyyy"), pageW - 14, 20, { align: "right" });
+
+      let y = 36;
+
+      // Game stats
+      if (playerGameStats.length > 0) {
+        doc.setTextColor(30, 41, 59);
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "bold");
+        doc.text("Stats Parties d'entraînement", 14, y);
+        y += 6;
+
+        const cols = [14, 80, 115, 145, 175, 210];
+        const headers = ["Athlète", "Parties", "Moyenne", "High", "% Strike", "% Spare"];
+        doc.setFillColor(241, 245, 249);
+        doc.rect(14, y, pageW - 28, 7, "F");
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "bold");
+        headers.forEach((h, i) => doc.text(h, cols[i], y + 5));
+        y += 9;
+        doc.setFont("helvetica", "normal");
+
+        playerGameStats.forEach(p => {
+          if (y > pageH - 15) { doc.addPage(); y = 15; }
+          doc.setTextColor(30, 41, 59);
+          doc.text(p.player.name.substring(0, 25), cols[0], y + 4);
+          doc.text(String(p.stats!.total), cols[1], y + 4);
+          doc.text(p.stats!.avgScore.toFixed(1), cols[2], y + 4);
+          doc.text(String(p.stats!.high), cols[3], y + 4);
+          doc.text(`${p.stats!.avgStrike.toFixed(1)}%`, cols[4], y + 4);
+          doc.text(`${p.stats!.avgSpare.toFixed(1)}%`, cols[5], y + 4);
+          y += 7;
+        });
+        y += 8;
+      }
+
+      // Spare stats
+      if (playerSpareStats.length > 0) {
+        if (y > pageH - 50) { doc.addPage(); y = 15; }
+        doc.setTextColor(30, 41, 59);
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "bold");
+        doc.text("Stats Exercices spécifiques", 14, y);
+        y += 6;
+
+        playerSpareStats.forEach(p => {
+          if (y > pageH - 30) { doc.addPage(); y = 15; }
+          doc.setFontSize(10);
+          doc.setFont("helvetica", "bold");
+          doc.setTextColor(30, 41, 59);
+          doc.text(`${p.player.name} — Global: ${p.total!.rate.toFixed(1)}%`, 14, y);
+          y += 6;
+          doc.setFontSize(9);
+          doc.setFont("helvetica", "normal");
+          Object.entries(p.byType).forEach(([type, stats]) => {
+            if (y > pageH - 15) { doc.addPage(); y = 15; }
+            const label = SPARE_EXERCISE_TYPES.find(e => e.value === type)?.label || type;
+            const rate = stats.attempts > 0 ? (stats.successes / stats.attempts) * 100 : 0;
+            doc.text(`${label}: ${stats.successes}/${stats.attempts} (${rate.toFixed(1)}%)`, 20, y);
+            y += 6;
+          });
+          y += 4;
+        });
+      }
+
+      doc.save(`stats-entrainement-bowling-${format(new Date(), "yyyy-MM-dd")}.pdf`);
+      toast.success("Export PDF téléchargé !");
+    } catch (e) {
+      toast.error("Erreur lors de l'export PDF");
+    }
+  };
+
   if (isLoading) return <p className="text-muted-foreground">Chargement...</p>;
 
   const hasGameData = playerGameStats.length > 0;
@@ -201,24 +358,38 @@ export function BowlingTrainingStats({ categoryId }: BowlingTrainingStatsProps) 
   return (
     <div className="space-y-4">
       {/* Player + Date range + Ball filter */}
-      <div className="flex flex-wrap gap-2 items-center">
-        {players.length > 0 && (
-          <Select value={selectedPlayerId} onValueChange={setSelectedPlayerId}>
-            <SelectTrigger className="w-[180px] h-8">
-              <SelectValue placeholder="Tous les athlètes" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tous les athlètes</SelectItem>
-              {players.map((p) => (
-                <SelectItem key={p.id} value={p.id}>
-                  <span className="flex items-center gap-1.5">
-                    <Users className="h-3 w-3" />
-                    {p.name}
-                  </span>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+      <div className="flex flex-wrap gap-2 items-center justify-between">
+        <div className="flex flex-wrap gap-2 items-center">
+          {players.length > 0 && (
+            <Select value={selectedPlayerId} onValueChange={setSelectedPlayerId}>
+              <SelectTrigger className="w-[180px] h-8">
+                <SelectValue placeholder="Tous les athlètes" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tous les athlètes</SelectItem>
+                {players.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    <span className="flex items-center gap-1.5">
+                      <Users className="h-3 w-3" />
+                      {p.name}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        </div>
+        {(hasGameData || hasSpareData) && (
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={handleExportExcel} className="gap-1">
+              <FileSpreadsheet className="h-4 w-4" />
+              <span className="hidden sm:inline">Excel</span>
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleExportPdf} className="gap-1">
+              <Download className="h-4 w-4" />
+              <span className="hidden sm:inline">PDF</span>
+            </Button>
+          </div>
         )}
       </div>
       <div className="flex flex-wrap gap-2 items-center">
