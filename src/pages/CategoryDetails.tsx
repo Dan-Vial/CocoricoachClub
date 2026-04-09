@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { ColoredNavTabsList, NAV_COLORS, NavColorKey } from "@/components/ui/colored-nav-tabs";
 import * as TabsPrimitive from "@radix-ui/react-tabs";
-import { ArrowLeft, LayoutDashboard, Shield, Users, Calendar, Zap, Heart, Trophy, MessageSquare, Loader2, Settings, FileCode, MapPin, Video, GraduationCap } from "lucide-react";
+import { ArrowLeft, LayoutDashboard, Shield, Users, Calendar, Zap, Heart, Trophy, MessageSquare, Loader2, Settings, FileCode, MapPin, Video, GraduationCap, CircleDot } from "lucide-react";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 import { OverviewTab } from "@/components/category/OverviewTab";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
@@ -36,6 +36,7 @@ import { ProgrammationTab } from "@/components/category/tabs/ProgrammationTab";
 import { GpsDataTab } from "@/components/category/gps/GpsDataTab";
 import { VideoAnalysisTab } from "@/components/category/video/VideoAnalysisTab";
 import { AdminTab } from "@/components/category/tabs/AdminTab";
+import { BowlingArsenalCatalogTab } from "@/components/bowling/BowlingArsenalCatalogTab";
 
 
 // Colored Tab Trigger Component - Large icons with labels below
@@ -173,6 +174,7 @@ function CategoryDetailsContent() {
   // Check if GPS/Video/Academy should be visible (category-level flags)
   const showGpsTab = isGpsSportType(category?.rugby_type) && (category?.gps_enabled === true);
   const showVideoTab = hasVideoAnalysis(category?.rugby_type) && (category?.video_enabled === true);
+  const isBowling = category?.rugby_type?.toLowerCase().includes("bowling");
 
   // Menu permissions based on role_menu_permissions matrix
   const { canSeeMenu } = useMenuPermissions(category?.clubs?.id, categoryId);
@@ -363,6 +365,14 @@ function CategoryDetailsContent() {
                   shortLabel="Compét"
                 />
               )}
+              {isBowling && (
+                <ColoredTabTrigger 
+                  value="arsenal" 
+                  colorKey="performance"
+                  icon={<CircleDot className="h-6 w-6 sm:h-7 sm:w-7" />}
+                  label="Arsenal"
+                />
+              )}
               {showGpsTab && (
                 <ColoredTabTrigger 
                   value="gps" 
@@ -456,6 +466,12 @@ function CategoryDetailsContent() {
                 isNationalTeam={isNationalTeam}
                 sportType={category?.rugby_type}
               />
+            </TabsContent>
+          )}
+
+          {isBowling && (
+            <TabsContent value="arsenal" className="space-y-4">
+              <BowlingArsenalCatalogTab />
             </TabsContent>
           )}
 
