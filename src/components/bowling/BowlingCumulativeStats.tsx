@@ -19,6 +19,7 @@ import type { FrameData } from "@/components/athlete-portal/BowlingScoreSheet";
 
 interface BowlingCumulativeStatsProps {
   categoryId: string;
+  playerId?: string;
 }
 
 interface BowlingGameData {
@@ -66,7 +67,7 @@ function ColoredStatRow({ label, value, statType, percentage }: { label: string;
   );
 }
 
-export function BowlingCumulativeStats({ categoryId }: BowlingCumulativeStatsProps) {
+export function BowlingCumulativeStats({ categoryId, playerId: fixedPlayerId }: BowlingCumulativeStatsProps) {
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
 
   const { data: allGames, isLoading } = useQuery({
@@ -139,7 +140,7 @@ export function BowlingCumulativeStats({ categoryId }: BowlingCumulativeStatsPro
     return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
   }, [allGames]);
 
-  const activePlayerId = selectedPlayerId || players[0]?.id;
+  const activePlayerId = fixedPlayerId || selectedPlayerId || players[0]?.id;
   const playerGames = useMemo(() => {
     if (!allGames || !activePlayerId) return [];
     return allGames.filter(g => g.playerId === activePlayerId);
