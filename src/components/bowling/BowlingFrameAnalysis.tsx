@@ -248,15 +248,16 @@ export function BowlingFrameAnalysis({ games }: BowlingFrameAnalysisProps) {
     return main.reduce((worst, f) => f.strikeRate < worst.strikeRate ? f : worst);
   }, [frameStats]);
 
-  const thirds = useMemo(() => {
+  const phases = useMemo(() => {
     if (frameStats.length === 0) return null;
-    const mainFrames = frameStats.filter(f => f.frameNumber <= 10);
-    const start = mainFrames.slice(0, 3);
-    const mid = mainFrames.slice(3, 7);
-    const end = mainFrames.slice(7, 10);
+    const allFrames = frameStats;
+    const start = allFrames.filter(f => f.frameNumber >= 1 && f.frameNumber <= 3);
+    const mid = allFrames.filter(f => f.frameNumber >= 4 && f.frameNumber <= 7);
+    const end = allFrames.filter(f => f.frameNumber >= 8 && f.frameNumber <= 9);
+    const moneyTime = allFrames.filter(f => f.frameNumber >= 10 && f.frameNumber <= 12);
 
     const avgRate = (frames: FrameStats[], key: keyof FrameStats) =>
-      frames.reduce((s, f) => s + (f[key] as number), 0) / frames.length;
+      frames.length > 0 ? frames.reduce((s, f) => s + (f[key] as number), 0) / frames.length : 0;
 
     const computePhase = (frames: FrameStats[], label: string) => ({
       label,
@@ -273,7 +274,8 @@ export function BowlingFrameAnalysis({ games }: BowlingFrameAnalysisProps) {
     return {
       start: computePhase(start, "Début (1-3)"),
       mid: computePhase(mid, "Milieu (4-7)"),
-      end: computePhase(end, "Fin (8-10)"),
+      end: computePhase(end, "Fin (8-9)"),
+      moneyTime: computePhase(moneyTime, "Money Time (10-12)"),
     };
   }, [frameStats]);
 
