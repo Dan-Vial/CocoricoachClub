@@ -80,7 +80,7 @@ export function BowlingCumulativeStats({ categoryId }: BowlingCumulativeStatsPro
 
       const { data: rounds, error: roundError } = await supabase
         .from("competition_rounds")
-        .select("*, competition_round_stats(*), players(id, name, first_name)")
+        .select("*, competition_round_stats(*), players(id, name, first_name, avatar_url)")
         .in("match_id", matchIds)
         .order("round_number");
       if (roundError) throw roundError;
