@@ -22,13 +22,53 @@ export function BowlingArsenalCatalogTab() {
   const { data: balls, isLoading } = useQuery({
     queryKey: ["bowling_ball_catalog_full"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("bowling_ball_catalog" as any)
-        .select("*")
-        .order("brand")
-        .order("model");
+      const [{ data, error }, { data: storageFiles, error: storageError }] = await Promise.all([
+        supabase
+          .from("bowling_ball_catalog" as any)
+          .select("*")
+          .order("brand")
+          .order("model"),
+        supabase.storage
+          .from("bowling-ball-images")
+          .list("balls", { limit: 500, sortBy: { column: "name", order: "asc" } }),
+      ]);
+
       if (error) throw error;
-      return data as any[];
+      if (storageError) {
+        return (data as any[]).map((ball: any) => ({
+          ...ball,
+          resolved_image_url: ball.image_url,
+          image_version: ball.updated_at || ball.created_at || ball.id,
+        }));
+      }
+
+      const latestFileByBallId = new Map<string, { path: string; updatedAt: string }>();
+
+      for (const file of storageFiles || []) {
+        const ballId = file.name.replace(/\.[^.]+$/, "");
+        const updatedAt = file.updated_at || file.created_at || "";
+        const existing = latestFileByBallId.get(ballId);
+
+        if (!existing || updatedAt > existing.updatedAt) {
+          latestFileByBallId.set(ballId, {
+            path: `balls/${file.name}`,
+            updatedAt,
+          });
+        }
+      }
+
+      return (data as any[]).map((ball: any) => {
+        const fallbackFile = latestFileByBallId.get(ball.id);
+        const fallbackUrl = fallbackFile
+          ? supabase.storage.from("bowling-ball-images").getPublicUrl(fallbackFile.path).data.publicUrl
+          : null;
+
+        return {
+          ...ball,
+          resolved_image_url: ball.image_url || fallbackUrl,
+          image_version: fallbackFile?.updatedAt || ball.updated_at || ball.created_at || ball.id,
+        };
+      });
     },
   });
 
@@ -36,6 +76,21 @@ export function BowlingArsenalCatalogTab() {
     mutationFn: async ({ ballId, file }: { ballId: string; file: File }) => {
       const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
       const filePath = `balls/${ballId}.${ext}`;
+
+      const { data: existingFiles } = await supabase.storage
+        .from("bowling-ball-images")
+        .list("balls", { limit: 500, sortBy: { column: "name", order: "asc" } });
+
+      const oldPaths = (existingFiles || [])
+        .filter((existingFile) => existingFile.name.startsWith(`${ballId}.`) && `balls/${existingFile.name}` !== filePath)
+        .map((existingFile) => `balls/${existingFile.name}`);
+
+      if (oldPaths.length > 0) {
+        const { error: cleanupError } = await supabase.storage
+          .from("bowling-ball-images")
+          .remove(oldPaths);
+        if (cleanupError) throw cleanupError;
+      }
 
       const { error: uploadError } = await supabase.storage
         .from("bowling-ball-images")
@@ -86,6 +141,22 @@ export function BowlingArsenalCatalogTab() {
 
   const removeImageMutation = useMutation({
     mutationFn: async (ballId: string) => {
+      const { data: existingFiles, error: listError } = await supabase.storage
+        .from("bowling-ball-images")
+        .list("balls", { limit: 500, sortBy: { column: "name", order: "asc" } });
+      if (listError) throw listError;
+
+      const pathsToRemove = (existingFiles || [])
+        .filter((file) => file.name.startsWith(`${ballId}.`))
+        .map((file) => `balls/${file.name}`);
+
+      if (pathsToRemove.length > 0) {
+        const { error: removeStorageError } = await supabase.storage
+          .from("bowling-ball-images")
+          .remove(pathsToRemove);
+        if (removeStorageError) throw removeStorageError;
+      }
+
       const { error } = await supabase
         .from("bowling_ball_catalog" as any)
         .update({ image_url: null } as any)
@@ -174,10 +245,10 @@ export function BowlingArsenalCatalogTab() {
             <Card key={ball.id} className="overflow-hidden hover:shadow-md transition-shadow">
               {/* Image area */}
               <div className="relative aspect-square bg-muted/30 flex items-center justify-center">
-                {ball.image_url ? (
+                {ball.resolved_image_url ? (
                   <>
                     <img
-                      src={`${ball.image_url}?t=${ball.id}`}
+                      src={`${ball.resolved_image_url}?t=${encodeURIComponent(ball.image_version || ball.id)}`}
                       alt={`${ball.brand} ${ball.model}`}
                       className="w-full h-full object-contain p-2"
                       onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
