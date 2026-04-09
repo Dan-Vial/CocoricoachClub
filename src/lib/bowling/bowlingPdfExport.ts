@@ -9,17 +9,25 @@ interface BowlingPdfOptions {
   oilPatternName?: string | null;
 }
 
-async function loadImageAsBase64(url: string): Promise<string | null> {
+async function loadImageAsBase64(url: string): Promise<{ data: string; width: number; height: number } | null> {
   try {
     const response = await fetch(url, { mode: "cors" });
     if (!response.ok) return null;
     const blob = await response.blob();
-    return new Promise((resolve) => {
+    const dataUrl: string = await new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror = () => resolve(null);
+      reader.onerror = () => reject();
       reader.readAsDataURL(blob);
     });
+    // Get real dimensions via Image
+    const dims = await new Promise<{ width: number; height: number }>((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
+      img.onerror = () => resolve({ width: 1, height: 1 });
+      img.src = dataUrl;
+    });
+    return { data: dataUrl, width: dims.width, height: dims.height };
   } catch {
     return null;
   }
@@ -110,15 +118,38 @@ function getStatLevelColor(statType: string, value: number): [number, number, nu
   const thresholds: Record<string, { max: number; color: [number, number, number] }[]> = {
     strike: [
       { max: 20, color: COLORS.statOrange },
+      { max: 30, color: COLORS.statGreen },
       { max: 35, color: COLORS.statGreen },
-      { max: 45, color: COLORS.statGreenDark },
-      { max: 50, color: COLORS.statBlue },
+      { max: 40, color: COLORS.statGreenDark },
+      { max: 45, color: COLORS.statBlue },
+      { max: 50, color: COLORS.statBlueDark },
       { max: Infinity, color: COLORS.statBlack },
     ],
     spare: [
       { max: 50, color: COLORS.statOrange },
+      { max: 60, color: COLORS.statGreen },
       { max: 70, color: COLORS.statGreen },
+      { max: 80, color: COLORS.statGreenDark },
       { max: 85, color: COLORS.statBlue },
+      { max: 90, color: COLORS.statBlueDark },
+      { max: Infinity, color: COLORS.statBlack },
+    ],
+    pocket: [
+      { max: 50, color: COLORS.statOrange },
+      { max: 60, color: COLORS.statGreen },
+      { max: 65, color: COLORS.statGreen },
+      { max: 70, color: COLORS.statGreenDark },
+      { max: 75, color: COLORS.statBlue },
+      { max: 80, color: COLORS.statBlueDark },
+      { max: Infinity, color: COLORS.statBlack },
+    ],
+    singlePin: [
+      { max: 70, color: COLORS.statOrange },
+      { max: 75, color: COLORS.statGreen },
+      { max: 80, color: COLORS.statGreen },
+      { max: 85, color: COLORS.statGreenDark },
+      { max: 90, color: COLORS.statBlue },
+      { max: 95, color: COLORS.statBlueDark },
       { max: Infinity, color: COLORS.statBlack },
     ],
   };
