@@ -436,23 +436,23 @@ export function BowlingFrameAnalysis({ games }: BowlingFrameAnalysisProps) {
                         className="h-full bg-yellow-500 transition-all flex items-center justify-center overflow-visible relative"
                         style={{ width: `${strikePercent}%`, minWidth: strikePercent > 0 ? '28px' : undefined }}
                       >
-                        <span className="text-xs font-extrabold text-black drop-shadow-[0_0_2px_rgba(255,255,255,0.8)] whitespace-nowrap">{strikePercent.toFixed(0)}%</span>
-                      </div>
-                    )}
-                    {f.frameNumber < 12 && sparePercent > 0 && (
-                      <div
-                        className="h-full bg-emerald-500 transition-all flex items-center justify-center overflow-visible relative"
-                        style={{ width: `${sparePercent}%`, minWidth: sparePercent > 0 ? '28px' : undefined }}
-                      >
-                        <span className="text-xs font-extrabold text-black drop-shadow-[0_0_2px_rgba(255,255,255,0.8)] whitespace-nowrap">{sparePercent.toFixed(0)}%</span>
-                      </div>
-                    )}
-                    {openPercent > 0 && (
-                      <div
-                        className="h-full bg-rose-500 transition-all flex items-center justify-center overflow-visible relative"
-                        style={{ width: `${openPercent}%`, minWidth: openPercent > 0 ? '28px' : undefined }}
-                      >
-                        <span className="text-xs font-extrabold text-black drop-shadow-[0_0_2px_rgba(255,255,255,0.8)] whitespace-nowrap">{openPercent.toFixed(0)}%</span>
+                         <span className="text-sm font-extrabold text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.7)] whitespace-nowrap">{strikePercent.toFixed(0)}%</span>
+                       </div>
+                     )}
+                     {f.frameNumber < 12 && sparePercent > 0 && (
+                       <div
+                         className="h-full bg-emerald-500 transition-all flex items-center justify-center overflow-visible relative"
+                         style={{ width: `${sparePercent}%`, minWidth: sparePercent > 0 ? '28px' : undefined }}
+                       >
+                         <span className="text-sm font-extrabold text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.7)] whitespace-nowrap">{sparePercent.toFixed(0)}%</span>
+                       </div>
+                     )}
+                     {openPercent > 0 && (
+                       <div
+                         className="h-full bg-rose-500 transition-all flex items-center justify-center overflow-visible relative"
+                         style={{ width: `${openPercent}%`, minWidth: openPercent > 0 ? '28px' : undefined }}
+                       >
+                         <span className="text-sm font-extrabold text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.7)] whitespace-nowrap">{openPercent.toFixed(0)}%</span>
                       </div>
                     )}
                   </div>
