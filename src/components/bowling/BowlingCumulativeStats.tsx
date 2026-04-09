@@ -370,7 +370,8 @@ export function BowlingCumulativeStats({ categoryId }: BowlingCumulativeStatsPro
           >
             <FileDown className="h-4 w-4" />
             Exporter en PDF
-          </Button>
+            </Button>
+          </div>
         )}
       </div>
 
