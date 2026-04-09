@@ -234,7 +234,7 @@ export async function exportBowlingPdf(playerName: string, games: BowlingGameDat
   doc.text(`Rapport genere le ${format(new Date(), "dd MMMM yyyy", { locale: fr })} - ${games.length} parties`, textStartX, avatarBase64 ? 27 : 23);
   y = headerH + 7;
 
-  // ===================== OIL PATTERN (full page) =====================
+  // ===================== OIL PATTERN (dedicated page) =====================
   if (oilBase64 || options?.oilPatternName) {
     doc.addPage();
     let oilY = 15;
@@ -251,13 +251,14 @@ export async function exportBowlingPdf(playerName: string, games: BowlingGameDat
 
     if (oilBase64) {
       try {
-        const availableH = 297 - oilY - 10; // A4 height minus margins
+        // Cap oil pattern to ~70% of available page height to leave breathing room
+        const maxH = (297 - oilY - 10) * 0.70;
         const availableW = contentWidth;
         const aspect = oilBase64.width / oilBase64.height;
         let imgW = availableW;
         let imgH = imgW / aspect;
-        if (imgH > availableH) {
-          imgH = availableH;
+        if (imgH > maxH) {
+          imgH = maxH;
           imgW = imgH * aspect;
         }
         doc.addImage(oilBase64.data, "PNG", margin + (contentWidth - imgW) / 2, oilY, imgW, imgH);
@@ -266,6 +267,10 @@ export async function exportBowlingPdf(playerName: string, games: BowlingGameDat
       }
     }
   }
+
+  // Start a new page for the overview so it never overlaps with the oil pattern
+  doc.addPage();
+  y = 15;
 
   // ===================== SECTION 1: VUE D'ENSEMBLE =====================
   const totalGames = games.length;
