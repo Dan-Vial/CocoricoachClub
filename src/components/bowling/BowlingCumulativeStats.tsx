@@ -22,6 +22,7 @@ interface BowlingGameData {
   matchId: string;
   playerId: string;
   playerName: string;
+  playerAvatarUrl?: string | null;
   roundNumber: number;
   matchDate: string;
   matchOpponent: string;
