@@ -108,6 +108,7 @@ const COLORS = {
   statBlue: [29, 78, 216] as [number, number, number],
   statBlueDark: [30, 64, 175] as [number, number, number],
   statBlack: [17, 24, 39] as [number, number, number],
+  statNoire2: [220, 38, 38] as [number, number, number], // Red for Noire 2
 };
 
 function getScoreColor(score: number): [number, number, number] {
@@ -127,7 +128,8 @@ function getStatLevelColor(statType: string, value: number): [number, number, nu
       { max: 40, color: COLORS.statGreenDark },
       { max: 45, color: COLORS.statBlue },
       { max: 50, color: COLORS.statBlueDark },
-      { max: Infinity, color: COLORS.statBlack },
+      { max: 55, color: COLORS.statBlack },
+      { max: Infinity, color: COLORS.statNoire2 },
     ],
     spare: [
       { max: 50, color: COLORS.statOrange },
@@ -136,7 +138,8 @@ function getStatLevelColor(statType: string, value: number): [number, number, nu
       { max: 80, color: COLORS.statGreenDark },
       { max: 85, color: COLORS.statBlue },
       { max: 90, color: COLORS.statBlueDark },
-      { max: Infinity, color: COLORS.statBlack },
+      { max: 95, color: COLORS.statBlack },
+      { max: Infinity, color: COLORS.statNoire2 },
     ],
     pocket: [
       { max: 50, color: COLORS.statOrange },
@@ -145,7 +148,8 @@ function getStatLevelColor(statType: string, value: number): [number, number, nu
       { max: 70, color: COLORS.statGreenDark },
       { max: 75, color: COLORS.statBlue },
       { max: 80, color: COLORS.statBlueDark },
-      { max: Infinity, color: COLORS.statBlack },
+      { max: 85, color: COLORS.statBlack },
+      { max: Infinity, color: COLORS.statNoire2 },
     ],
     singlePin: [
       { max: 70, color: COLORS.statOrange },
@@ -154,7 +158,17 @@ function getStatLevelColor(statType: string, value: number): [number, number, nu
       { max: 85, color: COLORS.statGreenDark },
       { max: 90, color: COLORS.statBlue },
       { max: 95, color: COLORS.statBlueDark },
-      { max: Infinity, color: COLORS.statBlack },
+      { max: 100, color: COLORS.statBlack },
+      { max: Infinity, color: COLORS.statNoire2 },
+    ],
+    firstBallGte8: [
+      { max: 50, color: COLORS.statOrange },
+      { max: 65, color: COLORS.statGreen },
+      { max: 75, color: COLORS.statGreen },
+      { max: 85, color: COLORS.statGreenDark },
+      { max: 88, color: COLORS.statBlue },
+      { max: 92, color: COLORS.statBlack },
+      { max: Infinity, color: COLORS.statNoire2 },
     ],
   };
   const levels = thresholds[statType];
