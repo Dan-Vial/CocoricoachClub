@@ -296,7 +296,7 @@ export function BowlingFrameAnalysis({ games }: BowlingFrameAnalysisProps) {
   return (
     <div className="space-y-4">
       {/* Phase analysis */}
-      {thirds && (
+      {phases && (
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
@@ -306,14 +306,14 @@ export function BowlingFrameAnalysis({ games }: BowlingFrameAnalysisProps) {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-3 gap-3">
-              {[thirds.start, thirds.mid, thirds.end].map((phase, idx) => (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {[phases.start, phases.mid, phases.end, phases.moneyTime].map((phase, idx) => (
                 <div
                   key={idx}
-                  className="p-4 rounded-lg border border-border bg-card text-center"
+                  className={`p-4 rounded-lg border border-border bg-card text-center ${idx === 3 ? "ring-2 ring-primary/30" : ""}`}
                 >
                   <div className="flex items-center justify-center gap-1 mb-2">
-                    <span className="text-sm font-semibold">{phase.label}</span>
+                    <span className="text-sm font-semibold">{idx === 3 ? "🎯 " : ""}{phase.label}</span>
                   </div>
                   <p className="text-3xl font-bold text-foreground">
                     {phase.strikeRate.toFixed(1)}%
@@ -340,10 +340,10 @@ export function BowlingFrameAnalysis({ games }: BowlingFrameAnalysisProps) {
               ))}
             </div>
             <p className="text-xs text-muted-foreground mt-3 text-center italic">
-              {thirds.start.strikeRate > thirds.end.strikeRate + 5
-                ? "📈 Meilleur en début de partie, performance qui baisse en fin"
-                : thirds.end.strikeRate > thirds.start.strikeRate + 5
-                ? "📈 Meilleur en fin de partie, monte en puissance"
+              {phases.start.strikeRate > phases.moneyTime.strikeRate + 5
+                ? "📈 Meilleur en début de partie, performance qui baisse en Money Time"
+                : phases.moneyTime.strikeRate > phases.start.strikeRate + 5
+                ? "📈 Monte en puissance, meilleur en Money Time"
                 : "📊 Performance régulière tout au long de la partie"}
             </p>
           </CardContent>
