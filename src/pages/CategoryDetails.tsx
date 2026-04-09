@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { ColoredNavTabsList, NAV_COLORS, NavColorKey } from "@/components/ui/colored-nav-tabs";
 import * as TabsPrimitive from "@radix-ui/react-tabs";
-import { ArrowLeft, LayoutDashboard, Shield, Users, Calendar, Zap, Heart, Trophy, MessageSquare, Loader2, Settings, FileCode, MapPin, Video, GraduationCap } from "lucide-react";
+import { ArrowLeft, LayoutDashboard, Shield, Users, Calendar, Zap, Heart, Trophy, MessageSquare, Loader2, Settings, FileCode, MapPin, Video, GraduationCap, CircleDot } from "lucide-react";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 import { OverviewTab } from "@/components/category/OverviewTab";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
