@@ -15,6 +15,7 @@ const reasonLabels: Record<string, string> = {
   level_promotion: "Promotion niveau supérieur",
   national_selection: "Sélection nationale",
   level_adjustment: "Ajustement de niveau",
+  end_of_season: "Fin de saison",
   other: "Autre",
 };
 
