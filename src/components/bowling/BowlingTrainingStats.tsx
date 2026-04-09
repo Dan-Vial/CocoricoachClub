@@ -360,22 +360,36 @@ export function BowlingTrainingStats({ categoryId }: BowlingTrainingStatsProps) 
       {/* Player + Date range + Ball filter */}
       <div className="flex flex-wrap gap-2 items-center justify-between">
         <div className="flex flex-wrap gap-2 items-center">
-          <Select value={selectedPlayerId} onValueChange={setSelectedPlayerId}>
-            <SelectTrigger className="w-[180px] h-8">
-              <SelectValue placeholder="Tous les athlètes" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tous les athlètes</SelectItem>
-              {players.map((p) => (
-                <SelectItem key={p.id} value={p.id}>
-                  <span className="flex items-center gap-1.5">
-                    <Users className="h-3 w-3" />
-                    {p.name}
-                  </span>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {players.length > 0 && (
+            <Select value={selectedPlayerId} onValueChange={setSelectedPlayerId}>
+              <SelectTrigger className="w-[180px] h-8">
+                <SelectValue placeholder="Tous les athlètes" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tous les athlètes</SelectItem>
+                {players.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    <span className="flex items-center gap-1.5">
+                      <Users className="h-3 w-3" />
+                      {p.name}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        </div>
+        {(hasGameData || hasSpareData) && (
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={handleExportExcel} className="gap-1">
+              <FileSpreadsheet className="h-4 w-4" />
+              <span className="hidden sm:inline">Excel</span>
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleExportPdf} className="gap-1">
+              <Download className="h-4 w-4" />
+              <span className="hidden sm:inline">PDF</span>
+            </Button>
+          </div>
         )}
       </div>
       <div className="flex flex-wrap gap-2 items-center">
