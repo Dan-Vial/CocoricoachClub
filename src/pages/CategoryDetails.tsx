@@ -469,6 +469,12 @@ function CategoryDetailsContent() {
             </TabsContent>
           )}
 
+          {isBowling && (
+            <TabsContent value="arsenal" className="space-y-4">
+              <BowlingArsenalCatalogTab />
+            </TabsContent>
+          )}
+
           {/* GPS Tab - Only for Football and Rugby + Client option enabled */}
           {showGpsTab && (
             <TabsContent value="gps" className="space-y-4">
