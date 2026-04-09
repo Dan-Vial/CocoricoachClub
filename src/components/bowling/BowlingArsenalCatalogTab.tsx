@@ -46,15 +46,14 @@ export function BowlingArsenalCatalogTab() {
         .from("bowling-ball-images")
         .getPublicUrl(filePath);
 
-      const imageUrl = `${urlData.publicUrl}?t=${Date.now()}`;
-
+      // Store clean URL without cache-busting param
       const { error: updateError } = await supabase
         .from("bowling_ball_catalog" as any)
-        .update({ image_url: imageUrl } as any)
+        .update({ image_url: urlData.publicUrl } as any)
         .eq("id", ballId);
       if (updateError) throw updateError;
 
-      return imageUrl;
+      return urlData.publicUrl;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["bowling_ball_catalog_full"] });
@@ -178,9 +177,10 @@ export function BowlingArsenalCatalogTab() {
                 {ball.image_url ? (
                   <>
                     <img
-                      src={ball.image_url}
+                      src={`${ball.image_url}?t=${ball.id}`}
                       alt={`${ball.brand} ${ball.model}`}
                       className="w-full h-full object-contain p-2"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                     />
                     <Button
                       variant="destructive"
