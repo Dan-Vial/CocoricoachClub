@@ -658,9 +658,10 @@ export async function exportBowlingPdf(playerName: string, games: BowlingGameDat
       doc.text(`${game.sparePercentage.toFixed(0)}%`, cx + 1, y + 4.5);
       cx += recapCols[4].w;
 
-      // %Poche
-      doc.setTextColor(...COLORS.text);
-      doc.setFont("helvetica", "normal");
+      // %Poche with color
+      const pocketColor = getStatLevelColor("pocket", game.pocketPercentage);
+      doc.setTextColor(...pocketColor);
+      doc.setFont("helvetica", "bold");
       doc.text(`${game.pocketPercentage.toFixed(0)}%`, cx + 1, y + 4.5);
       cx += recapCols[5].w;
 
