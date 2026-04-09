@@ -325,6 +325,11 @@ export function BowlingCumulativeStats({ categoryId }: BowlingCumulativeStatsPro
           ))}
         </div>
         {playerGames.length > 0 && (
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={handleExportExcel} className="gap-2">
+              <FileSpreadsheet className="h-4 w-4" />
+              Excel
+            </Button>
           <Button
             variant="outline"
             size="sm"
