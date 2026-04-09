@@ -252,8 +252,8 @@ export function BowlingFrameAnalysis({ games }: BowlingFrameAnalysisProps) {
     if (frameStats.length === 0) return null;
     const allFrames = frameStats;
     const start = allFrames.filter(f => f.frameNumber >= 1 && f.frameNumber <= 3);
-    const mid = allFrames.filter(f => f.frameNumber >= 4 && f.frameNumber <= 7);
-    const end = allFrames.filter(f => f.frameNumber >= 8 && f.frameNumber <= 9);
+    const mid = allFrames.filter(f => f.frameNumber >= 4 && f.frameNumber <= 6);
+    const end = allFrames.filter(f => f.frameNumber >= 7 && f.frameNumber <= 9);
     const moneyTime = allFrames.filter(f => f.frameNumber >= 10 && f.frameNumber <= 12);
 
     const avgRate = (frames: FrameStats[], key: keyof FrameStats) =>
@@ -273,8 +273,8 @@ export function BowlingFrameAnalysis({ games }: BowlingFrameAnalysisProps) {
 
     return {
       start: computePhase(start, "Début (1-3)"),
-      mid: computePhase(mid, "Milieu (4-7)"),
-      end: computePhase(end, "Fin (8-9)"),
+      mid: computePhase(mid, "Milieu (4-6)"),
+      end: computePhase(end, "Fin (7-9)"),
       moneyTime: computePhase(moneyTime, "Money Time (10-12)"),
     };
   }, [frameStats]);
