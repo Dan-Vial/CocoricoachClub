@@ -6,10 +6,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { ColoredSubTabsList, ColoredSubTabsTrigger } from "@/components/ui/colored-subtabs";
-import { BarChart3, Trophy, Target, TrendingUp, Calendar } from "lucide-react";
+import { BarChart3, Trophy, Target, TrendingUp, Calendar, FileDown } from "lucide-react";
 import { BowlingFrameAnalysis } from "./BowlingFrameAnalysis";
 import { BowlingGameHistory } from "./BowlingGameHistory";
 import { getStatColor } from "@/lib/bowling/statColors";
+import { exportBowlingPdf } from "@/lib/bowling/bowlingPdfExport";
 import type { FrameData } from "@/components/athlete-portal/BowlingScoreSheet";
 
 interface BowlingCumulativeStatsProps {
