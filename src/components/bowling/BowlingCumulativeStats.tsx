@@ -22,6 +22,7 @@ interface BowlingGameData {
   matchId: string;
   playerId: string;
   playerName: string;
+  playerAvatarUrl?: string | null;
   roundNumber: number;
   matchDate: string;
   matchOpponent: string;
@@ -80,7 +81,7 @@ export function BowlingCumulativeStats({ categoryId }: BowlingCumulativeStatsPro
 
       const { data: rounds, error: roundError } = await supabase
         .from("competition_rounds")
-        .select("*, competition_round_stats(*), players(id, name, first_name)")
+        .select("*, competition_round_stats(*), players(id, name, first_name, avatar_url)")
         .in("match_id", matchIds)
         .order("round_number");
       if (roundError) throw roundError;
@@ -89,7 +90,7 @@ export function BowlingCumulativeStats({ categoryId }: BowlingCumulativeStatsPro
       const games: BowlingGameData[] = [];
       for (const round of rounds) {
         const match = matchMap[round.match_id];
-        const player = round.players as { id: string; name: string; first_name?: string } | null;
+        const player = round.players as { id: string; name: string; first_name?: string; avatar_url?: string | null } | null;
         const statData = (round.competition_round_stats as any[])?.[0]?.stat_data as Record<string, any> || {};
         const bowlingFrames = statData.bowlingFrames as FrameData[] | undefined;
 
@@ -99,6 +100,7 @@ export function BowlingCumulativeStats({ categoryId }: BowlingCumulativeStatsPro
             matchId: round.match_id,
             playerId: round.player_id,
             playerName: player ? [player.first_name, player.name].filter(Boolean).join(" ") : "Athlète",
+            playerAvatarUrl: player?.avatar_url,
             roundNumber: round.round_number,
             matchDate: match?.match_date || "",
             matchOpponent: match?.opponent || "",
@@ -243,10 +245,35 @@ export function BowlingCumulativeStats({ categoryId }: BowlingCumulativeStatsPro
           <Button
             variant="outline"
             size="sm"
-            onClick={() => exportBowlingPdf(
-              players.find(p => p.id === activePlayerId)?.name || "Athlète",
-              playerGames
-            )}
+            onClick={async () => {
+              const avatarUrl = playerGames[0]?.playerAvatarUrl || null;
+              
+              // Fetch oil patterns for the matches of this player
+              const matchIds = [...new Set(playerGames.map(g => g.matchId))];
+              let oilPatternImageUrl: string | null = null;
+              let oilPatternName: string | null = null;
+              
+              try {
+                const { data: oilPatterns } = await supabase
+                  .from("bowling_oil_patterns")
+                  .select("name, image_url_male, image_url_female")
+                  .in("match_id", matchIds)
+                  .limit(1);
+                
+                if (oilPatterns && oilPatterns.length > 0) {
+                  oilPatternName = oilPatterns[0].name;
+                  oilPatternImageUrl = oilPatterns[0].image_url_male || oilPatterns[0].image_url_female || null;
+                }
+              } catch {
+                // ignore
+              }
+              
+              await exportBowlingPdf(
+                players.find(p => p.id === activePlayerId)?.name || "Athlète",
+                playerGames,
+                { playerAvatarUrl: avatarUrl, oilPatternImageUrl, oilPatternName }
+              );
+            }}
             className="gap-2"
           >
             <FileDown className="h-4 w-4" />
