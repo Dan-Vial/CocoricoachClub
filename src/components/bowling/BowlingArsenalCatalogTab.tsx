@@ -177,9 +177,10 @@ export function BowlingArsenalCatalogTab() {
                 {ball.image_url ? (
                   <>
                     <img
-                      src={ball.image_url}
+                      src={`${ball.image_url}?t=${ball.id}`}
                       alt={`${ball.brand} ${ball.model}`}
                       className="w-full h-full object-contain p-2"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                     />
                     <Button
                       variant="destructive"
