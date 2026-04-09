@@ -194,10 +194,9 @@ export async function exportBowlingPdf(playerName: string, games: BowlingGameDat
       const imgSize = 25;
       const imgX = margin;
       const imgY = 5;
-      // White circle background
       doc.setFillColor(...COLORS.white);
       doc.circle(imgX + imgSize / 2, imgY + imgSize / 2, imgSize / 2 + 1, "F");
-      doc.addImage(avatarBase64, "JPEG", imgX, imgY, imgSize, imgSize);
+      doc.addImage(avatarBase64.data, "JPEG", imgX, imgY, imgSize, imgSize);
       textStartX = margin + imgSize + 5;
     } catch {
       // If image fails, just skip
