@@ -296,16 +296,16 @@ export async function exportBowlingPdf(playerName: string, games: BowlingGameDat
   });
   y += 24;
 
-  // Detailed stats table
-  const statsRows = [
-    ["% Strikes", `${avgStrikeRate.toFixed(1)}%`, "% Spares", `${avgSpareRate.toFixed(1)}%`],
-    ["% Poches", `${avgPocketRate.toFixed(1)}%`, "% Quilles seules", `${singlePinConvRate.toFixed(1)}%`],
-    ["% Conv. splits", `${splitConvRate.toFixed(1)}%`, "% Frames ouvertes", `${openFramePercentage.toFixed(1)}%`],
-    ["Strikes total", String(totalStrikes), "Spares total", String(totalSpares)],
-    ["Splits total", String(totalSplits), "Frames ouvertes", String(totalOpenFrames)],
+  // Detailed stats table with color coding
+  const statsRowsDef: { label1: string; value1: string; stat1?: string; pct1?: number; label2: string; value2: string; stat2?: string; pct2?: number }[] = [
+    { label1: "% Strikes", value1: `${avgStrikeRate.toFixed(1)}%`, stat1: "strike", pct1: avgStrikeRate, label2: "% Spares", value2: `${avgSpareRate.toFixed(1)}%`, stat2: "spare", pct2: avgSpareRate },
+    { label1: "% Poches", value1: `${avgPocketRate.toFixed(1)}%`, stat1: "pocket", pct1: avgPocketRate, label2: "% Quilles seules", value2: `${singlePinConvRate.toFixed(1)}%`, stat2: "singlePin", pct2: singlePinConvRate },
+    { label1: "% Conv. splits", value1: `${splitConvRate.toFixed(1)}%`, label2: "% Frames ouvertes", value2: `${openFramePercentage.toFixed(1)}%` },
+    { label1: "Strikes total", value1: String(totalStrikes), label2: "Spares total", value2: String(totalSpares) },
+    { label1: "Splits total", value1: String(totalSplits), label2: "Frames ouvertes", value2: String(totalOpenFrames) },
   ];
 
-  statsRows.forEach((row, i) => {
+  statsRowsDef.forEach((row, i) => {
     const rowY = y + i * 7;
     if (i % 2 === 0) {
       doc.setFillColor(...COLORS.lightBg);
@@ -314,13 +314,20 @@ export async function exportBowlingPdf(playerName: string, games: BowlingGameDat
     doc.setTextColor(...COLORS.text);
     doc.setFontSize(9);
     doc.setFont("helvetica", "normal");
-    doc.text(row[0], margin + 2, rowY + 5);
+    doc.text(row.label1, margin + 2, rowY + 5);
     doc.setFont("helvetica", "bold");
-    doc.text(row[1], margin + contentWidth / 2 - 5, rowY + 5, { align: "right" });
+    if (row.stat1 && row.pct1 !== undefined) {
+      doc.setTextColor(...getStatLevelColor(row.stat1, row.pct1));
+    }
+    doc.text(row.value1, margin + contentWidth / 2 - 5, rowY + 5, { align: "right" });
+    doc.setTextColor(...COLORS.text);
     doc.setFont("helvetica", "normal");
-    doc.text(row[2], margin + contentWidth / 2 + 5, rowY + 5);
+    doc.text(row.label2, margin + contentWidth / 2 + 5, rowY + 5);
     doc.setFont("helvetica", "bold");
-    doc.text(row[3], margin + contentWidth - 2, rowY + 5, { align: "right" });
+    if (row.stat2 && row.pct2 !== undefined) {
+      doc.setTextColor(...getStatLevelColor(row.stat2, row.pct2));
+    }
+    doc.text(row.value2, margin + contentWidth - 2, rowY + 5, { align: "right" });
   });
   y += statsRows.length * 7 + 8;
 
