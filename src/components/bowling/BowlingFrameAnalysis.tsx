@@ -248,15 +248,16 @@ export function BowlingFrameAnalysis({ games }: BowlingFrameAnalysisProps) {
     return main.reduce((worst, f) => f.strikeRate < worst.strikeRate ? f : worst);
   }, [frameStats]);
 
-  const thirds = useMemo(() => {
+  const phases = useMemo(() => {
     if (frameStats.length === 0) return null;
-    const mainFrames = frameStats.filter(f => f.frameNumber <= 10);
-    const start = mainFrames.slice(0, 3);
-    const mid = mainFrames.slice(3, 7);
-    const end = mainFrames.slice(7, 10);
+    const allFrames = frameStats;
+    const start = allFrames.filter(f => f.frameNumber >= 1 && f.frameNumber <= 3);
+    const mid = allFrames.filter(f => f.frameNumber >= 4 && f.frameNumber <= 7);
+    const end = allFrames.filter(f => f.frameNumber >= 8 && f.frameNumber <= 9);
+    const moneyTime = allFrames.filter(f => f.frameNumber >= 10 && f.frameNumber <= 12);
 
     const avgRate = (frames: FrameStats[], key: keyof FrameStats) =>
-      frames.reduce((s, f) => s + (f[key] as number), 0) / frames.length;
+      frames.length > 0 ? frames.reduce((s, f) => s + (f[key] as number), 0) / frames.length : 0;
 
     const computePhase = (frames: FrameStats[], label: string) => ({
       label,
@@ -273,7 +274,8 @@ export function BowlingFrameAnalysis({ games }: BowlingFrameAnalysisProps) {
     return {
       start: computePhase(start, "Début (1-3)"),
       mid: computePhase(mid, "Milieu (4-7)"),
-      end: computePhase(end, "Fin (8-10)"),
+      end: computePhase(end, "Fin (8-9)"),
+      moneyTime: computePhase(moneyTime, "Money Time (10-12)"),
     };
   }, [frameStats]);
 
@@ -294,7 +296,7 @@ export function BowlingFrameAnalysis({ games }: BowlingFrameAnalysisProps) {
   return (
     <div className="space-y-4">
       {/* Phase analysis */}
-      {thirds && (
+      {phases && (
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
@@ -304,14 +306,14 @@ export function BowlingFrameAnalysis({ games }: BowlingFrameAnalysisProps) {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-3 gap-3">
-              {[thirds.start, thirds.mid, thirds.end].map((phase, idx) => (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {[phases.start, phases.mid, phases.end, phases.moneyTime].map((phase, idx) => (
                 <div
                   key={idx}
-                  className="p-4 rounded-lg border border-border bg-card text-center"
+                  className={`p-4 rounded-lg border border-border bg-card text-center ${idx === 3 ? "ring-2 ring-primary/30" : ""}`}
                 >
                   <div className="flex items-center justify-center gap-1 mb-2">
-                    <span className="text-sm font-semibold">{phase.label}</span>
+                    <span className="text-sm font-semibold">{idx === 3 ? "🎯 " : ""}{phase.label}</span>
                   </div>
                   <p className="text-3xl font-bold text-foreground">
                     {phase.strikeRate.toFixed(1)}%
@@ -338,10 +340,10 @@ export function BowlingFrameAnalysis({ games }: BowlingFrameAnalysisProps) {
               ))}
             </div>
             <p className="text-xs text-muted-foreground mt-3 text-center italic">
-              {thirds.start.strikeRate > thirds.end.strikeRate + 5
-                ? "📈 Meilleur en début de partie, performance qui baisse en fin"
-                : thirds.end.strikeRate > thirds.start.strikeRate + 5
-                ? "📈 Meilleur en fin de partie, monte en puissance"
+              {phases.start.strikeRate > phases.moneyTime.strikeRate + 5
+                ? "📈 Meilleur en début de partie, performance qui baisse en Money Time"
+                : phases.moneyTime.strikeRate > phases.start.strikeRate + 5
+                ? "📈 Monte en puissance, meilleur en Money Time"
                 : "📊 Performance régulière tout au long de la partie"}
             </p>
           </CardContent>
