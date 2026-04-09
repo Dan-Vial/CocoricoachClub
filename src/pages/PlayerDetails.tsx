@@ -31,6 +31,7 @@ import { PlayerAdditionalInfoSection } from "@/components/player/PlayerAdditiona
 import { PlayerPersonalInfoSection } from "@/components/player/PlayerPersonalInfoSection";
 import { PlayerReferenceCard } from "@/components/player/PlayerReferenceCard";
 import { PlayerBowlingArsenal } from "@/components/bowling/PlayerBowlingArsenal";
+import { BowlingCumulativeStats } from "@/components/bowling/BowlingCumulativeStats";
 import { PlayerSurfEquipment } from "@/components/surf/PlayerSurfEquipment";
 import { PlayerSkiEquipment } from "@/components/ski/PlayerSkiEquipment";
 import { PlayerPadelEquipment } from "@/components/padel/PlayerPadelEquipment";
