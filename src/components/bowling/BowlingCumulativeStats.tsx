@@ -26,6 +26,7 @@ interface BowlingGameData {
   matchDate: string;
   matchOpponent: string;
   phase: string;
+  bowlingCategory?: string;
   score: number;
   strikes: number;
   spares: number;
@@ -116,6 +117,7 @@ export function BowlingCumulativeStats({ categoryId }: BowlingCumulativeStatsPro
             singlePinConverted: statData.singlePinConverted || 0,
             singlePinConversionRate: statData.singlePinConversionRate || 0,
             frames: bowlingFrames,
+            bowlingCategory: statData.bowlingCategory as string | undefined,
           });
         }
       }
