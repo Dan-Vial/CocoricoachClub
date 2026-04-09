@@ -7,6 +7,10 @@ interface BowlingPdfOptions {
   playerAvatarUrl?: string | null;
   oilPatternImageUrl?: string | null;
   oilPatternName?: string | null;
+  competitionName?: string | null;
+  ageCategory?: string | null;
+  location?: string | null;
+  competitionDate?: string | null;
 }
 
 async function loadImageAsBase64(url: string): Promise<{ data: string; width: number; height: number } | null> {
@@ -183,7 +187,8 @@ export async function exportBowlingPdf(playerName: string, games: BowlingGameDat
   ]);
 
   // ===================== HEADER =====================
-  const headerH = avatarBase64 ? 35 : 28;
+  const hasSubInfo = !!(options?.competitionName || options?.ageCategory || options?.location || options?.competitionDate);
+  const headerH = avatarBase64 ? 35 : (hasSubInfo ? 30 : 28);
   doc.setFillColor(...COLORS.primary);
   doc.rect(0, 0, pageWidth, headerH, "F");
 
@@ -203,47 +208,63 @@ export async function exportBowlingPdf(playerName: string, games: BowlingGameDat
     }
   }
 
+  // Build title line with competition info
+  const titleParts = [`Statistiques Bowling - ${playerName}`];
+  const subParts: string[] = [];
+  if (options?.competitionName) subParts.push(options.competitionName);
+  if (options?.ageCategory) subParts.push(options.ageCategory);
+  if (options?.location) subParts.push(options.location);
+  if (options?.competitionDate) {
+    try {
+      subParts.push(format(new Date(options.competitionDate), "dd MMMM yyyy", { locale: fr }));
+    } catch { subParts.push(options.competitionDate); }
+  }
+
   doc.setTextColor(...COLORS.white);
   doc.setFontSize(18);
   doc.setFont("helvetica", "bold");
-  doc.text(`Statistiques Bowling - ${playerName}`, textStartX, avatarBase64 ? 18 : 14);
-  doc.setFontSize(10);
+  doc.text(titleParts[0], textStartX, avatarBase64 ? 14 : 10);
+  if (subParts.length > 0) {
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text(subParts.join(" | "), textStartX, avatarBase64 ? 21 : 17);
+  }
+  doc.setFontSize(8);
   doc.setFont("helvetica", "normal");
-  doc.text(`Rapport genere le ${format(new Date(), "dd MMMM yyyy", { locale: fr })} - ${games.length} parties`, textStartX, avatarBase64 ? 26 : 22);
+  doc.text(`Rapport genere le ${format(new Date(), "dd MMMM yyyy", { locale: fr })} - ${games.length} parties`, textStartX, avatarBase64 ? 27 : 23);
   y = headerH + 7;
 
-  // ===================== OIL PATTERN =====================
+  // ===================== OIL PATTERN (full page) =====================
   if (oilBase64 || options?.oilPatternName) {
-    y = checkPageBreak(doc, y, 55);
-    drawSectionTitle(doc, margin, y, contentWidth, "HUILAGE");
-    y += 12;
+    doc.addPage();
+    let oilY = 15;
+    drawSectionTitle(doc, margin, oilY, contentWidth, "HUILAGE");
+    oilY += 14;
 
     if (options?.oilPatternName) {
       doc.setTextColor(...COLORS.text);
-      doc.setFontSize(10);
+      doc.setFontSize(14);
       doc.setFont("helvetica", "bold");
-      doc.text(options.oilPatternName, margin, y + 4);
-      y += 8;
+      doc.text(options.oilPatternName, pageWidth / 2, oilY + 4, { align: "center" });
+      oilY += 12;
     }
 
     if (oilBase64) {
       try {
-        const maxH = 60;
-        const maxW = contentWidth;
+        const availableH = 297 - oilY - 10; // A4 height minus margins
+        const availableW = contentWidth;
         const aspect = oilBase64.width / oilBase64.height;
-        let imgW = maxW;
+        let imgW = availableW;
         let imgH = imgW / aspect;
-        if (imgH > maxH) {
-          imgH = maxH;
+        if (imgH > availableH) {
+          imgH = availableH;
           imgW = imgH * aspect;
         }
-        doc.addImage(oilBase64.data, "PNG", margin + (contentWidth - imgW) / 2, y, imgW, imgH);
-        y += imgH + 5;
+        doc.addImage(oilBase64.data, "PNG", margin + (contentWidth - imgW) / 2, oilY, imgW, imgH);
       } catch {
         // skip
       }
     }
-    y += 3;
   }
 
   // ===================== SECTION 1: VUE D'ENSEMBLE =====================
