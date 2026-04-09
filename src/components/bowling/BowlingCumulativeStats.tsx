@@ -118,8 +118,8 @@ export function BowlingCumulativeStats({ categoryId }: BowlingCumulativeStatsPro
             singlePinConversionRate: statData.singlePinConversionRate || 0,
             frames: bowlingFrames,
             bowlingCategory: statData.bowlingCategory as string | undefined,
+          });
         }
-      }
 
       return games;
     },
