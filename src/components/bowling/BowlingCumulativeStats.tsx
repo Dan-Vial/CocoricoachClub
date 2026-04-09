@@ -212,6 +212,85 @@ export function BowlingCumulativeStats({ categoryId }: BowlingCumulativeStatsPro
     return <p className="text-muted-foreground">Chargement des statistiques bowling...</p>;
   }
 
+  const handleExportExcel = async () => {
+    if (!cumulativeStats || playerGames.length === 0) return;
+    try {
+      const branding = await getExcelBranding(categoryId);
+      const wb = new ExcelJS.Workbook();
+      const playerName = players.find(p => p.id === activePlayerId)?.name || "Athlète";
+
+      // Sheet 1: Summary
+      const ws1 = wb.addWorksheet("Résumé");
+      ws1.columns = [
+        { header: "Statistique", key: "stat", width: 30 },
+        { header: "Valeur", key: "value", width: 18 },
+      ];
+      const startRow1 = addBrandedHeader(ws1, `Stats compétition bowling - ${playerName}`, branding, [
+        ["Parties", String(cumulativeStats.totalGames)],
+      ]);
+      styleDataHeaderRow(ws1, startRow1, 2, branding.headerColor);
+      ws1.getRow(startRow1).values = ["Statistique", "Valeur"];
+      const summaryRows = [
+        ["Parties jouées", cumulativeStats.totalGames],
+        ["Moyenne", cumulativeStats.avgScore.toFixed(1)],
+        ["Partie haute", cumulativeStats.highGame],
+        ["Partie basse", cumulativeStats.lowGame],
+        ["% Strikes", `${cumulativeStats.avgStrikeRate.toFixed(1)}%`],
+        ["% Spares", `${cumulativeStats.avgSpareRate.toFixed(1)}%`],
+        ["% Poches", `${cumulativeStats.avgPocketRate.toFixed(1)}%`],
+        ["% Quilles seules", `${cumulativeStats.singlePinConversionRate.toFixed(1)}%`],
+        ["% Conversion splits", `${cumulativeStats.splitConversionRate.toFixed(1)}%`],
+        ["% Boules ≥8", `${cumulativeStats.firstBallGte8Percentage.toFixed(1)}%`],
+        ["% Frames non fermées", `${cumulativeStats.openFramePercentage.toFixed(1)}%`],
+        ["Nombre de strikes", cumulativeStats.totalStrikes],
+        ["Nombre de spares", cumulativeStats.totalSpares],
+        ["Nombre de splits", cumulativeStats.totalSplits],
+        ["Nombre de frames non fermées", cumulativeStats.totalOpenFrames],
+      ];
+      summaryRows.forEach((r, i) => {
+        ws1.getRow(startRow1 + 1 + i).values = [r[0], r[1]];
+      });
+      addZebraRows(ws1, startRow1 + 1, startRow1 + summaryRows.length, 2);
+      addFooter(ws1, startRow1 + summaryRows.length + 1, 2, branding.footerText);
+
+      // Sheet 2: Game details
+      const ws2 = wb.addWorksheet("Détail parties");
+      ws2.columns = [
+        { header: "Date", key: "date", width: 14 },
+        { header: "Compétition", key: "comp", width: 25 },
+        { header: "Score", key: "score", width: 10 },
+        { header: "Strikes", key: "strikes", width: 10 },
+        { header: "Spares", key: "spares", width: 10 },
+        { header: "% Strike", key: "strikeP", width: 12 },
+        { header: "% Spare", key: "spareP", width: 12 },
+        { header: "Open", key: "open", width: 10 },
+      ];
+      const startRow2 = addBrandedHeader(ws2, `Détail des parties - ${playerName}`, branding);
+      styleDataHeaderRow(ws2, startRow2, 8, branding.headerColor);
+      ws2.getRow(startRow2).values = ["Date", "Compétition", "Score", "Strikes", "Spares", "% Strike", "% Spare", "Open"];
+      const sortedGames = [...playerGames].sort((a, b) => a.matchDate.localeCompare(b.matchDate));
+      sortedGames.forEach((g, i) => {
+        const row = ws2.getRow(startRow2 + 1 + i);
+        row.values = [
+          format(new Date(g.matchDate), "dd/MM/yyyy"),
+          g.matchOpponent,
+          g.score,
+          g.strikes,
+          g.spares,
+          `${g.strikePercentage.toFixed(1)}%`,
+          `${g.sparePercentage.toFixed(1)}%`,
+          g.openFrames,
+        ];
+      });
+      addZebraRows(ws2, startRow2 + 1, startRow2 + sortedGames.length, 8);
+
+      await downloadWorkbook(wb, `stats-bowling-competition-${format(new Date(), "yyyy-MM-dd")}.xlsx`);
+      toast.success("Export Excel téléchargé !");
+    } catch (e) {
+      toast.error("Erreur lors de l'export Excel");
+    }
+  };
+
   if (!allGames || allGames.length === 0) {
     return (
       <Card className="bg-gradient-card">
