@@ -138,24 +138,87 @@ function checkPageBreak(doc: jsPDF, y: number, needed: number): number {
   return y;
 }
 
-export function exportBowlingPdf(playerName: string, games: BowlingGameData[]) {
+export async function exportBowlingPdf(playerName: string, games: BowlingGameData[], options?: BowlingPdfOptions) {
   const doc = new jsPDF("p", "mm", "a4");
   const pageWidth = 210;
   const margin = 15;
   const contentWidth = pageWidth - margin * 2;
   let y = 15;
 
+  // Load images in parallel
+  const [avatarBase64, oilBase64] = await Promise.all([
+    options?.playerAvatarUrl ? loadImageAsBase64(options.playerAvatarUrl) : Promise.resolve(null),
+    options?.oilPatternImageUrl ? loadImageAsBase64(options.oilPatternImageUrl) : Promise.resolve(null),
+  ]);
+
   // ===================== HEADER =====================
+  const headerH = avatarBase64 ? 35 : 28;
   doc.setFillColor(...COLORS.primary);
-  doc.rect(0, 0, pageWidth, 28, "F");
+  doc.rect(0, 0, pageWidth, headerH, "F");
+
+  // Player avatar (circular clip via rounded rect)
+  let textStartX = margin;
+  if (avatarBase64) {
+    try {
+      const imgSize = 25;
+      const imgX = margin;
+      const imgY = 5;
+      // White circle background
+      doc.setFillColor(...COLORS.white);
+      doc.circle(imgX + imgSize / 2, imgY + imgSize / 2, imgSize / 2 + 1, "F");
+      doc.addImage(avatarBase64, "JPEG", imgX, imgY, imgSize, imgSize);
+      textStartX = margin + imgSize + 5;
+    } catch {
+      // If image fails, just skip
+    }
+  }
+
   doc.setTextColor(...COLORS.white);
   doc.setFontSize(18);
   doc.setFont("helvetica", "bold");
-  doc.text(`Statistiques Bowling - ${playerName}`, margin, 14);
+  doc.text(`Statistiques Bowling - ${playerName}`, textStartX, avatarBase64 ? 18 : 14);
   doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
-  doc.text(`Rapport genere le ${format(new Date(), "dd MMMM yyyy", { locale: fr })} - ${games.length} parties`, margin, 22);
-  y = 35;
+  doc.text(`Rapport genere le ${format(new Date(), "dd MMMM yyyy", { locale: fr })} - ${games.length} parties`, textStartX, avatarBase64 ? 26 : 22);
+  y = headerH + 7;
+
+  // ===================== OIL PATTERN =====================
+  if (oilBase64 || options?.oilPatternName) {
+    y = checkPageBreak(doc, y, 55);
+    drawSectionTitle(doc, margin, y, contentWidth, "HUILAGE");
+    y += 12;
+
+    if (options?.oilPatternName) {
+      doc.setTextColor(...COLORS.text);
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "bold");
+      doc.text(options.oilPatternName, margin, y + 4);
+      y += 8;
+    }
+
+    if (oilBase64) {
+      try {
+        // Fit oil pattern image within content width, max height 60mm
+        const maxH = 60;
+        const maxW = contentWidth;
+        // Use aspect ratio from a temporary image
+        const img = new Image();
+        img.src = oilBase64;
+        const aspect = img.width && img.height ? img.width / img.height : 1.5;
+        let imgW = maxW;
+        let imgH = imgW / aspect;
+        if (imgH > maxH) {
+          imgH = maxH;
+          imgW = imgH * aspect;
+        }
+        doc.addImage(oilBase64, "PNG", margin + (contentWidth - imgW) / 2, y, imgW, imgH);
+        y += imgH + 5;
+      } catch {
+        // skip
+      }
+    }
+    y += 3;
+  }
 
   // ===================== SECTION 1: VUE D'ENSEMBLE =====================
   const totalGames = games.length;
