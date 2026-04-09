@@ -195,13 +195,13 @@ export function BowlingFrameAnalysis({ games }: BowlingFrameAnalysisProps) {
     }
 
     // Frame 12: 3rd throw of 10th frame (only when both 1st and 2nd were strikes)
+    // No 13th throw exists, so non-strikes cannot be converted — only Strike vs Non-Strike
     {
       let eligible = 0, strikes = 0, nonStrikes = 0;
 
       gamesWithFrames.forEach(game => {
         const frame = game.frames![9];
         if (!frame || frame.throws.length < 3) return;
-        // Frame 12 only when first two throws were strikes
         if (frame.throws[0]?.value !== "X" || frame.throws[1]?.value !== "X") return;
 
         eligible++;
@@ -209,6 +209,7 @@ export function BowlingFrameAnalysis({ games }: BowlingFrameAnalysisProps) {
         if (thirdThrow?.value === "X") {
           strikes++;
         } else {
+          // Count as spare (non-strike but no conversion opportunity — not an "open")
           nonStrikes++;
         }
       });
@@ -218,14 +219,14 @@ export function BowlingFrameAnalysis({ games }: BowlingFrameAnalysisProps) {
           frameNumber: 12,
           label: "Frame 12",
           strikeCount: strikes,
-          spareCount: 0,
-          openCount: nonStrikes,
+          spareCount: nonStrikes, // non-strikes counted as "other" shown in spare color, not open
+          openCount: 0, // no opens possible — no 13th throw to fail conversion
           singlePinCount: 0,
           singlePinConverted: 0,
           totalGames: eligible,
           strikeRate: (strikes / eligible) * 100,
-          spareRate: 0,
-          openRate: (nonStrikes / eligible) * 100,
+          spareRate: (nonStrikes / eligible) * 100,
+          openRate: 0,
           singlePinConvRate: 0,
           avgFirstThrowPins: 0,
         });
