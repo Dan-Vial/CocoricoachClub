@@ -90,7 +90,7 @@ export function BowlingCumulativeStats({ categoryId }: BowlingCumulativeStatsPro
       const games: BowlingGameData[] = [];
       for (const round of rounds) {
         const match = matchMap[round.match_id];
-        const player = round.players as { id: string; name: string; first_name?: string } | null;
+        const player = round.players as { id: string; name: string; first_name?: string; avatar_url?: string | null } | null;
         const statData = (round.competition_round_stats as any[])?.[0]?.stat_data as Record<string, any> || {};
         const bowlingFrames = statData.bowlingFrames as FrameData[] | undefined;
 
@@ -100,6 +100,7 @@ export function BowlingCumulativeStats({ categoryId }: BowlingCumulativeStatsPro
             matchId: round.match_id,
             playerId: round.player_id,
             playerName: player ? [player.first_name, player.name].filter(Boolean).join(" ") : "Athlète",
+            playerAvatarUrl: player?.avatar_url,
             roundNumber: round.round_number,
             matchDate: match?.match_date || "",
             matchOpponent: match?.opponent || "",
