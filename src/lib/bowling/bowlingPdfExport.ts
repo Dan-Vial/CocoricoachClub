@@ -234,10 +234,9 @@ export async function exportBowlingPdf(playerName: string, games: BowlingGameDat
   doc.text(`Rapport genere le ${format(new Date(), "dd MMMM yyyy", { locale: fr })} - ${games.length} parties`, textStartX, avatarBase64 ? 27 : 23);
   y = headerH + 7;
 
-  // ===================== OIL PATTERN (dedicated page) =====================
+  // ===================== OIL PATTERN (on first page after header) =====================
   if (oilBase64 || options?.oilPatternName) {
-    doc.addPage();
-    let oilY = 15;
+    let oilY = y;
     drawSectionTitle(doc, margin, oilY, contentWidth, "HUILAGE");
     oilY += 14;
 
