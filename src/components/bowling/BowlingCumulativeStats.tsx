@@ -117,7 +117,7 @@ export function BowlingCumulativeStats({ categoryId }: BowlingCumulativeStatsPro
             singlePinConverted: statData.singlePinConverted || 0,
             singlePinConversionRate: statData.singlePinConversionRate || 0,
             frames: bowlingFrames,
-          });
+            bowlingCategory: statData.bowlingCategory as string | undefined,
         }
       }
 
