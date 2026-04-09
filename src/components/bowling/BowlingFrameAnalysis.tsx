@@ -272,10 +272,17 @@ export function BowlingFrameAnalysis({ games }: BowlingFrameAnalysisProps) {
       })(),
     });
 
+    const frame10 = allFrames.filter(f => f.frameNumber === 10);
+    const frame11 = allFrames.filter(f => f.frameNumber === 11);
+    const frame12 = allFrames.filter(f => f.frameNumber === 12);
+
     return {
       start: computePhase(start, "Début (1-3)"),
       mid: computePhase(mid, "Milieu (4-6)"),
       end: computePhase(end, "Fin (7-9)"),
+      frame10: computePhase(frame10, "Frame 10"),
+      frame11: computePhase(frame11, "Frame 11"),
+      frame12: computePhase(frame12, "Frame 12"),
       moneyTime: computePhase(moneyTime, "Money Time (10-12)"),
     };
   }, [frameStats]);
@@ -307,39 +314,82 @@ export function BowlingFrameAnalysis({ games }: BowlingFrameAnalysisProps) {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {[phases.start, phases.mid, phases.end, phases.moneyTime].map((phase, idx) => (
-                <div
-                  key={idx}
-                  className={`p-4 rounded-lg border border-border bg-card text-center ${idx === 3 ? "ring-2 ring-primary/30" : ""}`}
-                >
-                  <div className="flex items-center justify-center gap-1 mb-2">
-                    <span className="text-sm font-semibold">{idx === 3 ? "🎯 " : ""}{phase.label}</span>
+            {(() => {
+              const phaseCards = [
+                { phase: phases.start, type: "normal" },
+                { phase: phases.mid, type: "normal" },
+                { phase: phases.end, type: "normal" },
+                { phase: phases.frame10, type: "frame" },
+                { phase: phases.frame11, type: "frame" },
+                { phase: phases.frame12, type: "frame" },
+                { phase: phases.moneyTime, type: "gold" },
+              ];
+              return (
+                <>
+                  <div className="grid grid-cols-3 gap-3">
+                    {phaseCards.slice(0, 3).map((item, idx) => (
+                      <div key={idx} className="p-4 rounded-lg border border-border bg-card text-center">
+                        <div className="flex items-center justify-center gap-1 mb-2">
+                          <span className="text-sm font-semibold">{item.phase.label}</span>
+                        </div>
+                        <p className="text-3xl font-bold text-foreground">{item.phase.strikeRate.toFixed(1)}%</p>
+                        <p className="text-xs text-muted-foreground">% Strike</p>
+                        <div className="mt-3 space-y-1.5 text-sm">
+                          <div className="flex justify-between items-center px-1">
+                            <span className="text-muted-foreground">Spare</span>
+                            <span className="font-bold text-foreground text-lg">{item.phase.spareRate.toFixed(0)}%</span>
+                          </div>
+                          <div className="flex justify-between items-center px-1">
+                            <span className="text-muted-foreground">Open</span>
+                            <span className="font-bold text-foreground text-lg">{item.phase.openRate.toFixed(0)}%</span>
+                          </div>
+                          <div className="flex justify-between items-center px-1">
+                            <span className="text-muted-foreground">QS</span>
+                            <span className="font-bold text-foreground text-lg">{item.phase.singlePinConvRate.toFixed(0)}%</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                  <p className="text-3xl font-bold text-foreground">
-                    {phase.strikeRate.toFixed(1)}%
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    % Strike
-                    <StatInfoIcon text="Le % de strikes correspond au pourcentage de frames où le premier lancer abat les 10 quilles." />
-                  </p>
-                  <div className="mt-3 space-y-1.5 text-sm">
-                    <div className="flex justify-between items-center px-1">
-                      <span className="text-muted-foreground">Spare</span>
-                      <span className="font-bold text-foreground text-lg">{phase.spareRate.toFixed(0)}%</span>
-                    </div>
-                    <div className="flex justify-between items-center px-1">
-                      <span className="text-muted-foreground">Open</span>
-                      <span className="font-bold text-foreground text-lg">{phase.openRate.toFixed(0)}%</span>
-                    </div>
-                    <div className="flex justify-between items-center px-1">
-                      <span className="text-muted-foreground">QS</span>
-                      <span className="font-bold text-foreground text-lg">{phase.singlePinConvRate.toFixed(0)}%</span>
-                    </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3">
+                    {phaseCards.slice(3).map((item, idx) => (
+                      <div
+                        key={idx}
+                        className={`p-4 rounded-lg border text-center ${
+                          item.type === "gold"
+                            ? "bg-gradient-to-br from-yellow-400/30 via-amber-300/20 to-yellow-500/30 border-yellow-500/50 ring-2 ring-yellow-500/40"
+                            : "border-border bg-card"
+                        }`}
+                      >
+                        <div className="flex items-center justify-center gap-1 mb-2">
+                          <span className="text-sm font-semibold">
+                            {item.type === "gold" ? "🎯 " : ""}{item.phase.label}
+                          </span>
+                        </div>
+                        <p className={`text-3xl font-bold ${item.type === "gold" ? "text-yellow-600 dark:text-yellow-400" : "text-foreground"}`}>
+                          {item.phase.strikeRate.toFixed(1)}%
+                        </p>
+                        <p className="text-xs text-muted-foreground">% Strike</p>
+                        <div className="mt-3 space-y-1.5 text-sm">
+                          <div className="flex justify-between items-center px-1">
+                            <span className="text-muted-foreground">Spare</span>
+                            <span className="font-bold text-foreground text-lg">{item.phase.spareRate.toFixed(0)}%</span>
+                          </div>
+                          <div className="flex justify-between items-center px-1">
+                            <span className="text-muted-foreground">Open</span>
+                            <span className="font-bold text-foreground text-lg">{item.phase.openRate.toFixed(0)}%</span>
+                          </div>
+                          <div className="flex justify-between items-center px-1">
+                            <span className="text-muted-foreground">QS</span>
+                            <span className="font-bold text-foreground text-lg">{item.phase.singlePinConvRate.toFixed(0)}%</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                </div>
-              ))}
-            </div>
+                </>
+              );
+            })()}
             <p className="text-xs text-muted-foreground mt-3 text-center italic">
               {phases.start.strikeRate > phases.moneyTime.strikeRate + 5
                 ? "📈 Meilleur en début de partie, performance qui baisse en Money Time"
@@ -386,7 +436,7 @@ export function BowlingFrameAnalysis({ games }: BowlingFrameAnalysisProps) {
                         className="h-full bg-yellow-500 transition-all flex items-center justify-center overflow-visible relative"
                         style={{ width: `${strikePercent}%`, minWidth: strikePercent > 0 ? '28px' : undefined }}
                       >
-                        <span className="text-[10px] font-bold text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)] whitespace-nowrap">{strikePercent.toFixed(0)}%</span>
+                        <span className="text-xs font-extrabold text-black drop-shadow-[0_0_2px_rgba(255,255,255,0.8)] whitespace-nowrap">{strikePercent.toFixed(0)}%</span>
                       </div>
                     )}
                     {f.frameNumber < 12 && sparePercent > 0 && (
@@ -394,7 +444,7 @@ export function BowlingFrameAnalysis({ games }: BowlingFrameAnalysisProps) {
                         className="h-full bg-emerald-500 transition-all flex items-center justify-center overflow-visible relative"
                         style={{ width: `${sparePercent}%`, minWidth: sparePercent > 0 ? '28px' : undefined }}
                       >
-                        <span className="text-[10px] font-bold text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)] whitespace-nowrap">{sparePercent.toFixed(0)}%</span>
+                        <span className="text-xs font-extrabold text-black drop-shadow-[0_0_2px_rgba(255,255,255,0.8)] whitespace-nowrap">{sparePercent.toFixed(0)}%</span>
                       </div>
                     )}
                     {openPercent > 0 && (
@@ -402,7 +452,7 @@ export function BowlingFrameAnalysis({ games }: BowlingFrameAnalysisProps) {
                         className="h-full bg-rose-500 transition-all flex items-center justify-center overflow-visible relative"
                         style={{ width: `${openPercent}%`, minWidth: openPercent > 0 ? '28px' : undefined }}
                       >
-                        <span className="text-[10px] font-bold text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)] whitespace-nowrap">{openPercent.toFixed(0)}%</span>
+                        <span className="text-xs font-extrabold text-black drop-shadow-[0_0_2px_rgba(255,255,255,0.8)] whitespace-nowrap">{openPercent.toFixed(0)}%</span>
                       </div>
                     )}
                   </div>
