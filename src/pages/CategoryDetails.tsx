@@ -365,6 +365,14 @@ function CategoryDetailsContent() {
                   shortLabel="Compét"
                 />
               )}
+              {isBowling && (
+                <ColoredTabTrigger 
+                  value="arsenal" 
+                  colorKey="performance"
+                  icon={<CircleDot className="h-6 w-6 sm:h-7 sm:w-7" />}
+                  label="Arsenal"
+                />
+              )}
               {showGpsTab && (
                 <ColoredTabTrigger 
                   value="gps" 
