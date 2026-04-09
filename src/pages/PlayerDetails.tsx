@@ -31,6 +31,7 @@ import { PlayerAdditionalInfoSection } from "@/components/player/PlayerAdditiona
 import { PlayerPersonalInfoSection } from "@/components/player/PlayerPersonalInfoSection";
 import { PlayerReferenceCard } from "@/components/player/PlayerReferenceCard";
 import { PlayerBowlingArsenal } from "@/components/bowling/PlayerBowlingArsenal";
+import { BowlingCumulativeStats } from "@/components/bowling/BowlingCumulativeStats";
 import { PlayerSurfEquipment } from "@/components/surf/PlayerSurfEquipment";
 import { PlayerSkiEquipment } from "@/components/ski/PlayerSkiEquipment";
 import { PlayerPadelEquipment } from "@/components/padel/PlayerPadelEquipment";
@@ -513,12 +514,16 @@ function PlayerDetailsContent() {
           </TabsContent>
 
           <TabsContent value="matches">
-            <PlayerMatchesTab 
-              playerId={playerId!} 
-              categoryId={player.category_id} 
-              playerName={fullName}
-              sportType={(player.categories as { rugby_type?: string })?.rugby_type}
-            />
+            {isBowling ? (
+              <BowlingCumulativeStats categoryId={player.category_id} playerId={playerId!} />
+            ) : (
+              <PlayerMatchesTab 
+                playerId={playerId!} 
+                categoryId={player.category_id} 
+                playerName={fullName}
+                sportType={(player.categories as { rugby_type?: string })?.rugby_type}
+              />
+            )}
           </TabsContent>
 
           <TabsContent value="calendar">
