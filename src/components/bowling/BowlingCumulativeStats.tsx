@@ -220,10 +220,10 @@ export function BowlingCumulativeStats({ categoryId }: BowlingCumulativeStatsPro
 
   return (
     <div className="space-y-6">
-      {/* Player selector */}
-      {players.length > 1 && (
+      {/* Player selector + Export button */}
+      <div className="flex flex-wrap items-center gap-2 justify-between">
         <div className="flex flex-wrap gap-2">
-          {players.map(p => (
+          {players.length > 1 && players.map(p => (
             <Button
               key={p.id}
               variant={activePlayerId === p.id ? "default" : "outline"}
@@ -237,7 +237,21 @@ export function BowlingCumulativeStats({ categoryId }: BowlingCumulativeStatsPro
             </Button>
           ))}
         </div>
-      )}
+        {playerGames.length > 0 && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => exportBowlingPdf(
+              players.find(p => p.id === activePlayerId)?.name || "Athlète",
+              playerGames
+            )}
+            className="gap-2"
+          >
+            <FileDown className="h-4 w-4" />
+            Exporter en PDF
+          </Button>
+        )}
+      </div>
 
       <Tabs defaultValue="overview" className="w-full">
         <div className="flex justify-center overflow-x-auto -mx-4 px-4 pb-2">
