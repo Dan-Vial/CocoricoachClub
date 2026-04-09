@@ -12,6 +12,7 @@ interface BowlingGameData {
   matchDate: string;
   matchOpponent: string;
   phase: string;
+  bowlingCategory?: string;
   score: number;
   strikes: number;
   spares: number;
@@ -37,10 +38,20 @@ const PHASE_LABELS: Record<string, string> = {
   finale: "Finale",
 };
 
+const CATEGORY_LABELS: Record<string, string> = {
+  individuelle: "Individuelle",
+  doublette: "Doublette",
+  equipe_4: "Équipe de 4",
+  masters: "Masters",
+  practice_officiel: "Practice officiel",
+  practice_non_officiel: "Practice non officiel",
+};
+
 // PDF color palette
 const COLORS = {
   primary: [37, 99, 235] as [number, number, number],
   gold: [202, 138, 4] as [number, number, number],
+  goldBg: [254, 243, 199] as [number, number, number],
   strike: [234, 179, 8] as [number, number, number],
   spare: [16, 185, 129] as [number, number, number],
   open: [244, 63, 94] as [number, number, number],
@@ -50,10 +61,55 @@ const COLORS = {
   text: [15, 23, 42] as [number, number, number],
   muted: [100, 116, 139] as [number, number, number],
   white: [255, 255, 255] as [number, number, number],
+  // Score color scale
+  scoreRed: [239, 68, 68] as [number, number, number],
+  scoreOrange: [249, 115, 22] as [number, number, number],
+  scoreGreenLight: [74, 222, 128] as [number, number, number],
+  scoreGreen: [22, 163, 74] as [number, number, number],
+  scoreGold: [250, 204, 21] as [number, number, number],
+  // Stat color scale
+  statOrange: [194, 65, 12] as [number, number, number],
+  statGreen: [21, 128, 61] as [number, number, number],
+  statGreenDark: [20, 83, 45] as [number, number, number],
+  statBlue: [29, 78, 216] as [number, number, number],
+  statBlueDark: [30, 64, 175] as [number, number, number],
+  statBlack: [17, 24, 39] as [number, number, number],
 };
 
+function getScoreColor(score: number): [number, number, number] {
+  if (score >= 240) return COLORS.scoreGold;
+  if (score >= 210) return COLORS.scoreGreen;
+  if (score >= 180) return COLORS.scoreGreenLight;
+  if (score >= 151) return COLORS.scoreOrange;
+  return COLORS.scoreRed;
+}
+
+function getStatLevelColor(statType: string, value: number): [number, number, number] {
+  const thresholds: Record<string, { max: number; color: [number, number, number] }[]> = {
+    strike: [
+      { max: 20, color: COLORS.statOrange },
+      { max: 35, color: COLORS.statGreen },
+      { max: 45, color: COLORS.statGreenDark },
+      { max: 50, color: COLORS.statBlue },
+      { max: Infinity, color: COLORS.statBlack },
+    ],
+    spare: [
+      { max: 50, color: COLORS.statOrange },
+      { max: 70, color: COLORS.statGreen },
+      { max: 85, color: COLORS.statBlue },
+      { max: Infinity, color: COLORS.statBlack },
+    ],
+  };
+  const levels = thresholds[statType];
+  if (!levels) return COLORS.text;
+  for (const l of levels) {
+    if (value < l.max) return l.color;
+  }
+  return COLORS.text;
+}
+
 function checkPageBreak(doc: jsPDF, y: number, needed: number): number {
-  if (y + needed > 275) {
+  if (y + needed > 280) {
     doc.addPage();
     return 15;
   }
@@ -76,7 +132,7 @@ export function exportBowlingPdf(playerName: string, games: BowlingGameData[]) {
   doc.text(`Statistiques Bowling - ${playerName}`, margin, 14);
   doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
-  doc.text(`Rapport généré le ${format(new Date(), "dd MMMM yyyy", { locale: fr })} • ${games.length} parties`, margin, 22);
+  doc.text(`Rapport genere le ${format(new Date(), "dd MMMM yyyy", { locale: fr })} - ${games.length} parties`, margin, 22);
   y = 35;
 
   // ===================== SECTION 1: VUE D'ENSEMBLE =====================
@@ -102,12 +158,7 @@ export function exportBowlingPdf(playerName: string, games: BowlingGameData[]) {
   const openFramePercentage = totalFrames > 0 ? (totalOpenFrames / totalFrames) * 100 : 0;
 
   // Section title
-  doc.setFillColor(...COLORS.header);
-  doc.rect(margin, y, contentWidth, 8, "F");
-  doc.setTextColor(...COLORS.white);
-  doc.setFontSize(11);
-  doc.setFont("helvetica", "bold");
-  doc.text("📊 VUE D'ENSEMBLE", margin + 3, y + 5.5);
+  drawSectionTitle(doc, margin, y, contentWidth, "VUE D'ENSEMBLE");
   y += 12;
 
   // KPI boxes
@@ -164,15 +215,9 @@ export function exportBowlingPdf(playerName: string, games: BowlingGameData[]) {
 
   // ===================== SECTION 2: ANALYSE PAR FRAME =====================
   y = checkPageBreak(doc, y, 80);
-  doc.setFillColor(...COLORS.header);
-  doc.rect(margin, y, contentWidth, 8, "F");
-  doc.setTextColor(...COLORS.white);
-  doc.setFontSize(11);
-  doc.setFont("helvetica", "bold");
-  doc.text("🎯 ANALYSE PAR FRAME", margin + 3, y + 5.5);
+  drawSectionTitle(doc, margin, y, contentWidth, "ANALYSE PAR FRAME");
   y += 12;
 
-  // Compute frame stats
   const gamesWithFrames = games.filter(g => g.frames && g.frames.length === 10);
   if (gamesWithFrames.length > 0) {
     const frameStats = computeFrameStats(gamesWithFrames);
@@ -191,8 +236,8 @@ export function exportBowlingPdf(playerName: string, games: BowlingGameData[]) {
       phaseItems.forEach((p, i) => {
         const x = margin + i * (phaseW + 2.7);
         if (p.isGold) {
-          doc.setFillColor(254, 243, 199);
-          doc.setDrawColor(202, 138, 4);
+          doc.setFillColor(...COLORS.goldBg);
+          doc.setDrawColor(...COLORS.gold);
           doc.roundedRect(x, y, phaseW, 30, 2, 2, "FD");
         } else {
           doc.setFillColor(...COLORS.lightBg);
@@ -215,15 +260,16 @@ export function exportBowlingPdf(playerName: string, games: BowlingGameData[]) {
       y += 36;
     }
 
-    // Frame distribution bars
+    // Frame distribution bars (all frames including 9, 10, 11, 12)
     y = checkPageBreak(doc, y, frameStats.length * 7 + 15);
     doc.setTextColor(...COLORS.text);
     doc.setFontSize(9);
     doc.setFont("helvetica", "bold");
-    doc.text("Répartition par frame", margin, y + 4);
+    doc.text("Repartition par frame", margin, y + 4);
     y += 8;
 
     frameStats.forEach(f => {
+      y = checkPageBreak(doc, y, 8);
       const total = f.totalGames;
       const strikeP = total > 0 ? (f.strikeCount / total) * 100 : 0;
       const spareP = total > 0 ? (f.spareCount / total) * 100 : 0;
@@ -310,13 +356,9 @@ export function exportBowlingPdf(playerName: string, games: BowlingGameData[]) {
   }
 
   // ===================== SECTION 3: HISTORIQUE DES PARTIES =====================
-  y = checkPageBreak(doc, y, 30);
-  doc.setFillColor(...COLORS.header);
-  doc.rect(margin, y, contentWidth, 8, "F");
-  doc.setTextColor(...COLORS.white);
-  doc.setFontSize(11);
-  doc.setFont("helvetica", "bold");
-  doc.text("📋 HISTORIQUE DES PARTIES", margin + 3, y + 5.5);
+  doc.addPage();
+  y = 15;
+  drawSectionTitle(doc, margin, y, contentWidth, "HISTORIQUE DES PARTIES");
   y += 12;
 
   // Group by match
@@ -332,91 +374,352 @@ export function exportBowlingPdf(playerName: string, games: BowlingGameData[]) {
     b.matchDate.localeCompare(a.matchDate)
   );
 
+  sortedMatches.forEach(([, { matchDate, opponent, games: matchGames }]) => {
+    const matchTotalScore = matchGames.reduce((s, g) => s + g.score, 0);
+    const matchAvg = matchTotalScore / matchGames.length;
+    const matchHigh = Math.max(...matchGames.map(g => g.score));
+
+    // Check if we need a new page for the match block (title + at least some rows)
+    y = checkPageBreak(doc, y, 35);
+
+    // Match header bar
+    doc.setFillColor(...COLORS.primary);
+    doc.roundedRect(margin, y, contentWidth, 10, 2, 2, "F");
+    doc.setTextColor(...COLORS.white);
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "bold");
+    const dateStr = matchDate ? format(new Date(matchDate), "dd MMM yyyy", { locale: fr }) : "-";
+    doc.text(`${opponent || "Competition"} - ${dateStr}`, margin + 3, y + 6.5);
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "normal");
+    doc.text(`${matchGames.length} parties | Moy: ${matchAvg.toFixed(1)} | High: ${matchHigh}`, margin + contentWidth - 3, y + 6.5, { align: "right" });
+    y += 13;
+
+    // Each game row with score grid + stats
+    matchGames.forEach((game) => {
+      // Determine labels
+      const phaseLabel = game.phase ? (PHASE_LABELS[game.phase] || game.phase) : "";
+      const catLabel = game.bowlingCategory ? (CATEGORY_LABELS[game.bowlingCategory] || game.bowlingCategory) : "";
+      const infoTags = [catLabel, phaseLabel].filter(Boolean).join(" | ");
+
+      // Need space for: info line (4) + score grid (14) + stats row (7) + spacing (4) = ~29
+      y = checkPageBreak(doc, y, 30);
+      if (y === 15) {
+        // Re-draw section title after page break
+        drawSectionTitle(doc, margin, y, contentWidth, "HISTORIQUE DES PARTIES (suite)");
+        y += 12;
+      }
+
+      // Info line: Partie N - Category | Phase
+      doc.setTextColor(...COLORS.text);
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "bold");
+      doc.text(`Partie ${game.roundNumber}`, margin, y + 3);
+      if (infoTags) {
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(...COLORS.muted);
+        doc.text(` - ${infoTags}`, margin + doc.getTextWidth(`Partie ${game.roundNumber}`) + 1, y + 3);
+      }
+      y += 6;
+
+      // Score grid (10 frames)
+      if (game.frames && game.frames.length === 10) {
+        drawScoreGrid(doc, margin, y, contentWidth, game.frames, game.score);
+        y += 16;
+      } else {
+        // Just show score
+        doc.setTextColor(...COLORS.text);
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "bold");
+        doc.text(`Score: ${game.score}`, margin, y + 5);
+        y += 8;
+      }
+
+      // Stats row with color coding
+      drawGameStatsRow(doc, margin, y, contentWidth, game);
+      y += 9;
+    });
+
+    // Separator between matches
+    doc.setDrawColor(...COLORS.border);
+    doc.line(margin, y, margin + contentWidth, y);
+    y += 5;
+  });
+
+  // ===================== SECTION 4: RECAPITULATIF PAR PARTIE =====================
+  y = checkPageBreak(doc, y, 40);
+  if (y > 200) {
+    doc.addPage();
+    y = 15;
+  }
+  drawSectionTitle(doc, margin, y, contentWidth, "RECAPITULATIF - STATS PAR PARTIE");
+  y += 12;
+
   // Table header
-  const colWidths = [30, 35, 18, 18, 18, 18, 18, 25];
-  const colLabels = ["Date", "Compétition", "Score", "%X", "%/", "Open", "Splits", "Phase"];
-  const drawTableHeader = (startY: number) => {
+  const recapCols = [
+    { label: "Partie", w: 8 },
+    { label: "Competition", w: 32 },
+    { label: "Score", w: 16 },
+    { label: "%X", w: 14 },
+    { label: "%/", w: 14 },
+    { label: "%Poche", w: 16 },
+    { label: "Open", w: 14 },
+    { label: "Splits", w: 16 },
+    { label: "Phase", w: 22 },
+    { label: "Format", w: 28 },
+  ];
+
+  const drawRecapHeader = (startY: number) => {
     doc.setFillColor(...COLORS.header);
     doc.rect(margin, startY, contentWidth, 7, "F");
     doc.setTextColor(...COLORS.white);
-    doc.setFontSize(7);
+    doc.setFontSize(6);
     doc.setFont("helvetica", "bold");
     let cx = margin;
-    colLabels.forEach((label, i) => {
-      doc.text(label, cx + 1.5, startY + 5);
-      cx += colWidths[i];
+    recapCols.forEach(col => {
+      doc.text(col.label, cx + 1, startY + 5);
+      cx += col.w;
     });
     return startY + 8;
   };
 
-  y = drawTableHeader(y);
+  y = drawRecapHeader(y);
 
+  let gameIndex = 0;
   sortedMatches.forEach(([, { matchDate, opponent, games: matchGames }]) => {
-    matchGames.forEach((game, gi) => {
-      y = checkPageBreak(doc, y, 8);
+    matchGames.forEach((game) => {
+      gameIndex++;
+      y = checkPageBreak(doc, y, 7);
       if (y === 15) {
-        y = drawTableHeader(y);
+        drawSectionTitle(doc, margin, y, contentWidth, "RECAPITULATIF (suite)");
+        y += 12;
+        y = drawRecapHeader(y);
       }
 
-      if (gi % 2 === 0) {
+      if (gameIndex % 2 === 0) {
         doc.setFillColor(...COLORS.lightBg);
         doc.rect(margin, y, contentWidth, 6.5, "F");
       }
 
-      doc.setTextColor(...COLORS.text);
-      doc.setFontSize(7);
-      doc.setFont("helvetica", "normal");
+      // Score background color
+      const scoreColor = getScoreColor(game.score);
+      doc.setFillColor(...scoreColor);
+      const scoreColX = margin + recapCols[0].w + recapCols[1].w;
+      doc.rect(scoreColX, y, recapCols[2].w, 6.5, "F");
+
+      doc.setFontSize(6);
       let cx = margin;
 
-      const dateStr = matchDate ? format(new Date(matchDate), "dd/MM/yyyy") : "-";
-      doc.text(dateStr, cx + 1.5, y + 4.5);
-      cx += colWidths[0];
-
-      const oppText = opponent.length > 18 ? opponent.substring(0, 17) + "…" : opponent;
-      doc.text(oppText, cx + 1.5, y + 4.5);
-      cx += colWidths[1];
-
-      doc.setFont("helvetica", "bold");
-      doc.text(String(game.score), cx + 1.5, y + 4.5);
-      cx += colWidths[2];
-
+      // # 
+      doc.setTextColor(...COLORS.text);
       doc.setFont("helvetica", "normal");
-      doc.text(`${game.strikePercentage.toFixed(0)}%`, cx + 1.5, y + 4.5);
-      cx += colWidths[3];
+      doc.text(String(gameIndex), cx + 1, y + 4.5);
+      cx += recapCols[0].w;
 
-      doc.text(`${game.sparePercentage.toFixed(0)}%`, cx + 1.5, y + 4.5);
-      cx += colWidths[4];
+      // Competition
+      const oppText = (opponent || "-").length > 16 ? (opponent || "-").substring(0, 15) + "..." : (opponent || "-");
+      doc.text(oppText, cx + 1, y + 4.5);
+      cx += recapCols[1].w;
 
-      doc.text(String(game.openFrames), cx + 1.5, y + 4.5);
-      cx += colWidths[5];
+      // Score (on colored bg)
+      doc.setTextColor(...COLORS.white);
+      doc.setFont("helvetica", "bold");
+      doc.text(String(game.score), cx + 1, y + 4.5);
+      cx += recapCols[2].w;
 
-      doc.text(`${game.splitCount}(${game.splitConverted})`, cx + 1.5, y + 4.5);
-      cx += colWidths[6];
+      // %X with color
+      const xColor = getStatLevelColor("strike", game.strikePercentage);
+      doc.setTextColor(...xColor);
+      doc.setFont("helvetica", "bold");
+      doc.text(`${game.strikePercentage.toFixed(0)}%`, cx + 1, y + 4.5);
+      cx += recapCols[3].w;
 
-      const phaseLabel = game.phase ? (PHASE_LABELS[game.phase] || game.phase) : `P${game.roundNumber}`;
-      const phaseText = phaseLabel.length > 12 ? phaseLabel.substring(0, 11) + "…" : phaseLabel;
-      doc.text(phaseText, cx + 1.5, y + 4.5);
+      // %/ with color
+      const spColor = getStatLevelColor("spare", game.sparePercentage);
+      doc.setTextColor(...spColor);
+      doc.text(`${game.sparePercentage.toFixed(0)}%`, cx + 1, y + 4.5);
+      cx += recapCols[4].w;
+
+      // %Poche
+      doc.setTextColor(...COLORS.text);
+      doc.setFont("helvetica", "normal");
+      doc.text(`${game.pocketPercentage.toFixed(0)}%`, cx + 1, y + 4.5);
+      cx += recapCols[5].w;
+
+      // Open
+      doc.text(String(game.openFrames), cx + 1, y + 4.5);
+      cx += recapCols[6].w;
+
+      // Splits
+      doc.text(`${game.splitCount}(${game.splitConverted})`, cx + 1, y + 4.5);
+      cx += recapCols[7].w;
+
+      // Phase
+      const phaseText = game.phase ? (PHASE_LABELS[game.phase] || game.phase) : "-";
+      doc.text(phaseText.length > 10 ? phaseText.substring(0, 9) + "..." : phaseText, cx + 1, y + 4.5);
+      cx += recapCols[8].w;
+
+      // Format
+      const catText = game.bowlingCategory ? (CATEGORY_LABELS[game.bowlingCategory] || game.bowlingCategory) : "-";
+      doc.text(catText.length > 14 ? catText.substring(0, 13) + "..." : catText, cx + 1, y + 4.5);
 
       y += 6.5;
     });
   });
 
+  // Score color legend
+  y += 4;
+  y = checkPageBreak(doc, y, 10);
+  doc.setFontSize(6);
+  doc.setFont("helvetica", "normal");
+  const scoreLegends = [
+    { color: COLORS.scoreRed, label: "<150" },
+    { color: COLORS.scoreOrange, label: "151-179" },
+    { color: COLORS.scoreGreenLight, label: "180-209" },
+    { color: COLORS.scoreGreen, label: "210-239" },
+    { color: COLORS.scoreGold, label: "240+" },
+  ];
+  let slx = margin;
+  doc.setTextColor(...COLORS.muted);
+  doc.text("Scores:", slx, y + 2.5);
+  slx += 14;
+  scoreLegends.forEach(l => {
+    doc.setFillColor(...l.color);
+    doc.rect(slx, y, 3, 3, "F");
+    doc.setTextColor(...COLORS.muted);
+    doc.text(l.label, slx + 4, y + 2.5);
+    slx += 18;
+  });
+
   // Footer
-  y += 5;
+  y += 8;
   doc.setDrawColor(...COLORS.border);
   doc.line(margin, y, margin + contentWidth, y);
   y += 4;
   doc.setTextColor(...COLORS.muted);
   doc.setFontSize(7);
   doc.setFont("helvetica", "italic");
-  doc.text(`Rapport bowling de ${playerName} • ${totalGames} parties • Moyenne: ${avgScore.toFixed(1)} • High: ${highGame}`, pageWidth / 2, y, { align: "center" });
+  doc.text(`Rapport bowling de ${playerName} - ${totalGames} parties - Moyenne: ${avgScore.toFixed(1)} - High: ${highGame}`, pageWidth / 2, y, { align: "center" });
 
   // Save
   const fileName = `bowling_${playerName.replace(/\s+/g, "_")}_${format(new Date(), "yyyy-MM-dd")}.pdf`;
   doc.save(fileName);
 }
 
-// ===================== HELPER FUNCTIONS =====================
+// ===================== DRAWING HELPERS =====================
+
+function drawSectionTitle(doc: jsPDF, x: number, y: number, width: number, title: string) {
+  doc.setFillColor(...COLORS.header);
+  doc.rect(x, y, width, 8, "F");
+  doc.setTextColor(...COLORS.white);
+  doc.setFontSize(11);
+  doc.setFont("helvetica", "bold");
+  doc.text(title, x + 3, y + 5.5);
+}
+
+function drawScoreGrid(doc: jsPDF, x: number, y: number, totalWidth: number, frames: FrameData[], totalScore: number) {
+  const frameW = (totalWidth - 18) / 10; // 18 = space for total column
+  const frameH = 14;
+
+  for (let i = 0; i < 10; i++) {
+    const fx = x + i * frameW;
+    const frame = frames[i];
+    const isTenth = i === 9;
+
+    // Frame border
+    doc.setDrawColor(...COLORS.border);
+    doc.setFillColor(...COLORS.white);
+    doc.rect(fx, y, frameW, frameH, "FD");
+
+    // Frame number
+    doc.setTextColor(...COLORS.muted);
+    doc.setFontSize(5);
+    doc.setFont("helvetica", "normal");
+    doc.text(String(i + 1), fx + 1, y + 3);
+
+    // Throws
+    if (frame && frame.throws.length > 0) {
+      const throwCount = isTenth ? Math.min(frame.throws.length, 3) : Math.min(frame.throws.length, 2);
+      const throwW = frameW / (isTenth ? 3 : 2);
+
+      for (let t = 0; t < throwCount; t++) {
+        const throwVal = frame.throws[t]?.value || "";
+        const tx = fx + t * throwW;
+
+        // Color the throw cell
+        if (throwVal === "X") {
+          doc.setFillColor(...COLORS.strike);
+          doc.rect(tx, y + 4, throwW, 4, "F");
+          doc.setTextColor(...COLORS.white);
+        } else if (throwVal === "/") {
+          doc.setFillColor(...COLORS.spare);
+          doc.rect(tx, y + 4, throwW, 4, "F");
+          doc.setTextColor(...COLORS.white);
+        } else {
+          doc.setTextColor(...COLORS.text);
+        }
+
+        doc.setFontSize(6);
+        doc.setFont("helvetica", "bold");
+        if (throwVal) {
+          doc.text(throwVal, tx + throwW / 2, y + 7, { align: "center" });
+        }
+      }
+
+      // Cumulative score
+      if (frame.cumulativeScore !== undefined) {
+        doc.setTextColor(...COLORS.text);
+        doc.setFontSize(7);
+        doc.setFont("helvetica", "bold");
+        doc.text(String(frame.cumulativeScore), fx + frameW / 2, y + 12.5, { align: "center" });
+      }
+    }
+  }
+
+  // Total box
+  const totalX = x + 10 * frameW + 2;
+  const totalW = 16;
+  const scoreColor = getScoreColor(totalScore);
+  doc.setFillColor(...scoreColor);
+  doc.roundedRect(totalX, y, totalW, frameH, 1, 1, "F");
+  doc.setTextColor(...COLORS.white);
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "bold");
+  doc.text(String(totalScore), totalX + totalW / 2, y + 9, { align: "center" });
+}
+
+function drawGameStatsRow(doc: jsPDF, x: number, y: number, width: number, game: BowlingGameData) {
+  doc.setFillColor(248, 250, 252);
+  doc.rect(x, y, width, 7, "F");
+
+  const items = [
+    { label: "Strikes:", value: `${game.strikes} (${game.strikePercentage.toFixed(0)}%)`, statType: "strike", pct: game.strikePercentage },
+    { label: "Spares:", value: `${game.spares} (${game.sparePercentage.toFixed(0)}%)`, statType: "spare", pct: game.sparePercentage },
+    { label: "Open:", value: String(game.openFrames), statType: "", pct: 0 },
+    { label: "Splits:", value: `${game.splitCount}(${game.splitConverted})`, statType: "", pct: 0 },
+    { label: "Poche:", value: `${game.pocketPercentage.toFixed(0)}%`, statType: "", pct: 0 },
+  ];
+
+  const itemW = width / items.length;
+  items.forEach((item, i) => {
+    const ix = x + i * itemW;
+    doc.setTextColor(...COLORS.muted);
+    doc.setFontSize(5.5);
+    doc.setFont("helvetica", "normal");
+    doc.text(item.label, ix + 1, y + 3);
+
+    if (item.statType) {
+      const color = getStatLevelColor(item.statType, item.pct);
+      doc.setTextColor(...color);
+    } else {
+      doc.setTextColor(...COLORS.text);
+    }
+    doc.setFont("helvetica", "bold");
+    doc.text(item.value, ix + 1 + doc.getTextWidth(item.label) + 1, y + 3);
+  });
+}
+
+// ===================== DATA COMPUTATION =====================
 
 interface FrameStats {
   frameNumber: number;
@@ -430,6 +733,7 @@ interface FrameStats {
 function computeFrameStats(gamesWithFrames: BowlingGameData[]): FrameStats[] {
   const stats: FrameStats[] = [];
 
+  // Frames 1-9
   for (let i = 0; i < 9; i++) {
     let strikes = 0, spares = 0, opens = 0;
     gamesWithFrames.forEach(game => {
@@ -455,7 +759,7 @@ function computeFrameStats(gamesWithFrames: BowlingGameData[]): FrameStats[] {
     stats.push({ frameNumber: 10, label: "F10", strikeCount: strikes, spareCount: spares, openCount: opens, totalGames: gamesWithFrames.length });
   }
 
-  // Frame 11
+  // Frame 11 (bonus throw after strike on frame 10)
   {
     let eligible = 0, strikes = 0, spares = 0, opens = 0;
     gamesWithFrames.forEach(game => {
@@ -469,7 +773,7 @@ function computeFrameStats(gamesWithFrames: BowlingGameData[]): FrameStats[] {
     if (eligible > 0) stats.push({ frameNumber: 11, label: "F11", strikeCount: strikes, spareCount: spares, openCount: opens, totalGames: eligible });
   }
 
-  // Frame 12
+  // Frame 12 (3rd throw after XX)
   {
     let eligible = 0, strikes = 0, nonStrikes = 0;
     gamesWithFrames.forEach(game => {
@@ -501,7 +805,7 @@ function computePhases(frameStats: FrameStats[]) {
   const moneyTime = frameStats.filter(f => f.frameNumber >= 10 && f.frameNumber <= 12);
 
   return {
-    start: computePhase(start, "Début (1-3)"),
+    start: computePhase(start, "Debut (1-3)"),
     mid: computePhase(mid, "Milieu (4-6)"),
     end: computePhase(end, "Fin (7-9)"),
     moneyTime: computePhase(moneyTime, "Money Time (10-12)"),
