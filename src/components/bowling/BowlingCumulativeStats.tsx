@@ -70,7 +70,7 @@ export function BowlingCumulativeStats({ categoryId }: BowlingCumulativeStatsPro
     queryFn: async () => {
       const { data: matches, error: matchError } = await supabase
         .from("matches")
-        .select("id, match_date, opponent")
+        .select("id, match_date, opponent, location, age_category, competition")
         .eq("category_id", categoryId)
         .order("match_date", { ascending: false });
       if (matchError) throw matchError;
