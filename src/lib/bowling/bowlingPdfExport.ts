@@ -9,17 +9,25 @@ interface BowlingPdfOptions {
   oilPatternName?: string | null;
 }
 
-async function loadImageAsBase64(url: string): Promise<string | null> {
+async function loadImageAsBase64(url: string): Promise<{ data: string; width: number; height: number } | null> {
   try {
     const response = await fetch(url, { mode: "cors" });
     if (!response.ok) return null;
     const blob = await response.blob();
-    return new Promise((resolve) => {
+    const dataUrl: string = await new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror = () => resolve(null);
+      reader.onerror = () => reject();
       reader.readAsDataURL(blob);
     });
+    // Get real dimensions via Image
+    const dims = await new Promise<{ width: number; height: number }>((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
+      img.onerror = () => resolve({ width: 1, height: 1 });
+      img.src = dataUrl;
+    });
+    return { data: dataUrl, width: dims.width, height: dims.height };
   } catch {
     return null;
   }
@@ -110,15 +118,38 @@ function getStatLevelColor(statType: string, value: number): [number, number, nu
   const thresholds: Record<string, { max: number; color: [number, number, number] }[]> = {
     strike: [
       { max: 20, color: COLORS.statOrange },
+      { max: 30, color: COLORS.statGreen },
       { max: 35, color: COLORS.statGreen },
-      { max: 45, color: COLORS.statGreenDark },
-      { max: 50, color: COLORS.statBlue },
+      { max: 40, color: COLORS.statGreenDark },
+      { max: 45, color: COLORS.statBlue },
+      { max: 50, color: COLORS.statBlueDark },
       { max: Infinity, color: COLORS.statBlack },
     ],
     spare: [
       { max: 50, color: COLORS.statOrange },
+      { max: 60, color: COLORS.statGreen },
       { max: 70, color: COLORS.statGreen },
+      { max: 80, color: COLORS.statGreenDark },
       { max: 85, color: COLORS.statBlue },
+      { max: 90, color: COLORS.statBlueDark },
+      { max: Infinity, color: COLORS.statBlack },
+    ],
+    pocket: [
+      { max: 50, color: COLORS.statOrange },
+      { max: 60, color: COLORS.statGreen },
+      { max: 65, color: COLORS.statGreen },
+      { max: 70, color: COLORS.statGreenDark },
+      { max: 75, color: COLORS.statBlue },
+      { max: 80, color: COLORS.statBlueDark },
+      { max: Infinity, color: COLORS.statBlack },
+    ],
+    singlePin: [
+      { max: 70, color: COLORS.statOrange },
+      { max: 75, color: COLORS.statGreen },
+      { max: 80, color: COLORS.statGreen },
+      { max: 85, color: COLORS.statGreenDark },
+      { max: 90, color: COLORS.statBlue },
+      { max: 95, color: COLORS.statBlueDark },
       { max: Infinity, color: COLORS.statBlack },
     ],
   };
@@ -163,10 +194,9 @@ export async function exportBowlingPdf(playerName: string, games: BowlingGameDat
       const imgSize = 25;
       const imgX = margin;
       const imgY = 5;
-      // White circle background
       doc.setFillColor(...COLORS.white);
       doc.circle(imgX + imgSize / 2, imgY + imgSize / 2, imgSize / 2 + 1, "F");
-      doc.addImage(avatarBase64, "JPEG", imgX, imgY, imgSize, imgSize);
+      doc.addImage(avatarBase64.data, "JPEG", imgX, imgY, imgSize, imgSize);
       textStartX = margin + imgSize + 5;
     } catch {
       // If image fails, just skip
@@ -198,20 +228,16 @@ export async function exportBowlingPdf(playerName: string, games: BowlingGameDat
 
     if (oilBase64) {
       try {
-        // Fit oil pattern image within content width, max height 60mm
         const maxH = 60;
         const maxW = contentWidth;
-        // Use aspect ratio from a temporary image
-        const img = new Image();
-        img.src = oilBase64;
-        const aspect = img.width && img.height ? img.width / img.height : 1.5;
+        const aspect = oilBase64.width / oilBase64.height;
         let imgW = maxW;
         let imgH = imgW / aspect;
         if (imgH > maxH) {
           imgH = maxH;
           imgW = imgH * aspect;
         }
-        doc.addImage(oilBase64, "PNG", margin + (contentWidth - imgW) / 2, y, imgW, imgH);
+        doc.addImage(oilBase64.data, "PNG", margin + (contentWidth - imgW) / 2, y, imgW, imgH);
         y += imgH + 5;
       } catch {
         // skip
@@ -270,16 +296,16 @@ export async function exportBowlingPdf(playerName: string, games: BowlingGameDat
   });
   y += 24;
 
-  // Detailed stats table
-  const statsRows = [
-    ["% Strikes", `${avgStrikeRate.toFixed(1)}%`, "% Spares", `${avgSpareRate.toFixed(1)}%`],
-    ["% Poches", `${avgPocketRate.toFixed(1)}%`, "% Quilles seules", `${singlePinConvRate.toFixed(1)}%`],
-    ["% Conv. splits", `${splitConvRate.toFixed(1)}%`, "% Frames ouvertes", `${openFramePercentage.toFixed(1)}%`],
-    ["Strikes total", String(totalStrikes), "Spares total", String(totalSpares)],
-    ["Splits total", String(totalSplits), "Frames ouvertes", String(totalOpenFrames)],
+  // Detailed stats table with color coding
+  const statsRowsDef: { label1: string; value1: string; stat1?: string; pct1?: number; label2: string; value2: string; stat2?: string; pct2?: number }[] = [
+    { label1: "% Strikes", value1: `${avgStrikeRate.toFixed(1)}%`, stat1: "strike", pct1: avgStrikeRate, label2: "% Spares", value2: `${avgSpareRate.toFixed(1)}%`, stat2: "spare", pct2: avgSpareRate },
+    { label1: "% Poches", value1: `${avgPocketRate.toFixed(1)}%`, stat1: "pocket", pct1: avgPocketRate, label2: "% Quilles seules", value2: `${singlePinConvRate.toFixed(1)}%`, stat2: "singlePin", pct2: singlePinConvRate },
+    { label1: "% Conv. splits", value1: `${splitConvRate.toFixed(1)}%`, label2: "% Frames ouvertes", value2: `${openFramePercentage.toFixed(1)}%` },
+    { label1: "Strikes total", value1: String(totalStrikes), label2: "Spares total", value2: String(totalSpares) },
+    { label1: "Splits total", value1: String(totalSplits), label2: "Frames ouvertes", value2: String(totalOpenFrames) },
   ];
 
-  statsRows.forEach((row, i) => {
+  statsRowsDef.forEach((row, i) => {
     const rowY = y + i * 7;
     if (i % 2 === 0) {
       doc.setFillColor(...COLORS.lightBg);
@@ -288,15 +314,22 @@ export async function exportBowlingPdf(playerName: string, games: BowlingGameDat
     doc.setTextColor(...COLORS.text);
     doc.setFontSize(9);
     doc.setFont("helvetica", "normal");
-    doc.text(row[0], margin + 2, rowY + 5);
+    doc.text(row.label1, margin + 2, rowY + 5);
     doc.setFont("helvetica", "bold");
-    doc.text(row[1], margin + contentWidth / 2 - 5, rowY + 5, { align: "right" });
+    if (row.stat1 && row.pct1 !== undefined) {
+      doc.setTextColor(...getStatLevelColor(row.stat1, row.pct1));
+    }
+    doc.text(row.value1, margin + contentWidth / 2 - 5, rowY + 5, { align: "right" });
+    doc.setTextColor(...COLORS.text);
     doc.setFont("helvetica", "normal");
-    doc.text(row[2], margin + contentWidth / 2 + 5, rowY + 5);
+    doc.text(row.label2, margin + contentWidth / 2 + 5, rowY + 5);
     doc.setFont("helvetica", "bold");
-    doc.text(row[3], margin + contentWidth - 2, rowY + 5, { align: "right" });
+    if (row.stat2 && row.pct2 !== undefined) {
+      doc.setTextColor(...getStatLevelColor(row.stat2, row.pct2));
+    }
+    doc.text(row.value2, margin + contentWidth - 2, rowY + 5, { align: "right" });
   });
-  y += statsRows.length * 7 + 8;
+  y += statsRowsDef.length * 7 + 8;
 
   // ===================== SECTION 2: ANALYSE PAR FRAME =====================
   y = checkPageBreak(doc, y, 80);
@@ -625,9 +658,10 @@ export async function exportBowlingPdf(playerName: string, games: BowlingGameDat
       doc.text(`${game.sparePercentage.toFixed(0)}%`, cx + 1, y + 4.5);
       cx += recapCols[4].w;
 
-      // %Poche
-      doc.setTextColor(...COLORS.text);
-      doc.setFont("helvetica", "normal");
+      // %Poche with color
+      const pocketColor = getStatLevelColor("pocket", game.pocketPercentage);
+      doc.setTextColor(...pocketColor);
+      doc.setFont("helvetica", "bold");
       doc.text(`${game.pocketPercentage.toFixed(0)}%`, cx + 1, y + 4.5);
       cx += recapCols[5].w;
 
@@ -782,7 +816,7 @@ function drawGameStatsRow(doc: jsPDF, x: number, y: number, width: number, game:
     { label: "Spares:", value: `${game.spares} (${game.sparePercentage.toFixed(0)}%)`, statType: "spare", pct: game.sparePercentage },
     { label: "Open:", value: String(game.openFrames), statType: "", pct: 0 },
     { label: "Splits:", value: `${game.splitCount}(${game.splitConverted})`, statType: "", pct: 0 },
-    { label: "Poche:", value: `${game.pocketPercentage.toFixed(0)}%`, statType: "", pct: 0 },
+    { label: "Poche:", value: `${game.pocketPercentage.toFixed(0)}%`, statType: "pocket", pct: game.pocketPercentage },
   ];
 
   const itemW = width / items.length;
