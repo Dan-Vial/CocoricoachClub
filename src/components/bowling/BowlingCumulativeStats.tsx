@@ -120,6 +120,7 @@ export function BowlingCumulativeStats({ categoryId }: BowlingCumulativeStatsPro
             bowlingCategory: statData.bowlingCategory as string | undefined,
           });
         }
+      }
 
       return games;
     },
