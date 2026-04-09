@@ -379,35 +379,29 @@ export function BowlingFrameAnalysis({ games }: BowlingFrameAnalysisProps) {
                     {isBest && <span className="text-primary">★</span>}
                     {isWorst && <span className="text-destructive">▼</span>}
                   </div>
-                  <div className="flex-1 h-7 bg-muted rounded-full overflow-hidden flex relative">
+                  <div className="flex-1 h-8 bg-muted rounded-full overflow-hidden flex relative">
                     {strikePercent > 0 && (
                       <div
-                        className="h-full bg-yellow-500 transition-all flex items-center justify-center relative"
-                        style={{ width: `${strikePercent}%` }}
+                        className="h-full bg-yellow-500 transition-all flex items-center justify-center overflow-visible relative"
+                        style={{ width: `${strikePercent}%`, minWidth: strikePercent > 0 ? '28px' : undefined }}
                       >
-                        {strikePercent >= 12 && (
-                          <span className="text-[10px] font-bold text-white drop-shadow-sm">{strikePercent.toFixed(0)}%</span>
-                        )}
+                        <span className="text-[10px] font-bold text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)] whitespace-nowrap">{strikePercent.toFixed(0)}%</span>
                       </div>
                     )}
                     {f.frameNumber < 12 && sparePercent > 0 && (
                       <div
-                        className="h-full bg-emerald-500 transition-all flex items-center justify-center relative"
-                        style={{ width: `${sparePercent}%` }}
+                        className="h-full bg-emerald-500 transition-all flex items-center justify-center overflow-visible relative"
+                        style={{ width: `${sparePercent}%`, minWidth: sparePercent > 0 ? '28px' : undefined }}
                       >
-                        {sparePercent >= 12 && (
-                          <span className="text-[10px] font-bold text-white drop-shadow-sm">{sparePercent.toFixed(0)}%</span>
-                        )}
+                        <span className="text-[10px] font-bold text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)] whitespace-nowrap">{sparePercent.toFixed(0)}%</span>
                       </div>
                     )}
                     {openPercent > 0 && (
                       <div
-                        className="h-full bg-rose-500 transition-all flex items-center justify-center relative"
-                        style={{ width: `${openPercent}%` }}
+                        className="h-full bg-rose-500 transition-all flex items-center justify-center overflow-visible relative"
+                        style={{ width: `${openPercent}%`, minWidth: openPercent > 0 ? '28px' : undefined }}
                       >
-                        {openPercent >= 12 && (
-                          <span className="text-[10px] font-bold text-white drop-shadow-sm">{openPercent.toFixed(0)}%</span>
-                        )}
+                        <span className="text-[10px] font-bold text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)] whitespace-nowrap">{openPercent.toFixed(0)}%</span>
                       </div>
                     )}
                   </div>
