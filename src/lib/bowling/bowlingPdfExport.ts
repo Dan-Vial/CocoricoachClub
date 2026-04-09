@@ -187,7 +187,8 @@ export async function exportBowlingPdf(playerName: string, games: BowlingGameDat
   ]);
 
   // ===================== HEADER =====================
-  const headerH = avatarBase64 ? 35 : 28;
+  const hasSubInfo = !!(options?.competitionName || options?.ageCategory || options?.location || options?.competitionDate);
+  const headerH = avatarBase64 ? 35 : (hasSubInfo ? 30 : 28);
   doc.setFillColor(...COLORS.primary);
   doc.rect(0, 0, pageWidth, headerH, "F");
 
