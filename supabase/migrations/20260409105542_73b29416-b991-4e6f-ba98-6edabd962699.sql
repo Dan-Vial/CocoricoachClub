@@ -1,0 +1,1 @@
+ALTER TABLE public.bowling_oil_patterns DROP CONSTRAINT IF EXISTS bowling_oil_patterns_match_id_unique;
