@@ -7,6 +7,10 @@ interface BowlingPdfOptions {
   playerAvatarUrl?: string | null;
   oilPatternImageUrl?: string | null;
   oilPatternName?: string | null;
+  competitionName?: string | null;
+  ageCategory?: string | null;
+  location?: string | null;
+  competitionDate?: string | null;
 }
 
 async function loadImageAsBase64(url: string): Promise<{ data: string; width: number; height: number } | null> {
@@ -203,13 +207,30 @@ export async function exportBowlingPdf(playerName: string, games: BowlingGameDat
     }
   }
 
+  // Build title line with competition info
+  const titleParts = [`Statistiques Bowling - ${playerName}`];
+  const subParts: string[] = [];
+  if (options?.competitionName) subParts.push(options.competitionName);
+  if (options?.ageCategory) subParts.push(options.ageCategory);
+  if (options?.location) subParts.push(options.location);
+  if (options?.competitionDate) {
+    try {
+      subParts.push(format(new Date(options.competitionDate), "dd MMMM yyyy", { locale: fr }));
+    } catch { subParts.push(options.competitionDate); }
+  }
+
   doc.setTextColor(...COLORS.white);
   doc.setFontSize(18);
   doc.setFont("helvetica", "bold");
-  doc.text(`Statistiques Bowling - ${playerName}`, textStartX, avatarBase64 ? 18 : 14);
-  doc.setFontSize(10);
+  doc.text(titleParts[0], textStartX, avatarBase64 ? 14 : 10);
+  if (subParts.length > 0) {
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text(subParts.join(" | "), textStartX, avatarBase64 ? 21 : 17);
+  }
+  doc.setFontSize(8);
   doc.setFont("helvetica", "normal");
-  doc.text(`Rapport genere le ${format(new Date(), "dd MMMM yyyy", { locale: fr })} - ${games.length} parties`, textStartX, avatarBase64 ? 26 : 22);
+  doc.text(`Rapport genere le ${format(new Date(), "dd MMMM yyyy", { locale: fr })} - ${games.length} parties`, textStartX, avatarBase64 ? 27 : 23);
   y = headerH + 7;
 
   // ===================== OIL PATTERN =====================
