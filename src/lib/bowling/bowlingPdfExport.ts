@@ -815,7 +815,7 @@ function drawGameStatsRow(doc: jsPDF, x: number, y: number, width: number, game:
     { label: "Spares:", value: `${game.spares} (${game.sparePercentage.toFixed(0)}%)`, statType: "spare", pct: game.sparePercentage },
     { label: "Open:", value: String(game.openFrames), statType: "", pct: 0 },
     { label: "Splits:", value: `${game.splitCount}(${game.splitConverted})`, statType: "", pct: 0 },
-    { label: "Poche:", value: `${game.pocketPercentage.toFixed(0)}%`, statType: "", pct: 0 },
+    { label: "Poche:", value: `${game.pocketPercentage.toFixed(0)}%`, statType: "pocket", pct: game.pocketPercentage },
   ];
 
   const itemW = width / items.length;
