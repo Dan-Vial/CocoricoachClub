@@ -228,20 +228,16 @@ export async function exportBowlingPdf(playerName: string, games: BowlingGameDat
 
     if (oilBase64) {
       try {
-        // Fit oil pattern image within content width, max height 60mm
         const maxH = 60;
         const maxW = contentWidth;
-        // Use aspect ratio from a temporary image
-        const img = new Image();
-        img.src = oilBase64;
-        const aspect = img.width && img.height ? img.width / img.height : 1.5;
+        const aspect = oilBase64.width / oilBase64.height;
         let imgW = maxW;
         let imgH = imgW / aspect;
         if (imgH > maxH) {
           imgH = maxH;
           imgW = imgH * aspect;
         }
-        doc.addImage(oilBase64, "PNG", margin + (contentWidth - imgW) / 2, y, imgW, imgH);
+        doc.addImage(oilBase64.data, "PNG", margin + (contentWidth - imgW) / 2, y, imgW, imgH);
         y += imgH + 5;
       } catch {
         // skip
