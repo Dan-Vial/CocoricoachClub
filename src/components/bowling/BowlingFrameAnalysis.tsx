@@ -273,8 +273,8 @@ export function BowlingFrameAnalysis({ games }: BowlingFrameAnalysisProps) {
 
     return {
       start: computePhase(start, "Début (1-3)"),
-      mid: computePhase(mid, "Milieu (4-7)"),
-      end: computePhase(end, "Fin (8-9)"),
+      mid: computePhase(mid, "Milieu (4-6)"),
+      end: computePhase(end, "Fin (7-9)"),
       moneyTime: computePhase(moneyTime, "Money Time (10-12)"),
     };
   }, [frameStats]);
