@@ -379,24 +379,37 @@ export function BowlingFrameAnalysis({ games }: BowlingFrameAnalysisProps) {
                     {isBest && <span className="text-primary">★</span>}
                     {isWorst && <span className="text-destructive">▼</span>}
                   </div>
-                  <div className="flex-1 h-6 bg-muted rounded-full overflow-hidden flex">
-                    <div
-                      className="h-full bg-yellow-500 transition-all"
-                      style={{ width: `${strikePercent}%` }}
-                      title={`Strike: ${strikePercent.toFixed(1)}%`}
-                    />
-                    {f.frameNumber < 12 && (
+                  <div className="flex-1 h-7 bg-muted rounded-full overflow-hidden flex relative">
+                    {strikePercent > 0 && (
                       <div
-                        className="h-full bg-emerald-500 transition-all"
-                        style={{ width: `${sparePercent}%` }}
-                        title={`Spare: ${sparePercent.toFixed(1)}%`}
-                      />
+                        className="h-full bg-yellow-500 transition-all flex items-center justify-center relative"
+                        style={{ width: `${strikePercent}%` }}
+                      >
+                        {strikePercent >= 12 && (
+                          <span className="text-[10px] font-bold text-white drop-shadow-sm">{strikePercent.toFixed(0)}%</span>
+                        )}
+                      </div>
                     )}
-                    <div
-                      className="h-full bg-rose-500 transition-all"
-                      style={{ width: `${openPercent}%` }}
-                      title={`Open: ${openPercent.toFixed(1)}%`}
-                    />
+                    {f.frameNumber < 12 && sparePercent > 0 && (
+                      <div
+                        className="h-full bg-emerald-500 transition-all flex items-center justify-center relative"
+                        style={{ width: `${sparePercent}%` }}
+                      >
+                        {sparePercent >= 12 && (
+                          <span className="text-[10px] font-bold text-white drop-shadow-sm">{sparePercent.toFixed(0)}%</span>
+                        )}
+                      </div>
+                    )}
+                    {openPercent > 0 && (
+                      <div
+                        className="h-full bg-rose-500 transition-all flex items-center justify-center relative"
+                        style={{ width: `${openPercent}%` }}
+                      >
+                        {openPercent >= 12 && (
+                          <span className="text-[10px] font-bold text-white drop-shadow-sm">{openPercent.toFixed(0)}%</span>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <div className="w-24 text-right flex items-center justify-end gap-1">
                     <span className="text-sm font-bold">{strikePercent.toFixed(0)}%</span>
