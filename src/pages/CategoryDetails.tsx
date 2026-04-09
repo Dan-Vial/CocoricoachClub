@@ -36,6 +36,7 @@ import { ProgrammationTab } from "@/components/category/tabs/ProgrammationTab";
 import { GpsDataTab } from "@/components/category/gps/GpsDataTab";
 import { VideoAnalysisTab } from "@/components/category/video/VideoAnalysisTab";
 import { AdminTab } from "@/components/category/tabs/AdminTab";
+import { BowlingArsenalCatalogTab } from "@/components/bowling/BowlingArsenalCatalogTab";
 
 
 // Colored Tab Trigger Component - Large icons with labels below
@@ -173,6 +174,7 @@ function CategoryDetailsContent() {
   // Check if GPS/Video/Academy should be visible (category-level flags)
   const showGpsTab = isGpsSportType(category?.rugby_type) && (category?.gps_enabled === true);
   const showVideoTab = hasVideoAnalysis(category?.rugby_type) && (category?.video_enabled === true);
+  const isBowling = category?.rugby_type?.toLowerCase().includes("bowling");
 
   // Menu permissions based on role_menu_permissions matrix
   const { canSeeMenu } = useMenuPermissions(category?.clubs?.id, categoryId);
