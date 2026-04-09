@@ -18,6 +18,7 @@ interface BowlingFrameAnalysisProps {
 
 interface FrameStats {
   frameNumber: number;
+  label: string;
   strikeCount: number;
   spareCount: number;
   openCount: number;
@@ -53,21 +54,23 @@ export function BowlingFrameAnalysis({ games }: BowlingFrameAnalysisProps) {
     if (gamesWithFrames.length === 0) return [];
 
     const stats: FrameStats[] = [];
-    for (let i = 0; i < 10; i++) {
+
+    // Frames 1–9: standard analysis
+    for (let i = 0; i < 9; i++) {
       let strikes = 0, spares = 0, opens = 0, totalFirstPins = 0;
       let singlePinCount = 0, singlePinConverted = 0;
-      
+
       gamesWithFrames.forEach(game => {
         const frame = game.frames![i];
         if (!frame || frame.throws.length === 0) return;
-        
+
         const firstThrow = frame.throws[0];
         totalFirstPins += firstThrow?.pins || 0;
 
         if (firstThrow?.value === "X") {
           strikes++;
-        } else if (i < 9) {
-          // Check single pin spare opportunity
+        } else {
+          // Spare opportunity
           const pinsLeft = 10 - (firstThrow?.pins || 0);
           if (pinsLeft === 1) {
             singlePinCount++;
@@ -77,17 +80,17 @@ export function BowlingFrameAnalysis({ games }: BowlingFrameAnalysisProps) {
           }
           if (frame.throws[1]?.value === "/") {
             spares++;
-          } else if (!firstThrow?.isSplit) {
-            // Exclude unconverted splits from open frames
+          } else {
+            // ALL non-strike non-spare = open (including unconverted splits)
             opens++;
           }
         }
       });
 
       const total = gamesWithFrames.length;
-      const spareOpportunities = total - strikes;
       stats.push({
         frameNumber: i + 1,
+        label: `Frame ${i + 1}`,
         strikeCount: strikes,
         spareCount: spares,
         openCount: opens,
@@ -95,32 +98,164 @@ export function BowlingFrameAnalysis({ games }: BowlingFrameAnalysisProps) {
         singlePinConverted,
         totalGames: total,
         strikeRate: total > 0 ? (strikes / total) * 100 : 0,
-        spareRate: spareOpportunities > 0 ? Math.min(100, (spares / spareOpportunities) * 100) : 0,
-        openRate: spareOpportunities > 0 ? Math.min(100, (opens / spareOpportunities) * 100) : 0,
+        spareRate: total > 0 ? (spares / total) * 100 : 0,
+        openRate: total > 0 ? (opens / total) * 100 : 0,
         singlePinConvRate: singlePinCount > 0 ? (singlePinConverted / singlePinCount) * 100 : 0,
         avgFirstThrowPins: total > 0 ? totalFirstPins / total : 0,
       });
     }
+
+    // Frame 10: 1st throw of the 10th frame
+    {
+      let strikes = 0, spares = 0, opens = 0, totalFirstPins = 0;
+      let singlePinCount = 0, singlePinConverted = 0;
+
+      gamesWithFrames.forEach(game => {
+        const frame = game.frames![9];
+        if (!frame || frame.throws.length === 0) return;
+
+        const firstThrow = frame.throws[0];
+        totalFirstPins += firstThrow?.pins || 0;
+
+        if (firstThrow?.value === "X") {
+          strikes++;
+        } else {
+          const pinsLeft = 10 - (firstThrow?.pins || 0);
+          if (pinsLeft === 1) {
+            singlePinCount++;
+            if (frame.throws[1]?.value === "/") {
+              singlePinConverted++;
+            }
+          }
+          if (frame.throws[1]?.value === "/") {
+            spares++;
+          } else {
+            opens++;
+          }
+        }
+      });
+
+      const total = gamesWithFrames.length;
+      stats.push({
+        frameNumber: 10,
+        label: "Frame 10",
+        strikeCount: strikes,
+        spareCount: spares,
+        openCount: opens,
+        singlePinCount,
+        singlePinConverted,
+        totalGames: total,
+        strikeRate: total > 0 ? (strikes / total) * 100 : 0,
+        spareRate: total > 0 ? (spares / total) * 100 : 0,
+        openRate: total > 0 ? (opens / total) * 100 : 0,
+        singlePinConvRate: singlePinCount > 0 ? (singlePinConverted / singlePinCount) * 100 : 0,
+        avgFirstThrowPins: total > 0 ? totalFirstPins / total : 0,
+      });
+    }
+
+    // Frame 11: 2nd throw of 10th frame (only when 1st was a strike)
+    {
+      let eligible = 0, strikes = 0, spares = 0, opens = 0;
+
+      gamesWithFrames.forEach(game => {
+        const frame = game.frames![9];
+        if (!frame || frame.throws.length < 2) return;
+        const firstThrow = frame.throws[0];
+        // Frame 11 only exists if the 1st throw was a strike
+        if (firstThrow?.value !== "X") return;
+
+        eligible++;
+        const secondThrow = frame.throws[1];
+        if (secondThrow?.value === "X") {
+          strikes++;
+        } else if (frame.throws.length >= 3 && frame.throws[2]?.value === "/") {
+          spares++;
+        } else {
+          opens++;
+        }
+      });
+
+      if (eligible > 0) {
+        stats.push({
+          frameNumber: 11,
+          label: "Frame 11",
+          strikeCount: strikes,
+          spareCount: spares,
+          openCount: opens,
+          singlePinCount: 0,
+          singlePinConverted: 0,
+          totalGames: eligible,
+          strikeRate: (strikes / eligible) * 100,
+          spareRate: (spares / eligible) * 100,
+          openRate: (opens / eligible) * 100,
+          singlePinConvRate: 0,
+          avgFirstThrowPins: 0,
+        });
+      }
+    }
+
+    // Frame 12: 3rd throw of 10th frame (only when both 1st and 2nd were strikes)
+    {
+      let eligible = 0, strikes = 0, nonStrikes = 0;
+
+      gamesWithFrames.forEach(game => {
+        const frame = game.frames![9];
+        if (!frame || frame.throws.length < 3) return;
+        // Frame 12 only when first two throws were strikes
+        if (frame.throws[0]?.value !== "X" || frame.throws[1]?.value !== "X") return;
+
+        eligible++;
+        const thirdThrow = frame.throws[2];
+        if (thirdThrow?.value === "X") {
+          strikes++;
+        } else {
+          nonStrikes++;
+        }
+      });
+
+      if (eligible > 0) {
+        stats.push({
+          frameNumber: 12,
+          label: "Frame 12",
+          strikeCount: strikes,
+          spareCount: 0,
+          openCount: nonStrikes,
+          singlePinCount: 0,
+          singlePinConverted: 0,
+          totalGames: eligible,
+          strikeRate: (strikes / eligible) * 100,
+          spareRate: 0,
+          openRate: (nonStrikes / eligible) * 100,
+          singlePinConvRate: 0,
+          avgFirstThrowPins: 0,
+        });
+      }
+    }
+
     return stats;
   }, [gamesWithFrames]);
 
   const bestFrame = useMemo(() => {
     if (frameStats.length === 0) return null;
-    return frameStats.reduce((best, f) => f.strikeRate > best.strikeRate ? f : best);
+    // Only consider frames 1-10 for best/worst
+    const main = frameStats.filter(f => f.frameNumber <= 10);
+    return main.reduce((best, f) => f.strikeRate > best.strikeRate ? f : best);
   }, [frameStats]);
 
   const worstFrame = useMemo(() => {
     if (frameStats.length === 0) return null;
-    return frameStats.reduce((worst, f) => f.strikeRate < worst.strikeRate ? f : worst);
+    const main = frameStats.filter(f => f.frameNumber <= 10);
+    return main.reduce((worst, f) => f.strikeRate < worst.strikeRate ? f : worst);
   }, [frameStats]);
 
   const thirds = useMemo(() => {
     if (frameStats.length === 0) return null;
-    const start = frameStats.slice(0, 3);
-    const mid = frameStats.slice(3, 7);
-    const end = frameStats.slice(7, 10);
-    
-    const avgRate = (frames: FrameStats[], key: keyof FrameStats) => 
+    const mainFrames = frameStats.filter(f => f.frameNumber <= 10);
+    const start = mainFrames.slice(0, 3);
+    const mid = mainFrames.slice(3, 7);
+    const end = mainFrames.slice(7, 10);
+
+    const avgRate = (frames: FrameStats[], key: keyof FrameStats) =>
       frames.reduce((s, f) => s + (f[key] as number), 0) / frames.length;
 
     const computePhase = (frames: FrameStats[], label: string) => ({
@@ -158,7 +293,7 @@ export function BowlingFrameAnalysis({ games }: BowlingFrameAnalysisProps) {
 
   return (
     <div className="space-y-4">
-      {/* Partie analysis: début/milieu/fin */}
+      {/* Phase analysis */}
       {thirds && (
         <Card>
           <CardHeader className="pb-2">
@@ -170,41 +305,37 @@ export function BowlingFrameAnalysis({ games }: BowlingFrameAnalysisProps) {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-3 gap-3">
-              {[thirds.start, thirds.mid, thirds.end].map((phase, idx) => {
-                const isHighest = phase.strikeRate === Math.max(thirds.start.strikeRate, thirds.mid.strikeRate, thirds.end.strikeRate);
-                const isLowest = phase.strikeRate === Math.min(thirds.start.strikeRate, thirds.mid.strikeRate, thirds.end.strikeRate);
-                return (
-                   <div
-                     key={idx}
-                     className="p-4 rounded-lg border border-border bg-card text-center"
-                   >
-                     <div className="flex items-center justify-center gap-1 mb-2">
-                       <span className="text-sm font-semibold">{phase.label}</span>
-                     </div>
-                     <p className="text-3xl font-bold text-foreground">
-                       {phase.strikeRate.toFixed(1)}%
-                     </p>
-                     <p className="text-xs text-muted-foreground">
-                       % Strike
-                       <StatInfoIcon text="Le % de strikes correspond au pourcentage de frames où le premier lancer abat les 10 quilles." />
-                     </p>
-                     <div className="mt-3 space-y-1.5 text-sm">
-                       <div className="flex justify-between items-center px-1">
-                         <span className="text-muted-foreground">Spare</span>
-                         <span className="font-bold text-foreground text-lg">{phase.spareRate.toFixed(0)}%</span>
-                       </div>
-                       <div className="flex justify-between items-center px-1">
-                         <span className="text-muted-foreground">Open</span>
-                         <span className="font-bold text-foreground text-lg">{phase.openRate.toFixed(0)}%</span>
-                       </div>
-                       <div className="flex justify-between items-center px-1">
-                         <span className="text-muted-foreground">QS</span>
-                         <span className="font-bold text-foreground text-lg">{phase.singlePinConvRate.toFixed(0)}%</span>
-                       </div>
-                     </div>
-                   </div>
-                );
-              })}
+              {[thirds.start, thirds.mid, thirds.end].map((phase, idx) => (
+                <div
+                  key={idx}
+                  className="p-4 rounded-lg border border-border bg-card text-center"
+                >
+                  <div className="flex items-center justify-center gap-1 mb-2">
+                    <span className="text-sm font-semibold">{phase.label}</span>
+                  </div>
+                  <p className="text-3xl font-bold text-foreground">
+                    {phase.strikeRate.toFixed(1)}%
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    % Strike
+                    <StatInfoIcon text="Le % de strikes correspond au pourcentage de frames où le premier lancer abat les 10 quilles." />
+                  </p>
+                  <div className="mt-3 space-y-1.5 text-sm">
+                    <div className="flex justify-between items-center px-1">
+                      <span className="text-muted-foreground">Spare</span>
+                      <span className="font-bold text-foreground text-lg">{phase.spareRate.toFixed(0)}%</span>
+                    </div>
+                    <div className="flex justify-between items-center px-1">
+                      <span className="text-muted-foreground">Open</span>
+                      <span className="font-bold text-foreground text-lg">{phase.openRate.toFixed(0)}%</span>
+                    </div>
+                    <div className="flex justify-between items-center px-1">
+                      <span className="text-muted-foreground">QS</span>
+                      <span className="font-bold text-foreground text-lg">{phase.singlePinConvRate.toFixed(0)}%</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
             <p className="text-xs text-muted-foreground mt-3 text-center italic">
               {thirds.start.strikeRate > thirds.end.strikeRate + 5
@@ -222,68 +353,77 @@ export function BowlingFrameAnalysis({ games }: BowlingFrameAnalysisProps) {
         <CardHeader className="pb-2">
           <CardTitle className="text-sm flex items-center gap-2">
             <Target className="h-4 w-4" />
-            % Strike par frame
+            Répartition par frame
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-             {frameStats.map(f => {
-               const isBest = bestFrame && f.frameNumber === bestFrame.frameNumber;
-               const isWorst = worstFrame && f.frameNumber === worstFrame.frameNumber;
-               // Recalculate as % of total games so strike + spare + open = 100%
-               const total = f.totalGames;
-               const strikePercent = total > 0 ? (f.strikeCount / total) * 100 : 0;
-               const sparePercent = total > 0 ? (f.spareCount / total) * 100 : 0;
-               const openPercent = total > 0 ? (f.openCount / total) * 100 : 0;
-               return (
-                 <div key={f.frameNumber} className="flex items-center gap-3">
-                   <div className="w-16 text-sm font-medium">
-                     Frame {f.frameNumber}
-                     {isBest && <span className="ml-1 text-primary">★</span>}
-                     {isWorst && <span className="ml-1 text-destructive">▼</span>}
-                   </div>
-                   <div className="flex-1 h-6 bg-muted rounded-full overflow-hidden flex">
-                     <div
-                       className="h-full bg-yellow-500 transition-all"
-                       style={{ width: `${strikePercent}%` }}
-                       title={`Strike: ${strikePercent.toFixed(1)}%`}
-                     />
-                     <div
-                       className="h-full bg-emerald-500 transition-all"
-                       style={{ width: `${sparePercent}%` }}
-                       title={`Spare: ${sparePercent.toFixed(1)}%`}
-                     />
-                     <div
-                       className="h-full bg-rose-500 transition-all"
-                       style={{ width: `${openPercent}%` }}
-                       title={`Open: ${openPercent.toFixed(1)}%`}
-                     />
-                   </div>
-                   <div className="w-20 text-right">
-                     <span className="text-sm font-bold">{strikePercent.toFixed(0)}%</span>
-                     <span className="text-[10px] text-muted-foreground ml-1">X</span>
-                   </div>
-                 </div>
-               );
-             })}
-           </div>
-           <div className="flex items-center justify-center gap-4 mt-3 text-xs text-muted-foreground">
-             <div className="flex items-center gap-1">
-               <div className="w-3 h-3 rounded bg-yellow-500" />
-               Strike
-             </div>
-             <div className="flex items-center gap-1">
-               <div className="w-3 h-3 rounded bg-emerald-500" />
-               Spare
-             </div>
-             <div className="flex items-center gap-1">
-               <div className="w-3 h-3 rounded bg-rose-500" />
-               Open
-             </div>
-           </div>
-           <p className="text-[10px] text-muted-foreground text-center mt-2 italic">
-             Les « Frames non fermées » (Open) comptent toutes les frames où le joueur n'a réussi ni strike ni spare, hors splits non convertis. Total = Strike% + Spare% + Open% = 100%.
-           </p>
+            {frameStats.map(f => {
+              const isBest = bestFrame && f.frameNumber === bestFrame.frameNumber;
+              const isWorst = worstFrame && f.frameNumber === worstFrame.frameNumber;
+              const total = f.totalGames;
+              const strikePercent = total > 0 ? (f.strikeCount / total) * 100 : 0;
+              const sparePercent = total > 0 ? (f.spareCount / total) * 100 : 0;
+              const openPercent = total > 0 ? (f.openCount / total) * 100 : 0;
+
+              const isBonus = f.frameNumber > 10;
+
+              return (
+                <div key={f.frameNumber} className="flex items-center gap-3">
+                  <div className="w-20 text-sm font-medium flex items-center gap-1">
+                    <span className={isBonus ? "text-muted-foreground italic" : ""}>
+                      {f.label}
+                    </span>
+                    {isBest && <span className="text-primary">★</span>}
+                    {isWorst && <span className="text-destructive">▼</span>}
+                  </div>
+                  <div className="flex-1 h-6 bg-muted rounded-full overflow-hidden flex">
+                    <div
+                      className="h-full bg-yellow-500 transition-all"
+                      style={{ width: `${strikePercent}%` }}
+                      title={`Strike: ${strikePercent.toFixed(1)}%`}
+                    />
+                    {f.frameNumber < 12 && (
+                      <div
+                        className="h-full bg-emerald-500 transition-all"
+                        style={{ width: `${sparePercent}%` }}
+                        title={`Spare: ${sparePercent.toFixed(1)}%`}
+                      />
+                    )}
+                    <div
+                      className="h-full bg-rose-500 transition-all"
+                      style={{ width: `${openPercent}%` }}
+                      title={`Open: ${openPercent.toFixed(1)}%`}
+                    />
+                  </div>
+                  <div className="w-24 text-right flex items-center justify-end gap-1">
+                    <span className="text-sm font-bold">{strikePercent.toFixed(0)}%</span>
+                    <span className="text-[10px] text-muted-foreground">X</span>
+                    {isBonus && (
+                      <span className="text-[10px] text-muted-foreground ml-1">({total})</span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div className="flex items-center justify-center gap-4 mt-3 text-xs text-muted-foreground">
+            <div className="flex items-center gap-1">
+              <div className="w-3 h-3 rounded bg-yellow-500" />
+              Strike
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-3 h-3 rounded bg-emerald-500" />
+              Spare
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-3 h-3 rounded bg-rose-500" />
+              Open
+            </div>
+          </div>
+          <p className="text-[10px] text-muted-foreground text-center mt-2 italic">
+            Chaque frame totalise 100% (Strike + Spare + Open). Frames 11-12 : lancers bonus de la 10ème frame.
+          </p>
         </CardContent>
       </Card>
     </div>
