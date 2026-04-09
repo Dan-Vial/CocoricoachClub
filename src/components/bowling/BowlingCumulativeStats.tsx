@@ -26,6 +26,7 @@ interface BowlingGameData {
   matchDate: string;
   matchOpponent: string;
   phase: string;
+  bowlingCategory?: string;
   score: number;
   strikes: number;
   spares: number;
