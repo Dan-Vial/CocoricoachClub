@@ -791,6 +791,7 @@ function drawScoreGrid(doc: jsPDF, x: number, y: number, totalWidth: number, fra
         const tx = fx + t * throwW;
 
         // Color the throw cell
+        const isSplit = frame.throws[t]?.isSplit === true;
         if (throwVal === "X") {
           doc.setFillColor(...COLORS.strike);
           doc.rect(tx, y + 4, throwW, 4, "F");
@@ -799,6 +800,8 @@ function drawScoreGrid(doc: jsPDF, x: number, y: number, totalWidth: number, fra
           doc.setFillColor(...COLORS.spare);
           doc.rect(tx, y + 4, throwW, 4, "F");
           doc.setTextColor(...COLORS.white);
+        } else if (isSplit) {
+          doc.setTextColor(220, 38, 38); // Red for splits
         } else {
           doc.setTextColor(...COLORS.text);
         }
