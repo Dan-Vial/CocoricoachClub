@@ -10391,6 +10391,16 @@ export type Database = {
         Args: { _player_category_id: string; _response: string }
         Returns: Json
       }
+      transfer_player_with_history: {
+        Args: {
+          _from_category_id: string
+          _notes?: string
+          _player_id: string
+          _reason?: string
+          _to_category_id: string
+        }
+        Returns: Json
+      }
       user_is_conversation_admin: {
         Args: { _conversation_id: string; _user_id: string }
         Returns: boolean
