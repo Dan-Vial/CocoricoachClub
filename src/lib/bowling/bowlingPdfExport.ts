@@ -329,7 +329,7 @@ export async function exportBowlingPdf(playerName: string, games: BowlingGameDat
     }
     doc.text(row.value2, margin + contentWidth - 2, rowY + 5, { align: "right" });
   });
-  y += statsRows.length * 7 + 8;
+  y += statsRowsDef.length * 7 + 8;
 
   // ===================== SECTION 2: ANALYSE PAR FRAME =====================
   y = checkPageBreak(doc, y, 80);
