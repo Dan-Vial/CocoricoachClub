@@ -184,9 +184,10 @@ export function AddSessionDialog({
     mutationFn: async () => {
       // Create the session - use first block type if blocks exist, otherwise use selected type
       const mainType = sessionBlocks.length > 0 ? sessionBlocks[0].training_type : type;
-      const mainIntensity = sessionBlocks.length > 0
+      const rawIntensity = sessionBlocks.length > 0
         ? sessionBlocks.reduce((max, b) => Math.max(max, b.intensity || 0), 0)
         : (intensity ? parseInt(intensity) : null);
+      const mainIntensity = rawIntensity && rawIntensity >= 1 && rawIntensity <= 10 ? rawIntensity : null;
 
       if (isAthleteMode) {
         if (!athletePlayerId) {

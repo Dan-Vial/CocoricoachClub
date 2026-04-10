@@ -680,9 +680,10 @@ export function SessionFormDialog({
     mutationFn: async () => {
       // Use first block type if blocks exist, otherwise use selected type
       const mainType = sessionBlocks.length > 0 ? sessionBlocks[0].training_type : type;
-      const mainIntensity = sessionBlocks.length > 0 
+      const rawIntensity = sessionBlocks.length > 0 
         ? sessionBlocks.reduce((max, b) => Math.max(max, b.intensity || 0), 0)
         : (intensity ? parseInt(intensity) : null);
+      const mainIntensity = rawIntensity && rawIntensity >= 1 && rawIntensity <= 10 ? rawIntensity : null;
 
       // Build notes with embedded test config for test sessions
       let finalNotes = notes || "";

@@ -77,12 +77,13 @@ serve(async (req) => {
       return json({ success: false, error: "Accès refusé pour ce joueur" }, 403);
     }
 
-    const parsedIntensity =
+    const rawIntensity =
       typeof intensity === "number"
         ? intensity
         : typeof intensity === "string" && intensity.trim() !== ""
           ? Number(intensity)
           : null;
+    const parsedIntensity = rawIntensity !== null && !Number.isNaN(rawIntensity) && rawIntensity >= 1 && rawIntensity <= 10 ? rawIntensity : null;
 
     const { data: session, error: sessionError } = await supabase
       .from("training_sessions")
