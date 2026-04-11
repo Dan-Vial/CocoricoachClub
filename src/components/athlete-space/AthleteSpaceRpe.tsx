@@ -748,9 +748,8 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
                           </p>
                         )}
                       </div>
-                    )
-                      </div>
                     )}
+
 
                     {/* Optional HRV section */}
                     <div className="space-y-3">
