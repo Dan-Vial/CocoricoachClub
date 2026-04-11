@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Search, User, Phone, Mail, MapPin, Calendar, Trash2, GripVertical } from "lucide-react";
+import { Plus, Search, User, Phone, Mail, MapPin, Calendar, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import {
@@ -97,41 +97,33 @@ function DraggableProspectCard({ prospect, onClick }: { prospect: Prospect; onCl
     <Card
       ref={setNodeRef}
       style={style}
-      className="cursor-pointer hover:shadow-md transition-shadow"
+      className="cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow touch-none"
+      {...attributes}
+      {...listeners}
       onClick={onClick}
     >
       <CardContent className="p-2.5">
-        <div className="flex items-start gap-1">
-          <div
-            {...attributes}
-            {...listeners}
-            className="mt-0.5 cursor-grab active:cursor-grabbing text-muted-foreground/50 hover:text-muted-foreground"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <GripVertical className="h-3.5 w-3.5" />
+        <div className="flex-1 min-w-0">
+          <div className="flex justify-between items-start mb-1">
+            <h4 className="font-medium text-xs truncate">{prospect.name}</h4>
+            {prospect.rating && (
+              <span className="text-amber-500 text-[10px] ml-1 flex-shrink-0">
+                {"★".repeat(prospect.rating)}
+              </span>
+            )}
           </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex justify-between items-start mb-1">
-              <h4 className="font-medium text-xs truncate">{prospect.name}</h4>
-              {prospect.rating && (
-                <span className="text-amber-500 text-[10px] ml-1 flex-shrink-0">
-                  {"★".repeat(prospect.rating)}
-                </span>
-              )}
+          {prospect.position && (
+            <p className="text-[10px] text-muted-foreground mb-0.5 truncate">{prospect.position}</p>
+          )}
+          {prospect.current_club && (
+            <p className="text-[10px] text-muted-foreground truncate">{prospect.current_club}</p>
+          )}
+          {prospect.city && (
+            <div className="flex items-center gap-0.5 text-[10px] text-muted-foreground mt-1">
+              <MapPin className="h-2.5 w-2.5" />
+              <span className="truncate">{prospect.city}</span>
             </div>
-            {prospect.position && (
-              <p className="text-[10px] text-muted-foreground mb-0.5 truncate">{prospect.position}</p>
-            )}
-            {prospect.current_club && (
-              <p className="text-[10px] text-muted-foreground truncate">{prospect.current_club}</p>
-            )}
-            {prospect.city && (
-              <div className="flex items-center gap-0.5 text-[10px] text-muted-foreground mt-1">
-                <MapPin className="h-2.5 w-2.5" />
-                <span className="truncate">{prospect.city}</span>
-              </div>
-            )}
-          </div>
+          )}
         </div>
       </CardContent>
     </Card>
