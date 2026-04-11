@@ -84,6 +84,7 @@ export function DocumentsSection({ categoryId }: DocumentsSectionProps) {
   // "team" = documents d'équipe, or a player id
   const [selectedTab, setSelectedTab] = useState<string>("team");
 
+  const [customDocumentType, setCustomDocumentType] = useState("");
   const [formData, setFormData] = useState({
     document_type: "license",
     title: "",
