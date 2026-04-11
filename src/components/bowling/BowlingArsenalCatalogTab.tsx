@@ -40,9 +40,8 @@ export function BowlingArsenalCatalogTab({ categoryId }: BowlingArsenalCatalogTa
   const [newBallImageFile, setNewBallImageFile] = useState<File | null>(null);
   const addBallImageRef = useRef<HTMLInputElement>(null);
 
-  // Arsenal assignment dialog state
+  // Arsenal assignment dialog state (now depends on selected player)
   const [assignOpen, setAssignOpen] = useState(false);
-  const [selectedPlayerId, setSelectedPlayerId] = useState("");
   const [selectedBallIds, setSelectedBallIds] = useState<string[]>([]);
   const [assignWeight, setAssignWeight] = useState("");
   const [arsenalSearch, setArsenalSearch] = useState("");
@@ -50,6 +49,7 @@ export function BowlingArsenalCatalogTab({ categoryId }: BowlingArsenalCatalogTa
 
   // Player arsenal view state
   const [selectedViewPlayerId, setSelectedViewPlayerId] = useState<string | null>(null);
+
   // Fetch players for the category
   const { data: players = [] } = useQuery({
     queryKey: ["players", categoryId],
@@ -133,7 +133,6 @@ export function BowlingArsenalCatalogTab({ categoryId }: BowlingArsenalCatalogTa
         .single();
       if (error) throw error;
 
-      // Upload image if provided
       if (newBallImageFile && data) {
         const ballId = (data as any).id;
         const ext = newBallImageFile.name.split(".").pop()?.toLowerCase() || "jpg";
@@ -165,10 +164,10 @@ export function BowlingArsenalCatalogTab({ categoryId }: BowlingArsenalCatalogTa
 
   const assignBallsMutation = useMutation({
     mutationFn: async () => {
-      if (!selectedPlayerId || selectedBallIds.length === 0) throw new Error("Sélectionnez un joueur et au moins une boule");
+      if (!selectedViewPlayerId || selectedBallIds.length === 0) throw new Error("Sélectionnez au moins une boule");
 
       const inserts = selectedBallIds.map((ballId) => ({
-        player_id: selectedPlayerId,
+        player_id: selectedViewPlayerId,
         category_id: categoryId,
         ball_catalog_id: ballId,
         weight_lbs: assignWeight ? parseInt(assignWeight) : null,
@@ -180,6 +179,7 @@ export function BowlingArsenalCatalogTab({ categoryId }: BowlingArsenalCatalogTa
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["bowling_arsenal"] });
+      queryClient.invalidateQueries({ queryKey: ["bowling_arsenal_view", selectedViewPlayerId] });
       toast.success(`${selectedBallIds.length} boule(s) ajoutée(s) à l'arsenal`);
       resetAssignForm();
       setAssignOpen(false);
@@ -273,7 +273,6 @@ export function BowlingArsenalCatalogTab({ categoryId }: BowlingArsenalCatalogTa
   };
 
   const resetAssignForm = () => {
-    setSelectedPlayerId("");
     setSelectedBallIds([]);
     setAssignWeight("");
     setArsenalSearch("");
@@ -361,6 +360,12 @@ export function BowlingArsenalCatalogTab({ categoryId }: BowlingArsenalCatalogTa
     },
   });
 
+  const selectedPlayerName = useMemo(() => {
+    if (!selectedViewPlayerId) return "";
+    const p = players.find((p) => p.id === selectedViewPlayerId);
+    return p ? [p.first_name, p.name].filter(Boolean).join(" ") : "";
+  }, [selectedViewPlayerId, players]);
+
   return (
     <div className="space-y-4">
       <input
@@ -371,15 +376,11 @@ export function BowlingArsenalCatalogTab({ categoryId }: BowlingArsenalCatalogTa
         onChange={handleFileChange}
       />
 
-      {/* Action buttons */}
+      {/* Action button - only "Ajouter une boule" */}
       <div className="flex flex-wrap gap-2">
         <Button onClick={() => setAddBallOpen(true)} className="gap-2">
           <Plus className="h-4 w-4" />
           Ajouter une boule
-        </Button>
-        <Button onClick={() => setAssignOpen(true)} className="h-10 px-5 py-2 gap-2 bg-destructive text-primary border border-border hover:border-accent">
-          <Users className="h-4 w-4" />
-          Créer un arsenal pour un joueur
         </Button>
       </div>
 
@@ -418,11 +419,111 @@ export function BowlingArsenalCatalogTab({ categoryId }: BowlingArsenalCatalogTa
         </Select>
       </div>
 
-      {/* Count */}
+      {/* ===== PLAYER LIST (below filters) ===== */}
+      <div className="space-y-2">
+        <h3 className="text-sm font-semibold text-muted-foreground">Effectif</h3>
+        <div className="flex flex-wrap gap-2">
+          {players.map((p) => {
+            const isActive = selectedViewPlayerId === p.id;
+            return (
+              <Button
+                key={p.id}
+                variant={isActive ? "default" : "outline"}
+                size="sm"
+                onClick={() => setSelectedViewPlayerId(isActive ? null : p.id)}
+              >
+                {[p.first_name, p.name].filter(Boolean).join(" ")}
+              </Button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ===== SELECTED PLAYER ARSENAL (above catalog) ===== */}
+      {selectedViewPlayerId && (
+        <div className="space-y-3 p-4 border rounded-lg bg-accent/5">
+          <div className="flex items-center justify-between">
+            <h3 className="text-base font-semibold">
+              Arsenal de {selectedPlayerName}
+            </h3>
+            <Button
+              size="sm"
+              className="gap-1"
+              onClick={() => { resetAssignForm(); setAssignOpen(true); }}
+            >
+              <Plus className="h-4 w-4" />
+              Ajouter une boule à l'arsenal
+            </Button>
+          </div>
+
+          {isLoadingArsenal ? (
+            <div className="flex items-center justify-center py-6">
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            </div>
+          ) : !playerArsenal || playerArsenal.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-4">
+              Aucune boule dans l'arsenal de ce joueur.
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {playerArsenal.map((item: any) => {
+                const displayName = item.catalogBall
+                  ? `${item.catalogBall.brand} ${item.catalogBall.model}`
+                  : `${item.custom_ball_brand || ""} ${item.custom_ball_name || "Custom"}`.trim();
+                const imgUrl = item.catalogBall?.image_url;
+
+                return (
+                  <div key={item.id} className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-accent/5 transition-colors">
+                    <div className="h-12 w-12 rounded-full overflow-hidden bg-muted flex-shrink-0 flex items-center justify-center border">
+                      {imgUrl ? (
+                        <img src={imgUrl} alt={displayName} className="h-full w-full object-cover" />
+                      ) : (
+                        <CircleDot className="h-6 w-6 text-muted-foreground" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-sm truncate">{displayName}</p>
+                      <div className="flex flex-wrap gap-1.5 mt-1">
+                        {item.weight_lbs && (
+                          <Badge variant="outline" className="text-xs">{item.weight_lbs} lbs</Badge>
+                        )}
+                        {item.catalogBall && (
+                          <>
+                            <Badge variant="secondary" className="text-xs">{getCoverTypeLabel(item.catalogBall.cover_type)}</Badge>
+                            <Badge variant="secondary" className="text-xs">{getCoreTypeLabel(item.catalogBall.core_type)}</Badge>
+                          </>
+                        )}
+                        {item.drilling_layout && (
+                          <Badge variant="outline" className="text-xs">🎯 {item.drilling_layout}</Badge>
+                        )}
+                        {item.current_surface && (
+                          <Badge variant="outline" className="text-xs">Surface: {item.current_surface}</Badge>
+                        )}
+                      </div>
+                      <div className="flex gap-3 mt-1 text-xs text-muted-foreground">
+                        {item.custom_rg && <span>RG: {item.custom_rg}</span>}
+                        {item.custom_differential && <span>Diff: {item.custom_differential}</span>}
+                        {item.custom_intermediate_diff && <span>Int: {item.custom_intermediate_diff}</span>}
+                      </div>
+                      <div className="flex gap-3 mt-0.5 text-xs text-muted-foreground">
+                        {item.games_played > 0 && <span>{item.games_played} parties</span>}
+                        {item.purchase_date && <span>Achat: {format(new Date(item.purchase_date), "dd/MM/yyyy")}</span>}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Catalog count */}
       <p className="text-sm text-muted-foreground">
         {filtered.length} boule{filtered.length !== 1 ? "s" : ""} trouvée{filtered.length !== 1 ? "s" : ""}
       </p>
 
+      {/* ===== BALL CATALOG GRID ===== */}
       {isLoading ? (
         <div className="flex items-center justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -610,30 +711,16 @@ export function BowlingArsenalCatalogTab({ categoryId }: BowlingArsenalCatalogTa
         </DialogContent>
       </Dialog>
 
-      {/* ===== ASSIGN ARSENAL DIALOG ===== */}
+      {/* ===== ASSIGN BALL TO PLAYER DIALOG ===== */}
       <Dialog open={assignOpen} onOpenChange={setAssignOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              Créer un arsenal pour un joueur
+              <Plus className="h-5 w-5" />
+              Ajouter une boule à l'arsenal de {selectedPlayerName}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div>
-              <Label>Joueur *</Label>
-              <Select value={selectedPlayerId} onValueChange={setSelectedPlayerId}>
-                <SelectTrigger><SelectValue placeholder="Sélectionner un joueur" /></SelectTrigger>
-                <SelectContent>
-                  {players.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {[p.first_name, p.name].filter(Boolean).join(" ")}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
             <div>
               <Label>Poids par défaut (lbs)</Label>
               <Select value={assignWeight} onValueChange={setAssignWeight}>
@@ -648,21 +735,21 @@ export function BowlingArsenalCatalogTab({ categoryId }: BowlingArsenalCatalogTa
 
             <div>
               <Label>Sélectionner les boules ({selectedBallIds.length} sélectionnée{selectedBallIds.length !== 1 ? "s" : ""})</Label>
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input className="pl-8" placeholder="Filtrer les boules..." value={arsenalSearch} onChange={e => setArsenalSearch(e.target.value)} />
+              <div className="flex gap-2 mt-1">
+                <div className="relative flex-1">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input className="pl-8" placeholder="Filtrer les boules..." value={arsenalSearch} onChange={e => setArsenalSearch(e.target.value)} />
+                </div>
+                <Select value={arsenalBrandFilter} onValueChange={setArsenalBrandFilter}>
+                  <SelectTrigger className="w-[140px]"><SelectValue placeholder="Marque" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Toutes</SelectItem>
+                    {BOWLING_BALL_BRANDS.map(b => (
+                      <SelectItem key={b} value={b}>{b}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-              <Select value={arsenalBrandFilter} onValueChange={setArsenalBrandFilter}>
-                <SelectTrigger className="w-[140px]"><SelectValue placeholder="Marque" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Toutes</SelectItem>
-                  {BOWLING_BALL_BRANDS.map(b => (
-                    <SelectItem key={b} value={b}>{b}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
             </div>
 
             <div className="max-h-[300px] overflow-y-auto border rounded-md divide-y">
@@ -703,7 +790,7 @@ export function BowlingArsenalCatalogTab({ categoryId }: BowlingArsenalCatalogTa
             <Button variant="outline" onClick={() => { resetAssignForm(); setAssignOpen(false); }}>Annuler</Button>
             <Button
               onClick={() => assignBallsMutation.mutate()}
-              disabled={!selectedPlayerId || selectedBallIds.length === 0 || assignBallsMutation.isPending}
+              disabled={selectedBallIds.length === 0 || assignBallsMutation.isPending}
             >
               {assignBallsMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Check className="h-4 w-4 mr-1" />}
               Ajouter {selectedBallIds.length} boule{selectedBallIds.length !== 1 ? "s" : ""}
@@ -711,88 +798,6 @@ export function BowlingArsenalCatalogTab({ categoryId }: BowlingArsenalCatalogTa
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* ===== PLAYER ARSENAL VIEW ===== */}
-      <div className="mt-8 space-y-4">
-        <h3 className="text-lg font-semibold">Arsenal par joueur</h3>
-        <div className="flex flex-wrap gap-2">
-          {players.map((p) => {
-            const isActive = selectedViewPlayerId === p.id;
-            return (
-              <Button
-                key={p.id}
-                variant={isActive ? "default" : "outline"}
-                size="sm"
-                onClick={() => setSelectedViewPlayerId(isActive ? null : p.id)}
-              >
-                {[p.first_name, p.name].filter(Boolean).join(" ")}
-              </Button>
-            );
-          })}
-        </div>
-
-        {selectedViewPlayerId && (
-          <div className="space-y-3">
-            {isLoadingArsenal ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin text-primary" />
-              </div>
-            ) : !playerArsenal || playerArsenal.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-6">
-                Aucune boule dans l'arsenal de ce joueur.
-              </p>
-            ) : (
-              playerArsenal.map((item: any) => {
-                const displayName = item.catalogBall
-                  ? `${item.catalogBall.brand} ${item.catalogBall.model}`
-                  : `${item.custom_ball_brand || ""} ${item.custom_ball_name || "Custom"}`.trim();
-                const imgUrl = item.catalogBall?.image_url;
-
-                return (
-                  <div key={item.id} className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-accent/5 transition-colors">
-                    <div className="h-12 w-12 rounded-full overflow-hidden bg-muted flex-shrink-0 flex items-center justify-center border">
-                      {imgUrl ? (
-                        <img src={imgUrl} alt={displayName} className="h-full w-full object-cover" />
-                      ) : (
-                        <CircleDot className="h-6 w-6 text-muted-foreground" />
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-sm truncate">{displayName}</p>
-                      <div className="flex flex-wrap gap-1.5 mt-1">
-                        {item.weight_lbs && (
-                          <Badge variant="outline" className="text-xs">{item.weight_lbs} lbs</Badge>
-                        )}
-                        {item.catalogBall && (
-                          <>
-                            <Badge variant="secondary" className="text-xs">{getCoverTypeLabel(item.catalogBall.cover_type)}</Badge>
-                            <Badge variant="secondary" className="text-xs">{getCoreTypeLabel(item.catalogBall.core_type)}</Badge>
-                          </>
-                        )}
-                        {item.drilling_layout && (
-                          <Badge variant="outline" className="text-xs">🎯 {item.drilling_layout}</Badge>
-                        )}
-                        {item.current_surface && (
-                          <Badge variant="outline" className="text-xs">Surface: {item.current_surface}</Badge>
-                        )}
-                      </div>
-                      <div className="flex gap-3 mt-1 text-xs text-muted-foreground">
-                        {item.custom_rg && <span>RG: {item.custom_rg}</span>}
-                        {item.custom_differential && <span>Diff: {item.custom_differential}</span>}
-                        {item.custom_intermediate_diff && <span>Int: {item.custom_intermediate_diff}</span>}
-                      </div>
-                      <div className="flex gap-3 mt-0.5 text-xs text-muted-foreground">
-                        {item.games_played > 0 && <span>{item.games_played} parties</span>}
-                        {item.purchase_date && <span>Achat: {format(new Date(item.purchase_date), "dd/MM/yyyy")}</span>}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
-        )}
-      </div>
     </div>
   );
 }
