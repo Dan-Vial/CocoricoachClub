@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
-import { GraduationCap, Award, Star, BookOpen, Clock, BarChart3, CalendarIcon, Plus } from "lucide-react";
+import { GraduationCap, Award, Star, BookOpen, Clock, BarChart3, CalendarIcon, Plus, Pencil, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { toast } from "sonner";
@@ -32,6 +32,7 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
   const queryClient = useQueryClient();
   const [academicDialogOpen, setAcademicDialogOpen] = useState(false);
   const [absenceDialogOpen, setAbsenceDialogOpen] = useState(false);
+  const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
   
   
   const [selectedPlayer, setSelectedPlayer] = useState("");
@@ -121,6 +122,58 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
   });
 
 
+  const updateAcademicGrade = useMutation({
+    mutationFn: async () => {
+      if (!editingEntryId) return;
+      const { error } = await supabase.from("player_academic_tracking").update({
+        player_id: selectedPlayer,
+        academic_grade: gradeScale !== "letter" && academicGrade ? parseFloat(academicGrade) : null,
+        grade_scale: gradeScale,
+        subject: subject || null,
+        tracking_date: format(gradeDate, "yyyy-MM-dd"),
+        notes: gradeScale === "letter" ? `${academicGrade}${academicNotes ? ` - ${academicNotes}` : ""}` : (academicNotes || null),
+      }).eq("id", editingEntryId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["academic_tracking", categoryId] });
+      queryClient.invalidateQueries({ queryKey: ["academic_subjects", categoryId] });
+      toast.success("Note modifiée");
+      resetAcademicForm();
+      setAcademicDialogOpen(false);
+    },
+    onError: () => toast.error("Erreur lors de la modification"),
+  });
+
+  const deleteAcademicEntry = useMutation({
+    mutationFn: async (entryId: string) => {
+      const { error } = await supabase.from("player_academic_tracking").delete().eq("id", entryId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["academic_tracking", categoryId] });
+      queryClient.invalidateQueries({ queryKey: ["academic_subjects", categoryId] });
+      toast.success("Entrée supprimée");
+    },
+    onError: () => toast.error("Erreur lors de la suppression"),
+  });
+
+  const handleEditEntry = (entry: any) => {
+    setEditingEntryId(entry.id);
+    setSelectedPlayer(entry.player_id);
+    setGradeScale((entry as any).grade_scale || "20");
+    if ((entry as any).grade_scale === "letter" && entry.notes) {
+      setAcademicGrade(entry.notes.split(" - ")[0]);
+      setAcademicNotes(entry.notes.includes(" - ") ? entry.notes.split(" - ").slice(1).join(" - ") : "");
+    } else {
+      setAcademicGrade(entry.academic_grade ? String(entry.academic_grade) : "");
+      setAcademicNotes(entry.notes || "");
+    }
+    setSubject(entry.subject || "");
+    setGradeDate(new Date(entry.tracking_date));
+    setAcademicDialogOpen(true);
+  };
+
   const resetAcademicForm = () => {
     setSelectedPlayer("");
     setAcademicGrade("");
@@ -130,6 +183,7 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
     setIsAddingSubject(false);
     setGradeDate(new Date());
     setAcademicNotes("");
+    setEditingEntryId(null);
   };
 
   const resetAbsenceForm = () => {
@@ -210,6 +264,7 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
                         <TableHead>Note</TableHead>
                         <TableHead>Matière</TableHead>
                         <TableHead>Commentaires</TableHead>
+                        <TableHead className="w-20">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -229,6 +284,20 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
                           </TableCell>
                           <TableCell>{entry.subject || "-"}</TableCell>
                           <TableCell className="max-w-40 truncate">{entry.notes || "-"}</TableCell>
+                          <TableCell>
+                            <div className="flex gap-1">
+                              {(entry.academic_grade || (entry as any).grade_scale === "letter") && (
+                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEditEntry(entry)}>
+                                  <Pencil className="h-3.5 w-3.5" />
+                                </Button>
+                              )}
+                              <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => {
+                                if (confirm("Supprimer cette entrée ?")) deleteAcademicEntry.mutate(entry.id);
+                              }}>
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -259,10 +328,10 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
       </Tabs>
 
       {/* Grade Dialog */}
-      <Dialog open={academicDialogOpen} onOpenChange={setAcademicDialogOpen}>
+      <Dialog open={academicDialogOpen} onOpenChange={(open) => { setAcademicDialogOpen(open); if (!open) resetAcademicForm(); }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Ajouter une note scolaire</DialogTitle>
+            <DialogTitle>{editingEntryId ? "Modifier la note scolaire" : "Ajouter une note scolaire"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
@@ -360,9 +429,12 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setAcademicDialogOpen(false)}>Annuler</Button>
-            <Button onClick={() => addAcademicGrade.mutate()} disabled={!selectedPlayer || !academicGrade || addAcademicGrade.isPending}>
-              {addAcademicGrade.isPending ? "Ajout..." : "Ajouter"}
+            <Button variant="outline" onClick={() => { setAcademicDialogOpen(false); resetAcademicForm(); }}>Annuler</Button>
+            <Button 
+              onClick={() => editingEntryId ? updateAcademicGrade.mutate() : addAcademicGrade.mutate()} 
+              disabled={!selectedPlayer || !academicGrade || addAcademicGrade.isPending || updateAcademicGrade.isPending}
+            >
+              {(addAcademicGrade.isPending || updateAcademicGrade.isPending) ? "Enregistrement..." : (editingEntryId ? "Modifier" : "Ajouter")}
             </Button>
           </DialogFooter>
         </DialogContent>
