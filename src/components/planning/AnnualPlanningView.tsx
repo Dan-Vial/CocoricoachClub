@@ -388,7 +388,33 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
                                 <p className="text-xs">
                                   {format(new Date(cycle.start_date), "dd MMM yyyy", { locale: fr })} → {format(new Date(cycle.end_date), "dd MMM yyyy", { locale: fr })}
                                 </p>
+                                {cycle.cycle_type && (
+                                  <p className="text-xs">Type: {cycle.cycle_type === "recuperation" ? "Récupération" : cycle.cycle_type}</p>
+                                )}
                                 {cycle.objective && <p className="text-xs text-muted-foreground">Objectif: {cycle.objective}</p>}
+                                {(cycle.intensity != null && cycle.intensity > 0) && (
+                                  <div className="flex items-center gap-1 text-xs">
+                                    <span>Intensité:</span>
+                                    <div className="flex gap-0.5">
+                                      {Array.from({ length: 5 }).map((_, i) => (
+                                        <div key={i} className="w-2 h-2 rounded-sm" style={{ backgroundColor: i < cycle.intensity! ? getIntensityColor(cycle.intensity!) : "hsl(var(--muted))" }} />
+                                      ))}
+                                    </div>
+                                    <span>{cycle.intensity}/5</span>
+                                  </div>
+                                )}
+                                {(cycle.volume != null && cycle.volume > 0) && (
+                                  <div className="flex items-center gap-1 text-xs">
+                                    <span>Volume:</span>
+                                    <div className="flex gap-0.5">
+                                      {Array.from({ length: 5 }).map((_, i) => (
+                                        <div key={i} className="w-2 h-2 rounded-sm" style={{ backgroundColor: i < cycle.volume! ? getIntensityColor(cycle.volume!) : "hsl(var(--muted))" }} />
+                                      ))}
+                                    </div>
+                                    <span>{cycle.volume}/5</span>
+                                  </div>
+                                )}
+                                {cycle.notes && <p className="text-xs text-muted-foreground italic">{cycle.notes}</p>}
                               </div>
                             </TooltipContent>
                           </Tooltip>
