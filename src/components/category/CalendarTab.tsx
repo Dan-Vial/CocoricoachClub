@@ -298,10 +298,6 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
             <span className="hidden sm:inline">Calendrier Global</span>
             <span className="sm:hidden">Global</span>
           </ColoredSubTabsTrigger>
-          <ColoredSubTabsTrigger value="training_stats" colorKey="planification" icon={<BarChart3 className="h-4 w-4" />}>
-            <span className="hidden sm:inline">Stats entraînement</span>
-            <span className="sm:hidden">Stats</span>
-          </ColoredSubTabsTrigger>
           {/* Objectifs - Grisé en mode viewer */}
           {!isViewer && (
             <ColoredSubTabsTrigger value="objectives" colorKey="planification" icon={<Target className="h-4 w-4" />}>
@@ -371,15 +367,6 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
           />
         </TabsContent>
 
-        <TabsContent value="training_stats">
-          {isBowling ? (
-            <BowlingTrainingStats categoryId={categoryId} />
-          ) : isTennis ? (
-            <TennisTrainingStats categoryId={categoryId} />
-          ) : (
-            <PrecisionTrainingStats categoryId={categoryId} />
-          )}
-        </TabsContent>
 
         {!isViewer && (
           <TabsContent value="objectives">
