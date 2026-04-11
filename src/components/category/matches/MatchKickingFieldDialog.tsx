@@ -130,13 +130,17 @@ export function MatchKickingFieldDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[700px] max-h-[95vh] flex flex-col overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Target className="h-5 w-5 text-primary" />
-            Tirs au but — {playerName}
-          </DialogTitle>
-        </DialogHeader>
+      <DialogContent className="sm:max-w-[700px] max-h-[95vh] flex flex-col overflow-hidden p-0">
+        <div className="px-6 pt-6 pb-2 flex-shrink-0">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Target className="h-5 w-5 text-primary" />
+              Tirs au but — {playerName}
+            </DialogTitle>
+          </DialogHeader>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-6 space-y-3 min-h-0">
 
         {/* Controls */}
         <div className="flex flex-wrap gap-3 items-center flex-shrink-0">
@@ -329,14 +333,16 @@ export function MatchKickingFieldDialog({
           Cliquez sur le terrain pour placer un tir • Cliquez sur un tir existant pour le supprimer
         </p>
 
-        <DialogFooter className="flex-shrink-0">
+        </div>
+
+        <div className="flex-shrink-0 border-t px-6 py-4 flex justify-end gap-2 bg-background">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Annuler
           </Button>
           <Button onClick={handleValidate} className="gap-1">
-            Valider les tirs ({kicks.length})
+            ✓ Valider les tirs ({kicks.length})
           </Button>
-        </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   );
