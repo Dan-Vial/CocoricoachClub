@@ -814,6 +814,12 @@ export default function AthleteSpace() {
               />
             </TabsContent>
           )}
+          <TabsContent value="documents">
+              <AthleteSpaceDocuments
+                playerId={athleteInfo.player_id}
+                categoryId={athleteInfo.category_id}
+              />
+            </TabsContent>
           <TabsContent value="messaging">
               <MessagingTab categoryId={athleteInfo.category_id} isAthlete={true} />
             </TabsContent>
