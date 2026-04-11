@@ -48,6 +48,7 @@ interface BowlingGameData {
   singlePinConverted: number;
   singlePinConversionRate: number;
   frames?: FrameData[];
+  blockDebriefing?: string;
 }
 
 function ColoredStatRow({ label, value, statType, percentage }: { label: string; value: string; statType?: "pocket" | "strike" | "spare" | "singlePin" | "firstBallGte8"; percentage?: number }) {
@@ -128,6 +129,7 @@ export function BowlingCumulativeStats({ categoryId, playerId: fixedPlayerId }: 
             singlePinConversionRate: statData.singlePinConversionRate || 0,
             frames: bowlingFrames,
             bowlingCategory: statData.bowlingCategory as string | undefined,
+            blockDebriefing: statData.blockDebriefing as string | undefined,
           });
         }
       }
