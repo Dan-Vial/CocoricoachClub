@@ -86,6 +86,7 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
         academic_grade: gradeScale !== "letter" && academicGrade ? parseFloat(academicGrade) : null,
         grade_scale: gradeScale,
         subject: subject || null,
+        tracking_date: format(gradeDate, "yyyy-MM-dd"),
         notes: gradeScale === "letter" ? `${academicGrade}${academicNotes ? ` - ${academicNotes}` : ""}` : (academicNotes || null),
       });
       if (error) throw error;
@@ -124,6 +125,9 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
     setAcademicGrade("");
     setGradeScale("20");
     setSubject("");
+    setNewSubject("");
+    setIsAddingSubject(false);
+    setGradeDate(new Date());
     setAcademicNotes("");
   };
 
@@ -301,9 +305,53 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
                 )}
               </div>
               <div>
-                <Label>Matière</Label>
-                <Input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Mathématiques" />
+                <Label>Date</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !gradeDate && "text-muted-foreground")}>
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {gradeDate ? format(gradeDate, "dd MMM yyyy", { locale: fr }) : "Choisir une date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar mode="single" selected={gradeDate} onSelect={(d) => d && setGradeDate(d)} initialFocus className="p-3 pointer-events-auto" locale={fr} />
+                  </PopoverContent>
+                </Popover>
               </div>
+            </div>
+            <div>
+              <Label>Matière</Label>
+              {isAddingSubject ? (
+                <div className="flex gap-2">
+                  <Input 
+                    value={newSubject} 
+                    onChange={(e) => setNewSubject(e.target.value)} 
+                    placeholder="Nouvelle matière..." 
+                    className="flex-1"
+                  />
+                  <Button type="button" size="sm" onClick={() => {
+                    if (newSubject.trim()) {
+                      setSubject(newSubject.trim());
+                      setIsAddingSubject(false);
+                    }
+                  }}>OK</Button>
+                  <Button type="button" size="sm" variant="outline" onClick={() => { setIsAddingSubject(false); setNewSubject(""); }}>Annuler</Button>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <Select value={subject} onValueChange={setSubject}>
+                    <SelectTrigger className="flex-1"><SelectValue placeholder="Sélectionner une matière" /></SelectTrigger>
+                    <SelectContent>
+                      {existingSubjects?.map((s) => (
+                        <SelectItem key={s} value={s}>{s}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button type="button" size="icon" variant="outline" onClick={() => setIsAddingSubject(true)} title="Ajouter une matière">
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
             </div>
             <div>
               <Label>Commentaires</Label>
