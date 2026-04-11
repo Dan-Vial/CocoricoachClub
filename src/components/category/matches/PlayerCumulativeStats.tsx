@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { BarChart3, Trophy, Target, Shield, Activity, Dumbbell, Filter, CheckSquare, Calendar, Download, FileSpreadsheet, TrendingUp, TrendingDown, Minus, Users, User } from "lucide-react";
+import { BarChart3, Trophy, Target, Shield, Activity, Dumbbell, Filter, CheckSquare, Calendar, Download, FileSpreadsheet, TrendingUp, TrendingDown, Minus, Users, User, Crosshair } from "lucide-react";
+import { isRugbyType } from "@/lib/constants/sportTypes";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { getStatCategories, type StatField } from "@/lib/constants/sportStats";
@@ -53,6 +54,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
   const [selectedMatchIds, setSelectedMatchIds] = useState<string[]>([]);
   const [filterOpen, setFilterOpen] = useState(false);
   const [selectedPlayerId, setSelectedPlayerId] = useState<string>("");
+  const isRugby = isRugbyType(sportType);
 
   const { stats: sportStats, isLoading: loadingPrefs } = useStatPreferences({ categoryId, sportType });
   const statCategories = getStatCategories(sportType);
@@ -129,6 +131,56 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
     },
     enabled: activeMatchIds.length > 0,
   });
+
+  // Fetch kicking attempts for rugby sports
+  const { data: kickingAttempts = [] } = useQuery({
+    queryKey: ["kicking-stats-cumulative", categoryId, activeMatchIds],
+    queryFn: async () => {
+      if (activeMatchIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from("kicking_attempts")
+        .select("*, players(name, first_name), matches(opponent, match_date)")
+        .eq("category_id", categoryId)
+        .in("match_id", activeMatchIds);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: isRugby && activeMatchIds.length > 0,
+  });
+
+  // Aggregate kicking stats per player
+  const kickingByPlayer = useMemo(() => {
+    const map: Record<string, {
+      total: number; success: number;
+      penalty: { total: number; success: number };
+      conversion: { total: number; success: number };
+      drop: { total: number; success: number };
+      byMatch: Record<string, { total: number; success: number }>;
+    }> = {};
+    kickingAttempts.forEach((a: any) => {
+      if (!map[a.player_id]) {
+        map[a.player_id] = {
+          total: 0, success: 0,
+          penalty: { total: 0, success: 0 },
+          conversion: { total: 0, success: 0 },
+          drop: { total: 0, success: 0 },
+          byMatch: {},
+        };
+      }
+      const p = map[a.player_id];
+      p.total++;
+      if (a.success) p.success++;
+      const type = a.kick_type as "penalty" | "conversion" | "drop";
+      if (p[type]) {
+        p[type].total++;
+        if (a.success) p[type].success++;
+      }
+      if (!p.byMatch[a.match_id]) p.byMatch[a.match_id] = { total: 0, success: 0 };
+      p.byMatch[a.match_id].total++;
+      if (a.success) p.byMatch[a.match_id].success++;
+    });
+    return map;
+  }, [kickingAttempts]);
 
   const { data: matchesDataForCharts = [] } = useQuery({
     queryKey: ["per_match_player_stats", categoryId, sportType, activeMatchIds],
@@ -624,6 +676,48 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
                     );
                   })}
                 </Tabs>
+                {/* Kicking stats for rugby */}
+                {isRugby && kickingByPlayer[player.playerId] && (() => {
+                  const k = kickingByPlayer[player.playerId];
+                  const rate = k.total > 0 ? Math.round((k.success / k.total) * 100) : 0;
+                  const penRate = k.penalty.total > 0 ? Math.round((k.penalty.success / k.penalty.total) * 100) : 0;
+                  const convRate = k.conversion.total > 0 ? Math.round((k.conversion.success / k.conversion.total) * 100) : 0;
+                  const dropRate = k.drop.total > 0 ? Math.round((k.drop.success / k.drop.total) * 100) : 0;
+                  return (
+                    <Card className="mt-4 border-primary/20">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm flex items-center gap-2">
+                          <Crosshair className="h-4 w-4 text-primary" />
+                          Statistiques Buteur
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                          <div className="p-3 bg-primary/10 rounded-lg text-center">
+                            <p className="text-2xl font-bold text-primary">{rate}%</p>
+                            <p className="text-xs text-muted-foreground">Global</p>
+                            <p className="text-xs text-muted-foreground">{k.success}/{k.total}</p>
+                          </div>
+                          <div className="p-3 bg-muted/50 rounded-lg text-center">
+                            <p className="text-2xl font-bold">{penRate}%</p>
+                            <p className="text-xs text-muted-foreground">Pénalités</p>
+                            <p className="text-xs text-muted-foreground">{k.penalty.success}/{k.penalty.total}</p>
+                          </div>
+                          <div className="p-3 bg-muted/50 rounded-lg text-center">
+                            <p className="text-2xl font-bold">{convRate}%</p>
+                            <p className="text-xs text-muted-foreground">Transformations</p>
+                            <p className="text-xs text-muted-foreground">{k.conversion.success}/{k.conversion.total}</p>
+                          </div>
+                          <div className="p-3 bg-muted/50 rounded-lg text-center">
+                            <p className="text-2xl font-bold">{dropRate}%</p>
+                            <p className="text-xs text-muted-foreground">Drops</p>
+                            <p className="text-xs text-muted-foreground">{k.drop.success}/{k.drop.total}</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })()}
               </div>
             );
           })()}
@@ -700,6 +794,71 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
           </Tabs>
         </CardContent>
       </Card>
+
+      {/* Kicking ranking table for rugby */}
+      {isRugby && Object.keys(kickingByPlayer).length > 0 && (
+        <Card className="bg-gradient-card">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Crosshair className="h-5 w-5 text-primary" />
+              Classement Buteurs
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Athlète</TableHead>
+                    <TableHead className="text-center">Global</TableHead>
+                    <TableHead className="text-center">Pénalités</TableHead>
+                    <TableHead className="text-center">Transformations</TableHead>
+                    <TableHead className="text-center">Drops</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {Object.entries(kickingByPlayer)
+                    .map(([playerId, k]) => {
+                      const playerInfo = stats?.find(s => s.playerId === playerId);
+                      return { playerId, name: playerInfo?.playerName || "Inconnu", k };
+                    })
+                    .sort((a, b) => (b.k.total > 0 ? b.k.success / b.k.total : 0) - (a.k.total > 0 ? a.k.success / a.k.total : 0))
+                    .map(({ playerId, name, k }) => {
+                      const rate = k.total > 0 ? Math.round((k.success / k.total) * 100) : 0;
+                      const penRate = k.penalty.total > 0 ? Math.round((k.penalty.success / k.penalty.total) * 100) : 0;
+                      const convRate = k.conversion.total > 0 ? Math.round((k.conversion.success / k.conversion.total) * 100) : 0;
+                      const dropRate = k.drop.total > 0 ? Math.round((k.drop.success / k.drop.total) * 100) : 0;
+                      return (
+                        <TableRow key={playerId}>
+                          <TableCell className="font-medium">{name}</TableCell>
+                          <TableCell className="text-center">
+                            <span className="font-semibold">{rate}%</span>
+                            <span className="text-xs text-muted-foreground ml-1">({k.success}/{k.total})</span>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {k.penalty.total > 0 ? (
+                              <><span className="font-semibold">{penRate}%</span><span className="text-xs text-muted-foreground ml-1">({k.penalty.success}/{k.penalty.total})</span></>
+                            ) : <span className="text-muted-foreground">—</span>}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {k.conversion.total > 0 ? (
+                              <><span className="font-semibold">{convRate}%</span><span className="text-xs text-muted-foreground ml-1">({k.conversion.success}/{k.conversion.total})</span></>
+                            ) : <span className="text-muted-foreground">—</span>}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {k.drop.total > 0 ? (
+                              <><span className="font-semibold">{dropRate}%</span><span className="text-xs text-muted-foreground ml-1">({k.drop.success}/{k.drop.total})</span></>
+                            ) : <span className="text-muted-foreground">—</span>}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
