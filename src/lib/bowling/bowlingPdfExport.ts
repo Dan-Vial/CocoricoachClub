@@ -187,8 +187,9 @@ function checkPageBreak(doc: jsPDF, y: number, needed: number): number {
   return y;
 }
 
-export async function exportBowlingPdf(playerName: string, games: BowlingGameData[], options?: BowlingPdfOptions) {
-  const doc = new jsPDF("p", "mm", "a4");
+export async function exportBowlingPdf(playerName: string, games: BowlingGameData[], options?: BowlingPdfOptions, existingDoc?: jsPDF) {
+  const doc = existingDoc || new jsPDF("p", "mm", "a4");
+  const isNewDoc = !existingDoc;
   const pageWidth = 210;
   const margin = 15;
   const contentWidth = pageWidth - margin * 2;
@@ -759,9 +760,12 @@ export async function exportBowlingPdf(playerName: string, games: BowlingGameDat
   doc.setFont("helvetica", "italic");
   doc.text(`Rapport bowling de ${playerName} - ${totalGames} parties - Moyenne: ${avgScore.toFixed(1)} - High: ${highGame}`, pageWidth / 2, y, { align: "center" });
 
-  // Save
-  const fileName = `bowling_${playerName.replace(/\s+/g, "_")}_${format(new Date(), "yyyy-MM-dd")}.pdf`;
-  doc.save(fileName);
+  // Save only if this is a standalone export (not part of team export)
+  if (isNewDoc) {
+    const fileName = `bowling_${playerName.replace(/\s+/g, "_")}_${format(new Date(), "yyyy-MM-dd")}.pdf`;
+    doc.save(fileName);
+  }
+  return doc;
 }
 
 // ===================== DRAWING HELPERS =====================
