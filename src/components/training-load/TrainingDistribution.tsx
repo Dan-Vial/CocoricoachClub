@@ -27,14 +27,14 @@ export function TrainingDistribution({ categoryId }: TrainingDistributionProps) 
   const [endDate, setEndDate] = useState(() => format(new Date(), "yyyy-MM-dd"));
 
   const { data, isLoading } = useQuery({
-    queryKey: ["training-distribution", categoryId, startDate],
+    queryKey: ["training-distribution", categoryId, startDate, endDate],
     queryFn: async () => {
-      // Fetch sessions for the period
       const { data: sessions, error } = await supabase
         .from("training_sessions")
         .select("id, session_date, training_type, intensity")
         .eq("category_id", categoryId)
         .gte("session_date", startDate)
+        .lte("session_date", endDate)
         .order("session_date");
       if (error) throw error;
       if (!sessions?.length) return { sessions: [], blocks: [] };
