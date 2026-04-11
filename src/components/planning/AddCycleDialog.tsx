@@ -15,6 +15,7 @@ import { fr } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { CycleFormFields } from "./CycleFormFields";
+import { CycleColorPicker } from "./CycleColorPicker";
 
 
 interface AddCycleDialogProps {
@@ -130,25 +131,12 @@ export function AddCycleDialog({ open, onOpenChange, categoryId, categories, pre
             />
           </div>
 
-          <div>
-            <Label>Couleur du cycle</Label>
-            <div className="flex items-center gap-2 mt-1">
-              <input
-                type="color"
-                value={color}
-                onChange={(e) => setCustomColor(e.target.value)}
-                className="w-8 h-8 rounded cursor-pointer border border-border"
-              />
-              <span className="text-xs text-muted-foreground">
-                {customColor ? "Couleur personnalisée" : "Couleur de la ligne"}
-              </span>
-              {customColor && (
-                <Button variant="ghost" size="sm" className="h-6 text-xs px-2" onClick={() => setCustomColor("")}>
-                  Réinitialiser
-                </Button>
-              )}
-            </div>
-          </div>
+          <CycleColorPicker
+            categoryId={categoryId}
+            color={color}
+            customColor={customColor}
+            onCustomColorChange={setCustomColor}
+          />
 
           <CycleFormFields
             cycleType={cycleType}
