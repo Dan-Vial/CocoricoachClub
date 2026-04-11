@@ -449,11 +449,18 @@ export function BowlingCumulativeStats({ categoryId, playerId: fixedPlayerId }: 
                       const allArsenal = (arsenalResult.data as any[]) || [];
                       const teamPlayers = players.map(p => {
                         const playerArsenal = allArsenal.filter((a: any) => a.player_id === p.id);
+                        // Find per-player oil pattern assignment
+                        const playerOilAssign = allOilAssignments.find((a: any) => a.player_id === p.id);
+                        const playerOil = playerOilAssign
+                          ? allOilPatterns.find((op: any) => op.id === playerOilAssign.oil_pattern_id)
+                          : null;
                         return {
                           playerId: p.id,
                           playerName: p.name,
                           avatarUrl: (allGames || []).find(g => g.playerId === p.id)?.playerAvatarUrl || null,
                           games: (allGames || []).filter(g => g.playerId === p.id),
+                          oilPatternName: playerOil ? playerOil.name : null,
+                          oilPatternImageUrl: playerOil ? (playerOil.image_url_male || playerOil.image_url_female || null) : null,
                           arsenalBalls: playerArsenal.map((item: any) => {
                             const cat = item.ball_catalog_id ? catalogMap.get(item.ball_catalog_id) : null;
                             const name = cat ? `${cat.brand} ${cat.model}` : `${item.custom_ball_brand || ""} ${item.custom_ball_name || "Custom"}`.trim();
@@ -473,8 +480,8 @@ export function BowlingCumulativeStats({ categoryId, playerId: fixedPlayerId }: 
                         };
                       });
                       await exportBowlingTeamPdf(teamPlayers, {
-                        oilPatternImageUrl,
-                        oilPatternName,
+                        oilPatternImageUrl: defaultOilImage,
+                        oilPatternName: defaultOilName,
                         competitionName: matchRow?.opponent || matchRow?.competition || null,
                         ageCategory: catData?.name || matchRow?.age_category || null,
                         location: matchRow?.location || null,
