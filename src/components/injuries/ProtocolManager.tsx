@@ -112,6 +112,7 @@ export function ProtocolManager({ categoryId }: ProtocolManagerProps) {
   const [filterCategory, setFilterCategory] = useState<string>("all");
   
   // Form states
+  const [selectedInjuryType, setSelectedInjuryType] = useState<string>("");
   const [protocolName, setProtocolName] = useState("");
   const [protocolCategory, setProtocolCategory] = useState("");
   const [protocolDescription, setProtocolDescription] = useState("");
