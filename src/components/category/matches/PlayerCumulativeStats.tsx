@@ -336,8 +336,27 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
         doc.text(`${selectedCount} matchs • ${format(new Date(), "dd/MM/yyyy")}`, pageW - 14, 20, { align: "right" });
       };
 
-      drawHeader("Stats compétition cumulées");
-      let y = 36;
+      // Match context info
+      const selectedMatches = allMatches.filter(m => activeMatchIds.includes(m.id));
+      doc.setTextColor(30, 41, 59);
+      doc.setFontSize(8);
+      selectedMatches.slice(0, 6).forEach((m, i) => {
+        const lieu = m.is_home ? "DOM" : "EXT";
+        const loc = m.location ? ` — ${m.location}` : "";
+        const comp = m.competition || "";
+        const stage = m.competition_stage ? ` (${m.competition_stage})` : "";
+        const time = m.match_time ? ` ${m.match_time}` : "";
+        doc.text(
+          `${format(new Date(m.match_date), "dd/MM/yy")} • vs ${m.opponent} [${lieu}]${loc}${time} ${comp}${stage}`,
+          14, y
+        );
+        y += 4;
+      });
+      if (selectedMatches.length > 6) {
+        doc.text(`... et ${selectedMatches.length - 6} autre(s)`, 14, y);
+        y += 4;
+      }
+      y += 4;
 
       statCategories.forEach((cat, catIdx) => {
         const categoryStats = sportStats.filter(s => s.category === cat.key);
