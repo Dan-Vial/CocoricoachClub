@@ -27,24 +27,86 @@ interface BowlingPdfOptions {
   arsenalBalls?: ArsenalBallData[];
 }
 
-async function loadImageAsBase64(url: string): Promise<{ data: string; width: number; height: number } | null> {
-  try {
-    const response = await fetch(url, { mode: "cors" });
-    if (!response.ok) return null;
-    const blob = await response.blob();
-    const dataUrl: string = await new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror = () => reject();
-      reader.readAsDataURL(blob);
-    });
-    const dims = await new Promise<{ width: number; height: number }>((resolve) => {
+async function loadImageAsBase64(url: string): Promise<{ data: string; width: number; height: number; format: "PNG" | "JPEG" } | null> {
+  if (!url) return null;
+
+  const cacheBustedUrl = url + (url.includes("?") ? "&" : "?") + "t=" + Date.now();
+
+  const getDimensions = async (dataUrl: string) => {
+    return new Promise<{ width: number; height: number }>((resolve) => {
       const img = new Image();
-      img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
+      img.onload = () => resolve({ width: img.naturalWidth || 1, height: img.naturalHeight || 1 });
       img.onerror = () => resolve({ width: 1, height: 1 });
       img.src = dataUrl;
     });
-    return { data: dataUrl, width: dims.width, height: dims.height };
+  };
+
+  const normalizeFormat = (dataUrl: string): "PNG" | "JPEG" => {
+    if (dataUrl.startsWith("data:image/png")) return "PNG";
+    return "JPEG";
+  };
+
+  try {
+    const response = await fetch(cacheBustedUrl, { mode: "cors" });
+    if (response.ok) {
+      const blob = await response.blob();
+      const dataUrl: string = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = () => reject();
+        reader.readAsDataURL(blob);
+      });
+
+      let finalDataUrl = dataUrl;
+      if (dataUrl.startsWith("data:image/webp")) {
+        finalDataUrl = await new Promise<string>((resolve) => {
+          const img = new Image();
+          img.onload = () => {
+            try {
+              const canvas = document.createElement("canvas");
+              canvas.width = img.naturalWidth;
+              canvas.height = img.naturalHeight;
+              const ctx = canvas.getContext("2d");
+              if (!ctx) return resolve(dataUrl);
+              ctx.drawImage(img, 0, 0);
+              resolve(canvas.toDataURL("image/png"));
+            } catch {
+              resolve(dataUrl);
+            }
+          };
+          img.onerror = () => resolve(dataUrl);
+          img.src = dataUrl;
+        });
+      }
+
+      const dims = await getDimensions(finalDataUrl);
+      return { data: finalDataUrl, width: dims.width, height: dims.height, format: normalizeFormat(finalDataUrl) };
+    }
+  } catch {
+    // fallback below
+  }
+
+  try {
+    return await new Promise((resolve) => {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => {
+        try {
+          const canvas = document.createElement("canvas");
+          canvas.width = img.naturalWidth;
+          canvas.height = img.naturalHeight;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) return resolve(null);
+          ctx.drawImage(img, 0, 0);
+          const dataUrl = canvas.toDataURL("image/png");
+          resolve({ data: dataUrl, width: img.naturalWidth || 1, height: img.naturalHeight || 1, format: "PNG" });
+        } catch {
+          resolve(null);
+        }
+      };
+      img.onerror = () => resolve(null);
+      img.src = cacheBustedUrl;
+    });
   } catch {
     return null;
   }
@@ -220,7 +282,7 @@ export async function exportBowlingPdf(playerName: string, games: BowlingGameDat
 
   // Load images in parallel
   const arsenalBalls = options?.arsenalBalls || [];
-  const imagePromises: Promise<{ data: string; width: number; height: number } | null>[] = [
+  const imagePromises: Promise<{ data: string; width: number; height: number; format: "PNG" | "JPEG" } | null>[] = [
     options?.playerAvatarUrl ? loadImageAsBase64(options.playerAvatarUrl) : Promise.resolve(null),
     options?.oilPatternImageUrl ? loadImageAsBase64(options.oilPatternImageUrl) : Promise.resolve(null),
     ...arsenalBalls.map(b => b.imageUrl ? loadImageAsBase64(b.imageUrl) : Promise.resolve(null)),
@@ -244,7 +306,7 @@ export async function exportBowlingPdf(playerName: string, games: BowlingGameDat
       const imgY = 5;
       doc.setFillColor(...COLORS.white);
       doc.circle(imgX + imgSize / 2, imgY + imgSize / 2, imgSize / 2 + 1, "F");
-      doc.addImage(avatarBase64.data, "JPEG", imgX, imgY, imgSize, imgSize);
+      doc.addImage(avatarBase64.data, avatarBase64.format, imgX, imgY, imgSize, imgSize);
       textStartX = margin + imgSize + 5;
     } catch {
       // skip
@@ -303,7 +365,7 @@ export async function exportBowlingPdf(playerName: string, games: BowlingGameDat
           imgH = maxH;
           imgW = imgH * aspect;
         }
-        doc.addImage(oilBase64.data, "PNG", margin + (contentWidth - imgW) / 2, oilY, imgW, imgH);
+        doc.addImage(oilBase64.data, oilBase64.format, margin + (contentWidth - imgW) / 2, oilY, imgW, imgH);
         oilY += imgH + 4;
       } catch {
         // skip
@@ -345,7 +407,7 @@ export async function exportBowlingPdf(playerName: string, games: BowlingGameDat
           doc.setFillColor(230, 230, 230);
           doc.circle(cx, cy, radius, "F");
           // Add image (square crop into circle area)
-          doc.addImage(imgData.data, "JPEG", bx, y, ballSize, ballSize);
+          doc.addImage(imgData.data, imgData.format, bx, y, ballSize, ballSize);
           // Draw circle border on top
           doc.setDrawColor(...COLORS.border);
           doc.setLineWidth(0.5);
