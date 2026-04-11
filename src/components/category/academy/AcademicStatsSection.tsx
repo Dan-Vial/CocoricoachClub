@@ -61,7 +61,7 @@ export function AcademicStatsSection({ categoryId }: AcademicStatsSectionProps) 
     queryFn: async () => {
       const { data, error } = await supabase
         .from("players")
-        .select("id, name, first_name, photo_url")
+        .select("id, name, first_name")
         .eq("category_id", categoryId)
         .eq("is_active", true)
         .order("name");
@@ -323,11 +323,7 @@ export function AcademicStatsSection({ categoryId }: AcademicStatsSectionProps) 
                       : "bg-card hover:bg-muted border-border"
                   )}
                 >
-                  {player.photo_url ? (
-                    <img src={player.photo_url} alt="" className="h-6 w-6 rounded-full object-cover" />
-                  ) : (
-                    <User className="h-4 w-4" />
-                  )}
+                  <User className="h-4 w-4" />
                   {fullName}
                 </button>
               );
