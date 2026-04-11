@@ -389,8 +389,8 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
     }
   }, [stats, sportStats, statCategories, categoryId, selectedCount, allMatches, playerProgressions]);
 
-  // Export PDF - ALL stats, no slicing
-  const handleExportPdf = async () => {
+  // Export PDF
+  const handleExportPdf = useCallback(async (mode: "all" | "team" | "individual" = "all") => {
     if (!stats || stats.length === 0) return;
     try {
       const { settings, clubName, categoryName, seasonName } = await preparePdfWithSettings(categoryId);
