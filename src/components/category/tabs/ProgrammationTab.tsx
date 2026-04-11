@@ -1,11 +1,10 @@
 import { Tabs, TabsContent } from "@/components/ui/tabs";
-import { CalendarDays, FolderOpen, ClipboardCheck, Bell, Target, Timer } from "lucide-react";
+import { CalendarDays, FolderOpen, ClipboardCheck, Bell, Target } from "lucide-react";
 import { TestsTab } from "@/components/category/TestsTab";
 import { SessionsTab } from "@/components/category/sessions/SessionsTab";
 import { ProgramsTab } from "@/components/category/programs/ProgramsTab";
 import { TestRemindersTab } from "@/components/category/TestRemindersTab";
 import { LoadObjectivesSection } from "@/components/periodization/LoadObjectivesSection";
-import { PeriodizationTab } from "@/components/periodization/PeriodizationTab";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ColoredSubTabsList, ColoredSubTabsTrigger } from "@/components/ui/colored-subtabs";
