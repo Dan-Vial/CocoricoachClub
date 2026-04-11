@@ -38,6 +38,7 @@ export function MatchesTab({ categoryId, sportType }: MatchesTabProps) {
   const isBowling = (sportType || "").toLowerCase().includes("bowling");
   const isTennis = (sportType || "").toLowerCase().includes("tennis");
   const hasTrainingStats = true; // Available for all sports
+  const isRugby = isRugbyType(sportType || "");
   
   // Labels adaptés selon le sport
   const itemLabel = isIndividual ? "compétition" : "match";
