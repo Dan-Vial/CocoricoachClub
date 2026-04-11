@@ -51,13 +51,13 @@ function PlayerDetailTab({ value, label, icon: Icon, color }: { value: string; l
         "transition-all duration-200 ease-out whitespace-nowrap",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
         "hover:opacity-80",
-        "data-[state=active]:shadow-md data-[state=active]:scale-105",
+        "data-[state=active]:shadow-md",
       )}
       style={{ borderWidth: "2px", borderColor: color, borderStyle: "solid" }}
     >
       <span
         className={cn(
-          "absolute inset-0 rounded-md transition-all duration-200",
+          "pointer-events-none absolute inset-0 rounded-md transition-all duration-200",
           "opacity-0 scale-95",
           "group-data-[state=active]:opacity-100 group-data-[state=active]:scale-100"
         )}

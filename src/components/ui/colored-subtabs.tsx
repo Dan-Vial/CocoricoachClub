@@ -60,7 +60,7 @@ const ColoredSubTabsTrigger = React.forwardRef<
       {/* Active background */}
       <span 
         className={cn(
-          "absolute inset-0 rounded-md transition-all duration-200",
+          "pointer-events-none absolute inset-0 rounded-md transition-all duration-200",
           "opacity-0 scale-95",
           "group-data-[state=active]:opacity-100 group-data-[state=active]:scale-100"
         )}
