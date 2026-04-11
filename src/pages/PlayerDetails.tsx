@@ -421,7 +421,7 @@ function PlayerDetailsContent() {
 
         {/* Athlete Access Section - only for coaches */}
         {!isViewer && player.category_id && (
-          <div className="mb-6">
+          <div className="mb-3">
             <AthleteAccessSection 
               playerId={playerId!} 
               categoryId={player.category_id}
@@ -430,8 +430,7 @@ function PlayerDetailsContent() {
           </div>
         )}
 
-        {/* Performance References Section */}
-        <div className="mb-6">
+        <div className="mb-3">
           <PlayerReferenceCard 
             categoryId={player.category_id}
             playerId={playerId!}
@@ -440,7 +439,7 @@ function PlayerDetailsContent() {
         </div>
 
         {/* Player Profile and Biometrics Section - Compact */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-3">
           <PlayerProfile 
             playerId={playerId!} 
             categoryId={player.category_id}
