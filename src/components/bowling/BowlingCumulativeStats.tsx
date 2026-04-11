@@ -442,7 +442,7 @@ export function BowlingCumulativeStats({ categoryId, playerId: fixedPlayerId }: 
                         const playerArsenal = allArsenal.filter((a: any) => a.player_id === p.id);
                         return {
                           playerId: p.id,
-                          playerName: [p.first_name, p.name].filter(Boolean).join(" "),
+                          playerName: p.name,
                           avatarUrl: (allGames || []).find(g => g.playerId === p.id)?.playerAvatarUrl || null,
                           games: (allGames || []).filter(g => g.playerId === p.id),
                           arsenalBalls: playerArsenal.map((item: any) => {
