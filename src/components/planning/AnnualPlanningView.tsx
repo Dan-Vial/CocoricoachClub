@@ -83,7 +83,7 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("training_sessions")
-        .select("id, session_date, session_type")
+        .select("id, session_date")
         .eq("category_id", categoryId)
         .gte("session_date", format(yearStart, "yyyy-MM-dd"))
         .lte("session_date", format(yearEnd, "yyyy-MM-dd"));
