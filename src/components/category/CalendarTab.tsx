@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { ColoredSubTabsList, ColoredSubTabsTrigger, ColoredContentCard, ColoredCardHeader, ColoredTitle } from "@/components/ui/colored-subtabs";
-import { Calendar as CalendarIcon, Target, BarChart3, Dumbbell } from "lucide-react";
+import { Calendar as CalendarIcon, Target, BarChart3, Dumbbell, LayoutGrid } from "lucide-react";
 import { toast } from "sonner";
 import { SessionFormDialog } from "./sessions/SessionFormDialog";
 import { AddMatchCalendarDialog } from "./matches/AddMatchCalendarDialog";
@@ -25,6 +25,7 @@ import { getTrainingTypesForSport, TRAINING_TYPE_COLORS } from "@/lib/constants/
 import { DisabledTabTrigger } from "@/components/ui/disabled-tab-trigger";
 import { useViewerSessions, useViewerMatches } from "@/hooks/use-viewer-data";
 import { ImprovedCalendarView } from "./calendar/ImprovedCalendarView";
+import { AnnualPlanningView } from "@/components/planning/AnnualPlanningView";
 
 interface CalendarTabProps {
   categoryId: string;
@@ -291,9 +292,13 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
 
   return (
     <div className="space-y-6">
-      <Tabs defaultValue="global" className="space-y-4">
+      <Tabs defaultValue="annual" className="space-y-4">
         <div className="flex justify-center">
           <ColoredSubTabsList colorKey="planification" className="inline-flex w-max">
+          <ColoredSubTabsTrigger value="annual" colorKey="planification" icon={<LayoutGrid className="h-4 w-4" />}>
+            <span className="hidden sm:inline">Vue Annuelle</span>
+            <span className="sm:hidden">Annuel</span>
+          </ColoredSubTabsTrigger>
           <ColoredSubTabsTrigger value="global" colorKey="planification" icon={<CalendarIcon className="h-4 w-4" />}>
             <span className="hidden sm:inline">Calendrier Global</span>
             <span className="sm:hidden">Global</span>
