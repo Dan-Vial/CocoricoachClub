@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, User, LogOut, Activity, Heart, BarChart3, Target, Video, Shield, ArrowLeft, Search, ChevronRight, MessageSquare, Settings, CalendarDays, FlaskConical, CircleDot, Weight, Waves } from "lucide-react";
+import { Loader2, User, LogOut, Activity, Heart, BarChart3, Target, Video, Shield, ArrowLeft, Search, ChevronRight, MessageSquare, Settings, CalendarDays, FlaskConical, CircleDot, Weight, Waves, FileText } from "lucide-react";
 import { PlayerBowlingArsenal } from "@/components/bowling/PlayerBowlingArsenal";
 import { PlayerSurfEquipment } from "@/components/surf/PlayerSurfEquipment";
 import { PlayerSkiEquipment } from "@/components/ski/PlayerSkiEquipment";
@@ -28,6 +28,7 @@ import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 import { AthleteSpaceCalendar } from "@/components/athlete-space/AthleteSpaceCalendar";
 import { AthleteSpaceTests } from "@/components/athlete-space/AthleteSpaceTests";
 import { TonnageDashboard } from "@/components/tonnage/TonnageDashboard";
+import { AthleteSpaceDocuments } from "@/components/athlete-space/AthleteSpaceDocuments";
 
 interface AthleteInfo {
   player_id: string;
