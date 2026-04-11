@@ -46,7 +46,10 @@ export function BowlingArsenalCatalogTab({ categoryId }: BowlingArsenalCatalogTa
   const [selectedBallIds, setSelectedBallIds] = useState<string[]>([]);
   const [assignWeight, setAssignWeight] = useState("");
   const [arsenalSearch, setArsenalSearch] = useState("");
+  const [arsenalBrandFilter, setArsenalBrandFilter] = useState<string>("all");
 
+  // Player arsenal view state
+  const [selectedViewPlayerId, setSelectedViewPlayerId] = useState<string | null>(null);
   // Fetch players for the category
   const { data: players = [] } = useQuery({
     queryKey: ["players", categoryId],
