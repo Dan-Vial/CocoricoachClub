@@ -2853,7 +2853,7 @@ export function SessionFormDialog({
                     )}
 
 
-                    {/* Precision exercise selector - shown for "precision" type, hidden for rugby (uses field input at RPE time) */}
+                    {/* Precision exercise selector - shown for "precision" type */}
                     {type === "precision" && !isRugbyType(sportType || "") && (
                       <div className="rounded-lg border border-accent/30 p-3 space-y-2">
                         <PrecisionExerciseSelector
@@ -2870,9 +2870,12 @@ export function SessionFormDialog({
                       </div>
                     )}
                     {type === "precision" && isRugbyType(sportType || "") && (
-                      <div className="rounded-lg border border-accent/30 p-3">
+                      <div className="rounded-lg border border-accent/30 p-3 space-y-2">
                         <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                          🏉 Les exercices de précision (Drop, Pénalités, Touches, Jeu de zone…) seront sélectionnés par l'athlète lors de la saisie RPE via le terrain interactif.
+                          🏉 Exercices disponibles : Drop, Pénalités, Coup de pied, Chandelle, Passe au pied, Jeu de zone, Touche…
+                        </p>
+                        <p className="text-[10px] text-muted-foreground">
+                          📊 Tu pourras saisir tes stats de précision (réussites / tentatives) lors de la saisie RPE via le terrain interactif.
                         </p>
                       </div>
                     )}
