@@ -276,113 +276,118 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
   const selectedCount = selectedMatchIds.length === 0 ? allMatches.length : selectedMatchIds.length;
   const selectedPlayer = stats?.find(p => p.playerId === selectedPlayerId);
 
-  // Export Excel - ALL stats, no slicing
-  const handleExportExcel = async () => {
+  // Export Excel
+  const handleExportExcel = useCallback(async (mode: "all" | "team" | "individual" = "all") => {
     if (!stats || stats.length === 0) return;
     try {
       const branding = await getExcelBranding(categoryId);
       const wb = new ExcelJS.Workbook();
 
-      // Sheet 1: Team totals
-      const wsTeam = wb.addWorksheet("Équipe");
-      const teamStats: Record<string, number> = {};
-      sportStats.forEach(stat => {
-        if (stat.computedFrom) return;
-        teamStats[stat.key] = stats.reduce((sum, p) => sum + (p.sportData[stat.key] || 0), 0);
-      });
-      sportStats.forEach(stat => {
-        if (stat.computedFrom) {
-          const { successKey, totalKey, failureKey } = stat.computedFrom;
-          const success = teamStats[successKey] || 0;
-          const total = totalKey ? (teamStats[totalKey] || 0) : success + (teamStats[failureKey!] || 0);
-          teamStats[stat.key] = total > 0 ? Math.round((success / total) * 100) : 0;
-        }
-      });
-
-      wsTeam.columns = [
-        { header: "Catégorie", key: "cat", width: 15 },
-        { header: "Statistique", key: "stat", width: 25 },
-        { header: "Total équipe", key: "total", width: 15 },
-        { header: "Moy/match", key: "avg", width: 15 },
-      ];
-      const teamStartRow = addBrandedHeader(wsTeam, "Stats équipe cumulées", branding, [
-        ["Matchs", `${selectedCount}/${allMatches.length}`],
-      ]);
-      styleDataHeaderRow(wsTeam, teamStartRow, 4, branding.headerColor);
-      const teamHdr = wsTeam.getRow(teamStartRow);
-      teamHdr.getCell(1).value = "Catégorie";
-      teamHdr.getCell(2).value = "Statistique";
-      teamHdr.getCell(3).value = "Total";
-      teamHdr.getCell(4).value = "Moy/match";
-
-      let tRow = teamStartRow + 1;
-      statCategories.forEach(cat => {
-        const catStats = sportStats.filter(s => s.category === cat.key);
-        catStats.forEach(s => {
-          const row = wsTeam.getRow(tRow);
-          row.getCell(1).value = cat.label;
-          row.getCell(2).value = s.label;
-          const val = teamStats[s.key] || 0;
-          row.getCell(3).value = s.computedFrom ? `${val}%` : val;
-          row.getCell(4).value = s.computedFrom ? "" : Math.round((val / Math.max(selectedCount, 1)) * 10) / 10;
-          tRow++;
+      if (mode === "all" || mode === "team") {
+        // Sheet: Team totals
+        const wsTeam = wb.addWorksheet("Équipe");
+        const teamStats: Record<string, number> = {};
+        sportStats.forEach(stat => {
+          if (stat.computedFrom) return;
+          teamStats[stat.key] = stats.reduce((sum, p) => sum + (p.sportData[stat.key] || 0), 0);
         });
-      });
-      addZebraRows(wsTeam, teamStartRow + 1, tRow - 1, 4);
-      addFooter(wsTeam, tRow, 4, branding.footerText);
+        sportStats.forEach(stat => {
+          if (stat.computedFrom) {
+            const { successKey, totalKey, failureKey } = stat.computedFrom;
+            const success = teamStats[successKey] || 0;
+            const total = totalKey ? (teamStats[totalKey] || 0) : success + (teamStats[failureKey!] || 0);
+            teamStats[stat.key] = total > 0 ? Math.round((success / total) * 100) : 0;
+          }
+        });
 
-      // Individual sheets per category
-      statCategories.forEach(cat => {
-        const categoryStats = sportStats.filter(s => s.category === cat.key);
-        if (categoryStats.length === 0) return;
-        const ws = wb.addWorksheet(cat.label);
-        const colCount = 2 + categoryStats.length * 2;
-        ws.columns = [
-          { header: "Athlète", key: "name", width: 22 },
-          { header: "Matchs", key: "matches", width: 10 },
-          ...categoryStats.flatMap(s => [
-            { header: s.shortLabel, key: s.key, width: 12 },
-            { header: "+/-", key: `${s.key}_prog`, width: 10 },
-          ]),
+        wsTeam.columns = [
+          { header: "Catégorie", key: "cat", width: 15 },
+          { header: "Statistique", key: "stat", width: 25 },
+          { header: "Total équipe", key: "total", width: 15 },
+          { header: "Moy/match", key: "avg", width: 15 },
         ];
-        const startRow = addBrandedHeader(ws, `Stats individuelles - ${cat.label}`, branding, [
-          ["Matchs sélectionnés", `${selectedCount}/${allMatches.length}`],
+        const teamStartRow = addBrandedHeader(wsTeam, "Stats équipe cumulées", branding, [
+          ["Matchs", `${selectedCount}/${allMatches.length}`],
         ]);
-        styleDataHeaderRow(ws, startRow, colCount, branding.headerColor);
-        const headerRow = ws.getRow(startRow);
-        headerRow.getCell(1).value = "Athlète";
-        headerRow.getCell(2).value = "Matchs";
-        categoryStats.forEach((s, i) => {
-          headerRow.getCell(3 + i * 2).value = s.shortLabel;
-          headerRow.getCell(4 + i * 2).value = "+/-";
-        });
-        const sorted = [...stats].sort((a, b) => {
-          const firstStat = categoryStats[0]?.key;
-          return firstStat ? (b.sportData[firstStat] || 0) - (a.sportData[firstStat] || 0) : 0;
-        });
-        sorted.forEach((p, idx) => {
-          const row = ws.getRow(startRow + 1 + idx);
-          row.getCell(1).value = p.playerName;
-          row.getCell(2).value = p.matchesPlayed;
-          categoryStats.forEach((s, i) => {
-            const val = p.sportData[s.key] || 0;
-            row.getCell(3 + i * 2).value = s.computedFrom ? `${val}%` : val;
-            const prog = playerProgressions[p.playerId]?.[s.key] || 0;
-            const progCell = row.getCell(4 + i * 2);
-            progCell.value = prog > 0 ? `+${prog}` : String(prog);
-            progCell.font = { color: { argb: prog > 0 ? "FF16A34A" : prog < 0 ? "FFDC2626" : "FF64748B" } };
+        styleDataHeaderRow(wsTeam, teamStartRow, 4, branding.headerColor);
+        const teamHdr = wsTeam.getRow(teamStartRow);
+        teamHdr.getCell(1).value = "Catégorie";
+        teamHdr.getCell(2).value = "Statistique";
+        teamHdr.getCell(3).value = "Total";
+        teamHdr.getCell(4).value = "Moy/match";
+
+        let tRow = teamStartRow + 1;
+        statCategories.forEach(cat => {
+          const catStats = sportStats.filter(s => s.category === cat.key);
+          catStats.forEach(s => {
+            const row = wsTeam.getRow(tRow);
+            row.getCell(1).value = cat.label;
+            row.getCell(2).value = s.label;
+            const val = teamStats[s.key] || 0;
+            row.getCell(3).value = s.computedFrom ? `${val}%` : val;
+            row.getCell(4).value = s.computedFrom ? "" : Math.round((val / Math.max(selectedCount, 1)) * 10) / 10;
+            tRow++;
           });
         });
-        addZebraRows(ws, startRow + 1, startRow + sorted.length, colCount);
-        addFooter(ws, startRow + sorted.length + 1, colCount, branding.footerText);
-      });
+        addZebraRows(wsTeam, teamStartRow + 1, tRow - 1, 4);
+        addFooter(wsTeam, tRow, 4, branding.footerText);
+      }
 
-      await downloadWorkbook(wb, `stats-competition-${format(new Date(), "yyyy-MM-dd")}.xlsx`);
+      if (mode === "all" || mode === "individual") {
+        // Individual sheets per category
+        statCategories.forEach(cat => {
+          const categoryStats = sportStats.filter(s => s.category === cat.key);
+          if (categoryStats.length === 0) return;
+          const ws = wb.addWorksheet(cat.label);
+          const colCount = 2 + categoryStats.length * 2;
+          ws.columns = [
+            { header: "Athlète", key: "name", width: 22 },
+            { header: "Matchs", key: "matches", width: 10 },
+            ...categoryStats.flatMap(s => [
+              { header: s.shortLabel, key: s.key, width: 12 },
+              { header: "+/-", key: `${s.key}_prog`, width: 10 },
+            ]),
+          ];
+          const startRow = addBrandedHeader(ws, `Stats individuelles - ${cat.label}`, branding, [
+            ["Matchs sélectionnés", `${selectedCount}/${allMatches.length}`],
+          ]);
+          styleDataHeaderRow(ws, startRow, colCount, branding.headerColor);
+          const headerRow = ws.getRow(startRow);
+          headerRow.getCell(1).value = "Athlète";
+          headerRow.getCell(2).value = "Matchs";
+          categoryStats.forEach((s, i) => {
+            headerRow.getCell(3 + i * 2).value = s.shortLabel;
+            headerRow.getCell(4 + i * 2).value = "+/-";
+          });
+          const sorted = [...stats].sort((a, b) => {
+            const firstStat = categoryStats[0]?.key;
+            return firstStat ? (b.sportData[firstStat] || 0) - (a.sportData[firstStat] || 0) : 0;
+          });
+          sorted.forEach((p, idx) => {
+            const row = ws.getRow(startRow + 1 + idx);
+            row.getCell(1).value = p.playerName;
+            row.getCell(2).value = p.matchesPlayed;
+            categoryStats.forEach((s, i) => {
+              const val = p.sportData[s.key] || 0;
+              row.getCell(3 + i * 2).value = s.computedFrom ? `${val}%` : val;
+              const prog = playerProgressions[p.playerId]?.[s.key] || 0;
+              const progCell = row.getCell(4 + i * 2);
+              progCell.value = prog > 0 ? `+${prog}` : String(prog);
+              progCell.font = { color: { argb: prog > 0 ? "FF16A34A" : prog < 0 ? "FFDC2626" : "FF64748B" } };
+            });
+          });
+          addZebraRows(ws, startRow + 1, startRow + sorted.length, colCount);
+          addFooter(ws, startRow + sorted.length + 1, colCount, branding.footerText);
+        });
+      }
+
+      const suffix = mode === "team" ? "-equipe" : mode === "individual" ? "-individuelles" : "";
+      await downloadWorkbook(wb, `stats-competition${suffix}-${format(new Date(), "yyyy-MM-dd")}.xlsx`);
       toast.success("Export Excel téléchargé !");
     } catch (e) {
       toast.error("Erreur lors de l'export Excel");
     }
-  };
+  }, [stats, sportStats, statCategories, categoryId, selectedCount, allMatches, playerProgressions]);
 
   // Export PDF - ALL stats, no slicing
   const handleExportPdf = async () => {
