@@ -313,6 +313,10 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
           </ColoredSubTabsList>
         </div>
 
+        <TabsContent value="annual">
+          <AnnualPlanningView categoryId={categoryId} />
+        </TabsContent>
+
         <TabsContent value="global">
           <ImprovedCalendarView
             sessions={sessions || []}
