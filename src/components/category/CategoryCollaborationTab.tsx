@@ -279,32 +279,44 @@ export function CategoryCollaborationTab({ categoryId }: CategoryCollaborationTa
   };
 
   // Find invitation for a member by email
-  const getInvitationForMember = (memberEmail: string | null | undefined, isClubMember: boolean) => {
+  const getInvitationForMember = (memberEmail: string | null | undefined, isClubMember: boolean): { invitation: any; type: string } | null => {
     if (!memberEmail) return null;
     
     if (isClubMember) {
-      return clubInvitations?.find((inv: any) => inv.email === memberEmail) || null;
+      const clubInv = clubInvitations?.find((inv: any) => inv.email === memberEmail);
+      if (clubInv) return { invitation: clubInv, type: "club_invitations" };
+      return null;
     }
-    return invitations?.find((inv: any) => inv.email === memberEmail) || null;
+    
+    // Check category invitations
+    const catInv = invitations?.find((inv: any) => inv.email === memberEmail);
+    if (catInv) return { invitation: catInv, type: "category_invitations" };
+    
+    // Check athlete invitations
+    const athInv = athleteInvitations?.find((inv: any) => inv.email === memberEmail);
+    if (athInv) return { invitation: athInv, type: "athlete_invitations" };
+    
+    return null;
   };
 
-  const getInvitationLink = (token: string, isCategory: boolean) => {
+  const getInvitationLink = (token: string, type: string) => {
+    if (type === "athlete_invitations") {
+      return `${window.location.origin}/athlete-signup?token=${token}`;
+    }
+    const isCategory = type === "category_invitations";
     return `${window.location.origin}/accept-invitation?token=${token}${isCategory ? "&type=category" : ""}`;
   };
 
-  const handleCopyLink = async (token: string, isCategory: boolean, memberId: string) => {
-    const link = getInvitationLink(token, isCategory);
+  const handleCopyLink = async (token: string, type: string, memberId: string) => {
+    const link = getInvitationLink(token, type);
     await navigator.clipboard.writeText(link);
     setCopiedId(memberId);
     toast.success("Lien copié dans le presse-papiers");
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const handleResendInvitation = (invitation: any, isCategory: boolean) => {
-    renewInvitationMutation.mutate({
-      tableName: isCategory ? "category_invitations" : "club_invitations",
-      invitationId: invitation.id,
-    });
+  const handleResendInvitation = (invitationId: string, tableName: string) => {
+    renewInvitationMutation.mutate({ tableName, invitationId });
   };
 
   if (categoryLoading) {
@@ -312,10 +324,15 @@ export function CategoryCollaborationTab({ categoryId }: CategoryCollaborationTa
   }
 
   const renderInvitationActions = (member: any, isClubMember: boolean) => {
-    const invitation = getInvitationForMember(member.profile?.email, isClubMember);
-    if (!invitation) return null;
+    const result = getInvitationForMember(member.profile?.email, isClubMember);
+    
+    if (!result) {
+      return (
+        <span className="text-xs text-muted-foreground italic">—</span>
+      );
+    }
 
-    const isCategory = !isClubMember;
+    const { invitation, type } = result;
     
     return (
       <TooltipProvider>
@@ -326,7 +343,7 @@ export function CategoryCollaborationTab({ categoryId }: CategoryCollaborationTa
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8"
-                onClick={() => handleResendInvitation(invitation, isCategory)}
+                onClick={() => handleResendInvitation(invitation.id, type)}
                 disabled={renewInvitationMutation.isPending}
               >
                 <Send className="h-3.5 w-3.5" />
@@ -340,7 +357,7 @@ export function CategoryCollaborationTab({ categoryId }: CategoryCollaborationTa
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8"
-                onClick={() => handleCopyLink(invitation.token, isCategory, member.id)}
+                onClick={() => handleCopyLink(invitation.token, type, member.id)}
               >
                 {copiedId === member.id ? (
                   <Check className="h-3.5 w-3.5 text-green-500" />
