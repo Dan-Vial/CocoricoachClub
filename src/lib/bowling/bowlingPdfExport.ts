@@ -836,8 +836,7 @@ export async function exportBowlingPdf(playerName: string, games: BowlingGameDat
 
       y = checkPageBreak(doc, y, 30);
       if (y === 15) {
-        drawSectionTitle(doc, margin, y, contentWidth, "HISTORIQUE DES PARTIES (suite)");
-        y += 12;
+        // No repeat title on continuation pages
       }
 
       // Info line: Partie N
@@ -951,8 +950,6 @@ export async function exportBowlingPdf(playerName: string, games: BowlingGameDat
       gameIndex++;
       y = checkPageBreak(doc, y, 7);
       if (y === 15) {
-        drawSectionTitle(doc, margin, y, contentWidth, "RECAPITULATIF (suite)");
-        y += 12;
         y = drawRecapHeader(y);
       }
 
