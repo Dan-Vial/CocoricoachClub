@@ -140,8 +140,7 @@ export function PlayerBowlingArsenal({ playerId, categoryId, isViewer }: PlayerB
     },
   });
 
-  const resetForm = () => {
-    setIsAddOpen(false);
+  const clearFormFields = () => {
     setEditingBall(null);
     setSelectedCatalogBall(null);
     setWeight("");
@@ -156,6 +155,11 @@ export function PlayerBowlingArsenal({ playerId, categoryId, isViewer }: PlayerB
     setDrillingAngle("");
     setPinPapDistance("");
     setValAngle("");
+  };
+
+  const resetForm = () => {
+    setIsAddOpen(false);
+    clearFormFields();
   };
 
   const handleSelectFromCatalog = (ball: any) => {
