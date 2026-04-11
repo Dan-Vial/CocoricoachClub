@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,6 +12,7 @@ import { BarChart3, Trophy, Target, Shield, Activity, Dumbbell, Filter, CheckSqu
 import { isRugbyType } from "@/lib/constants/sportTypes";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from "@/components/ui/dropdown-menu";
 import { getStatCategories, type StatField } from "@/lib/constants/sportStats";
 import { useStatPreferences } from "@/hooks/use-stat-preferences";
 import { format } from "date-fns";
@@ -132,15 +133,14 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
     enabled: activeMatchIds.length > 0,
   });
 
-  // Fetch kicking attempts for rugby sports
-  const { data: kickingAttempts = [] } = useQuery({
-    queryKey: ["kicking-stats-cumulative", categoryId, activeMatchIds],
+  // Fetch per-match kicking data from player_match_stats for rugby
+  const { data: kickingData = [] } = useQuery({
+    queryKey: ["kicking-from-match-stats", categoryId, activeMatchIds],
     queryFn: async () => {
       if (activeMatchIds.length === 0) return [];
       const { data, error } = await supabase
-        .from("kicking_attempts")
-        .select("*, players(name, first_name), matches(opponent, match_date)")
-        .eq("category_id", categoryId)
+        .from("player_match_stats")
+        .select("player_id, match_id, conversions, penalties_scored, drop_goals, sport_data")
         .in("match_id", activeMatchIds);
       if (error) throw error;
       return data || [];
@@ -148,8 +148,8 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
     enabled: isRugby && activeMatchIds.length > 0,
   });
 
-  // Aggregate kicking stats per player
-  const kickingByPlayer = useMemo(() => {
+  // Aggregate kicking stats per player from player_match_stats
+  const kickingByPlayerFinal = useMemo(() => {
     const map: Record<string, {
       total: number; success: number;
       penalty: { total: number; success: number };
@@ -157,9 +157,24 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
       drop: { total: number; success: number };
       byMatch: Record<string, { total: number; success: number }>;
     }> = {};
-    kickingAttempts.forEach((a: any) => {
-      if (!map[a.player_id]) {
-        map[a.player_id] = {
+
+    kickingData.forEach((row: any) => {
+      const sportData = row.sport_data || {};
+      const convSuccess = Number(row.conversions) || 0;
+      const convAttempts = Number(sportData.conversionAttempts) || convSuccess;
+      const penSuccess = Number(row.penalties_scored) || 0;
+      const penAttempts = Number(sportData.penaltyAttempts) || penSuccess;
+      const dropSuccess = Number(row.drop_goals) || 0;
+      const dropAttempts = Number(sportData.dropAttempts) || dropSuccess;
+
+      const totalAttempts = convAttempts + penAttempts + dropAttempts;
+      const totalSuccess = convSuccess + penSuccess + dropSuccess;
+
+      // Skip players with no kicking activity
+      if (totalAttempts === 0) return;
+
+      if (!map[row.player_id]) {
+        map[row.player_id] = {
           total: 0, success: 0,
           penalty: { total: 0, success: 0 },
           conversion: { total: 0, success: 0 },
@@ -167,20 +182,22 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
           byMatch: {},
         };
       }
-      const p = map[a.player_id];
-      p.total++;
-      if (a.success) p.success++;
-      const type = a.kick_type as "penalty" | "conversion" | "drop";
-      if (p[type]) {
-        p[type].total++;
-        if (a.success) p[type].success++;
-      }
-      if (!p.byMatch[a.match_id]) p.byMatch[a.match_id] = { total: 0, success: 0 };
-      p.byMatch[a.match_id].total++;
-      if (a.success) p.byMatch[a.match_id].success++;
+      const p = map[row.player_id];
+      p.total += totalAttempts;
+      p.success += totalSuccess;
+      p.penalty.total += penAttempts;
+      p.penalty.success += penSuccess;
+      p.conversion.total += convAttempts;
+      p.conversion.success += convSuccess;
+      p.drop.total += dropAttempts;
+      p.drop.success += dropSuccess;
+      if (!p.byMatch[row.match_id]) p.byMatch[row.match_id] = { total: 0, success: 0 };
+      p.byMatch[row.match_id].total += totalAttempts;
+      p.byMatch[row.match_id].success += totalSuccess;
     });
+
     return map;
-  }, [kickingAttempts]);
+  }, [kickingData]);
 
   const { data: matchesDataForCharts = [] } = useQuery({
     queryKey: ["per_match_player_stats", categoryId, sportType, activeMatchIds],
@@ -259,116 +276,121 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
   const selectedCount = selectedMatchIds.length === 0 ? allMatches.length : selectedMatchIds.length;
   const selectedPlayer = stats?.find(p => p.playerId === selectedPlayerId);
 
-  // Export Excel - ALL stats, no slicing
-  const handleExportExcel = async () => {
+  // Export Excel
+  const handleExportExcel = useCallback(async (mode: "all" | "team" | "individual" = "all") => {
     if (!stats || stats.length === 0) return;
     try {
       const branding = await getExcelBranding(categoryId);
       const wb = new ExcelJS.Workbook();
 
-      // Sheet 1: Team totals
-      const wsTeam = wb.addWorksheet("Équipe");
-      const teamStats: Record<string, number> = {};
-      sportStats.forEach(stat => {
-        if (stat.computedFrom) return;
-        teamStats[stat.key] = stats.reduce((sum, p) => sum + (p.sportData[stat.key] || 0), 0);
-      });
-      sportStats.forEach(stat => {
-        if (stat.computedFrom) {
-          const { successKey, totalKey, failureKey } = stat.computedFrom;
-          const success = teamStats[successKey] || 0;
-          const total = totalKey ? (teamStats[totalKey] || 0) : success + (teamStats[failureKey!] || 0);
-          teamStats[stat.key] = total > 0 ? Math.round((success / total) * 100) : 0;
-        }
-      });
-
-      wsTeam.columns = [
-        { header: "Catégorie", key: "cat", width: 15 },
-        { header: "Statistique", key: "stat", width: 25 },
-        { header: "Total équipe", key: "total", width: 15 },
-        { header: "Moy/match", key: "avg", width: 15 },
-      ];
-      const teamStartRow = addBrandedHeader(wsTeam, "Stats équipe cumulées", branding, [
-        ["Matchs", `${selectedCount}/${allMatches.length}`],
-      ]);
-      styleDataHeaderRow(wsTeam, teamStartRow, 4, branding.headerColor);
-      const teamHdr = wsTeam.getRow(teamStartRow);
-      teamHdr.getCell(1).value = "Catégorie";
-      teamHdr.getCell(2).value = "Statistique";
-      teamHdr.getCell(3).value = "Total";
-      teamHdr.getCell(4).value = "Moy/match";
-
-      let tRow = teamStartRow + 1;
-      statCategories.forEach(cat => {
-        const catStats = sportStats.filter(s => s.category === cat.key);
-        catStats.forEach(s => {
-          const row = wsTeam.getRow(tRow);
-          row.getCell(1).value = cat.label;
-          row.getCell(2).value = s.label;
-          const val = teamStats[s.key] || 0;
-          row.getCell(3).value = s.computedFrom ? `${val}%` : val;
-          row.getCell(4).value = s.computedFrom ? "" : Math.round((val / Math.max(selectedCount, 1)) * 10) / 10;
-          tRow++;
+      if (mode === "all" || mode === "team") {
+        // Sheet: Team totals
+        const wsTeam = wb.addWorksheet("Équipe");
+        const teamStats: Record<string, number> = {};
+        sportStats.forEach(stat => {
+          if (stat.computedFrom) return;
+          teamStats[stat.key] = stats.reduce((sum, p) => sum + (p.sportData[stat.key] || 0), 0);
         });
-      });
-      addZebraRows(wsTeam, teamStartRow + 1, tRow - 1, 4);
-      addFooter(wsTeam, tRow, 4, branding.footerText);
+        sportStats.forEach(stat => {
+          if (stat.computedFrom) {
+            const { successKey, totalKey, failureKey } = stat.computedFrom;
+            const success = teamStats[successKey] || 0;
+            const total = totalKey ? (teamStats[totalKey] || 0) : success + (teamStats[failureKey!] || 0);
+            teamStats[stat.key] = total > 0 ? Math.round((success / total) * 100) : 0;
+          }
+        });
 
-      // Individual sheets per category
-      statCategories.forEach(cat => {
-        const categoryStats = sportStats.filter(s => s.category === cat.key);
-        if (categoryStats.length === 0) return;
-        const ws = wb.addWorksheet(cat.label);
-        const colCount = 2 + categoryStats.length * 2;
-        ws.columns = [
-          { header: "Athlète", key: "name", width: 22 },
-          { header: "Matchs", key: "matches", width: 10 },
-          ...categoryStats.flatMap(s => [
-            { header: s.shortLabel, key: s.key, width: 12 },
-            { header: "+/-", key: `${s.key}_prog`, width: 10 },
-          ]),
+        wsTeam.columns = [
+          { header: "Catégorie", key: "cat", width: 15 },
+          { header: "Statistique", key: "stat", width: 25 },
+          { header: "Total équipe", key: "total", width: 15 },
+          { header: "Moy/match", key: "avg", width: 15 },
         ];
-        const startRow = addBrandedHeader(ws, `Stats individuelles - ${cat.label}`, branding, [
-          ["Matchs sélectionnés", `${selectedCount}/${allMatches.length}`],
+        const teamStartRow = addBrandedHeader(wsTeam, "Stats équipe cumulées", branding, [
+          ["Matchs", `${selectedCount}/${allMatches.length}`],
         ]);
-        styleDataHeaderRow(ws, startRow, colCount, branding.headerColor);
-        const headerRow = ws.getRow(startRow);
-        headerRow.getCell(1).value = "Athlète";
-        headerRow.getCell(2).value = "Matchs";
-        categoryStats.forEach((s, i) => {
-          headerRow.getCell(3 + i * 2).value = s.shortLabel;
-          headerRow.getCell(4 + i * 2).value = "+/-";
-        });
-        const sorted = [...stats].sort((a, b) => {
-          const firstStat = categoryStats[0]?.key;
-          return firstStat ? (b.sportData[firstStat] || 0) - (a.sportData[firstStat] || 0) : 0;
-        });
-        sorted.forEach((p, idx) => {
-          const row = ws.getRow(startRow + 1 + idx);
-          row.getCell(1).value = p.playerName;
-          row.getCell(2).value = p.matchesPlayed;
-          categoryStats.forEach((s, i) => {
-            const val = p.sportData[s.key] || 0;
-            row.getCell(3 + i * 2).value = s.computedFrom ? `${val}%` : val;
-            const prog = playerProgressions[p.playerId]?.[s.key] || 0;
-            const progCell = row.getCell(4 + i * 2);
-            progCell.value = prog > 0 ? `+${prog}` : String(prog);
-            progCell.font = { color: { argb: prog > 0 ? "FF16A34A" : prog < 0 ? "FFDC2626" : "FF64748B" } };
+        styleDataHeaderRow(wsTeam, teamStartRow, 4, branding.headerColor);
+        const teamHdr = wsTeam.getRow(teamStartRow);
+        teamHdr.getCell(1).value = "Catégorie";
+        teamHdr.getCell(2).value = "Statistique";
+        teamHdr.getCell(3).value = "Total";
+        teamHdr.getCell(4).value = "Moy/match";
+
+        let tRow = teamStartRow + 1;
+        statCategories.forEach(cat => {
+          const catStats = sportStats.filter(s => s.category === cat.key);
+          catStats.forEach(s => {
+            const row = wsTeam.getRow(tRow);
+            row.getCell(1).value = cat.label;
+            row.getCell(2).value = s.label;
+            const val = teamStats[s.key] || 0;
+            row.getCell(3).value = s.computedFrom ? `${val}%` : val;
+            row.getCell(4).value = s.computedFrom ? "" : Math.round((val / Math.max(selectedCount, 1)) * 10) / 10;
+            tRow++;
           });
         });
-        addZebraRows(ws, startRow + 1, startRow + sorted.length, colCount);
-        addFooter(ws, startRow + sorted.length + 1, colCount, branding.footerText);
-      });
+        addZebraRows(wsTeam, teamStartRow + 1, tRow - 1, 4);
+        addFooter(wsTeam, tRow, 4, branding.footerText);
+      }
 
-      await downloadWorkbook(wb, `stats-competition-${format(new Date(), "yyyy-MM-dd")}.xlsx`);
+      if (mode === "all" || mode === "individual") {
+        // Individual sheets per category
+        statCategories.forEach(cat => {
+          const categoryStats = sportStats.filter(s => s.category === cat.key);
+          if (categoryStats.length === 0) return;
+          const ws = wb.addWorksheet(cat.label);
+          const colCount = 2 + categoryStats.length * 2;
+          ws.columns = [
+            { header: "Athlète", key: "name", width: 22 },
+            { header: "Matchs", key: "matches", width: 10 },
+            ...categoryStats.flatMap(s => [
+              { header: s.shortLabel, key: s.key, width: 12 },
+              { header: "+/-", key: `${s.key}_prog`, width: 10 },
+            ]),
+          ];
+          const startRow = addBrandedHeader(ws, `Stats individuelles - ${cat.label}`, branding, [
+            ["Matchs sélectionnés", `${selectedCount}/${allMatches.length}`],
+          ]);
+          styleDataHeaderRow(ws, startRow, colCount, branding.headerColor);
+          const headerRow = ws.getRow(startRow);
+          headerRow.getCell(1).value = "Athlète";
+          headerRow.getCell(2).value = "Matchs";
+          categoryStats.forEach((s, i) => {
+            headerRow.getCell(3 + i * 2).value = s.shortLabel;
+            headerRow.getCell(4 + i * 2).value = "+/-";
+          });
+          const sorted = [...stats].sort((a, b) => {
+            const firstStat = categoryStats[0]?.key;
+            return firstStat ? (b.sportData[firstStat] || 0) - (a.sportData[firstStat] || 0) : 0;
+          });
+          sorted.forEach((p, idx) => {
+            const row = ws.getRow(startRow + 1 + idx);
+            row.getCell(1).value = p.playerName;
+            row.getCell(2).value = p.matchesPlayed;
+            categoryStats.forEach((s, i) => {
+              const val = p.sportData[s.key] || 0;
+              row.getCell(3 + i * 2).value = s.computedFrom ? `${val}%` : val;
+              const prog = playerProgressions[p.playerId]?.[s.key] || 0;
+              const progCell = row.getCell(4 + i * 2);
+              progCell.value = prog > 0 ? `+${prog}` : String(prog);
+              progCell.font = { color: { argb: prog > 0 ? "FF16A34A" : prog < 0 ? "FFDC2626" : "FF64748B" } };
+            });
+          });
+          addZebraRows(ws, startRow + 1, startRow + sorted.length, colCount);
+          addFooter(ws, startRow + sorted.length + 1, colCount, branding.footerText);
+        });
+      }
+
+      const suffix = mode === "team" ? "-equipe" : mode === "individual" ? "-individuelles" : "";
+      await downloadWorkbook(wb, `stats-competition${suffix}-${format(new Date(), "yyyy-MM-dd")}.xlsx`);
       toast.success("Export Excel téléchargé !");
     } catch (e) {
       toast.error("Erreur lors de l'export Excel");
     }
-  };
+  }, [stats, sportStats, statCategories, categoryId, selectedCount, allMatches, playerProgressions]);
 
-  // Export PDF - ALL stats, no slicing
-  const handleExportPdf = async () => {
+  // Export PDF
+  const handleExportPdf = useCallback(async (mode: "all" | "team" | "individual" = "all") => {
     if (!stats || stats.length === 0) return;
     try {
       const { settings, clubName, categoryName, seasonName } = await preparePdfWithSettings(categoryId);
@@ -483,12 +505,13 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
         });
       });
 
-      doc.save(`stats-competition-${format(new Date(), "yyyy-MM-dd")}.pdf`);
+      const suffix = mode === "team" ? "-equipe" : mode === "individual" ? "-individuelles" : "";
+      doc.save(`stats-competition${suffix}-${format(new Date(), "yyyy-MM-dd")}.pdf`);
       toast.success("Export PDF téléchargé !");
     } catch (e) {
       toast.error("Erreur lors de l'export PDF");
     }
-  };
+  }, [stats, sportStats, statCategories, categoryId, selectedCount, allMatches, activeMatchIds, playerProgressions]);
 
   const getCategoryIcon = (catKey: string) => {
     switch (catKey) {
@@ -582,12 +605,46 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
         </div>
 
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={handleExportExcel} className="gap-1">
-            <FileSpreadsheet className="h-4 w-4" /><span className="hidden sm:inline">Excel</span>
-          </Button>
-          <Button variant="outline" size="sm" onClick={handleExportPdf} className="gap-1">
-            <Download className="h-4 w-4" /><span className="hidden sm:inline">PDF</span>
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-1">
+                <FileSpreadsheet className="h-4 w-4" /><span className="hidden sm:inline">Excel</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel className="text-xs">Exporter en Excel</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => handleExportExcel("all")}>
+                <Users className="h-3.5 w-3.5 mr-2" />Tout (équipe + individuel)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExportExcel("team")}>
+                <Users className="h-3.5 w-3.5 mr-2" />Statistiques équipe
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExportExcel("individual")}>
+                <User className="h-3.5 w-3.5 mr-2" />Statistiques individuelles
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-1">
+                <Download className="h-4 w-4" /><span className="hidden sm:inline">PDF</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel className="text-xs">Exporter en PDF</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => handleExportPdf("all")}>
+                <Users className="h-3.5 w-3.5 mr-2" />Tout (équipe + individuel)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExportPdf("team")}>
+                <Users className="h-3.5 w-3.5 mr-2" />Statistiques équipe
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExportPdf("individual")}>
+                <User className="h-3.5 w-3.5 mr-2" />Statistiques individuelles
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
@@ -677,8 +734,8 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
                   })}
                 </Tabs>
                 {/* Kicking stats for rugby */}
-                {isRugby && kickingByPlayer[player.playerId] && (() => {
-                  const k = kickingByPlayer[player.playerId];
+                {isRugby && kickingByPlayerFinal[player.playerId] && (() => {
+                  const k = kickingByPlayerFinal[player.playerId];
                   const rate = k.total > 0 ? Math.round((k.success / k.total) * 100) : 0;
                   const penRate = k.penalty.total > 0 ? Math.round((k.penalty.success / k.penalty.total) * 100) : 0;
                   const convRate = k.conversion.total > 0 ? Math.round((k.conversion.success / k.conversion.total) * 100) : 0;
@@ -796,7 +853,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
       </Card>
 
       {/* Kicking ranking table for rugby */}
-      {isRugby && Object.keys(kickingByPlayer).length > 0 && (
+      {isRugby && Object.keys(kickingByPlayerFinal).length > 0 && (
         <Card className="bg-gradient-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -817,7 +874,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {Object.entries(kickingByPlayer)
+                  {Object.entries(kickingByPlayerFinal)
                     .map(([playerId, k]) => {
                       const playerInfo = stats?.find(s => s.playerId === playerId);
                       return { playerId, name: playerInfo?.playerName || "Inconnu", k };
