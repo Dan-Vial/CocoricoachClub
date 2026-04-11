@@ -64,17 +64,30 @@ serve(async (req) => {
       return respond({ success: false, error: "Données manquantes" });
     }
 
-    // Check player access: either primary category or via player_categories
+    // Check player access: athlete owns the player OR staff/admin has category access
     const { data: player, error: playerError } = await supabase
       .from("players")
-      .select("id")
+      .select("id, user_id")
       .eq("id", player_id)
-      .eq("user_id", userId)
       .maybeSingle();
 
     if (playerError) throw playerError;
     if (!player) {
-      return respond({ success: false, error: "Accès refusé pour ce joueur" });
+      return respond({ success: false, error: "Joueur introuvable" });
+    }
+
+    // If the logged-in user is NOT the player owner, check if they have staff access
+    if (player.user_id !== userId) {
+      const { data: hasAccess } = await supabase.rpc("can_access_category", {
+        _user_id: userId,
+        _category_id: category_id,
+      });
+      const { data: isSA } = await supabase.rpc("is_super_admin", {
+        _user_id: userId,
+      });
+      if (!hasAccess && !isSA) {
+        return respond({ success: false, error: "Accès refusé pour ce joueur" });
+      }
     }
 
     // Verify player has access to this category (primary or via player_categories)
