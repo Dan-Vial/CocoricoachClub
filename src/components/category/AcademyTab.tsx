@@ -227,6 +227,11 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
         <TabsContent value="evaluations">
           <EvaluationsSection categoryId={categoryId} players={players} />
         </TabsContent>
+
+        {/* Stats Tab */}
+        <TabsContent value="stats">
+          <AcademicStatsSection categoryId={categoryId} />
+        </TabsContent>
       </Tabs>
 
       {/* Grade Dialog */}
