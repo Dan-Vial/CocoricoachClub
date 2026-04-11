@@ -119,6 +119,20 @@ export function CategoryCollaborationTab({ categoryId }: CategoryCollaborationTa
     },
   });
 
+  // Also fetch athlete invitations
+  const { data: athleteInvitations } = useQuery({
+    queryKey: ["athlete-invitations", categoryId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("athlete_invitations")
+        .select("*")
+        .eq("category_id", categoryId)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const { data: clubMembers, isLoading: clubMembersLoading } = useQuery({
     queryKey: ["club-members-for-category", categoryId],
     queryFn: async () => {
