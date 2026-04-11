@@ -90,10 +90,6 @@ export function PerformanceTab({ categoryId }: PerformanceTabProps) {
         <TrainingLoadTab categoryId={categoryId} />
       </TabsContent>
 
-      <TabsContent value="history">
-        <SessionHistoryTimeline categoryId={categoryId} />
-      </TabsContent>
-
       <TabsContent value="analytics">
         <AnalyticsTab categoryId={categoryId} />
       </TabsContent>
