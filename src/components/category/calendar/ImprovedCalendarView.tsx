@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ChevronLeft, ChevronRight, Plus, Download, Printer, Calendar as CalendarIcon, Filter, X } from "lucide-react";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, addMonths, subMonths, startOfWeek, endOfWeek, isSameDay, isSameMonth, addWeeks, subWeeks, addDays, subDays } from "date-fns";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, addMonths, subMonths, startOfWeek, endOfWeek, isSameDay, isSameMonth, addWeeks, subWeeks, addDays, subDays, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
 import { TRAINING_TYPE_COLORS, getTrainingTypesForSport, getTrainingTypeLabel } from "@/lib/constants/trainingTypes";
 import { isIndividualSport } from "@/lib/constants/sportTypes";
