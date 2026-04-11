@@ -1,10 +1,9 @@
 import { Tabs, TabsContent } from "@/components/ui/tabs";
-import { BarChart3, Dumbbell, Zap, Lock, Brain, Weight } from "lucide-react";
-import { AnalyticsTab } from "@/components/analytics/AnalyticsTab";
+import { Dumbbell, Zap, Lock, Brain, Weight, BarChart3 } from "lucide-react";
 import { PhysicalPreparationTab } from "@/components/category/PhysicalPreparationTab";
 import { TrainingLoadTab } from "@/components/training-load/TrainingLoadTab";
 import { MentalPerformanceSection } from "@/components/category/mental/MentalPerformanceSection";
-import { TonnageDashboard } from "@/components/tonnage/TonnageDashboard";
+import { EvolutionTestsMuscuTab } from "@/components/tonnage/EvolutionTestsMuscuTab";
 import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ColoredSubTabsList, ColoredSubTabsTrigger } from "@/components/ui/colored-subtabs";
@@ -35,7 +34,6 @@ function PerformanceDisabledMessage() {
 export function PerformanceTab({ categoryId }: PerformanceTabProps) {
   const { isViewer } = useViewerModeContext();
 
-
   if (isViewer) {
     return <PerformanceDisabledMessage />;
   }
@@ -51,13 +49,6 @@ export function PerformanceTab({ categoryId }: PerformanceTabProps) {
           >
             <span className="hidden sm:inline">Charge d'entraînement</span>
             <span className="sm:hidden">Charge</span>
-          </ColoredSubTabsTrigger>
-          <ColoredSubTabsTrigger 
-            value="analytics" 
-            colorKey="performance"
-            icon={<BarChart3 className="h-4 w-4" />}
-          >
-            Analyse
           </ColoredSubTabsTrigger>
           <ColoredSubTabsTrigger 
             value="physical-prep" 
@@ -76,22 +67,18 @@ export function PerformanceTab({ categoryId }: PerformanceTabProps) {
             <span className="sm:hidden">Mental</span>
           </ColoredSubTabsTrigger>
           <ColoredSubTabsTrigger 
-            value="tonnage" 
+            value="evolution-tests" 
             colorKey="performance"
-            icon={<Weight className="h-4 w-4" />}
+            icon={<BarChart3 className="h-4 w-4" />}
           >
-            <span className="hidden sm:inline">Tonnage Muscu</span>
-            <span className="sm:hidden">Tonnage</span>
+            <span className="hidden sm:inline">Évolution Tests / Muscu</span>
+            <span className="sm:hidden">Tests</span>
           </ColoredSubTabsTrigger>
         </ColoredSubTabsList>
       </div>
 
       <TabsContent value="training-load">
         <TrainingLoadTab categoryId={categoryId} />
-      </TabsContent>
-
-      <TabsContent value="analytics">
-        <AnalyticsTab categoryId={categoryId} />
       </TabsContent>
 
       <TabsContent value="physical-prep">
@@ -102,8 +89,8 @@ export function PerformanceTab({ categoryId }: PerformanceTabProps) {
         <MentalPerformanceSection categoryId={categoryId} />
       </TabsContent>
 
-      <TabsContent value="tonnage">
-        <TonnageDashboard categoryId={categoryId} />
+      <TabsContent value="evolution-tests">
+        <EvolutionTestsMuscuTab categoryId={categoryId} />
       </TabsContent>
     </Tabs>
   );
