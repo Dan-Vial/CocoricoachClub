@@ -118,6 +118,34 @@ export function ImprovedCalendarView({
   const [selectedEventTypes, setSelectedEventTypes] = useState<string[]>([]);
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
 
+  // Fetch periodization cycles for this category
+  const { data: periodizationCycles } = useQuery({
+    queryKey: ["periodization-cycles-calendar", categoryId],
+    queryFn: async () => {
+      const { data: categories, error: catError } = await supabase
+        .from("periodization_categories")
+        .select("id, name, color")
+        .eq("category_id", categoryId);
+      if (catError) throw catError;
+      if (!categories || categories.length === 0) return [];
+
+      const { data: cycles, error: cycleError } = await supabase
+        .from("periodization_cycles")
+        .select("id, periodization_category_id, name, color, start_date, end_date, cycle_type")
+        .in("periodization_category_id", categories.map(c => c.id));
+      if (cycleError) throw cycleError;
+
+      return (cycles || []).map(cycle => {
+        const cat = categories.find(c => c.id === cycle.periodization_category_id);
+        return {
+          ...cycle,
+          categoryName: cat?.name || "",
+          displayColor: cycle.color || cat?.color || "#6366f1",
+        };
+      });
+    },
+  });
+
   // Fetch players for filter and notifications
   const { data: players } = useQuery({
     queryKey: ["players-calendar-filter", categoryId],
