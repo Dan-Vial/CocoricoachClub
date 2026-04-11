@@ -99,7 +99,7 @@ export function WellnessTab({ categoryId }: WellnessTabProps) {
         <TabsList>
           <TabsTrigger value="tracking">Suivi Wellness</TabsTrigger>
           <TabsTrigger value="pain-stats">Statistiques Douleurs</TabsTrigger>
-          <TabsTrigger value="risk">Risque Blessure (EWMA + Wellness)</TabsTrigger>
+          <TabsTrigger value="risk">Risque Blessure (EWMA + AWCR + Wellness)</TabsTrigger>
           {isFeminine && (
             <TabsTrigger value="menstrual">Cycle Menstruel</TabsTrigger>
           )}
