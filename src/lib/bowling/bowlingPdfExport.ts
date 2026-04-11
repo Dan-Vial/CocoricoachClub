@@ -68,6 +68,8 @@ interface BowlingGameData {
   singlePinConversionRate: number;
   frames?: FrameData[];
   blockDebriefing?: string;
+  blockId?: string;
+  roundDate?: string;
 }
 
 const PHASE_LABELS: Record<string, string> = {
