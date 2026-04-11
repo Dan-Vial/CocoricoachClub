@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -78,6 +78,22 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
       return data as PeriodizationCategory[];
     },
   });
+
+  // Auto-seed default categories if none exist
+  const seededRef = useRef(false);
+  useEffect(() => {
+    if (seededRef.current || categories.length > 0 || isViewer) return;
+    seededRef.current = true;
+    const seedDefaults = async () => {
+      const defaults = [
+        { category_id: categoryId, name: "Compétitions", color: "#d4a017", sort_order: 100 },
+        { category_id: categoryId, name: "Stages France", color: "#1e3a5f", sort_order: 101 },
+      ];
+      await supabase.from("periodization_categories").insert(defaults);
+      queryClient.invalidateQueries({ queryKey: ["periodization_categories", categoryId] });
+    };
+    seedDefaults();
+  }, [categories, categoryId, isViewer, queryClient]);
 
   const { data: cycles = [] } = useQuery({
     queryKey: ["periodization_cycles", categoryId, selectedYear.getFullYear()],
