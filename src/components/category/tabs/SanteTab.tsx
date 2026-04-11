@@ -64,13 +64,6 @@ export function SanteTab({ categoryId }: SanteTabProps) {
                 Wellness
               </ColoredSubTabsTrigger>
             )}
-            <ColoredSubTabsTrigger 
-              value="hrv" 
-              colorKey="sante"
-              icon={<Activity className="h-4 w-4" />}
-            >
-              HRV
-            </ColoredSubTabsTrigger>
             {!isViewer && (
               <ColoredSubTabsTrigger 
                 value="nutrition" 
@@ -93,9 +86,6 @@ export function SanteTab({ categoryId }: SanteTabProps) {
           </TabsContent>
         )}
 
-        <TabsContent value="hrv">
-          <HrvHistoryTab categoryId={categoryId} />
-        </TabsContent>
 
         {!isViewer && (
           <TabsContent value="nutrition">
