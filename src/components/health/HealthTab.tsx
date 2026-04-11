@@ -43,6 +43,7 @@ export function HealthTab({ categoryId }: HealthTabProps) {
 
   const sportType = category?.rugby_type || "";
   const isRugby = isRugbyType(sportType);
+  const hasConcussionProtocol = isRugby || ["judo", "ski", "snowboard"].includes(sportType);
 
   return (
     <div className="space-y-6">
@@ -70,7 +71,7 @@ export function HealthTab({ categoryId }: HealthTabProps) {
             )}
             
             {/* Protocole Commotion - Uniquement pour Rugby */}
-            {!isViewer && isRugby && (
+            {!isViewer && hasConcussionProtocol && (
               <ColoredSubTabsTrigger 
                 value="concussion" 
                 colorKey="sante"
@@ -125,7 +126,7 @@ export function HealthTab({ categoryId }: HealthTabProps) {
           </TabsContent>
         )}
 
-        {!isViewer && isRugby && (
+        {!isViewer && hasConcussionProtocol && (
           <TabsContent value="concussion">
             <ConcussionProtocolTab categoryId={categoryId} />
           </TabsContent>
