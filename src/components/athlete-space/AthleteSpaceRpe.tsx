@@ -20,6 +20,8 @@ import { getDisplayNotes } from "@/lib/utils/sessionNotes";
 import { SPARE_EXERCISE_TYPES } from "@/lib/constants/bowlingBallBrands";
 import { GroupedExerciseList } from "@/components/category/GroupedExerciseList";
 import { PrecisionExerciseSelector } from "@/components/precision/PrecisionExerciseSelector";
+import { AthletePrecisionFieldInput } from "./AthletePrecisionFieldInput";
+import { isRugbyType } from "@/lib/constants/sportTypes";
 
 interface Props {
   playerId: string;
@@ -280,6 +282,7 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
   );
   const isBowlingPrecision = selectedSessionData?.training_type === "bowling_spare";
   const isGenericPrecision = selectedSessionData?.training_type === "precision";
+  const isRugbyPrecision = isGenericPrecision && sportType && isRugbyType(sportType);
   const isPrecisionSession = isBowlingPrecision || isGenericPrecision;
 
   // State for generic precision exercises
@@ -367,7 +370,7 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
         throw new Error("Durée invalide");
       }
 
-      if (isPrecisionSession && !isSpareStatsValid) {
+      if (isPrecisionSession && !isRugbyPrecision && !isSpareStatsValid) {
         throw new Error("Renseigne des statistiques valides (réussites ≤ tentatives)");
       }
 
@@ -403,8 +406,8 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
           await supabase.from("awcr_tracking").delete().eq("id", awcrRow.id);
           throw spareError;
         }
-      } else if (isGenericPrecision && attemptsValue > 0) {
-        // Insert into precision_training table
+      } else if (isGenericPrecision && !isRugbyPrecision && attemptsValue > 0) {
+        // Insert into precision_training table (non-rugby sports)
         const { error: precisionError } = await supabase.from("precision_training").insert({
           player_id: playerId,
           category_id: categoryId,
@@ -687,8 +690,17 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
                       </div>
                     )}
 
-                    {/* Generic precision (all sports except bowling) */}
-                    {isGenericPrecision && (
+                    {/* Rugby precision with interactive field map */}
+                    {isRugbyPrecision && selectedSession && (
+                      <AthletePrecisionFieldInput
+                        playerId={playerId}
+                        categoryId={categoryId}
+                        sessionId={selectedSession}
+                      />
+                    )}
+
+                    {/* Generic precision (non-rugby sports) */}
+                    {isGenericPrecision && !isRugbyPrecision && (
                       <div className="space-y-3 rounded-lg border border-accent/30 p-3">
                         <PrecisionExerciseSelector
                           categoryId={categoryId}
@@ -737,6 +749,7 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
                         )}
                       </div>
                     )}
+
 
                     {/* Optional HRV section */}
                     <div className="space-y-3">
