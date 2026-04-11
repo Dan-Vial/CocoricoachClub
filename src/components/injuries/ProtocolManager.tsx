@@ -110,6 +110,7 @@ export function ProtocolManager({ categoryId }: ProtocolManagerProps) {
   const [isEditPhasesOpen, setIsEditPhasesOpen] = useState(false);
   const [selectedProtocol, setSelectedProtocol] = useState<any>(null);
   const [filterCategory, setFilterCategory] = useState<string>("all");
+  const [creationMode, setCreationMode] = useState<"predefined" | "custom">("predefined");
   
   // Form states
   const [selectedInjuryType, setSelectedInjuryType] = useState<string>("");
