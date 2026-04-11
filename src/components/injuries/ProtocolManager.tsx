@@ -679,7 +679,7 @@ export function ProtocolManager({ categoryId }: ProtocolManagerProps) {
         )}
       </div>
 
-      {/* Add Protocol Dialog */}
+      {/* Add Protocol Dialog - Simplified: pick injury → auto-generate */}
       <Dialog open={isAddDialogOpen} onOpenChange={(open) => { if (!open) resetForm(); setIsAddDialogOpen(open); }}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -687,165 +687,173 @@ export function ProtocolManager({ categoryId }: ProtocolManagerProps) {
           </DialogHeader>
           
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Nom du protocole *</Label>
-                <Input
-                  value={protocolName}
-                  onChange={(e) => setProtocolName(e.target.value)}
-                  placeholder="Ex: Entorse cheville Grade 2"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Catégorie *</Label>
-                <Select value={protocolCategory} onValueChange={setProtocolCategory}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {INJURY_CATEGORIES.map(cat => (
-                      <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
+            {/* Step 1: Select injury type */}
             <div className="space-y-2">
-              <Label>Description</Label>
-              <Textarea
-                value={protocolDescription}
-                onChange={(e) => setProtocolDescription(e.target.value)}
-                placeholder="Description du protocole..."
-                rows={2}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Durée min (jours)</Label>
-                <Input
-                  type="number"
-                  value={durationMin}
-                  onChange={(e) => setDurationMin(parseInt(e.target.value) || 0)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Durée max (jours)</Label>
-                <Input
-                  type="number"
-                  value={durationMax}
-                  onChange={(e) => setDurationMax(parseInt(e.target.value) || 0)}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Label className="text-base font-semibold">Phases de réathlétisation</Label>
-                <Button variant="outline" size="sm" onClick={addPhase}>
-                  <Plus className="h-4 w-4 mr-1" />
-                  Ajouter
-                </Button>
-              </div>
-              
-              {phases.map((phase, index) => (
-                <div key={index} className="p-3 border rounded-lg space-y-2">
-                  <div className="flex items-center gap-2">
-                    <GripVertical className="h-4 w-4 text-muted-foreground" />
-                    <Badge variant="outline">{phase.phase_number}</Badge>
-                    <Input
-                      value={phase.name}
-                      onChange={(e) => updatePhase(index, 'name', e.target.value)}
-                      placeholder="Nom de la phase"
-                      className="flex-1"
-                    />
-                    <div className="flex gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => movePhase(index, 'up')}
-                        disabled={index === 0}
-                      >
-                        <ChevronUp className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => movePhase(index, 'down')}
-                        disabled={index === phases.length - 1}
-                      >
-                        <ChevronDown className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => removePhase(index)}
-                        disabled={phases.length <= 1}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
+              <Label className="text-base font-semibold">1. Sélectionnez la blessure</Label>
+              <Select value={selectedInjuryType} onValueChange={handleInjuryTypeSelect}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choisir le type de blessure..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {INJURY_CATEGORIES.map(cat => (
+                    <div key={cat.value}>
+                      <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        {cat.label}
+                      </div>
+                      {RUGBY_INJURY_TYPES.filter(i => i.category === cat.value).map(injury => (
+                        <SelectItem key={injury.name} value={injury.name}>
+                          {injury.name}
+                        </SelectItem>
+                      ))}
                     </div>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Step 2: Show auto-generated structure (editable) */}
+            {selectedInjuryType && (
+              <>
+                <div className="p-3 rounded-lg bg-muted/50 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium">{protocolName}</p>
+                      <p className="text-sm text-muted-foreground">{protocolDescription}</p>
+                    </div>
+                    <Badge variant="secondary">
+                      {durationMin}-{durationMax} jours
+                    </Badge>
                   </div>
-                  <Input
-                    value={phase.description}
-                    onChange={(e) => updatePhase(index, 'description', e.target.value)}
-                    placeholder="Description de la phase"
-                    className="text-sm"
-                  />
                   <div className="grid grid-cols-2 gap-2">
-                    <div className="flex items-center gap-2">
-                      <Label className="text-xs whitespace-nowrap">Min:</Label>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Nom du protocole</Label>
                       <Input
-                        type="number"
-                        value={phase.duration_days_min}
-                        onChange={(e) => updatePhase(index, 'duration_days_min', parseInt(e.target.value) || 0)}
+                        value={protocolName}
+                        onChange={(e) => setProtocolName(e.target.value)}
                         className="h-8"
                       />
-                      <span className="text-xs text-muted-foreground">jours</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Label className="text-xs whitespace-nowrap">Max:</Label>
-                      <Input
-                        type="number"
-                        value={phase.duration_days_max}
-                        onChange={(e) => updatePhase(index, 'duration_days_max', parseInt(e.target.value) || 0)}
-                        className="h-8"
-                      />
-                      <span className="text-xs text-muted-foreground">jours</span>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <Label className="text-xs">Durée min</Label>
+                        <Input
+                          type="number"
+                          value={durationMin}
+                          onChange={(e) => setDurationMin(parseInt(e.target.value) || 0)}
+                          className="h-8"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Durée max</Label>
+                        <Input
+                          type="number"
+                          value={durationMax}
+                          onChange={(e) => setDurationMax(parseInt(e.target.value) || 0)}
+                          className="h-8"
+                        />
+                      </div>
                     </div>
-                   </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">🩹 Soins</Label>
-                    <Textarea
-                      value={(phase.care_instructions || []).join('\n')}
-                      onChange={(e) => updatePhase(index, 'care_instructions', e.target.value.split('\n').filter((c: string) => c.trim()))}
-                      placeholder="Bain froid, étirements..."
-                      rows={2}
-                      className="text-sm"
-                    />
                   </div>
-                   <TapingDetailEditor
-                     tapingInstructions={phase.taping_instructions || []}
-                     tapingDiagramUrl={phase.taping_diagram_url}
-                     onInstructionsChange={(instructions) => updatePhase(index, 'taping_instructions', instructions)}
-                     onDiagramUrlChange={(url) => updatePhase(index, 'taping_diagram_url', url)}
-                     injuryType={protocolCategory}
-                     phaseDescription={phase.description}
-                   />
-                   <ProtocolPhaseProgramLink
-                     categoryId={categoryId}
-                     linkedProgramId={phase.linked_program_id}
-                     phaseName={phase.name}
-                     onProgramLinked={(programId) => updatePhase(index, 'linked_program_id', programId)}
-                   />
-                   <ProtocolPhaseExercises
-                     exercises={phase.exercises || []}
-                     onChange={(exercises) => updatePhase(index, 'exercises', exercises)}
-                   />
                 </div>
-              ))}
-            </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-base font-semibold">2. Structure auto-générée ({phases.length} phases)</Label>
+                    <Button variant="outline" size="sm" onClick={addPhase}>
+                      <Plus className="h-4 w-4 mr-1" />
+                      Ajouter phase
+                    </Button>
+                  </div>
+                  
+                  {phases.map((phase, index) => (
+                    <div key={index} className="p-3 border rounded-lg space-y-2">
+                      <div className="flex items-center gap-2">
+                        <GripVertical className="h-4 w-4 text-muted-foreground" />
+                        <Badge variant="outline">{phase.phase_number}</Badge>
+                        <Input
+                          value={phase.name}
+                          onChange={(e) => updatePhase(index, 'name', e.target.value)}
+                          placeholder="Nom de la phase"
+                          className="flex-1"
+                        />
+                        <div className="flex gap-1">
+                          <Button variant="ghost" size="icon" onClick={() => movePhase(index, 'up')} disabled={index === 0}>
+                            <ChevronUp className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" onClick={() => movePhase(index, 'down')} disabled={index === phases.length - 1}>
+                            <ChevronDown className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" onClick={() => removePhase(index)} disabled={phases.length <= 1}>
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
+                      </div>
+                      <Input
+                        value={phase.description}
+                        onChange={(e) => updatePhase(index, 'description', e.target.value)}
+                        placeholder="Description de la phase"
+                        className="text-sm"
+                      />
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="flex items-center gap-2">
+                          <Label className="text-xs whitespace-nowrap">Min:</Label>
+                          <Input type="number" value={phase.duration_days_min} onChange={(e) => updatePhase(index, 'duration_days_min', parseInt(e.target.value) || 0)} className="h-8" />
+                          <span className="text-xs text-muted-foreground">jours</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Label className="text-xs whitespace-nowrap">Max:</Label>
+                          <Input type="number" value={phase.duration_days_max} onChange={(e) => updatePhase(index, 'duration_days_max', parseInt(e.target.value) || 0)} className="h-8" />
+                          <span className="text-xs text-muted-foreground">jours</span>
+                        </div>
+                      </div>
+                      
+                      {/* Objectives */}
+                      {phase.objectives.length > 0 && (
+                        <div className="space-y-1">
+                          <Label className="text-xs">🎯 Objectifs</Label>
+                          <Textarea
+                            value={(phase.objectives || []).join('\n')}
+                            onChange={(e) => updatePhase(index, 'objectives', e.target.value.split('\n').filter((o: string) => o.trim()))}
+                            placeholder="Objectifs de la phase..."
+                            rows={2}
+                            className="text-sm"
+                          />
+                        </div>
+                      )}
+
+                      <div className="space-y-1">
+                        <Label className="text-xs">🩹 Soins</Label>
+                        <Textarea
+                          value={(phase.care_instructions || []).join('\n')}
+                          onChange={(e) => updatePhase(index, 'care_instructions', e.target.value.split('\n').filter((c: string) => c.trim()))}
+                          placeholder="Bain froid, étirements..."
+                          rows={2}
+                          className="text-sm"
+                        />
+                      </div>
+                      <TapingDetailEditor
+                        tapingInstructions={phase.taping_instructions || []}
+                        tapingDiagramUrl={phase.taping_diagram_url}
+                        onInstructionsChange={(instructions) => updatePhase(index, 'taping_instructions', instructions)}
+                        onDiagramUrlChange={(url) => updatePhase(index, 'taping_diagram_url', url)}
+                        injuryType={protocolCategory}
+                        phaseDescription={phase.description}
+                      />
+                      <ProtocolPhaseProgramLink
+                        categoryId={categoryId}
+                        linkedProgramId={phase.linked_program_id}
+                        phaseName={phase.name}
+                        onProgramLinked={(programId) => updatePhase(index, 'linked_program_id', programId)}
+                      />
+                      <ProtocolPhaseExercises
+                        exercises={phase.exercises || []}
+                        onChange={(exercises) => updatePhase(index, 'exercises', exercises)}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
 
           <DialogFooter>
@@ -854,7 +862,7 @@ export function ProtocolManager({ categoryId }: ProtocolManagerProps) {
             </Button>
             <Button 
               onClick={() => createProtocol.mutate()}
-              disabled={!protocolName || !protocolCategory || createProtocol.isPending}
+              disabled={!selectedInjuryType || !protocolName || createProtocol.isPending}
             >
               Créer le protocole
             </Button>
