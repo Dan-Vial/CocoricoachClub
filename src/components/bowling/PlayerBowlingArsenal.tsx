@@ -363,6 +363,14 @@ export function PlayerBowlingArsenal({ playerId, categoryId, isViewer }: PlayerB
           <div className="space-y-3">
             {arsenal.map((item: any) => (
               <div key={item.id} className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-accent/5 transition-colors">
+                {/* Ball image */}
+                <div className="h-12 w-12 rounded-full overflow-hidden bg-muted flex-shrink-0 flex items-center justify-center border">
+                  {item.catalogBall?.image_url ? (
+                    <img src={item.catalogBall.image_url} alt={getBallDisplayName(item)} className="h-full w-full object-cover" />
+                  ) : (
+                    <CircleDot className="h-6 w-6 text-muted-foreground" />
+                  )}
+                </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-sm truncate">{getBallDisplayName(item)}</p>
                   <div className="flex flex-wrap gap-1.5 mt-1">
