@@ -373,8 +373,31 @@ export function CategoryCollaborationTab({ categoryId }: CategoryCollaborationTa
     const result = getInvitationForMember(member.profile?.email, isClubMember);
     
     if (!result) {
+      if (!member.profile?.email) {
+        return <span className="text-xs text-muted-foreground italic">—</span>;
+      }
       return (
-        <span className="text-xs text-muted-foreground italic">—</span>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 gap-1 text-xs"
+                onClick={() => createInvitationMutation.mutate({
+                  email: member.profile.email,
+                  role: member.role,
+                  isClubMember,
+                })}
+                disabled={createInvitationMutation.isPending}
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Créer
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Créer et copier un lien d'invitation</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       );
     }
 
