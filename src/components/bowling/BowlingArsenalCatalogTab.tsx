@@ -50,6 +50,20 @@ export function BowlingArsenalCatalogTab({ categoryId }: BowlingArsenalCatalogTa
   // Player arsenal view state
   const [selectedViewPlayerId, setSelectedViewPlayerId] = useState<string | null>(null);
 
+  // Edit arsenal item state
+  const [editArsenalOpen, setEditArsenalOpen] = useState(false);
+  const [editingArsenalItem, setEditingArsenalItem] = useState<any>(null);
+  const [editWeight, setEditWeight] = useState("");
+  const [editCurrentSurface, setEditCurrentSurface] = useState("");
+  const [editGamesPlayed, setEditGamesPlayed] = useState("0");
+  const [editRg, setEditRg] = useState("");
+  const [editDifferential, setEditDifferential] = useState("");
+  const [editIntermediateDiff, setEditIntermediateDiff] = useState("");
+  const [editDrillingAngle, setEditDrillingAngle] = useState("");
+  const [editPinPap, setEditPinPap] = useState("");
+  const [editValAngle, setEditValAngle] = useState("");
+  const [editPurchaseDate, setEditPurchaseDate] = useState("");
+
   // Fetch players for the category
   const { data: players = [] } = useQuery({
     queryKey: ["players", categoryId],
