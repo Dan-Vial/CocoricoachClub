@@ -193,7 +193,15 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
   };
 
 
-  const { data: existingSubjects } = useQuery({
+  const DEFAULT_SUBJECTS = [
+    "Mathématiques", "Français", "Anglais", "Espagnol", "Allemand",
+    "Histoire-Géographie", "Physique-Chimie", "SVT", "SES",
+    "Philosophie", "EPS", "NSI", "EMC",
+    "Arts Plastiques", "Musique", "Italien",
+    "HGGSP", "HLP", "LLCE", "Maths Expertes", "Maths Complémentaires",
+  ];
+
+  const { data: dbSubjects } = useQuery({
     queryKey: ["academic_subjects", categoryId],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -202,10 +210,11 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
         .eq("category_id", categoryId)
         .not("subject", "is", null);
       if (error) throw error;
-      const subjects = [...new Set(data.map(d => d.subject).filter(Boolean))] as string[];
-      return subjects.sort();
+      return [...new Set(data.map(d => d.subject).filter(Boolean))] as string[];
     },
   });
+
+  const existingSubjects = [...new Set([...DEFAULT_SUBJECTS, ...(dbSubjects || [])])].sort();
 
 
   return (
