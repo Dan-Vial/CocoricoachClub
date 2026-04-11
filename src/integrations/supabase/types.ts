@@ -3349,6 +3349,83 @@ export type Database = {
           },
         ]
       }
+      kicking_attempts: {
+        Row: {
+          category_id: string
+          created_at: string
+          half: number | null
+          id: string
+          kick_type: string
+          match_id: string
+          minute: number | null
+          notes: string | null
+          player_id: string
+          success: boolean
+          zone_label: string | null
+          zone_x: number
+          zone_y: number
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          half?: number | null
+          id?: string
+          kick_type?: string
+          match_id: string
+          minute?: number | null
+          notes?: string | null
+          player_id: string
+          success?: boolean
+          zone_label?: string | null
+          zone_x?: number
+          zone_y?: number
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          half?: number | null
+          id?: string
+          kick_type?: string
+          match_id?: string
+          minute?: number | null
+          notes?: string | null
+          player_id?: string
+          success?: boolean
+          zone_label?: string | null
+          zone_x?: number
+          zone_y?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kicking_attempts_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kicking_attempts_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kicking_attempts_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kicking_attempts_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       match_lineups: {
         Row: {
           boat_type: string | null

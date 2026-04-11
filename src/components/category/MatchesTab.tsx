@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Calendar, BarChart3, Settings2, Dumbbell, Target, Camera } from "lucide-react";
+import { Plus, Calendar, BarChart3, Settings2, Dumbbell, Target, Camera, Crosshair } from "lucide-react";
 import { AddMatchCalendarDialog } from "./matches/AddMatchCalendarDialog";
 import { MatchCard } from "./matches/MatchCard";
 import { PlayerCumulativeStats } from "./matches/PlayerCumulativeStats";
@@ -9,12 +9,13 @@ import { BowlingCumulativeStats } from "@/components/bowling/BowlingCumulativeSt
 import { BowlingTrainingStats } from "@/components/bowling/BowlingTrainingStats";
 import { TennisTrainingStats } from "@/components/tennis/TennisTrainingStats";
 import { PrecisionTrainingStats } from "@/components/training/PrecisionTrainingStats";
+import { KickingTracker } from "@/components/rugby/KickingTracker";
 import { CategoryPhotosTab } from "./photos/CategoryPhotosTab";
 import { isFuture, isPast, format } from "date-fns";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { ColoredSubTabsList, ColoredSubTabsTrigger } from "@/components/ui/colored-subtabs";
 import { useViewerModeContext } from "@/contexts/ViewerModeContext";
-import { isIndividualSport } from "@/lib/constants/sportTypes";
+import { isIndividualSport, isRugbyType } from "@/lib/constants/sportTypes";
 import { useViewerMatches } from "@/hooks/use-viewer-data";
 import { StatPreferencesDialog } from "./settings/StatPreferencesDialog";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -37,6 +38,7 @@ export function MatchesTab({ categoryId, sportType }: MatchesTabProps) {
   const isBowling = (sportType || "").toLowerCase().includes("bowling");
   const isTennis = (sportType || "").toLowerCase().includes("tennis");
   const hasTrainingStats = true; // Available for all sports
+  const isRugby = isRugbyType(sportType || "");
   
   // Labels adaptés selon le sport
   const itemLabel = isIndividual ? "compétition" : "match";
@@ -93,6 +95,11 @@ export function MatchesTab({ categoryId, sportType }: MatchesTabProps) {
             {hasTrainingStats && (
               <ColoredSubTabsTrigger value="training_stats" colorKey="competition" icon={<Target className="h-4 w-4" />}>
                 Stats entraînement
+              </ColoredSubTabsTrigger>
+            )}
+            {isRugby && (
+              <ColoredSubTabsTrigger value="kicking" colorKey="competition" icon={<Crosshair className="h-4 w-4" />}>
+                Buteur
               </ColoredSubTabsTrigger>
             )}
             <ColoredSubTabsTrigger value="photos" colorKey="competition" icon={<Camera className="h-4 w-4" />}>
@@ -205,6 +212,12 @@ export function MatchesTab({ categoryId, sportType }: MatchesTabProps) {
             <PrecisionTrainingStats categoryId={categoryId} />
           )}
         </TabsContent>
+
+        {isRugby && (
+          <TabsContent value="kicking">
+            <KickingTracker categoryId={categoryId} sportType={sportType} />
+          </TabsContent>
+        )}
 
         <TabsContent value="photos">
           <CategoryPhotosTab categoryId={categoryId} />

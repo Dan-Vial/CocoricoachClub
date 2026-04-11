@@ -32,6 +32,12 @@ interface MatchInfo {
   id: string;
   match_date: string;
   opponent: string;
+  is_home?: boolean;
+  location?: string;
+  match_time?: string;
+  competition?: string;
+  competition_stage?: string;
+  event_type?: string;
 }
 
 interface CumulativeStats {
@@ -39,6 +45,8 @@ interface CumulativeStats {
   playerName: string;
   matchesPlayed: number;
   sportData: Record<string, number>;
+  avatarUrl?: string;
+  position?: string;
 }
 
 export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCumulativeStatsProps) {
@@ -63,7 +71,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
       if (uniqueMatchIds.length === 0) return [] as MatchInfo[];
       const { data, error } = await supabase
         .from("matches")
-        .select("id, match_date, opponent")
+        .select("id, match_date, opponent, is_home, location, match_time, competition, competition_stage, event_type")
         .in("id", uniqueMatchIds)
         .order("match_date", { ascending: false });
       if (error) throw error;
@@ -82,18 +90,18 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
       if (activeMatchIds.length === 0) return [];
       const { data: playerStats, error: statsError } = await supabase
         .from("player_match_stats")
-        .select(`*, players(id, name, first_name)`)
+        .select(`*, players(id, name, first_name, avatar_url, position)`)
         .in("match_id", activeMatchIds);
       if (statsError) throw statsError;
       if (!playerStats) return [];
 
       const aggregated: Record<string, CumulativeStats> = {};
       playerStats.forEach((stat) => {
-        const player = stat.players as { id: string; name: string; first_name?: string } | null;
+        const player = stat.players as { id: string; name: string; first_name?: string; avatar_url?: string; position?: string } | null;
         const playerId = stat.player_id;
         const playerName = player ? [player.first_name, player.name].filter(Boolean).join(" ") : "Athlète inconnu";
         if (!aggregated[playerId]) {
-          aggregated[playerId] = { playerId, playerName, matchesPlayed: 0, sportData: {} };
+          aggregated[playerId] = { playerId, playerName, matchesPlayed: 0, sportData: {}, avatarUrl: player?.avatar_url || undefined, position: player?.position || undefined };
         }
         const p = aggregated[playerId];
         p.matchesPlayed += 1;
@@ -327,9 +335,30 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
         doc.text(`${clubName || ""} • ${categoryName || ""} • ${seasonName || ""}`, 14, 20);
         doc.text(`${selectedCount} matchs • ${format(new Date(), "dd/MM/yyyy")}`, pageW - 14, 20, { align: "right" });
       };
-
       drawHeader("Stats compétition cumulées");
       let y = 36;
+
+      // Match context info
+      const selectedMatches = allMatches.filter(m => activeMatchIds.includes(m.id));
+      doc.setTextColor(30, 41, 59);
+      doc.setFontSize(8);
+      selectedMatches.slice(0, 6).forEach((m, i) => {
+        const lieu = m.is_home ? "DOM" : "EXT";
+        const loc = m.location ? ` — ${m.location}` : "";
+        const comp = m.competition || "";
+        const stage = m.competition_stage ? ` (${m.competition_stage})` : "";
+        const time = m.match_time ? ` ${m.match_time}` : "";
+        doc.text(
+          `${format(new Date(m.match_date), "dd/MM/yy")} • vs ${m.opponent} [${lieu}]${loc}${time} ${comp}${stage}`,
+          14, y
+        );
+        y += 4;
+      });
+      if (selectedMatches.length > 6) {
+        doc.text(`... et ${selectedMatches.length - 6} autre(s)`, 14, y);
+        y += 4;
+      }
+      y += 4;
 
       statCategories.forEach((cat, catIdx) => {
         const categoryStats = sportStats.filter(s => s.category === cat.key);
