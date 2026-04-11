@@ -140,8 +140,7 @@ export function PlayerBowlingArsenal({ playerId, categoryId, isViewer }: PlayerB
     },
   });
 
-  const resetForm = () => {
-    setIsAddOpen(false);
+  const clearFormFields = () => {
     setEditingBall(null);
     setSelectedCatalogBall(null);
     setWeight("");
@@ -156,6 +155,11 @@ export function PlayerBowlingArsenal({ playerId, categoryId, isViewer }: PlayerB
     setDrillingAngle("");
     setPinPapDistance("");
     setValAngle("");
+  };
+
+  const resetForm = () => {
+    setIsAddOpen(false);
+    clearFormFields();
   };
 
   const handleSelectFromCatalog = (ball: any) => {
@@ -352,7 +356,7 @@ export function PlayerBowlingArsenal({ playerId, categoryId, isViewer }: PlayerB
             Mon Arsenal
           </CardTitle>
           {!isViewer && (
-            <Button size="sm" onClick={() => { resetForm(); setIsAddOpen(true); }} className="gap-1">
+            <Button size="sm" onClick={() => { clearFormFields(); setIsAddOpen(true); }} className="gap-1">
               <Plus className="h-4 w-4" />
               Ajouter
             </Button>
