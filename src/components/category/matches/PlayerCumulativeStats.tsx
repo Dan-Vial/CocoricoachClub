@@ -675,8 +675,68 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
                       </TabsContent>
                     );
                   })}
-                </Tabs>
+          </Tabs>
 
+          {/* Kicking table for rugby */}
+          {isRugby && Object.keys(kickingByPlayer).length > 0 && (
+            <div className="mt-6">
+              <h4 className="text-sm font-semibold flex items-center gap-2 mb-3">
+                <Crosshair className="h-4 w-4 text-primary" />
+                Classement Buteurs
+              </h4>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Athlète</TableHead>
+                      <TableHead className="text-center">Global</TableHead>
+                      <TableHead className="text-center">Pénalités</TableHead>
+                      <TableHead className="text-center">Transformations</TableHead>
+                      <TableHead className="text-center">Drops</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {Object.entries(kickingByPlayer)
+                      .map(([playerId, k]) => {
+                        const playerInfo = stats?.find(s => s.playerId === playerId);
+                        return { playerId, name: playerInfo?.playerName || "Inconnu", k };
+                      })
+                      .sort((a, b) => (b.k.total > 0 ? b.k.success / b.k.total : 0) - (a.k.total > 0 ? a.k.success / a.k.total : 0))
+                      .map(({ playerId, name, k }) => {
+                        const rate = k.total > 0 ? Math.round((k.success / k.total) * 100) : 0;
+                        const penRate = k.penalty.total > 0 ? Math.round((k.penalty.success / k.penalty.total) * 100) : 0;
+                        const convRate = k.conversion.total > 0 ? Math.round((k.conversion.success / k.conversion.total) * 100) : 0;
+                        const dropRate = k.drop.total > 0 ? Math.round((k.drop.success / k.drop.total) * 100) : 0;
+                        return (
+                          <TableRow key={playerId}>
+                            <TableCell className="font-medium">{name}</TableCell>
+                            <TableCell className="text-center">
+                              <span className="font-semibold">{rate}%</span>
+                              <span className="text-xs text-muted-foreground ml-1">({k.success}/{k.total})</span>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              {k.penalty.total > 0 ? (
+                                <><span className="font-semibold">{penRate}%</span><span className="text-xs text-muted-foreground ml-1">({k.penalty.success}/{k.penalty.total})</span></>
+                              ) : <span className="text-muted-foreground">—</span>}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              {k.conversion.total > 0 ? (
+                                <><span className="font-semibold">{convRate}%</span><span className="text-xs text-muted-foreground ml-1">({k.conversion.success}/{k.conversion.total})</span></>
+                              ) : <span className="text-muted-foreground">—</span>}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              {k.drop.total > 0 ? (
+                                <><span className="font-semibold">{dropRate}%</span><span className="text-xs text-muted-foreground ml-1">({k.drop.success}/{k.drop.total})</span></>
+                              ) : <span className="text-muted-foreground">—</span>}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+          )}
                 {/* Kicking stats for rugby */}
                 {isRugby && kickingByPlayer[player.playerId] && (() => {
                   const k = kickingByPlayer[player.playerId];
