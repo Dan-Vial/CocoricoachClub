@@ -27,9 +27,11 @@ interface AddCycleDialogProps {
   categoryId: string;
   categories: { id: string; name: string; color: string }[];
   preselectedCategoryId: string | null;
+  prefilledStartDate?: Date;
+  prefilledEndDate?: Date;
 }
 
-export function AddCycleDialog({ open, onOpenChange, categoryId, categories, preselectedCategoryId }: AddCycleDialogProps) {
+export function AddCycleDialog({ open, onOpenChange, categoryId, categories, preselectedCategoryId, prefilledStartDate, prefilledEndDate }: AddCycleDialogProps) {
   const [name, setName] = useState("");
   const [periodizationCategoryId, setPeriodizationCategoryId] = useState("");
   const [color, setColor] = useState(CYCLE_COLORS[0]);
@@ -44,6 +46,11 @@ export function AddCycleDialog({ open, onOpenChange, categoryId, categories, pre
       setPeriodizationCategoryId(preselectedCategoryId);
     }
   }, [preselectedCategoryId]);
+
+  useEffect(() => {
+    if (prefilledStartDate) setStartDate(prefilledStartDate);
+    if (prefilledEndDate) setEndDate(prefilledEndDate);
+  }, [prefilledStartDate, prefilledEndDate]);
 
   const createCycle = useMutation({
     mutationFn: async () => {
