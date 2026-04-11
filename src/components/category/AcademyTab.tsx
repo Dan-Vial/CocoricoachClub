@@ -20,7 +20,6 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { toast } from "sonner";
 import { AcademicStatsSection } from "./academy/AcademicStatsSection";
-import { AcademicStatsSection } from "./academy/AcademicStatsSection";
 
 interface AcademyTabProps {
   categoryId: string;
