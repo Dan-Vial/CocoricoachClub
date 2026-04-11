@@ -298,7 +298,6 @@ export function TrainingLoadTab({ categoryId }: TrainingLoadTabProps) {
                 <BarChart3 className="h-3 w-3" />
                 Répartition
               </TabsTrigger>
-              <TabsTrigger value="alerts">Alertes</TabsTrigger>
             </TabsList>
 
             <TabsContent value="chart">
@@ -335,13 +334,6 @@ export function TrainingLoadTab({ categoryId }: TrainingLoadTabProps) {
               <TrainingDistribution categoryId={categoryId} />
             </TabsContent>
 
-            <TabsContent value="alerts">
-              <TrainingLoadAlerts
-                playersAtRisk={playersAtRisk}
-                onPlayerClick={handlePlayerClick}
-                isLoading={teamLoading}
-              />
-            </TabsContent>
           </Tabs>
 
           {/* Recommendations section */}
