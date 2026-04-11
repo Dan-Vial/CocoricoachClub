@@ -306,6 +306,7 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
   const successesValue = Number(spareSuccesses);
   const isSpareStatsValid =
     !isPrecisionSession ||
+    isRugbyPrecision ||
     (Number.isInteger(attemptsValue) &&
       Number.isInteger(successesValue) &&
       attemptsValue > 0 &&
