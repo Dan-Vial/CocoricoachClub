@@ -34,11 +34,14 @@ interface AddCycleDialogProps {
 export function AddCycleDialog({ open, onOpenChange, categoryId, categories, preselectedCategoryId, prefilledStartDate, prefilledEndDate }: AddCycleDialogProps) {
   const [name, setName] = useState("");
   const [periodizationCategoryId, setPeriodizationCategoryId] = useState("");
-  const [color, setColor] = useState(CYCLE_COLORS[0]);
   const [startDate, setStartDate] = useState<Date>();
   const [endDate, setEndDate] = useState<Date>();
   const [objective, setObjective] = useState("");
   const [notes, setNotes] = useState("");
+  const queryClient = useQueryClient();
+
+  const selectedCategory = categories.find(c => c.id === periodizationCategoryId);
+  const color = selectedCategory?.color || "#3b82f6";
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -78,7 +81,6 @@ export function AddCycleDialog({ open, onOpenChange, categoryId, categories, pre
 
   const resetForm = () => {
     setName("");
-    setColor(CYCLE_COLORS[0]);
     setStartDate(undefined);
     setEndDate(undefined);
     setObjective("");
@@ -122,19 +124,7 @@ export function AddCycleDialog({ open, onOpenChange, categoryId, categories, pre
             />
           </div>
 
-          <div>
-            <Label>Couleur</Label>
-            <div className="flex gap-1.5 mt-2 flex-wrap">
-              {CYCLE_COLORS.map((c) => (
-                <button
-                  key={c}
-                  className={`w-7 h-7 rounded-full border-2 transition-transform ${color === c ? "border-foreground scale-110" : "border-transparent"}`}
-                  style={{ backgroundColor: c }}
-                  onClick={() => setColor(c)}
-                />
-              ))}
-            </div>
-          </div>
+
 
           <div className="grid grid-cols-2 gap-3">
             <div>
