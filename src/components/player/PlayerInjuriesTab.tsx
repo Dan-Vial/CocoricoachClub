@@ -277,7 +277,7 @@ export function PlayerInjuriesTab({ playerId, categoryId, playerName = "Joueur" 
               </p>
             </div>
             {!isViewer && (
-              <Button onClick={() => setIsDialogOpen(true)} size="sm">
+              <Button onClick={() => { console.log("[Blessures] Ajouter clicked"); setIsDialogOpen(true); }} size="sm" className="cursor-pointer">
                 <Plus className="h-4 w-4 mr-2" />
                 Ajouter
               </Button>
