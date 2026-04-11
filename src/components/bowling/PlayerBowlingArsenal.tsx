@@ -265,15 +265,8 @@ export function PlayerBowlingArsenal({ playerId, categoryId, isViewer }: PlayerB
           </Select>
         </div>
         <div>
-          <Label className="text-xs">Poids</Label>
-          <Select value={weight} onValueChange={setWeight}>
-            <SelectTrigger><SelectValue placeholder="lbs" /></SelectTrigger>
-            <SelectContent>
-              {BALL_WEIGHTS.map(w => (
-                <SelectItem key={w} value={w.toString()}>{w} lbs</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Label className="text-xs">Surface actuelle</Label>
+          <Input value={currentSurface} onChange={e => setCurrentSurface(e.target.value)} placeholder="1500 Grit..." />
         </div>
       </div>
 
