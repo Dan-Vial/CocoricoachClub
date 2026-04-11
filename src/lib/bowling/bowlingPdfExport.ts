@@ -768,7 +768,41 @@ export async function exportBowlingPdf(playerName: string, games: BowlingGameDat
   return doc;
 }
 
-// ===================== DRAWING HELPERS =====================
+export interface TeamPlayerData {
+  playerId: string;
+  playerName: string;
+  avatarUrl?: string | null;
+  games: BowlingGameData[];
+}
+
+export async function exportBowlingTeamPdf(
+  teamPlayers: TeamPlayerData[],
+  options?: Omit<BowlingPdfOptions, "playerAvatarUrl">
+) {
+  const doc = new jsPDF("p", "mm", "a4");
+
+  for (let i = 0; i < teamPlayers.length; i++) {
+    const player = teamPlayers[i];
+    if (player.games.length === 0) continue;
+
+    // Add a new page for each player after the first
+    if (i > 0) {
+      doc.addPage();
+    }
+
+    await exportBowlingPdf(
+      player.playerName,
+      player.games,
+      { ...options, playerAvatarUrl: player.avatarUrl },
+      doc
+    );
+  }
+
+  const fileName = `bowling_equipe_${format(new Date(), "yyyy-MM-dd")}.pdf`;
+  doc.save(fileName);
+}
+
+
 
 function drawSectionTitle(doc: jsPDF, x: number, y: number, width: number, title: string) {
   doc.setFillColor(...COLORS.header);
