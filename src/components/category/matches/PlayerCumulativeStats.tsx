@@ -7,18 +7,19 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { BarChart3, Trophy, Target, Shield, Activity, Dumbbell, Filter, CheckSquare, Calendar, Download, FileSpreadsheet, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { BarChart3, Trophy, Target, Shield, Activity, Dumbbell, Filter, CheckSquare, Calendar, Download, FileSpreadsheet, TrendingUp, TrendingDown, Minus, Users, User } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { getStatCategories, type StatField } from "@/lib/constants/sportStats";
 import { useStatPreferences } from "@/hooks/use-stat-preferences";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import ExcelJS from "exceljs";
 import jsPDF from "jspdf";
 import { CumulativeStatsCharts } from "./CumulativeStatsCharts";
+import { TeamCumulativeStats } from "./TeamCumulativeStats";
 import { getExcelBranding, addBrandedHeader, styleDataHeaderRow, addZebraRows, addFooter, downloadWorkbook } from "@/lib/excelExport";
 import { preparePdfWithSettings } from "@/lib/pdfExport";
 
@@ -43,34 +44,23 @@ interface CumulativeStats {
 export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCumulativeStatsProps) {
   const [selectedMatchIds, setSelectedMatchIds] = useState<string[]>([]);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [selectedPlayerId, setSelectedPlayerId] = useState<string>("");
 
-  // Use stat preferences hook to respect user's configured stats
-  const { stats: sportStats, isLoading: loadingPrefs } = useStatPreferences({
-    categoryId,
-    sportType,
-  });
+  const { stats: sportStats, isLoading: loadingPrefs } = useStatPreferences({ categoryId, sportType });
   const statCategories = getStatCategories(sportType);
 
-  // Fetch all matches that have stats data for this category
   const { data: allMatches = [] } = useQuery({
     queryKey: ["matches-list-cumulative", categoryId],
     queryFn: async () => {
-      // Get match IDs that have player stats
       const { data: statsMatchIds, error: statsError } = await supabase
         .from("player_match_stats")
         .select("match_id")
-        .in("match_id", 
-          (await supabase
-            .from("matches")
-            .select("id")
-            .eq("category_id", categoryId)
-          ).data?.map(m => m.id) || []
+        .in("match_id",
+          (await supabase.from("matches").select("id").eq("category_id", categoryId)).data?.map(m => m.id) || []
         );
       if (statsError) throw statsError;
-      
       const uniqueMatchIds = [...new Set((statsMatchIds || []).map(s => s.match_id))];
       if (uniqueMatchIds.length === 0) return [] as MatchInfo[];
-
       const { data, error } = await supabase
         .from("matches")
         .select("id, match_date, opponent")
@@ -81,7 +71,6 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
     },
   });
 
-  // Determine which match IDs to use (all or selected)
   const activeMatchIds = useMemo(() => {
     if (selectedMatchIds.length === 0) return allMatches.map(m => m.id);
     return selectedMatchIds;
@@ -91,67 +80,38 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
     queryKey: ["cumulative_player_stats", categoryId, sportType, activeMatchIds],
     queryFn: async () => {
       if (activeMatchIds.length === 0) return [];
-
-      // Get all player stats for selected matches
       const { data: playerStats, error: statsError } = await supabase
         .from("player_match_stats")
-        .select(`
-          *,
-          players(id, name, first_name)
-        `)
+        .select(`*, players(id, name, first_name)`)
         .in("match_id", activeMatchIds);
-
       if (statsError) throw statsError;
       if (!playerStats) return [];
 
-      // Aggregate stats by player
       const aggregated: Record<string, CumulativeStats> = {};
-
       playerStats.forEach((stat) => {
         const player = stat.players as { id: string; name: string; first_name?: string } | null;
         const playerId = stat.player_id;
-        const playerName = player
-          ? [player.first_name, player.name].filter(Boolean).join(" ")
-          : "Athlète inconnu";
-
+        const playerName = player ? [player.first_name, player.name].filter(Boolean).join(" ") : "Athlète inconnu";
         if (!aggregated[playerId]) {
-          aggregated[playerId] = {
-            playerId,
-            playerName,
-            matchesPlayed: 0,
-            sportData: {},
-          };
+          aggregated[playerId] = { playerId, playerName, matchesPlayed: 0, sportData: {} };
         }
-
         const p = aggregated[playerId];
         p.matchesPlayed += 1;
-
-        // Aggregate sport-specific stats from sport_data JSONB
         const sportData = (stat as { sport_data?: Record<string, number> }).sport_data || {};
-        
         sportStats.forEach(statField => {
           if (statField.computedFrom) return;
-          
-          const value = sportData[statField.key] || 
-                       stat[statField.key as keyof typeof stat] || 
-                       0;
-          
-          if (!p.sportData[statField.key]) {
-            p.sportData[statField.key] = 0;
-          }
+          const value = sportData[statField.key] || stat[statField.key as keyof typeof stat] || 0;
+          if (!p.sportData[statField.key]) p.sportData[statField.key] = 0;
           p.sportData[statField.key] += Number(value) || 0;
         });
       });
 
-      // Compute percentage stats from aggregated totals
       Object.values(aggregated).forEach(p => {
         sportStats.forEach(statField => {
           if (statField.computedFrom) {
             const { successKey, totalKey, failureKey } = statField.computedFrom;
             const success = p.sportData[successKey] || 0;
-            const total = totalKey 
-              ? (p.sportData[totalKey] || 0)
-              : success + (p.sportData[failureKey!] || 0);
+            const total = totalKey ? (p.sportData[totalKey] || 0) : success + (p.sportData[failureKey!] || 0);
             p.sportData[statField.key] = total > 0 ? Math.round((success / total) * 100) : 0;
           }
         });
@@ -162,25 +122,19 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
     enabled: activeMatchIds.length > 0,
   });
 
-  // Fetch per-match breakdown for charts
   const { data: matchesDataForCharts = [] } = useQuery({
     queryKey: ["per_match_player_stats", categoryId, sportType, activeMatchIds],
     queryFn: async () => {
       if (activeMatchIds.length === 0) return [];
-
       const { data: playerStats, error } = await supabase
         .from("player_match_stats")
         .select(`*, players(id, name, first_name)`)
         .in("match_id", activeMatchIds);
-
       if (error) throw error;
       if (!playerStats) return [];
 
-      // Group by match
       const matchMap: Record<string, {
-        matchId: string;
-        matchLabel: string;
-        matchDate: string;
+        matchId: string; matchLabel: string; matchDate: string;
         players: Record<string, { playerName: string; sportData: Record<string, number> }>;
       }> = {};
 
@@ -199,19 +153,15 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
         const playerId = stat.player_id;
         const playerName = player ? [player.first_name, player.name].filter(Boolean).join(" ") : "Inconnu";
         const sportData = (stat as { sport_data?: Record<string, number> }).sport_data || {};
-        
-        // Also check top-level keys
         const merged: Record<string, number> = {};
         sportStats.forEach(sf => {
           if (!sf.computedFrom) {
             merged[sf.key] = Number(sportData[sf.key] || stat[sf.key as keyof typeof stat] || 0) || 0;
           }
         });
-        
         matchMap[matchId].players[playerId] = { playerName, sportData: merged };
       });
 
-      // Sort by date ascending for evolution chart
       return Object.values(matchMap).sort((a, b) => a.matchDate.localeCompare(b.matchDate));
     },
     enabled: activeMatchIds.length > 1,
@@ -219,23 +169,15 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
 
   const toggleMatch = (matchId: string) => {
     setSelectedMatchIds(prev => {
-      // If currently "all selected" (empty array), switch to "all except this one"
-      if (prev.length === 0) {
-        return allMatches.filter(m => m.id !== matchId).map(m => m.id);
-      }
+      if (prev.length === 0) return allMatches.filter(m => m.id !== matchId).map(m => m.id);
       if (prev.includes(matchId)) {
-        const newSelection = prev.filter(id => id !== matchId);
-        // If nothing left selected, go back to "all"
-        return newSelection.length === 0 ? [] : newSelection;
+        const newSel = prev.filter(id => id !== matchId);
+        return newSel.length === 0 ? [] : newSel;
       }
       return [...prev, matchId];
     });
   };
 
-  const selectAllMatches = () => setSelectedMatchIds([]);
-  const clearSelection = () => setSelectedMatchIds(allMatches.map(m => m.id));
-
-  // Compute per-player progression (first match vs last match)
   const playerProgressions = useMemo(() => {
     if (!matchesDataForCharts || matchesDataForCharts.length < 2 || !stats) return {};
     const progressions: Record<string, Record<string, number>> = {};
@@ -248,87 +190,85 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
       const last = playerMatchData[playerMatchData.length - 1];
       progressions[player.playerId] = {};
       sportStats.forEach(stat => {
-        const firstVal = first[stat.key] || 0;
-        const lastVal = last[stat.key] || 0;
-        progressions[player.playerId][stat.key] = lastVal - firstVal;
+        progressions[player.playerId][stat.key] = (last[stat.key] || 0) - (first[stat.key] || 0);
       });
     });
     return progressions;
   }, [matchesDataForCharts, stats, sportStats]);
 
   const selectedCount = selectedMatchIds.length === 0 ? allMatches.length : selectedMatchIds.length;
+  const selectedPlayer = stats?.find(p => p.playerId === selectedPlayerId);
 
-  if (isLoading || loadingPrefs) {
-    return <p className="text-muted-foreground">Chargement des statistiques...</p>;
-  }
-
-  if (!stats || stats.length === 0) {
-    return (
-      <Card className="bg-gradient-card">
-        <CardContent className="py-8">
-          <div className="text-center text-muted-foreground">
-            <BarChart3 className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p>Aucune statistique enregistrée pour le moment.</p>
-            <p className="text-sm mt-2">Les statistiques apparaîtront ici une fois saisies pour les matchs.</p>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  // Get top performers
-  const scoringStats = sportStats.filter(s => s.category === "scoring");
-  const attackStats = sportStats.filter(s => s.category === "attack");
-  const defenseStats = sportStats.filter(s => s.category === "defense");
-
-  const topScoringStatKey = scoringStats[0]?.key;
-  const topAttackStatKey = attackStats[0]?.key;
-  const topDefenseStatKey = defenseStats[0]?.key;
-
-  const topScorers = topScoringStatKey 
-    ? [...stats].sort((a, b) => (b.sportData[topScoringStatKey] || 0) - (a.sportData[topScoringStatKey] || 0)).slice(0, 3)
-    : [];
-  const topAttackers = topAttackStatKey
-    ? [...stats].sort((a, b) => (b.sportData[topAttackStatKey] || 0) - (a.sportData[topAttackStatKey] || 0)).slice(0, 3)
-    : [];
-  const topDefenders = topDefenseStatKey
-    ? [...stats].sort((a, b) => (b.sportData[topDefenseStatKey] || 0) - (a.sportData[topDefenseStatKey] || 0)).slice(0, 3)
-    : [];
-
-  const getCategoryIcon = (catKey: string) => {
-    switch (catKey) {
-      case "scoring": return <Trophy className="h-4 w-4 text-primary" />;
-      case "attack": return <Target className="h-4 w-4 text-primary" />;
-      case "defense": return <Shield className="h-4 w-4 text-primary" />;
-      case "general": return <Activity className="h-4 w-4 text-primary" />;
-      default: return <Dumbbell className="h-4 w-4 text-primary" />;
-    }
-  };
-
-
-
-  // Export Excel
+  // Export Excel - ALL stats, no slicing
   const handleExportExcel = async () => {
     if (!stats || stats.length === 0) return;
     try {
       const branding = await getExcelBranding(categoryId);
       const wb = new ExcelJS.Workbook();
 
+      // Sheet 1: Team totals
+      const wsTeam = wb.addWorksheet("Équipe");
+      const teamStats: Record<string, number> = {};
+      sportStats.forEach(stat => {
+        if (stat.computedFrom) return;
+        teamStats[stat.key] = stats.reduce((sum, p) => sum + (p.sportData[stat.key] || 0), 0);
+      });
+      sportStats.forEach(stat => {
+        if (stat.computedFrom) {
+          const { successKey, totalKey, failureKey } = stat.computedFrom;
+          const success = teamStats[successKey] || 0;
+          const total = totalKey ? (teamStats[totalKey] || 0) : success + (teamStats[failureKey!] || 0);
+          teamStats[stat.key] = total > 0 ? Math.round((success / total) * 100) : 0;
+        }
+      });
+
+      wsTeam.columns = [
+        { header: "Catégorie", key: "cat", width: 15 },
+        { header: "Statistique", key: "stat", width: 25 },
+        { header: "Total équipe", key: "total", width: 15 },
+        { header: "Moy/match", key: "avg", width: 15 },
+      ];
+      const teamStartRow = addBrandedHeader(wsTeam, "Stats équipe cumulées", branding, [
+        ["Matchs", `${selectedCount}/${allMatches.length}`],
+      ]);
+      styleDataHeaderRow(wsTeam, teamStartRow, 4, branding.headerColor);
+      const teamHdr = wsTeam.getRow(teamStartRow);
+      teamHdr.getCell(1).value = "Catégorie";
+      teamHdr.getCell(2).value = "Statistique";
+      teamHdr.getCell(3).value = "Total";
+      teamHdr.getCell(4).value = "Moy/match";
+
+      let tRow = teamStartRow + 1;
+      statCategories.forEach(cat => {
+        const catStats = sportStats.filter(s => s.category === cat.key);
+        catStats.forEach(s => {
+          const row = wsTeam.getRow(tRow);
+          row.getCell(1).value = cat.label;
+          row.getCell(2).value = s.label;
+          const val = teamStats[s.key] || 0;
+          row.getCell(3).value = s.computedFrom ? `${val}%` : val;
+          row.getCell(4).value = s.computedFrom ? "" : Math.round((val / Math.max(selectedCount, 1)) * 10) / 10;
+          tRow++;
+        });
+      });
+      addZebraRows(wsTeam, teamStartRow + 1, tRow - 1, 4);
+      addFooter(wsTeam, tRow, 4, branding.footerText);
+
+      // Individual sheets per category
       statCategories.forEach(cat => {
         const categoryStats = sportStats.filter(s => s.category === cat.key);
         if (categoryStats.length === 0) return;
-        
         const ws = wb.addWorksheet(cat.label);
-        const colCount = 2 + categoryStats.length * 2; // Name, Matchs, then stat + progression pairs
+        const colCount = 2 + categoryStats.length * 2;
         ws.columns = [
           { header: "Athlète", key: "name", width: 22 },
           { header: "Matchs", key: "matches", width: 10 },
           ...categoryStats.flatMap(s => [
             { header: s.shortLabel, key: s.key, width: 12 },
-            { header: `+/-`, key: `${s.key}_prog`, width: 10 },
+            { header: "+/-", key: `${s.key}_prog`, width: 10 },
           ]),
         ];
-        const startRow = addBrandedHeader(ws, `Stats cumulées - ${cat.label}`, branding, [
+        const startRow = addBrandedHeader(ws, `Stats individuelles - ${cat.label}`, branding, [
           ["Matchs sélectionnés", `${selectedCount}/${allMatches.length}`],
         ]);
         styleDataHeaderRow(ws, startRow, colCount, branding.headerColor);
@@ -339,12 +279,10 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
           headerRow.getCell(3 + i * 2).value = s.shortLabel;
           headerRow.getCell(4 + i * 2).value = "+/-";
         });
-
         const sorted = [...stats].sort((a, b) => {
           const firstStat = categoryStats[0]?.key;
           return firstStat ? (b.sportData[firstStat] || 0) - (a.sportData[firstStat] || 0) : 0;
         });
-
         sorted.forEach((p, idx) => {
           const row = ws.getRow(startRow + 1 + idx);
           row.getCell(1).value = p.playerName;
@@ -369,7 +307,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
     }
   };
 
-  // Export PDF
+  // Export PDF - ALL stats, no slicing
   const handleExportPdf = async () => {
     if (!stats || stats.length === 0) return;
     try {
@@ -377,88 +315,91 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
       const doc = new jsPDF({ orientation: "landscape" });
       const pageW = doc.internal.pageSize.getWidth();
       const pageH = doc.internal.pageSize.getHeight();
+      const hc = (settings?.header_color || "#224378").replace("#", "");
 
-      // Header
-      if (settings?.header_color) {
-        const hc = settings.header_color.replace("#", "");
+      const drawHeader = (title: string) => {
         doc.setFillColor(parseInt(hc.substring(0, 2), 16), parseInt(hc.substring(2, 4), 16), parseInt(hc.substring(4, 6), 16));
-      } else {
-        doc.setFillColor(34, 67, 120);
-      }
-      doc.rect(0, 0, pageW, 28, "F");
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(16);
-      doc.text("Stats compétition cumulées", 14, 12);
-      doc.setFontSize(10);
-      doc.text(`${clubName || ""} • ${categoryName || ""} • ${seasonName || ""}`, 14, 20);
-      doc.text(`${selectedCount} matchs • ${format(new Date(), "dd/MM/yyyy")}`, pageW - 14, 20, { align: "right" });
+        doc.rect(0, 0, pageW, 28, "F");
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(16);
+        doc.text(title, 14, 12);
+        doc.setFontSize(10);
+        doc.text(`${clubName || ""} • ${categoryName || ""} • ${seasonName || ""}`, 14, 20);
+        doc.text(`${selectedCount} matchs • ${format(new Date(), "dd/MM/yyyy")}`, pageW - 14, 20, { align: "right" });
+      };
 
+      drawHeader("Stats compétition cumulées");
       let y = 36;
 
       statCategories.forEach((cat, catIdx) => {
-        const categoryStats = sportStats.filter(s => s.category === cat.key).slice(0, 5);
+        const categoryStats = sportStats.filter(s => s.category === cat.key);
         if (categoryStats.length === 0) return;
 
-        if (catIdx > 0 && y > pageH - 50) {
-          doc.addPage();
-          y = 15;
+        // Paginate: max 6 stat columns per page section
+        const chunks: StatField[][] = [];
+        for (let i = 0; i < categoryStats.length; i += 6) {
+          chunks.push(categoryStats.slice(i, i + 6));
         }
 
-        doc.setTextColor(30, 41, 59);
-        doc.setFontSize(12);
-        doc.setFont("helvetica", "bold");
-        doc.text(cat.label, 14, y);
-        y += 6;
-
-        // Table header
-        const colWidths = [60, 20, ...categoryStats.flatMap(() => [22, 18])];
-        const headers = ["Athlète", "M", ...categoryStats.flatMap(s => [s.shortLabel, "+/-"])];
-        doc.setFillColor(241, 245, 249);
-        doc.rect(14, y, pageW - 28, 7, "F");
-        doc.setFontSize(8);
-        doc.setFont("helvetica", "bold");
-        let x = 14;
-        headers.forEach((h, i) => {
-          doc.text(h, x + 1, y + 5);
-          x += colWidths[i] || 20;
-        });
-        y += 9;
-        doc.setFont("helvetica", "normal");
-
-        const sorted = [...stats].sort((a, b) => {
-          const firstStat = categoryStats[0]?.key;
-          return firstStat ? (b.sportData[firstStat] || 0) - (a.sportData[firstStat] || 0) : 0;
-        });
-
-        sorted.forEach((p) => {
-          if (y > pageH - 15) {
+        chunks.forEach((chunk, chunkIdx) => {
+          if (y > pageH - 50) {
             doc.addPage();
             y = 15;
           }
-          x = 14;
-          doc.setTextColor(30, 41, 59);
-          doc.setFontSize(8);
-          doc.text(p.playerName.substring(0, 20), x + 1, y + 4);
-          x += colWidths[0];
-          doc.text(String(p.matchesPlayed), x + 1, y + 4);
-          x += colWidths[1];
 
-          categoryStats.forEach((s, i) => {
-            const val = p.sportData[s.key] || 0;
-            doc.setTextColor(30, 41, 59);
-            doc.text(s.computedFrom ? `${val}%` : String(val), x + 1, y + 4);
-            x += colWidths[2 + i * 2];
-            
-            const prog = playerProgressions[p.playerId]?.[s.key] || 0;
-            if (prog > 0) doc.setTextColor(22, 163, 74);
-            else if (prog < 0) doc.setTextColor(220, 38, 38);
-            else doc.setTextColor(100, 116, 139);
-            doc.text(prog > 0 ? `+${prog}` : String(prog), x + 1, y + 4);
-            x += colWidths[3 + i * 2] || 18;
+          doc.setTextColor(30, 41, 59);
+          doc.setFontSize(12);
+          doc.setFont("helvetica", "bold");
+          doc.text(`${cat.label}${chunks.length > 1 ? ` (${chunkIdx + 1}/${chunks.length})` : ""}`, 14, y);
+          y += 6;
+
+          const colWidths = [55, 18, ...chunk.flatMap(() => [20, 16])];
+          const headers = ["Athlète", "M", ...chunk.flatMap(s => [s.shortLabel, "+/-"])];
+          doc.setFillColor(241, 245, 249);
+          doc.rect(14, y, pageW - 28, 7, "F");
+          doc.setFontSize(7);
+          doc.setFont("helvetica", "bold");
+          let x = 14;
+          headers.forEach((h, i) => {
+            doc.text(h.substring(0, 10), x + 1, y + 5);
+            x += colWidths[i] || 18;
           });
-          y += 7;
+          y += 9;
+          doc.setFont("helvetica", "normal");
+
+          const sorted = [...stats].sort((a, b) => {
+            const firstStat = chunk[0]?.key;
+            return firstStat ? (b.sportData[firstStat] || 0) - (a.sportData[firstStat] || 0) : 0;
+          });
+
+          sorted.forEach((p) => {
+            if (y > pageH - 15) {
+              doc.addPage();
+              y = 15;
+            }
+            x = 14;
+            doc.setTextColor(30, 41, 59);
+            doc.setFontSize(7);
+            doc.text(p.playerName.substring(0, 18), x + 1, y + 4);
+            x += colWidths[0];
+            doc.text(String(p.matchesPlayed), x + 1, y + 4);
+            x += colWidths[1];
+            chunk.forEach((s, i) => {
+              const val = p.sportData[s.key] || 0;
+              doc.setTextColor(30, 41, 59);
+              doc.text(s.computedFrom ? `${val}%` : String(val), x + 1, y + 4);
+              x += colWidths[2 + i * 2];
+              const prog = playerProgressions[p.playerId]?.[s.key] || 0;
+              if (prog > 0) doc.setTextColor(22, 163, 74);
+              else if (prog < 0) doc.setTextColor(220, 38, 38);
+              else doc.setTextColor(100, 116, 139);
+              doc.text(prog > 0 ? `+${prog}` : String(prog), x + 1, y + 4);
+              x += colWidths[3 + i * 2] || 16;
+            });
+            y += 7;
+          });
+          y += 6;
         });
-        y += 6;
       });
 
       doc.save(`stats-competition-${format(new Date(), "yyyy-MM-dd")}.pdf`);
@@ -468,11 +409,39 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
     }
   };
 
+  const getCategoryIcon = (catKey: string) => {
+    switch (catKey) {
+      case "scoring": return <Trophy className="h-4 w-4 text-primary" />;
+      case "attack": return <Target className="h-4 w-4 text-primary" />;
+      case "defense": return <Shield className="h-4 w-4 text-primary" />;
+      case "general": return <Activity className="h-4 w-4 text-primary" />;
+      default: return <Dumbbell className="h-4 w-4 text-primary" />;
+    }
+  };
+
   const ProgressionIndicator = ({ value }: { value: number }) => {
     if (value > 0) return <span className="text-emerald-600 dark:text-emerald-400 text-xs font-medium flex items-center gap-0.5"><TrendingUp className="h-3 w-3" />+{value}</span>;
     if (value < 0) return <span className="text-destructive text-xs font-medium flex items-center gap-0.5"><TrendingDown className="h-3 w-3" />{value}</span>;
     return <span className="text-muted-foreground text-xs"><Minus className="h-3 w-3 inline" /></span>;
   };
+
+  if (isLoading || loadingPrefs) {
+    return <p className="text-muted-foreground">Chargement des statistiques...</p>;
+  }
+
+  if (!stats || stats.length === 0) {
+    return (
+      <Card className="bg-gradient-card">
+        <CardContent className="py-8">
+          <div className="text-center text-muted-foreground">
+            <BarChart3 className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <p>Aucune statistique enregistrée pour le moment.</p>
+            <p className="text-sm mt-2">Les statistiques apparaîtront ici une fois saisies pour les matchs.</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -492,16 +461,9 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
             <PopoverContent className="w-[360px] p-0" align="start">
               <div className="p-3 border-b">
                 <p className="text-sm font-medium">Sélectionner les matchs</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Choisissez les matchs à inclure dans le cumul
-                </p>
                 <div className="flex gap-2 mt-2">
-                  <Button variant="outline" size="sm" className="text-xs h-7" onClick={selectAllMatches}>
-                    <CheckSquare className="h-3 w-3 mr-1" />
-                    Tous
-                  </Button>
-                  <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setSelectedMatchIds([])}>
-                    Réinitialiser
+                  <Button variant="outline" size="sm" className="text-xs h-7" onClick={() => setSelectedMatchIds([])}>
+                    <CheckSquare className="h-3 w-3 mr-1" />Tous
                   </Button>
                 </div>
               </div>
@@ -510,21 +472,11 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
                   {allMatches.map(match => {
                     const isSelected = selectedMatchIds.length === 0 || selectedMatchIds.includes(match.id);
                     return (
-                      <button
-                        key={match.id}
-                        onClick={() => toggleMatch(match.id)}
-                        className={`w-full flex items-center gap-3 p-2 rounded-md text-left transition-colors hover:bg-muted ${
-                          isSelected ? 'bg-primary/5' : 'opacity-50'
-                        }`}
-                      >
-                        <Checkbox
-                          checked={isSelected}
-                          className="pointer-events-none"
-                        />
+                      <button key={match.id} onClick={() => toggleMatch(match.id)}
+                        className={`w-full flex items-center gap-3 p-2 rounded-md text-left transition-colors hover:bg-muted ${isSelected ? 'bg-primary/5' : 'opacity-50'}`}>
+                        <Checkbox checked={isSelected} className="pointer-events-none" />
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">
-                            vs {match.opponent || "Adversaire inconnu"}
-                          </p>
+                          <p className="text-sm font-medium truncate">vs {match.opponent || "Adversaire inconnu"}</p>
                           <div className="flex items-center gap-1 text-xs text-muted-foreground">
                             <Calendar className="h-3 w-3" />
                             {format(new Date(match.match_date), "dd MMM yyyy", { locale: fr })}
@@ -533,130 +485,128 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
                       </button>
                     );
                   })}
-                  {allMatches.length === 0 && (
-                    <p className="text-sm text-muted-foreground text-center py-4">Aucun match</p>
-                  )}
                 </div>
               </ScrollArea>
             </PopoverContent>
           </Popover>
 
+          {selectedMatchIds.length === 0 && allMatches.length > 0 && (
+            <Badge variant="secondary" className="gap-1">Tous les matchs ({allMatches.length})</Badge>
+          )}
           {selectedMatchIds.length > 0 && (
             <Badge variant="outline" className="gap-1">
-              <Trophy className="h-3 w-3" />
-              {selectedMatchIds.length} match{selectedMatchIds.length > 1 ? 's' : ''} sélectionné{selectedMatchIds.length > 1 ? 's' : ''}
-            </Badge>
-          )}
-          {selectedMatchIds.length === 0 && allMatches.length > 0 && (
-            <Badge variant="secondary" className="gap-1">
-              Tous les matchs ({allMatches.length})
+              <Trophy className="h-3 w-3" />{selectedMatchIds.length} match{selectedMatchIds.length > 1 ? 's' : ''}
             </Badge>
           )}
         </div>
 
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={handleExportExcel} className="gap-1">
-            <FileSpreadsheet className="h-4 w-4" />
-            <span className="hidden sm:inline">Excel</span>
+            <FileSpreadsheet className="h-4 w-4" /><span className="hidden sm:inline">Excel</span>
           </Button>
           <Button variant="outline" size="sm" onClick={handleExportPdf} className="gap-1">
-            <Download className="h-4 w-4" />
-            <span className="hidden sm:inline">PDF</span>
+            <Download className="h-4 w-4" /><span className="hidden sm:inline">PDF</span>
           </Button>
         </div>
       </div>
 
-      {/* Charts section */}
-      {stats && stats.length > 0 && (
-        <CumulativeStatsCharts
-          stats={stats}
-          matchesData={matchesDataForCharts}
-          sportStats={sportStats}
-          selectedMatchIds={activeMatchIds}
-        />
+      {/* Charts */}
+      {stats.length > 0 && (
+        <CumulativeStatsCharts stats={stats} matchesData={matchesDataForCharts} sportStats={sportStats} selectedMatchIds={activeMatchIds} />
       )}
 
-      {/* Top performers cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {topScoringStatKey && scoringStats[0] && (
-          <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <Trophy className="h-4 w-4 text-primary" />
-                Top {scoringStats[0].label}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {topScorers.map((p, i) => (
-                <div key={p.playerId} className="flex justify-between items-center">
-                  <span className="text-sm">
-                    <Badge variant="outline" className="mr-2 w-5 h-5 p-0 justify-center">
-                      {i + 1}
-                    </Badge>
-                    {p.playerName}
-                  </span>
-                  <span className="font-bold text-primary">{p.sportData[topScoringStatKey] || 0}</span>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        )}
+      {/* SPLIT SCREEN: Team (left) + Individual (right) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* LEFT: Team Stats */}
+        <div>
+          <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+            <Users className="h-5 w-5 text-primary" />
+            Statistiques équipe
+          </h3>
+          <TeamCumulativeStats
+            stats={stats}
+            matchesData={matchesDataForCharts}
+            sportStats={sportStats}
+            sportType={sportType}
+          />
+        </div>
 
-        {topAttackStatKey && attackStats[0] && (
-          <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <Target className="h-4 w-4 text-primary" />
-                Top {attackStats[0].label}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {topAttackers.map((p, i) => (
-                <div key={p.playerId} className="flex justify-between items-center">
-                  <span className="text-sm">
-                    <Badge variant="outline" className="mr-2 w-5 h-5 p-0 justify-center">
-                      {i + 1}
-                    </Badge>
-                    {p.playerName}
-                  </span>
-                  <span className="font-bold text-primary">{p.sportData[topAttackStatKey] || 0}</span>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        )}
+        {/* RIGHT: Individual Stats */}
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-lg font-semibold flex items-center gap-2">
+              <User className="h-5 w-5 text-primary" />
+              Statistiques individuelles
+            </h3>
+            <Select value={selectedPlayerId || (stats[0]?.playerId || "")} onValueChange={setSelectedPlayerId}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Choisir un joueur" />
+              </SelectTrigger>
+              <SelectContent>
+                {stats.map(p => (
+                  <SelectItem key={p.playerId} value={p.playerId}>{p.playerName}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-        {topDefenseStatKey && defenseStats[0] && (
-          <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <Shield className="h-4 w-4 text-primary" />
-                Top {defenseStats[0].label}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {topDefenders.map((p, i) => (
-                <div key={p.playerId} className="flex justify-between items-center">
-                  <span className="text-sm">
-                    <Badge variant="outline" className="mr-2 w-5 h-5 p-0 justify-center">
-                      {i + 1}
-                    </Badge>
-                    {p.playerName}
-                  </span>
-                  <span className="font-bold text-primary">{p.sportData[topDefenseStatKey] || 0}</span>
+          {(() => {
+            const player = selectedPlayer || stats[0];
+            if (!player) return null;
+            return (
+              <div className="space-y-4">
+                <div className="flex items-center gap-4 p-3 bg-muted/50 rounded-lg">
+                  <div>
+                    <p className="font-semibold text-lg">{player.playerName}</p>
+                    <p className="text-sm text-muted-foreground">{player.matchesPlayed} matchs joués</p>
+                  </div>
                 </div>
-              ))}
-            </CardContent>
-          </Card>
-        )}
+
+                <Tabs defaultValue={statCategories[0]?.key || "general"} className="w-full">
+                  <TabsList className={`grid w-full grid-cols-${Math.min(statCategories.length, 4)}`}>
+                    {statCategories.map(cat => (
+                      <TabsTrigger key={cat.key} value={cat.key} className="gap-1 text-xs">
+                        {getCategoryIcon(cat.key)}
+                        <span className="hidden sm:inline">{cat.label}</span>
+                      </TabsTrigger>
+                    ))}
+                  </TabsList>
+
+                  {statCategories.map(cat => {
+                    const categoryStats = sportStats.filter(s => s.category === cat.key);
+                    return (
+                      <TabsContent key={cat.key} value={cat.key}>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                          {categoryStats.map(stat => {
+                            const val = player.sportData[stat.key] || 0;
+                            const prog = playerProgressions[player.playerId]?.[stat.key] || 0;
+                            return (
+                              <div key={stat.key} className="p-3 bg-muted/50 rounded-lg text-center space-y-1">
+                                <p className="text-2xl font-bold">{stat.computedFrom ? `${val}%` : val}</p>
+                                <p className="text-xs text-muted-foreground">{stat.shortLabel}</p>
+                                {matchesDataForCharts.length >= 2 && (
+                                  <ProgressionIndicator value={prog} />
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </TabsContent>
+                    );
+                  })}
+                </Tabs>
+              </div>
+            );
+          })()}
+        </div>
       </div>
 
-      {/* Detailed stats table */}
+      {/* Full detailed table below */}
       <Card className="bg-gradient-card">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <BarChart3 className="h-5 w-5" />
-            Statistiques détaillées par athlète
+            Tableau détaillé — tous les joueurs
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -672,7 +622,6 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
 
             {statCategories.map(cat => {
               const categoryStats = sportStats.filter(s => s.category === cat.key);
-              
               return (
                 <TabsContent key={cat.key} value={cat.key}>
                   <div className="overflow-x-auto">
@@ -681,10 +630,8 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
                         <TableRow>
                           <TableHead>Athlète</TableHead>
                           <TableHead className="text-center">Matchs</TableHead>
-                          {categoryStats.slice(0, 6).map(stat => (
-                            <TableHead key={stat.key} className="text-center">
-                              {stat.shortLabel}
-                            </TableHead>
+                          {categoryStats.map(stat => (
+                            <TableHead key={stat.key} className="text-center">{stat.shortLabel}</TableHead>
                           ))}
                         </TableRow>
                       </TableHeader>
@@ -699,7 +646,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
                             <TableRow key={p.playerId}>
                               <TableCell className="font-medium">{p.playerName}</TableCell>
                               <TableCell className="text-center">{p.matchesPlayed}</TableCell>
-                              {categoryStats.slice(0, 6).map(stat => {
+                              {categoryStats.map(stat => {
                                 const val = p.sportData[stat.key] || 0;
                                 const prog = playerProgressions[p.playerId]?.[stat.key] || 0;
                                 return (
