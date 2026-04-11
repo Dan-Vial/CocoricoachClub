@@ -304,9 +304,19 @@ export async function exportBowlingPdf(playerName: string, games: BowlingGameDat
       const imgSize = 25;
       const imgX = margin;
       const imgY = 5;
+      const cx = imgX + imgSize / 2;
+      const cy = imgY + imgSize / 2;
+      const r = imgSize / 2;
+      // White circle border
       doc.setFillColor(...COLORS.white);
-      doc.circle(imgX + imgSize / 2, imgY + imgSize / 2, imgSize / 2 + 1, "F");
+      doc.circle(cx, cy, r + 1, "F");
+      // Clip image to circle
+      doc.saveGraphicsState();
+      doc.circle(cx, cy, r, null as any);
+      (doc as any).clip();
+      (doc as any).discardPath();
       doc.addImage(avatarBase64.data, avatarBase64.format, imgX, imgY, imgSize, imgSize);
+      doc.restoreGraphicsState();
       textStartX = margin + imgSize + 5;
     } catch {
       // skip
