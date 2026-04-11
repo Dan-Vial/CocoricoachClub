@@ -189,9 +189,16 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
     const startOffset = differenceInDays(effectiveStart, yearStart);
     const duration = differenceInDays(effectiveEnd, effectiveStart) + 1;
     
+    const widthPercent = (duration / totalDays) * 100;
+    // Minimum visible width: ~1.8% ≈ ~7 days visually for very short events
+    const minWidthPercent = 1.8;
+    const isNarrow = widthPercent < minWidthPercent;
+    
     return {
       left: `${(startOffset / totalDays) * 100}%`,
-      width: `${(duration / totalDays) * 100}%`,
+      width: `${Math.max(widthPercent, minWidthPercent)}%`,
+      isNarrow,
+      duration,
     };
   };
 
