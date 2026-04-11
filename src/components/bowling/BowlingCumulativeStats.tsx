@@ -381,6 +381,13 @@ export function BowlingCumulativeStats({ categoryId, playerId: fixedPlayerId }: 
                           name,
                           drillingLayout: item.drilling_layout || item.balance_type || null,
                           imageUrl: (item.ball_catalog_id ? imageMap.get(item.ball_catalog_id) : null) || cat?.image_url || null,
+                          weightLbs: item.weight_lbs || null,
+                          coverType: cat?.cover_type || null,
+                          coreType: cat?.core_type || null,
+                          rg: item.custom_rg || cat?.rg || null,
+                          differential: item.custom_differential || cat?.differential || null,
+                          intermediateDiff: item.custom_intermediate_diff || cat?.intermediate_diff || null,
+                          currentSurface: item.current_surface || null,
                         };
                       });
                       await exportBowlingPdf(
@@ -441,7 +448,18 @@ export function BowlingCumulativeStats({ categoryId, playerId: fixedPlayerId }: 
                           arsenalBalls: playerArsenal.map((item: any) => {
                             const cat = item.ball_catalog_id ? catalogMap.get(item.ball_catalog_id) : null;
                             const name = cat ? `${cat.brand} ${cat.model}` : `${item.custom_ball_brand || ""} ${item.custom_ball_name || "Custom"}`.trim();
-                            return { name, drillingLayout: item.drilling_layout || item.balance_type || null, imageUrl: (item.ball_catalog_id ? imageMap.get(item.ball_catalog_id) : null) || cat?.image_url || null };
+                            return {
+                              name,
+                              drillingLayout: item.drilling_layout || item.balance_type || null,
+                              imageUrl: (item.ball_catalog_id ? imageMap.get(item.ball_catalog_id) : null) || cat?.image_url || null,
+                              weightLbs: item.weight_lbs || null,
+                              coverType: cat?.cover_type || null,
+                              coreType: cat?.core_type || null,
+                              rg: item.custom_rg || cat?.rg || null,
+                              differential: item.custom_differential || cat?.differential || null,
+                              intermediateDiff: item.custom_intermediate_diff || cat?.intermediate_diff || null,
+                              currentSurface: item.current_surface || null,
+                            };
                           }),
                         };
                       });
