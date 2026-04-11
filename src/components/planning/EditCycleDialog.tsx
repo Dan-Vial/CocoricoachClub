@@ -14,11 +14,6 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
-const CYCLE_COLORS = [
-  "#3b82f6", "#ef4444", "#22c55e", "#f59e0b", "#8b5cf6",
-  "#ec4899", "#06b6d4", "#f97316", "#14b8a6", "#6366f1",
-  "#84cc16", "#a855f7", "#0ea5e9", "#d946ef", "#10b981",
-];
 
 interface EditCycleDialogProps {
   open: boolean;
@@ -41,7 +36,8 @@ interface EditCycleDialogProps {
 export function EditCycleDialog({ open, onOpenChange, cycle, categoryId, categories, onDelete }: EditCycleDialogProps) {
   const [name, setName] = useState(cycle.name);
   const [periodizationCategoryId, setPeriodizationCategoryId] = useState(cycle.periodization_category_id);
-  const [color, setColor] = useState(cycle.color);
+  const selectedCategory = categories.find(c => c.id === periodizationCategoryId);
+  const color = selectedCategory?.color || cycle.color;
   const [startDate, setStartDate] = useState<Date>(new Date(cycle.start_date));
   const [endDate, setEndDate] = useState<Date>(new Date(cycle.end_date));
   const [objective, setObjective] = useState(cycle.objective || "");
@@ -105,19 +101,8 @@ export function EditCycleDialog({ open, onOpenChange, cycle, categoryId, categor
             <Input value={name} onChange={(e) => setName(e.target.value)} />
           </div>
 
-          <div>
-            <Label>Couleur</Label>
-            <div className="flex gap-1.5 mt-2 flex-wrap">
-              {CYCLE_COLORS.map((c) => (
-                <button
-                  key={c}
-                  className={`w-7 h-7 rounded-full border-2 transition-transform ${color === c ? "border-foreground scale-110" : "border-transparent"}`}
-                  style={{ backgroundColor: c }}
-                  onClick={() => setColor(c)}
-                />
-              ))}
-            </div>
-          </div>
+
+
 
           <div className="grid grid-cols-2 gap-3">
             <div>

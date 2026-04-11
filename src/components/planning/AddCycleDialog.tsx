@@ -15,11 +15,6 @@ import { fr } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
-const CYCLE_COLORS = [
-  "#3b82f6", "#ef4444", "#22c55e", "#f59e0b", "#8b5cf6",
-  "#ec4899", "#06b6d4", "#f97316", "#14b8a6", "#6366f1",
-  "#84cc16", "#a855f7", "#0ea5e9", "#d946ef", "#10b981",
-];
 
 interface AddCycleDialogProps {
   open: boolean;
@@ -34,12 +29,14 @@ interface AddCycleDialogProps {
 export function AddCycleDialog({ open, onOpenChange, categoryId, categories, preselectedCategoryId, prefilledStartDate, prefilledEndDate }: AddCycleDialogProps) {
   const [name, setName] = useState("");
   const [periodizationCategoryId, setPeriodizationCategoryId] = useState("");
-  const [color, setColor] = useState(CYCLE_COLORS[0]);
   const [startDate, setStartDate] = useState<Date>();
   const [endDate, setEndDate] = useState<Date>();
   const [objective, setObjective] = useState("");
   const [notes, setNotes] = useState("");
   const queryClient = useQueryClient();
+
+  const selectedCategory = categories.find(c => c.id === periodizationCategoryId);
+  const color = selectedCategory?.color || "#3b82f6";
 
   useEffect(() => {
     if (preselectedCategoryId) {
@@ -78,7 +75,6 @@ export function AddCycleDialog({ open, onOpenChange, categoryId, categories, pre
 
   const resetForm = () => {
     setName("");
-    setColor(CYCLE_COLORS[0]);
     setStartDate(undefined);
     setEndDate(undefined);
     setObjective("");
@@ -122,19 +118,7 @@ export function AddCycleDialog({ open, onOpenChange, categoryId, categories, pre
             />
           </div>
 
-          <div>
-            <Label>Couleur</Label>
-            <div className="flex gap-1.5 mt-2 flex-wrap">
-              {CYCLE_COLORS.map((c) => (
-                <button
-                  key={c}
-                  className={`w-7 h-7 rounded-full border-2 transition-transform ${color === c ? "border-foreground scale-110" : "border-transparent"}`}
-                  style={{ backgroundColor: c }}
-                  onClick={() => setColor(c)}
-                />
-              ))}
-            </div>
-          </div>
+
 
           <div className="grid grid-cols-2 gap-3">
             <div>
