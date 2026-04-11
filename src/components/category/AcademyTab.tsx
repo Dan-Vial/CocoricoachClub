@@ -134,6 +134,19 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
   };
 
 
+  const { data: existingSubjects } = useQuery({
+    queryKey: ["academic_subjects", categoryId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("player_academic_tracking")
+        .select("subject")
+        .eq("category_id", categoryId)
+        .not("subject", "is", null);
+      if (error) throw error;
+      const subjects = [...new Set(data.map(d => d.subject).filter(Boolean))] as string[];
+      return subjects.sort();
+    },
+  });
 
 
   return (
