@@ -129,6 +129,7 @@ export function BowlingCumulativeStats({ categoryId, playerId: fixedPlayerId }: 
             singlePinConversionRate: statData.singlePinConversionRate || 0,
             frames: bowlingFrames,
             bowlingCategory: statData.bowlingCategory as string | undefined,
+            blockDebriefing: statData.blockDebriefing as string | undefined,
           });
         }
       }
