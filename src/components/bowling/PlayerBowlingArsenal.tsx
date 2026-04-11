@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { resolveBallCatalogImages } from "@/lib/bowling/bowlingBallImageResolver";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -48,7 +49,11 @@ export function PlayerBowlingArsenal({ playerId, categoryId, isViewer }: PlayerB
         .from("bowling_ball_catalog" as any)
         .select("*");
       if (error) throw error;
-      const catalogMap = new Map((data as any[]).map((b: any) => [b.id, b]));
+      const catalogBalls = data as any[];
+      const catalogMap = new Map(catalogBalls.map((b: any) => [b.id, b]));
+
+      // Resolve images from storage for balls without image_url
+      const imageMap = await resolveBallCatalogImages(catalogBalls);
 
       const { data: arsenalData, error: arsenalError } = await supabase
         .from("player_bowling_arsenal" as any)
@@ -58,10 +63,15 @@ export function PlayerBowlingArsenal({ playerId, categoryId, isViewer }: PlayerB
         .order("created_at", { ascending: false });
       if (arsenalError) throw arsenalError;
 
-      return (arsenalData as any[]).map((item: any) => ({
-        ...item,
-        catalogBall: item.ball_catalog_id ? catalogMap.get(item.ball_catalog_id) : null,
-      }));
+      return (arsenalData as any[]).map((item: any) => {
+        const cat = item.ball_catalog_id ? catalogMap.get(item.ball_catalog_id) : null;
+        const resolvedImageUrl = item.ball_catalog_id ? imageMap.get(item.ball_catalog_id) || null : null;
+        return {
+          ...item,
+          catalogBall: cat ? { ...cat, image_url: cat.image_url || resolvedImageUrl } : null,
+          resolvedImageUrl,
+        };
+      });
     },
   });
 
