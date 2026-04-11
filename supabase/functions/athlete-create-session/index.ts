@@ -12,22 +12,22 @@ serve(async (req) => {
     return new Response("ok", { headers: corsHeaders });
   }
 
-  const json = (data: unknown, status = 200) =>
+  const respond = (data: unknown) =>
     new Response(JSON.stringify(data), {
-      status,
+      status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
 
   try {
     if (req.method !== "POST") {
-      return json({ success: false, error: "Méthode non autorisée" }, 405);
+      return respond({ success: false, error: "Méthode non autorisée" });
     }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
     if (!supabaseUrl || !serviceKey) {
-      return json({ success: false, error: "Configuration backend manquante" }, 500);
+      return respond({ success: false, error: "Configuration backend manquante" });
     }
 
     const supabase = createClient(supabaseUrl, serviceKey);
@@ -36,14 +36,14 @@ serve(async (req) => {
     const jwt = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
 
     if (!jwt) {
-      return json({ success: false, error: "Authentification requise" }, 401);
+      return respond({ success: false, error: "Authentification requise" });
     }
 
     const { data: userData, error: userError } = await supabase.auth.getUser(jwt);
     const userId = userData.user?.id;
 
     if (userError || !userId) {
-      return json({ success: false, error: "Session invalide" }, 401);
+      return respond({ success: false, error: "Session invalide" });
     }
 
     const body = await req.json();
@@ -61,7 +61,7 @@ serve(async (req) => {
     } = body ?? {};
 
     if (!category_id || !player_id || !session_date || !training_type) {
-      return json({ success: false, error: "Données manquantes" }, 400);
+      return respond({ success: false, error: "Données manquantes" });
     }
 
     const { data: player, error: playerError } = await supabase
@@ -74,7 +74,7 @@ serve(async (req) => {
 
     if (playerError) throw playerError;
     if (!player) {
-      return json({ success: false, error: "Accès refusé pour ce joueur" }, 403);
+      return respond({ success: false, error: "Accès refusé pour ce joueur" });
     }
 
     const rawIntensity =
@@ -119,6 +119,7 @@ serve(async (req) => {
             target_intensity: block.target_intensity ?? null,
             volume: block.volume ?? null,
             contact_charge: block.contact_charge ?? null,
+            bowling_exercise_type: block.bowling_exercise_type || null,
           }))
       : [];
 
@@ -166,10 +167,10 @@ serve(async (req) => {
       }
     }
 
-    return json({ success: true, session_id: session.id });
+    return respond({ success: true, session_id: session.id });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Erreur inconnue";
     console.error("[athlete-create-session] Error:", message);
-    return json({ success: false, error: message }, 500);
+    return respond({ success: false, error: message });
   }
 });

@@ -717,6 +717,7 @@ export function SessionFormDialog({
             target_intensity: block.target_intensity || null,
             volume: block.volume || null,
             contact_charge: block.contact_charge || null,
+            bowling_exercise_type: block.bowling_exercise_type || null,
           }));
 
         const validExercisesForAthlete = exercises
