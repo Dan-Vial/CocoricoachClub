@@ -16,6 +16,14 @@ import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 
+function getIntensityColor(value: number) {
+  if (value <= 1) return "#facc15";
+  if (value <= 2) return "#f59e0b";
+  if (value <= 3) return "#f97316";
+  if (value <= 4) return "#ef4444";
+  return "#dc2626";
+}
+
 interface AnnualPlanningViewProps {
   categoryId: string;
 }
