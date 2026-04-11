@@ -547,6 +547,22 @@ function PlayerDetailsContent() {
 
         </Tabs>
 
+        {/* Personal Info Section (Email, Phone, Birth date) */}
+        <div className="mb-6 mt-6">
+          <PlayerPersonalInfoSection 
+            playerId={playerId!}
+            isViewer={isViewer}
+          />
+        </div>
+
+        {/* Additional Info Section (Parent contacts, dietary, medical) */}
+        <div className="mb-6">
+          <PlayerAdditionalInfoSection 
+            playerId={playerId!}
+            isViewer={isViewer}
+          />
+        </div>
+
         {/* Individual Report - always visible at the bottom */}
         <div className="mt-8">
           <PlayerReportSection 
