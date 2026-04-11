@@ -505,12 +505,13 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
         });
       });
 
-      doc.save(`stats-competition-${format(new Date(), "yyyy-MM-dd")}.pdf`);
+      const suffix = mode === "team" ? "-equipe" : mode === "individual" ? "-individuelles" : "";
+      doc.save(`stats-competition${suffix}-${format(new Date(), "yyyy-MM-dd")}.pdf`);
       toast.success("Export PDF téléchargé !");
     } catch (e) {
       toast.error("Erreur lors de l'export PDF");
     }
-  };
+  }, [stats, sportStats, statCategories, categoryId, selectedCount, allMatches, activeMatchIds, playerProgressions]);
 
   const getCategoryIcon = (catKey: string) => {
     switch (catKey) {
