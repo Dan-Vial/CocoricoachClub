@@ -88,20 +88,26 @@ function computeDetailedStats(roundsWithScores: Round[]): DetailedStats | null {
 
 function StatsGrid({ stats, compact = false }: { stats: DetailedStats; compact?: boolean }) {
   const items = [
-    { label: "High", value: String(stats.high), bgClass: null as string | null },
-    { label: "Low", value: String(stats.low), bgClass: null },
-    { label: "Moy", value: stats.average.toFixed(1), bgClass: null },
-    { label: "% Strike", value: `${stats.avgStrikeRate.toFixed(1)}%`, bgClass: getStatColor("strike", stats.avgStrikeRate).bg },
-    { label: "% Spare", value: `${stats.avgSpareRate.toFixed(1)}%`, bgClass: getStatColor("spare", stats.avgSpareRate).bg },
-    { label: "% QS conv.", value: `${stats.singlePinConvRate.toFixed(0)}%`, bgClass: getStatColor("singlePin", stats.singlePinConvRate).bg },
-    { label: "% Split conv.", value: `${stats.splitConvRate.toFixed(0)}%`, bgClass: null },
+    { label: "High", value: String(stats.high), bgClass: null as string | null, statType: null as string | null },
+    { label: "Low", value: String(stats.low), bgClass: null, statType: null },
+    { label: "Moy", value: stats.average.toFixed(1), bgClass: null, statType: null },
+    { label: "% Strike", value: `${stats.avgStrikeRate.toFixed(1)}%`, bgClass: getStatColor("strike", stats.avgStrikeRate).bg, statType: getStatColor("strike", stats.avgStrikeRate).text },
+    { label: "% Spare", value: `${stats.avgSpareRate.toFixed(1)}%`, bgClass: getStatColor("spare", stats.avgSpareRate).bg, statType: getStatColor("spare", stats.avgSpareRate).text },
+    { label: "% QS conv.", value: `${stats.singlePinConvRate.toFixed(0)}%`, bgClass: getStatColor("singlePin", stats.singlePinConvRate).bg, statType: getStatColor("singlePin", stats.singlePinConvRate).text },
+    { label: "% Split conv.", value: `${stats.splitConvRate.toFixed(0)}%`, bgClass: null, statType: null },
   ];
+
+  const getTextClass = (item: typeof items[0]) => {
+    if (!item.bgClass) return "";
+    if (item.statType?.includes("text-red")) return "text-red-600 font-extrabold";
+    return "text-white";
+  };
 
   if (compact) {
     return (
       <div className="grid grid-cols-7 gap-1 text-center">
         {items.map(item => (
-          <div key={item.label} className={`p-1 rounded ${item.bgClass ? `${item.bgClass} text-white` : "bg-muted/50"}`}>
+          <div key={item.label} className={`p-1 rounded ${item.bgClass ? `${item.bgClass} ${getTextClass(item)}` : "bg-muted/50"}`}>
             <p className="text-xs font-bold">{item.value}</p>
             <p className={`text-[8px] leading-tight ${item.bgClass ? "opacity-80" : "text-muted-foreground"}`}>{item.label}</p>
           </div>

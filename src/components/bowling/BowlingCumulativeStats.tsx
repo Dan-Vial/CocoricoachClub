@@ -52,10 +52,12 @@ interface BowlingGameData {
 function ColoredStatRow({ label, value, statType, percentage }: { label: string; value: string; statType?: "pocket" | "strike" | "spare" | "singlePin" | "firstBallGte8"; percentage?: number }) {
   if (statType && percentage !== undefined) {
     const color = getStatColor(statType, percentage);
+    const isNoire2 = color.text.includes("text-red");
+    const textClass = isNoire2 ? "text-red-600 font-extrabold" : "text-white";
     return (
       <div className="flex justify-between items-center">
         <span className="text-sm text-muted-foreground">{label}</span>
-        <span className={`font-bold px-2.5 py-0.5 rounded ${color.bg} text-white text-sm`}>{value}</span>
+        <span className={`font-bold px-2.5 py-0.5 rounded ${color.bg} ${textClass} text-sm`}>{value}</span>
       </div>
     );
   }
