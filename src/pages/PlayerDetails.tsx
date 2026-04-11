@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { ArrowLeft, ArrowRightLeft, Edit2, Check, X, User, Activity, FlaskConical, Swords, CalendarDays, Heart, Utensils, GraduationCap, Bandage, CircleDot, Mountain } from "lucide-react";
 import { ColoredNavTabsList } from "@/components/ui/colored-nav-tabs";
 import * as TabsPrimitive from "@radix-ui/react-tabs";
@@ -472,8 +473,8 @@ function PlayerDetailsContent() {
         </div>
 
         <Tabs defaultValue="charge" className="space-y-6">
-          <div className="w-full overflow-x-auto pb-2 relative z-0">
-            <ColoredNavTabsList className="flex w-max gap-1.5 p-2" style={{ position: 'relative', zIndex: 0 }}>
+          <ScrollArea className="w-full whitespace-nowrap pb-2">
+            <ColoredNavTabsList className="flex w-max gap-1.5 p-2">
               <PlayerDetailTab value="charge" label="Charge" icon={Activity} color="hsl(350 80% 55%)" />
               <PlayerDetailTab value="tests" label="Tests" icon={FlaskConical} color="hsl(280 70% 55%)" />
               <PlayerDetailTab value="matches" label={isTeamSport ? "Matchs" : "Compétitions"} icon={Swords} color="hsl(220 80% 55%)" />
@@ -488,9 +489,9 @@ function PlayerDetailsContent() {
                 <PlayerDetailTab value="equipment" label={isBowling ? "Arsenal" : "Matériel"} icon={Mountain} color="hsl(190 70% 50%)" />
               )}
             </ColoredNavTabsList>
-          </div>
+          </ScrollArea>
 
-          <TabsContent value="charge" className="relative z-[1]">
+          <TabsContent value="charge">
             <div className="space-y-6">
               <PlayerTrainingLoadCard 
                 playerId={playerId!} 
@@ -507,11 +508,11 @@ function PlayerDetailsContent() {
             </div>
           </TabsContent>
 
-          <TabsContent value="tests" className="relative z-[1]">
+          <TabsContent value="tests">
             <PlayerTestsTab playerId={playerId!} categoryId={player.category_id} sportType={sportType} />
           </TabsContent>
 
-          <TabsContent value="matches" className="relative z-[1]">
+          <TabsContent value="matches">
             {isBowling ? (
               <BowlingCumulativeStats categoryId={player.category_id} playerId={playerId!} />
             ) : (
@@ -524,29 +525,29 @@ function PlayerDetailsContent() {
             )}
           </TabsContent>
 
-          <TabsContent value="calendar" className="relative z-[1]">
+          <TabsContent value="calendar">
             <PlayerCalendarTab playerId={playerId!} categoryId={player.category_id} />
           </TabsContent>
 
 
-          <TabsContent value="wellness" className="relative z-[1]">
+          <TabsContent value="wellness">
             <PlayerWellnessTab playerId={playerId!} categoryId={player.category_id} />
           </TabsContent>
 
-          <TabsContent value="nutrition" className="relative z-[1]">
+          <TabsContent value="nutrition">
             <PlayerNutritionTab playerId={playerId!} categoryId={player.category_id} />
           </TabsContent>
 
-          <TabsContent value="academy" className="relative z-[1]">
+          <TabsContent value="academy">
             <PlayerAcademyTab playerId={playerId!} categoryId={player.category_id} playerName={fullName} />
           </TabsContent>
 
-          <TabsContent value="injuries" className="relative z-[1]">
+          <TabsContent value="injuries">
             <PlayerInjuriesTab playerId={playerId!} categoryId={player.category_id} playerName={fullName} />
           </TabsContent>
 
           {(isBowling || isSurf || isSki || isPadel) && (
-            <TabsContent value="equipment" className="relative z-[1]">
+            <TabsContent value="equipment">
               {isBowling && (
                 <PlayerBowlingArsenal playerId={playerId!} categoryId={player.category_id} isViewer={isViewer} />
               )}
