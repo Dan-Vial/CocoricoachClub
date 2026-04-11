@@ -370,7 +370,7 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
         throw new Error("Durée invalide");
       }
 
-      if (isPrecisionSession && !isSpareStatsValid) {
+      if (isPrecisionSession && !isRugbyPrecision && !isSpareStatsValid) {
         throw new Error("Renseigne des statistiques valides (réussites ≤ tentatives)");
       }
 
