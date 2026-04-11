@@ -650,7 +650,10 @@ export function SportMatchStatsDialog({
               updateStat(playerId, "penaltyAttempts", kickStats.penaltyAttempts);
               updateStat(playerId, "dropGoals", kickStats.dropGoals);
               updateStat(playerId, "dropAttempts", kickStats.dropAttempts);
-              updateStat(playerId, "points", kickStats.points);
+              // Points = tries * 5 + kicking points
+              const playerData = statsData.find(p => p.playerId === playerId);
+              const triesPoints = (Number(playerData?.tries) || 0) * 5;
+              updateStat(playerId, "points", triesPoints + kickStats.points);
               setKickingFieldPlayer(null);
             }}
           />
