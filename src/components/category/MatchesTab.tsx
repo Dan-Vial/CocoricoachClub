@@ -9,6 +9,7 @@ import { BowlingCumulativeStats } from "@/components/bowling/BowlingCumulativeSt
 import { BowlingTrainingStats } from "@/components/bowling/BowlingTrainingStats";
 import { TennisTrainingStats } from "@/components/tennis/TennisTrainingStats";
 import { PrecisionTrainingStats } from "@/components/training/PrecisionTrainingStats";
+import { PrecisionFieldTracker } from "@/components/rugby/PrecisionFieldTracker";
 import { KickingTracker } from "@/components/rugby/KickingTracker";
 import { CategoryPhotosTab } from "./photos/CategoryPhotosTab";
 import { isFuture, isPast, format } from "date-fns";
