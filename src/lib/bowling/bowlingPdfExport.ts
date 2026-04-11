@@ -7,6 +7,13 @@ interface ArsenalBallData {
   name: string;
   drillingLayout?: string | null;
   imageUrl?: string | null;
+  weightLbs?: number | null;
+  coverType?: string | null;
+  coreType?: string | null;
+  rg?: number | null;
+  differential?: number | null;
+  intermediateDiff?: number | null;
+  currentSurface?: string | null;
 }
 
 interface BowlingPdfOptions {
