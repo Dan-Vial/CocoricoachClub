@@ -467,13 +467,13 @@ export async function exportBowlingPdf(playerName: string, games: BowlingGameDat
     doc.setFont("helvetica", "bold");
     if (row.stat && row.pct !== undefined) {
       // Draw colored badge
-      const color = getStatLevelColor(row.stat, row.pct);
+      const colors = getStatLevelColors(row.stat, row.pct);
       const tw = doc.getTextWidth(row.value);
       const badgeW = tw + 4;
       const badgeX = leftX + leftColW - badgeW - 2;
-      doc.setFillColor(...color);
+      doc.setFillColor(...colors.bg);
       doc.roundedRect(badgeX, rowY + 0.5, badgeW, 5.5, 1, 1, "F");
-      doc.setTextColor(...COLORS.white);
+      doc.setTextColor(...colors.text);
       doc.text(row.value, badgeX + badgeW / 2, rowY + 4.5, { align: "center" });
     } else {
       doc.setTextColor(...COLORS.text);
