@@ -64,7 +64,6 @@ export function AcademicStatsSection({ categoryId }: AcademicStatsSectionProps) 
         .select("id, name, first_name");
       const { data, error } = await query
         .eq("category_id", categoryId)
-        .eq("is_active", true)
         .order("name");
       if (error) throw error;
       return data as { id: string; name: string; first_name: string | null }[];
