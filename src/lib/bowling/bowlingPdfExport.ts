@@ -369,18 +369,42 @@ export async function exportBowlingPdf(playerName: string, games: BowlingGameDat
 
       // Ball name
       const textX = bx + ballSize + 3;
+      const maxTextW = colW - ballSize - 6;
       doc.setTextColor(...COLORS.text);
       doc.setFontSize(8);
       doc.setFont("helvetica", "bold");
-      const displayName = ball.name.length > 20 ? ball.name.substring(0, 19) + "..." : ball.name;
-      doc.text(displayName, textX, y + ballSize / 2 - 1);
+      const displayName = ball.name.length > 25 ? ball.name.substring(0, 24) + "..." : ball.name;
+      doc.text(displayName, textX, y + 4);
 
-      // Drilling layout
-      if (ball.drillingLayout) {
+      // Weight + cover/core type line
+      const detailParts: string[] = [];
+      if (ball.weightLbs) detailParts.push(`${ball.weightLbs} lbs`);
+      if (ball.coverType) detailParts.push(ball.coverType);
+      if (ball.coreType) detailParts.push(ball.coreType);
+      if (detailParts.length > 0) {
         doc.setFontSize(6.5);
         doc.setFont("helvetica", "normal");
         doc.setTextColor(...COLORS.muted);
-        doc.text(`Layout: ${ball.drillingLayout}`, textX, y + ballSize / 2 + 4);
+        doc.text(detailParts.join("  |  "), textX, y + 8.5);
+      }
+
+      // RG / Diff / Layout line
+      const specParts: string[] = [];
+      if (ball.rg) specParts.push(`RG: ${ball.rg}`);
+      if (ball.differential) specParts.push(`Diff: ${ball.differential}`);
+      if (ball.intermediateDiff) specParts.push(`Int: ${ball.intermediateDiff}`);
+      if (ball.drillingLayout) specParts.push(`Layout: ${ball.drillingLayout}`);
+      if (specParts.length > 0) {
+        doc.setFontSize(6);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(...COLORS.muted);
+        doc.text(specParts.join("  |  "), textX, y + 12.5);
+      }
+
+      // Surface
+      if (ball.currentSurface) {
+        doc.setFontSize(6);
+        doc.text(`Surface: ${ball.currentSurface}`, textX, y + 16);
       }
     }
     y += ballSize + 12;
