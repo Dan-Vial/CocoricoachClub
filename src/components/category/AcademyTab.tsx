@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, GraduationCap, Target, Award, Star, BookOpen, Clock } from "lucide-react";
+import { GraduationCap, Award, Star, BookOpen, Clock } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { toast } from "sonner";
@@ -29,7 +29,7 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
   const [academicDialogOpen, setAcademicDialogOpen] = useState(false);
   const [absenceDialogOpen, setAbsenceDialogOpen] = useState(false);
   
-  const [developmentDialogOpen, setDevelopmentDialogOpen] = useState(false);
+  
   const [selectedPlayer, setSelectedPlayer] = useState("");
 
   // Form states
@@ -41,12 +41,6 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
   const [academicNotes, setAcademicNotes] = useState("");
 
 
-  const [seasonYear, setSeasonYear] = useState(new Date().getFullYear().toString());
-  const [physicalObj, setPhysicalObj] = useState("");
-  const [technicalObj, setTechnicalObj] = useState("");
-  const [tacticalObj, setTacticalObj] = useState("");
-  const [mentalObj, setMentalObj] = useState("");
-  const [academicObj, setAcademicObj] = useState("");
 
   const { data: players } = useQuery({
     queryKey: ["players", categoryId],
@@ -75,18 +69,6 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
   });
 
 
-  const { data: developmentPlans } = useQuery({
-    queryKey: ["development_plans", categoryId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("player_development_plans")
-        .select("*, players(name)")
-        .eq("category_id", categoryId)
-        .order("season_year", { ascending: false });
-      if (error) throw error;
-      return data;
-    },
-  });
 
   const addAcademicGrade = useMutation({
     mutationFn: async () => {
@@ -129,28 +111,6 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
     onError: () => toast.error("Erreur lors de l'ajout"),
   });
 
-  const addDevelopmentPlan = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase.from("player_development_plans").insert({
-        player_id: selectedPlayer,
-        category_id: categoryId,
-        season_year: parseInt(seasonYear),
-        physical_objectives: physicalObj || null,
-        technical_objectives: technicalObj || null,
-        tactical_objectives: tacticalObj || null,
-        mental_objectives: mentalObj || null,
-        academic_objectives: academicObj || null,
-      });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["development_plans", categoryId] });
-      toast.success("Plan de développement créé");
-      resetDevelopmentForm();
-      setDevelopmentDialogOpen(false);
-    },
-    onError: () => toast.error("Erreur lors de l'ajout"),
-  });
 
   const resetAcademicForm = () => {
     setSelectedPlayer("");
@@ -167,15 +127,6 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
   };
 
 
-  const resetDevelopmentForm = () => {
-    setSelectedPlayer("");
-    setSeasonYear(new Date().getFullYear().toString());
-    setPhysicalObj("");
-    setTechnicalObj("");
-    setTacticalObj("");
-    setMentalObj("");
-    setAcademicObj("");
-  };
 
 
   return (
@@ -185,9 +136,6 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
           <ColoredSubTabsList colorKey="academy" className="inline-flex w-max">
             <ColoredSubTabsTrigger value="academic" colorKey="academy" icon={<GraduationCap className="h-4 w-4" />}>
               Suivi Scolaire
-            </ColoredSubTabsTrigger>
-            <ColoredSubTabsTrigger value="development" colorKey="academy" icon={<Target className="h-4 w-4" />}>
-              Plans de Développement
             </ColoredSubTabsTrigger>
             <ColoredSubTabsTrigger value="selections" colorKey="academy" icon={<Award className="h-4 w-4" />}>
               Sélections
@@ -264,72 +212,6 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
         </TabsContent>
 
         {/* Staff Notes Tab */}
-        <TabsContent value="development">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Plans de Développement Individuel</CardTitle>
-                  <CardDescription>Objectifs annuels et bilans par joueur</CardDescription>
-                </div>
-                <Button onClick={() => setDevelopmentDialogOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Nouveau plan
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {!developmentPlans || developmentPlans.length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">Aucun plan de développement enregistré.</p>
-              ) : (
-                <div className="space-y-4">
-                  {developmentPlans.map((plan) => (
-                    <div key={plan.id} className="p-4 border rounded-lg">
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-3">
-                          <span className="font-medium text-lg">{plan.players?.name}</span>
-                          <Badge variant="outline">Saison {plan.season_year}/{plan.season_year + 1}</Badge>
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
-                        {plan.physical_objectives && (
-                          <div className="p-3 bg-muted rounded">
-                            <span className="font-medium text-primary">Physique:</span>
-                            <p className="mt-1">{plan.physical_objectives}</p>
-                          </div>
-                        )}
-                        {plan.technical_objectives && (
-                          <div className="p-3 bg-muted rounded">
-                            <span className="font-medium text-primary">Technique:</span>
-                            <p className="mt-1">{plan.technical_objectives}</p>
-                          </div>
-                        )}
-                        {plan.tactical_objectives && (
-                          <div className="p-3 bg-muted rounded">
-                            <span className="font-medium text-primary">Tactique:</span>
-                            <p className="mt-1">{plan.tactical_objectives}</p>
-                          </div>
-                        )}
-                        {plan.mental_objectives && (
-                          <div className="p-3 bg-muted rounded">
-                            <span className="font-medium text-primary">Mental:</span>
-                            <p className="mt-1">{plan.mental_objectives}</p>
-                          </div>
-                        )}
-                        {plan.academic_objectives && (
-                          <div className="p-3 bg-muted rounded">
-                            <span className="font-medium text-primary">Scolaire:</span>
-                            <p className="mt-1">{plan.academic_objectives}</p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
 
         {/* Selections Tab */}
         <TabsContent value="selections">
@@ -447,62 +329,6 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={developmentDialogOpen} onOpenChange={setDevelopmentDialogOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Créer un plan de développement</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Joueur</Label>
-                <Select value={selectedPlayer} onValueChange={setSelectedPlayer}>
-                  <SelectTrigger><SelectValue placeholder="Sélectionner un joueur" /></SelectTrigger>
-                  <SelectContent>
-                    {players?.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>{p.first_name ? `${p.first_name} ${p.name}` : p.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>Année de saison</Label>
-                <Input type="number" value={seasonYear} onChange={(e) => setSeasonYear(e.target.value)} />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Objectifs Physiques</Label>
-                <Textarea value={physicalObj} onChange={(e) => setPhysicalObj(e.target.value)} placeholder="Ex: Améliorer la VMA de 10%..." rows={2} />
-              </div>
-              <div>
-                <Label>Objectifs Techniques</Label>
-                <Textarea value={technicalObj} onChange={(e) => setTechnicalObj(e.target.value)} placeholder="Ex: Travailler le jeu au pied..." rows={2} />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Objectifs Tactiques</Label>
-                <Textarea value={tacticalObj} onChange={(e) => setTacticalObj(e.target.value)} placeholder="Ex: Améliorer la lecture du jeu..." rows={2} />
-              </div>
-              <div>
-                <Label>Objectifs Mentaux</Label>
-                <Textarea value={mentalObj} onChange={(e) => setMentalObj(e.target.value)} placeholder="Ex: Gestion du stress en match..." rows={2} />
-              </div>
-            </div>
-            <div>
-              <Label>Objectifs Scolaires</Label>
-              <Textarea value={academicObj} onChange={(e) => setAcademicObj(e.target.value)} placeholder="Ex: Maintenir une moyenne > 12..." rows={2} />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDevelopmentDialogOpen(false)}>Annuler</Button>
-            <Button onClick={() => addDevelopmentPlan.mutate()} disabled={!selectedPlayer || addDevelopmentPlan.isPending}>
-              {addDevelopmentPlan.isPending ? "Création..." : "Créer"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
