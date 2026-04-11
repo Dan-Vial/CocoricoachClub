@@ -472,8 +472,8 @@ function PlayerDetailsContent() {
         </div>
 
         <Tabs defaultValue="charge" className="space-y-6">
-          <div className="w-full overflow-x-auto pb-2">
-            <ColoredNavTabsList className="flex w-max gap-1.5 p-2">
+          <div className="w-full overflow-x-auto pb-2 relative z-0">
+            <ColoredNavTabsList className="flex w-max gap-1.5 p-2" style={{ position: 'relative', zIndex: 0 }}>
               <PlayerDetailTab value="charge" label="Charge" icon={Activity} color="hsl(350 80% 55%)" />
               <PlayerDetailTab value="tests" label="Tests" icon={FlaskConical} color="hsl(280 70% 55%)" />
               <PlayerDetailTab value="matches" label={isTeamSport ? "Matchs" : "Compétitions"} icon={Swords} color="hsl(220 80% 55%)" />
@@ -490,7 +490,7 @@ function PlayerDetailsContent() {
             </ColoredNavTabsList>
           </div>
 
-          <TabsContent value="charge">
+          <TabsContent value="charge" className="relative z-[1]">
             <div className="space-y-6">
               <PlayerTrainingLoadCard 
                 playerId={playerId!} 
@@ -507,11 +507,11 @@ function PlayerDetailsContent() {
             </div>
           </TabsContent>
 
-          <TabsContent value="tests">
+          <TabsContent value="tests" className="relative z-[1]">
             <PlayerTestsTab playerId={playerId!} categoryId={player.category_id} sportType={sportType} />
           </TabsContent>
 
-          <TabsContent value="matches">
+          <TabsContent value="matches" className="relative z-[1]">
             {isBowling ? (
               <BowlingCumulativeStats categoryId={player.category_id} playerId={playerId!} />
             ) : (
@@ -524,29 +524,29 @@ function PlayerDetailsContent() {
             )}
           </TabsContent>
 
-          <TabsContent value="calendar">
+          <TabsContent value="calendar" className="relative z-[1]">
             <PlayerCalendarTab playerId={playerId!} categoryId={player.category_id} />
           </TabsContent>
 
 
-          <TabsContent value="wellness">
+          <TabsContent value="wellness" className="relative z-[1]">
             <PlayerWellnessTab playerId={playerId!} categoryId={player.category_id} />
           </TabsContent>
 
-          <TabsContent value="nutrition">
+          <TabsContent value="nutrition" className="relative z-[1]">
             <PlayerNutritionTab playerId={playerId!} categoryId={player.category_id} />
           </TabsContent>
 
-          <TabsContent value="academy">
+          <TabsContent value="academy" className="relative z-[1]">
             <PlayerAcademyTab playerId={playerId!} categoryId={player.category_id} playerName={fullName} />
           </TabsContent>
 
-          <TabsContent value="injuries">
+          <TabsContent value="injuries" className="relative z-[1]">
             <PlayerInjuriesTab playerId={playerId!} categoryId={player.category_id} playerName={fullName} />
           </TabsContent>
 
           {(isBowling || isSurf || isSki || isPadel) && (
-            <TabsContent value="equipment">
+            <TabsContent value="equipment" className="relative z-[1]">
               {isBowling && (
                 <PlayerBowlingArsenal playerId={playerId!} categoryId={player.category_id} isViewer={isViewer} />
               )}
