@@ -102,7 +102,7 @@ function DraggableProspectCard({ prospect, onClick }: { prospect: Prospect; onCl
       {...listeners}
       onClick={onClick}
     >
-      <CardContent className="p-2.5">
+      <CardContent className="p-2.5 text-center border-primary border border-solid">
         <div className="flex-1 min-w-0">
           <div className="flex justify-between items-start mb-1">
             <h4 className="font-medium text-xs truncate">{prospect.name}</h4>
