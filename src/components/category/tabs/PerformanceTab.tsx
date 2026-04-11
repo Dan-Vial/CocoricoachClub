@@ -1,8 +1,7 @@
 import { Tabs, TabsContent } from "@/components/ui/tabs";
-import { BarChart3, Dumbbell, History, Zap, Lock, Brain, Weight } from "lucide-react";
+import { BarChart3, Dumbbell, Zap, Lock, Brain, Weight } from "lucide-react";
 import { AnalyticsTab } from "@/components/analytics/AnalyticsTab";
 import { PhysicalPreparationTab } from "@/components/category/PhysicalPreparationTab";
-import { SessionHistoryTimeline } from "@/components/category/history/SessionHistoryTimeline";
 import { TrainingLoadTab } from "@/components/training-load/TrainingLoadTab";
 import { MentalPerformanceSection } from "@/components/category/mental/MentalPerformanceSection";
 import { TonnageDashboard } from "@/components/tonnage/TonnageDashboard";
@@ -54,14 +53,6 @@ export function PerformanceTab({ categoryId }: PerformanceTabProps) {
             <span className="sm:hidden">Charge</span>
           </ColoredSubTabsTrigger>
           <ColoredSubTabsTrigger 
-            value="history" 
-            colorKey="performance"
-            icon={<History className="h-4 w-4" />}
-          >
-            <span className="hidden sm:inline">Historique</span>
-            <span className="sm:hidden">Hist</span>
-          </ColoredSubTabsTrigger>
-          <ColoredSubTabsTrigger 
             value="analytics" 
             colorKey="performance"
             icon={<BarChart3 className="h-4 w-4" />}
@@ -97,10 +88,6 @@ export function PerformanceTab({ categoryId }: PerformanceTabProps) {
 
       <TabsContent value="training-load">
         <TrainingLoadTab categoryId={categoryId} />
-      </TabsContent>
-
-      <TabsContent value="history">
-        <SessionHistoryTimeline categoryId={categoryId} />
       </TabsContent>
 
       <TabsContent value="analytics">
