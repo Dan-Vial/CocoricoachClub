@@ -32,6 +32,12 @@ interface MatchInfo {
   id: string;
   match_date: string;
   opponent: string;
+  is_home?: boolean;
+  location?: string;
+  match_time?: string;
+  competition?: string;
+  competition_stage?: string;
+  event_type?: string;
 }
 
 interface CumulativeStats {
