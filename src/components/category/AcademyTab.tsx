@@ -23,19 +23,12 @@ interface AcademyTabProps {
   categoryId: string;
 }
 
-const STAFF_ROLES = [
-  { value: "medecin", label: "Médecin" },
-  { value: "kine", label: "Kinésithérapeute" },
-  { value: "preparateur", label: "Préparateur physique" },
-  { value: "tuteur", label: "Tuteur scolaire" },
-  { value: "coach", label: "Coach" },
-];
 
 export function AcademyTab({ categoryId }: AcademyTabProps) {
   const queryClient = useQueryClient();
   const [academicDialogOpen, setAcademicDialogOpen] = useState(false);
   const [absenceDialogOpen, setAbsenceDialogOpen] = useState(false);
-  const [staffNoteDialogOpen, setStaffNoteDialogOpen] = useState(false);
+  
   const [developmentDialogOpen, setDevelopmentDialogOpen] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState("");
 
@@ -47,8 +40,6 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
   const [subject, setSubject] = useState("");
   const [academicNotes, setAcademicNotes] = useState("");
 
-  const [staffRole, setStaffRole] = useState("");
-  const [noteContent, setNoteContent] = useState("");
 
   const [seasonYear, setSeasonYear] = useState(new Date().getFullYear().toString());
   const [physicalObj, setPhysicalObj] = useState("");
