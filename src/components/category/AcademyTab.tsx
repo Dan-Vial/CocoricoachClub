@@ -42,6 +42,9 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
   const [academicGrade, setAcademicGrade] = useState("");
   const [gradeScale, setGradeScale] = useState("20");
   const [subject, setSubject] = useState("");
+  const [newSubject, setNewSubject] = useState("");
+  const [isAddingSubject, setIsAddingSubject] = useState(false);
+  const [gradeDate, setGradeDate] = useState<Date>(new Date());
   const [academicNotes, setAcademicNotes] = useState("");
 
 
