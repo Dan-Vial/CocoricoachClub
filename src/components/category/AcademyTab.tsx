@@ -141,26 +141,6 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
     onError: () => toast.error("Erreur lors de l'ajout"),
   });
 
-  const addStaffNote = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase.from("staff_notes").insert({
-        player_id: selectedPlayer,
-        category_id: categoryId,
-        staff_role: staffRole,
-        note_content: noteContent,
-      });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["staff_notes", categoryId] });
-      toast.success("Note ajoutée");
-      resetStaffNoteForm();
-      setStaffNoteDialogOpen(false);
-    },
-    onError: () => toast.error("Erreur lors de l'ajout"),
-  });
-
-  const addDevelopmentPlan = useMutation({
     mutationFn: async () => {
       const { error } = await supabase.from("player_development_plans").insert({
         player_id: selectedPlayer,
@@ -197,11 +177,6 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
     setAbsenceReason("");
   };
 
-  const resetStaffNoteForm = () => {
-    setSelectedPlayer("");
-    setStaffRole("");
-    setNoteContent("");
-  };
 
   const resetDevelopmentForm = () => {
     setSelectedPlayer("");
