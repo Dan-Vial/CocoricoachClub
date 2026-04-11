@@ -29,6 +29,7 @@ interface Match {
   id: string;
   opponent: string;
   match_date: string;
+  end_date?: string | null;
   match_time: string | null;
   location: string | null;
   is_home: boolean;
