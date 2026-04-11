@@ -303,7 +303,7 @@ export function BowlingBlockManager({
                         value={block.roundDate}
                         onChange={(e) => updateBlock(block.id, { roundDate: e.target.value })}
                         className="h-8 text-xs"
-                        disabled={blockHasLockedGames}
+                        
                       />
                     </div>
                     <div>
@@ -311,7 +311,7 @@ export function BowlingBlockManager({
                       <Select
                         value={block.bowlingCategory}
                         onValueChange={(v) => updateBlock(block.id, { bowlingCategory: v })}
-                        disabled={blockHasLockedGames}
+                        
                       >
                         <SelectTrigger className="h-8 text-xs">
                           <SelectValue placeholder="Sélectionner..." />
@@ -328,7 +328,7 @@ export function BowlingBlockManager({
                       <Select
                         value={block.phase}
                         onValueChange={(v) => updateBlock(block.id, { phase: v })}
-                        disabled={blockHasLockedGames}
+                        
                       >
                         <SelectTrigger className="h-8 text-xs">
                           <SelectValue placeholder="Sélectionner..." />
@@ -347,7 +347,7 @@ export function BowlingBlockManager({
                         onChange={(e) => updateBlock(block.id, { opponent_name: e.target.value })}
                         placeholder="Nom adversaire"
                         className="h-8 text-xs"
-                        disabled={blockHasLockedGames}
+                        
                       />
                     </div>
                   </div>
