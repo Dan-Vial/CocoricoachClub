@@ -233,25 +233,25 @@ export function BowlingCompetitionSummary({
 
           {/* Detailed stats */}
           <div className="grid grid-cols-3 sm:grid-cols-7 gap-2 text-center">
-            <div className={`p-2 rounded-lg ${getStatColor("strike", overall.avgStrikeRate).bg} text-white`}>
-              <p className="text-lg font-bold">{overall.avgStrikeRate.toFixed(1)}%</p>
-              <p className="text-[9px] opacity-80">% Strike</p>
+            <div className={`p-2 rounded-lg ${getStatColor("strike", overall.avgStrikeRate).bg}`}>
+              <p className={`text-lg font-bold ${getStatColor("strike", overall.avgStrikeRate).text.includes("text-red") ? "text-red-600" : "text-white"}`}>{overall.avgStrikeRate.toFixed(1)}%</p>
+              <p className="text-[9px] text-white opacity-80">% Strike</p>
             </div>
-            <div className={`p-2 rounded-lg ${getStatColor("spare", overall.avgSpareRate).bg} text-white`}>
-              <p className="text-lg font-bold">{overall.avgSpareRate.toFixed(1)}%</p>
-              <p className="text-[9px] opacity-80">% Spare</p>
+            <div className={`p-2 rounded-lg ${getStatColor("spare", overall.avgSpareRate).bg}`}>
+              <p className={`text-lg font-bold ${getStatColor("spare", overall.avgSpareRate).text.includes("text-red") ? "text-red-600" : "text-white"}`}>{overall.avgSpareRate.toFixed(1)}%</p>
+              <p className="text-[9px] text-white opacity-80">% Spare</p>
             </div>
-            <div className={`p-2 rounded-lg ${getStatColor("singlePin", overall.singlePinConvRate).bg} text-white`}>
-              <p className="text-lg font-bold">{overall.singlePinConvRate.toFixed(0)}%</p>
-              <p className="text-[9px] opacity-80">% QS conv.</p>
+            <div className={`p-2 rounded-lg ${getStatColor("singlePin", overall.singlePinConvRate).bg}`}>
+              <p className={`text-lg font-bold ${getStatColor("singlePin", overall.singlePinConvRate).text.includes("text-red") ? "text-red-600" : "text-white"}`}>{overall.singlePinConvRate.toFixed(0)}%</p>
+              <p className="text-[9px] text-white opacity-80">% QS conv.</p>
             </div>
             <div className="p-2 rounded-lg border">
               <p className="text-lg font-bold text-orange-600">{overall.splitConvRate.toFixed(0)}%</p>
               <p className="text-[9px] text-muted-foreground">% Split conv.</p>
             </div>
-            <div className={`p-2 rounded-lg ${getStatColor("pocket", overall.pocketPct).bg} text-white`}>
-              <p className="text-lg font-bold">{overall.pocketPct.toFixed(0)}%</p>
-              <p className="text-[9px] opacity-80">% Pocket</p>
+            <div className={`p-2 rounded-lg ${getStatColor("pocket", overall.pocketPct).bg}`}>
+              <p className={`text-lg font-bold ${getStatColor("pocket", overall.pocketPct).text.includes("text-red") ? "text-red-600" : "text-white"}`}>{overall.pocketPct.toFixed(0)}%</p>
+              <p className="text-[9px] text-white opacity-80">% Pocket</p>
             </div>
             <div className="p-2 rounded-lg border">
               <p className="text-lg font-bold text-red-500">{overall.low}</p>
