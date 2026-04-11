@@ -1,12 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useState, useMemo } from "react";
-import { format, subDays, subWeeks } from "date-fns";
-import { fr } from "date-fns/locale";
-import { BarChart3, Dumbbell, Zap, Shield } from "lucide-react";
+import { format, subDays } from "date-fns";
+import { BarChart3, Dumbbell, Zap, Shield, CalendarRange } from "lucide-react";
 import {
   getSessionTypeLabel,
   getObjectiveLabel,
@@ -22,12 +22,9 @@ interface TrainingDistributionProps {
   categoryId: string;
 }
 
-type PeriodOption = "7" | "14" | "28" | "56" | "90";
-
 export function TrainingDistribution({ categoryId }: TrainingDistributionProps) {
-  const [period, setPeriod] = useState<PeriodOption>("28");
-
-  const startDate = useMemo(() => format(subDays(new Date(), Number(period)), "yyyy-MM-dd"), [period]);
+  const [startDate, setStartDate] = useState(() => format(subDays(new Date(), 28), "yyyy-MM-dd"));
+  const [endDate, setEndDate] = useState(() => format(new Date(), "yyyy-MM-dd"));
 
   const { data, isLoading } = useQuery({
     queryKey: ["training-distribution", categoryId, startDate],
