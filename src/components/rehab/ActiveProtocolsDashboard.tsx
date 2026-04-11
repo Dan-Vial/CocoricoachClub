@@ -44,6 +44,13 @@ interface ActiveProtocolsDashboardProps {
   categoryId: string;
 }
 
+// State for quick protocol assignment
+interface AssignState {
+  injuryId: string;
+  playerId: string;
+  protocolId: string;
+}
+
 const EVENT_TYPES = [
   { value: "exercise", label: "Exercice / Séance réhab" },
   { value: "checkpoint", label: "Bilan / Checkpoint" },
