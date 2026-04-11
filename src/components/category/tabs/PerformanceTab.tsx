@@ -53,14 +53,6 @@ export function PerformanceTab({ categoryId }: PerformanceTabProps) {
             <span className="sm:hidden">Charge</span>
           </ColoredSubTabsTrigger>
           <ColoredSubTabsTrigger 
-            value="history" 
-            colorKey="performance"
-            icon={<History className="h-4 w-4" />}
-          >
-            <span className="hidden sm:inline">Historique</span>
-            <span className="sm:hidden">Hist</span>
-          </ColoredSubTabsTrigger>
-          <ColoredSubTabsTrigger 
             value="analytics" 
             colorKey="performance"
             icon={<BarChart3 className="h-4 w-4" />}
