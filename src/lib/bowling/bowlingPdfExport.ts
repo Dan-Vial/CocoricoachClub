@@ -275,7 +275,9 @@ export async function exportBowlingPdf(playerName: string, games: BowlingGameDat
 
     if (oilBase64) {
       try {
-        const maxH = (297 - oilY - 10) * 0.70;
+        // Calculate available space: leave room for arsenal below
+        const arsenalNeededH = arsenalBalls.length > 0 ? 45 : 0;
+        const maxH = (297 - oilY - 10 - arsenalNeededH) * 0.85;
         const availableW = contentWidth;
         const aspect = oilBase64.width / oilBase64.height;
         let imgW = availableW;
@@ -285,16 +287,17 @@ export async function exportBowlingPdf(playerName: string, games: BowlingGameDat
           imgW = imgH * aspect;
         }
         doc.addImage(oilBase64.data, "PNG", margin + (contentWidth - imgW) / 2, oilY, imgW, imgH);
+        oilY += imgH + 4;
       } catch {
         // skip
       }
     }
+    y = oilY;
   }
 
   // ===================== ARSENAL =====================
   if (arsenalBalls.length > 0) {
-    doc.addPage();
-    y = 15;
+    y += 4;
     drawSectionTitle(doc, margin, y, contentWidth, "ARSENAL");
     y += 14;
 
