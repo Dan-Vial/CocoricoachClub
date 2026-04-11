@@ -103,6 +103,40 @@ export function AcademicStatsSection({ categoryId }: AcademicStatsSectionProps) 
     })).sort((a, b) => b.avg - a.avg);
   }, [gradeEntries]);
 
+  // Subject evolution data: each point is a grade with its date, grouped for the line chart
+  const subjectEvolutionData = useMemo(() => {
+    // Collect all grade entries with dates per subject
+    const subjectEntries: Record<string, { date: string; grade: number }[]> = {};
+    gradeEntries.forEach(e => {
+      const subj = e.subject || "Non spécifié";
+      const n = normalizeGrade(e.academic_grade, e.grade_scale);
+      if (n !== null) {
+        if (!subjectEntries[subj]) subjectEntries[subj] = [];
+        subjectEntries[subj].push({ date: e.tracking_date, grade: Math.round(n * 100) / 100 });
+      }
+    });
+
+    // Get all unique dates across all subjects, sorted
+    const allDates = [...new Set(gradeEntries.map(e => e.tracking_date))].sort();
+    
+    // Build chart data: one row per date, one key per subject
+    const subjects = Object.keys(subjectEntries).sort();
+    const chartData = allDates.map(date => {
+      const row: Record<string, any> = {
+        date,
+        label: new Date(date).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" }),
+      };
+      subjects.forEach(subj => {
+        // Find grade for this subject on this date
+        const entry = subjectEntries[subj]?.find(e => e.date === date);
+        row[subj] = entry ? entry.grade : null;
+      });
+      return row;
+    });
+
+    return { chartData, subjects };
+  }, [gradeEntries]);
+
   // Per-player stats
   const playerStats = useMemo(() => {
     const players: Record<string, { grades: number[]; name: string; absences: number }> = {};
@@ -365,15 +399,35 @@ export function AcademicStatsSection({ categoryId }: AcademicStatsSectionProps) 
               <TabsContent value="subjects">
                 {subjectStats.length > 0 ? (
                   <div className="space-y-4">
-                    <div className="h-64">
+                    {/* Line chart: one line per subject, date on X, grade on Y */}
+                    <div className="h-80">
                       <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={subjectStats} layout="vertical">
+                        <LineChart data={subjectEvolutionData.chartData}>
                           <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis type="number" domain={[0, 20]} fontSize={12} />
-                          <YAxis type="category" dataKey="name" width={120} fontSize={12} />
+                          <XAxis dataKey="label" fontSize={12} />
+                          <YAxis domain={[0, 20]} fontSize={12} />
                           <Tooltip />
-                          <Bar dataKey="avg" name="Moyenne (/20)" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
-                        </BarChart>
+                          <Legend />
+                          {subjectEvolutionData.subjects.map((subj, i) => {
+                            const colors = [
+                              "hsl(var(--primary))", "#e11d48", "#2563eb", "#16a34a", "#d97706", 
+                              "#7c3aed", "#0891b2", "#be185d", "#65a30d", "#dc2626",
+                              "#4f46e5", "#059669", "#ca8a04", "#9333ea", "#0284c7"
+                            ];
+                            return (
+                              <Line
+                                key={subj}
+                                type="monotone"
+                                dataKey={subj}
+                                name={subj}
+                                stroke={colors[i % colors.length]}
+                                strokeWidth={2}
+                                dot={{ r: 5 }}
+                                connectNulls
+                              />
+                            );
+                          })}
+                        </LineChart>
                       </ResponsiveContainer>
                     </div>
                     <div className="rounded-md border overflow-x-auto">
