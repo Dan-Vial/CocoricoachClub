@@ -836,6 +836,49 @@ export type Database = {
         }
         Relationships: []
       }
+      bowling_oil_pattern_players: {
+        Row: {
+          created_at: string
+          id: string
+          oil_pattern_id: string
+          player_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          oil_pattern_id: string
+          player_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          oil_pattern_id?: string
+          player_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bowling_oil_pattern_players_oil_pattern_id_fkey"
+            columns: ["oil_pattern_id"]
+            isOneToOne: false
+            referencedRelation: "bowling_oil_patterns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bowling_oil_pattern_players_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bowling_oil_pattern_players_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bowling_oil_patterns: {
         Row: {
           buff_distance_feet: number | null
