@@ -711,6 +711,88 @@ export function BowlingArsenalCatalogTab({ categoryId }: BowlingArsenalCatalogTa
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* ===== PLAYER ARSENAL VIEW ===== */}
+      <div className="mt-8 space-y-4">
+        <h3 className="text-lg font-semibold">Arsenal par joueur</h3>
+        <div className="flex flex-wrap gap-2">
+          {players.map((p) => {
+            const isActive = selectedViewPlayerId === p.id;
+            return (
+              <Button
+                key={p.id}
+                variant={isActive ? "default" : "outline"}
+                size="sm"
+                onClick={() => setSelectedViewPlayerId(isActive ? null : p.id)}
+              >
+                {[p.first_name, p.name].filter(Boolean).join(" ")}
+              </Button>
+            );
+          })}
+        </div>
+
+        {selectedViewPlayerId && (
+          <div className="space-y-3">
+            {isLoadingArsenal ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              </div>
+            ) : !playerArsenal || playerArsenal.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-6">
+                Aucune boule dans l'arsenal de ce joueur.
+              </p>
+            ) : (
+              playerArsenal.map((item: any) => {
+                const displayName = item.catalogBall
+                  ? `${item.catalogBall.brand} ${item.catalogBall.model}`
+                  : `${item.custom_ball_brand || ""} ${item.custom_ball_name || "Custom"}`.trim();
+                const imgUrl = item.catalogBall?.image_url;
+
+                return (
+                  <div key={item.id} className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-accent/5 transition-colors">
+                    <div className="h-12 w-12 rounded-full overflow-hidden bg-muted flex-shrink-0 flex items-center justify-center border">
+                      {imgUrl ? (
+                        <img src={imgUrl} alt={displayName} className="h-full w-full object-cover" />
+                      ) : (
+                        <CircleDot className="h-6 w-6 text-muted-foreground" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-sm truncate">{displayName}</p>
+                      <div className="flex flex-wrap gap-1.5 mt-1">
+                        {item.weight_lbs && (
+                          <Badge variant="outline" className="text-xs">{item.weight_lbs} lbs</Badge>
+                        )}
+                        {item.catalogBall && (
+                          <>
+                            <Badge variant="secondary" className="text-xs">{getCoverTypeLabel(item.catalogBall.cover_type)}</Badge>
+                            <Badge variant="secondary" className="text-xs">{getCoreTypeLabel(item.catalogBall.core_type)}</Badge>
+                          </>
+                        )}
+                        {item.drilling_layout && (
+                          <Badge variant="outline" className="text-xs">🎯 {item.drilling_layout}</Badge>
+                        )}
+                        {item.current_surface && (
+                          <Badge variant="outline" className="text-xs">Surface: {item.current_surface}</Badge>
+                        )}
+                      </div>
+                      <div className="flex gap-3 mt-1 text-xs text-muted-foreground">
+                        {item.custom_rg && <span>RG: {item.custom_rg}</span>}
+                        {item.custom_differential && <span>Diff: {item.custom_differential}</span>}
+                        {item.custom_intermediate_diff && <span>Int: {item.custom_intermediate_diff}</span>}
+                      </div>
+                      <div className="flex gap-3 mt-0.5 text-xs text-muted-foreground">
+                        {item.games_played > 0 && <span>{item.games_played} parties</span>}
+                        {item.purchase_date && <span>Achat: {format(new Date(item.purchase_date), "dd/MM/yyyy")}</span>}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
