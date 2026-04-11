@@ -12,12 +12,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { GraduationCap, Award, Star, BookOpen, Clock } from "lucide-react";
+import { GraduationCap, Award, Star, BookOpen, Clock, BarChart3 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { toast } from "sonner";
 import { SelectionsSection } from "./academy/SelectionsSection";
 import { EvaluationsSection } from "./academy/EvaluationsSection";
+import { AcademicStatsSection } from "./academy/AcademicStatsSection";
 
 interface AcademyTabProps {
   categoryId: string;
@@ -143,6 +144,9 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
             <ColoredSubTabsTrigger value="evaluations" colorKey="academy" icon={<Star className="h-4 w-4" />}>
               Évaluations
             </ColoredSubTabsTrigger>
+            <ColoredSubTabsTrigger value="stats" colorKey="academy" icon={<BarChart3 className="h-4 w-4" />}>
+              Statistiques
+            </ColoredSubTabsTrigger>
           </ColoredSubTabsList>
         </div>
 
@@ -222,6 +226,11 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
         {/* Evaluations Tab */}
         <TabsContent value="evaluations">
           <EvaluationsSection categoryId={categoryId} players={players} />
+        </TabsContent>
+
+        {/* Stats Tab */}
+        <TabsContent value="stats">
+          <AcademicStatsSection categoryId={categoryId} />
         </TabsContent>
       </Tabs>
 
