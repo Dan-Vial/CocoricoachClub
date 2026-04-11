@@ -117,7 +117,6 @@ const COLORS = {
   statNoire2Bg: [0, 0, 0] as [number, number, number],
   statNoire2Text: [220, 38, 38] as [number, number, number],
 };
-};
 
 function getScoreColor(score: number): [number, number, number] {
   if (score >= 240) return COLORS.scoreGold;
