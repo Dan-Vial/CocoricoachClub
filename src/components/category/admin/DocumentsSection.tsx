@@ -160,7 +160,7 @@ export function DocumentsSection({ categoryId }: DocumentsSectionProps) {
         category_id: categoryId,
         created_by: user?.id,
         player_id: playerId,
-        document_type: data.document_type,
+        document_type: data.document_type === "custom" ? customDocumentType : data.document_type,
         title: data.title,
         file_url: fileUrl,
         expiry_date: data.expiry_date || null,
@@ -250,6 +250,7 @@ export function DocumentsSection({ categoryId }: DocumentsSectionProps) {
       expiry_date: "",
       notes: "",
     });
+    setCustomDocumentType("");
     setSelectedFile(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
@@ -474,7 +475,7 @@ export function DocumentsSection({ categoryId }: DocumentsSectionProps) {
 
               <div>
                 <Label>Type de document *</Label>
-                <Select value={formData.document_type} onValueChange={(v) => setFormData({ ...formData, document_type: v })}>
+                <Select value={formData.document_type} onValueChange={(v) => { setFormData({ ...formData, document_type: v }); if (v !== "custom") setCustomDocumentType(""); }}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {DOCUMENT_TYPES.map((type) => (
@@ -482,6 +483,14 @@ export function DocumentsSection({ categoryId }: DocumentsSectionProps) {
                     ))}
                   </SelectContent>
                 </Select>
+                {formData.document_type === "custom" && (
+                  <Input
+                    className="mt-2"
+                    value={customDocumentType}
+                    onChange={(e) => setCustomDocumentType(e.target.value)}
+                    placeholder="Nom du type de document personnalisé"
+                  />
+                )}
               </div>
               <div>
                 <Label>Titre / Description *</Label>
@@ -561,7 +570,7 @@ export function DocumentsSection({ categoryId }: DocumentsSectionProps) {
                         )}
                       </div>
                       <div className="flex items-center gap-3 text-sm text-muted-foreground flex-wrap">
-                        <span>{DOCUMENT_TYPES.find((t) => t.value === doc.document_type)?.label}</span>
+                        <span>{DOCUMENT_TYPES.find((t) => t.value === doc.document_type)?.label || doc.document_type}</span>
                         {doc.expiry_date && (
                           <span className="flex items-center gap-1">
                             <Calendar className="h-3 w-3" />
