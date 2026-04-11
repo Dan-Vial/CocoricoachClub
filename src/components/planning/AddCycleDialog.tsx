@@ -68,7 +68,6 @@ export function AddCycleDialog({ open, onOpenChange, categoryId, categories, pre
         cycle_type: cycleType || null,
         intensity: intensity || null,
         volume: volume || null,
-        notes: notes || null,
       });
       if (error) throw error;
     },
