@@ -277,6 +277,7 @@ export function BowlingArsenalCatalogTab({ categoryId }: BowlingArsenalCatalogTa
     setSelectedBallIds([]);
     setAssignWeight("");
     setArsenalSearch("");
+    setArsenalBrandFilter("all");
   };
 
   const handleFileSelect = (ballId: string) => {
