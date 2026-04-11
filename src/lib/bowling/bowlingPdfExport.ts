@@ -1156,6 +1156,8 @@ export interface TeamPlayerData {
   avatarUrl?: string | null;
   games: BowlingGameData[];
   arsenalBalls?: ArsenalBallData[];
+  oilPatternName?: string | null;
+  oilPatternImageUrl?: string | null;
 }
 
 export async function exportBowlingTeamPdf(
@@ -1172,10 +1174,19 @@ export async function exportBowlingTeamPdf(
       doc.addPage();
     }
 
+    const playerOptions = {
+      ...options,
+      playerAvatarUrl: player.avatarUrl,
+      arsenalBalls: player.arsenalBalls,
+      // Use per-player oil pattern if assigned, otherwise fallback to shared options
+      oilPatternName: player.oilPatternName ?? options?.oilPatternName,
+      oilPatternImageUrl: player.oilPatternImageUrl ?? options?.oilPatternImageUrl,
+    };
+
     await exportBowlingPdf(
       player.playerName,
       player.games,
-      { ...options, playerAvatarUrl: player.avatarUrl, arsenalBalls: player.arsenalBalls },
+      playerOptions,
       doc
     );
   }

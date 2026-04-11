@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -18,7 +19,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
-import { Droplet, Save, Plus, Trash2, Info, X, Image as ImageIcon, ChevronDown } from "lucide-react";
+import { Droplet, Save, Plus, Trash2, Info, X, Image as ImageIcon, ChevronDown, Users } from "lucide-react";
 import {
   ALL_PATTERN_NAMES,
   getPatternPreset,
@@ -83,8 +84,73 @@ export function BowlingOilPatternSection({
   const [patterns, setPatterns] = useState<OilPatternData[]>([]);
   const [enlargedImage, setEnlargedImage] = useState<string | null>(null);
   const [initialized, setInitialized] = useState(false);
+  const [assignPatternId, setAssignPatternId] = useState<string | null>(null);
+  const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
   const fileInputRefs = useRef<Record<number, HTMLInputElement | null>>({});
   const queryClient = useQueryClient();
+
+  // Load players for this category
+  const { data: categoryPlayers } = useQuery({
+    queryKey: ["players_for_oil", categoryId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("players")
+        .select("id, name, first_name")
+        .eq("category_id", categoryId)
+        .order("name");
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  // Load existing assignments for all patterns in this match
+  const { data: patternAssignments } = useQuery({
+    queryKey: ["oil_pattern_players", matchId],
+    queryFn: async () => {
+      const patternIds = patterns.filter(p => p.id).map(p => p.id!);
+      if (patternIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from("bowling_oil_pattern_players" as any)
+        .select("*")
+        .in("oil_pattern_id", patternIds);
+      if (error) throw error;
+      return (data as any[]) || [];
+    },
+    enabled: patterns.some(p => !!p.id),
+  });
+
+  const assignMutation = useMutation({
+    mutationFn: async ({ patternId, playerIds }: { patternId: string; playerIds: string[] }) => {
+      // Delete existing assignments for this pattern
+      await supabase.from("bowling_oil_pattern_players" as any).delete().eq("oil_pattern_id", patternId);
+      // Insert new ones
+      if (playerIds.length > 0) {
+        const rows = playerIds.map(pid => ({ oil_pattern_id: patternId, player_id: pid }));
+        const { error } = await supabase.from("bowling_oil_pattern_players" as any).insert(rows);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["oil_pattern_players", matchId] });
+      toast.success("Attribution enregistrée");
+      setAssignPatternId(null);
+    },
+    onError: () => toast.error("Erreur lors de l'attribution"),
+  });
+
+  const openAssignDialog = (patternId: string) => {
+    const existing = (patternAssignments || []).filter((a: any) => a.oil_pattern_id === patternId).map((a: any) => a.player_id);
+    setSelectedPlayerIds(existing);
+    setAssignPatternId(patternId);
+  };
+
+  const getAssignedPlayerNames = (patternId: string) => {
+    const assigned = (patternAssignments || []).filter((a: any) => a.oil_pattern_id === patternId);
+    return assigned.map((a: any) => {
+      const p = categoryPlayers?.find(pl => pl.id === a.player_id);
+      return p ? [p.first_name, p.name].filter(Boolean).join(" ") : "";
+    }).filter(Boolean);
+  };
 
   const { data: existingPatterns, isLoading } = useQuery({
     queryKey: ["bowling_oil_patterns", matchId],
@@ -276,12 +342,28 @@ export function BowlingOilPatternSection({
                       )}
                     </button>
                   </CollapsibleTrigger>
-                  {!readOnly && (
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => removePattern(idx)}>
-                      <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                    </Button>
-                  )}
+                  <div className="flex items-center gap-1">
+                    {!readOnly && pattern.id && (
+                      <Button variant="outline" size="sm" className="h-7 gap-1 text-xs" onClick={() => openAssignDialog(pattern.id!)}>
+                        <Users className="h-3.5 w-3.5" />
+                        Attribuer
+                      </Button>
+                    )}
+                    {!readOnly && (
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => removePattern(idx)}>
+                        <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
+                {/* Show assigned players */}
+                {pattern.id && getAssignedPlayerNames(pattern.id).length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-1 ml-6">
+                    {getAssignedPlayerNames(pattern.id).map((name, ni) => (
+                      <Badge key={ni} variant="secondary" className="text-[10px]">{name}</Badge>
+                    ))}
+                  </div>
+                )}
               </CardHeader>
 
               <CollapsibleContent>
@@ -477,6 +559,66 @@ export function BowlingOilPatternSection({
           {enlargedImage && (
             <img src={enlargedImage} alt="Huilage agrandi" className="w-full h-full object-contain max-h-[85vh] rounded-lg" />
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Assign players dialog */}
+      <Dialog open={!!assignPatternId} onOpenChange={(open) => !open && setAssignPatternId(null)}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Attribuer le huilage à l'effectif</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 max-h-[50vh] overflow-y-auto py-2">
+            {categoryPlayers?.map((player) => {
+              const fullName = [player.first_name, player.name].filter(Boolean).join(" ");
+              const isChecked = selectedPlayerIds.includes(player.id);
+              return (
+                <label key={player.id} className="flex items-center gap-3 cursor-pointer hover:bg-muted/50 rounded-lg p-2">
+                  <Checkbox
+                    checked={isChecked}
+                    onCheckedChange={(checked) => {
+                      setSelectedPlayerIds(prev =>
+                        checked ? [...prev, player.id] : prev.filter(id => id !== player.id)
+                      );
+                    }}
+                  />
+                  <span className="text-sm">{fullName}</span>
+                </label>
+              );
+            })}
+            {(!categoryPlayers || categoryPlayers.length === 0) && (
+              <p className="text-sm text-muted-foreground text-center py-4">Aucun athlète dans l'effectif</p>
+            )}
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setSelectedPlayerIds(categoryPlayers?.map(p => p.id) || [])}
+            >
+              Tout sélectionner
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setSelectedPlayerIds([])}
+            >
+              Aucun
+            </Button>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAssignPatternId(null)}>Annuler</Button>
+            <Button
+              onClick={() => {
+                if (assignPatternId) {
+                  assignMutation.mutate({ patternId: assignPatternId, playerIds: selectedPlayerIds });
+                }
+              }}
+              disabled={assignMutation.isPending}
+            >
+              {assignMutation.isPending ? "Enregistrement..." : "Enregistrer"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>

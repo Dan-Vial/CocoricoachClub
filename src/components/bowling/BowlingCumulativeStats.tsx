@@ -356,20 +356,28 @@ export function BowlingCumulativeStats({ categoryId, playerId: fixedPlayerId }: 
                       toast.info("Génération du PDF joueur...");
                       const avatarUrl = playerGames[0]?.playerAvatarUrl || null;
                       const matchIds = [...new Set(playerGames.map(g => g.matchId))];
-                      const [matchResult, catResult, oilResult, arsenalResult, catalogResult] = await Promise.all([
+                      const [matchResult, catResult, oilResult, oilAssignResult, arsenalResult, catalogResult] = await Promise.all([
                         supabase.from("matches").select("opponent, location, age_category, competition, match_date").eq("id", matchIds[0]).single(),
                         supabase.from("categories").select("name").eq("id", categoryId).single(),
-                        supabase.from("bowling_oil_patterns").select("name, image_url_male, image_url_female").in("match_id", matchIds).limit(1),
+                        supabase.from("bowling_oil_patterns").select("id, name, image_url_male, image_url_female").in("match_id", matchIds),
+                        supabase.from("bowling_oil_pattern_players" as any).select("oil_pattern_id, player_id"),
                         supabase.from("player_bowling_arsenal" as any).select("*").eq("player_id", activePlayerId).eq("category_id", categoryId),
                         supabase.from("bowling_ball_catalog" as any).select("*"),
                       ]);
                       const matchRow = matchResult.data;
                       const catData = catResult.data;
+                      const allOilPatterns = (oilResult.data || []) as any[];
+                      const allAssignments = (oilAssignResult.data || []) as any[];
+                      // Find assigned pattern for this player, fallback to first pattern
+                      const playerAssignment = allAssignments.find((a: any) => a.player_id === activePlayerId);
+                      const assignedPattern = playerAssignment
+                        ? allOilPatterns.find((op: any) => op.id === playerAssignment.oil_pattern_id)
+                        : allOilPatterns[0] || null;
                       let oilPatternImageUrl: string | null = null;
                       let oilPatternName: string | null = null;
-                      if (oilResult.data && oilResult.data.length > 0) {
-                        oilPatternName = oilResult.data[0].name;
-                        oilPatternImageUrl = oilResult.data[0].image_url_male || oilResult.data[0].image_url_female || null;
+                      if (assignedPattern) {
+                        oilPatternName = assignedPattern.name;
+                        oilPatternImageUrl = assignedPattern.image_url_male || assignedPattern.image_url_female || null;
                       }
                       const catalogBalls = (catalogResult.data as any[] || []);
                       const catalogMap = new Map(catalogBalls.map((b: any) => [b.id, b]));
@@ -419,32 +427,40 @@ export function BowlingCumulativeStats({ categoryId, playerId: fixedPlayerId }: 
                     try {
                       toast.info("Génération du PDF équipe...");
                       const allMatchIds = [...new Set((allGames || []).map(g => g.matchId))];
-                      const [matchResult, catResult, oilResult, arsenalResult, catalogResult] = await Promise.all([
+                      const [matchResult, catResult, oilResult, oilAssignResult, arsenalResult, catalogResult] = await Promise.all([
                         supabase.from("matches").select("opponent, location, age_category, competition, match_date").eq("id", allMatchIds[0]).single(),
                         supabase.from("categories").select("name").eq("id", categoryId).single(),
-                        supabase.from("bowling_oil_patterns").select("name, image_url_male, image_url_female").in("match_id", allMatchIds).limit(1),
+                        supabase.from("bowling_oil_patterns").select("id, name, image_url_male, image_url_female").in("match_id", allMatchIds),
+                        supabase.from("bowling_oil_pattern_players" as any).select("oil_pattern_id, player_id"),
                         supabase.from("player_bowling_arsenal" as any).select("*").eq("category_id", categoryId),
                         supabase.from("bowling_ball_catalog" as any).select("*"),
                       ]);
                       const matchRow = matchResult.data;
                       const catData = catResult.data;
-                      let oilPatternImageUrl: string | null = null;
-                      let oilPatternName: string | null = null;
-                      if (oilResult.data && oilResult.data.length > 0) {
-                        oilPatternName = oilResult.data[0].name;
-                        oilPatternImageUrl = oilResult.data[0].image_url_male || oilResult.data[0].image_url_female || null;
-                      }
+                      const allOilPatterns = (oilResult.data || []) as any[];
+                      const allOilAssignments = (oilAssignResult.data || []) as any[];
+                      // Default oil pattern (first one, for players without assignment)
+                      const defaultOil = allOilPatterns[0] || null;
+                      let defaultOilName: string | null = defaultOil?.name || null;
+                      let defaultOilImage: string | null = defaultOil ? (defaultOil.image_url_male || defaultOil.image_url_female || null) : null;
                       const catalogBalls2 = (catalogResult.data as any[] || []);
                       const catalogMap = new Map(catalogBalls2.map((b: any) => [b.id, b]));
                       const imageMap = await resolveBallCatalogImages(catalogBalls2);
                       const allArsenal = (arsenalResult.data as any[]) || [];
                       const teamPlayers = players.map(p => {
                         const playerArsenal = allArsenal.filter((a: any) => a.player_id === p.id);
+                        // Find per-player oil pattern assignment
+                        const playerOilAssign = allOilAssignments.find((a: any) => a.player_id === p.id);
+                        const playerOil = playerOilAssign
+                          ? allOilPatterns.find((op: any) => op.id === playerOilAssign.oil_pattern_id)
+                          : null;
                         return {
                           playerId: p.id,
                           playerName: p.name,
                           avatarUrl: (allGames || []).find(g => g.playerId === p.id)?.playerAvatarUrl || null,
                           games: (allGames || []).filter(g => g.playerId === p.id),
+                          oilPatternName: playerOil ? playerOil.name : null,
+                          oilPatternImageUrl: playerOil ? (playerOil.image_url_male || playerOil.image_url_female || null) : null,
                           arsenalBalls: playerArsenal.map((item: any) => {
                             const cat = item.ball_catalog_id ? catalogMap.get(item.ball_catalog_id) : null;
                             const name = cat ? `${cat.brand} ${cat.model}` : `${item.custom_ball_brand || ""} ${item.custom_ball_name || "Custom"}`.trim();
@@ -464,8 +480,8 @@ export function BowlingCumulativeStats({ categoryId, playerId: fixedPlayerId }: 
                         };
                       });
                       await exportBowlingTeamPdf(teamPlayers, {
-                        oilPatternImageUrl,
-                        oilPatternName,
+                        oilPatternImageUrl: defaultOilImage,
+                        oilPatternName: defaultOilName,
                         competitionName: matchRow?.opponent || matchRow?.competition || null,
                         ageCategory: catData?.name || matchRow?.age_category || null,
                         location: matchRow?.location || null,
