@@ -122,6 +122,58 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
   });
 
 
+  const updateAcademicGrade = useMutation({
+    mutationFn: async () => {
+      if (!editingEntryId) return;
+      const { error } = await supabase.from("player_academic_tracking").update({
+        player_id: selectedPlayer,
+        academic_grade: gradeScale !== "letter" && academicGrade ? parseFloat(academicGrade) : null,
+        grade_scale: gradeScale,
+        subject: subject || null,
+        tracking_date: format(gradeDate, "yyyy-MM-dd"),
+        notes: gradeScale === "letter" ? `${academicGrade}${academicNotes ? ` - ${academicNotes}` : ""}` : (academicNotes || null),
+      }).eq("id", editingEntryId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["academic_tracking", categoryId] });
+      queryClient.invalidateQueries({ queryKey: ["academic_subjects", categoryId] });
+      toast.success("Note modifiée");
+      resetAcademicForm();
+      setAcademicDialogOpen(false);
+    },
+    onError: () => toast.error("Erreur lors de la modification"),
+  });
+
+  const deleteAcademicEntry = useMutation({
+    mutationFn: async (entryId: string) => {
+      const { error } = await supabase.from("player_academic_tracking").delete().eq("id", entryId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["academic_tracking", categoryId] });
+      queryClient.invalidateQueries({ queryKey: ["academic_subjects", categoryId] });
+      toast.success("Entrée supprimée");
+    },
+    onError: () => toast.error("Erreur lors de la suppression"),
+  });
+
+  const handleEditEntry = (entry: any) => {
+    setEditingEntryId(entry.id);
+    setSelectedPlayer(entry.player_id);
+    setGradeScale((entry as any).grade_scale || "20");
+    if ((entry as any).grade_scale === "letter" && entry.notes) {
+      setAcademicGrade(entry.notes.split(" - ")[0]);
+      setAcademicNotes(entry.notes.includes(" - ") ? entry.notes.split(" - ").slice(1).join(" - ") : "");
+    } else {
+      setAcademicGrade(entry.academic_grade ? String(entry.academic_grade) : "");
+      setAcademicNotes(entry.notes || "");
+    }
+    setSubject(entry.subject || "");
+    setGradeDate(new Date(entry.tracking_date));
+    setAcademicDialogOpen(true);
+  };
+
   const resetAcademicForm = () => {
     setSelectedPlayer("");
     setAcademicGrade("");
@@ -131,6 +183,7 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
     setIsAddingSubject(false);
     setGradeDate(new Date());
     setAcademicNotes("");
+    setEditingEntryId(null);
   };
 
   const resetAbsenceForm = () => {
