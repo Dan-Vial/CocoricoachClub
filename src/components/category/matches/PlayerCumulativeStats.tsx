@@ -676,6 +676,49 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
                     );
                   })}
                 </Tabs>
+
+                {/* Kicking stats for rugby */}
+                {isRugby && kickingByPlayer[player.playerId] && (() => {
+                  const k = kickingByPlayer[player.playerId];
+                  const rate = k.total > 0 ? Math.round((k.success / k.total) * 100) : 0;
+                  const penRate = k.penalty.total > 0 ? Math.round((k.penalty.success / k.penalty.total) * 100) : 0;
+                  const convRate = k.conversion.total > 0 ? Math.round((k.conversion.success / k.conversion.total) * 100) : 0;
+                  const dropRate = k.drop.total > 0 ? Math.round((k.drop.success / k.drop.total) * 100) : 0;
+                  return (
+                    <Card className="mt-4 border-primary/20">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm flex items-center gap-2">
+                          <Crosshair className="h-4 w-4 text-primary" />
+                          Statistiques Buteur
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                          <div className="p-3 bg-primary/10 rounded-lg text-center">
+                            <p className="text-2xl font-bold text-primary">{rate}%</p>
+                            <p className="text-xs text-muted-foreground">Global</p>
+                            <p className="text-xs text-muted-foreground">{k.success}/{k.total}</p>
+                          </div>
+                          <div className="p-3 bg-muted/50 rounded-lg text-center">
+                            <p className="text-2xl font-bold">{penRate}%</p>
+                            <p className="text-xs text-muted-foreground">Pénalités</p>
+                            <p className="text-xs text-muted-foreground">{k.penalty.success}/{k.penalty.total}</p>
+                          </div>
+                          <div className="p-3 bg-muted/50 rounded-lg text-center">
+                            <p className="text-2xl font-bold">{convRate}%</p>
+                            <p className="text-xs text-muted-foreground">Transformations</p>
+                            <p className="text-xs text-muted-foreground">{k.conversion.success}/{k.conversion.total}</p>
+                          </div>
+                          <div className="p-3 bg-muted/50 rounded-lg text-center">
+                            <p className="text-2xl font-bold">{dropRate}%</p>
+                            <p className="text-xs text-muted-foreground">Drops</p>
+                            <p className="text-xs text-muted-foreground">{k.drop.success}/{k.drop.total}</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })()}
               </div>
             );
           })()}
