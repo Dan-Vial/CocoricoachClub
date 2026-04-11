@@ -114,7 +114,8 @@ const COLORS = {
   statBlue: [29, 78, 216] as [number, number, number],
   statBlueDark: [30, 64, 175] as [number, number, number],
   statBlack: [17, 24, 39] as [number, number, number],
-  statNoire2: [220, 38, 38] as [number, number, number],
+  statNoire2Bg: [0, 0, 0] as [number, number, number],
+  statNoire2Text: [220, 38, 38] as [number, number, number],
 };
 
 function getScoreColor(score: number): [number, number, number] {
