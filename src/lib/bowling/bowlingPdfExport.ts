@@ -939,7 +939,7 @@ export async function exportBowlingPdf(playerName: string, games: BowlingGameDat
   y = drawRecapHeader(y);
 
   let gameIndex = 0;
-  sortedMatches.forEach(([, { matchDate, opponent, games: matchGames }]) => {
+  sortedMatches.forEach(([, { matchDate, roundDate, opponent, bowlingCategory, phase, games: matchGames }]) => {
     matchGames.forEach((game) => {
       gameIndex++;
       y = checkPageBreak(doc, y, 7);
