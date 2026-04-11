@@ -664,6 +664,19 @@ export default function AthleteSpace() {
                    Matériel
                  </TabsTrigger>
                )}
+               <TabsTrigger 
+                  value="documents"
+                  className="athlete-tab shrink-0 gap-1 px-2 py-1.5 rounded-xl font-semibold text-xs transition-all duration-200 data-[state=active]:shadow-lg"
+                  style={{
+                    color: NAV_COLORS.administratif.base,
+                    backgroundColor: `${NAV_COLORS.administratif.base}15`,
+                    borderBottom: `3px solid ${NAV_COLORS.administratif.base}`,
+                    ["--tab-color" as string]: NAV_COLORS.administratif.base,
+                  }}
+                >
+                  <FileText className="h-3.5 w-3.5" />
+                  Documents
+                </TabsTrigger>
                {(
                   <TabsTrigger 
                     value="messaging"
