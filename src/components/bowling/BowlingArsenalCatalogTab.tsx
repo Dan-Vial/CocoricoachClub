@@ -12,6 +12,8 @@ import { Search, Upload, Image as ImageIcon, Loader2, X, Plus, Users, CircleDot,
 import { getCoverTypeLabel, getCoreTypeLabel, BOWLING_BALL_BRANDS, COVER_TYPES, CORE_TYPES, BALL_WEIGHTS } from "@/lib/constants/bowlingBallBrands";
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
+import { resolveBallCatalogImages } from "@/lib/bowling/bowlingBallImageResolver";
+import { format } from "date-fns";
 
 interface BowlingArsenalCatalogTabProps {
   categoryId: string;
