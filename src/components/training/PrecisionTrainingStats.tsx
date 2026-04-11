@@ -231,12 +231,207 @@ export function PrecisionTrainingStats({ categoryId }: PrecisionTrainingStatsPro
     }
   };
 
+  // Build zone stats from filtered data for PDF field visual
+  const fieldZoneStats = useMemo(() => {
+    const map = new Map<string, { attempts: number; successes: number; x: number; y: number }>();
+    filtered.forEach((e: any) => {
+      if (e.zone_x == null || e.zone_y == null) return;
+      const zoneKey = `${Math.round(e.zone_x / 15) * 15}-${Math.round(e.zone_y / 15) * 15}`;
+      const prev = map.get(zoneKey) || { attempts: 0, successes: 0, x: Math.round(e.zone_x / 15) * 15, y: Math.round(e.zone_y / 15) * 15 };
+      prev.attempts += e.attempts || 0;
+      prev.successes += e.successes || 0;
+      map.set(zoneKey, prev);
+    });
+    return Array.from(map.values());
+  }, [filtered]);
+
+  // Separate zone entries by exercise type category
+  const zoneGridEntries = useMemo(() => {
+    const map: Record<string, { attempts: number; successes: number }> = {};
+    filtered.forEach((e: any) => {
+      if (e.zone_x == null || e.zone_y == null) return;
+      if (!e.exercise_label?.startsWith("Jeu de zone")) return;
+      const key = `${e.zone_x}-${e.zone_y}`;
+      if (!map[key]) map[key] = { attempts: 0, successes: 0 };
+      map[key].attempts += e.attempts || 0;
+      map[key].successes += e.successes || 0;
+    });
+    return map;
+  }, [filtered]);
+
+  const lineoutEntries = useMemo(() => {
+    const map: Record<string, { attempts: number; successes: number }> = {};
+    ["devant", "milieu", "fond"].forEach(k => { map[k] = { attempts: 0, successes: 0 }; });
+    filtered.forEach((e: any) => {
+      if (!e.exercise_label?.startsWith("Touche")) return;
+      if (e.zone_y === 20 && map["devant"]) { map["devant"].attempts += e.attempts || 0; map["devant"].successes += e.successes || 0; }
+      if (e.zone_y === 50 && map["milieu"]) { map["milieu"].attempts += e.attempts || 0; map["milieu"].successes += e.successes || 0; }
+      if (e.zone_y === 80 && map["fond"]) { map["fond"].attempts += e.attempts || 0; map["fond"].successes += e.successes || 0; }
+    });
+    return map;
+  }, [filtered]);
+
+  const kickFieldEntries = useMemo(() => {
+    const map = new Map<string, { attempts: number; successes: number; x: number; y: number }>();
+    filtered.forEach((e: any) => {
+      if (e.zone_x == null || e.zone_y == null) return;
+      if (e.exercise_label?.startsWith("Jeu de zone") || e.exercise_label?.startsWith("Touche")) return;
+      const zoneKey = `${Math.round(e.zone_x / 15) * 15}-${Math.round(e.zone_y / 15) * 15}`;
+      const prev = map.get(zoneKey) || { attempts: 0, successes: 0, x: Math.round(e.zone_x / 15) * 15, y: Math.round(e.zone_y / 15) * 15 };
+      prev.attempts += e.attempts || 0;
+      prev.successes += e.successes || 0;
+      map.set(zoneKey, prev);
+    });
+    return Array.from(map.values());
+  }, [filtered]);
+
+  const hasZoneData = filtered.some((e: any) => e.zone_x != null && e.zone_y != null);
+
+  // PDF drawing helpers
+  const drawPdfField = (doc: jsPDF, x: number, y: number, w: number, h: number, zones: { x: number; y: number; attempts: number; successes: number }[]) => {
+    // Green field background
+    doc.setFillColor(21, 128, 61);
+    doc.roundedRect(x, y, w, h, 3, 3, "F");
+    // Field outline
+    doc.setDrawColor(255, 255, 255);
+    doc.setLineWidth(0.5);
+    doc.rect(x + 3, y + 2, w - 6, h - 4);
+    // Field lines
+    const lines = [0.15, 0.35, 0.55, 0.75];
+    const labels = ["En-but", "22m", "40m", "50m"];
+    doc.setFontSize(5);
+    doc.setTextColor(255, 255, 255);
+    lines.forEach((pct, i) => {
+      const lx = x + 3 + pct * (w - 6);
+      doc.setLineWidth(0.3);
+      doc.line(lx, y + 2, lx, y + h - 2);
+      doc.text(labels[i], lx, y + h + 3, { align: "center" });
+    });
+    // Goals
+    const gx = x + w - 5;
+    doc.setLineWidth(1);
+    doc.line(gx, y + h * 0.35, gx, y + h * 0.65);
+    // Zone bubbles
+    zones.forEach(z => {
+      const cx = x + 3 + (z.x / 100) * (w - 6);
+      const cy = y + 2 + (z.y / 100) * (h - 4);
+      const rate = z.attempts > 0 ? Math.round((z.successes / z.attempts) * 100) : 0;
+      if (rate >= 75) doc.setFillColor(34, 197, 94);
+      else if (rate >= 50) doc.setFillColor(245, 158, 11);
+      else doc.setFillColor(239, 68, 68);
+      doc.circle(cx, cy, 5, "F");
+      doc.setDrawColor(255, 255, 255);
+      doc.setLineWidth(0.3);
+      doc.circle(cx, cy, 5, "S");
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(6);
+      doc.setFont("helvetica", "bold");
+      doc.text(`${rate}%`, cx, cy - 0.5, { align: "center" });
+      doc.setFontSize(4);
+      doc.setFont("helvetica", "normal");
+      doc.text(`${z.successes}/${z.attempts}`, cx, cy + 2.5, { align: "center" });
+    });
+  };
+
+  const drawPdfZoneGrid = (doc: jsPDF, x: number, y: number, w: number, h: number, zones: Record<string, { attempts: number; successes: number }>) => {
+    doc.setFillColor(21, 128, 61);
+    doc.roundedRect(x, y, w, h, 3, 3, "F");
+    const cols = 4, rows = 3;
+    const cellW = (w - 8) / cols, cellH = (h - 8) / rows;
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const cx = x + 4 + c * cellW;
+        const cy = y + 4 + r * cellH;
+        const key = `${c}-${r}`;
+        const stat = zones[key] || { attempts: 0, successes: 0 };
+        const rate = stat.attempts > 0 ? Math.round((stat.successes / stat.attempts) * 100) : -1;
+        if (rate < 0) doc.setFillColor(255, 255, 255, 30);
+        else if (rate >= 75) doc.setFillColor(34, 197, 94);
+        else if (rate >= 50) doc.setFillColor(245, 158, 11);
+        else doc.setFillColor(239, 68, 68);
+        doc.roundedRect(cx, cy, cellW - 2, cellH - 2, 1, 1, "F");
+        doc.setDrawColor(255, 255, 255);
+        doc.setLineWidth(0.3);
+        doc.roundedRect(cx, cy, cellW - 2, cellH - 2, 1, 1, "S");
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(5);
+        doc.text(`Zone ${r * cols + c + 1}`, cx + (cellW - 2) / 2, cy + 4, { align: "center" });
+        if (stat.attempts > 0) {
+          doc.setFontSize(9);
+          doc.setFont("helvetica", "bold");
+          doc.text(`${rate}%`, cx + (cellW - 2) / 2, cy + (cellH - 2) / 2 + 1, { align: "center" });
+          doc.setFontSize(5);
+          doc.setFont("helvetica", "normal");
+          doc.text(`${stat.successes}/${stat.attempts}`, cx + (cellW - 2) / 2, cy + (cellH - 2) / 2 + 5, { align: "center" });
+        } else {
+          doc.setFontSize(5);
+          doc.text("—", cx + (cellW - 2) / 2, cy + (cellH - 2) / 2 + 1, { align: "center" });
+        }
+      }
+    }
+  };
+
+  const drawPdfLineout = (doc: jsPDF, x: number, y: number, w: number, h: number, stats: Record<string, { attempts: number; successes: number }>) => {
+    doc.setFillColor(21, 128, 61);
+    doc.roundedRect(x, y, w, h, 3, 3, "F");
+    // Touch line
+    doc.setDrawColor(255, 255, 255);
+    doc.setLineWidth(1);
+    doc.line(x + 5, y + 10, x + 5, y + h - 5);
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(5);
+    doc.text("Lanceur", x + 5, y + 7, { align: "center" });
+    const positions = [
+      { key: "devant", label: "Devant (2-4m)", yPct: 0.2 },
+      { key: "milieu", label: "Milieu (6-8m)", yPct: 0.5 },
+      { key: "fond", label: "Fond (12-15m)", yPct: 0.8 },
+    ];
+    const barW = w - 30;
+    positions.forEach(pos => {
+      const py = y + pos.yPct * h;
+      const stat = stats[pos.key] || { attempts: 0, successes: 0 };
+      const rate = stat.attempts > 0 ? Math.round((stat.successes / stat.attempts) * 100) : -1;
+      if (rate < 0) doc.setFillColor(255, 255, 255, 40);
+      else if (rate >= 75) doc.setFillColor(34, 197, 94);
+      else if (rate >= 50) doc.setFillColor(245, 158, 11);
+      else doc.setFillColor(239, 68, 68);
+      doc.roundedRect(x + 15, py - 6, barW, 12, 2, 2, "F");
+      doc.setDrawColor(255, 255, 255);
+      doc.setLineWidth(0.3);
+      doc.roundedRect(x + 15, py - 6, barW, 12, 2, 2, "S");
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(7);
+      doc.setFont("helvetica", "bold");
+      doc.text(pos.label, x + 20, py + 1);
+      if (stat.attempts > 0) {
+        doc.setFontSize(10);
+        doc.text(`${rate}%`, x + 15 + barW - 5, py - 0.5, { align: "right" });
+        doc.setFontSize(6);
+        doc.setFont("helvetica", "normal");
+        doc.text(`${stat.successes}/${stat.attempts}`, x + 15 + barW - 5, py + 4, { align: "right" });
+      } else {
+        doc.setFontSize(7);
+        doc.setFont("helvetica", "normal");
+        doc.text("—", x + 15 + barW - 5, py + 1, { align: "right" });
+      }
+    });
+    // Arrow
+    doc.setDrawColor(255, 255, 255);
+    doc.setLineWidth(0.3);
+    const arrowY = y + h - 3;
+    doc.line(x + 10, arrowY, x + w - 5, arrowY);
+    doc.setFontSize(4);
+    doc.text("← Lanceur", x + 12, arrowY - 1);
+    doc.text("Fond →", x + w - 10, arrowY - 1, { align: "right" });
+  };
+
   // Export PDF
   const handleExportPdf = async () => {
     try {
       const { settings, logoBase64, clubName, categoryName, seasonName } = await preparePdfWithSettings(categoryId);
       const doc = new jsPDF({ orientation: "landscape" });
       const pageW = doc.internal.pageSize.getWidth();
+      const pageH = doc.internal.pageSize.getHeight();
 
       // Header
       let y = 15;
@@ -267,9 +462,79 @@ export function PrecisionTrainingStats({ categoryId }: PrecisionTrainingStatsPro
       doc.text(`Enregistrements: ${filtered.length}  |  Tentatives: ${totalAttempts}  |  Réussites: ${totalSuccesses}  |  Taux: ${globalRate}%`, 14, y);
       y += 12;
 
+      // ===== TERRAIN VISUALS =====
+      if (hasZoneData) {
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "bold");
+        doc.text("Cartographie terrain", 14, y);
+        y += 6;
+
+        const fieldW = 120;
+        const fieldH = 70;
+        let fieldX = 14;
+
+        // Draw kick field if there are kick entries
+        if (kickFieldEntries.length > 0) {
+          doc.setFontSize(8);
+          doc.setFont("helvetica", "bold");
+          doc.setTextColor(30, 41, 59);
+          doc.text("Coups de pied / Passes", fieldX + fieldW / 2, y, { align: "center" });
+          drawPdfField(doc, fieldX, y + 2, fieldW, fieldH, kickFieldEntries);
+          // Stats below field
+          const kickTotal = kickFieldEntries.reduce((s, z) => s + z.attempts, 0);
+          const kickSuccess = kickFieldEntries.reduce((s, z) => s + z.successes, 0);
+          const kickRate = kickTotal > 0 ? Math.round((kickSuccess / kickTotal) * 100) : 0;
+          doc.setFontSize(7);
+          doc.setFont("helvetica", "normal");
+          doc.setTextColor(30, 41, 59);
+          doc.text(`${kickSuccess}/${kickTotal} — ${kickRate}%`, fieldX + fieldW / 2, y + fieldH + 7, { align: "center" });
+          fieldX += fieldW + 10;
+        }
+
+        // Draw zone grid if there are zone entries
+        const hasZoneGrid = Object.values(zoneGridEntries).some(v => v.attempts > 0);
+        if (hasZoneGrid) {
+          doc.setFontSize(8);
+          doc.setFont("helvetica", "bold");
+          doc.setTextColor(30, 41, 59);
+          doc.text("Jeu de zone", fieldX + fieldW / 2, y, { align: "center" });
+          drawPdfZoneGrid(doc, fieldX, y + 2, fieldW, fieldH, zoneGridEntries);
+          const zgTotal = Object.values(zoneGridEntries).reduce((s, v) => s + v.attempts, 0);
+          const zgSuccess = Object.values(zoneGridEntries).reduce((s, v) => s + v.successes, 0);
+          const zgRate = zgTotal > 0 ? Math.round((zgSuccess / zgTotal) * 100) : 0;
+          doc.setFontSize(7);
+          doc.setFont("helvetica", "normal");
+          doc.setTextColor(30, 41, 59);
+          doc.text(`${zgSuccess}/${zgTotal} — ${zgRate}%`, fieldX + fieldW / 2, y + fieldH + 7, { align: "center" });
+          fieldX += fieldW + 10;
+        }
+
+        // Draw lineout if there are lineout entries
+        const hasLineout = Object.values(lineoutEntries).some(v => v.attempts > 0);
+        if (hasLineout) {
+          const lineoutW = 80;
+          doc.setFontSize(8);
+          doc.setFont("helvetica", "bold");
+          doc.setTextColor(30, 41, 59);
+          doc.text("Touches", fieldX + lineoutW / 2, y, { align: "center" });
+          drawPdfLineout(doc, fieldX, y + 2, lineoutW, fieldH, lineoutEntries);
+          const ltTotal = Object.values(lineoutEntries).reduce((s, v) => s + v.attempts, 0);
+          const ltSuccess = Object.values(lineoutEntries).reduce((s, v) => s + v.successes, 0);
+          const ltRate = ltTotal > 0 ? Math.round((ltSuccess / ltTotal) * 100) : 0;
+          doc.setFontSize(7);
+          doc.setFont("helvetica", "normal");
+          doc.setTextColor(30, 41, 59);
+          doc.text(`${ltSuccess}/${ltTotal} — ${ltRate}%`, fieldX + lineoutW / 2, y + fieldH + 7, { align: "center" });
+        }
+
+        y += fieldH + 16;
+      }
+
       // By exercise table
+      if (y > pageH - 50) { doc.addPage(); y = 15; }
       doc.setFontSize(12);
       doc.setFont("helvetica", "bold");
+      doc.setTextColor(30, 41, 59);
       doc.text("Par exercice", 14, y);
       y += 6;
       const cols = [14, 120, 155, 190, 225];
@@ -283,10 +548,7 @@ export function PrecisionTrainingStats({ categoryId }: PrecisionTrainingStatsPro
       doc.setFont("helvetica", "normal");
 
       byExercise.forEach((ex) => {
-        if (y > doc.internal.pageSize.getHeight() - 20) {
-          doc.addPage();
-          y = 15;
-        }
+        if (y > pageH - 20) { doc.addPage(); y = 15; }
         doc.setTextColor(30, 41, 59);
         doc.text(ex.label, cols[0], y + 4);
         doc.text(String(ex.attempts), cols[1], y + 4);
@@ -301,10 +563,7 @@ export function PrecisionTrainingStats({ categoryId }: PrecisionTrainingStatsPro
 
       // By player table
       y += 8;
-      if (y > doc.internal.pageSize.getHeight() - 40) {
-        doc.addPage();
-        y = 15;
-      }
+      if (y > pageH - 40) { doc.addPage(); y = 15; }
       doc.setTextColor(30, 41, 59);
       doc.setFontSize(12);
       doc.setFont("helvetica", "bold");
@@ -320,10 +579,7 @@ export function PrecisionTrainingStats({ categoryId }: PrecisionTrainingStatsPro
       doc.setFont("helvetica", "normal");
 
       byPlayer.forEach((p) => {
-        if (y > doc.internal.pageSize.getHeight() - 20) {
-          doc.addPage();
-          y = 15;
-        }
+        if (y > pageH - 20) { doc.addPage(); y = 15; }
         doc.setTextColor(30, 41, 59);
         doc.text(p.name, cols[0], y + 4);
         doc.text(String(p.attempts), cols[1], y + 4);
