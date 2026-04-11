@@ -561,6 +561,66 @@ export function BowlingOilPatternSection({
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Assign players dialog */}
+      <Dialog open={!!assignPatternId} onOpenChange={(open) => !open && setAssignPatternId(null)}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Attribuer le huilage à l'effectif</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 max-h-[50vh] overflow-y-auto py-2">
+            {categoryPlayers?.map((player) => {
+              const fullName = [player.first_name, player.name].filter(Boolean).join(" ");
+              const isChecked = selectedPlayerIds.includes(player.id);
+              return (
+                <label key={player.id} className="flex items-center gap-3 cursor-pointer hover:bg-muted/50 rounded-lg p-2">
+                  <Checkbox
+                    checked={isChecked}
+                    onCheckedChange={(checked) => {
+                      setSelectedPlayerIds(prev =>
+                        checked ? [...prev, player.id] : prev.filter(id => id !== player.id)
+                      );
+                    }}
+                  />
+                  <span className="text-sm">{fullName}</span>
+                </label>
+              );
+            })}
+            {(!categoryPlayers || categoryPlayers.length === 0) && (
+              <p className="text-sm text-muted-foreground text-center py-4">Aucun athlète dans l'effectif</p>
+            )}
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setSelectedPlayerIds(categoryPlayers?.map(p => p.id) || [])}
+            >
+              Tout sélectionner
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setSelectedPlayerIds([])}
+            >
+              Aucun
+            </Button>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAssignPatternId(null)}>Annuler</Button>
+            <Button
+              onClick={() => {
+                if (assignPatternId) {
+                  assignMutation.mutate({ patternId: assignPatternId, playerIds: selectedPlayerIds });
+                }
+              }}
+              disabled={assignMutation.isPending}
+            >
+              {assignMutation.isPending ? "Enregistrement..." : "Enregistrer"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
