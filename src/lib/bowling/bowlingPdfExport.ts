@@ -960,19 +960,19 @@ export async function exportBowlingPdf(playerName: string, games: BowlingGameDat
       doc.text(String(game.score), cx + 1, y + 4.5);
       cx += recapCols[2].w;
 
-      const xColor = getStatLevelColor("strike", game.strikePercentage);
-      doc.setTextColor(...xColor);
+      const xColors = getStatLevelColors("strike", game.strikePercentage);
+      doc.setTextColor(...xColors.bg);
       doc.setFont("helvetica", "bold");
       doc.text(`${game.strikePercentage.toFixed(0)}%`, cx + 1, y + 4.5);
       cx += recapCols[3].w;
 
-      const spColor = getStatLevelColor("spare", game.sparePercentage);
-      doc.setTextColor(...spColor);
+      const spColors = getStatLevelColors("spare", game.sparePercentage);
+      doc.setTextColor(...spColors.bg);
       doc.text(`${game.sparePercentage.toFixed(0)}%`, cx + 1, y + 4.5);
       cx += recapCols[4].w;
 
-      const pocketColor = getStatLevelColor("pocket", game.pocketPercentage);
-      doc.setTextColor(...pocketColor);
+      const pocketColors = getStatLevelColors("pocket", game.pocketPercentage);
+      doc.setTextColor(...pocketColors.bg);
       doc.setFont("helvetica", "bold");
       doc.text(`${game.pocketPercentage.toFixed(0)}%`, cx + 1, y + 4.5);
       cx += recapCols[5].w;
