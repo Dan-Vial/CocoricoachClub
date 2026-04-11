@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, GraduationCap, Users, Target, Trash2, Award, Star, BookOpen, Clock } from "lucide-react";
+import { Plus, GraduationCap, Target, Award, Star, BookOpen, Clock } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { toast } from "sonner";
@@ -23,19 +23,12 @@ interface AcademyTabProps {
   categoryId: string;
 }
 
-const STAFF_ROLES = [
-  { value: "medecin", label: "Médecin" },
-  { value: "kine", label: "Kinésithérapeute" },
-  { value: "preparateur", label: "Préparateur physique" },
-  { value: "tuteur", label: "Tuteur scolaire" },
-  { value: "coach", label: "Coach" },
-];
 
 export function AcademyTab({ categoryId }: AcademyTabProps) {
   const queryClient = useQueryClient();
   const [academicDialogOpen, setAcademicDialogOpen] = useState(false);
   const [absenceDialogOpen, setAbsenceDialogOpen] = useState(false);
-  const [staffNoteDialogOpen, setStaffNoteDialogOpen] = useState(false);
+  
   const [developmentDialogOpen, setDevelopmentDialogOpen] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState("");
 
@@ -47,8 +40,6 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
   const [subject, setSubject] = useState("");
   const [academicNotes, setAcademicNotes] = useState("");
 
-  const [staffRole, setStaffRole] = useState("");
-  const [noteContent, setNoteContent] = useState("");
 
   const [seasonYear, setSeasonYear] = useState(new Date().getFullYear().toString());
   const [physicalObj, setPhysicalObj] = useState("");
@@ -83,18 +74,6 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
     },
   });
 
-  const { data: staffNotes } = useQuery({
-    queryKey: ["staff_notes", categoryId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("staff_notes")
-        .select("*, players(name)")
-        .eq("category_id", categoryId)
-        .order("note_date", { ascending: false });
-      if (error) throw error;
-      return data;
-    },
-  });
 
   const { data: developmentPlans } = useQuery({
     queryKey: ["development_plans", categoryId],
@@ -150,25 +129,6 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
     onError: () => toast.error("Erreur lors de l'ajout"),
   });
 
-  const addStaffNote = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase.from("staff_notes").insert({
-        player_id: selectedPlayer,
-        category_id: categoryId,
-        staff_role: staffRole,
-        note_content: noteContent,
-      });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["staff_notes", categoryId] });
-      toast.success("Note ajoutée");
-      resetStaffNoteForm();
-      setStaffNoteDialogOpen(false);
-    },
-    onError: () => toast.error("Erreur lors de l'ajout"),
-  });
-
   const addDevelopmentPlan = useMutation({
     mutationFn: async () => {
       const { error } = await supabase.from("player_development_plans").insert({
@@ -206,11 +166,6 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
     setAbsenceReason("");
   };
 
-  const resetStaffNoteForm = () => {
-    setSelectedPlayer("");
-    setStaffRole("");
-    setNoteContent("");
-  };
 
   const resetDevelopmentForm = () => {
     setSelectedPlayer("");
@@ -222,16 +177,6 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
     setAcademicObj("");
   };
 
-  const getRoleBadgeColor = (role: string) => {
-    const colors: Record<string, string> = {
-      medecin: "bg-red-500",
-      kine: "bg-blue-500",
-      preparateur: "bg-green-500",
-      tuteur: "bg-purple-500",
-      coach: "bg-orange-500",
-    };
-    return colors[role] || "bg-gray-500";
-  };
 
   return (
     <div className="space-y-6">
@@ -240,9 +185,6 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
           <ColoredSubTabsList colorKey="academy" className="inline-flex w-max">
             <ColoredSubTabsTrigger value="academic" colorKey="academy" icon={<GraduationCap className="h-4 w-4" />}>
               Suivi Scolaire
-            </ColoredSubTabsTrigger>
-            <ColoredSubTabsTrigger value="staff" colorKey="academy" icon={<Users className="h-4 w-4" />}>
-              Notes Staff
             </ColoredSubTabsTrigger>
             <ColoredSubTabsTrigger value="development" colorKey="academy" icon={<Target className="h-4 w-4" />}>
               Plans de Développement
@@ -322,48 +264,6 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
         </TabsContent>
 
         {/* Staff Notes Tab */}
-        <TabsContent value="staff">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Notes du Staff</CardTitle>
-                  <CardDescription>Commentaires médecin, kiné, préparateur, tuteur</CardDescription>
-                </div>
-                <Button onClick={() => setStaffNoteDialogOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Nouvelle note
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {!staffNotes || staffNotes.length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">Aucune note enregistrée.</p>
-              ) : (
-                <div className="space-y-4">
-                  {staffNotes.map((note) => (
-                    <div key={note.id} className="p-4 border rounded-lg">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-3">
-                          <span className="font-medium">{note.players?.name}</span>
-                          <Badge className={`${getRoleBadgeColor(note.staff_role)} text-white`}>
-                            {STAFF_ROLES.find((r) => r.value === note.staff_role)?.label || note.staff_role}
-                          </Badge>
-                        </div>
-                        <span className="text-sm text-muted-foreground">
-                          {format(new Date(note.note_date), "dd MMM yyyy", { locale: fr })}
-                        </span>
-                      </div>
-                      <p className="text-sm">{note.note_content}</p>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Development Plans Tab */}
         <TabsContent value="development">
           <Card>
             <CardHeader>
@@ -547,50 +447,6 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
         </DialogContent>
       </Dialog>
 
-      {/* Staff Note Dialog */}
-      <Dialog open={staffNoteDialogOpen} onOpenChange={setStaffNoteDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Ajouter une note</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>Joueur</Label>
-              <Select value={selectedPlayer} onValueChange={setSelectedPlayer}>
-                <SelectTrigger><SelectValue placeholder="Sélectionner un joueur" /></SelectTrigger>
-                <SelectContent>
-                  {players?.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>{p.first_name ? `${p.first_name} ${p.name}` : p.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Rôle</Label>
-              <Select value={staffRole} onValueChange={setStaffRole}>
-                <SelectTrigger><SelectValue placeholder="Sélectionner un rôle" /></SelectTrigger>
-                <SelectContent>
-                  {STAFF_ROLES.map((role) => (
-                    <SelectItem key={role.value} value={role.value}>{role.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Note</Label>
-              <Textarea value={noteContent} onChange={(e) => setNoteContent(e.target.value)} placeholder="Contenu de la note..." rows={4} />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setStaffNoteDialogOpen(false)}>Annuler</Button>
-            <Button onClick={() => addStaffNote.mutate()} disabled={!selectedPlayer || !staffRole || !noteContent || addStaffNote.isPending}>
-              {addStaffNote.isPending ? "Ajout..." : "Ajouter"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Development Plan Dialog */}
       <Dialog open={developmentDialogOpen} onOpenChange={setDevelopmentDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
