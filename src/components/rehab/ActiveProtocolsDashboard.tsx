@@ -63,6 +63,13 @@ const EVENT_TYPES = [
 export function ActiveProtocolsDashboard({ categoryId }: ActiveProtocolsDashboardProps) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [isAddEventOpen, setIsAddEventOpen] = useState(false);
+  const [eventPlayerId, setEventPlayerId] = useState("");
+  const [eventProtocolId, setEventProtocolId] = useState("");
+  const [eventType, setEventType] = useState("exercise");
+  const [eventTitle, setEventTitle] = useState("");
+  const [eventDate, setEventDate] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [eventDescription, setEventDescription] = useState("");
   const [assignState, setAssignState] = useState<AssignState | null>(null);
 
   // Fetch injury protocols for quick assignment dropdown
