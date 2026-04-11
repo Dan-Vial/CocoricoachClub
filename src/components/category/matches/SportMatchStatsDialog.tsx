@@ -581,6 +581,8 @@ export function SportMatchStatsDialog({
               stats={activeCategoryStats}
               onUpdateStat={updateStat}
               supportsGoalkeeper={supportsGoalkeeper}
+              isRugby={isRugbyType(sportType)}
+              onOpenKickingField={(playerId, playerName) => setKickingFieldPlayer({ id: playerId, name: playerName })}
             />
           </div>
         </ScrollArea>
