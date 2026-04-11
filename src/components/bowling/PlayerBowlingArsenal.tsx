@@ -222,8 +222,15 @@ export function PlayerBowlingArsenal({ playerId, categoryId, isViewer }: PlayerB
         <>
           {selectedCatalogBall ? (
             <div className="p-3 border rounded-lg bg-accent/10">
-              <div className="flex justify-between items-start">
-                <div>
+              <div className="flex items-center gap-3">
+                <div className="h-12 w-12 rounded-full overflow-hidden bg-muted flex-shrink-0 flex items-center justify-center border">
+                  {(selectedCatalogBall.resolved_image_url || selectedCatalogBall.image_url) ? (
+                    <img src={selectedCatalogBall.resolved_image_url || selectedCatalogBall.image_url} alt={`${selectedCatalogBall.brand} ${selectedCatalogBall.model}`} className="h-full w-full object-cover" />
+                  ) : (
+                    <CircleDot className="h-6 w-6 text-muted-foreground" />
+                  )}
+                </div>
+                <div className="flex-1">
                   <p className="font-semibold">{selectedCatalogBall.brand} {selectedCatalogBall.model}</p>
                   <div className="flex gap-1.5 mt-1">
                     <Badge variant="secondary" className="text-xs">{getCoverTypeLabel(selectedCatalogBall.cover_type)}</Badge>
@@ -258,7 +265,16 @@ export function PlayerBowlingArsenal({ playerId, categoryId, isViewer }: PlayerB
 
       {editingBall && (
         <div className="p-3 border rounded-lg bg-accent/10">
-          <p className="font-semibold">{getBallDisplayName(editingBall)}</p>
+          <div className="flex items-center gap-3">
+            <div className="h-12 w-12 rounded-full overflow-hidden bg-muted flex-shrink-0 flex items-center justify-center border">
+              {(editingBall.catalogBall?.image_url || editingBall.resolvedImageUrl) ? (
+                <img src={editingBall.catalogBall?.image_url || editingBall.resolvedImageUrl} alt={getBallDisplayName(editingBall)} className="h-full w-full object-cover" />
+              ) : (
+                <CircleDot className="h-6 w-6 text-muted-foreground" />
+              )}
+            </div>
+            <p className="font-semibold">{getBallDisplayName(editingBall)}</p>
+          </div>
         </div>
       )}
 
