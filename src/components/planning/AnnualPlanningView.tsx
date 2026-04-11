@@ -292,213 +292,271 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
             </div>
           </div>
         </CardHeader>
-        <CardContent>
-          {/* Month headers */}
-          <div className="relative">
-            <div className="flex border-b border-border">
-              <div className="w-32 min-w-[128px] shrink-0" />
-              <div className="flex-1 flex">
-                {months.map((month, i) => {
-                  const monthDays = differenceInDays(endOfMonth(month), startOfMonth(month)) + 1;
-                  const widthPercent = (monthDays / totalDays) * 100;
-                  return (
-                    <div
-                      key={i}
-                      className="text-center text-xs font-medium text-muted-foreground py-2 border-l border-border first:border-l-0 uppercase"
-                      style={{ width: `${widthPercent}%` }}
-                    >
-                      {format(month, "MMM", { locale: fr })}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+        <CardContent className="space-y-4">
+          {[0, 1].map((semesterIndex) => {
+            const semesterMonths = months.slice(semesterIndex * 6, semesterIndex * 6 + 6);
+            const semesterStart = startOfMonth(semesterMonths[0]);
+            const semesterEnd = endOfMonth(semesterMonths[semesterMonths.length - 1]);
+            const semesterTotalDays = differenceInDays(semesterEnd, semesterStart) + 1;
 
-            {/* Activity row: sessions + matches dots */}
-            <div className="flex border-b border-border bg-muted/30">
-              <div className="w-32 min-w-[128px] shrink-0 flex items-center px-3">
-                <span className="text-xs font-medium text-muted-foreground">Activité</span>
-              </div>
-              <div className="flex-1 flex">
-                {months.map((month, i) => {
-                  const monthDays = differenceInDays(endOfMonth(month), startOfMonth(month)) + 1;
-                  const widthPercent = (monthDays / totalDays) * 100;
-                  return (
-                    <div
-                      key={i}
-                      className="flex items-center justify-center gap-1 py-2 border-l border-border first:border-l-0"
-                      style={{ width: `${widthPercent}%` }}
-                    >
-                      {sessionsPerMonth[i] > 0 && (
-                        <TooltipProvider delayDuration={200}>
-                          <Tooltip>
-                            <TooltipTrigger>
-                              <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5">
-                                {sessionsPerMonth[i]}S
-                              </Badge>
-                            </TooltipTrigger>
-                            <TooltipContent>{sessionsPerMonth[i]} séance(s)</TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      )}
-                      {matchesPerMonth[i] > 0 && (
-                        <TooltipProvider delayDuration={200}>
-                          <Tooltip>
-                            <TooltipTrigger>
-                              <Badge variant="destructive" className="text-[10px] px-1.5 py-0 h-5">
-                                {matchesPerMonth[i]}M
-                              </Badge>
-                            </TooltipTrigger>
-                            <TooltipContent>{matchesPerMonth[i]} match(s)</TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+            const getSemesterCyclePosition = (cycle: PeriodizationCycle) => {
+              const cycleStart = new Date(cycle.start_date);
+              const cycleEnd = new Date(cycle.end_date);
+              
+              // Skip if cycle doesn't overlap this semester
+              if (cycleEnd < semesterStart || cycleStart > semesterEnd) return null;
+              
+              const effectiveStart = cycleStart < semesterStart ? semesterStart : cycleStart;
+              const effectiveEnd = cycleEnd > semesterEnd ? semesterEnd : cycleEnd;
+              
+              const startOffset = differenceInDays(effectiveStart, semesterStart);
+              const duration = differenceInDays(effectiveEnd, effectiveStart) + 1;
+              
+              const widthPercent = (duration / semesterTotalDays) * 100;
+              const minWidthPercent = 2.5;
+              const isNarrow = widthPercent < minWidthPercent;
+              
+              return {
+                left: `${(startOffset / semesterTotalDays) * 100}%`,
+                width: `${Math.max(widthPercent, minWidthPercent)}%`,
+                isNarrow,
+                duration,
+              };
+            };
 
-            {/* Cycle category rows */}
-            {categories.length === 0 && (
-              <div className="py-12 text-center text-muted-foreground">
-                <Calendar className="h-10 w-10 mx-auto mb-3 opacity-40" />
-                <p className="text-sm">Aucune ligne de périodisation configurée</p>
-                {!isViewer && (
-                  <Button variant="outline" size="sm" className="mt-3" onClick={() => setAddCategoryOpen(true)}>
-                    <Plus className="h-4 w-4 mr-1" /> Créer une première ligne
-                  </Button>
-                )}
-              </div>
-            )}
+            const semesterSessionsPerMonth = semesterMonths.map((month) => {
+              const mStart = startOfMonth(month);
+              const mEnd = endOfMonth(month);
+              return sessions.filter(s => {
+                const d = new Date(s.session_date);
+                return isWithinInterval(d, { start: mStart, end: mEnd });
+              }).length;
+            });
 
-            {categories.map((cat) => {
-              const catCycles = cycles.filter(c => c.periodization_category_id === cat.id);
-              return (
-                <div key={cat.id} className="flex border-b border-border group/row hover:bg-muted/20 transition-colors">
-                  <div className="w-32 min-w-[128px] shrink-0 flex items-center px-3 py-3 gap-2">
-                    <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: cat.color }} />
-                    <span className="text-xs font-semibold truncate">{cat.name}</span>
-                    {!isViewer && (
-                      <button
-                        className="opacity-0 group-hover/row:opacity-100 transition-opacity ml-auto"
-                        onClick={() => handleAddCycle(cat.id)}
-                        title="Ajouter un cycle"
-                      >
-                        <Plus className="h-3.5 w-3.5 text-muted-foreground hover:text-primary" />
-                      </button>
-                    )}
-                  </div>
-                  <div className="flex-1 relative" style={{ minHeight: "48px" }}>
-                    {/* Month grid lines */}
-                    <div className="absolute inset-0 flex pointer-events-none">
-                      {months.map((month, i) => {
-                        const monthDays = differenceInDays(endOfMonth(month), startOfMonth(month)) + 1;
-                        const widthPercent = (monthDays / totalDays) * 100;
-                        return (
-                          <div
-                            key={i}
-                            className="border-l border-border/50 first:border-l-0 h-full"
-                            style={{ width: `${widthPercent}%` }}
-                          />
-                        );
-                      })}
-                    </div>
-                    {/* Cycle blocks */}
-                    {catCycles.map((cycle) => {
-                      const pos = getCyclePosition(cycle);
+            const semesterMatchesPerMonth = semesterMonths.map((month) => {
+              const mStart = startOfMonth(month);
+              const mEnd = endOfMonth(month);
+              return matches.filter(m => {
+                const d = new Date(m.match_date);
+                return isWithinInterval(d, { start: mStart, end: mEnd });
+              }).length;
+            });
+
+            return (
+              <div key={semesterIndex} className="relative">
+                {/* Semester label */}
+                <div className="text-xs font-semibold text-muted-foreground mb-1 uppercase tracking-wider">
+                  {semesterIndex === 0 ? "Janvier – Juin" : "Juillet – Décembre"}
+                </div>
+
+                {/* Month headers */}
+                <div className="flex border-b border-border">
+                  <div className="w-32 min-w-[128px] shrink-0" />
+                  <div className="flex-1 flex">
+                    {semesterMonths.map((month, i) => {
+                      const monthDays = differenceInDays(endOfMonth(month), startOfMonth(month)) + 1;
+                      const widthPercent = (monthDays / semesterTotalDays) * 100;
                       return (
-                        <TooltipProvider key={cycle.id} delayDuration={200}>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <button
-                                className={cn(
-                                  "absolute top-1.5 h-[calc(100%-12px)] rounded-md shadow-sm",
-                                  "flex flex-col items-center justify-center overflow-hidden",
-                                  "hover:shadow-md hover:brightness-110 transition-all cursor-pointer",
-                                  "text-white",
-                                  pos.isNarrow ? "px-0.5" : "px-2"
-                                )}
-                                style={{
-                                  left: pos.left,
-                                  width: pos.width,
-                                  backgroundColor: cycle.color,
-                                  zIndex: pos.isNarrow ? 5 : 1,
-                                }}
-                                onClick={() => !isViewer && setEditingCycle(cycle)}
-                              >
-                                {pos.isNarrow ? (
-                                  <span className="truncate text-[9px] font-bold tracking-tight leading-tight text-center w-full">
-                                    {pos.duration}j
-                                  </span>
-                                ) : (
-                                  <>
-                                    <span className="truncate text-[11px] font-semibold tracking-wide">{cycle.name}</span>
-                                    {cycle.objective && (
-                                      <span className="truncate text-[9px] font-normal opacity-80 w-full text-center">{cycle.objective}</span>
-                                    )}
-                                  </>
-                                )}
-                              </button>
-                            </TooltipTrigger>
-                            <TooltipContent side="top" className="max-w-xs">
-                              <div className="space-y-1">
-                                <p className="font-semibold">{cycle.name}</p>
-                                <p className="text-xs">
-                                  {format(new Date(cycle.start_date), "dd MMM yyyy", { locale: fr })} → {format(new Date(cycle.end_date), "dd MMM yyyy", { locale: fr })}
-                                </p>
-                                {cycle.cycle_type && (
-                                  <p className="text-xs">Type: {cycle.cycle_type === "recuperation" ? "Récupération" : cycle.cycle_type}</p>
-                                )}
-                                {cycle.objective && <p className="text-xs text-muted-foreground">Objectif: {cycle.objective}</p>}
-                                {(cycle.intensity != null && cycle.intensity > 0) && (
-                                  <div className="flex items-center gap-1 text-xs">
-                                    <span>Intensité:</span>
-                                    <div className="flex gap-0.5">
-                                      {Array.from({ length: 5 }).map((_, i) => (
-                                        <div key={i} className="w-2 h-2 rounded-sm" style={{ backgroundColor: i < cycle.intensity! ? getIntensityColor(cycle.intensity!) : "hsl(var(--muted))" }} />
-                                      ))}
-                                    </div>
-                                    <span>{cycle.intensity}/5</span>
-                                  </div>
-                                )}
-                                {(cycle.volume != null && cycle.volume > 0) && (
-                                  <div className="flex items-center gap-1 text-xs">
-                                    <span>Volume:</span>
-                                    <div className="flex gap-0.5">
-                                      {Array.from({ length: 5 }).map((_, i) => (
-                                        <div key={i} className="w-2 h-2 rounded-sm" style={{ backgroundColor: i < cycle.volume! ? getIntensityColor(cycle.volume!) : "hsl(var(--muted))" }} />
-                                      ))}
-                                    </div>
-                                    <span>{cycle.volume}/5</span>
-                                  </div>
-                                )}
-                                {cycle.notes && <p className="text-xs text-muted-foreground italic">{cycle.notes}</p>}
-                              </div>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
+                        <div
+                          key={i}
+                          className="text-center text-xs font-medium text-muted-foreground py-2 border-l border-border first:border-l-0 uppercase"
+                          style={{ width: `${widthPercent}%` }}
+                        >
+                          {format(month, "MMMM", { locale: fr })}
+                        </div>
                       );
                     })}
                   </div>
                 </div>
-              );
-            })}
 
-            {/* Today marker */}
-            {isWithinInterval(new Date(), { start: yearStart, end: yearEnd }) && (() => {
-              const todayOffset = differenceInDays(new Date(), yearStart);
-              const pct = (todayOffset / totalDays) * 100;
-              return (
-                <div
-                  className="absolute top-0 bottom-0 w-0.5 bg-destructive z-10 pointer-events-none"
-                  style={{
-                    left: `calc(128px + (100% - 128px) * ${pct / 100})`,
-                  }}
-                />
-              );
-            })()}
-          </div>
+                {/* Activity row */}
+                <div className="flex border-b border-border bg-muted/30">
+                  <div className="w-32 min-w-[128px] shrink-0 flex items-center px-3">
+                    <span className="text-xs font-medium text-muted-foreground">Activité</span>
+                  </div>
+                  <div className="flex-1 flex">
+                    {semesterMonths.map((month, i) => {
+                      const monthDays = differenceInDays(endOfMonth(month), startOfMonth(month)) + 1;
+                      const widthPercent = (monthDays / semesterTotalDays) * 100;
+                      return (
+                        <div
+                          key={i}
+                          className="flex items-center justify-center gap-1 py-2 border-l border-border first:border-l-0"
+                          style={{ width: `${widthPercent}%` }}
+                        >
+                          {semesterSessionsPerMonth[i] > 0 && (
+                            <TooltipProvider delayDuration={200}>
+                              <Tooltip>
+                                <TooltipTrigger>
+                                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5">
+                                    {semesterSessionsPerMonth[i]}S
+                                  </Badge>
+                                </TooltipTrigger>
+                                <TooltipContent>{semesterSessionsPerMonth[i]} séance(s)</TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
+                          {semesterMatchesPerMonth[i] > 0 && (
+                            <TooltipProvider delayDuration={200}>
+                              <Tooltip>
+                                <TooltipTrigger>
+                                  <Badge variant="destructive" className="text-[10px] px-1.5 py-0 h-5">
+                                    {semesterMatchesPerMonth[i]}M
+                                  </Badge>
+                                </TooltipTrigger>
+                                <TooltipContent>{semesterMatchesPerMonth[i]} match(s)</TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Category rows */}
+                {categories.length === 0 && semesterIndex === 0 && (
+                  <div className="py-12 text-center text-muted-foreground">
+                    <Calendar className="h-10 w-10 mx-auto mb-3 opacity-40" />
+                    <p className="text-sm">Aucune ligne de périodisation configurée</p>
+                    {!isViewer && (
+                      <Button variant="outline" size="sm" className="mt-3" onClick={() => setAddCategoryOpen(true)}>
+                        <Plus className="h-4 w-4 mr-1" /> Créer une première ligne
+                      </Button>
+                    )}
+                  </div>
+                )}
+
+                {categories.map((cat) => {
+                  const catCycles = cycles.filter(c => c.periodization_category_id === cat.id);
+                  return (
+                    <div key={cat.id} className="flex border-b border-border group/row hover:bg-muted/20 transition-colors">
+                      <div className="w-32 min-w-[128px] shrink-0 flex items-center px-3 py-3 gap-2">
+                        <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: cat.color }} />
+                        <span className="text-xs font-semibold truncate">{cat.name}</span>
+                        {!isViewer && semesterIndex === 0 && (
+                          <button
+                            className="opacity-0 group-hover/row:opacity-100 transition-opacity ml-auto"
+                            onClick={() => handleAddCycle(cat.id)}
+                            title="Ajouter un cycle"
+                          >
+                            <Plus className="h-3.5 w-3.5 text-muted-foreground hover:text-primary" />
+                          </button>
+                        )}
+                      </div>
+                      <div className="flex-1 relative" style={{ minHeight: "48px" }}>
+                        {/* Month grid lines */}
+                        <div className="absolute inset-0 flex pointer-events-none">
+                          {semesterMonths.map((month, i) => {
+                            const monthDays = differenceInDays(endOfMonth(month), startOfMonth(month)) + 1;
+                            const widthPercent = (monthDays / semesterTotalDays) * 100;
+                            return (
+                              <div
+                                key={i}
+                                className="border-l border-border/50 first:border-l-0 h-full"
+                                style={{ width: `${widthPercent}%` }}
+                              />
+                            );
+                          })}
+                        </div>
+                        {/* Cycle blocks */}
+                        {catCycles.map((cycle) => {
+                          const pos = getSemesterCyclePosition(cycle);
+                          if (!pos) return null;
+                          return (
+                            <TooltipProvider key={cycle.id} delayDuration={200}>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <button
+                                    className={cn(
+                                      "absolute top-1.5 h-[calc(100%-12px)] rounded-md shadow-sm",
+                                      "flex flex-col items-center justify-center overflow-hidden",
+                                      "hover:shadow-md hover:brightness-110 transition-all cursor-pointer",
+                                      "text-white",
+                                      pos.isNarrow ? "px-0.5" : "px-2"
+                                    )}
+                                    style={{
+                                      left: pos.left,
+                                      width: pos.width,
+                                      backgroundColor: cycle.color,
+                                      zIndex: pos.isNarrow ? 5 : 1,
+                                    }}
+                                    onClick={() => !isViewer && setEditingCycle(cycle)}
+                                  >
+                                    {pos.isNarrow ? (
+                                      <span className="truncate text-[9px] font-bold tracking-tight leading-tight text-center w-full">
+                                        {pos.duration}j
+                                      </span>
+                                    ) : (
+                                      <>
+                                        <span className="truncate text-[11px] font-semibold tracking-wide w-full text-center">{cycle.name}</span>
+                                        {cycle.objective && (
+                                          <span className="truncate text-[9px] font-normal opacity-80 w-full text-center">{cycle.objective}</span>
+                                        )}
+                                      </>
+                                    )}
+                                  </button>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="max-w-xs">
+                                  <div className="space-y-1">
+                                    <p className="font-semibold">{cycle.name}</p>
+                                    <p className="text-xs">
+                                      {format(new Date(cycle.start_date), "dd MMM yyyy", { locale: fr })} → {format(new Date(cycle.end_date), "dd MMM yyyy", { locale: fr })}
+                                    </p>
+                                    {cycle.cycle_type && (
+                                      <p className="text-xs">Type: {cycle.cycle_type === "recuperation" ? "Récupération" : cycle.cycle_type}</p>
+                                    )}
+                                    {cycle.objective && <p className="text-xs text-muted-foreground">Objectif: {cycle.objective}</p>}
+                                    {(cycle.intensity != null && cycle.intensity > 0) && (
+                                      <div className="flex items-center gap-1 text-xs">
+                                        <span>Intensité:</span>
+                                        <div className="flex gap-0.5">
+                                          {Array.from({ length: 5 }).map((_, i) => (
+                                            <div key={i} className="w-2 h-2 rounded-sm" style={{ backgroundColor: i < cycle.intensity! ? getIntensityColor(cycle.intensity!) : "hsl(var(--muted))" }} />
+                                          ))}
+                                        </div>
+                                        <span>{cycle.intensity}/5</span>
+                                      </div>
+                                    )}
+                                    {(cycle.volume != null && cycle.volume > 0) && (
+                                      <div className="flex items-center gap-1 text-xs">
+                                        <span>Volume:</span>
+                                        <div className="flex gap-0.5">
+                                          {Array.from({ length: 5 }).map((_, i) => (
+                                            <div key={i} className="w-2 h-2 rounded-sm" style={{ backgroundColor: i < cycle.volume! ? getIntensityColor(cycle.volume!) : "hsl(var(--muted))" }} />
+                                          ))}
+                                        </div>
+                                        <span>{cycle.volume}/5</span>
+                                      </div>
+                                    )}
+                                    {cycle.notes && <p className="text-xs text-muted-foreground italic">{cycle.notes}</p>}
+                                  </div>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {/* Today marker */}
+                {isWithinInterval(new Date(), { start: semesterStart, end: semesterEnd }) && (() => {
+                  const todayOffset = differenceInDays(new Date(), semesterStart);
+                  const pct = (todayOffset / semesterTotalDays) * 100;
+                  return (
+                    <div
+                      className="absolute top-0 bottom-0 w-0.5 bg-destructive z-10 pointer-events-none"
+                      style={{
+                        left: `calc(128px + (100% - 128px) * ${pct / 100})`,
+                      }}
+                    />
+                  );
+                })()}
+              </div>
+            );
+          })}
         </CardContent>
       </Card>
 
