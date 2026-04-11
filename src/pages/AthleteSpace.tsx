@@ -18,16 +18,13 @@ import { AthletePWAInstallPopup } from "@/components/athlete/AthletePWAInstallPo
 import { AthleteSpaceDashboard } from "@/components/athlete-space/AthleteSpaceDashboard";
 import { AthleteSpaceRpe } from "@/components/athlete-space/AthleteSpaceRpe";
 import { AthleteSpaceWellness } from "@/components/athlete-space/AthleteSpaceWellness";
-import { AthleteSpaceProgression } from "@/components/athlete-space/AthleteSpaceProgression";
 import { AthleteSpaceObjectives } from "@/components/athlete-space/AthleteSpaceObjectives";
 import { AthleteSpaceHealth } from "@/components/athlete-space/AthleteSpaceHealth";
-// AthleteSpaceEducation removed
+import { AthleteSpacePerformance } from "@/components/athlete-space/AthleteSpacePerformance";
 import { MessagingTab } from "@/components/messaging/MessagingTab";
 import { AthleteSpaceSettings } from "@/components/athlete-space/AthleteSpaceSettings";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 import { AthleteSpaceCalendar } from "@/components/athlete-space/AthleteSpaceCalendar";
-import { AthleteSpaceTests } from "@/components/athlete-space/AthleteSpaceTests";
-import { TonnageDashboard } from "@/components/tonnage/TonnageDashboard";
 import { AthleteSpaceDocuments } from "@/components/athlete-space/AthleteSpaceDocuments";
 
 interface AthleteInfo {
