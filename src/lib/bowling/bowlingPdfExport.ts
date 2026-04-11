@@ -758,34 +758,45 @@ export async function exportBowlingPdf(playerName: string, games: BowlingGameDat
   drawSectionTitle(doc, margin, y, contentWidth, "HISTORIQUE DES PARTIES");
   y += 12;
 
-  // Group by match (each match = one Bloc)
-  const groupedByMatch = games.reduce<Record<string, { matchDate: string; opponent: string; games: BowlingGameData[] }>>((acc, game) => {
-    if (!acc[game.matchId]) {
-      acc[game.matchId] = { matchDate: game.matchDate, opponent: game.matchOpponent, games: [] };
+  // Group by blockId (each block = distinct category/phase grouping), fallback to matchId for legacy data
+  const groupedByBlock = games.reduce<Record<string, { matchDate: string; roundDate: string; opponent: string; bowlingCategory: string; phase: string; games: BowlingGameData[] }>>((acc, game) => {
+    const key = game.blockId || `match_${game.matchId}_${game.bowlingCategory || ""}_${game.phase || ""}`;
+    if (!acc[key]) {
+      acc[key] = {
+        matchDate: game.matchDate,
+        roundDate: game.roundDate || game.matchDate,
+        opponent: game.matchOpponent,
+        bowlingCategory: game.bowlingCategory || "",
+        phase: game.phase || "",
+        games: [],
+      };
     }
-    acc[game.matchId].games.push(game);
+    acc[key].games.push(game);
     return acc;
   }, {});
 
-  const sortedMatches = Object.entries(groupedByMatch).sort(([, a], [, b]) =>
-    b.matchDate.localeCompare(a.matchDate)
-  );
+  const sortedMatches = Object.entries(groupedByBlock).sort(([, a], [, b]) => {
+    const dateA = a.roundDate || a.matchDate;
+    const dateB = b.roundDate || b.matchDate;
+    return dateA.localeCompare(dateB);
+  });
 
-  sortedMatches.forEach(([, { matchDate, opponent, games: matchGames }], blocIndex) => {
+  sortedMatches.forEach(([, { matchDate, roundDate, opponent, bowlingCategory, phase, games: matchGames }], blocIndex) => {
     const matchTotalScore = matchGames.reduce((s, g) => s + g.score, 0);
     const matchAvg = matchTotalScore / matchGames.length;
     const matchHigh = Math.max(...matchGames.map(g => g.score));
 
-    // Build bloc title: "Bloc N: Event, date, category, phase"
-    const firstGame = matchGames[0];
-    const dateStr = matchDate ? format(new Date(matchDate), "dd MMM yyyy", { locale: fr }) : "-";
-    const catLabel = firstGame?.bowlingCategory ? (CATEGORY_LABELS[firstGame.bowlingCategory] || firstGame.bowlingCategory) : "";
-    const phaseLabel = firstGame?.phase ? (PHASE_LABELS[firstGame.phase] || firstGame.phase) : "";
-    const blocTitleParts = [`Bloc ${blocIndex + 1} : ${opponent || "Competition"}`];
-    if (dateStr !== "-") blocTitleParts.push(dateStr);
+    // Build bloc title: "Bloc N: Category, Phase, Date"
+    const effectiveDate = roundDate || matchDate;
+    const dateStr = effectiveDate ? format(new Date(effectiveDate), "dd MMM yyyy", { locale: fr }) : "-";
+    const catLabel = bowlingCategory ? (CATEGORY_LABELS[bowlingCategory] || bowlingCategory) : "";
+    const phaseLabel = phase ? (PHASE_LABELS[phase] || phase) : "";
+    const blocTitleParts = [`Bloc ${blocIndex + 1}`];
     if (catLabel) blocTitleParts.push(catLabel);
     if (phaseLabel) blocTitleParts.push(phaseLabel);
-    const blocTitle = blocTitleParts.join(", ");
+    if (opponent) blocTitleParts.push(`vs ${opponent}`);
+    const blocTitle = blocTitleParts.join(" - ");
+    const blocSubtitle = dateStr !== "-" ? dateStr : "";
 
     // Check space
     y = checkPageBreak(doc, y, 40);
