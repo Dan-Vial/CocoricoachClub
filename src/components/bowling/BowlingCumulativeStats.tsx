@@ -334,47 +334,100 @@ export function BowlingCumulativeStats({ categoryId, playerId: fixedPlayerId }: 
               <FileSpreadsheet className="h-4 w-4" />
               Excel
             </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={async () => {
-              const avatarUrl = playerGames[0]?.playerAvatarUrl || null;
-              const matchIds = [...new Set(playerGames.map(g => g.matchId))];
-              let oilPatternImageUrl: string | null = null;
-              let oilPatternName: string | null = null;
-
-              const [matchResult, catResult, oilResult] = await Promise.all([
-                supabase.from("matches").select("opponent, location, age_category, competition, match_date").eq("id", matchIds[0]).single(),
-                supabase.from("categories").select("name").eq("id", categoryId).single(),
-                supabase.from("bowling_oil_patterns").select("name, image_url_male, image_url_female").in("match_id", matchIds).limit(1),
-              ]);
-
-              const matchRow = matchResult.data;
-              const catData = catResult.data;
-              if (oilResult.data && oilResult.data.length > 0) {
-                oilPatternName = oilResult.data[0].name;
-                oilPatternImageUrl = oilResult.data[0].image_url_male || oilResult.data[0].image_url_female || null;
-              }
-
-              await exportBowlingPdf(
-                players.find(p => p.id === activePlayerId)?.name || "Athlète",
-                playerGames,
-                {
-                  playerAvatarUrl: avatarUrl,
-                  oilPatternImageUrl,
-                  oilPatternName,
-                  competitionName: matchRow?.opponent || matchRow?.competition || null,
-                  ageCategory: catData?.name || matchRow?.age_category || null,
-                  location: matchRow?.location || null,
-                  competitionDate: matchRow?.match_date || null,
-                }
-              );
-            }}
-            className="gap-2"
-          >
-            <FileDown className="h-4 w-4" />
-            Exporter en PDF
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-2">
+                  <FileDown className="h-4 w-4" />
+                  Exporter en PDF
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  className="gap-2 cursor-pointer"
+                  onClick={async () => {
+                    try {
+                      toast.info("Génération du PDF joueur...");
+                      const avatarUrl = playerGames[0]?.playerAvatarUrl || null;
+                      const matchIds = [...new Set(playerGames.map(g => g.matchId))];
+                      const [matchResult, catResult, oilResult] = await Promise.all([
+                        supabase.from("matches").select("opponent, location, age_category, competition, match_date").eq("id", matchIds[0]).single(),
+                        supabase.from("categories").select("name").eq("id", categoryId).single(),
+                        supabase.from("bowling_oil_patterns").select("name, image_url_male, image_url_female").in("match_id", matchIds).limit(1),
+                      ]);
+                      const matchRow = matchResult.data;
+                      const catData = catResult.data;
+                      let oilPatternImageUrl: string | null = null;
+                      let oilPatternName: string | null = null;
+                      if (oilResult.data && oilResult.data.length > 0) {
+                        oilPatternName = oilResult.data[0].name;
+                        oilPatternImageUrl = oilResult.data[0].image_url_male || oilResult.data[0].image_url_female || null;
+                      }
+                      await exportBowlingPdf(
+                        players.find(p => p.id === activePlayerId)?.name || "Athlète",
+                        playerGames,
+                        {
+                          playerAvatarUrl: avatarUrl,
+                          oilPatternImageUrl,
+                          oilPatternName,
+                          competitionName: matchRow?.opponent || matchRow?.competition || null,
+                          ageCategory: catData?.name || matchRow?.age_category || null,
+                          location: matchRow?.location || null,
+                          competitionDate: matchRow?.match_date || null,
+                        }
+                      );
+                      toast.success("PDF joueur exporté !");
+                    } catch (e) {
+                      toast.error("Erreur lors de l'export PDF");
+                    }
+                  }}
+                >
+                  <User className="h-4 w-4" />
+                  Exporter pour le joueur
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="gap-2 cursor-pointer"
+                  onClick={async () => {
+                    try {
+                      toast.info("Génération du PDF équipe...");
+                      const allMatchIds = [...new Set((allGames || []).map(g => g.matchId))];
+                      const [matchResult, catResult, oilResult] = await Promise.all([
+                        supabase.from("matches").select("opponent, location, age_category, competition, match_date").eq("id", allMatchIds[0]).single(),
+                        supabase.from("categories").select("name").eq("id", categoryId).single(),
+                        supabase.from("bowling_oil_patterns").select("name, image_url_male, image_url_female").in("match_id", allMatchIds).limit(1),
+                      ]);
+                      const matchRow = matchResult.data;
+                      const catData = catResult.data;
+                      let oilPatternImageUrl: string | null = null;
+                      let oilPatternName: string | null = null;
+                      if (oilResult.data && oilResult.data.length > 0) {
+                        oilPatternName = oilResult.data[0].name;
+                        oilPatternImageUrl = oilResult.data[0].image_url_male || oilResult.data[0].image_url_female || null;
+                      }
+                      const teamPlayers = players.map(p => ({
+                        playerId: p.id,
+                        playerName: p.name,
+                        avatarUrl: (allGames || []).find(g => g.playerId === p.id)?.playerAvatarUrl || null,
+                        games: (allGames || []).filter(g => g.playerId === p.id),
+                      }));
+                      await exportBowlingTeamPdf(teamPlayers, {
+                        oilPatternImageUrl,
+                        oilPatternName,
+                        competitionName: matchRow?.opponent || matchRow?.competition || null,
+                        ageCategory: catData?.name || matchRow?.age_category || null,
+                        location: matchRow?.location || null,
+                        competitionDate: matchRow?.match_date || null,
+                      });
+                      toast.success("PDF équipe exporté !");
+                    } catch (e) {
+                      toast.error("Erreur lors de l'export PDF équipe");
+                    }
+                  }}
+                >
+                  <Users className="h-4 w-4" />
+                  Exporter pour l'équipe
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         )}
       </div>
