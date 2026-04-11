@@ -74,18 +74,6 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
     },
   });
 
-  const { data: staffNotes } = useQuery({
-    queryKey: ["staff_notes", categoryId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("staff_notes")
-        .select("*, players(name)")
-        .eq("category_id", categoryId)
-        .order("note_date", { ascending: false });
-      if (error) throw error;
-      return data;
-    },
-  });
 
   const { data: developmentPlans } = useQuery({
     queryKey: ["development_plans", categoryId],
