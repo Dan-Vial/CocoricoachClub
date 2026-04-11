@@ -39,7 +39,7 @@ import {
   Copy,
   Settings2
 } from "lucide-react";
-import { INJURY_CATEGORIES } from "@/lib/constants/rugbyInjuries";
+import { INJURY_CATEGORIES, RUGBY_INJURY_TYPES, DEFAULT_REHAB_PHASES } from "@/lib/constants/rugbyInjuries";
 import { ProtocolPhaseExercises, ProtocolExercise } from "./ProtocolPhaseExercises";
 import { TapingDetailEditor } from "./TapingDetailEditor";
 import { ProtocolPhaseProgramLink } from "./ProtocolPhaseProgramLink";
@@ -70,6 +70,39 @@ const DEFAULT_PHASES: Phase[] = [
   { phase_number: 3, name: "Retour à la compétition", description: "Réintégration aux entraînements collectifs", duration_days_min: 7, duration_days_max: 14, objectives: [], exit_criteria: [], care_instructions: ["Étirements actifs", "Automassage / foam roller"], taping_instructions: ["Tape de prévention"], taping_diagram_url: null, linked_program_id: null, exercises: [] },
   { phase_number: 4, name: "Retour à la performance", description: "Validation complète pour la compétition", duration_days_min: 7, duration_days_max: 14, objectives: [], exit_criteria: [], care_instructions: [], taping_instructions: [], taping_diagram_url: null, linked_program_id: null, exercises: [] },
 ];
+
+/**
+ * Convert DEFAULT_REHAB_PHASES for a given category into Phase[] with exercises
+ */
+function getPhasesForInjuryCategory(category: string): Phase[] {
+  const rehabPhases = DEFAULT_REHAB_PHASES[category as keyof typeof DEFAULT_REHAB_PHASES];
+  if (!rehabPhases) return DEFAULT_PHASES;
+  
+  return rehabPhases.map((p: any) => ({
+    phase_number: p.phase_number,
+    name: p.name,
+    description: p.description,
+    duration_days_min: p.duration_days_min,
+    duration_days_max: p.duration_days_max,
+    objectives: p.objectives || [],
+    exit_criteria: p.exit_criteria || [],
+    care_instructions: [],
+    taping_instructions: [],
+    taping_diagram_url: null,
+    linked_program_id: null,
+    exercises: (p.exercises || []).map((ex: any, i: number) => ({
+      name: ex.name,
+      description: ex.description || "",
+      sets: ex.sets,
+      reps: ex.reps || "",
+      frequency: ex.frequency || "",
+      exercise_order: i,
+      image_url: null,
+      video_url: null,
+      notes: null,
+    })),
+  }));
+}
 
 export function ProtocolManager({ categoryId }: ProtocolManagerProps) {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
