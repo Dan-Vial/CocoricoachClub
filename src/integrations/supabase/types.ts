@@ -1134,6 +1134,41 @@ export type Database = {
           },
         ]
       }
+      category_photos: {
+        Row: {
+          caption: string | null
+          category_id: string
+          created_at: string
+          file_url: string
+          id: string
+          uploaded_by: string
+        }
+        Insert: {
+          caption?: string | null
+          category_id: string
+          created_at?: string
+          file_url: string
+          id?: string
+          uploaded_by: string
+        }
+        Update: {
+          caption?: string | null
+          category_id?: string
+          created_at?: string
+          file_url?: string
+          id?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "category_photos_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       category_stat_preferences: {
         Row: {
           category_id: string
