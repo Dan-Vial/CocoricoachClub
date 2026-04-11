@@ -439,8 +439,8 @@ function PlayerDetailsContent() {
           />
         </div>
 
-        {/* Player Profile and Biometrics Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        {/* Player Profile and Biometrics Section - Compact */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
           <PlayerProfile 
             playerId={playerId!} 
             categoryId={player.category_id}
@@ -453,23 +453,6 @@ function PlayerDetailsContent() {
             playerId={playerId!} 
             categoryId={player.category_id}
             birthYear={player.birth_year}
-          />
-        </div>
-
-
-        {/* Personal Info Section (Email, Phone, Birth date) */}
-        <div className="mb-6">
-          <PlayerPersonalInfoSection 
-            playerId={playerId!}
-            isViewer={isViewer}
-          />
-        </div>
-
-        {/* Additional Info Section (Parent contacts, dietary, medical) */}
-        <div className="mb-6">
-          <PlayerAdditionalInfoSection 
-            playerId={playerId!}
-            isViewer={isViewer}
           />
         </div>
 
