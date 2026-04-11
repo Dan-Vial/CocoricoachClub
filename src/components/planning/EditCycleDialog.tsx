@@ -13,6 +13,7 @@ import { CalendarIcon, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { CycleFormFields } from "./CycleFormFields";
 
 
 interface EditCycleDialogProps {
@@ -27,6 +28,9 @@ interface EditCycleDialogProps {
     end_date: string;
     objective: string | null;
     notes: string | null;
+    cycle_type: string | null;
+    intensity: number | null;
+    volume: number | null;
   };
   categoryId: string;
   categories: { id: string; name: string; color: string }[];
@@ -42,6 +46,9 @@ export function EditCycleDialog({ open, onOpenChange, cycle, categoryId, categor
   const [endDate, setEndDate] = useState<Date>(new Date(cycle.end_date));
   const [objective, setObjective] = useState(cycle.objective || "");
   const [notes, setNotes] = useState(cycle.notes || "");
+  const [cycleType, setCycleType] = useState(cycle.cycle_type || "");
+  const [intensity, setIntensity] = useState(cycle.intensity || 0);
+  const [volume, setVolume] = useState(cycle.volume || 0);
   const queryClient = useQueryClient();
 
   const updateCycle = useMutation({
@@ -56,6 +63,9 @@ export function EditCycleDialog({ open, onOpenChange, cycle, categoryId, categor
           end_date: format(endDate, "yyyy-MM-dd"),
           objective: objective || null,
           notes: notes || null,
+          cycle_type: cycleType || null,
+          intensity: intensity || null,
+          volume: volume || null,
         })
         .eq("id", cycle.id);
       if (error) throw error;
@@ -102,7 +112,14 @@ export function EditCycleDialog({ open, onOpenChange, cycle, categoryId, categor
           </div>
 
 
-
+          <CycleFormFields
+            cycleType={cycleType}
+            onCycleTypeChange={setCycleType}
+            intensity={intensity}
+            onIntensityChange={setIntensity}
+            volume={volume}
+            onVolumeChange={setVolume}
+          />
 
           <div className="grid grid-cols-2 gap-3">
             <div>
