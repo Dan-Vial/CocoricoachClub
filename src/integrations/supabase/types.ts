@@ -7307,6 +7307,117 @@ export type Database = {
           },
         ]
       }
+      prophylaxis_exercises: {
+        Row: {
+          created_at: string
+          duration_seconds: number | null
+          exercise_name: string
+          id: string
+          notes: string | null
+          order_index: number
+          program_id: string
+          reps: string | null
+          rest_seconds: number | null
+          sets: number | null
+        }
+        Insert: {
+          created_at?: string
+          duration_seconds?: number | null
+          exercise_name: string
+          id?: string
+          notes?: string | null
+          order_index?: number
+          program_id: string
+          reps?: string | null
+          rest_seconds?: number | null
+          sets?: number | null
+        }
+        Update: {
+          created_at?: string
+          duration_seconds?: number | null
+          exercise_name?: string
+          id?: string
+          notes?: string | null
+          order_index?: number
+          program_id?: string
+          reps?: string | null
+          rest_seconds?: number | null
+          sets?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prophylaxis_exercises_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "prophylaxis_programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prophylaxis_programs: {
+        Row: {
+          body_zone: string
+          category_id: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          frequency: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          player_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          body_zone: string
+          category_id: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          frequency?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          player_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          body_zone?: string
+          category_id?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          frequency?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          player_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prophylaxis_programs_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prophylaxis_programs_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prophylaxis_programs_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       protocol_exercises: {
         Row: {
           created_at: string
