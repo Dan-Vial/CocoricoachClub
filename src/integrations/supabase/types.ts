@@ -4797,6 +4797,7 @@ export type Database = {
           academic_grade: number | null
           category_id: string
           created_at: string
+          grade_scale: string | null
           id: string
           notes: string | null
           player_id: string
@@ -4809,6 +4810,7 @@ export type Database = {
           academic_grade?: number | null
           category_id: string
           created_at?: string
+          grade_scale?: string | null
           id?: string
           notes?: string | null
           player_id: string
@@ -4821,6 +4823,7 @@ export type Database = {
           academic_grade?: number | null
           category_id?: string
           created_at?: string
+          grade_scale?: string | null
           id?: string
           notes?: string | null
           player_id?: string
