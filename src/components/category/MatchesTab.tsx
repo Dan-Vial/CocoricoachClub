@@ -213,6 +213,12 @@ export function MatchesTab({ categoryId, sportType }: MatchesTabProps) {
           )}
         </TabsContent>
 
+        {isRugby && (
+          <TabsContent value="kicking">
+            <KickingTracker categoryId={categoryId} sportType={sportType} />
+          </TabsContent>
+        )}
+
         <TabsContent value="photos">
           <CategoryPhotosTab categoryId={categoryId} />
         </TabsContent>
