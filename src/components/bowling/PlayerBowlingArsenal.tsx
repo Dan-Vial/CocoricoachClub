@@ -371,7 +371,7 @@ export function PlayerBowlingArsenal({ playerId, categoryId, isViewer }: PlayerB
             Mon Arsenal
           </CardTitle>
           {!isViewer && (
-            <Button size="sm" onClick={() => { clearFormFields(); setIsAddOpen(true); }} className="gap-1">
+            <Button size="sm" onClick={() => { console.log("[Arsenal] Ajouter clicked"); clearFormFields(); setIsAddOpen(true); }} className="gap-1 cursor-pointer">
               <Plus className="h-4 w-4" />
               Ajouter
             </Button>

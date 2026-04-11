@@ -338,7 +338,7 @@ export function PlayerAcademyTab({ playerId, categoryId, playerName }: PlayerAca
                   <CardDescription>Absences et notes académiques</CardDescription>
                 </div>
                 {!isViewer && (
-                  <Button size="sm" onClick={() => setAcademicDialogOpen(true)}>
+                  <Button size="sm" onClick={() => { console.log("[Académie Scolaire] Ajouter clicked"); setAcademicDialogOpen(true); }} className="cursor-pointer">
                     <Plus className="h-4 w-4 mr-2" />
                     Ajouter
                   </Button>
@@ -388,7 +388,7 @@ export function PlayerAcademyTab({ playerId, categoryId, playerName }: PlayerAca
                   <CardDescription>Médecin, kiné, préparateur, tuteur</CardDescription>
                 </div>
                 {!isViewer && (
-                  <Button size="sm" onClick={() => setStaffNoteDialogOpen(true)}>
+                  <Button size="sm" onClick={() => { console.log("[Staff Notes] Ajouter clicked"); setStaffNoteDialogOpen(true); }} className="cursor-pointer">
                     <Plus className="h-4 w-4 mr-2" />
                     Ajouter
                   </Button>
@@ -429,7 +429,7 @@ export function PlayerAcademyTab({ playerId, categoryId, playerName }: PlayerAca
                   <CardDescription>Objectifs annuels</CardDescription>
                 </div>
                 {!isViewer && (
-                  <Button size="sm" onClick={() => setDevelopmentDialogOpen(true)}>
+                  <Button size="sm" onClick={() => { console.log("[Development] Ajouter clicked"); setDevelopmentDialogOpen(true); }} className="cursor-pointer">
                     <Plus className="h-4 w-4 mr-2" />
                     Ajouter
                   </Button>
@@ -496,7 +496,7 @@ export function PlayerAcademyTab({ playerId, categoryId, playerName }: PlayerAca
                   <CardDescription>Équipes nationales et régionales</CardDescription>
                 </div>
                 {!isViewer && (
-                  <Button size="sm" onClick={() => setSelectionDialogOpen(true)}>
+                  <Button size="sm" onClick={() => { console.log("[Selections] Ajouter clicked"); setSelectionDialogOpen(true); }} className="cursor-pointer">
                     <Plus className="h-4 w-4 mr-2" />
                     Ajouter
                   </Button>
@@ -537,7 +537,7 @@ export function PlayerAcademyTab({ playerId, categoryId, playerName }: PlayerAca
                   <CardDescription>Parents et tuteurs légaux</CardDescription>
                 </div>
                 {!isViewer && (
-                  <Button size="sm" onClick={() => setContactDialogOpen(true)}>
+                  <Button size="sm" onClick={() => { console.log("[Contacts] Ajouter clicked"); setContactDialogOpen(true); }} className="cursor-pointer">
                     <Plus className="h-4 w-4 mr-2" />
                     Ajouter
                   </Button>
