@@ -399,15 +399,35 @@ export function AcademicStatsSection({ categoryId }: AcademicStatsSectionProps) 
               <TabsContent value="subjects">
                 {subjectStats.length > 0 ? (
                   <div className="space-y-4">
-                    <div className="h-64">
+                    {/* Line chart: one line per subject, date on X, grade on Y */}
+                    <div className="h-80">
                       <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={subjectStats} layout="vertical">
+                        <LineChart data={subjectEvolutionData.chartData}>
                           <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis type="number" domain={[0, 20]} fontSize={12} />
-                          <YAxis type="category" dataKey="name" width={120} fontSize={12} />
+                          <XAxis dataKey="label" fontSize={12} />
+                          <YAxis domain={[0, 20]} fontSize={12} />
                           <Tooltip />
-                          <Bar dataKey="avg" name="Moyenne (/20)" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
-                        </BarChart>
+                          <Legend />
+                          {subjectEvolutionData.subjects.map((subj, i) => {
+                            const colors = [
+                              "hsl(var(--primary))", "#e11d48", "#2563eb", "#16a34a", "#d97706", 
+                              "#7c3aed", "#0891b2", "#be185d", "#65a30d", "#dc2626",
+                              "#4f46e5", "#059669", "#ca8a04", "#9333ea", "#0284c7"
+                            ];
+                            return (
+                              <Line
+                                key={subj}
+                                type="monotone"
+                                dataKey={subj}
+                                name={subj}
+                                stroke={colors[i % colors.length]}
+                                strokeWidth={2}
+                                dot={{ r: 5 }}
+                                connectNulls
+                              />
+                            );
+                          })}
+                        </LineChart>
                       </ResponsiveContainer>
                     </div>
                     <div className="rounded-md border overflow-x-auto">
