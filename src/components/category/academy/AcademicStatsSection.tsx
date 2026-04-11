@@ -6,10 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Download, TrendingUp, TrendingDown, Minus, BarChart3 } from "lucide-react";
+import { Download, TrendingUp, TrendingDown, Minus, BarChart3, Users, User } from "lucide-react";
 import { toast } from "sonner";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from "recharts";
 import ExcelJS from "exceljs";
+import { cn } from "@/lib/utils";
 
 interface AcademicStatsSectionProps {
   categoryId: string;
@@ -24,7 +25,7 @@ interface TrackingEntry {
   subject: string | null;
   school_absence_hours: number | null;
   notes: string | null;
-  players: { name: string } | null;
+  players: { name: string; first_name: string | null } | null;
 }
 
 function normalizeGrade(grade: number | null, scale: string | null): number | null {
@@ -33,20 +34,20 @@ function normalizeGrade(grade: number | null, scale: string | null): number | nu
   if (s === "letter") return null;
   const max = parseFloat(s);
   if (max <= 0) return null;
-  return (grade / max) * 20; // Normalize to /20
+  return (grade / max) * 20;
 }
 
 export function AcademicStatsSection({ categoryId }: AcademicStatsSectionProps) {
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState<string>("all");
-  const [statsView, setStatsView] = useState<"global" | "subject">("global");
+  const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
 
   const { data: allData } = useQuery({
     queryKey: ["academic_stats_all", categoryId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("player_academic_tracking")
-        .select("id, player_id, tracking_date, academic_grade, grade_scale, subject, school_absence_hours, notes, players(name)")
+        .select("id, player_id, tracking_date, academic_grade, grade_scale, subject, school_absence_hours, notes, players(name, first_name)")
         .eq("category_id", categoryId)
         .order("tracking_date", { ascending: true });
       if (error) throw error;
@@ -54,26 +55,45 @@ export function AcademicStatsSection({ categoryId }: AcademicStatsSectionProps) 
     },
   });
 
-  // Get available years
+  // Fetch all players in the category
+  const { data: allPlayers } = useQuery({
+    queryKey: ["category_players_for_stats", categoryId],
+    queryFn: async () => {
+      const query: any = supabase
+        .from("players")
+        .select("id, name, first_name");
+      const { data, error } = await query
+        .eq("category_id", categoryId)
+        .eq("is_active", true)
+        .order("name");
+      if (error) throw error;
+      return data as { id: string; name: string; first_name: string | null }[];
+    },
+  });
+
   const availableYears = useMemo(() => {
     if (!allData) return [];
     const years = new Set(allData.map(d => new Date(d.tracking_date).getFullYear()));
     return Array.from(years).sort((a, b) => b - a);
   }, [allData]);
 
-  // Filter data by year
+  // Filter by year then by player
   const filteredData = useMemo(() => {
     if (!allData) return [];
-    if (selectedYear === "all") return allData;
-    return allData.filter(d => new Date(d.tracking_date).getFullYear() === parseInt(selectedYear));
-  }, [allData, selectedYear]);
+    let data = allData;
+    if (selectedYear !== "all") {
+      data = data.filter(d => new Date(d.tracking_date).getFullYear() === parseInt(selectedYear));
+    }
+    if (selectedPlayerId) {
+      data = data.filter(d => d.player_id === selectedPlayerId);
+    }
+    return data;
+  }, [allData, selectedYear, selectedPlayerId]);
 
-  // Only entries with grades
   const gradeEntries = useMemo(() => {
     return filteredData.filter(d => d.academic_grade !== null && (d.grade_scale || "20") !== "letter");
   }, [filteredData]);
 
-  // Global stats
   const globalStats = useMemo(() => {
     if (gradeEntries.length === 0) return null;
     const normalized = gradeEntries.map(e => normalizeGrade(e.academic_grade, e.grade_scale)!).filter(n => n !== null);
@@ -85,7 +105,6 @@ export function AcademicStatsSection({ categoryId }: AcademicStatsSectionProps) 
     return { avg: Math.round(avg * 100) / 100, min: Math.round(min * 100) / 100, max: Math.round(max * 100) / 100, count: normalized.length, totalAbsences };
   }, [gradeEntries, filteredData]);
 
-  // Per-subject stats
   const subjectStats = useMemo(() => {
     const subjects: Record<string, { grades: number[]; name: string }> = {};
     gradeEntries.forEach(e => {
@@ -103,9 +122,7 @@ export function AcademicStatsSection({ categoryId }: AcademicStatsSectionProps) 
     })).sort((a, b) => b.avg - a.avg);
   }, [gradeEntries]);
 
-  // Subject evolution data: each point is a grade with its date, grouped for the line chart
   const subjectEvolutionData = useMemo(() => {
-    // Collect all grade entries with dates per subject
     const subjectEntries: Record<string, { date: string; grade: number }[]> = {};
     gradeEntries.forEach(e => {
       const subj = e.subject || "Non spécifié";
@@ -115,11 +132,7 @@ export function AcademicStatsSection({ categoryId }: AcademicStatsSectionProps) 
         subjectEntries[subj].push({ date: e.tracking_date, grade: Math.round(n * 100) / 100 });
       }
     });
-
-    // Get all unique dates across all subjects, sorted
     const allDates = [...new Set(gradeEntries.map(e => e.tracking_date))].sort();
-    
-    // Build chart data: one row per date, one key per subject
     const subjects = Object.keys(subjectEntries).sort();
     const chartData = allDates.map(date => {
       const row: Record<string, any> = {
@@ -127,35 +140,14 @@ export function AcademicStatsSection({ categoryId }: AcademicStatsSectionProps) 
         label: new Date(date).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" }),
       };
       subjects.forEach(subj => {
-        // Find grade for this subject on this date
         const entry = subjectEntries[subj]?.find(e => e.date === date);
         row[subj] = entry ? entry.grade : null;
       });
       return row;
     });
-
     return { chartData, subjects };
   }, [gradeEntries]);
 
-  // Per-player stats
-  const playerStats = useMemo(() => {
-    const players: Record<string, { grades: number[]; name: string; absences: number }> = {};
-    filteredData.forEach(e => {
-      const pid = e.player_id;
-      if (!players[pid]) players[pid] = { grades: [], name: e.players?.name || "Inconnu", absences: 0 };
-      players[pid].absences += e.school_absence_hours || 0;
-      const n = normalizeGrade(e.academic_grade, e.grade_scale);
-      if (n !== null) players[pid].grades.push(n);
-    });
-    return Object.values(players).map(p => ({
-      name: p.name,
-      avg: p.grades.length > 0 ? Math.round((p.grades.reduce((a, b) => a + b, 0) / p.grades.length) * 100) / 100 : null,
-      count: p.grades.length,
-      absences: p.absences,
-    })).sort((a, b) => (b.avg || 0) - (a.avg || 0));
-  }, [filteredData]);
-
-  // Evolution data by month
   const evolutionData = useMemo(() => {
     const months: Record<string, { grades: number[]; label: string; absences: number }> = {};
     filteredData.forEach(e => {
@@ -177,11 +169,14 @@ export function AcademicStatsSection({ categoryId }: AcademicStatsSectionProps) 
       }));
   }, [filteredData]);
 
-  // Year-over-year comparison
   const yearComparison = useMemo(() => {
     if (!allData) return [];
+    let data = allData;
+    if (selectedPlayerId) {
+      data = data.filter(d => d.player_id === selectedPlayerId);
+    }
     const years: Record<number, { grades: number[]; absences: number }> = {};
-    allData.forEach(e => {
+    data.forEach(e => {
       const y = new Date(e.tracking_date).getFullYear();
       if (!years[y]) years[y] = { grades: [], absences: 0 };
       years[y].absences += e.school_absence_hours || 0;
@@ -196,14 +191,11 @@ export function AcademicStatsSection({ categoryId }: AcademicStatsSectionProps) 
         absences: v.absences,
         nbNotes: v.grades.length,
       }));
-  }, [allData]);
+  }, [allData, selectedPlayerId]);
 
-  // Export to Excel
   const exportToExcel = async () => {
     try {
       const wb = new ExcelJS.Workbook();
-
-      // Sheet 1: Global stats
       const ws1 = wb.addWorksheet("Statistiques Globales");
       ws1.columns = [
         { header: "Indicateur", key: "indicator", width: 25 },
@@ -217,8 +209,6 @@ export function AcademicStatsSection({ categoryId }: AcademicStatsSectionProps) 
         ws1.addRow({ indicator: "Nombre de notes", value: globalStats.count });
         ws1.addRow({ indicator: "Total heures absences", value: globalStats.totalAbsences });
       }
-
-      // Sheet 2: Per subject
       const ws2 = wb.addWorksheet("Par Matière");
       ws2.columns = [
         { header: "Matière", key: "name", width: 20 },
@@ -229,19 +219,6 @@ export function AcademicStatsSection({ categoryId }: AcademicStatsSectionProps) 
       ];
       ws2.getRow(1).font = { bold: true };
       subjectStats.forEach(s => ws2.addRow(s));
-
-      // Sheet 3: Per player
-      const ws3 = wb.addWorksheet("Par Joueur");
-      ws3.columns = [
-        { header: "Joueur", key: "name", width: 25 },
-        { header: "Moyenne (/20)", key: "avg", width: 15 },
-        { header: "Nb notes", key: "count", width: 12 },
-        { header: "Heures absences", key: "absences", width: 18 },
-      ];
-      ws3.getRow(1).font = { bold: true };
-      playerStats.forEach(p => ws3.addRow(p));
-
-      // Sheet 4: Evolution
       const ws4 = wb.addWorksheet("Évolution Mensuelle");
       ws4.columns = [
         { header: "Mois", key: "label", width: 15 },
@@ -251,8 +228,6 @@ export function AcademicStatsSection({ categoryId }: AcademicStatsSectionProps) 
       ];
       ws4.getRow(1).font = { bold: true };
       evolutionData.forEach(e => ws4.addRow(e));
-
-      // Sheet 5: Year comparison
       const ws5 = wb.addWorksheet("Comparaison Annuelle");
       ws5.columns = [
         { header: "Année", key: "year", width: 12 },
@@ -262,7 +237,6 @@ export function AcademicStatsSection({ categoryId }: AcademicStatsSectionProps) 
       ];
       ws5.getRow(1).font = { bold: true };
       yearComparison.forEach(y => ws5.addRow(y));
-
       const buffer = await wb.xlsx.writeBuffer();
       const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
       const url = URL.createObjectURL(blob);
@@ -287,6 +261,12 @@ export function AcademicStatsSection({ categoryId }: AcademicStatsSectionProps) 
     return <Minus className="h-4 w-4 text-muted-foreground" />;
   };
 
+  const selectedPlayerName = useMemo(() => {
+    if (!selectedPlayerId || !allPlayers) return null;
+    const p = allPlayers.find(p => p.id === selectedPlayerId);
+    return p ? `${p.first_name || ""} ${p.name}`.trim() : null;
+  }, [selectedPlayerId, allPlayers]);
+
   return (
     <Card>
       <CardHeader>
@@ -295,8 +275,13 @@ export function AcademicStatsSection({ categoryId }: AcademicStatsSectionProps) 
             <CardTitle className="flex items-center gap-2">
               <BarChart3 className="h-5 w-5" />
               Statistiques Scolaires
+              {selectedPlayerName && (
+                <span className="text-sm font-normal text-muted-foreground">— {selectedPlayerName}</span>
+              )}
             </CardTitle>
-            <CardDescription>Analyse des notes et absences par période</CardDescription>
+            <CardDescription>
+              {selectedPlayerId ? "Statistiques individuelles" : "Sélectionnez un joueur pour voir ses statistiques"}
+            </CardDescription>
           </div>
           <div className="flex items-center gap-2">
             <Select value={selectedYear} onValueChange={setSelectedYear}>
@@ -318,11 +303,43 @@ export function AcademicStatsSection({ categoryId }: AcademicStatsSectionProps) 
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
-        {!allData || allData.length === 0 ? (
-          <p className="text-center text-muted-foreground py-8">Aucune donnée scolaire pour générer des statistiques.</p>
+        {/* Player selector list */}
+        <div className="space-y-2">
+          <p className="text-sm font-medium text-muted-foreground flex items-center gap-1.5">
+            <Users className="h-4 w-4" />
+            Sélectionner un joueur
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {allPlayers?.map(player => {
+              const fullName = `${player.first_name || ""} ${player.name}`.trim();
+              const isSelected = selectedPlayerId === player.id;
+              return (
+                <button
+                  key={player.id}
+                  onClick={() => setSelectedPlayerId(isSelected ? null : player.id)}
+                  className={cn(
+                    "flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-all",
+                    isSelected
+                      ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                      : "bg-card hover:bg-muted border-border"
+                  )}
+                >
+                  <User className="h-4 w-4" />
+                  {fullName}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {!selectedPlayerId ? (
+          <p className="text-center text-muted-foreground py-8">
+            Cliquez sur un joueur ci-dessus pour afficher ses statistiques scolaires.
+          </p>
+        ) : filteredData.length === 0 ? (
+          <p className="text-center text-muted-foreground py-8">Aucune donnée scolaire pour ce joueur.</p>
         ) : (
           <>
-            {/* Summary cards */}
             {globalStats && (
               <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                 <div className="p-4 bg-muted rounded-lg text-center">
@@ -348,16 +365,13 @@ export function AcademicStatsSection({ categoryId }: AcademicStatsSectionProps) 
               </div>
             )}
 
-            {/* Tabs for views */}
             <Tabs defaultValue="evolution" className="space-y-4">
               <TabsList>
                 <TabsTrigger value="evolution">Évolution</TabsTrigger>
                 <TabsTrigger value="subjects">Par Matière</TabsTrigger>
-                <TabsTrigger value="players">Par Joueur</TabsTrigger>
                 <TabsTrigger value="years">Année par Année</TabsTrigger>
               </TabsList>
 
-              {/* Evolution */}
               <TabsContent value="evolution">
                 {evolutionData.length > 0 ? (
                   <div className="space-y-4">
@@ -370,7 +384,7 @@ export function AcademicStatsSection({ categoryId }: AcademicStatsSectionProps) 
                         <LineChart data={evolutionData}>
                           <CartesianGrid strokeDasharray="3 3" />
                           <XAxis dataKey="label" fontSize={12} />
-                           <YAxis domain={[(dataMin: number) => Math.max(0, Math.floor(dataMin) - 2), 20]} fontSize={12} allowDecimals={false} />
+                          <YAxis domain={[(dataMin: number) => Math.max(0, Math.floor(dataMin) - 2), 20]} fontSize={12} allowDecimals={false} />
                           <Tooltip />
                           <Legend />
                           <Line type="monotone" dataKey="moyenne" name="Moyenne (/20)" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4 }} connectNulls />
@@ -395,22 +409,20 @@ export function AcademicStatsSection({ categoryId }: AcademicStatsSectionProps) 
                 )}
               </TabsContent>
 
-              {/* Per subject */}
               <TabsContent value="subjects">
                 {subjectStats.length > 0 ? (
                   <div className="space-y-4">
-                    {/* Line chart: one line per subject, date on X, grade on Y */}
                     <div className="h-80">
                       <ResponsiveContainer width="100%" height="100%">
                         <LineChart data={subjectEvolutionData.chartData}>
                           <CartesianGrid strokeDasharray="3 3" />
                           <XAxis dataKey="label" fontSize={12} />
-                           <YAxis domain={[(dataMin: number) => Math.max(0, Math.floor(dataMin) - 2), 20]} fontSize={12} allowDecimals={false} />
+                          <YAxis domain={[(dataMin: number) => Math.max(0, Math.floor(dataMin) - 2), 20]} fontSize={12} allowDecimals={false} />
                           <Tooltip />
                           <Legend />
                           {subjectEvolutionData.subjects.map((subj, i) => {
                             const colors = [
-                              "hsl(var(--primary))", "#e11d48", "#2563eb", "#16a34a", "#d97706", 
+                              "hsl(var(--primary))", "#e11d48", "#2563eb", "#16a34a", "#d97706",
                               "#7c3aed", "#0891b2", "#be185d", "#65a30d", "#dc2626",
                               "#4f46e5", "#059669", "#ca8a04", "#9333ea", "#0284c7"
                             ];
@@ -460,37 +472,6 @@ export function AcademicStatsSection({ categoryId }: AcademicStatsSectionProps) 
                 )}
               </TabsContent>
 
-              {/* Per player */}
-              <TabsContent value="players">
-                {playerStats.length > 0 ? (
-                  <div className="rounded-md border overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Joueur</TableHead>
-                          <TableHead className="text-center">Moyenne (/20)</TableHead>
-                          <TableHead className="text-center">Nb notes</TableHead>
-                          <TableHead className="text-center">Heures absences</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {playerStats.map(p => (
-                          <TableRow key={p.name}>
-                            <TableCell className="font-medium">{p.name}</TableCell>
-                            <TableCell className="text-center font-bold">{p.avg !== null ? `${p.avg}/20` : "-"}</TableCell>
-                            <TableCell className="text-center">{p.count}</TableCell>
-                            <TableCell className="text-center">{p.absences > 0 ? <span className="text-destructive font-medium">{p.absences}h</span> : "0h"}</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                ) : (
-                  <p className="text-center text-muted-foreground py-8">Aucune donnée par joueur.</p>
-                )}
-              </TabsContent>
-
-              {/* Year comparison */}
               <TabsContent value="years">
                 {yearComparison.length > 0 ? (
                   <div className="space-y-4">
