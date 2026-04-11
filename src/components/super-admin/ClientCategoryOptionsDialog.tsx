@@ -50,6 +50,9 @@ export function ClientCategoryOptionsDialog({
   const queryClient = useQueryClient();
   const [expandedClubs, setExpandedClubs] = useState<Set<string>>(new Set());
   const [addingForClub, setAddingForClub] = useState<string | null>(null);
+  const [addingClub, setAddingClub] = useState(false);
+  const [newClubName, setNewClubName] = useState("");
+  const [newClubSport, setNewClubSport] = useState<MainSportCategory>("rugby");
   const [newCat, setNewCat] = useState({
     name: "",
     gender: "male",
