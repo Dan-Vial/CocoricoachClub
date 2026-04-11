@@ -325,9 +325,9 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
                               <button
                                 className={cn(
                                   "absolute top-1.5 h-[calc(100%-12px)] rounded-md shadow-sm",
-                                  "flex items-center justify-center px-2 overflow-hidden",
+                                  "flex flex-col items-center justify-center px-2 overflow-hidden",
                                   "hover:shadow-md hover:brightness-110 transition-all cursor-pointer",
-                                  "text-white text-[11px] font-semibold tracking-wide"
+                                  "text-white"
                                 )}
                                 style={{
                                   left: pos.left,
@@ -337,7 +337,10 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
                                 }}
                                 onClick={() => !isViewer && setEditingCycle(cycle)}
                               >
-                                <span className="truncate">{cycle.name}</span>
+                                <span className="truncate text-[11px] font-semibold tracking-wide">{cycle.name}</span>
+                                {cycle.objective && (
+                                  <span className="truncate text-[9px] font-normal opacity-80 w-full text-center">{cycle.objective}</span>
+                                )}
                               </button>
                             </TooltipTrigger>
                             <TooltipContent side="top" className="max-w-xs">
