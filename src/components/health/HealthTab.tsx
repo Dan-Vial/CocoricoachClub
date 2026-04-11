@@ -101,16 +101,6 @@ export function HealthTab({ categoryId }: HealthTabProps) {
               </ColoredSubTabsTrigger>
             )}
             
-            {/* Protocoles - Masqué en mode viewer */}
-            {!isViewer && (
-              <ColoredSubTabsTrigger 
-                value="protocols" 
-                colorKey="sante"
-                icon={<Settings2 className="h-4 w-4" />}
-              >
-                Protocoles
-              </ColoredSubTabsTrigger>
-            )}
           </ColoredSubTabsList>
         </div>
 
@@ -139,12 +129,6 @@ export function HealthTab({ categoryId }: HealthTabProps) {
         {!isViewer && (
           <TabsContent value="rehab">
             <ActiveProtocolsDashboard categoryId={categoryId} />
-          </TabsContent>
-        )}
-
-        {!isViewer && (
-          <TabsContent value="protocols">
-            <ProtocolManager categoryId={categoryId} />
           </TabsContent>
         )}
       </Tabs>
