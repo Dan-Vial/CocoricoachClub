@@ -44,6 +44,13 @@ interface ActiveProtocolsDashboardProps {
   categoryId: string;
 }
 
+// State for quick protocol assignment
+interface AssignState {
+  injuryId: string;
+  playerId: string;
+  protocolId: string;
+}
+
 const EVENT_TYPES = [
   { value: "exercise", label: "Exercice / Séance réhab" },
   { value: "checkpoint", label: "Bilan / Checkpoint" },
@@ -57,14 +64,52 @@ export function ActiveProtocolsDashboard({ categoryId }: ActiveProtocolsDashboar
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [isAddEventOpen, setIsAddEventOpen] = useState(false);
-  
-  // Event form state
   const [eventPlayerId, setEventPlayerId] = useState("");
   const [eventProtocolId, setEventProtocolId] = useState("");
   const [eventType, setEventType] = useState("exercise");
   const [eventTitle, setEventTitle] = useState("");
   const [eventDate, setEventDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const [eventDescription, setEventDescription] = useState("");
+  const [assignState, setAssignState] = useState<AssignState | null>(null);
+
+  // Fetch injury protocols for quick assignment dropdown
+  const { data: availableProtocols } = useQuery({
+    queryKey: ["injury-protocols-for-assign", categoryId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("injury_protocols")
+        .select("id, name, injury_category")
+        .order("injury_category, name");
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  // Assign protocol mutation
+  const assignProtocol = useMutation({
+    mutationFn: async ({ injuryId, playerId, protocolId }: AssignState) => {
+      const { error } = await supabase
+        .from("player_rehab_protocols")
+        .insert({
+          player_id: playerId,
+          injury_id: injuryId,
+          category_id: categoryId,
+          protocol_id: protocolId,
+          status: "in_progress",
+          current_phase: 1,
+        });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["active-rehab-protocols", categoryId] });
+      queryClient.invalidateQueries({ queryKey: ["recovering-injuries-no-protocol", categoryId] });
+      toast.success("Protocole assigné avec succès");
+      setAssignState(null);
+    },
+    onError: (err: any) => {
+      toast.error("Erreur: " + err.message);
+    },
+  });
 
   // Fetch all active player rehab protocols for this category
   const { data: activeProtocols, isLoading: protocolsLoading } = useQuery({
@@ -459,9 +504,46 @@ export function ActiveProtocolsDashboard({ categoryId }: ActiveProtocolsDashboar
                               Retour estimé: {format(parseISO(injury.estimated_return_date), "d MMM yyyy", { locale: fr })}
                             </p>
                           )}
-                          <p className="text-xs text-amber-600 mt-2 italic">
-                            Aucun protocole assigné — Assignez un protocole depuis la fiche joueur
+                          <p className="text-xs text-amber-600 mt-2 font-medium">
+                            Assigner un protocole :
                           </p>
+                          <div className="mt-1" onClick={(e) => e.stopPropagation()}>
+                            <Select
+                              value={assignState?.injuryId === injury.id ? assignState.protocolId : ""}
+                              onValueChange={(protocolId) => {
+                                setAssignState({ injuryId: injury.id, playerId: player?.id, protocolId });
+                                assignProtocol.mutate({ injuryId: injury.id, playerId: player?.id, protocolId });
+                              }}
+                            >
+                              <SelectTrigger className="h-8 text-xs">
+                                <SelectValue placeholder="Choisir un protocole..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {availableProtocols && availableProtocols.length > 0 ? (
+                                  (() => {
+                                    const grouped = availableProtocols.reduce((acc, p) => {
+                                      const cat = p.injury_category || "Autre";
+                                      if (!acc[cat]) acc[cat] = [];
+                                      acc[cat].push(p);
+                                      return acc;
+                                    }, {} as Record<string, typeof availableProtocols>);
+                                    return Object.entries(grouped).map(([category, protocols]) => (
+                                      <div key={category}>
+                                        <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">{category}</div>
+                                        {protocols.map((protocol) => (
+                                          <SelectItem key={protocol.id} value={protocol.id}>
+                                            {protocol.name}
+                                          </SelectItem>
+                                        ))}
+                                      </div>
+                                    ));
+                                  })()
+                                ) : (
+                                  <SelectItem value="__none__" disabled>Aucun protocole disponible</SelectItem>
+                                )}
+                              </SelectContent>
+                            </Select>
+                          </div>
                         </div>
                       </div>
                     </div>
