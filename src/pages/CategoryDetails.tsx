@@ -344,8 +344,8 @@ function CategoryDetailsContent() {
                   value="performance" 
                   colorKey="performance"
                   icon={<Zap className="h-6 w-6 sm:h-7 sm:w-7" />}
-                  label="Entrainement"
-                  shortLabel="Entraîn"
+                  label="Data"
+                  shortLabel="Data"
                 />
               )}
               {canSeeMenu("sante") && (
