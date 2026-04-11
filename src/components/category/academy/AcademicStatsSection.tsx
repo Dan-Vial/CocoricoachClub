@@ -59,7 +59,7 @@ export function AcademicStatsSection({ categoryId }: AcademicStatsSectionProps) 
   const { data: allPlayers } = useQuery({
     queryKey: ["category_players_for_stats", categoryId],
     queryFn: async () => {
-      const query = supabase
+      const query: any = supabase
         .from("players")
         .select("id, name, first_name");
       const { data, error } = await query
