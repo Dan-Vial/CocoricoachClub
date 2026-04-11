@@ -548,6 +548,57 @@ export function ImprovedCalendarView({
                   ))}
                 </div>
 
+                {/* Periodization cycle bars */}
+                {visibleCycles.length > 0 && (
+                  <div className="border-b bg-muted/30 px-0.5 py-1 space-y-0.5">
+                    {visibleCycles.map(cycle => {
+                      const totalDays = calendarDays.length;
+                      const viewStart = calendarDays[0];
+                      const viewEnd = calendarDays[totalDays - 1];
+                      const cycleStart = parseISO(cycle.start_date);
+                      const cycleEnd = parseISO(cycle.end_date);
+                      
+                      const clampedStart = cycleStart < viewStart ? viewStart : cycleStart;
+                      const clampedEnd = cycleEnd > viewEnd ? viewEnd : cycleEnd;
+                      
+                      // Calculate position as percentage of total grid
+                      const startIndex = calendarDays.findIndex(d => 
+                        d.getFullYear() === clampedStart.getFullYear() && 
+                        d.getMonth() === clampedStart.getMonth() && 
+                        d.getDate() === clampedStart.getDate()
+                      );
+                      const endIndex = calendarDays.findIndex(d => 
+                        d.getFullYear() === clampedEnd.getFullYear() && 
+                        d.getMonth() === clampedEnd.getMonth() && 
+                        d.getDate() === clampedEnd.getDate()
+                      );
+                      
+                      if (startIndex === -1 || endIndex === -1) return null;
+                      
+                      const leftPercent = (startIndex / totalDays) * 100;
+                      const widthPercent = ((endIndex - startIndex + 1) / totalDays) * 100;
+                      
+                      return (
+                        <div key={cycle.id} className="relative h-5">
+                          <div
+                            className="absolute top-0 h-full rounded-sm flex items-center px-1.5 overflow-hidden"
+                            style={{
+                              left: `${leftPercent}%`,
+                              width: `${widthPercent}%`,
+                              backgroundColor: cycle.displayColor,
+                              opacity: 0.85,
+                            }}
+                          >
+                            <span className="text-[10px] font-medium text-white truncate drop-shadow-sm">
+                              {cycle.categoryName}: {cycle.name}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
                 {/* Calendar days */}
                 <div className="grid grid-cols-7">
                   {calendarDays.map((day, index) => (
