@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Search, User, Phone, Mail, MapPin, Calendar, Trash2 } from "lucide-react";
+import { Plus, Search, User, Phone, Mail, MapPin, Calendar, Trash2, Pencil } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import {
@@ -136,6 +136,8 @@ export function RecruitmentSection({ categoryId }: RecruitmentSectionProps) {
   const queryClient = useQueryClient();
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [selectedProspect, setSelectedProspect] = useState<Prospect | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editData, setEditData] = useState<typeof formData>({ name: "", position: "", current_club: "", birth_date: "", phone: "", email: "", city: "", status: "contacted", rating: "", notes: "", source: "" });
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -215,6 +217,34 @@ export function RecruitmentSection({ categoryId }: RecruitmentSectionProps) {
     },
   });
 
+  const updateProspectMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: typeof formData }) => {
+      const { error } = await supabase.from("recruitment_prospects" as any).update({
+        name: data.name,
+        position: data.position || null,
+        current_club: data.current_club || null,
+        birth_date: data.birth_date || null,
+        phone: data.phone || null,
+        email: data.email || null,
+        city: data.city || null,
+        status: data.status,
+        rating: data.rating ? parseInt(data.rating) : null,
+        notes: data.notes || null,
+        source: data.source || null,
+      }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["prospects", categoryId] });
+      setIsEditing(false);
+      setSelectedProspect(null);
+      toast({ title: "Prospect mis à jour" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Erreur", description: error.message, variant: "destructive" });
+    },
+  });
+
   const deleteProspectMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("recruitment_prospects" as any).delete().eq("id", id);
@@ -226,6 +256,23 @@ export function RecruitmentSection({ categoryId }: RecruitmentSectionProps) {
       toast({ title: "Prospect supprimé" });
     },
   });
+
+  const startEditing = (prospect: Prospect) => {
+    setEditData({
+      name: prospect.name,
+      position: prospect.position || "",
+      current_club: prospect.current_club || "",
+      birth_date: prospect.birth_date || "",
+      phone: prospect.phone || "",
+      email: prospect.email || "",
+      city: prospect.city || "",
+      status: prospect.status,
+      rating: prospect.rating ? String(prospect.rating) : "",
+      notes: prospect.notes || "",
+      source: prospect.source || "",
+    });
+    setIsEditing(true);
+  };
 
   const resetForm = () => {
     setFormData({
@@ -474,15 +521,15 @@ export function RecruitmentSection({ categoryId }: RecruitmentSectionProps) {
       </DndContext>
 
       {/* Dialog détails prospect */}
-      <Dialog open={!!selectedProspect} onOpenChange={() => setSelectedProspect(null)}>
-        <DialogContent className="max-w-lg">
+      <Dialog open={!!selectedProspect} onOpenChange={() => { setSelectedProspect(null); setIsEditing(false); }}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <User className="h-5 w-5" />
-              {selectedProspect?.name}
+              {isEditing ? "Modifier le prospect" : selectedProspect?.name}
             </DialogTitle>
           </DialogHeader>
-          {selectedProspect && (
+          {selectedProspect && !isEditing && (
             <div className="space-y-4">
               <div className="flex items-center gap-2">
                 <Badge className={STATUS_COLORS[selectedProspect.status]}>
@@ -583,12 +630,94 @@ export function RecruitmentSection({ categoryId }: RecruitmentSectionProps) {
 
               <div className="flex justify-end gap-2 pt-4 border-t">
                 <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => startEditing(selectedProspect)}
+                >
+                  <Pencil className="h-4 w-4 mr-1" />
+                  Modifier
+                </Button>
+                <Button
                   variant="destructive"
                   size="sm"
                   onClick={() => deleteProspectMutation.mutate(selectedProspect.id)}
                 >
                   <Trash2 className="h-4 w-4 mr-1" />
                   Supprimer
+                </Button>
+              </div>
+            </div>
+          )}
+          {selectedProspect && isEditing && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2">
+                  <Label>Nom complet *</Label>
+                  <Input value={editData.name} onChange={(e) => setEditData({ ...editData, name: e.target.value })} />
+                </div>
+                <div>
+                  <Label>Poste</Label>
+                  <Input value={editData.position} onChange={(e) => setEditData({ ...editData, position: e.target.value })} />
+                </div>
+                <div>
+                  <Label>Club actuel</Label>
+                  <Input value={editData.current_club} onChange={(e) => setEditData({ ...editData, current_club: e.target.value })} />
+                </div>
+                <div>
+                  <Label>Date de naissance</Label>
+                  <Input type="date" value={editData.birth_date} onChange={(e) => setEditData({ ...editData, birth_date: e.target.value })} />
+                </div>
+                <div>
+                  <Label>Ville</Label>
+                  <Input value={editData.city} onChange={(e) => setEditData({ ...editData, city: e.target.value })} />
+                </div>
+                <div>
+                  <Label>Téléphone</Label>
+                  <Input value={editData.phone} onChange={(e) => setEditData({ ...editData, phone: e.target.value })} />
+                </div>
+                <div>
+                  <Label>Email</Label>
+                  <Input type="email" value={editData.email} onChange={(e) => setEditData({ ...editData, email: e.target.value })} />
+                </div>
+                <div>
+                  <Label>Source</Label>
+                  <Input value={editData.source} onChange={(e) => setEditData({ ...editData, source: e.target.value })} />
+                </div>
+                <div>
+                  <Label>Note (1-5)</Label>
+                  <Select value={editData.rating} onValueChange={(v) => setEditData({ ...editData, rating: v })}>
+                    <SelectTrigger><SelectValue placeholder="Note" /></SelectTrigger>
+                    <SelectContent>
+                      {[1, 2, 3, 4, 5].map((n) => (
+                        <SelectItem key={n} value={String(n)}>{"★".repeat(n)}{"☆".repeat(5 - n)}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Statut</Label>
+                  <Select value={editData.status} onValueChange={(v) => setEditData({ ...editData, status: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(STATUS_LABELS).map(([value, label]) => (
+                        <SelectItem key={value} value={value}>{label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div>
+                <Label>Notes / Observations</Label>
+                <Textarea value={editData.notes} onChange={(e) => setEditData({ ...editData, notes: e.target.value })} rows={3} />
+              </div>
+              <div className="flex justify-end gap-2 pt-4 border-t">
+                <Button variant="outline" size="sm" onClick={() => setIsEditing(false)}>Annuler</Button>
+                <Button
+                  size="sm"
+                  disabled={!editData.name || updateProspectMutation.isPending}
+                  onClick={() => updateProspectMutation.mutate({ id: selectedProspect.id, data: editData })}
+                >
+                  Enregistrer
                 </Button>
               </div>
             </div>
