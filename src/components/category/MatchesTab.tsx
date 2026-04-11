@@ -95,6 +95,9 @@ export function MatchesTab({ categoryId, sportType }: MatchesTabProps) {
                 Stats entraînement
               </ColoredSubTabsTrigger>
             )}
+            <ColoredSubTabsTrigger value="photos" colorKey="competition" icon={<Camera className="h-4 w-4" />}>
+              Photos
+            </ColoredSubTabsTrigger>
           </ColoredSubTabsList>
         </div>
 
@@ -201,6 +204,10 @@ export function MatchesTab({ categoryId, sportType }: MatchesTabProps) {
           ) : (
             <PrecisionTrainingStats categoryId={categoryId} />
           )}
+        </TabsContent>
+
+        <TabsContent value="photos">
+          <CategoryPhotosTab categoryId={categoryId} />
         </TabsContent>
       </Tabs>
 
