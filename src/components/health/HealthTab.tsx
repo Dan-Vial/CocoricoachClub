@@ -43,6 +43,7 @@ export function HealthTab({ categoryId }: HealthTabProps) {
 
   const sportType = category?.rugby_type || "";
   const isRugby = isRugbyType(sportType);
+  const hasConcussionProtocol = isRugby || ["judo", "ski", "snowboard"].includes(sportType);
 
   return (
     <div className="space-y-6">
