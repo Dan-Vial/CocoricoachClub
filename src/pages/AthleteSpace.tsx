@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, User, LogOut, Activity, Heart, BarChart3, Target, Video, Shield, ArrowLeft, Search, ChevronRight, MessageSquare, Settings, CalendarDays, FlaskConical, CircleDot, Weight, Waves, FileText } from "lucide-react";
+import { Loader2, User, LogOut, Activity, Heart, BarChart3, Target, Video, Shield, ArrowLeft, Search, ChevronRight, MessageSquare, Settings, CalendarDays, CircleDot, Waves, FileText } from "lucide-react";
 import { PlayerBowlingArsenal } from "@/components/bowling/PlayerBowlingArsenal";
 import { PlayerSurfEquipment } from "@/components/surf/PlayerSurfEquipment";
 import { PlayerSkiEquipment } from "@/components/ski/PlayerSkiEquipment";
@@ -18,16 +18,13 @@ import { AthletePWAInstallPopup } from "@/components/athlete/AthletePWAInstallPo
 import { AthleteSpaceDashboard } from "@/components/athlete-space/AthleteSpaceDashboard";
 import { AthleteSpaceRpe } from "@/components/athlete-space/AthleteSpaceRpe";
 import { AthleteSpaceWellness } from "@/components/athlete-space/AthleteSpaceWellness";
-import { AthleteSpaceProgression } from "@/components/athlete-space/AthleteSpaceProgression";
 import { AthleteSpaceObjectives } from "@/components/athlete-space/AthleteSpaceObjectives";
 import { AthleteSpaceHealth } from "@/components/athlete-space/AthleteSpaceHealth";
-// AthleteSpaceEducation removed
+import { AthleteSpacePerformance } from "@/components/athlete-space/AthleteSpacePerformance";
 import { MessagingTab } from "@/components/messaging/MessagingTab";
 import { AthleteSpaceSettings } from "@/components/athlete-space/AthleteSpaceSettings";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 import { AthleteSpaceCalendar } from "@/components/athlete-space/AthleteSpaceCalendar";
-import { AthleteSpaceTests } from "@/components/athlete-space/AthleteSpaceTests";
-import { TonnageDashboard } from "@/components/tonnage/TonnageDashboard";
 import { AthleteSpaceDocuments } from "@/components/athlete-space/AthleteSpaceDocuments";
 
 interface AthleteInfo {
@@ -540,43 +537,17 @@ export default function AthleteSpace() {
                   Calendrier
                </TabsTrigger>
               <TabsTrigger 
-                value="tests"
+                value="performance"
                  className="athlete-tab shrink-0 gap-1 px-2 py-1.5 rounded-xl font-semibold text-xs transition-all duration-200 data-[state=active]:shadow-lg"
                  style={{
                    color: NAV_COLORS.performance.base,
                   backgroundColor: `${NAV_COLORS.performance.base}15`,
                   borderBottom: `3px solid ${NAV_COLORS.performance.base}`,
                   ["--tab-color" as string]: NAV_COLORS.performance.base,
-                }}
-              >
-                <FlaskConical className="h-3.5 w-3.5" />
-                Tests
-               </TabsTrigger>
-              <TabsTrigger 
-                value="tonnage"
-                 className="athlete-tab shrink-0 gap-1 px-2 py-1.5 rounded-xl font-semibold text-xs transition-all duration-200 data-[state=active]:shadow-lg"
-                 style={{
-                   color: NAV_COLORS.performance.base,
-                  backgroundColor: `${NAV_COLORS.performance.base}15`,
-                  borderBottom: `3px solid ${NAV_COLORS.performance.base}`,
-                  ["--tab-color" as string]: NAV_COLORS.performance.base,
-                }}
-              >
-                <Weight className="h-3.5 w-3.5" />
-                Tonnage
-               </TabsTrigger>
-              <TabsTrigger 
-                value="progression"
-                 className="athlete-tab shrink-0 gap-1 px-2 py-1.5 rounded-xl font-semibold text-xs transition-all duration-200 data-[state=active]:shadow-lg"
-                 style={{
-                   color: NAV_COLORS.programmation.base,
-                  backgroundColor: `${NAV_COLORS.programmation.base}15`,
-                  borderBottom: `3px solid ${NAV_COLORS.programmation.base}`,
-                  ["--tab-color" as string]: NAV_COLORS.programmation.base,
                 }}
               >
                 <BarChart3 className="h-3.5 w-3.5" />
-                Progression
+                Performance
               </TabsTrigger>
               <TabsTrigger 
                 value="objectives"
@@ -745,23 +716,8 @@ export default function AthleteSpace() {
             />
           </TabsContent>
 
-          <TabsContent value="tests">
-            <AthleteSpaceTests
-              playerId={athleteInfo.player_id}
-              categoryId={athleteInfo.category_id}
-              sportType={athleteInfo.sport_type}
-            />
-          </TabsContent>
-
-          <TabsContent value="tonnage">
-            <TonnageDashboard
-              categoryId={athleteInfo.category_id}
-              playerId={athleteInfo.player_id}
-            />
-          </TabsContent>
-
-          <TabsContent value="progression">
-            <AthleteSpaceProgression
+          <TabsContent value="performance">
+            <AthleteSpacePerformance
               playerId={athleteInfo.player_id}
               categoryId={athleteInfo.category_id}
               sportType={athleteInfo.sport_type}
