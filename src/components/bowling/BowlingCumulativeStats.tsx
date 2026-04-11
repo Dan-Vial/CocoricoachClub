@@ -432,40 +432,84 @@ export function BowlingCumulativeStats({ categoryId, playerId: fixedPlayerId }: 
                 </Card>
               </div>
 
-              {/* All stats in one card */}
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm flex items-center gap-2">
-                    <Trophy className="h-4 w-4 text-amber-500" />
-                    Statistiques détaillées
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {/* Percentages first */}
-                  <ColoredStatRow label="% Strikes" value={`${cumulativeStats.avgStrikeRate.toFixed(1)}%`} statType="strike" percentage={cumulativeStats.avgStrikeRate} />
-                  <ColoredStatRow label="% Spares" value={`${cumulativeStats.avgSpareRate.toFixed(1)}%`} statType="spare" percentage={cumulativeStats.avgSpareRate} />
-                  <ColoredStatRow label="% Poches" value={`${cumulativeStats.avgPocketRate.toFixed(1)}%`} statType="pocket" percentage={cumulativeStats.avgPocketRate} />
-                  <ColoredStatRow label="% Quilles seules" value={`${cumulativeStats.singlePinConversionRate.toFixed(1)}%`} statType="singlePin" percentage={cumulativeStats.singlePinConversionRate} />
-                  <ColoredStatRow label="% Conversion splits" value={`${cumulativeStats.splitConversionRate.toFixed(1)}%`} />
-                  <ColoredStatRow label="% Boules ≥8" value={`${cumulativeStats.firstBallGte8Percentage.toFixed(1)}%`} statType="firstBallGte8" percentage={cumulativeStats.firstBallGte8Percentage} />
-                   <div>
-                     <ColoredStatRow label="% Frames non fermées" value={`${cumulativeStats.openFramePercentage.toFixed(1)}%`} />
-                     <p className="text-[10px] text-muted-foreground mt-0.5 italic">
-                       Frames où ni strike ni spare n'a été réalisé (splits non convertis exclus).
-                     </p>
-                   </div>
-                  
-                  <div className="border-t pt-3 mt-3" />
-                  
-                  {/* Counts */}
-                  <ColoredStatRow label="Nombre de strikes total" value={String(cumulativeStats.totalStrikes)} />
-                  <ColoredStatRow label="Nombre de spares total" value={String(cumulativeStats.totalSpares)} />
-                  <ColoredStatRow label="Nombre de splits" value={String(cumulativeStats.totalSplits)} />
-                  <ColoredStatRow label="Nombre de frames non fermées" value={String(cumulativeStats.totalOpenFrames)} />
-                </CardContent>
-              </Card>
+              {/* Stats détaillées + Référentiel côte à côte */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {/* Stats détaillées - colonne gauche */}
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <Trophy className="h-4 w-4 text-amber-500" />
+                      Statistiques détaillées
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <ColoredStatRow label="% Strikes" value={`${cumulativeStats.avgStrikeRate.toFixed(1)}%`} statType="strike" percentage={cumulativeStats.avgStrikeRate} />
+                    <ColoredStatRow label="% Spares" value={`${cumulativeStats.avgSpareRate.toFixed(1)}%`} statType="spare" percentage={cumulativeStats.avgSpareRate} />
+                    <ColoredStatRow label="% Poches" value={`${cumulativeStats.avgPocketRate.toFixed(1)}%`} statType="pocket" percentage={cumulativeStats.avgPocketRate} />
+                    <ColoredStatRow label="% Quilles seules" value={`${cumulativeStats.singlePinConversionRate.toFixed(1)}%`} statType="singlePin" percentage={cumulativeStats.singlePinConversionRate} />
+                    <ColoredStatRow label="% Conversion splits" value={`${cumulativeStats.splitConversionRate.toFixed(1)}%`} />
+                    <ColoredStatRow label="% Boules ≥8" value={`${cumulativeStats.firstBallGte8Percentage.toFixed(1)}%`} statType="firstBallGte8" percentage={cumulativeStats.firstBallGte8Percentage} />
+                    <div>
+                      <ColoredStatRow label="% Frames non fermées" value={`${cumulativeStats.openFramePercentage.toFixed(1)}%`} />
+                      <p className="text-[10px] text-muted-foreground mt-0.5 italic">
+                        Frames où ni strike ni spare n'a été réalisé.
+                      </p>
+                    </div>
+                    <div className="border-t pt-2 mt-2" />
+                    <ColoredStatRow label="Strikes total" value={String(cumulativeStats.totalStrikes)} />
+                    <ColoredStatRow label="Spares total" value={String(cumulativeStats.totalSpares)} />
+                    <ColoredStatRow label="Splits" value={String(cumulativeStats.totalSplits)} />
+                    <ColoredStatRow label="Frames non fermées" value={String(cumulativeStats.totalOpenFrames)} />
+                  </CardContent>
+                </Card>
 
-              {/* Evolution chart */}
+                {/* Référentiel - colonne droite */}
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <Target className="h-4 w-4" />
+                      Référentiel de performance
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="overflow-x-auto">
+                    <table className="w-full text-xs text-center border-collapse">
+                      <thead>
+                        <tr>
+                          <th className="p-1.5 border font-semibold text-muted-foreground">Niveau</th>
+                          <th className="p-1.5 border font-semibold text-muted-foreground">Poches</th>
+                          <th className="p-1.5 border font-semibold text-muted-foreground">Strikes</th>
+                          <th className="p-1.5 border font-semibold text-muted-foreground">Spares</th>
+                          <th className="p-1.5 border font-semibold text-muted-foreground">9/</th>
+                          <th className="p-1.5 border font-semibold text-muted-foreground">≥8</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {[
+                          { label: "Orange", bg: "bg-orange-700", text: "text-white", pocket: "<50%", strike: "<20%", spare: "<50%", single: "<70%", fb8: "<50%" },
+                          { label: "Verte 1", bg: "bg-green-700", text: "text-white", pocket: "50-60%", strike: "20-30%", spare: "50-60%", single: "70-75%", fb8: "50-65%" },
+                          { label: "Verte 2", bg: "bg-green-700", text: "text-white", pocket: "60-65%", strike: "30-35%", spare: "60-70%", single: "75-80%", fb8: "65-75%" },
+                          { label: "Verte 3", bg: "bg-green-800", text: "text-white", pocket: "65-70%", strike: "35-40%", spare: "70-80%", single: "80-85%", fb8: "75-85%" },
+                          { label: "Bleue 1", bg: "bg-blue-700", text: "text-white", pocket: "70-75%", strike: "40-45%", spare: "80-85%", single: "85-90%", fb8: "85-88%" },
+                          { label: "Bleue 2", bg: "bg-blue-800", text: "text-white", pocket: "75-80%", strike: "45-50%", spare: "85-90%", single: "90-95%", fb8: "85-88%" },
+                          { label: "Noire 1", bg: "bg-gray-900", text: "text-white", pocket: "80-85%", strike: "50-55%", spare: "90-95%", single: "95-99%", fb8: "88-92%" },
+                          { label: "Noire 2", bg: "bg-black", text: "text-red-600", pocket: "≥85%", strike: "≥55%", spare: "≥95%", single: "100%", fb8: "≥92%" },
+                        ].map((row) => (
+                          <tr key={row.label}>
+                            <td className={`p-1.5 border ${row.bg} ${row.text} font-bold`}>{row.label}</td>
+                            <td className={`p-1.5 border ${row.bg} ${row.text}`}>{row.pocket}</td>
+                            <td className={`p-1.5 border ${row.bg} ${row.text}`}>{row.strike}</td>
+                            <td className={`p-1.5 border ${row.bg} ${row.text}`}>{row.spare}</td>
+                            <td className={`p-1.5 border ${row.bg} ${row.text}`}>{row.single}</td>
+                            <td className={`p-1.5 border ${row.bg} ${row.text}`}>{row.fb8}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Evolution chart - en dessous */}
               {playerGames.length >= 2 && (
                 <Card>
                   <CardHeader className="pb-2">
@@ -483,13 +527,13 @@ export function BowlingCumulativeStats({ categoryId, playerId: fixedPlayerId }: 
                         const clampedScore = Math.max(game.score, minBase);
                         const height = range > 0 ? ((clampedScore - minBase) / range) * 100 : 50;
                         
-                         const getBarColor = (score: number) => {
-                           if (score >= 240) return "bg-yellow-400";
-                           if (score >= 210) return "bg-green-600";
-                           if (score >= 180) return "bg-green-400";
-                           if (score >= 151) return "bg-orange-500";
-                           return "bg-red-500";
-                         };
+                        const getBarColor = (score: number) => {
+                          if (score >= 240) return "bg-yellow-400";
+                          if (score >= 210) return "bg-green-600";
+                          if (score >= 180) return "bg-green-400";
+                          if (score >= 151) return "bg-orange-500";
+                          return "bg-red-500";
+                        };
                         
                         return (
                           <div
@@ -508,8 +552,8 @@ export function BowlingCumulativeStats({ categoryId, playerId: fixedPlayerId }: 
                     <div className="mt-2 border-t pt-2 flex items-center justify-center gap-3 flex-wrap text-[9px] text-muted-foreground">
                       <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded bg-red-500" />&lt;150</div>
                       <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded bg-orange-500" />151-179</div>
-                       <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded bg-green-400" />180-209</div>
-                       <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded bg-green-600" />210-239</div>
+                      <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded bg-green-400" />180-209</div>
+                      <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded bg-green-600" />210-239</div>
                       <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded bg-yellow-400" />240+</div>
                     </div>
                     <p className="text-[10px] text-muted-foreground text-center mt-1">
@@ -518,51 +562,6 @@ export function BowlingCumulativeStats({ categoryId, playerId: fixedPlayerId }: 
                   </CardContent>
                 </Card>
               )}
-
-              {/* Référentiel de performance */}
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm flex items-center gap-2">
-                    <Target className="h-4 w-4" />
-                    Référentiel de performance
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="overflow-x-auto">
-                  <table className="w-full text-xs text-center border-collapse">
-                    <thead>
-                      <tr>
-                        <th className="p-2 border font-semibold text-muted-foreground">Niveau</th>
-                        <th className="p-2 border font-semibold text-muted-foreground">Poches</th>
-                        <th className="p-2 border font-semibold text-muted-foreground">Strikes</th>
-                        <th className="p-2 border font-semibold text-muted-foreground">Spares composés</th>
-                        <th className="p-2 border font-semibold text-muted-foreground">9/</th>
-                        <th className="p-2 border font-semibold text-muted-foreground">Boules ≥ 8</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {[
-                        { label: "Orange", bg: "bg-orange-700", text: "text-white", pocket: "<50%", strike: "<20%", spare: "<50%", single: "<70%", fb8: "<50%" },
-                        { label: "Verte 1", bg: "bg-green-700", text: "text-white", pocket: "50-60%", strike: "20-30%", spare: "50-60%", single: "70-75%", fb8: "50-65%" },
-                        { label: "Verte 2", bg: "bg-green-700", text: "text-white", pocket: "60-65%", strike: "30-35%", spare: "60-70%", single: "75-80%", fb8: "65-75%" },
-                        { label: "Verte 3", bg: "bg-green-800", text: "text-white", pocket: "65-70%", strike: "35-40%", spare: "70-80%", single: "80-85%", fb8: "75-85%" },
-                        { label: "Bleue 1", bg: "bg-blue-700", text: "text-white", pocket: "70-75%", strike: "40-45%", spare: "80-85%", single: "85-90%", fb8: "85-88%" },
-                        { label: "Bleue 2", bg: "bg-blue-800", text: "text-white", pocket: "75-80%", strike: "45-50%", spare: "85-90%", single: "90-95%", fb8: "85-88%" },
-                        { label: "Noire 1", bg: "bg-gray-900", text: "text-white", pocket: "80-85%", strike: "50-55%", spare: "90-95%", single: "95-99%", fb8: "88-92%" },
-                        { label: "Noire 2", bg: "bg-black", text: "text-red-600", pocket: "≥85%", strike: "≥55%", spare: "≥95%", single: "100%", fb8: "≥92%" },
-                      ].map((row) => (
-                        <tr key={row.label}>
-                          <td className={`p-2 border ${row.bg} ${row.text} font-bold`}>{row.label}</td>
-                          <td className={`p-2 border ${row.bg} ${row.text}`}>{row.pocket}</td>
-                          <td className={`p-2 border ${row.bg} ${row.text}`}>{row.strike}</td>
-                          <td className={`p-2 border ${row.bg} ${row.text}`}>{row.spare}</td>
-                          <td className={`p-2 border ${row.bg} ${row.text}`}>{row.single}</td>
-                          <td className={`p-2 border ${row.bg} ${row.text}`}>{row.fb8}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </CardContent>
-              </Card>
             </div>
           )}
         </TabsContent>
