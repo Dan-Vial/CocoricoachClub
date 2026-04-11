@@ -335,6 +335,8 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
         doc.text(`${clubName || ""} • ${categoryName || ""} • ${seasonName || ""}`, 14, 20);
         doc.text(`${selectedCount} matchs • ${format(new Date(), "dd/MM/yyyy")}`, pageW - 14, 20, { align: "right" });
       };
+      drawHeader("Stats compétition cumulées");
+      let y = 36;
 
       // Match context info
       const selectedMatches = allMatches.filter(m => activeMatchIds.includes(m.id));
