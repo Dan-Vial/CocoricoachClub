@@ -84,18 +84,18 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
       if (activeMatchIds.length === 0) return [];
       const { data: playerStats, error: statsError } = await supabase
         .from("player_match_stats")
-        .select(`*, players(id, name, first_name)`)
+        .select(`*, players(id, name, first_name, avatar_url, position)`)
         .in("match_id", activeMatchIds);
       if (statsError) throw statsError;
       if (!playerStats) return [];
 
       const aggregated: Record<string, CumulativeStats> = {};
       playerStats.forEach((stat) => {
-        const player = stat.players as { id: string; name: string; first_name?: string } | null;
+        const player = stat.players as { id: string; name: string; first_name?: string; avatar_url?: string; position?: string } | null;
         const playerId = stat.player_id;
         const playerName = player ? [player.first_name, player.name].filter(Boolean).join(" ") : "Athlète inconnu";
         if (!aggregated[playerId]) {
-          aggregated[playerId] = { playerId, playerName, matchesPlayed: 0, sportData: {} };
+          aggregated[playerId] = { playerId, playerName, matchesPlayed: 0, sportData: {}, avatarUrl: player?.avatar_url || undefined, position: player?.position || undefined };
         }
         const p = aggregated[playerId];
         p.matchesPlayed += 1;
