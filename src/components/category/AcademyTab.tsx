@@ -258,57 +258,98 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
                 </div>
               </div>
             </CardHeader>
-            <CardContent>
-              {!academicData || academicData.length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">Aucun suivi scolaire enregistré.</p>
-              ) : (
-                <div className="rounded-md border overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Joueur</TableHead>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Heures Absence</TableHead>
-                        <TableHead>Raison</TableHead>
-                        <TableHead>Note</TableHead>
-                        <TableHead>Matière</TableHead>
-                        <TableHead>Commentaires</TableHead>
-                        <TableHead className="w-20">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {academicData.map((entry) => (
-                        <TableRow key={entry.id}>
-                          <TableCell className="font-medium">{entry.players?.name}</TableCell>
-                          <TableCell>{format(new Date(entry.tracking_date), "dd MMM yyyy", { locale: fr })}</TableCell>
-                          <TableCell>{entry.school_absence_hours || 0}h</TableCell>
-                          <TableCell className="max-w-32 truncate">{entry.absence_reason || "-"}</TableCell>
-                          <TableCell>
-                            {entry.academic_grade 
-                              ? `${entry.academic_grade}/${(entry as any).grade_scale || "20"}`
-                              : ((entry as any).grade_scale === "letter" && entry.notes) 
-                                ? entry.notes.split(" - ")[0]
-                                : "-"
-                            }
-                          </TableCell>
-                          <TableCell>{entry.subject || "-"}</TableCell>
-                          <TableCell className="max-w-40 truncate">{entry.notes || "-"}</TableCell>
-                          <TableCell>
-                            <div className="flex gap-1">
-                              {(entry.academic_grade || (entry as any).grade_scale === "letter") && (
+            <CardContent className="space-y-6">
+              {/* Notes section */}
+              <div>
+                <h3 className="text-sm font-semibold mb-2">Notes</h3>
+                {(!academicData || academicData.filter(e => e.academic_grade || (e as any).grade_scale === "letter").length === 0) ? (
+                  <p className="text-center text-muted-foreground py-4 text-sm">Aucune note enregistrée.</p>
+                ) : (
+                  <div className="rounded-md border overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Joueur</TableHead>
+                          <TableHead>Date</TableHead>
+                          <TableHead>Note</TableHead>
+                          <TableHead>Matière</TableHead>
+                          <TableHead>Commentaires</TableHead>
+                          <TableHead className="w-20">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {academicData.filter(e => e.academic_grade || (e as any).grade_scale === "letter").map((entry) => (
+                          <TableRow key={entry.id}>
+                            <TableCell className="font-medium">{entry.players?.name}</TableCell>
+                            <TableCell>{format(new Date(entry.tracking_date), "dd MMM yyyy", { locale: fr })}</TableCell>
+                            <TableCell>
+                              {entry.academic_grade 
+                                ? `${entry.academic_grade}/${(entry as any).grade_scale || "20"}`
+                                : ((entry as any).grade_scale === "letter" && entry.notes) 
+                                  ? entry.notes.split(" - ")[0]
+                                  : "-"
+                              }
+                            </TableCell>
+                            <TableCell>{entry.subject || "-"}</TableCell>
+                            <TableCell className="max-w-40 truncate">{entry.notes || "-"}</TableCell>
+                            <TableCell>
+                              <div className="flex gap-1">
                                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEditEntry(entry)}>
                                   <Pencil className="h-3.5 w-3.5" />
                                 </Button>
-                              )}
+                                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => {
+                                  if (confirm("Supprimer cette note ?")) deleteAcademicEntry.mutate(entry.id);
+                                }}>
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </div>
+
+              {/* Absences section */}
+              <div>
+                <h3 className="text-sm font-semibold mb-2">Absences</h3>
+                {(!academicData || academicData.filter(e => e.school_absence_hours && e.school_absence_hours > 0 && !e.academic_grade).length === 0) ? (
+                  <p className="text-center text-muted-foreground py-4 text-sm">Aucune absence enregistrée.</p>
+                ) : (
+                  <div className="rounded-md border overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Joueur</TableHead>
+                          <TableHead>Date</TableHead>
+                          <TableHead>Heures</TableHead>
+                          <TableHead>Raison</TableHead>
+                          <TableHead className="w-20">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {academicData.filter(e => e.school_absence_hours && e.school_absence_hours > 0 && !e.academic_grade).map((entry) => (
+                          <TableRow key={entry.id}>
+                            <TableCell className="font-medium">{entry.players?.name}</TableCell>
+                            <TableCell>{format(new Date(entry.tracking_date), "dd MMM yyyy", { locale: fr })}</TableCell>
+                            <TableCell>{entry.school_absence_hours}h</TableCell>
+                            <TableCell className="max-w-40 truncate">{entry.absence_reason || "-"}</TableCell>
+                            <TableCell>
                               <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => {
-                                if (confirm("Supprimer cette entrée ?")) deleteAcademicEntry.mutate(entry.id);
+                                if (confirm("Supprimer cette absence ?")) deleteAcademicEntry.mutate(entry.id);
                               }}>
                                 <Trash2 className="h-3.5 w-3.5" />
                               </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </div>
                     </TableBody>
                   </Table>
                 </div>
