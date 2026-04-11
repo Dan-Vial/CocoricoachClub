@@ -407,6 +407,7 @@ export function ProtocolManager({ categoryId }: ProtocolManagerProps) {
   });
 
   const resetForm = () => {
+    setSelectedInjuryType("");
     setProtocolName("");
     setProtocolCategory("");
     setProtocolDescription("");
@@ -414,6 +415,19 @@ export function ProtocolManager({ categoryId }: ProtocolManagerProps) {
     setDurationMax(42);
     setPhases(DEFAULT_PHASES);
     setSelectedProtocol(null);
+  };
+
+  const handleInjuryTypeSelect = (injuryName: string) => {
+    setSelectedInjuryType(injuryName);
+    const injury = RUGBY_INJURY_TYPES.find(i => i.name === injuryName);
+    if (injury) {
+      setProtocolName(`Protocole - ${injury.name}`);
+      setProtocolCategory(injury.category);
+      setProtocolDescription(injury.description);
+      setDurationMin(injury.durationMin);
+      setDurationMax(injury.durationMax);
+      setPhases(getPhasesForInjuryCategory(injury.category));
+    }
   };
 
   const handleEdit = (protocol: any) => {
