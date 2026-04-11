@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
-import { GraduationCap, Award, Star, BookOpen, Clock, BarChart3, CalendarIcon, Plus } from "lucide-react";
+import { GraduationCap, Award, Star, BookOpen, Clock, BarChart3, CalendarIcon, Plus, Pencil, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { toast } from "sonner";
@@ -32,6 +32,7 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
   const queryClient = useQueryClient();
   const [academicDialogOpen, setAcademicDialogOpen] = useState(false);
   const [absenceDialogOpen, setAbsenceDialogOpen] = useState(false);
+  const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
   
   
   const [selectedPlayer, setSelectedPlayer] = useState("");
