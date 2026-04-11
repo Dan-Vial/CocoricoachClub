@@ -201,7 +201,68 @@ export function BowlingArsenalCatalogTab({ categoryId }: BowlingArsenalCatalogTa
     onError: (err: any) => toast.error(err.message || "Erreur lors de l'assignation"),
   });
 
-  const updateImageMutation = useMutation({
+  const removeArsenalBallMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("player_bowling_arsenal" as any).delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["bowling_arsenal_view", selectedViewPlayerId] });
+      queryClient.invalidateQueries({ queryKey: ["bowling_arsenal"] });
+      toast.success("Boule retirée de l'arsenal");
+    },
+    onError: () => toast.error("Erreur lors de la suppression"),
+  });
+
+  const updateArsenalBallMutation = useMutation({
+    mutationFn: async () => {
+      if (!editingArsenalItem) return;
+      const updateData: any = {
+        weight_lbs: editWeight ? parseInt(editWeight) : null,
+        current_surface: editCurrentSurface || null,
+        games_played: parseInt(editGamesPlayed) || 0,
+        custom_rg: editRg ? parseFloat(editRg) : null,
+        custom_differential: editDifferential ? parseFloat(editDifferential) : null,
+        custom_intermediate_diff: editIntermediateDiff ? parseFloat(editIntermediateDiff) : null,
+        purchase_date: editPurchaseDate || null,
+        drilling_layout: (editDrillingAngle || editPinPap || editValAngle)
+          ? `${editDrillingAngle || "?"}x${editPinPap || "?"}x${editValAngle || "?"}`
+          : null,
+      };
+      const { error } = await supabase
+        .from("player_bowling_arsenal" as any)
+        .update(updateData)
+        .eq("id", editingArsenalItem.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["bowling_arsenal_view", selectedViewPlayerId] });
+      queryClient.invalidateQueries({ queryKey: ["bowling_arsenal"] });
+      toast.success("Boule mise à jour");
+      setEditArsenalOpen(false);
+      setEditingArsenalItem(null);
+    },
+    onError: () => toast.error("Erreur lors de la mise à jour"),
+  });
+
+  const handleEditArsenalItem = (item: any) => {
+    setEditingArsenalItem(item);
+    setEditWeight(item.weight_lbs?.toString() || "");
+    setEditCurrentSurface(item.current_surface || "");
+    setEditGamesPlayed(item.games_played?.toString() || "0");
+    setEditRg(item.custom_rg?.toString() || "");
+    setEditDifferential(item.custom_differential?.toString() || "");
+    setEditIntermediateDiff(item.custom_intermediate_diff?.toString() || "");
+    setEditPurchaseDate(item.purchase_date || "");
+    const layout = item.drilling_layout || "";
+    const parts = layout.split("x");
+    setEditDrillingAngle(parts[0] && parts[0] !== "?" ? parts[0] : "");
+    setEditPinPap(parts[1] && parts[1] !== "?" ? parts[1] : "");
+    setEditValAngle(parts[2] && parts[2] !== "?" ? parts[2] : "");
+    setEditArsenalOpen(true);
+  };
+
+
     mutationFn: async ({ ballId, file }: { ballId: string; file: File }) => {
       const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
       const filePath = `balls/${ballId}.${ext}`;
