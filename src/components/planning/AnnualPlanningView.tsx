@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, Calendar, Settings2, ChevronLeft, ChevronRight } from "lucide-react";
 import { format, startOfYear, endOfYear, eachMonthOfInterval, startOfMonth, endOfMonth, differenceInDays, isWithinInterval, eachWeekOfInterval, startOfWeek, addYears, subYears } from "date-fns";
+import { YearCalendarGrid } from "./YearCalendarGrid";
 import { fr } from "date-fns/locale";
 import { AddCycleCategoryDialog } from "./AddCycleCategoryDialog";
 import { AddCycleDialog } from "./AddCycleDialog";
@@ -371,6 +372,23 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
               );
             })()}
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Full Year Calendar Grid */}
+      <Card className="bg-gradient-card shadow-md">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-semibold text-muted-foreground">
+            Calendrier {selectedYear.getFullYear()}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <YearCalendarGrid
+            year={selectedYear.getFullYear()}
+            cycles={cycles}
+            sessions={sessions}
+            matches={matches}
+          />
         </CardContent>
       </Card>
 
