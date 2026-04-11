@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Calendar, Settings2, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, Calendar, Settings2, ChevronLeft, ChevronRight, Check } from "lucide-react";
 import { format, startOfYear, endOfYear, eachMonthOfInterval, startOfMonth, endOfMonth, differenceInDays, isWithinInterval, eachWeekOfInterval, startOfWeek, addYears, subYears } from "date-fns";
 import { YearCalendarGrid } from "./YearCalendarGrid";
 import { fr } from "date-fns/locale";
@@ -14,6 +14,7 @@ import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { toast } from "sonner";
 
 interface AnnualPlanningViewProps {
   categoryId: string;
@@ -47,6 +48,7 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
   const [editingCycle, setEditingCycle] = useState<PeriodizationCycle | null>(null);
   const [prefilledStartDate, setPrefilledStartDate] = useState<Date | undefined>();
   const [prefilledEndDate, setPrefilledEndDate] = useState<Date | undefined>();
+  const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null);
 
   const yearStart = startOfYear(selectedYear);
   const yearEnd = endOfYear(selectedYear);
@@ -170,6 +172,38 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
     setAddCyclePreselectedCategory(periodizationCategoryId);
     setAddCycleOpen(true);
   };
+
+  const quickCreateCycle = useMutation({
+    mutationFn: async ({ catId, start, end }: { catId: string; start: Date; end: Date }) => {
+      const cat = categories.find(c => c.id === catId);
+      if (!cat) throw new Error("Catégorie introuvable");
+      const { error } = await supabase.from("periodization_cycles").insert({
+        periodization_category_id: catId,
+        category_id: categoryId,
+        name: cat.name,
+        color: cat.color,
+        start_date: format(start, "yyyy-MM-dd"),
+        end_date: format(end, "yyyy-MM-dd"),
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["periodization_cycles", categoryId] });
+      toast.success("Cycle créé");
+    },
+    onError: () => toast.error("Erreur lors de la création"),
+  });
+
+  const handleDateRangeSelect = useCallback((start: Date, end: Date) => {
+    if (activeCategoryId) {
+      quickCreateCycle.mutate({ catId: activeCategoryId, start, end });
+    } else {
+      setPrefilledStartDate(start);
+      setPrefilledEndDate(end);
+      setAddCyclePreselectedCategory(null);
+      setAddCycleOpen(true);
+    }
+  }, [activeCategoryId, quickCreateCycle]);
 
   return (
     <div className="space-y-4">
@@ -387,18 +421,44 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
             Calendrier {selectedYear.getFullYear()}
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-3">
+          {/* Quick-assign toolbar */}
+          {!isViewer && categories.length > 0 && (
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs text-muted-foreground mr-1">Assignation rapide :</span>
+              {categories.map((cat) => (
+                <button
+                  key={cat.id}
+                  onClick={() => setActiveCategoryId(activeCategoryId === cat.id ? null : cat.id)}
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all border-2",
+                    activeCategoryId === cat.id
+                      ? "text-white shadow-md scale-105"
+                      : "text-foreground bg-card hover:brightness-95"
+                  )}
+                  style={{
+                    borderColor: cat.color,
+                    backgroundColor: activeCategoryId === cat.id ? cat.color : undefined,
+                  }}
+                >
+                  {activeCategoryId === cat.id && <Check className="h-3 w-3" />}
+                  {cat.name}
+                </button>
+              ))}
+              {activeCategoryId && (
+                <span className="text-[10px] text-muted-foreground italic ml-2">
+                  Sélectionnez une période dans le calendrier
+                </span>
+              )}
+            </div>
+          )}
           <YearCalendarGrid
             year={selectedYear.getFullYear()}
             cycles={cycles}
             sessions={sessions}
             matches={matches}
-            onDateRangeSelect={(start, end) => {
-              setPrefilledStartDate(start);
-              setPrefilledEndDate(end);
-              setAddCyclePreselectedCategory(null);
-              setAddCycleOpen(true);
-            }}
+            onDateRangeSelect={handleDateRangeSelect}
+            activeCategoryColor={categories.find(c => c.id === activeCategoryId)?.color}
           />
         </CardContent>
       </Card>
