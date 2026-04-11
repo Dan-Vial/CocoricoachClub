@@ -209,6 +209,11 @@ export function MatchesTab({ categoryId, sportType }: MatchesTabProps) {
             <BowlingTrainingStats categoryId={categoryId} />
           ) : isTennis ? (
             <TennisTrainingStats categoryId={categoryId} />
+          ) : isRugby ? (
+            <div className="space-y-6">
+              <PrecisionFieldTracker categoryId={categoryId} />
+              <PrecisionTrainingStats categoryId={categoryId} />
+            </div>
           ) : (
             <PrecisionTrainingStats categoryId={categoryId} />
           )}
