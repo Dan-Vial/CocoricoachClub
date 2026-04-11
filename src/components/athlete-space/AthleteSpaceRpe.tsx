@@ -20,6 +20,8 @@ import { getDisplayNotes } from "@/lib/utils/sessionNotes";
 import { SPARE_EXERCISE_TYPES } from "@/lib/constants/bowlingBallBrands";
 import { GroupedExerciseList } from "@/components/category/GroupedExerciseList";
 import { PrecisionExerciseSelector } from "@/components/precision/PrecisionExerciseSelector";
+import { AthletePrecisionFieldInput } from "./AthletePrecisionFieldInput";
+import { isRugbyType } from "@/lib/constants/sportTypes";
 
 interface Props {
   playerId: string;
