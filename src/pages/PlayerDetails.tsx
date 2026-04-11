@@ -430,8 +430,7 @@ function PlayerDetailsContent() {
           </div>
         )}
 
-        {/* Performance References Section */}
-        <div className="mb-6">
+        <div className="mb-3">
           <PlayerReferenceCard 
             categoryId={player.category_id}
             playerId={playerId!}
