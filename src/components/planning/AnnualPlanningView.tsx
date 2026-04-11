@@ -189,9 +189,16 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
     const startOffset = differenceInDays(effectiveStart, yearStart);
     const duration = differenceInDays(effectiveEnd, effectiveStart) + 1;
     
+    const widthPercent = (duration / totalDays) * 100;
+    // Minimum visible width: ~1.8% ≈ ~7 days visually for very short events
+    const minWidthPercent = 1.8;
+    const isNarrow = widthPercent < minWidthPercent;
+    
     return {
       left: `${(startOffset / totalDays) * 100}%`,
-      width: `${(duration / totalDays) * 100}%`,
+      width: `${Math.max(widthPercent, minWidthPercent)}%`,
+      isNarrow,
+      duration,
     };
   };
 
@@ -407,21 +414,30 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
                               <button
                                 className={cn(
                                   "absolute top-1.5 h-[calc(100%-12px)] rounded-md shadow-sm",
-                                  "flex flex-col items-center justify-center px-2 overflow-hidden",
+                                  "flex flex-col items-center justify-center overflow-hidden",
                                   "hover:shadow-md hover:brightness-110 transition-all cursor-pointer",
-                                  "text-white"
+                                  "text-white",
+                                  pos.isNarrow ? "px-0.5" : "px-2"
                                 )}
                                 style={{
                                   left: pos.left,
                                   width: pos.width,
                                   backgroundColor: cycle.color,
-                                  minWidth: "20px",
+                                  zIndex: pos.isNarrow ? 5 : 1,
                                 }}
                                 onClick={() => !isViewer && setEditingCycle(cycle)}
                               >
-                                <span className="truncate text-[11px] font-semibold tracking-wide">{cycle.name}</span>
-                                {cycle.objective && (
-                                  <span className="truncate text-[9px] font-normal opacity-80 w-full text-center">{cycle.objective}</span>
+                                {pos.isNarrow ? (
+                                  <span className="truncate text-[9px] font-bold tracking-tight leading-tight text-center w-full">
+                                    {pos.duration}j
+                                  </span>
+                                ) : (
+                                  <>
+                                    <span className="truncate text-[11px] font-semibold tracking-wide">{cycle.name}</span>
+                                    {cycle.objective && (
+                                      <span className="truncate text-[9px] font-normal opacity-80 w-full text-center">{cycle.objective}</span>
+                                    )}
+                                  </>
                                 )}
                               </button>
                             </TooltipTrigger>
