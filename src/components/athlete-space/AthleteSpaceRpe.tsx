@@ -690,8 +690,17 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
                       </div>
                     )}
 
-                    {/* Generic precision (all sports except bowling) */}
-                    {isGenericPrecision && (
+                    {/* Rugby precision with interactive field map */}
+                    {isRugbyPrecision && selectedSession && (
+                      <AthletePrecisionFieldInput
+                        playerId={playerId}
+                        categoryId={categoryId}
+                        sessionId={selectedSession}
+                      />
+                    )}
+
+                    {/* Generic precision (non-rugby sports) */}
+                    {isGenericPrecision && !isRugbyPrecision && (
                       <div className="space-y-3 rounded-lg border border-accent/30 p-3">
                         <PrecisionExerciseSelector
                           categoryId={categoryId}
@@ -738,6 +747,8 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
                             Taux de réussite : {Math.round((successesValue / attemptsValue) * 10000) / 100}%
                           </p>
                         )}
+                      </div>
+                    )
                       </div>
                     )}
 
