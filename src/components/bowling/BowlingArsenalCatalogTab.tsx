@@ -377,7 +377,7 @@ export function BowlingArsenalCatalogTab({ categoryId }: BowlingArsenalCatalogTa
           <Plus className="h-4 w-4" />
           Ajouter une boule
         </Button>
-        <Button onClick={() => setAssignOpen(true)} variant="outline" className="gap-2">
+        <Button onClick={() => setAssignOpen(true)} className="h-10 px-5 py-2 gap-2 bg-destructive text-primary border border-border hover:border-accent">
           <Users className="h-4 w-4" />
           Créer un arsenal pour un joueur
         </Button>
