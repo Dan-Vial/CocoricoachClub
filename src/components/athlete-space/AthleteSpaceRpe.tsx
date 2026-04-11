@@ -282,6 +282,7 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
   );
   const isBowlingPrecision = selectedSessionData?.training_type === "bowling_spare";
   const isGenericPrecision = selectedSessionData?.training_type === "precision";
+  const isRugbyPrecision = isGenericPrecision && sportType && isRugbyType(sportType);
   const isPrecisionSession = isBowlingPrecision || isGenericPrecision;
 
   // State for generic precision exercises
