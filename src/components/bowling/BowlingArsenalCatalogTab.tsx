@@ -319,10 +319,46 @@ export function BowlingArsenalCatalogTab({ categoryId }: BowlingArsenalCatalogTa
 
   const arsenalFiltered = useMemo(() => {
     if (!balls) return [];
-    if (!arsenalSearch) return balls;
-    const q = arsenalSearch.toLowerCase();
-    return balls.filter((b: any) => b.brand.toLowerCase().includes(q) || b.model.toLowerCase().includes(q));
-  }, [balls, arsenalSearch]);
+    return balls.filter((b: any) => {
+      if (arsenalBrandFilter !== "all" && b.brand !== arsenalBrandFilter) return false;
+      if (arsenalSearch) {
+        const q = arsenalSearch.toLowerCase();
+        return b.brand.toLowerCase().includes(q) || b.model.toLowerCase().includes(q);
+      }
+      return true;
+    });
+  }, [balls, arsenalSearch, arsenalBrandFilter]);
+
+  // Fetch selected player's arsenal
+  const { data: playerArsenal, isLoading: isLoadingArsenal } = useQuery({
+    queryKey: ["bowling_arsenal_view", selectedViewPlayerId],
+    enabled: !!selectedViewPlayerId,
+    queryFn: async () => {
+      const { data: catalogData } = await supabase
+        .from("bowling_ball_catalog" as any)
+        .select("*");
+      const catalogBalls = (catalogData as any[]) || [];
+      const catalogMap = new Map(catalogBalls.map((b: any) => [b.id, b]));
+      const imageMap = await resolveBallCatalogImages(catalogBalls);
+
+      const { data: arsenalData, error } = await supabase
+        .from("player_bowling_arsenal" as any)
+        .select("*")
+        .eq("player_id", selectedViewPlayerId)
+        .eq("category_id", categoryId)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+
+      return (arsenalData as any[]).map((item: any) => {
+        const cat = item.ball_catalog_id ? catalogMap.get(item.ball_catalog_id) : null;
+        const resolvedImageUrl = item.ball_catalog_id ? imageMap.get(item.ball_catalog_id) || null : null;
+        return {
+          ...item,
+          catalogBall: cat ? { ...cat, image_url: cat.image_url || resolvedImageUrl } : null,
+        };
+      });
+    },
+  });
 
   return (
     <div className="space-y-4">
