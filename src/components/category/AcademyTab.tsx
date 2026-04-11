@@ -264,6 +264,7 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
                         <TableHead>Note</TableHead>
                         <TableHead>Matière</TableHead>
                         <TableHead>Commentaires</TableHead>
+                        <TableHead className="w-20">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -283,6 +284,20 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
                           </TableCell>
                           <TableCell>{entry.subject || "-"}</TableCell>
                           <TableCell className="max-w-40 truncate">{entry.notes || "-"}</TableCell>
+                          <TableCell>
+                            <div className="flex gap-1">
+                              {(entry.academic_grade || (entry as any).grade_scale === "letter") && (
+                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEditEntry(entry)}>
+                                  <Pencil className="h-3.5 w-3.5" />
+                                </Button>
+                              )}
+                              <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => {
+                                if (confirm("Supprimer cette entrée ?")) deleteAcademicEntry.mutate(entry.id);
+                              }}>
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
