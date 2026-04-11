@@ -121,10 +121,7 @@ export function AdminTab({ categoryId }: AdminTabProps) {
       </TabsContent>
 
       <TabsContent value="documents">
-        <div className="space-y-8">
-          <DocumentsSection categoryId={categoryId} />
-          <MedicalRecordsTab categoryId={categoryId} />
-        </div>
+        <DocumentsSection categoryId={categoryId} />
       </TabsContent>
 
       <TabsContent value="reports">
