@@ -71,7 +71,7 @@ export function HealthTab({ categoryId }: HealthTabProps) {
             )}
             
             {/* Protocole Commotion - Uniquement pour Rugby */}
-            {!isViewer && isRugby && (
+            {!isViewer && hasConcussionProtocol && (
               <ColoredSubTabsTrigger 
                 value="concussion" 
                 colorKey="sante"
@@ -126,7 +126,7 @@ export function HealthTab({ categoryId }: HealthTabProps) {
           </TabsContent>
         )}
 
-        {!isViewer && isRugby && (
+        {!isViewer && hasConcussionProtocol && (
           <TabsContent value="concussion">
             <ConcussionProtocolTab categoryId={categoryId} />
           </TabsContent>
