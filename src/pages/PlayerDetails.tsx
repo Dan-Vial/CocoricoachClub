@@ -498,13 +498,7 @@ function PlayerDetailsContent() {
                 categoryId={player.category_id} 
                 playerName={fullName}
               />
-              <PlayerAwcrTab playerId={playerId!} categoryId={player.category_id} />
-              <PlayerReportSection 
-                playerId={playerId!} 
-                categoryId={player.category_id} 
-                playerName={fullName}
-                sportType={sportType}
-              />
+              <PlayerAwcrTab playerId={playerId!} categoryId={player.category_id} readOnly={true} />
             </div>
           </TabsContent>
 
@@ -535,35 +529,45 @@ function PlayerDetailsContent() {
           </TabsContent>
 
           <TabsContent value="nutrition">
-            <PlayerNutritionTab playerId={playerId!} categoryId={player.category_id} />
+            <PlayerNutritionTab playerId={playerId!} categoryId={player.category_id} readOnly={true} />
           </TabsContent>
 
           <TabsContent value="academy">
-            <PlayerAcademyTab playerId={playerId!} categoryId={player.category_id} playerName={fullName} />
+            <PlayerAcademyTab playerId={playerId!} categoryId={player.category_id} playerName={fullName} readOnly={true} />
           </TabsContent>
 
           <TabsContent value="injuries">
-            <PlayerInjuriesTab playerId={playerId!} categoryId={player.category_id} playerName={fullName} />
+            <PlayerInjuriesTab playerId={playerId!} categoryId={player.category_id} playerName={fullName} readOnly={true} />
           </TabsContent>
 
           {(isBowling || isSurf || isSki || isPadel) && (
             <TabsContent value="equipment">
               {isBowling && (
-                <PlayerBowlingArsenal playerId={playerId!} categoryId={player.category_id} isViewer={isViewer} />
+                <PlayerBowlingArsenal playerId={playerId!} categoryId={player.category_id} isViewer={true} />
               )}
               {isSurf && (
-                <PlayerSurfEquipment playerId={playerId!} categoryId={player.category_id} isViewer={isViewer} />
+                <PlayerSurfEquipment playerId={playerId!} categoryId={player.category_id} isViewer={true} />
               )}
               {isSki && (
-                <PlayerSkiEquipment playerId={playerId!} categoryId={player.category_id} isViewer={isViewer} />
+                <PlayerSkiEquipment playerId={playerId!} categoryId={player.category_id} isViewer={true} />
               )}
               {isPadel && (
-                <PlayerPadelEquipment playerId={playerId!} categoryId={player.category_id} isViewer={isViewer} />
+                <PlayerPadelEquipment playerId={playerId!} categoryId={player.category_id} isViewer={true} />
               )}
             </TabsContent>
           )}
 
         </Tabs>
+
+        {/* Individual Report - always visible at the bottom */}
+        <div className="mt-8">
+          <PlayerReportSection 
+            playerId={playerId!} 
+            categoryId={player.category_id} 
+            playerName={fullName}
+            sportType={sportType}
+          />
+        </div>
 
         {!isViewer && (
           <TransferPlayerDialog

@@ -20,6 +20,7 @@ import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 interface PlayerNutritionTabProps {
   playerId: string;
   categoryId: string;
+  readOnly?: boolean;
 }
 
 const mealTypeLabels: Record<string, string> = {
@@ -38,8 +39,9 @@ const mealTypeIcons: Record<string, React.ReactNode> = {
   hydration: <Droplets className="h-4 w-4" />,
 };
 
-export function PlayerNutritionTab({ playerId, categoryId }: PlayerNutritionTabProps) {
-  const { isViewer } = useViewerModeContext();
+export function PlayerNutritionTab({ playerId, categoryId, readOnly = false }: PlayerNutritionTabProps) {
+  const { isViewer: contextViewer } = useViewerModeContext();
+  const isViewer = contextViewer || readOnly;
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(format(new Date(), "yyyy-MM-dd"));
