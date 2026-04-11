@@ -60,14 +60,6 @@ export function ProgrammationTab({ categoryId }: ProgrammationTabProps) {
             <span className="sm:hidden">Obj</span>
           </ColoredSubTabsTrigger>
           <ColoredSubTabsTrigger 
-            value="periodization" 
-            colorKey="programmation"
-            icon={<Timer className="h-4 w-4" />}
-          >
-            <span className="hidden sm:inline">Périodisation</span>
-            <span className="sm:hidden">Période</span>
-          </ColoredSubTabsTrigger>
-          <ColoredSubTabsTrigger 
             value="tests" 
             colorKey="programmation"
             icon={<ClipboardCheck className="h-4 w-4" />}
@@ -97,9 +89,6 @@ export function ProgrammationTab({ categoryId }: ProgrammationTabProps) {
         <LoadObjectivesSection categoryId={categoryId} />
       </TabsContent>
 
-      <TabsContent value="periodization">
-        <PeriodizationTab categoryId={categoryId} />
-      </TabsContent>
 
       <TabsContent value="tests">
         <TestsTab categoryId={categoryId} sportType={sportType} />
