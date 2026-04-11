@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, GraduationCap, Users, Target, Trash2, Award, Star, BookOpen, Clock } from "lucide-react";
+import { Plus, GraduationCap, Target, Award, Star, BookOpen, Clock } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { toast } from "sonner";
@@ -177,16 +177,6 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
     setAcademicObj("");
   };
 
-  const getRoleBadgeColor = (role: string) => {
-    const colors: Record<string, string> = {
-      medecin: "bg-red-500",
-      kine: "bg-blue-500",
-      preparateur: "bg-green-500",
-      tuteur: "bg-purple-500",
-      coach: "bg-orange-500",
-    };
-    return colors[role] || "bg-gray-500";
-  };
 
   return (
     <div className="space-y-6">
