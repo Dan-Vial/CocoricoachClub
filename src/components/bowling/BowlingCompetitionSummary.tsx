@@ -119,7 +119,7 @@ function StatsGrid({ stats, compact = false }: { stats: DetailedStats; compact?:
   return (
     <div className="grid grid-cols-4 gap-2 text-center">
       {items.map(item => (
-        <div key={item.label} className={`p-2 rounded-lg ${item.bgClass ? `${item.bgClass} text-white` : "border"}`}>
+        <div key={item.label} className={`p-2 rounded-lg ${item.bgClass ? `${item.bgClass} ${getTextClass(item)}` : "border"}`}>
           <p className="text-lg font-bold">{item.value}</p>
           <p className={`text-[10px] ${item.bgClass ? "opacity-80" : "text-muted-foreground"}`}>{item.label}</p>
         </div>
