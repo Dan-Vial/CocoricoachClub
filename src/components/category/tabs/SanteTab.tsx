@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
-import { Heart, Smile, Apple, Activity } from "lucide-react";
+import { Heart, Smile, Apple } from "lucide-react";
 import { HealthTab } from "@/components/health/HealthTab";
 import { WellnessTab } from "@/components/category/WellnessTab";
 import { NutritionTab } from "@/components/category/NutritionTab";
