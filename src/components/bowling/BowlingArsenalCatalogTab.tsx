@@ -882,6 +882,100 @@ export function BowlingArsenalCatalogTab({ categoryId }: BowlingArsenalCatalogTa
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* ===== EDIT ARSENAL ITEM DIALOG ===== */}
+      <Dialog open={editArsenalOpen} onOpenChange={(open) => { if (!open) { setEditArsenalOpen(false); setEditingArsenalItem(null); } }}>
+        <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Modifier la boule</DialogTitle>
+          </DialogHeader>
+          {editingArsenalItem && (
+            <div className="space-y-4">
+              {/* Ball name display */}
+              <div className="p-3 border rounded-lg bg-accent/10">
+                <div className="flex items-center gap-3">
+                  <div className="h-12 w-12 rounded-full overflow-hidden bg-muted flex-shrink-0 flex items-center justify-center border">
+                    {editingArsenalItem.catalogBall?.image_url ? (
+                      <img src={editingArsenalItem.catalogBall.image_url} alt="" className="h-full w-full object-cover" />
+                    ) : (
+                      <CircleDot className="h-6 w-6 text-muted-foreground" />
+                    )}
+                  </div>
+                  <p className="font-semibold">
+                    {editingArsenalItem.catalogBall
+                      ? `${editingArsenalItem.catalogBall.brand} ${editingArsenalItem.catalogBall.model}`
+                      : `${editingArsenalItem.custom_ball_brand || ""} ${editingArsenalItem.custom_ball_name || "Custom"}`.trim()}
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs">Poids</Label>
+                  <Select value={editWeight} onValueChange={setEditWeight}>
+                    <SelectTrigger><SelectValue placeholder="lbs" /></SelectTrigger>
+                    <SelectContent>
+                      {BALL_WEIGHTS.map(w => (
+                        <SelectItem key={w} value={w.toString()}>{w} lbs</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-xs">Surface actuelle</Label>
+                  <Input value={editCurrentSurface} onChange={e => setEditCurrentSurface(e.target.value)} placeholder="1500 Grit..." />
+                </div>
+              </div>
+
+              <div>
+                <Label className="text-xs">Layout de perçage</Label>
+                <div className="flex items-center gap-1.5 mt-1">
+                  <Input value={editDrillingAngle} onChange={e => setEditDrillingAngle(e.target.value)} placeholder="50" className="w-16 text-center text-sm" />
+                  <span className="text-xs font-medium text-muted-foreground">×</span>
+                  <Input value={editPinPap} onChange={e => setEditPinPap(e.target.value)} placeholder={'4"½'} className="w-16 text-center text-sm" />
+                  <span className="text-xs font-medium text-muted-foreground">×</span>
+                  <Input value={editValAngle} onChange={e => setEditValAngle(e.target.value)} placeholder="40" className="w-16 text-center text-sm" />
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-1">Angle perçage × Pin-PAP × Angle VAL</p>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <Label className="text-xs">RG</Label>
+                  <Input type="number" step="0.001" value={editRg} onChange={e => setEditRg(e.target.value)} placeholder="2.540" />
+                </div>
+                <div>
+                  <Label className="text-xs">Différentiel</Label>
+                  <Input type="number" step="0.001" value={editDifferential} onChange={e => setEditDifferential(e.target.value)} placeholder="0.050" />
+                </div>
+                <div>
+                  <Label className="text-xs">Diff. Int.</Label>
+                  <Input type="number" step="0.001" value={editIntermediateDiff} onChange={e => setEditIntermediateDiff(e.target.value)} placeholder="0.012" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs">Date d'achat</Label>
+                  <Input type="date" value={editPurchaseDate} onChange={e => setEditPurchaseDate(e.target.value)} />
+                </div>
+                <div>
+                  <Label className="text-xs">Parties jouées</Label>
+                  <Input type="number" value={editGamesPlayed} onChange={e => setEditGamesPlayed(e.target.value)} min="0" />
+                </div>
+              </div>
+
+              <Button
+                className="w-full"
+                onClick={() => updateArsenalBallMutation.mutate()}
+                disabled={updateArsenalBallMutation.isPending}
+              >
+                {updateArsenalBallMutation.isPending ? "Mise à jour..." : "Enregistrer les modifications"}
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
