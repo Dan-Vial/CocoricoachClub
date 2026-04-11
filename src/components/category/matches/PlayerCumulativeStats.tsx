@@ -717,8 +717,8 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
                   })}
                 </Tabs>
                 {/* Kicking stats for rugby */}
-                {isRugby && kickingByPlayer[player.playerId] && (() => {
-                  const k = kickingByPlayer[player.playerId];
+                {isRugby && kickingByPlayerFinal[player.playerId] && (() => {
+                  const k = kickingByPlayerFinal[player.playerId];
                   const rate = k.total > 0 ? Math.round((k.success / k.total) * 100) : 0;
                   const penRate = k.penalty.total > 0 ? Math.round((k.penalty.success / k.penalty.total) * 100) : 0;
                   const convRate = k.conversion.total > 0 ? Math.round((k.conversion.success / k.conversion.total) * 100) : 0;
@@ -836,7 +836,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
       </Card>
 
       {/* Kicking ranking table for rugby */}
-      {isRugby && Object.keys(kickingByPlayer).length > 0 && (
+      {isRugby && Object.keys(kickingByPlayerFinal).length > 0 && (
         <Card className="bg-gradient-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -857,7 +857,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {Object.entries(kickingByPlayer)
+                  {Object.entries(kickingByPlayerFinal)
                     .map(([playerId, k]) => {
                       const playerInfo = stats?.find(s => s.playerId === playerId);
                       return { playerId, name: playerInfo?.playerName || "Inconnu", k };
