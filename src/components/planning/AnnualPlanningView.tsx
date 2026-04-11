@@ -79,19 +79,38 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
     },
   });
 
-  // Auto-seed default categories if none exist
+  // Auto-seed default categories if they don't exist
   const seededRef = useRef(false);
   useEffect(() => {
-    if (seededRef.current || categories.length > 0 || isViewer) return;
+    if (seededRef.current || isViewer) return;
     seededRef.current = true;
+    
     const seedDefaults = async () => {
-      const defaults = [
-        { category_id: categoryId, name: "Compétitions", color: "#d4a017", sort_order: 100 },
-        { category_id: categoryId, name: "Stages France", color: "#1e3a5f", sort_order: 101 },
+      const defaultCategories = [
+        { name: "Compétitions", color: "#d4a017", sort_order: 100 },
+        { name: "Stages France", color: "#1e3a5f", sort_order: 101 },
       ];
-      await supabase.from("periodization_categories").insert(defaults);
-      queryClient.invalidateQueries({ queryKey: ["periodization_categories", categoryId] });
+      
+      for (const defaultCat of defaultCategories) {
+        const exists = categories.some(cat => cat.name === defaultCat.name);
+        if (!exists) {
+          await supabase.from("periodization_categories").insert({
+            category_id: categoryId,
+            ...defaultCat
+          });
+        }
+      }
+      
+      // Refresh if any were added
+      const needsRefresh = defaultCategories.some(defaultCat => 
+        !categories.some(cat => cat.name === defaultCat.name)
+      );
+      
+      if (needsRefresh) {
+        queryClient.invalidateQueries({ queryKey: ["periodization_categories", categoryId] });
+      }
     };
+    
     seedDefaults();
   }, [categories, categoryId, isViewer, queryClient]);
 
