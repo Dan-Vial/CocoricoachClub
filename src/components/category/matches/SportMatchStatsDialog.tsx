@@ -21,6 +21,7 @@ import { Switch } from "@/components/ui/switch";
 import { useStatPreferences } from "@/hooks/use-stat-preferences";
 import { MatchGpsImport } from "./MatchGpsImport";
 import { PlayerStatsGrid } from "./PlayerStatsGrid";
+import { MatchKickingFieldDialog } from "./MatchKickingFieldDialog";
 
 // Convert seconds to minutes display format (e.g., 185 => "3'05")
 function formatSecondsToMinutes(totalSeconds: number): string {
@@ -74,6 +75,7 @@ export function SportMatchStatsDialog({
   const [averagePlaySequenceText, setAveragePlaySequenceText] = useState<string>("");
   const [showGpsImport, setShowGpsImport] = useState(false);
   const [activeCategoryIndex, setActiveCategoryIndex] = useState(0);
+  const [kickingFieldPlayer, setKickingFieldPlayer] = useState<{ id: string; name: string } | null>(null);
   const queryClient = useQueryClient();
 
   const fieldConfig = getSportFieldConfig(sportType);
@@ -579,6 +581,8 @@ export function SportMatchStatsDialog({
               stats={activeCategoryStats}
               onUpdateStat={updateStat}
               supportsGoalkeeper={supportsGoalkeeper}
+              isRugby={isRugbyType(sportType)}
+              onOpenKickingField={(playerId, playerName) => setKickingFieldPlayer({ id: playerId, name: playerName })}
             />
           </div>
         </ScrollArea>
@@ -627,6 +631,31 @@ export function SportMatchStatsDialog({
               name: p.playerName,
               position: p.position,
             }))}
+          />
+        )}
+
+        {/* Kicking Field Dialog for Rugby */}
+        {isRugbyType(sportType) && kickingFieldPlayer && (
+          <MatchKickingFieldDialog
+            open={!!kickingFieldPlayer}
+            onOpenChange={(open) => { if (!open) setKickingFieldPlayer(null); }}
+            playerName={kickingFieldPlayer.name}
+            playerId={kickingFieldPlayer.id}
+            onComplete={(kickStats) => {
+              const playerId = kickingFieldPlayer.id;
+              // Update all kicking stats for this player
+              updateStat(playerId, "conversions", kickStats.conversions);
+              updateStat(playerId, "conversionAttempts", kickStats.conversionAttempts);
+              updateStat(playerId, "penaltiesScored", kickStats.penaltiesScored);
+              updateStat(playerId, "penaltyAttempts", kickStats.penaltyAttempts);
+              updateStat(playerId, "dropGoals", kickStats.dropGoals);
+              updateStat(playerId, "dropAttempts", kickStats.dropAttempts);
+              // Points = tries * 5 + kicking points
+              const playerData = statsData.find(p => p.playerId === playerId);
+              const triesPoints = (Number(playerData?.tries) || 0) * 5;
+              updateStat(playerId, "points", triesPoints + kickStats.points);
+              setKickingFieldPlayer(null);
+            }}
           />
         )}
       </DialogContent>
