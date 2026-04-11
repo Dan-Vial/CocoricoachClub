@@ -9,6 +9,7 @@ import { BowlingCumulativeStats } from "@/components/bowling/BowlingCumulativeSt
 import { BowlingTrainingStats } from "@/components/bowling/BowlingTrainingStats";
 import { TennisTrainingStats } from "@/components/tennis/TennisTrainingStats";
 import { PrecisionTrainingStats } from "@/components/training/PrecisionTrainingStats";
+import { PrecisionFieldTracker } from "@/components/rugby/PrecisionFieldTracker";
 import { KickingTracker } from "@/components/rugby/KickingTracker";
 import { CategoryPhotosTab } from "./photos/CategoryPhotosTab";
 import { isFuture, isPast, format } from "date-fns";
@@ -208,6 +209,11 @@ export function MatchesTab({ categoryId, sportType }: MatchesTabProps) {
             <BowlingTrainingStats categoryId={categoryId} />
           ) : isTennis ? (
             <TennisTrainingStats categoryId={categoryId} />
+          ) : isRugby ? (
+            <div className="space-y-6">
+              <PrecisionFieldTracker categoryId={categoryId} />
+              <PrecisionTrainingStats categoryId={categoryId} />
+            </div>
           ) : (
             <PrecisionTrainingStats categoryId={categoryId} />
           )}

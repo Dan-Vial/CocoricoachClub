@@ -6974,6 +6974,8 @@ export type Database = {
           success_rate: number | null
           successes: number
           training_session_id: string | null
+          zone_x: number | null
+          zone_y: number | null
         }
         Insert: {
           attempts?: number
@@ -6989,6 +6991,8 @@ export type Database = {
           success_rate?: number | null
           successes?: number
           training_session_id?: string | null
+          zone_x?: number | null
+          zone_y?: number | null
         }
         Update: {
           attempts?: number
@@ -7004,6 +7008,8 @@ export type Database = {
           success_rate?: number | null
           successes?: number
           training_session_id?: string | null
+          zone_x?: number | null
+          zone_y?: number | null
         }
         Relationships: [
           {
