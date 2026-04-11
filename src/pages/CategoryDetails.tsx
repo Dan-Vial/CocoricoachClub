@@ -471,7 +471,7 @@ function CategoryDetailsContent() {
 
           {isBowling && (
             <TabsContent value="arsenal" className="space-y-4">
-              <BowlingArsenalCatalogTab />
+              <BowlingArsenalCatalogTab categoryId={categoryId!} />
             </TabsContent>
           )}
 
