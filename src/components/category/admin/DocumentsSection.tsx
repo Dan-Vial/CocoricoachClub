@@ -484,12 +484,15 @@ export function DocumentsSection({ categoryId }: DocumentsSectionProps) {
                   </SelectContent>
                 </Select>
                 {formData.document_type === "custom" && (
-                  <Input
-                    className="mt-2"
-                    value={customDocumentType}
-                    onChange={(e) => setCustomDocumentType(e.target.value)}
-                    placeholder="Nom du type de document personnalisé"
-                  />
+                  <div className="mt-2">
+                    <Label className="text-xs">Nom du type personnalisé *</Label>
+                    <Input
+                      value={customDocumentType}
+                      onChange={(e) => setCustomDocumentType(e.target.value)}
+                      placeholder="Ex: Bilan annuel, Fiche technique..."
+                      autoFocus
+                    />
+                  </div>
                 )}
               </div>
               <div>
