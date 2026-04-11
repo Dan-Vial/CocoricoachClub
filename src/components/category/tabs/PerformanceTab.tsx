@@ -1,8 +1,7 @@
 import { Tabs, TabsContent } from "@/components/ui/tabs";
-import { BarChart3, Dumbbell, History, Zap, Lock, Brain, Weight } from "lucide-react";
+import { BarChart3, Dumbbell, Zap, Lock, Brain, Weight } from "lucide-react";
 import { AnalyticsTab } from "@/components/analytics/AnalyticsTab";
 import { PhysicalPreparationTab } from "@/components/category/PhysicalPreparationTab";
-import { SessionHistoryTimeline } from "@/components/category/history/SessionHistoryTimeline";
 import { TrainingLoadTab } from "@/components/training-load/TrainingLoadTab";
 import { MentalPerformanceSection } from "@/components/category/mental/MentalPerformanceSection";
 import { TonnageDashboard } from "@/components/tonnage/TonnageDashboard";
