@@ -45,6 +45,8 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
   const [addCycleOpen, setAddCycleOpen] = useState(false);
   const [addCyclePreselectedCategory, setAddCyclePreselectedCategory] = useState<string | null>(null);
   const [editingCycle, setEditingCycle] = useState<PeriodizationCycle | null>(null);
+  const [prefilledStartDate, setPrefilledStartDate] = useState<Date | undefined>();
+  const [prefilledEndDate, setPrefilledEndDate] = useState<Date | undefined>();
 
   const yearStart = startOfYear(selectedYear);
   const yearEnd = endOfYear(selectedYear);
@@ -391,6 +393,12 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
             cycles={cycles}
             sessions={sessions}
             matches={matches}
+            onDateRangeSelect={(start, end) => {
+              setPrefilledStartDate(start);
+              setPrefilledEndDate(end);
+              setAddCyclePreselectedCategory(null);
+              setAddCycleOpen(true);
+            }}
           />
         </CardContent>
       </Card>
@@ -403,10 +411,18 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
       />
       <AddCycleDialog
         open={addCycleOpen}
-        onOpenChange={setAddCycleOpen}
+        onOpenChange={(open) => {
+          setAddCycleOpen(open);
+          if (!open) {
+            setPrefilledStartDate(undefined);
+            setPrefilledEndDate(undefined);
+          }
+        }}
         categoryId={categoryId}
         categories={categories}
         preselectedCategoryId={addCyclePreselectedCategory}
+        prefilledStartDate={prefilledStartDate}
+        prefilledEndDate={prefilledEndDate}
       />
       {editingCycle && (
         <EditCycleDialog
