@@ -518,6 +518,51 @@ export function BowlingCumulativeStats({ categoryId, playerId: fixedPlayerId }: 
                   </CardContent>
                 </Card>
               )}
+
+              {/* Référentiel de performance */}
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <Target className="h-4 w-4" />
+                    Référentiel de performance
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="overflow-x-auto">
+                  <table className="w-full text-xs text-center border-collapse">
+                    <thead>
+                      <tr>
+                        <th className="p-2 border font-semibold text-muted-foreground">Niveau</th>
+                        <th className="p-2 border font-semibold text-muted-foreground">Poches</th>
+                        <th className="p-2 border font-semibold text-muted-foreground">Strikes</th>
+                        <th className="p-2 border font-semibold text-muted-foreground">Spares composés</th>
+                        <th className="p-2 border font-semibold text-muted-foreground">9/</th>
+                        <th className="p-2 border font-semibold text-muted-foreground">Boules ≥ 8</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[
+                        { label: "Orange", bg: "bg-orange-700", text: "text-white", pocket: "<50%", strike: "<20%", spare: "<50%", single: "<70%", fb8: "<50%" },
+                        { label: "Verte 1", bg: "bg-green-700", text: "text-white", pocket: "50-60%", strike: "20-30%", spare: "50-60%", single: "70-75%", fb8: "50-65%" },
+                        { label: "Verte 2", bg: "bg-green-700", text: "text-white", pocket: "60-65%", strike: "30-35%", spare: "60-70%", single: "75-80%", fb8: "65-75%" },
+                        { label: "Verte 3", bg: "bg-green-800", text: "text-white", pocket: "65-70%", strike: "35-40%", spare: "70-80%", single: "80-85%", fb8: "75-85%" },
+                        { label: "Bleue 1", bg: "bg-blue-700", text: "text-white", pocket: "70-75%", strike: "40-45%", spare: "80-85%", single: "85-90%", fb8: "85-88%" },
+                        { label: "Bleue 2", bg: "bg-blue-800", text: "text-white", pocket: "75-80%", strike: "45-50%", spare: "85-90%", single: "90-95%", fb8: "85-88%" },
+                        { label: "Noire 1", bg: "bg-gray-900", text: "text-white", pocket: "80-85%", strike: "50-55%", spare: "90-95%", single: "95-99%", fb8: "88-92%" },
+                        { label: "Noire 2", bg: "bg-black", text: "text-red-600", pocket: "≥85%", strike: "≥55%", spare: "≥95%", single: "100%", fb8: "≥92%" },
+                      ].map((row) => (
+                        <tr key={row.label}>
+                          <td className={`p-2 border ${row.bg} ${row.text} font-bold`}>{row.label}</td>
+                          <td className={`p-2 border ${row.bg} ${row.text}`}>{row.pocket}</td>
+                          <td className={`p-2 border ${row.bg} ${row.text}`}>{row.strike}</td>
+                          <td className={`p-2 border ${row.bg} ${row.text}`}>{row.spare}</td>
+                          <td className={`p-2 border ${row.bg} ${row.text}`}>{row.single}</td>
+                          <td className={`p-2 border ${row.bg} ${row.text}`}>{row.fb8}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </CardContent>
+              </Card>
             </div>
           )}
         </TabsContent>
