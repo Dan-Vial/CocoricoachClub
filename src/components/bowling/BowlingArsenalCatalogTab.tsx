@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Card, CardContent } from "@/components/ui/card";
-import { Search, Upload, Image as ImageIcon, Loader2, X, Plus, Users, CircleDot, Check } from "lucide-react";
+import { Search, Upload, Image as ImageIcon, Loader2, X, Plus, Users, CircleDot, Check, Edit2, Trash2 } from "lucide-react";
 import { getCoverTypeLabel, getCoreTypeLabel, BOWLING_BALL_BRANDS, COVER_TYPES, CORE_TYPES, BALL_WEIGHTS } from "@/lib/constants/bowlingBallBrands";
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -49,6 +49,20 @@ export function BowlingArsenalCatalogTab({ categoryId }: BowlingArsenalCatalogTa
 
   // Player arsenal view state
   const [selectedViewPlayerId, setSelectedViewPlayerId] = useState<string | null>(null);
+
+  // Edit arsenal item state
+  const [editArsenalOpen, setEditArsenalOpen] = useState(false);
+  const [editingArsenalItem, setEditingArsenalItem] = useState<any>(null);
+  const [editWeight, setEditWeight] = useState("");
+  const [editCurrentSurface, setEditCurrentSurface] = useState("");
+  const [editGamesPlayed, setEditGamesPlayed] = useState("0");
+  const [editRg, setEditRg] = useState("");
+  const [editDifferential, setEditDifferential] = useState("");
+  const [editIntermediateDiff, setEditIntermediateDiff] = useState("");
+  const [editDrillingAngle, setEditDrillingAngle] = useState("");
+  const [editPinPap, setEditPinPap] = useState("");
+  const [editValAngle, setEditValAngle] = useState("");
+  const [editPurchaseDate, setEditPurchaseDate] = useState("");
 
   // Fetch players for the category
   const { data: players = [] } = useQuery({
@@ -186,6 +200,68 @@ export function BowlingArsenalCatalogTab({ categoryId }: BowlingArsenalCatalogTa
     },
     onError: (err: any) => toast.error(err.message || "Erreur lors de l'assignation"),
   });
+
+  const removeArsenalBallMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("player_bowling_arsenal" as any).delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["bowling_arsenal_view", selectedViewPlayerId] });
+      queryClient.invalidateQueries({ queryKey: ["bowling_arsenal"] });
+      toast.success("Boule retirée de l'arsenal");
+    },
+    onError: () => toast.error("Erreur lors de la suppression"),
+  });
+
+  const updateArsenalBallMutation = useMutation({
+    mutationFn: async () => {
+      if (!editingArsenalItem) return;
+      const updateData: any = {
+        weight_lbs: editWeight ? parseInt(editWeight) : null,
+        current_surface: editCurrentSurface || null,
+        games_played: parseInt(editGamesPlayed) || 0,
+        custom_rg: editRg ? parseFloat(editRg) : null,
+        custom_differential: editDifferential ? parseFloat(editDifferential) : null,
+        custom_intermediate_diff: editIntermediateDiff ? parseFloat(editIntermediateDiff) : null,
+        purchase_date: editPurchaseDate || null,
+        drilling_layout: (editDrillingAngle || editPinPap || editValAngle)
+          ? `${editDrillingAngle || "?"}x${editPinPap || "?"}x${editValAngle || "?"}`
+          : null,
+      };
+      const { error } = await supabase
+        .from("player_bowling_arsenal" as any)
+        .update(updateData)
+        .eq("id", editingArsenalItem.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["bowling_arsenal_view", selectedViewPlayerId] });
+      queryClient.invalidateQueries({ queryKey: ["bowling_arsenal"] });
+      toast.success("Boule mise à jour");
+      setEditArsenalOpen(false);
+      setEditingArsenalItem(null);
+    },
+    onError: () => toast.error("Erreur lors de la mise à jour"),
+  });
+
+  const handleEditArsenalItem = (item: any) => {
+    setEditingArsenalItem(item);
+    setEditWeight(item.weight_lbs?.toString() || "");
+    setEditCurrentSurface(item.current_surface || "");
+    setEditGamesPlayed(item.games_played?.toString() || "0");
+    setEditRg(item.custom_rg?.toString() || "");
+    setEditDifferential(item.custom_differential?.toString() || "");
+    setEditIntermediateDiff(item.custom_intermediate_diff?.toString() || "");
+    setEditPurchaseDate(item.purchase_date || "");
+    const layout = item.drilling_layout || "";
+    const parts = layout.split("x");
+    setEditDrillingAngle(parts[0] && parts[0] !== "?" ? parts[0] : "");
+    setEditPinPap(parts[1] && parts[1] !== "?" ? parts[1] : "");
+    setEditValAngle(parts[2] && parts[2] !== "?" ? parts[2] : "");
+    setEditArsenalOpen(true);
+  };
+
 
   const updateImageMutation = useMutation({
     mutationFn: async ({ ballId, file }: { ballId: string; file: File }) => {
@@ -510,6 +586,14 @@ export function BowlingArsenalCatalogTab({ categoryId }: BowlingArsenalCatalogTa
                         {item.purchase_date && <span>Achat: {format(new Date(item.purchase_date), "dd/MM/yyyy")}</span>}
                       </div>
                     </div>
+                    <div className="flex flex-col gap-1">
+                      <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handleEditArsenalItem(item)}>
+                        <Edit2 className="h-4 w-4" />
+                      </Button>
+                      <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => removeArsenalBallMutation.mutate(item.id)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 );
               })}
@@ -796,6 +880,100 @@ export function BowlingArsenalCatalogTab({ categoryId }: BowlingArsenalCatalogTa
               Ajouter {selectedBallIds.length} boule{selectedBallIds.length !== 1 ? "s" : ""}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ===== EDIT ARSENAL ITEM DIALOG ===== */}
+      <Dialog open={editArsenalOpen} onOpenChange={(open) => { if (!open) { setEditArsenalOpen(false); setEditingArsenalItem(null); } }}>
+        <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Modifier la boule</DialogTitle>
+          </DialogHeader>
+          {editingArsenalItem && (
+            <div className="space-y-4">
+              {/* Ball name display */}
+              <div className="p-3 border rounded-lg bg-accent/10">
+                <div className="flex items-center gap-3">
+                  <div className="h-12 w-12 rounded-full overflow-hidden bg-muted flex-shrink-0 flex items-center justify-center border">
+                    {editingArsenalItem.catalogBall?.image_url ? (
+                      <img src={editingArsenalItem.catalogBall.image_url} alt="" className="h-full w-full object-cover" />
+                    ) : (
+                      <CircleDot className="h-6 w-6 text-muted-foreground" />
+                    )}
+                  </div>
+                  <p className="font-semibold">
+                    {editingArsenalItem.catalogBall
+                      ? `${editingArsenalItem.catalogBall.brand} ${editingArsenalItem.catalogBall.model}`
+                      : `${editingArsenalItem.custom_ball_brand || ""} ${editingArsenalItem.custom_ball_name || "Custom"}`.trim()}
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs">Poids</Label>
+                  <Select value={editWeight} onValueChange={setEditWeight}>
+                    <SelectTrigger><SelectValue placeholder="lbs" /></SelectTrigger>
+                    <SelectContent>
+                      {BALL_WEIGHTS.map(w => (
+                        <SelectItem key={w} value={w.toString()}>{w} lbs</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-xs">Surface actuelle</Label>
+                  <Input value={editCurrentSurface} onChange={e => setEditCurrentSurface(e.target.value)} placeholder="1500 Grit..." />
+                </div>
+              </div>
+
+              <div>
+                <Label className="text-xs">Layout de perçage</Label>
+                <div className="flex items-center gap-1.5 mt-1">
+                  <Input value={editDrillingAngle} onChange={e => setEditDrillingAngle(e.target.value)} placeholder="50" className="w-16 text-center text-sm" />
+                  <span className="text-xs font-medium text-muted-foreground">×</span>
+                  <Input value={editPinPap} onChange={e => setEditPinPap(e.target.value)} placeholder={'4"½'} className="w-16 text-center text-sm" />
+                  <span className="text-xs font-medium text-muted-foreground">×</span>
+                  <Input value={editValAngle} onChange={e => setEditValAngle(e.target.value)} placeholder="40" className="w-16 text-center text-sm" />
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-1">Angle perçage × Pin-PAP × Angle VAL</p>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <Label className="text-xs">RG</Label>
+                  <Input type="number" step="0.001" value={editRg} onChange={e => setEditRg(e.target.value)} placeholder="2.540" />
+                </div>
+                <div>
+                  <Label className="text-xs">Différentiel</Label>
+                  <Input type="number" step="0.001" value={editDifferential} onChange={e => setEditDifferential(e.target.value)} placeholder="0.050" />
+                </div>
+                <div>
+                  <Label className="text-xs">Diff. Int.</Label>
+                  <Input type="number" step="0.001" value={editIntermediateDiff} onChange={e => setEditIntermediateDiff(e.target.value)} placeholder="0.012" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs">Date d'achat</Label>
+                  <Input type="date" value={editPurchaseDate} onChange={e => setEditPurchaseDate(e.target.value)} />
+                </div>
+                <div>
+                  <Label className="text-xs">Parties jouées</Label>
+                  <Input type="number" value={editGamesPlayed} onChange={e => setEditGamesPlayed(e.target.value)} min="0" />
+                </div>
+              </div>
+
+              <Button
+                className="w-full"
+                onClick={() => updateArsenalBallMutation.mutate()}
+                disabled={updateArsenalBallMutation.isPending}
+              >
+                {updateArsenalBallMutation.isPending ? "Mise à jour..." : "Enregistrer les modifications"}
+              </Button>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
