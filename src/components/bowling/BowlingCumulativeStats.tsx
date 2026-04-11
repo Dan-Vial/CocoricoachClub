@@ -48,6 +48,7 @@ interface BowlingGameData {
   singlePinConverted: number;
   singlePinConversionRate: number;
   frames?: FrameData[];
+  blockDebriefing?: string;
 }
 
 function ColoredStatRow({ label, value, statType, percentage }: { label: string; value: string; statType?: "pocket" | "strike" | "spare" | "singlePin" | "firstBallGte8"; percentage?: number }) {
