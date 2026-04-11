@@ -93,7 +93,7 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["academic_tracking", categoryId] });
-      toast.success("Note scolaire ajoutée");
+      queryClient.invalidateQueries({ queryKey: ["academic_subjects", categoryId] });
       resetAcademicForm();
       setAcademicDialogOpen(false);
     },
