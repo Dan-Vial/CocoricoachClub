@@ -130,7 +130,7 @@ export function MatchKickingFieldDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[700px] max-h-[95vh] flex flex-col overflow-hidden">
+      <DialogContent className="sm:max-w-[700px] max-h-[95vh] flex flex-col overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Target className="h-5 w-5 text-primary" />
