@@ -2,7 +2,7 @@ import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { ClipboardCheck, Users, FileSpreadsheet, FileText, UserSearch, FolderOpen, Truck, BarChart3 } from "lucide-react";
 import { AttendanceTab } from "@/components/category/attendance/AttendanceTab";
 import { CategoryCollaborationTab } from "@/components/category/CategoryCollaborationTab";
-import { MedicalRecordsTab } from "@/components/health/MedicalRecordsTab";
+
 import { MatchSheetsSection } from "@/components/category/admin/MatchSheetsSection";
 
 import { RecruitmentSection } from "@/components/category/admin/RecruitmentSection";
@@ -121,10 +121,7 @@ export function AdminTab({ categoryId }: AdminTabProps) {
       </TabsContent>
 
       <TabsContent value="documents">
-        <div className="space-y-8">
-          <DocumentsSection categoryId={categoryId} />
-          <MedicalRecordsTab categoryId={categoryId} />
-        </div>
+        <DocumentsSection categoryId={categoryId} />
       </TabsContent>
 
       <TabsContent value="reports">
