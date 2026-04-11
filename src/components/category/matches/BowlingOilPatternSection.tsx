@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -18,7 +19,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
-import { Droplet, Save, Plus, Trash2, Info, X, Image as ImageIcon, ChevronDown } from "lucide-react";
+import { Droplet, Save, Plus, Trash2, Info, X, Image as ImageIcon, ChevronDown, Users } from "lucide-react";
 import {
   ALL_PATTERN_NAMES,
   getPatternPreset,
