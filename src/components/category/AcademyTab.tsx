@@ -15,12 +15,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
-import { GraduationCap, Award, Star, BookOpen, Clock, BarChart3, CalendarIcon, Plus, Pencil, Trash2 } from "lucide-react";
+import { GraduationCap, BookOpen, Clock, BarChart3, CalendarIcon, Plus, Pencil, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { toast } from "sonner";
-import { SelectionsSection } from "./academy/SelectionsSection";
-import { EvaluationsSection } from "./academy/EvaluationsSection";
+import { AcademicStatsSection } from "./academy/AcademicStatsSection";
 import { AcademicStatsSection } from "./academy/AcademicStatsSection";
 
 interface AcademyTabProps {
@@ -225,12 +224,6 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
             <ColoredSubTabsTrigger value="academic" colorKey="academy" icon={<GraduationCap className="h-4 w-4" />}>
               Suivi Scolaire
             </ColoredSubTabsTrigger>
-            <ColoredSubTabsTrigger value="selections" colorKey="academy" icon={<Award className="h-4 w-4" />}>
-              Sélections
-            </ColoredSubTabsTrigger>
-            <ColoredSubTabsTrigger value="evaluations" colorKey="academy" icon={<Star className="h-4 w-4" />}>
-              Évaluations
-            </ColoredSubTabsTrigger>
             <ColoredSubTabsTrigger value="stats" colorKey="academy" icon={<BarChart3 className="h-4 w-4" />}>
               Statistiques
             </ColoredSubTabsTrigger>
@@ -354,18 +347,6 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
           </Card>
         </TabsContent>
 
-        {/* Staff Notes Tab */}
-
-        {/* Selections Tab */}
-        <TabsContent value="selections">
-          <SelectionsSection categoryId={categoryId} players={players} />
-        </TabsContent>
-
-
-        {/* Evaluations Tab */}
-        <TabsContent value="evaluations">
-          <EvaluationsSection categoryId={categoryId} players={players} />
-        </TabsContent>
 
         {/* Stats Tab */}
         <TabsContent value="stats">
