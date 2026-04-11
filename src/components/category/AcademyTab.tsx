@@ -241,9 +241,6 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
             <ColoredSubTabsTrigger value="academic" colorKey="academy" icon={<GraduationCap className="h-4 w-4" />}>
               Suivi Scolaire
             </ColoredSubTabsTrigger>
-            <ColoredSubTabsTrigger value="staff" colorKey="academy" icon={<Users className="h-4 w-4" />}>
-              Notes Staff
-            </ColoredSubTabsTrigger>
             <ColoredSubTabsTrigger value="development" colorKey="academy" icon={<Target className="h-4 w-4" />}>
               Plans de Développement
             </ColoredSubTabsTrigger>
@@ -322,48 +319,6 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
         </TabsContent>
 
         {/* Staff Notes Tab */}
-        <TabsContent value="staff">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Notes du Staff</CardTitle>
-                  <CardDescription>Commentaires médecin, kiné, préparateur, tuteur</CardDescription>
-                </div>
-                <Button onClick={() => setStaffNoteDialogOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Nouvelle note
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {!staffNotes || staffNotes.length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">Aucune note enregistrée.</p>
-              ) : (
-                <div className="space-y-4">
-                  {staffNotes.map((note) => (
-                    <div key={note.id} className="p-4 border rounded-lg">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-3">
-                          <span className="font-medium">{note.players?.name}</span>
-                          <Badge className={`${getRoleBadgeColor(note.staff_role)} text-white`}>
-                            {STAFF_ROLES.find((r) => r.value === note.staff_role)?.label || note.staff_role}
-                          </Badge>
-                        </div>
-                        <span className="text-sm text-muted-foreground">
-                          {format(new Date(note.note_date), "dd MMM yyyy", { locale: fr })}
-                        </span>
-                      </div>
-                      <p className="text-sm">{note.note_content}</p>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Development Plans Tab */}
         <TabsContent value="development">
           <Card>
             <CardHeader>
@@ -547,50 +502,6 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
         </DialogContent>
       </Dialog>
 
-      {/* Staff Note Dialog */}
-      <Dialog open={staffNoteDialogOpen} onOpenChange={setStaffNoteDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Ajouter une note</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>Joueur</Label>
-              <Select value={selectedPlayer} onValueChange={setSelectedPlayer}>
-                <SelectTrigger><SelectValue placeholder="Sélectionner un joueur" /></SelectTrigger>
-                <SelectContent>
-                  {players?.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>{p.first_name ? `${p.first_name} ${p.name}` : p.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Rôle</Label>
-              <Select value={staffRole} onValueChange={setStaffRole}>
-                <SelectTrigger><SelectValue placeholder="Sélectionner un rôle" /></SelectTrigger>
-                <SelectContent>
-                  {STAFF_ROLES.map((role) => (
-                    <SelectItem key={role.value} value={role.value}>{role.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Note</Label>
-              <Textarea value={noteContent} onChange={(e) => setNoteContent(e.target.value)} placeholder="Contenu de la note..." rows={4} />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setStaffNoteDialogOpen(false)}>Annuler</Button>
-            <Button onClick={() => addStaffNote.mutate()} disabled={!selectedPlayer || !staffRole || !noteContent || addStaffNote.isPending}>
-              {addStaffNote.isPending ? "Ajout..." : "Ajouter"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Development Plan Dialog */}
       <Dialog open={developmentDialogOpen} onOpenChange={setDevelopmentDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
