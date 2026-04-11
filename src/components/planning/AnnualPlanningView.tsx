@@ -358,14 +358,18 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
             })}
 
             {/* Today marker */}
-            {isWithinInterval(new Date(), { start: yearStart, end: yearEnd }) && (
-              <div
-                className="absolute top-0 bottom-0 w-0.5 bg-destructive z-10 pointer-events-none"
-                style={{
-                  left: `calc(128px + ${(differenceInDays(new Date(), yearStart) / totalDays) * 100}% * (100% - 128px) / 100%)`,
-                }}
-              />
-            )}
+            {isWithinInterval(new Date(), { start: yearStart, end: yearEnd }) && (() => {
+              const todayOffset = differenceInDays(new Date(), yearStart);
+              const pct = (todayOffset / totalDays) * 100;
+              return (
+                <div
+                  className="absolute top-0 bottom-0 w-0.5 bg-destructive z-10 pointer-events-none"
+                  style={{
+                    left: `calc(128px + (100% - 128px) * ${pct / 100})`,
+                  }}
+                />
+              );
+            })()}
           </div>
         </CardContent>
       </Card>
