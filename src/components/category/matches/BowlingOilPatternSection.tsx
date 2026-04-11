@@ -84,8 +84,73 @@ export function BowlingOilPatternSection({
   const [patterns, setPatterns] = useState<OilPatternData[]>([]);
   const [enlargedImage, setEnlargedImage] = useState<string | null>(null);
   const [initialized, setInitialized] = useState(false);
+  const [assignPatternId, setAssignPatternId] = useState<string | null>(null);
+  const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
   const fileInputRefs = useRef<Record<number, HTMLInputElement | null>>({});
   const queryClient = useQueryClient();
+
+  // Load players for this category
+  const { data: categoryPlayers } = useQuery({
+    queryKey: ["players_for_oil", categoryId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("players")
+        .select("id, name, first_name")
+        .eq("category_id", categoryId)
+        .order("name");
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  // Load existing assignments for all patterns in this match
+  const { data: patternAssignments } = useQuery({
+    queryKey: ["oil_pattern_players", matchId],
+    queryFn: async () => {
+      const patternIds = patterns.filter(p => p.id).map(p => p.id!);
+      if (patternIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from("bowling_oil_pattern_players" as any)
+        .select("*")
+        .in("oil_pattern_id", patternIds);
+      if (error) throw error;
+      return (data as any[]) || [];
+    },
+    enabled: patterns.some(p => !!p.id),
+  });
+
+  const assignMutation = useMutation({
+    mutationFn: async ({ patternId, playerIds }: { patternId: string; playerIds: string[] }) => {
+      // Delete existing assignments for this pattern
+      await supabase.from("bowling_oil_pattern_players" as any).delete().eq("oil_pattern_id", patternId);
+      // Insert new ones
+      if (playerIds.length > 0) {
+        const rows = playerIds.map(pid => ({ oil_pattern_id: patternId, player_id: pid }));
+        const { error } = await supabase.from("bowling_oil_pattern_players" as any).insert(rows);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["oil_pattern_players", matchId] });
+      toast.success("Attribution enregistrée");
+      setAssignPatternId(null);
+    },
+    onError: () => toast.error("Erreur lors de l'attribution"),
+  });
+
+  const openAssignDialog = (patternId: string) => {
+    const existing = (patternAssignments || []).filter((a: any) => a.oil_pattern_id === patternId).map((a: any) => a.player_id);
+    setSelectedPlayerIds(existing);
+    setAssignPatternId(patternId);
+  };
+
+  const getAssignedPlayerNames = (patternId: string) => {
+    const assigned = (patternAssignments || []).filter((a: any) => a.oil_pattern_id === patternId);
+    return assigned.map((a: any) => {
+      const p = categoryPlayers?.find(pl => pl.id === a.player_id);
+      return p ? [p.first_name, p.name].filter(Boolean).join(" ") : "";
+    }).filter(Boolean);
+  };
 
   const { data: existingPatterns, isLoading } = useQuery({
     queryKey: ["bowling_oil_patterns", matchId],
