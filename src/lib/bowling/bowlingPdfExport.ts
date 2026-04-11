@@ -563,6 +563,7 @@ export async function exportBowlingPdf(playerName: string, games: BowlingGameDat
     doc.text("Evolution des scores", margin + 2, y + 4);
     y += 8;
 
+    const scoreLabelH = 6; // space reserved for score labels above bars
     const barAreaH = 30;
     const barMaxH = barAreaH;
     const minBase = 100;
@@ -574,20 +575,26 @@ export async function exportBowlingPdf(playerName: string, games: BowlingGameDat
 
     const barsStartX = margin + (contentWidth - maxBars * (barW + barGap)) / 2;
 
-    // Draw bars
+    // Draw bars with score labels
     for (let i = 0; i < maxBars; i++) {
       const game = games[i];
       const clampedScore = Math.max(game.score, minBase);
       const h = range > 0 ? ((clampedScore - minBase) / range) * barMaxH : barMaxH * 0.5;
       const barH = Math.max(h, 2);
       const bx = barsStartX + i * (barW + barGap);
-      const by = y + barAreaH - barH;
+      const by = y + scoreLabelH + barAreaH - barH;
 
       const color = getScoreColor(game.score);
       doc.setFillColor(...color);
       doc.roundedRect(bx, by, barW, barH, 0.5, 0.5, "F");
+
+      // Score label above bar
+      doc.setTextColor(...COLORS.text);
+      doc.setFontSize(barW >= 5 ? 5 : 4);
+      doc.setFont("helvetica", "bold");
+      doc.text(String(game.score), bx + barW / 2, by - 1, { align: "center" });
     }
-    y += barAreaH + 3;
+    y += scoreLabelH + barAreaH + 3;
 
     // Score legend
     const scoreLegends = [
