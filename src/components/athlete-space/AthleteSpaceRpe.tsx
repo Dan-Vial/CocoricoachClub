@@ -406,8 +406,8 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
           await supabase.from("awcr_tracking").delete().eq("id", awcrRow.id);
           throw spareError;
         }
-      } else if (isGenericPrecision && attemptsValue > 0) {
-        // Insert into precision_training table
+      } else if (isGenericPrecision && !isRugbyPrecision && attemptsValue > 0) {
+        // Insert into precision_training table (non-rugby sports)
         const { error: precisionError } = await supabase.from("precision_training").insert({
           player_id: playerId,
           category_id: categoryId,
