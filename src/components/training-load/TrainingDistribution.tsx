@@ -111,14 +111,6 @@ export function TrainingDistribution({ categoryId }: TrainingDistributionProps) 
     };
   }, [data]);
 
-  const periodLabels: Record<PeriodOption, string> = {
-    "7": "7 jours",
-    "14": "14 jours",
-    "28": "28 jours",
-    "56": "8 semaines",
-    "90": "Saison",
-  };
-
   if (isLoading) {
     return (
       <Card>
@@ -134,19 +126,39 @@ export function TrainingDistribution({ categoryId }: TrainingDistributionProps) 
 
   if (!stats) {
     return (
-      <Card>
-        <CardContent className="p-6 text-center text-muted-foreground">
-          <BarChart3 className="h-8 w-8 mx-auto mb-2 opacity-50" />
-          <p>Aucune donnée de séance sur cette période</p>
-        </CardContent>
-      </Card>
+      <div className="space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+          <div>
+            <h3 className="text-lg font-semibold flex items-center gap-2">
+              <BarChart3 className="h-5 w-5 text-primary" />
+              Répartition des entraînements
+            </h3>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Du</Label>
+              <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="h-8 w-[140px] text-sm" max={endDate} />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Au</Label>
+              <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="h-8 w-[140px] text-sm" min={startDate} />
+            </div>
+          </div>
+        </div>
+        <Card>
+          <CardContent className="p-6 text-center text-muted-foreground">
+            <BarChart3 className="h-8 w-8 mx-auto mb-2 opacity-50" />
+            <p>Aucune donnée de séance sur cette période</p>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <h3 className="text-lg font-semibold flex items-center gap-2">
             <BarChart3 className="h-5 w-5 text-primary" />
@@ -156,16 +168,18 @@ export function TrainingDistribution({ categoryId }: TrainingDistributionProps) 
             {stats.totalSessions} séances · {stats.totalBlocks} blocs analysés
           </p>
         </div>
-        <Select value={period} onValueChange={(v) => setPeriod(v as PeriodOption)}>
-          <SelectTrigger className="w-[130px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {Object.entries(periodLabels).map(([val, label]) => (
-              <SelectItem key={val} value={val}>{label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-3">
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground flex items-center gap-1">
+              <CalendarRange className="h-3 w-3" /> Du
+            </Label>
+            <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="h-8 w-[140px] text-sm" max={endDate} />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">Au</Label>
+            <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="h-8 w-[140px] text-sm" min={startDate} />
+          </div>
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
