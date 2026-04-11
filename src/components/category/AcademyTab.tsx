@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, GraduationCap, Users, Target, Trash2, Award, Star } from "lucide-react";
+import { Plus, GraduationCap, Users, Target, Trash2, Award, Star, BookOpen, Clock } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { toast } from "sonner";
@@ -34,6 +34,7 @@ const STAFF_ROLES = [
 export function AcademyTab({ categoryId }: AcademyTabProps) {
   const queryClient = useQueryClient();
   const [academicDialogOpen, setAcademicDialogOpen] = useState(false);
+  const [absenceDialogOpen, setAbsenceDialogOpen] = useState(false);
   const [staffNoteDialogOpen, setStaffNoteDialogOpen] = useState(false);
   const [developmentDialogOpen, setDevelopmentDialogOpen] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState("");
@@ -107,13 +108,12 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
     },
   });
 
-  const addAcademicTracking = useMutation({
+  const addAcademicGrade = useMutation({
     mutationFn: async () => {
       const { error } = await supabase.from("player_academic_tracking").insert({
         player_id: selectedPlayer,
         category_id: categoryId,
-        school_absence_hours: absenceHours ? parseFloat(absenceHours) : 0,
-        absence_reason: absenceReason || null,
+        school_absence_hours: 0,
         academic_grade: academicGrade ? parseFloat(academicGrade) : null,
         subject: subject || null,
         notes: academicNotes || null,
@@ -122,9 +122,28 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["academic_tracking", categoryId] });
-      toast.success("Suivi scolaire ajouté");
+      toast.success("Note scolaire ajoutée");
       resetAcademicForm();
       setAcademicDialogOpen(false);
+    },
+    onError: () => toast.error("Erreur lors de l'ajout"),
+  });
+
+  const addAbsence = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("player_academic_tracking").insert({
+        player_id: selectedPlayer,
+        category_id: categoryId,
+        school_absence_hours: absenceHours ? parseFloat(absenceHours) : 0,
+        absence_reason: absenceReason || null,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["academic_tracking", categoryId] });
+      toast.success("Absence enregistrée");
+      resetAbsenceForm();
+      setAbsenceDialogOpen(false);
     },
     onError: () => toast.error("Erreur lors de l'ajout"),
   });
@@ -173,11 +192,15 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
 
   const resetAcademicForm = () => {
     setSelectedPlayer("");
-    setAbsenceHours("");
-    setAbsenceReason("");
     setAcademicGrade("");
     setSubject("");
     setAcademicNotes("");
+  };
+
+  const resetAbsenceForm = () => {
+    setSelectedPlayer("");
+    setAbsenceHours("");
+    setAbsenceReason("");
   };
 
   const resetStaffNoteForm = () => {
@@ -239,10 +262,16 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
                   <CardTitle>Suivi Scolaire</CardTitle>
                   <CardDescription>Absences, notes et suivi académique</CardDescription>
                 </div>
-                <Button onClick={() => setAcademicDialogOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Nouvelle entrée
-                </Button>
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={() => setAbsenceDialogOpen(true)}>
+                    <Clock className="h-4 w-4 mr-2" />
+                    Ajouter une absence
+                  </Button>
+                  <Button onClick={() => setAcademicDialogOpen(true)}>
+                    <BookOpen className="h-4 w-4 mr-2" />
+                    Ajouter une note
+                  </Button>
+                </div>
               </div>
             </CardHeader>
             <CardContent>
@@ -404,11 +433,53 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
         </TabsContent>
       </Tabs>
 
-      {/* Academic Dialog */}
+      {/* Grade Dialog */}
       <Dialog open={academicDialogOpen} onOpenChange={setAcademicDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Ajouter un suivi scolaire</DialogTitle>
+            <DialogTitle>Ajouter une note scolaire</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Joueur</Label>
+              <Select value={selectedPlayer} onValueChange={setSelectedPlayer}>
+                <SelectTrigger><SelectValue placeholder="Sélectionner un joueur" /></SelectTrigger>
+                <SelectContent>
+                  {players?.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>{p.first_name ? `${p.first_name} ${p.name}` : p.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Note (/20)</Label>
+                <Input type="number" value={academicGrade} onChange={(e) => setAcademicGrade(e.target.value)} placeholder="15" />
+              </div>
+              <div>
+                <Label>Matière</Label>
+                <Input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Mathématiques" />
+              </div>
+            </div>
+            <div>
+              <Label>Commentaires</Label>
+              <Textarea value={academicNotes} onChange={(e) => setAcademicNotes(e.target.value)} placeholder="Notes additionnelles..." />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAcademicDialogOpen(false)}>Annuler</Button>
+            <Button onClick={() => addAcademicGrade.mutate()} disabled={!selectedPlayer || !academicGrade || addAcademicGrade.isPending}>
+              {addAcademicGrade.isPending ? "Ajout..." : "Ajouter"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Absence Dialog */}
+      <Dialog open={absenceDialogOpen} onOpenChange={setAbsenceDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Ajouter une absence</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
@@ -428,29 +499,15 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
                 <Input type="number" value={absenceHours} onChange={(e) => setAbsenceHours(e.target.value)} placeholder="0" />
               </div>
               <div>
-                <Label>Raison absence</Label>
+                <Label>Raison</Label>
                 <Input value={absenceReason} onChange={(e) => setAbsenceReason(e.target.value)} placeholder="Compétition, blessure..." />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Note (/20)</Label>
-                <Input type="number" value={academicGrade} onChange={(e) => setAcademicGrade(e.target.value)} placeholder="15" />
-              </div>
-              <div>
-                <Label>Matière</Label>
-                <Input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Mathématiques" />
-              </div>
-            </div>
-            <div>
-              <Label>Commentaires</Label>
-              <Textarea value={academicNotes} onChange={(e) => setAcademicNotes(e.target.value)} placeholder="Notes additionnelles..." />
-            </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setAcademicDialogOpen(false)}>Annuler</Button>
-            <Button onClick={() => addAcademicTracking.mutate()} disabled={!selectedPlayer || addAcademicTracking.isPending}>
-              {addAcademicTracking.isPending ? "Ajout..." : "Ajouter"}
+            <Button variant="outline" onClick={() => setAbsenceDialogOpen(false)}>Annuler</Button>
+            <Button onClick={() => addAbsence.mutate()} disabled={!selectedPlayer || !absenceHours || addAbsence.isPending}>
+              {addAbsence.isPending ? "Ajout..." : "Ajouter"}
             </Button>
           </DialogFooter>
         </DialogContent>
