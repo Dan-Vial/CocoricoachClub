@@ -688,6 +688,37 @@ export async function exportBowlingPdf(playerName: string, games: BowlingGameDat
       y += 9;
     });
 
+    // Block debriefing/bilan - use the first game's blockDebriefing (same for all games in a block)
+    const blockDebriefing = matchGames.find(g => g.blockDebriefing)?.blockDebriefing;
+    if (blockDebriefing) {
+      y = checkPageBreak(doc, y, 18);
+      // Debriefing box
+      doc.setFillColor(237, 242, 255); // Light blue background
+      doc.setDrawColor(...COLORS.primary);
+      doc.setLineWidth(0.3);
+      
+      // Calculate text height
+      const maxTextWidth = contentWidth - 10;
+      const lines = doc.splitTextToSize(blockDebriefing, maxTextWidth);
+      const textH = lines.length * 4;
+      const boxH = Math.max(textH + 10, 14);
+      
+      y = checkPageBreak(doc, y, boxH + 4);
+      doc.roundedRect(margin, y, contentWidth, boxH, 1.5, 1.5, "FD");
+      
+      doc.setTextColor(...COLORS.primary);
+      doc.setFontSize(7);
+      doc.setFont("helvetica", "bold");
+      doc.text("BILAN DU BLOC", margin + 4, y + 5);
+      
+      doc.setTextColor(...COLORS.text);
+      doc.setFontSize(7);
+      doc.setFont("helvetica", "normal");
+      doc.text(lines, margin + 4, y + 9);
+      
+      y += boxH + 3;
+    }
+
     // Separator between blocs
     doc.setDrawColor(...COLORS.border);
     doc.setLineWidth(0.2);
