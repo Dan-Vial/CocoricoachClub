@@ -823,8 +823,48 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, c
               </CardTitle>
             </CardHeader>
           </CollapsibleTrigger>
-          <CollapsibleContent>
+           <CollapsibleContent>
             <CardContent>
+              {/* Toggle all pockets button */}
+              {!isSaved && (
+                <div className="mb-4 flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setFrames(prevFrames => {
+                        const allPocketsChecked = prevFrames.every((frame, fi) =>
+                          frame.throws.every((t, ti) => {
+                            if (!t.value) return true;
+                            if (!isPocketAllowed(fi, ti, frame)) return true;
+                            return t.isPocket;
+                          })
+                        );
+                        return prevFrames.map((frame, fi) => ({
+                          ...frame,
+                          throws: frame.throws.map((t, ti) => {
+                            if (!t.value) return t;
+                            if (!isPocketAllowed(fi, ti, frame)) return t;
+                            return { ...t, isPocket: !allPocketsChecked };
+                          }),
+                        }));
+                      });
+                    }}
+                    className="gap-1"
+                  >
+                    <Target className="h-4 w-4" />
+                    {frames.every((frame, fi) =>
+                      frame.throws.every((t, ti) => {
+                        if (!t.value) return true;
+                        if (!isPocketAllowed(fi, ti, frame)) return true;
+                        return t.isPocket;
+                      })
+                    )
+                      ? "Décocher toutes les poches"
+                      : "Cocher toutes les poches"}
+                  </Button>
+                </div>
+              )}
               <div className="overflow-x-auto">
                 <div className="space-y-3 min-w-max">
                   {frames.map((frame, frameIndex) => (
@@ -907,12 +947,14 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, c
               value={`${stats.strikePercentage}%`}
               detail={`${stats.strikes}/${stats.totalFrames} frames`}
               bgColorClass={getStatColor("strike", stats.strikePercentage).bg}
+              textColorClass={getStatColor("strike", stats.strikePercentage).text}
             />
             <StatBox 
               label="% Spares" 
               value={`${stats.sparePercentage}%`}
               detail={`${stats.spares} spares (hors splits)`}
               bgColorClass={getStatColor("spare", stats.sparePercentage).bg}
+              textColorClass={getStatColor("spare", stats.sparePercentage).text}
             />
             <StatBox 
               label="% Splits conv." 
@@ -925,18 +967,21 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, c
               value={`${stats.singlePinConversionRate}%`}
               detail={`${stats.singlePinConverted}/${stats.singlePinCount}`}
               bgColorClass={getStatColor("singlePin", stats.singlePinConversionRate).bg}
+              textColorClass={getStatColor("singlePin", stats.singlePinConversionRate).text}
             />
             <StatBox 
               label="% Poches" 
               value={`${stats.pocketPercentage}%`}
               detail={`${stats.pocketCount} lancers`}
               bgColorClass={getStatColor("pocket", stats.pocketPercentage).bg}
+              textColorClass={getStatColor("pocket", stats.pocketPercentage).text}
             />
             <StatBox 
               label="% Boules ≥8" 
               value={`${stats.firstBallGte8Percentage}%`}
               detail={`${stats.firstBallGte8Count}/${stats.firstBallGte8Opportunities}`}
               bgColorClass={getStatColor("firstBallGte8", stats.firstBallGte8Percentage).bg}
+              textColorClass={getStatColor("firstBallGte8", stats.firstBallGte8Percentage).text}
             />
             <StatBox 
               label="Frames non fermées" 
@@ -978,14 +1023,17 @@ interface StatBoxProps {
   highlight?: boolean;
   colorClass?: string;
   bgColorClass?: string;
+  textColorClass?: string;
 }
 
-function StatBox({ label, value, detail, note, highlight, colorClass, bgColorClass }: StatBoxProps) {
+function StatBox({ label, value, detail, note, highlight, colorClass, bgColorClass, textColorClass }: StatBoxProps) {
   if (bgColorClass) {
+    const isNoire2 = textColorClass?.includes("text-red");
+    const valueColor = isNoire2 ? "text-red-600 font-extrabold" : "text-white";
     return (
       <div className={`p-3 rounded-lg ${bgColorClass} text-white`}>
         <div className="text-xs opacity-80">{label}</div>
-        <div className="text-xl font-bold">{value}</div>
+        <div className={`text-xl font-bold ${valueColor}`}>{value}</div>
         <div className="text-xs opacity-80">{detail}</div>
         {note && <div className="text-xs opacity-70">{note}</div>}
       </div>

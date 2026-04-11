@@ -112,8 +112,8 @@ export function BowlingGameHistory({ games, categoryId }: BowlingGameHistoryProp
                       <div className="flex items-center gap-3">
                          <div className="text-right text-xs text-muted-foreground hidden sm:block">
                           <div className="flex items-center gap-1 justify-end">
-                            <span className={`${getStatColor("strike", game.strikePercentage).bg} text-white px-1.5 py-0.5 rounded text-xs font-medium`}>{game.strikes}X</span>
-                            <span className={`${getStatColor("spare", game.sparePercentage).bg} text-white px-1.5 py-0.5 rounded text-xs font-medium`}>{game.spares}/</span>
+                            <span className={`${getStatColor("strike", game.strikePercentage).bg} ${getStatColor("strike", game.strikePercentage).text.includes("text-red") ? "text-red-600" : "text-white"} px-1.5 py-0.5 rounded text-xs font-medium`}>{game.strikes}X</span>
+                            <span className={`${getStatColor("spare", game.sparePercentage).bg} ${getStatColor("spare", game.sparePercentage).text.includes("text-red") ? "text-red-600" : "text-white"} px-1.5 py-0.5 rounded text-xs font-medium`}>{game.spares}/</span>
                             <span className="text-muted-foreground">{game.openFrames} open</span>
                           </div>
                           <div>Splits: {game.splitCount} ({game.splitConverted} conv.)</div>
