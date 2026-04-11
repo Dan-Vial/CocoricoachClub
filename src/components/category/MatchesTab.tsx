@@ -97,6 +97,11 @@ export function MatchesTab({ categoryId, sportType }: MatchesTabProps) {
                 Stats entraînement
               </ColoredSubTabsTrigger>
             )}
+            {isRugby && (
+              <ColoredSubTabsTrigger value="kicking" colorKey="competition" icon={<Crosshair className="h-4 w-4" />}>
+                Buteur
+              </ColoredSubTabsTrigger>
+            )}
             <ColoredSubTabsTrigger value="photos" colorKey="competition" icon={<Camera className="h-4 w-4" />}>
               Photos
             </ColoredSubTabsTrigger>
