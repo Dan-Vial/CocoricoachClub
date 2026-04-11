@@ -215,22 +215,22 @@ export function PlayerProfile({ playerId, categoryId, playerName, avatarUrl, spo
   return (
     <>
       <Card className="bg-gradient-card shadow-md">
-        <CardHeader>
+        <CardHeader className="py-3 px-4">
           <CardTitle className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Target className="h-5 w-5" />
+            <div className="flex items-center gap-2 text-sm">
+              <Target className="h-4 w-4" />
               Profil Athlétique - {profileLabel}
             </div>
-            <Button variant="ghost" size="sm" onClick={() => setEditorOpen(true)} title="Personnaliser le profil">
-              <Settings2 className="h-4 w-4" />
+            <Button variant="ghost" size="sm" className="h-7" onClick={() => setEditorOpen(true)} title="Personnaliser le profil">
+              <Settings2 className="h-3.5 w-3.5" />
             </Button>
           </CardTitle>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-xs text-muted-foreground">
             {profileDescription}
-            {isCustom && <Badge variant="outline" className="ml-2 text-xs">Personnalisé</Badge>}
+            {isCustom && <Badge variant="outline" className="ml-2 text-[10px]">Personnalisé</Badge>}
           </p>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-3 px-4 pb-3 pt-0">
           <PlayerAvatarUpload
             playerId={playerId}
             playerName={playerName}
@@ -238,54 +238,54 @@ export function PlayerProfile({ playerId, categoryId, playerName, avatarUrl, spo
           />
           
           <div className="flex items-center justify-between">
-            <Badge className={`${getProfileColor()} text-lg py-2 px-4`}>
-              <Icon className="h-4 w-4 mr-2" />
+            <Badge className={`${getProfileColor()} text-sm py-1 px-3`}>
+              <Icon className="h-3.5 w-3.5 mr-1.5" />
               {displayProfile.label}
             </Badge>
             {profile.ratio !== null && (
               <div className="text-right">
-                <p className="text-sm text-muted-foreground">Équilibre</p>
-                <p className="text-2xl font-bold">{profile.ratio.toFixed(0)}%</p>
+                <p className="text-xs text-muted-foreground">Équilibre</p>
+                <p className="text-xl font-bold">{profile.ratio.toFixed(0)}%</p>
               </div>
             )}
           </div>
 
-          <div className="space-y-2">
-            <p className="text-muted-foreground">{displayProfile.description}</p>
-            
-            {profile.testResults && profile.testResults.some(r => r !== null) && (
-              <div className={`grid grid-cols-${Math.min(activeTests.length, 3)} gap-4 mt-4 p-4 bg-muted/50 rounded-lg`}>
-                {activeTests.map((test, i) => {
-                  const result = profile.testResults[i];
-                  if (!result) return null;
-                  return (
-                    <div key={test.key}>
-                      <p className="text-sm text-muted-foreground">{test.shortLabel}</p>
-                      <p className="text-xl font-bold text-primary">
-                        {result.value.toFixed(1)} {test.unit}
-                      </p>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+          <p className="text-xs text-muted-foreground">{displayProfile.description}</p>
+          
+          {profile.testResults && profile.testResults.some(r => r !== null) && (
+            <div className={`grid grid-cols-${Math.min(activeTests.length, 3)} gap-2 p-2 bg-muted/50 rounded-lg`}>
+              {activeTests.map((test, i) => {
+                const result = profile.testResults[i];
+                if (!result) return null;
+                return (
+                  <div key={test.key}>
+                    <p className="text-xs text-muted-foreground">{test.shortLabel}</p>
+                    <p className="text-base font-bold text-primary">
+                      {result.value.toFixed(1)} {test.unit}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
-          <div className="space-y-2">
-            <h4 className="font-semibold">Recommandations d'entraînement:</h4>
-            <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-              {displayProfile.recommendations.map((rec, index) => (
-                <li key={index}>{rec}</li>
-              ))}
-            </ul>
-          </div>
+          {displayProfile.recommendations.length > 0 && (
+            <div className="space-y-1">
+              <h4 className="font-semibold text-xs">Recommandations:</h4>
+              <ul className="list-disc list-inside space-y-0.5 text-xs text-muted-foreground">
+                {displayProfile.recommendations.slice(0, 3).map((rec, index) => (
+                  <li key={index}>{rec}</li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {profile.type === "insufficientData" && (
-            <div className="p-3 bg-muted rounded-lg">
-              <p className="text-sm text-muted-foreground">
-                Pour déterminer le profil athlétique, il faut effectuer:
+            <div className="p-2 bg-muted rounded-lg">
+              <p className="text-xs text-muted-foreground">
+                Tests requis:
               </p>
-              <ul className="list-disc list-inside text-sm text-muted-foreground mt-2">
+              <ul className="list-disc list-inside text-xs text-muted-foreground mt-1">
                 {activeTests.map((test, i) => (
                   <li key={i}>{test.label}</li>
                 ))}
