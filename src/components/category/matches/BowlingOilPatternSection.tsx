@@ -342,12 +342,28 @@ export function BowlingOilPatternSection({
                       )}
                     </button>
                   </CollapsibleTrigger>
-                  {!readOnly && (
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => removePattern(idx)}>
-                      <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                    </Button>
-                  )}
+                  <div className="flex items-center gap-1">
+                    {!readOnly && pattern.id && (
+                      <Button variant="outline" size="sm" className="h-7 gap-1 text-xs" onClick={() => openAssignDialog(pattern.id!)}>
+                        <Users className="h-3.5 w-3.5" />
+                        Attribuer
+                      </Button>
+                    )}
+                    {!readOnly && (
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => removePattern(idx)}>
+                        <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
+                {/* Show assigned players */}
+                {pattern.id && getAssignedPlayerNames(pattern.id).length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-1 ml-6">
+                    {getAssignedPlayerNames(pattern.id).map((name, ni) => (
+                      <Badge key={ni} variant="secondary" className="text-[10px]">{name}</Badge>
+                    ))}
+                  </div>
+                )}
               </CardHeader>
 
               <CollapsibleContent>
