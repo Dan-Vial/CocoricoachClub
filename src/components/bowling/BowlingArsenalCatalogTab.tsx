@@ -131,6 +131,9 @@ export function BowlingArsenalCatalogTab({ categoryId }: BowlingArsenalCatalogTa
     mutationFn: async () => {
       if (!newBrand || !newModel) throw new Error("Marque et modèle requis");
 
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Non authentifié");
+
       const { data, error } = await supabase
         .from("bowling_ball_catalog" as any)
         .insert({
@@ -142,6 +145,7 @@ export function BowlingArsenalCatalogTab({ categoryId }: BowlingArsenalCatalogTa
           differential: newDifferential ? parseFloat(newDifferential) : null,
           factory_surface: newFactorySurface || null,
           is_system: false,
+          created_by: user.id,
         } as any)
         .select()
         .single();
