@@ -648,10 +648,21 @@ export function BowlingArsenalCatalogTab({ categoryId }: BowlingArsenalCatalogTa
 
             <div>
               <Label>Sélectionner les boules ({selectedBallIds.length} sélectionnée{selectedBallIds.length !== 1 ? "s" : ""})</Label>
-              <div className="relative mt-1">
+            <div className="flex gap-2">
+              <div className="relative flex-1">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input className="pl-8" placeholder="Filtrer les boules..." value={arsenalSearch} onChange={e => setArsenalSearch(e.target.value)} />
               </div>
+              <Select value={arsenalBrandFilter} onValueChange={setArsenalBrandFilter}>
+                <SelectTrigger className="w-[140px]"><SelectValue placeholder="Marque" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Toutes</SelectItem>
+                  {BOWLING_BALL_BRANDS.map(b => (
+                    <SelectItem key={b} value={b}>{b}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             </div>
 
             <div className="max-h-[300px] overflow-y-auto border rounded-md divide-y">
