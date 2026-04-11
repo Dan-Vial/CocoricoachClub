@@ -27,7 +27,7 @@ const LEVELS: Record<StatType, LevelThreshold[]> = {
     { max: 75, bg: "bg-blue-700", text: "text-blue-600", label: "Bleue 1" },
     { max: 80, bg: "bg-blue-800", text: "text-blue-700", label: "Bleue 2" },
     { max: 85, bg: "bg-gray-900", text: "text-gray-900 dark:text-gray-100", label: "Noire 1" },
-    { max: Infinity, bg: "bg-yellow-600", text: "text-red-600", label: "Noire 2" },
+    { max: Infinity, bg: "bg-black", text: "text-red-600", label: "Noire 2" },
   ],
   strike: [
     { max: 20, bg: "bg-orange-700", text: "text-orange-600", label: "Orange" },
@@ -37,7 +37,7 @@ const LEVELS: Record<StatType, LevelThreshold[]> = {
     { max: 45, bg: "bg-blue-700", text: "text-blue-600", label: "Bleue 1" },
     { max: 50, bg: "bg-blue-800", text: "text-blue-700", label: "Bleue 2" },
     { max: 55, bg: "bg-gray-900", text: "text-gray-900 dark:text-gray-100", label: "Noire 1" },
-    { max: Infinity, bg: "bg-yellow-600", text: "text-red-600", label: "Noire 2" },
+    { max: Infinity, bg: "bg-black", text: "text-red-600", label: "Noire 2" },
   ],
   spare: [
     { max: 50, bg: "bg-orange-700", text: "text-orange-600", label: "Orange" },
@@ -47,7 +47,7 @@ const LEVELS: Record<StatType, LevelThreshold[]> = {
     { max: 85, bg: "bg-blue-700", text: "text-blue-600", label: "Bleue 1" },
     { max: 90, bg: "bg-blue-800", text: "text-blue-700", label: "Bleue 2" },
     { max: 95, bg: "bg-gray-900", text: "text-gray-900 dark:text-gray-100", label: "Noire 1" },
-    { max: Infinity, bg: "bg-yellow-600", text: "text-red-600", label: "Noire 2" },
+    { max: Infinity, bg: "bg-black", text: "text-red-600", label: "Noire 2" },
   ],
   singlePin: [
     { max: 70, bg: "bg-orange-700", text: "text-orange-600", label: "Orange" },
@@ -57,7 +57,7 @@ const LEVELS: Record<StatType, LevelThreshold[]> = {
     { max: 90, bg: "bg-blue-700", text: "text-blue-600", label: "Bleue 1" },
     { max: 95, bg: "bg-blue-800", text: "text-blue-700", label: "Bleue 2" },
     { max: 100, bg: "bg-gray-900", text: "text-gray-900 dark:text-gray-100", label: "Noire 1" },
-    { max: Infinity, bg: "bg-yellow-600", text: "text-red-600", label: "Noire 2" },
+    { max: Infinity, bg: "bg-black", text: "text-red-600", label: "Noire 2" },
   ],
   firstBallGte8: [
     { max: 50, bg: "bg-orange-700", text: "text-orange-600", label: "Orange" },
@@ -67,7 +67,7 @@ const LEVELS: Record<StatType, LevelThreshold[]> = {
     { max: 88, bg: "bg-blue-700", text: "text-blue-600", label: "Bleue 1" },
     { max: 88, bg: "bg-blue-800", text: "text-blue-700", label: "Bleue 2" },
     { max: 92, bg: "bg-gray-900", text: "text-gray-900 dark:text-gray-100", label: "Noire 1" },
-    { max: Infinity, bg: "bg-yellow-600", text: "text-red-600", label: "Noire 2" },
+    { max: Infinity, bg: "bg-black", text: "text-red-600", label: "Noire 2" },
   ],
 };
 
