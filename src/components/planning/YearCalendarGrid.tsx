@@ -20,11 +20,12 @@ interface YearCalendarGridProps {
   sessions: { id: string; session_date: string }[];
   matches: { id: string; match_date: string; opponent: string }[];
   onDateRangeSelect?: (startDate: Date, endDate: Date) => void;
+  activeCategoryColor?: string;
 }
 
 const WEEKDAY_LABELS = ["L", "M", "M", "J", "V", "S", "D"];
 
-export function YearCalendarGrid({ year, cycles, sessions, matches, onDateRangeSelect }: YearCalendarGridProps) {
+export function YearCalendarGrid({ year, cycles, sessions, matches, onDateRangeSelect, activeCategoryColor }: YearCalendarGridProps) {
   const [dragStart, setDragStart] = useState<string | null>(null);
   const [dragEnd, setDragEnd] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -134,12 +135,18 @@ export function YearCalendarGrid({ year, cycles, sessions, matches, onDateRangeS
                       today && "ring-2 ring-destructive ring-offset-1 ring-offset-background font-bold",
                       isWeekend && !cycleColor && !inRange && "text-muted-foreground/50",
                       !cycleColor && !today && !inRange && "hover:bg-muted/50",
-                      inRange && "!bg-primary/25 !text-primary font-semibold",
+                      inRange && "font-semibold",
                     )}
-                    style={!inRange && cycleColor ? {
-                      backgroundColor: `${cycleColor}20`,
-                      color: cycleColor,
-                    } : undefined}
+                    style={{
+                      ...(!inRange && cycleColor ? {
+                        backgroundColor: `${cycleColor}20`,
+                        color: cycleColor,
+                      } : {}),
+                      ...(inRange ? {
+                        backgroundColor: `${activeCategoryColor || 'hsl(var(--primary))'}30`,
+                        color: activeCategoryColor || 'hsl(var(--primary))',
+                      } : {}),
+                    }}
                     onMouseDown={(e) => {
                       e.preventDefault();
                       handleMouseDown(dateStr);
