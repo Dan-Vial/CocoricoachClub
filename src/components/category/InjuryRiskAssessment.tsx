@@ -236,12 +236,12 @@ export function InjuryRiskAssessment({ categoryId }: InjuryRiskAssessmentProps) 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+         <CardTitle className="flex items-center gap-2">
           <Activity className="h-5 w-5" />
-          Risque de Blessure (EWMA + Wellness)
+          Risque de Blessure (EWMA + AWCR + Wellness)
         </CardTitle>
         <CardDescription>
-          Ratio EWMA (Charge Aiguë / Charge Chronique) combiné avec le Score Wellness pondéré. Le ratio EWMA est affiché dans la colonne "EWMA".
+          Corrélation entre le ratio EWMA, l'AWCR (Charge Aiguë / Charge Chronique) et le Score Wellness pondéré pour évaluer le risque de blessure.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -332,7 +332,7 @@ export function InjuryRiskAssessment({ categoryId }: InjuryRiskAssessmentProps) 
                     {getRiskBadge(player.combinedRisk)}
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-4 text-sm mb-3">
+                  <div className="grid grid-cols-3 gap-4 text-sm mb-3">
                     <div>
                       <span className="text-muted-foreground">EWMA: </span>
                       <span className={player.awcrRisk === "high" ? "text-destructive font-medium" : ""}>
@@ -340,7 +340,13 @@ export function InjuryRiskAssessment({ categoryId }: InjuryRiskAssessmentProps) 
                       </span>
                     </div>
                     <div>
-                      <span className="text-muted-foreground">Wellness (pondéré): </span>
+                      <span className="text-muted-foreground">AWCR: </span>
+                      <span className={player.awcrRisk === "high" ? "text-destructive font-medium" : ""}>
+                        {player.awcr?.toFixed(2) ?? "N/A"}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Wellness: </span>
                       <span className={player.wellnessRisk === "high" ? "text-destructive font-medium" : ""}>
                         {player.wellnessScore?.toFixed(2) ?? "N/A"}/5
                       </span>
@@ -381,6 +387,9 @@ export function InjuryRiskAssessment({ categoryId }: InjuryRiskAssessmentProps) 
                     EWMA: {player.awcr?.toFixed(2) ?? "-"}
                   </div>
                   <div className="text-sm text-muted-foreground">
+                    AWCR: {player.awcr?.toFixed(2) ?? "-"}
+                  </div>
+                  <div className="text-sm text-muted-foreground">
                     W: {player.wellnessScore?.toFixed(2) ?? "-"}
                   </div>
                   {getRiskBadge(player.combinedRisk)}
@@ -395,9 +404,11 @@ export function InjuryRiskAssessment({ categoryId }: InjuryRiskAssessmentProps) 
           <h5 className="font-medium mb-2">Comment est calculé le risque ?</h5>
           <ul className="space-y-1 text-muted-foreground">
             <li>• <strong>Score Wellness pondéré:</strong> Fatigue (22%) et douleurs bas du corps (22%) pèsent plus</li>
-            <li>• <strong>Ratio EWMA optimal:</strong> 0.8 - 1.3 (zone de sécurité)</li>
+            <li>• <strong>Ratio EWMA optimal:</strong> 0.85 - 1.30 (zone de sécurité)</li>
+            <li>• <strong>AWCR (Acute:Chronic Workload Ratio):</strong> 0.8 - 1.3 (zone optimale)</li>
+            <li>• <strong>Corrélation triple:</strong> EWMA + AWCR + Wellness pour une évaluation plus précise</li>
             <li>• <strong>Détection de tendance:</strong> Analyse sur 7 jours pour détecter les détériorations</li>
-            <li>• <strong>Risque critique:</strong> Douleur + (EWMA ou Wellness élevé) ou détérioration rapide</li>
+            <li>• <strong>Risque critique:</strong> Douleur + (EWMA/AWCR ou Wellness élevé) ou détérioration rapide</li>
             <li>• <strong>Alertes intelligentes:</strong> Recommandations personnalisées selon le contexte</li>
           </ul>
         </div>
