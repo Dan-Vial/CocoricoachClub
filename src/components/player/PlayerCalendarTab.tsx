@@ -6,10 +6,12 @@ import { useState } from "react";
 import { DateRange } from "react-day-picker";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { X, Dumbbell, Activity, CheckCircle2, Swords, Video, Stethoscope, Users } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { X, Dumbbell, Activity, CheckCircle2, Swords, Video, Stethoscope, Users, CalendarDays, LayoutDashboard } from "lucide-react";
 import { isWithinInterval, parseISO } from "date-fns";
 import { getDisplayNotes, parseTestsFromNotes } from "@/lib/utils/sessionNotes";
 import { TEST_CATEGORIES } from "@/lib/constants/testCategories";
+import { AnnualPlanningView } from "@/components/planning/AnnualPlanningView";
 
 interface PlayerCalendarTabProps {
   playerId: string;
@@ -178,228 +180,249 @@ export function PlayerCalendarTab({ playerId, categoryId }: PlayerCalendarTabPro
   ].sort((a, b) => b._date.getTime() - a._date.getTime());
 
   return (
-    <Card className="bg-gradient-card shadow-md">
-      <CardHeader>
-        <div className="flex justify-between items-center">
-          <CardTitle>Calendrier du joueur</CardTitle>
-          {dateRange?.from && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setDateRange(undefined)}
-              className="gap-2"
-            >
-              <X className="h-4 w-4" />
-              Réinitialiser
-            </Button>
-          )}
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="grid md:grid-cols-2 gap-6">
-          <div className="flex justify-center">
-            <Calendar
-              mode="range"
-              selected={dateRange}
-              onSelect={setDateRange}
-              modifiers={{
-                session: sessionDates,
-                match: matchDates,
-                rehab: rehabDates,
-              }}
-              modifiersStyles={{
-                session: {
-                  fontWeight: "bold",
-                  textDecoration: "underline",
-                },
-                match: {
-                  backgroundColor: "hsl(346, 77%, 50%, 0.2)",
-                  borderRadius: "4px",
-                  fontWeight: "bold",
-                },
-                rehab: {
-                  backgroundColor: "hsl(var(--primary) / 0.2)",
-                  borderRadius: "4px",
-                },
-              }}
-              className="rounded-md border pointer-events-auto"
-            />
-          </div>
+    <Tabs defaultValue="calendar" className="space-y-4">
+      <div className="flex justify-center">
+        <TabsList>
+          <TabsTrigger value="calendar" className="gap-2">
+            <CalendarDays className="h-4 w-4" />
+            Calendrier
+          </TabsTrigger>
+          <TabsTrigger value="annual" className="gap-2">
+            <LayoutDashboard className="h-4 w-4" />
+            Planification annuelle
+          </TabsTrigger>
+        </TabsList>
+      </div>
 
-          <div className="space-y-4">
-            {/* Legend */}
-            <div className="flex flex-wrap gap-3 text-xs">
-              <div className="flex items-center gap-1">
-                <Activity className="w-3 h-3 text-muted-foreground" />
-                <span>Entraînement</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <Swords className="w-3 h-3 text-rose-500" />
-                <span>Match</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <Dumbbell className="w-3 h-3 text-primary" />
-                <span>Réhabilitation</span>
-              </div>
-            </div>
-
-            <div>
-              <h3 className="font-semibold mb-2">
-                {dateRange?.from
-                  ? dateRange.to
-                    ? `Événements du ${dateRange.from.toLocaleDateString("fr-FR")} au ${dateRange.to.toLocaleDateString("fr-FR")}`
-                    : `Événements du ${dateRange.from.toLocaleDateString("fr-FR")}`
-                  : "Tous les événements"}
-              </h3>
-              
-              {allEvents.length > 0 ? (
-                <div className="space-y-2 max-h-[400px] overflow-y-auto">
-                  {allEvents.map((event) => {
-                    if (event._type === 'session') {
-                      const Icon = getTrainingTypeIcon(event.training_type);
-                      return (
-                        <div
-                          key={`session-${event.id}`}
-                          className="p-3 border rounded-lg bg-card hover:bg-accent/10 transition-colors"
-                        >
-                          <div className="flex justify-between items-start">
-                            <div className="flex items-start gap-2">
-                              <Icon className="h-4 w-4 mt-0.5 text-muted-foreground" />
-                              <div>
-                                <p className="font-medium">{getTrainingTypeLabel(event.training_type)}</p>
-                                <p className="text-sm text-muted-foreground">
-                                  {event._date.toLocaleDateString("fr-FR", {
-                                    weekday: "long",
-                                    year: "numeric",
-                                    month: "long",
-                                    day: "numeric",
-                                  })}
-                                </p>
-                                {event.session_start_time && (
-                                  <p className="text-sm text-muted-foreground">
-                                    {event.session_start_time}
-                                    {event.session_end_time && ` - ${event.session_end_time}`}
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-                            {event.intensity && event.intensity > 1 && (
-                              <span className="text-xs px-2 py-1 bg-primary/10 text-primary rounded">
-                                Intensité: {event.intensity}/10
-                              </span>
-                            )}
-                          </div>
-                          {(() => {
-                            const tests = parseTestsFromNotes(event.notes);
-                            const displayNotes = getDisplayNotes(event.notes);
-                            return (
-                              <>
-                                {tests.length > 0 && (
-                                  <div className="flex flex-wrap gap-1 mt-2 ml-6">
-                                    {tests.map((t, i) => (
-                                      <Badge key={i} variant="outline" className="text-xs bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30">
-                                        {getTestLabel(t.test_type)}{t.result_unit ? ` (${t.result_unit})` : ''}
-                                      </Badge>
-                                    ))}
-                                  </div>
-                                )}
-                                {displayNotes && (
-                                  <p className="text-sm mt-2 text-muted-foreground ml-6">{displayNotes}</p>
-                                )}
-                              </>
-                            );
-                          })()}
-                        </div>
-                      );
-                    } else if (event._type === 'match') {
-                      return (
-                        <div
-                          key={`match-${event.id}`}
-                          className="p-3 border-l-4 border-rose-500 rounded-lg bg-rose-50 dark:bg-rose-950/20 transition-colors"
-                        >
-                          <div className="flex justify-between items-start">
-                            <div className="flex items-start gap-2">
-                              <Swords className="h-4 w-4 mt-0.5 text-rose-600" />
-                              <div>
-                                <p className="font-medium">vs {event.opponent}</p>
-                                <p className="text-sm text-muted-foreground">
-                                  {event._date.toLocaleDateString("fr-FR", {
-                                    weekday: "long",
-                                    year: "numeric",
-                                    month: "long",
-                                    day: "numeric",
-                                  })}
-                                </p>
-                                {event.location && (
-                                  <p className="text-xs text-muted-foreground">{event.location}</p>
-                                )}
-                              </div>
-                            </div>
-                            <Badge variant="outline" className="text-xs border-rose-300 text-rose-600">
-                              {event.is_home ? 'Domicile' : 'Extérieur'}
-                            </Badge>
-                          </div>
-                        </div>
-                      );
-                    } else {
-                      // Rehab event
-                      const rehabEvent = event as typeof event & { 
-                        title: string; 
-                        event_type: string;
-                        is_completed?: boolean; 
-                        description?: string;
-                        player_rehab_protocols?: { injury_protocols?: { name: string } };
-                      };
-                      const protocolName = rehabEvent.player_rehab_protocols?.injury_protocols?.name;
-                      return (
-                        <div
-                          key={`rehab-${event.id}`}
-                          className={`p-3 border-l-4 rounded-lg transition-colors ${getRehabEventTypeColor(rehabEvent.event_type, rehabEvent.is_completed || false)}`}
-                        >
-                          <div className="flex justify-between items-start">
-                            <div className="flex items-start gap-2">
-                              <Dumbbell className="h-4 w-4 mt-0.5" />
-                              <div>
-                                <div className="flex items-center gap-2">
-                                  <p className="font-medium">{rehabEvent.title}</p>
-                                  {rehabEvent.is_completed && (
-                                    <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                                  )}
-                                </div>
-                                <p className="text-sm text-muted-foreground">
-                                  {event._date.toLocaleDateString("fr-FR", {
-                                    weekday: "long",
-                                    year: "numeric",
-                                    month: "long",
-                                    day: "numeric",
-                                  })}
-                                </p>
-                                {protocolName && (
-                                  <p className="text-xs text-muted-foreground">
-                                    Protocole: {protocolName}
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-                            <Badge variant="outline" className="text-xs">
-                              {getRehabEventTypeLabel(rehabEvent.event_type)}
-                            </Badge>
-                          </div>
-                          {rehabEvent.description && (
-                            <p className="text-sm mt-2 text-muted-foreground ml-6">{rehabEvent.description}</p>
-                          )}
-                        </div>
-                      );
-                    }
-                  })}
-                </div>
-              ) : (
-                <p className="text-muted-foreground">Aucun événement pour cette période</p>
+      <TabsContent value="calendar">
+        <Card className="bg-gradient-card shadow-md">
+          <CardHeader>
+            <div className="flex justify-between items-center">
+              <CardTitle>Calendrier du joueur</CardTitle>
+              {dateRange?.from && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setDateRange(undefined)}
+                  className="gap-2"
+                >
+                  <X className="h-4 w-4" />
+                  Réinitialiser
+                </Button>
               )}
             </div>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+          </CardHeader>
+          <CardContent>
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="flex justify-center">
+                <Calendar
+                  mode="range"
+                  selected={dateRange}
+                  onSelect={setDateRange}
+                  modifiers={{
+                    session: sessionDates,
+                    match: matchDates,
+                    rehab: rehabDates,
+                  }}
+                  modifiersStyles={{
+                    session: {
+                      fontWeight: "bold",
+                      textDecoration: "underline",
+                    },
+                    match: {
+                      backgroundColor: "hsl(346, 77%, 50%, 0.2)",
+                      borderRadius: "4px",
+                      fontWeight: "bold",
+                    },
+                    rehab: {
+                      backgroundColor: "hsl(var(--primary) / 0.2)",
+                      borderRadius: "4px",
+                    },
+                  }}
+                  className="rounded-md border pointer-events-auto"
+                />
+              </div>
+
+              <div className="space-y-4">
+                {/* Legend */}
+                <div className="flex flex-wrap gap-3 text-xs">
+                  <div className="flex items-center gap-1">
+                    <Activity className="w-3 h-3 text-muted-foreground" />
+                    <span>Entraînement</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Swords className="w-3 h-3 text-rose-500" />
+                    <span>Match</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Dumbbell className="w-3 h-3 text-primary" />
+                    <span>Réhabilitation</span>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="font-semibold mb-2">
+                    {dateRange?.from
+                      ? dateRange.to
+                        ? `Événements du ${dateRange.from.toLocaleDateString("fr-FR")} au ${dateRange.to.toLocaleDateString("fr-FR")}`
+                        : `Événements du ${dateRange.from.toLocaleDateString("fr-FR")}`
+                      : "Tous les événements"}
+                  </h3>
+                  
+                  {allEvents.length > 0 ? (
+                    <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                      {allEvents.map((event) => {
+                        if (event._type === 'session') {
+                          const Icon = getTrainingTypeIcon(event.training_type);
+                          return (
+                            <div
+                              key={`session-${event.id}`}
+                              className="p-3 border rounded-lg bg-card hover:bg-accent/10 transition-colors"
+                            >
+                              <div className="flex justify-between items-start">
+                                <div className="flex items-start gap-2">
+                                  <Icon className="h-4 w-4 mt-0.5 text-muted-foreground" />
+                                  <div>
+                                    <p className="font-medium">{getTrainingTypeLabel(event.training_type)}</p>
+                                    <p className="text-sm text-muted-foreground">
+                                      {event._date.toLocaleDateString("fr-FR", {
+                                        weekday: "long",
+                                        year: "numeric",
+                                        month: "long",
+                                        day: "numeric",
+                                      })}
+                                    </p>
+                                    {event.session_start_time && (
+                                      <p className="text-sm text-muted-foreground">
+                                        {event.session_start_time}
+                                        {event.session_end_time && ` - ${event.session_end_time}`}
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                                {event.intensity && event.intensity > 1 && (
+                                  <span className="text-xs px-2 py-1 bg-primary/10 text-primary rounded">
+                                    Intensité: {event.intensity}/10
+                                  </span>
+                                )}
+                              </div>
+                              {(() => {
+                                const tests = parseTestsFromNotes(event.notes);
+                                const displayNotes = getDisplayNotes(event.notes);
+                                return (
+                                  <>
+                                    {tests.length > 0 && (
+                                      <div className="flex flex-wrap gap-1 mt-2 ml-6">
+                                        {tests.map((t, i) => (
+                                          <Badge key={i} variant="outline" className="text-xs bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30">
+                                            {getTestLabel(t.test_type)}{t.result_unit ? ` (${t.result_unit})` : ''}
+                                          </Badge>
+                                        ))}
+                                      </div>
+                                    )}
+                                    {displayNotes && (
+                                      <p className="text-sm mt-2 text-muted-foreground ml-6">{displayNotes}</p>
+                                    )}
+                                  </>
+                                );
+                              })()}
+                            </div>
+                          );
+                        } else if (event._type === 'match') {
+                          return (
+                            <div
+                              key={`match-${event.id}`}
+                              className="p-3 border-l-4 border-rose-500 rounded-lg bg-rose-50 dark:bg-rose-950/20 transition-colors"
+                            >
+                              <div className="flex justify-between items-start">
+                                <div className="flex items-start gap-2">
+                                  <Swords className="h-4 w-4 mt-0.5 text-rose-600" />
+                                  <div>
+                                    <p className="font-medium">vs {event.opponent}</p>
+                                    <p className="text-sm text-muted-foreground">
+                                      {event._date.toLocaleDateString("fr-FR", {
+                                        weekday: "long",
+                                        year: "numeric",
+                                        month: "long",
+                                        day: "numeric",
+                                      })}
+                                    </p>
+                                    {event.location && (
+                                      <p className="text-xs text-muted-foreground">{event.location}</p>
+                                    )}
+                                  </div>
+                                </div>
+                                <Badge variant="outline" className="text-xs border-rose-300 text-rose-600">
+                                  {event.is_home ? 'Domicile' : 'Extérieur'}
+                                </Badge>
+                              </div>
+                            </div>
+                          );
+                        } else {
+                          // Rehab event
+                          const rehabEvent = event as typeof event & { 
+                            title: string; 
+                            event_type: string;
+                            is_completed?: boolean; 
+                            description?: string;
+                            player_rehab_protocols?: { injury_protocols?: { name: string } };
+                          };
+                          const protocolName = rehabEvent.player_rehab_protocols?.injury_protocols?.name;
+                          return (
+                            <div
+                              key={`rehab-${event.id}`}
+                              className={`p-3 border-l-4 rounded-lg transition-colors ${getRehabEventTypeColor(rehabEvent.event_type, rehabEvent.is_completed || false)}`}
+                            >
+                              <div className="flex justify-between items-start">
+                                <div className="flex items-start gap-2">
+                                  <Dumbbell className="h-4 w-4 mt-0.5" />
+                                  <div>
+                                    <div className="flex items-center gap-2">
+                                      <p className="font-medium">{rehabEvent.title}</p>
+                                      {rehabEvent.is_completed && (
+                                        <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                                      )}
+                                    </div>
+                                    <p className="text-sm text-muted-foreground">
+                                      {event._date.toLocaleDateString("fr-FR", {
+                                        weekday: "long",
+                                        year: "numeric",
+                                        month: "long",
+                                        day: "numeric",
+                                      })}
+                                    </p>
+                                    {protocolName && (
+                                      <p className="text-xs text-muted-foreground">
+                                        Protocole: {protocolName}
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                                <Badge variant="outline" className="text-xs">
+                                  {getRehabEventTypeLabel(rehabEvent.event_type)}
+                                </Badge>
+                              </div>
+                              {rehabEvent.description && (
+                                <p className="text-sm mt-2 text-muted-foreground ml-6">{rehabEvent.description}</p>
+                              )}
+                            </div>
+                          );
+                        }
+                      })}
+                    </div>
+                  ) : (
+                    <p className="text-muted-foreground">Aucun événement pour cette période</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </TabsContent>
+
+      <TabsContent value="annual">
+        <AnnualPlanningView categoryId={categoryId} />
+      </TabsContent>
+    </Tabs>
   );
 }
