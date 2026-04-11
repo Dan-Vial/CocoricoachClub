@@ -421,7 +421,7 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
                   <Select value={subject} onValueChange={setSubject}>
                     <SelectTrigger className="flex-1"><SelectValue placeholder="Sélectionner une matière" /></SelectTrigger>
                     <SelectContent>
-                      {existingSubjects?.map((s) => (
+                     {existingSubjects.map((s) => (
                         <SelectItem key={s} value={s}>{s}</SelectItem>
                       ))}
                     </SelectContent>
