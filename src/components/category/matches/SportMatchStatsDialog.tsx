@@ -75,6 +75,7 @@ export function SportMatchStatsDialog({
   const [averagePlaySequenceText, setAveragePlaySequenceText] = useState<string>("");
   const [showGpsImport, setShowGpsImport] = useState(false);
   const [activeCategoryIndex, setActiveCategoryIndex] = useState(0);
+  const [kickingFieldPlayer, setKickingFieldPlayer] = useState<{ id: string; name: string } | null>(null);
   const queryClient = useQueryClient();
 
   const fieldConfig = getSportFieldConfig(sportType);
