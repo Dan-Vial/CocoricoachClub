@@ -86,6 +86,7 @@ export function EditMatchDialog({
   const [customCompetition, setCustomCompetition] = useState("");
   const [competitionStage, setCompetitionStage] = useState(match.competition_stage || "");
   const [matchDate, setMatchDate] = useState(match.match_date || "");
+  const [endDate, setEndDate] = useState(match.end_date || "");
   const [matchTime, setMatchTime] = useState(match.match_time?.slice(0, 5) || "");
   const [location, setLocation] = useState(match.location || "");
   const [isHome, setIsHome] = useState(match.is_home);
@@ -122,6 +123,7 @@ export function EditMatchDialog({
           competition: finalCompetition || null,
           competition_stage: competitionStage === "none" ? null : (competitionStage || null),
           match_date: matchDate,
+          end_date: endDate || null,
           match_time: matchTime || null,
           location: location || null,
           is_home: isHome,
@@ -325,15 +327,25 @@ export function EditMatchDialog({
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="matchDate">Date *</Label>
+              <Label htmlFor="matchDate">Date début *</Label>
               <Input
                 id="matchDate"
                 type="date"
                 value={matchDate}
                 onChange={(e) => setMatchDate(e.target.value)}
                 required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="endDate">Date fin</Label>
+              <Input
+                id="endDate"
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                min={matchDate}
               />
             </div>
             <div className="space-y-2">
