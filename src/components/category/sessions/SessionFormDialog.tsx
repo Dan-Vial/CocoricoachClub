@@ -2853,10 +2853,8 @@ export function SessionFormDialog({
                     )}
 
 
-                    {/* Precision exercise selector - shown for "precision" type or any sport-specific training type */}
-                    {(type === "precision" || (
-                      type && !["musculation", "cardio", "repos", "test", "echauffement", "recuperation", "video_analyse", "physique", "fitness_game", "match_preparation", "tactique"].includes(type)
-                    )) && (
+                    {/* Precision exercise selector - shown for "precision" type, hidden for rugby (uses field input at RPE time) */}
+                    {type === "precision" && !isRugbyType(sportType || "") && (
                       <div className="rounded-lg border border-accent/30 p-3 space-y-2">
                         <PrecisionExerciseSelector
                           categoryId={categoryId}
@@ -2868,6 +2866,13 @@ export function SessionFormDialog({
                         <p className="text-[10px] text-muted-foreground">
                           📊 Les athlètes pourront saisir leurs stats de précision (réussites / tentatives) lors de la saisie RPE.
                           Le staff peut créer des exercices personnalisés via le bouton « + ».
+                        </p>
+                      </div>
+                    )}
+                    {type === "precision" && isRugbyType(sportType || "") && (
+                      <div className="rounded-lg border border-accent/30 p-3">
+                        <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                          🏉 Les exercices de précision (Drop, Pénalités, Touches, Jeu de zone…) seront sélectionnés par l'athlète lors de la saisie RPE via le terrain interactif.
                         </p>
                       </div>
                     )}
