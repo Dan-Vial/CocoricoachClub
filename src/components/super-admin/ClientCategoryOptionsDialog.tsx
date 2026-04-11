@@ -156,6 +156,36 @@ export function ClientCategoryOptionsDialog({
     },
   });
 
+  const createClub = useMutation({
+    mutationFn: async () => {
+      if (!newClubName.trim()) throw new Error("Nom requis");
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Non authentifié");
+      
+      const { error } = await supabase
+        .from("clubs")
+        .insert({
+          name: newClubName.trim(),
+          sport: newClubSport,
+          user_id: user.id,
+          client_id: clientId,
+          timezone: "Europe/Paris",
+        });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["client-clubs-categories", clientId] });
+      queryClient.invalidateQueries({ queryKey: ["super-admin-clubs"] });
+      toast.success("Club créé avec succès");
+      setNewClubName("");
+      setNewClubSport("rugby");
+      setAddingClub(false);
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Erreur lors de la création du club");
+    },
+  });
+
   const toggleClub = (clubId: string) => {
     const newExpanded = new Set(expandedClubs);
     if (newExpanded.has(clubId)) {
