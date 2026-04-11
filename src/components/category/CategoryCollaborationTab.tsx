@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { Trash2, Info, Send, Copy, Link2, Check } from "lucide-react";
+import { Trash2, Info, Send, Copy, Link2, Check, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -267,6 +267,52 @@ export function CategoryCollaborationTab({ categoryId }: CategoryCollaborationTa
     },
   });
 
+  const createInvitationMutation = useMutation({
+    mutationFn: async ({ email, role, isClubMember }: { email: string; role: string; isClubMember: boolean }) => {
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) throw new Error("Not authenticated");
+      
+      const token = crypto.randomUUID();
+      const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
+
+      if (isClubMember) {
+        const { error } = await supabase.from("club_invitations").insert({
+          club_id: (category as any).club_id,
+          email,
+          role: role as any,
+          invited_by: user.user.id,
+          token,
+          expires_at: expiresAt,
+          status: "pending",
+        });
+        if (error) throw error;
+        return { token, type: "club_invitations" };
+      } else {
+        const { error } = await supabase.from("category_invitations").insert({
+          category_id: categoryId,
+          email,
+          role: role as any,
+          invited_by: user.user.id,
+          token,
+          expires_at: expiresAt,
+          status: "pending",
+        });
+        if (error) throw error;
+        return { token, type: "category_invitations" };
+      }
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["category-invitations", categoryId] });
+      queryClient.invalidateQueries({ queryKey: ["club-invitations-for-category"] });
+      const link = getInvitationLink(data.token, data.type);
+      navigator.clipboard.writeText(link);
+      toast.success("Invitation créée et lien copié dans le presse-papiers !");
+    },
+    onError: () => {
+      toast.error("Erreur lors de la création de l'invitation");
+    },
+  });
+
   const getRoleConfig = (role: string) => {
     return AVAILABLE_ROLES.find(r => r.value === role) || { 
       value: role, label: role, description: "", variant: "outline" as const 
@@ -327,8 +373,31 @@ export function CategoryCollaborationTab({ categoryId }: CategoryCollaborationTa
     const result = getInvitationForMember(member.profile?.email, isClubMember);
     
     if (!result) {
+      if (!member.profile?.email) {
+        return <span className="text-xs text-muted-foreground italic">—</span>;
+      }
       return (
-        <span className="text-xs text-muted-foreground italic">—</span>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 gap-1 text-xs"
+                onClick={() => createInvitationMutation.mutate({
+                  email: member.profile.email,
+                  role: member.role,
+                  isClubMember,
+                })}
+                disabled={createInvitationMutation.isPending}
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Créer
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Créer et copier un lien d'invitation</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       );
     }
 
