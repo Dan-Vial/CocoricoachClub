@@ -323,10 +323,6 @@ export function PlayerBowlingArsenal({ playerId, categoryId, isViewer }: PlayerB
         </div>
       </div>
 
-      <div>
-        <Label className="text-xs">Parties jouées</Label>
-        <Input type="number" value={gamesPlayed} onChange={e => setGamesPlayed(e.target.value)} min="0" className="w-32" />
-      </div>
 
       <Button
         className="w-full"
