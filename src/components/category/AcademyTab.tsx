@@ -350,10 +350,6 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
                   </div>
                 )}
               </div>
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
             </CardContent>
           </Card>
         </TabsContent>
