@@ -218,6 +218,19 @@ export function ImprovedCalendarView({
     }
   }, [currentDate, viewMode]);
 
+  // Get cycles visible in the current calendar view
+  const visibleCycles = useMemo(() => {
+    if (!periodizationCycles || calendarDays.length === 0) return [];
+    const viewStart = calendarDays[0];
+    const viewEnd = calendarDays[calendarDays.length - 1];
+    
+    return periodizationCycles.filter(cycle => {
+      const cycleStart = parseISO(cycle.start_date);
+      const cycleEnd = parseISO(cycle.end_date);
+      return cycleStart <= viewEnd && cycleEnd >= viewStart;
+    });
+  }, [periodizationCycles, calendarDays]);
+
   // Filter sessions based on selected filters
   const filteredSessions = useMemo(() => {
     let result = sessions;
