@@ -263,6 +263,7 @@ export function BowlingArsenalCatalogTab({ categoryId }: BowlingArsenalCatalogTa
   };
 
 
+  const updateImageMutation = useMutation({
     mutationFn: async ({ ballId, file }: { ballId: string; file: File }) => {
       const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
       const filePath = `balls/${ballId}.${ext}`;
