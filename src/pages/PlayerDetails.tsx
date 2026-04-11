@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { ArrowLeft, ArrowRightLeft, Edit2, Check, X, User, Activity, FlaskConical, Swords, CalendarDays, Heart, Utensils, GraduationCap, Bandage, CircleDot, Mountain } from "lucide-react";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { ColoredNavTabsList } from "@/components/ui/colored-nav-tabs";
 import * as TabsPrimitive from "@radix-ui/react-tabs";
 import { cn } from "@/lib/utils";
@@ -473,7 +472,7 @@ function PlayerDetailsContent() {
         </div>
 
         <Tabs defaultValue="charge" className="space-y-6">
-          <ScrollArea className="w-full">
+          <div className="w-full overflow-x-auto pb-2">
             <ColoredNavTabsList className="flex w-max gap-1.5 p-2">
               <PlayerDetailTab value="charge" label="Charge" icon={Activity} color="hsl(350 80% 55%)" />
               <PlayerDetailTab value="tests" label="Tests" icon={FlaskConical} color="hsl(280 70% 55%)" />
@@ -489,8 +488,7 @@ function PlayerDetailsContent() {
                 <PlayerDetailTab value="equipment" label={isBowling ? "Arsenal" : "Matériel"} icon={Mountain} color="hsl(190 70% 50%)" />
               )}
             </ColoredNavTabsList>
-            <ScrollBar orientation="horizontal" />
-          </ScrollArea>
+          </div>
 
           <TabsContent value="charge">
             <div className="space-y-6">
