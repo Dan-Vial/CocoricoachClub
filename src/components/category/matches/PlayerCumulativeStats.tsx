@@ -132,24 +132,18 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
     enabled: activeMatchIds.length > 0,
   });
 
-  // Fetch kicking attempts for rugby sports
-  const { data: kickingAttempts = [] } = useQuery({
-    queryKey: ["kicking-stats-cumulative", categoryId, activeMatchIds],
-    queryFn: async () => {
-      if (activeMatchIds.length === 0) return [];
-      const { data, error } = await supabase
-        .from("kicking_attempts")
-        .select("*, players(name, first_name), matches(opponent, match_date)")
-        .eq("category_id", categoryId)
-        .in("match_id", activeMatchIds);
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: isRugby && activeMatchIds.length > 0,
-  });
-
-  // Aggregate kicking stats per player
+  // Build kicking stats from player_match_stats (sport_data contains attempts)
   const kickingByPlayer = useMemo(() => {
+    if (!isRugby || activeMatchIds.length === 0) return {} as Record<string, {
+      total: number; success: number;
+      penalty: { total: number; success: number };
+      conversion: { total: number; success: number };
+      drop: { total: number; success: number };
+      byMatch: Record<string, { total: number; success: number }>;
+    }>;
+
+    // We already have stats data aggregated - but we need per-match data for byMatch
+    // Use the stats query data directly
     const map: Record<string, {
       total: number; success: number;
       penalty: { total: number; success: number };
@@ -157,9 +151,53 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
       drop: { total: number; success: number };
       byMatch: Record<string, { total: number; success: number }>;
     }> = {};
-    kickingAttempts.forEach((a: any) => {
-      if (!map[a.player_id]) {
-        map[a.player_id] = {
+
+    // We need the raw per-match data, let's use matchesDataForCharts or re-fetch
+    return map;
+  }, [isRugby, activeMatchIds]);
+
+  // Fetch per-match kicking data from player_match_stats for rugby
+  const { data: kickingData = [] } = useQuery({
+    queryKey: ["kicking-from-match-stats", categoryId, activeMatchIds],
+    queryFn: async () => {
+      if (activeMatchIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from("player_match_stats")
+        .select("player_id, match_id, conversions, penalties_scored, drop_goals, sport_data")
+        .in("match_id", activeMatchIds);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: isRugby && activeMatchIds.length > 0,
+  });
+
+  // Aggregate kicking stats per player from player_match_stats
+  const kickingByPlayerFinal = useMemo(() => {
+    const map: Record<string, {
+      total: number; success: number;
+      penalty: { total: number; success: number };
+      conversion: { total: number; success: number };
+      drop: { total: number; success: number };
+      byMatch: Record<string, { total: number; success: number }>;
+    }> = {};
+
+    kickingData.forEach((row: any) => {
+      const sportData = row.sport_data || {};
+      const convSuccess = Number(row.conversions) || 0;
+      const convAttempts = Number(sportData.conversionAttempts) || convSuccess;
+      const penSuccess = Number(row.penalties_scored) || 0;
+      const penAttempts = Number(sportData.penaltyAttempts) || penSuccess;
+      const dropSuccess = Number(row.drop_goals) || 0;
+      const dropAttempts = Number(sportData.dropAttempts) || dropSuccess;
+
+      const totalAttempts = convAttempts + penAttempts + dropAttempts;
+      const totalSuccess = convSuccess + penSuccess + dropSuccess;
+
+      // Skip players with no kicking activity
+      if (totalAttempts === 0) return;
+
+      if (!map[row.player_id]) {
+        map[row.player_id] = {
           total: 0, success: 0,
           penalty: { total: 0, success: 0 },
           conversion: { total: 0, success: 0 },
@@ -167,20 +205,22 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
           byMatch: {},
         };
       }
-      const p = map[a.player_id];
-      p.total++;
-      if (a.success) p.success++;
-      const type = a.kick_type as "penalty" | "conversion" | "drop";
-      if (p[type]) {
-        p[type].total++;
-        if (a.success) p[type].success++;
-      }
-      if (!p.byMatch[a.match_id]) p.byMatch[a.match_id] = { total: 0, success: 0 };
-      p.byMatch[a.match_id].total++;
-      if (a.success) p.byMatch[a.match_id].success++;
+      const p = map[row.player_id];
+      p.total += totalAttempts;
+      p.success += totalSuccess;
+      p.penalty.total += penAttempts;
+      p.penalty.success += penSuccess;
+      p.conversion.total += convAttempts;
+      p.conversion.success += convSuccess;
+      p.drop.total += dropAttempts;
+      p.drop.success += dropSuccess;
+      if (!p.byMatch[row.match_id]) p.byMatch[row.match_id] = { total: 0, success: 0 };
+      p.byMatch[row.match_id].total += totalAttempts;
+      p.byMatch[row.match_id].success += totalSuccess;
     });
+
     return map;
-  }, [kickingAttempts]);
+  }, [kickingData]);
 
   const { data: matchesDataForCharts = [] } = useQuery({
     queryKey: ["per_match_player_stats", categoryId, sportType, activeMatchIds],
