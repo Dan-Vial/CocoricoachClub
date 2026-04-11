@@ -328,10 +328,10 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
       </Tabs>
 
       {/* Grade Dialog */}
-      <Dialog open={academicDialogOpen} onOpenChange={setAcademicDialogOpen}>
+      <Dialog open={academicDialogOpen} onOpenChange={(open) => { setAcademicDialogOpen(open); if (!open) resetAcademicForm(); }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Ajouter une note scolaire</DialogTitle>
+            <DialogTitle>{editingEntryId ? "Modifier la note scolaire" : "Ajouter une note scolaire"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
@@ -429,9 +429,12 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setAcademicDialogOpen(false)}>Annuler</Button>
-            <Button onClick={() => addAcademicGrade.mutate()} disabled={!selectedPlayer || !academicGrade || addAcademicGrade.isPending}>
-              {addAcademicGrade.isPending ? "Ajout..." : "Ajouter"}
+            <Button variant="outline" onClick={() => { setAcademicDialogOpen(false); resetAcademicForm(); }}>Annuler</Button>
+            <Button 
+              onClick={() => editingEntryId ? updateAcademicGrade.mutate() : addAcademicGrade.mutate()} 
+              disabled={!selectedPlayer || !academicGrade || addAcademicGrade.isPending || updateAcademicGrade.isPending}
+            >
+              {(addAcademicGrade.isPending || updateAcademicGrade.isPending) ? "Enregistrement..." : (editingEntryId ? "Modifier" : "Ajouter")}
             </Button>
           </DialogFooter>
         </DialogContent>
