@@ -301,7 +301,7 @@ export function CategoryCollaborationTab({ categoryId }: CategoryCollaborationTa
 
   const getInvitationLink = (token: string, type: string) => {
     if (type === "athlete_invitations") {
-      return `${window.location.origin}/athlete-signup?token=${token}`;
+      return `${window.location.origin}/accept-athlete-invitation?token=${token}`;
     }
     const isCategory = type === "category_invitations";
     return `${window.location.origin}/accept-invitation?token=${token}${isCategory ? "&type=category" : ""}`;
