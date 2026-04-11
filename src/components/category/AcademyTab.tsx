@@ -141,6 +141,7 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
     onError: () => toast.error("Erreur lors de l'ajout"),
   });
 
+  const addDevelopmentPlan = useMutation({
     mutationFn: async () => {
       const { error } = await supabase.from("player_development_plans").insert({
         player_id: selectedPlayer,
