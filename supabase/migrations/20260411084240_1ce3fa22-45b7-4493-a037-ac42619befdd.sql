@@ -1,0 +1,1 @@
+CREATE POLICY "Authenticated users can update bowling ball catalog" ON public.bowling_ball_catalog FOR UPDATE TO authenticated USING (true) WITH CHECK (true);
