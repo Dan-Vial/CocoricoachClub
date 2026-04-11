@@ -4,14 +4,12 @@ import { ConcussionProtocolTab } from "@/components/category/ConcussionProtocolT
 import { MedicalRecordsTab } from "./MedicalRecordsTab";
 import { RecoveryJournalTab } from "./RecoveryJournalTab";
 import { CoachDashboard } from "./CoachDashboard";
-import { ProtocolManager } from "@/components/injuries/ProtocolManager";
 import { ActiveProtocolsDashboard } from "@/components/rehab/ActiveProtocolsDashboard";
 import {
   Activity,
   Brain,
   Snowflake,
   LayoutDashboard,
-  Settings2,
   Dumbbell,
 } from "lucide-react";
 import { useViewerModeContext } from "@/contexts/ViewerModeContext";
