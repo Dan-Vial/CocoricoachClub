@@ -569,28 +569,49 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
         </CardHeader>
         <CardContent className="space-y-3">
           {/* Quick-assign toolbar */}
-          {!isViewer && categories.length > 0 && (
+          {!isViewer && (
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-xs text-muted-foreground mr-1">Assignation rapide :</span>
               {categories.map((cat) => (
-                <button
-                  key={cat.id}
-                  onClick={() => setActiveCategoryId(activeCategoryId === cat.id ? null : cat.id)}
-                  className={cn(
-                    "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all border-2",
-                    activeCategoryId === cat.id
-                      ? "text-white shadow-md scale-105"
-                      : "text-foreground bg-card hover:brightness-95"
-                  )}
-                  style={{
-                    borderColor: cat.color,
-                    backgroundColor: activeCategoryId === cat.id ? cat.color : undefined,
-                  }}
-                >
-                  {activeCategoryId === cat.id && <Check className="h-3 w-3" />}
-                  {cat.name}
-                </button>
+                <div key={cat.id} className="relative group/chip flex items-center">
+                  <button
+                    onClick={() => setActiveCategoryId(activeCategoryId === cat.id ? null : cat.id)}
+                    className={cn(
+                      "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all border-2",
+                      activeCategoryId === cat.id
+                        ? "text-white shadow-md scale-105"
+                        : "text-foreground bg-card hover:brightness-95"
+                    )}
+                    style={{
+                      borderColor: cat.color,
+                      backgroundColor: activeCategoryId === cat.id ? cat.color : undefined,
+                    }}
+                  >
+                    {activeCategoryId === cat.id && <Check className="h-3 w-3" />}
+                    {cat.name}
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (confirm(`Supprimer la ligne "${cat.name}" et tous ses cycles ?`)) {
+                        deleteCycleCategory.mutate(cat.id);
+                        if (activeCategoryId === cat.id) setActiveCategoryId(null);
+                      }
+                    }}
+                    className="absolute -top-1.5 -right-1.5 z-10 h-4 w-4 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover/chip:opacity-100 transition-opacity hover:scale-110"
+                    title="Supprimer cette ligne"
+                  >
+                    <span className="text-[10px] font-bold leading-none">✕</span>
+                  </button>
+                </div>
               ))}
+              <button
+                onClick={() => setAddCategoryOpen(true)}
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-medium border-2 border-dashed border-muted-foreground/30 text-muted-foreground hover:border-primary hover:text-primary transition-colors"
+              >
+                <Plus className="h-3 w-3" />
+                Ajouter
+              </button>
               {activeCategoryId && (
                 <span className="text-[10px] text-muted-foreground italic ml-2">
                   Sélectionnez une période dans le calendrier
