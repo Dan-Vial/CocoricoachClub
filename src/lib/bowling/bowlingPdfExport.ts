@@ -126,64 +126,71 @@ function getScoreColor(score: number): [number, number, number] {
   return COLORS.scoreRed;
 }
 
-function getStatLevelColor(statType: string, value: number): [number, number, number] {
-  const thresholds: Record<string, { max: number; color: [number, number, number] }[]> = {
+function getStatLevelColors(statType: string, value: number): { bg: [number, number, number]; text: [number, number, number] } {
+  const NOIRE2 = { bg: COLORS.statNoire2Bg, text: COLORS.statNoire2Text };
+  const WHITE_TEXT = COLORS.white;
+  const thresholds: Record<string, { max: number; bg: [number, number, number]; text: [number, number, number] }[]> = {
     strike: [
-      { max: 20, color: COLORS.statOrange },
-      { max: 30, color: COLORS.statGreen },
-      { max: 35, color: COLORS.statGreen },
-      { max: 40, color: COLORS.statGreenDark },
-      { max: 45, color: COLORS.statBlue },
-      { max: 50, color: COLORS.statBlueDark },
-      { max: 55, color: COLORS.statBlack },
-      { max: Infinity, color: COLORS.statNoire2 },
+      { max: 20, bg: COLORS.statOrange, text: WHITE_TEXT },
+      { max: 30, bg: COLORS.statGreen, text: WHITE_TEXT },
+      { max: 35, bg: COLORS.statGreen, text: WHITE_TEXT },
+      { max: 40, bg: COLORS.statGreenDark, text: WHITE_TEXT },
+      { max: 45, bg: COLORS.statBlue, text: WHITE_TEXT },
+      { max: 50, bg: COLORS.statBlueDark, text: WHITE_TEXT },
+      { max: 55, bg: COLORS.statBlack, text: WHITE_TEXT },
+      { max: Infinity, bg: NOIRE2.bg, text: NOIRE2.text },
     ],
     spare: [
-      { max: 50, color: COLORS.statOrange },
-      { max: 60, color: COLORS.statGreen },
-      { max: 70, color: COLORS.statGreen },
-      { max: 80, color: COLORS.statGreenDark },
-      { max: 85, color: COLORS.statBlue },
-      { max: 90, color: COLORS.statBlueDark },
-      { max: 95, color: COLORS.statBlack },
-      { max: Infinity, color: COLORS.statNoire2 },
+      { max: 50, bg: COLORS.statOrange, text: WHITE_TEXT },
+      { max: 60, bg: COLORS.statGreen, text: WHITE_TEXT },
+      { max: 70, bg: COLORS.statGreen, text: WHITE_TEXT },
+      { max: 80, bg: COLORS.statGreenDark, text: WHITE_TEXT },
+      { max: 85, bg: COLORS.statBlue, text: WHITE_TEXT },
+      { max: 90, bg: COLORS.statBlueDark, text: WHITE_TEXT },
+      { max: 95, bg: COLORS.statBlack, text: WHITE_TEXT },
+      { max: Infinity, bg: NOIRE2.bg, text: NOIRE2.text },
     ],
     pocket: [
-      { max: 50, color: COLORS.statOrange },
-      { max: 60, color: COLORS.statGreen },
-      { max: 65, color: COLORS.statGreen },
-      { max: 70, color: COLORS.statGreenDark },
-      { max: 75, color: COLORS.statBlue },
-      { max: 80, color: COLORS.statBlueDark },
-      { max: 85, color: COLORS.statBlack },
-      { max: Infinity, color: COLORS.statNoire2 },
+      { max: 50, bg: COLORS.statOrange, text: WHITE_TEXT },
+      { max: 60, bg: COLORS.statGreen, text: WHITE_TEXT },
+      { max: 65, bg: COLORS.statGreen, text: WHITE_TEXT },
+      { max: 70, bg: COLORS.statGreenDark, text: WHITE_TEXT },
+      { max: 75, bg: COLORS.statBlue, text: WHITE_TEXT },
+      { max: 80, bg: COLORS.statBlueDark, text: WHITE_TEXT },
+      { max: 85, bg: COLORS.statBlack, text: WHITE_TEXT },
+      { max: Infinity, bg: NOIRE2.bg, text: NOIRE2.text },
     ],
     singlePin: [
-      { max: 70, color: COLORS.statOrange },
-      { max: 75, color: COLORS.statGreen },
-      { max: 80, color: COLORS.statGreen },
-      { max: 85, color: COLORS.statGreenDark },
-      { max: 90, color: COLORS.statBlue },
-      { max: 95, color: COLORS.statBlueDark },
-      { max: 100, color: COLORS.statBlack },
-      { max: Infinity, color: COLORS.statNoire2 },
+      { max: 70, bg: COLORS.statOrange, text: WHITE_TEXT },
+      { max: 75, bg: COLORS.statGreen, text: WHITE_TEXT },
+      { max: 80, bg: COLORS.statGreen, text: WHITE_TEXT },
+      { max: 85, bg: COLORS.statGreenDark, text: WHITE_TEXT },
+      { max: 90, bg: COLORS.statBlue, text: WHITE_TEXT },
+      { max: 95, bg: COLORS.statBlueDark, text: WHITE_TEXT },
+      { max: 100, bg: COLORS.statBlack, text: WHITE_TEXT },
+      { max: Infinity, bg: NOIRE2.bg, text: NOIRE2.text },
     ],
     firstBallGte8: [
-      { max: 50, color: COLORS.statOrange },
-      { max: 65, color: COLORS.statGreen },
-      { max: 75, color: COLORS.statGreen },
-      { max: 85, color: COLORS.statGreenDark },
-      { max: 88, color: COLORS.statBlue },
-      { max: 92, color: COLORS.statBlack },
-      { max: Infinity, color: COLORS.statNoire2 },
+      { max: 50, bg: COLORS.statOrange, text: WHITE_TEXT },
+      { max: 65, bg: COLORS.statGreen, text: WHITE_TEXT },
+      { max: 75, bg: COLORS.statGreen, text: WHITE_TEXT },
+      { max: 85, bg: COLORS.statGreenDark, text: WHITE_TEXT },
+      { max: 88, bg: COLORS.statBlue, text: WHITE_TEXT },
+      { max: 92, bg: COLORS.statBlack, text: WHITE_TEXT },
+      { max: Infinity, bg: NOIRE2.bg, text: NOIRE2.text },
     ],
   };
   const levels = thresholds[statType];
-  if (!levels) return COLORS.text;
+  if (!levels) return { bg: COLORS.text, text: COLORS.white };
   for (const l of levels) {
-    if (value < l.max) return l.color;
+    if (value < l.max) return { bg: l.bg, text: l.text };
   }
-  return COLORS.text;
+  return { bg: COLORS.text, text: COLORS.white };
+}
+
+// Backward-compatible wrapper
+function getStatLevelColor(statType: string, value: number): [number, number, number] {
+  return getStatLevelColors(statType, value).bg;
 }
 
 function checkPageBreak(doc: jsPDF, y: number, needed: number): number {
