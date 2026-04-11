@@ -132,6 +132,56 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
     enabled: activeMatchIds.length > 0,
   });
 
+  // Fetch kicking attempts for rugby sports
+  const { data: kickingAttempts = [] } = useQuery({
+    queryKey: ["kicking-stats-cumulative", categoryId, activeMatchIds],
+    queryFn: async () => {
+      if (activeMatchIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from("kicking_attempts")
+        .select("*, players(name, first_name), matches(opponent, match_date)")
+        .eq("category_id", categoryId)
+        .in("match_id", activeMatchIds);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: isRugby && activeMatchIds.length > 0,
+  });
+
+  // Aggregate kicking stats per player
+  const kickingByPlayer = useMemo(() => {
+    const map: Record<string, {
+      total: number; success: number;
+      penalty: { total: number; success: number };
+      conversion: { total: number; success: number };
+      drop: { total: number; success: number };
+      byMatch: Record<string, { total: number; success: number }>;
+    }> = {};
+    kickingAttempts.forEach((a: any) => {
+      if (!map[a.player_id]) {
+        map[a.player_id] = {
+          total: 0, success: 0,
+          penalty: { total: 0, success: 0 },
+          conversion: { total: 0, success: 0 },
+          drop: { total: 0, success: 0 },
+          byMatch: {},
+        };
+      }
+      const p = map[a.player_id];
+      p.total++;
+      if (a.success) p.success++;
+      const type = a.kick_type as "penalty" | "conversion" | "drop";
+      if (p[type]) {
+        p[type].total++;
+        if (a.success) p[type].success++;
+      }
+      if (!p.byMatch[a.match_id]) p.byMatch[a.match_id] = { total: 0, success: 0 };
+      p.byMatch[a.match_id].total++;
+      if (a.success) p.byMatch[a.match_id].success++;
+    });
+    return map;
+  }, [kickingAttempts]);
+
   const { data: matchesDataForCharts = [] } = useQuery({
     queryKey: ["per_match_player_stats", categoryId, sportType, activeMatchIds],
     queryFn: async () => {
