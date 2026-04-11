@@ -4828,6 +4828,35 @@ export type Database = {
           },
         ]
       }
+      periodization_saved_colors: {
+        Row: {
+          category_id: string
+          color: string
+          created_at: string
+          id: string
+        }
+        Insert: {
+          category_id: string
+          color: string
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          category_id?: string
+          color?: string
+          created_at?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "periodization_saved_colors_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       player_academic_profiles: {
         Row: {
           category_id: string
