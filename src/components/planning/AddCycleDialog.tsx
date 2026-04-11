@@ -37,10 +37,11 @@ export function AddCycleDialog({ open, onOpenChange, categoryId, categories, pre
   const [cycleType, setCycleType] = useState("");
   const [intensity, setIntensity] = useState(0);
   const [volume, setVolume] = useState(0);
+  const [customColor, setCustomColor] = useState("");
   const queryClient = useQueryClient();
 
   const selectedCategory = categories.find(c => c.id === periodizationCategoryId);
-  const color = selectedCategory?.color || "#3b82f6";
+  const color = customColor || selectedCategory?.color || "#3b82f6";
 
   useEffect(() => {
     if (preselectedCategoryId) {
@@ -89,6 +90,7 @@ export function AddCycleDialog({ open, onOpenChange, categoryId, categories, pre
     setCycleType("");
     setIntensity(0);
     setVolume(0);
+    setCustomColor("");
   };
 
   const isValid = name.trim() && periodizationCategoryId && startDate && endDate && endDate >= startDate;
@@ -126,6 +128,26 @@ export function AddCycleDialog({ open, onOpenChange, categoryId, categories, pre
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
+          </div>
+
+          <div>
+            <Label>Couleur du cycle</Label>
+            <div className="flex items-center gap-2 mt-1">
+              <input
+                type="color"
+                value={color}
+                onChange={(e) => setCustomColor(e.target.value)}
+                className="w-8 h-8 rounded cursor-pointer border border-border"
+              />
+              <span className="text-xs text-muted-foreground">
+                {customColor ? "Couleur personnalisée" : "Couleur de la ligne"}
+              </span>
+              {customColor && (
+                <Button variant="ghost" size="sm" className="h-6 text-xs px-2" onClick={() => setCustomColor("")}>
+                  Réinitialiser
+                </Button>
+              )}
+            </div>
           </div>
 
           <CycleFormFields

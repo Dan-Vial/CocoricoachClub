@@ -41,7 +41,9 @@ export function EditCycleDialog({ open, onOpenChange, cycle, categoryId, categor
   const [name, setName] = useState(cycle.name);
   const [periodizationCategoryId, setPeriodizationCategoryId] = useState(cycle.periodization_category_id);
   const selectedCategory = categories.find(c => c.id === periodizationCategoryId);
-  const color = selectedCategory?.color || cycle.color;
+  const defaultColor = selectedCategory?.color || cycle.color;
+  const [customColor, setCustomColor] = useState(cycle.color !== selectedCategory?.color ? cycle.color : "");
+  const color = customColor || defaultColor;
   const [startDate, setStartDate] = useState<Date>(new Date(cycle.start_date));
   const [endDate, setEndDate] = useState<Date>(new Date(cycle.end_date));
   const [objective, setObjective] = useState(cycle.objective || "");
@@ -109,6 +111,26 @@ export function EditCycleDialog({ open, onOpenChange, cycle, categoryId, categor
           <div>
             <Label>Nom du cycle</Label>
             <Input value={name} onChange={(e) => setName(e.target.value)} />
+          </div>
+
+          <div>
+            <Label>Couleur du cycle</Label>
+            <div className="flex items-center gap-2 mt-1">
+              <input
+                type="color"
+                value={color}
+                onChange={(e) => setCustomColor(e.target.value)}
+                className="w-8 h-8 rounded cursor-pointer border border-border"
+              />
+              <span className="text-xs text-muted-foreground">
+                {customColor ? "Couleur personnalisée" : "Couleur de la ligne"}
+              </span>
+              {customColor && (
+                <Button variant="ghost" size="sm" className="h-6 text-xs px-2" onClick={() => setCustomColor("")}>
+                  Réinitialiser
+                </Button>
+              )}
+            </div>
           </div>
 
 
