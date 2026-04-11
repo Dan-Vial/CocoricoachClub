@@ -22,6 +22,7 @@ interface PlayerAcademyTabProps {
   playerId: string;
   categoryId: string;
   playerName: string;
+  readOnly?: boolean;
 }
 
 const STAFF_ROLES = [
@@ -40,8 +41,9 @@ const SELECTION_TYPES = [
   { value: "selection_regionale", label: "Sélection Régionale" },
 ];
 
-export function PlayerAcademyTab({ playerId, categoryId, playerName }: PlayerAcademyTabProps) {
-  const { isViewer } = useViewerModeContext();
+export function PlayerAcademyTab({ playerId, categoryId, playerName, readOnly = false }: PlayerAcademyTabProps) {
+  const { isViewer: contextViewer } = useViewerModeContext();
+  const isViewer = contextViewer || readOnly;
   const queryClient = useQueryClient();
   const [academicDialogOpen, setAcademicDialogOpen] = useState(false);
   const [staffNoteDialogOpen, setStaffNoteDialogOpen] = useState(false);

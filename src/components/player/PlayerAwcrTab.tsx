@@ -18,9 +18,10 @@ import { HrvEntryDialog } from "@/components/category/hrv/HrvEntryDialog";
 interface PlayerAwcrTabProps {
   playerId: string;
   categoryId: string;
+  readOnly?: boolean;
 }
 
-export function PlayerAwcrTab({ playerId, categoryId }: PlayerAwcrTabProps) {
+export function PlayerAwcrTab({ playerId, categoryId, readOnly = false }: PlayerAwcrTabProps) {
   const [isHrvDialogOpen, setIsHrvDialogOpen] = useState(false);
   const { data: awcrData } = useQuery({
     queryKey: ["awcr_tracking", playerId],

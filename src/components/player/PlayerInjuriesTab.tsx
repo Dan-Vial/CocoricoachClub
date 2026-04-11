@@ -28,10 +28,12 @@ interface PlayerInjuriesTabProps {
   playerId: string;
   categoryId: string;
   playerName?: string;
+  readOnly?: boolean;
 }
 
-export function PlayerInjuriesTab({ playerId, categoryId, playerName = "Joueur" }: PlayerInjuriesTabProps) {
-  const { isViewer } = useViewerModeContext();
+export function PlayerInjuriesTab({ playerId, categoryId, playerName = "Joueur", readOnly = false }: PlayerInjuriesTabProps) {
+  const { isViewer: contextViewer } = useViewerModeContext();
+  const isViewer = contextViewer || readOnly;
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [protocolDialogOpen, setProtocolDialogOpen] = useState(false);
   const [selectedInjury, setSelectedInjury] = useState<any>(null);
