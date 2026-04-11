@@ -349,10 +349,12 @@ export function BowlingCumulativeStats({ categoryId, playerId: fixedPlayerId }: 
                       toast.info("Génération du PDF joueur...");
                       const avatarUrl = playerGames[0]?.playerAvatarUrl || null;
                       const matchIds = [...new Set(playerGames.map(g => g.matchId))];
-                      const [matchResult, catResult, oilResult] = await Promise.all([
+                      const [matchResult, catResult, oilResult, arsenalResult, catalogResult] = await Promise.all([
                         supabase.from("matches").select("opponent, location, age_category, competition, match_date").eq("id", matchIds[0]).single(),
                         supabase.from("categories").select("name").eq("id", categoryId).single(),
                         supabase.from("bowling_oil_patterns").select("name, image_url_male, image_url_female").in("match_id", matchIds).limit(1),
+                        supabase.from("player_bowling_arsenal" as any).select("*").eq("player_id", activePlayerId).eq("category_id", categoryId),
+                        supabase.from("bowling_ball_catalog" as any).select("*"),
                       ]);
                       const matchRow = matchResult.data;
                       const catData = catResult.data;
@@ -362,6 +364,16 @@ export function BowlingCumulativeStats({ categoryId, playerId: fixedPlayerId }: 
                         oilPatternName = oilResult.data[0].name;
                         oilPatternImageUrl = oilResult.data[0].image_url_male || oilResult.data[0].image_url_female || null;
                       }
+                      const catalogMap = new Map((catalogResult.data as any[] || []).map((b: any) => [b.id, b]));
+                      const arsenalBalls = ((arsenalResult.data as any[]) || []).map((item: any) => {
+                        const cat = item.ball_catalog_id ? catalogMap.get(item.ball_catalog_id) : null;
+                        const name = cat ? `${cat.brand} ${cat.model}` : `${item.custom_ball_brand || ""} ${item.custom_ball_name || "Custom"}`.trim();
+                        return {
+                          name,
+                          drillingLayout: item.drilling_layout || item.balance_type || null,
+                          imageUrl: cat?.image_url || null,
+                        };
+                      });
                       await exportBowlingPdf(
                         players.find(p => p.id === activePlayerId)?.name || "Athlète",
                         playerGames,
@@ -373,6 +385,7 @@ export function BowlingCumulativeStats({ categoryId, playerId: fixedPlayerId }: 
                           ageCategory: catData?.name || matchRow?.age_category || null,
                           location: matchRow?.location || null,
                           competitionDate: matchRow?.match_date || null,
+                          arsenalBalls,
                         }
                       );
                       toast.success("PDF joueur exporté !");
