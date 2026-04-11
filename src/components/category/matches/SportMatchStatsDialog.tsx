@@ -21,6 +21,7 @@ import { Switch } from "@/components/ui/switch";
 import { useStatPreferences } from "@/hooks/use-stat-preferences";
 import { MatchGpsImport } from "./MatchGpsImport";
 import { PlayerStatsGrid } from "./PlayerStatsGrid";
+import { MatchKickingFieldDialog } from "./MatchKickingFieldDialog";
 
 // Convert seconds to minutes display format (e.g., 185 => "3'05")
 function formatSecondsToMinutes(totalSeconds: number): string {
