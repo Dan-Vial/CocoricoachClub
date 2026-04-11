@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ArrowLeft, ArrowRightLeft, Edit2, Check, X, User, Activity, FlaskConical, Swords, CalendarDays, Heart, Utensils, GraduationCap, Bandage, CircleDot, Mountain } from "lucide-react";
+import { ArrowLeft, ArrowRightLeft, Edit2, Check, X, User, Activity, FlaskConical, Swords, CalendarDays, Heart, Utensils, GraduationCap, Bandage, CircleDot, Mountain, FileText } from "lucide-react";
 import { ColoredNavTabsList } from "@/components/ui/colored-nav-tabs";
 import * as TabsPrimitive from "@radix-ui/react-tabs";
 import { cn } from "@/lib/utils";
@@ -36,6 +36,7 @@ import { PlayerSurfEquipment } from "@/components/surf/PlayerSurfEquipment";
 import { PlayerSkiEquipment } from "@/components/ski/PlayerSkiEquipment";
 import { PlayerPadelEquipment } from "@/components/padel/PlayerPadelEquipment";
 import { ViewerModeProvider, useViewerModeContext } from "@/contexts/ViewerModeContext";
+import { AthleteSpaceDocuments } from "@/components/athlete-space/AthleteSpaceDocuments";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getPositionsForSport } from "@/lib/constants/sportPositions";
@@ -488,6 +489,7 @@ function PlayerDetailsContent() {
               {(isBowling || isSurf || isSki || isPadel) && (
                 <PlayerDetailTab value="equipment" label={isBowling ? "Arsenal" : "Matériel"} icon={Mountain} color="hsl(190 70% 50%)" />
               )}
+              <PlayerDetailTab value="documents" label="Documents" icon={FileText} color="hsl(280 70% 55%)" />
             </ColoredNavTabsList>
           </ScrollArea>
 
@@ -556,6 +558,9 @@ function PlayerDetailsContent() {
               )}
             </TabsContent>
           )}
+          <TabsContent value="documents">
+            <AthleteSpaceDocuments playerId={playerId!} categoryId={player.category_id} />
+          </TabsContent>
 
         </Tabs>
 
