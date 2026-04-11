@@ -4724,6 +4724,101 @@ export type Database = {
           },
         ]
       }
+      periodization_categories: {
+        Row: {
+          category_id: string
+          color: string
+          created_at: string
+          id: string
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          category_id: string
+          color?: string
+          created_at?: string
+          id?: string
+          name: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string
+          color?: string
+          created_at?: string
+          id?: string
+          name?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "periodization_categories_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      periodization_cycles: {
+        Row: {
+          category_id: string
+          color: string
+          created_at: string
+          end_date: string
+          id: string
+          name: string
+          notes: string | null
+          objective: string | null
+          periodization_category_id: string
+          start_date: string
+          updated_at: string
+        }
+        Insert: {
+          category_id: string
+          color?: string
+          created_at?: string
+          end_date: string
+          id?: string
+          name: string
+          notes?: string | null
+          objective?: string | null
+          periodization_category_id: string
+          start_date: string
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string
+          color?: string
+          created_at?: string
+          end_date?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          objective?: string | null
+          periodization_category_id?: string
+          start_date?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "periodization_cycles_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "periodization_cycles_periodization_category_id_fkey"
+            columns: ["periodization_category_id"]
+            isOneToOne: false
+            referencedRelation: "periodization_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       player_academic_profiles: {
         Row: {
           category_id: string
@@ -9515,6 +9610,7 @@ export type Database = {
           id: string
           intensity: number | null
           notes: string | null
+          periodization_cycle_id: string | null
           planned_intensity: number | null
           session_date: string
           session_end_time: string | null
@@ -9529,6 +9625,7 @@ export type Database = {
           id?: string
           intensity?: number | null
           notes?: string | null
+          periodization_cycle_id?: string | null
           planned_intensity?: number | null
           session_date: string
           session_end_time?: string | null
@@ -9543,6 +9640,7 @@ export type Database = {
           id?: string
           intensity?: number | null
           notes?: string | null
+          periodization_cycle_id?: string | null
           planned_intensity?: number | null
           session_date?: string
           session_end_time?: string | null
@@ -9570,6 +9668,13 @@ export type Database = {
             columns: ["created_by_player_id"]
             isOneToOne: false
             referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_sessions_periodization_cycle_id_fkey"
+            columns: ["periodization_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "periodization_cycles"
             referencedColumns: ["id"]
           },
           {
