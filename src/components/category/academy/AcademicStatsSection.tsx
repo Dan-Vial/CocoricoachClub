@@ -370,7 +370,7 @@ export function AcademicStatsSection({ categoryId }: AcademicStatsSectionProps) 
                         <LineChart data={evolutionData}>
                           <CartesianGrid strokeDasharray="3 3" />
                           <XAxis dataKey="label" fontSize={12} />
-                          <YAxis domain={[0, 20]} fontSize={12} />
+                           <YAxis domain={['dataMin - 2', 20]} fontSize={12} allowDecimals={false} />
                           <Tooltip />
                           <Legend />
                           <Line type="monotone" dataKey="moyenne" name="Moyenne (/20)" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4 }} connectNulls />
@@ -405,7 +405,7 @@ export function AcademicStatsSection({ categoryId }: AcademicStatsSectionProps) 
                         <LineChart data={subjectEvolutionData.chartData}>
                           <CartesianGrid strokeDasharray="3 3" />
                           <XAxis dataKey="label" fontSize={12} />
-                          <YAxis domain={[0, 20]} fontSize={12} />
+                           <YAxis domain={['dataMin - 2', 20]} fontSize={12} allowDecimals={false} />
                           <Tooltip />
                           <Legend />
                           {subjectEvolutionData.subjects.map((subj, i) => {
@@ -503,7 +503,7 @@ export function AcademicStatsSection({ categoryId }: AcademicStatsSectionProps) 
                         <BarChart data={yearComparison}>
                           <CartesianGrid strokeDasharray="3 3" />
                           <XAxis dataKey="year" fontSize={12} />
-                          <YAxis domain={[0, 20]} fontSize={12} />
+                          <YAxis domain={['dataMin - 2', 20]} fontSize={12} allowDecimals={false} />
                           <Tooltip />
                           <Legend />
                           <Bar dataKey="moyenne" name="Moyenne (/20)" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
