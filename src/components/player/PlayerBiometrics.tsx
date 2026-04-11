@@ -73,80 +73,64 @@ export function PlayerBiometrics({ playerId, categoryId, birthYear }: PlayerBiom
   return (
     <>
       <Card className="bg-gradient-card shadow-md">
-        <CardHeader>
+        <CardHeader className="py-3 px-4">
           <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <Weight className="h-5 w-5" />
+            <CardTitle className="flex items-center gap-2 text-sm">
+              <Weight className="h-4 w-4" />
               Données Biométriques
             </CardTitle>
             {!isViewer && (
               <Button
                 size="sm"
+                variant="ghost"
+                className="h-7 text-xs"
                 onClick={() => setShowAddDialog(true)}
               >
-                <Plus className="h-4 w-4 mr-2" />
-                Nouvelle mesure
+                <Plus className="h-3 w-3 mr-1" />
+                Mesure
               </Button>
             )}
           </div>
           {birthYear && (
-            <p className="text-sm text-muted-foreground">
-              Année de naissance: {birthYear} ({age} ans)
+            <p className="text-xs text-muted-foreground">
+              Naissance: {birthYear} ({age} ans)
             </p>
           )}
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-3 px-4 pb-3 pt-0">
           {(latestMeasurement || latestComposition) ? (
             <>
               {/* Basic measurements */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                 {weight && (
-                  <div className="p-4 bg-muted/50 rounded-lg">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Weight className="h-4 w-4 text-muted-foreground" />
-                      <p className="text-sm text-muted-foreground">Poids</p>
-                    </div>
-                    <p className="text-2xl font-bold text-primary">
-                      {weight} kg
-                    </p>
+                  <div className="p-2 bg-muted/50 rounded-lg">
+                    <p className="text-xs text-muted-foreground">Poids</p>
+                    <p className="text-lg font-bold text-primary">{weight} kg</p>
                   </div>
                 )}
                 {height && (
-                  <div className="p-4 bg-muted/50 rounded-lg">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Ruler className="h-4 w-4 text-muted-foreground" />
-                      <p className="text-sm text-muted-foreground">Taille</p>
-                    </div>
-                    <p className="text-2xl font-bold text-primary">
-                      {height} cm
-                    </p>
+                  <div className="p-2 bg-muted/50 rounded-lg">
+                    <p className="text-xs text-muted-foreground">Taille</p>
+                    <p className="text-lg font-bold text-primary">{height} cm</p>
                   </div>
                 )}
                 {bmi && (
-                  <div className="p-4 bg-muted/50 rounded-lg">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Scale className="h-4 w-4 text-muted-foreground" />
-                      <p className="text-sm text-muted-foreground">IMC</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <p className="text-2xl font-bold text-primary">{bmi}</p>
-                      <Badge variant="outline" className={getBmiCategory(parseFloat(bmi)).color}>
+                  <div className="p-2 bg-muted/50 rounded-lg">
+                    <p className="text-xs text-muted-foreground">IMC</p>
+                    <div className="flex items-center gap-1">
+                      <p className="text-lg font-bold text-primary">{bmi}</p>
+                      <Badge variant="outline" className={`text-[10px] px-1 py-0 ${getBmiCategory(parseFloat(bmi)).color}`}>
                         {getBmiCategory(parseFloat(bmi)).label}
                       </Badge>
                     </div>
                   </div>
                 )}
                 {latestComposition?.body_fat_percentage && (
-                  <div className="p-4 bg-muted/50 rounded-lg">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Scale className="h-4 w-4 text-muted-foreground" />
-                      <p className="text-sm text-muted-foreground">% Masse Grasse</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <p className="text-2xl font-bold text-primary">
-                        {latestComposition.body_fat_percentage}%
-                      </p>
-                      <Badge variant="outline" className={getBodyFatCategory(latestComposition.body_fat_percentage).color}>
+                  <div className="p-2 bg-muted/50 rounded-lg">
+                    <p className="text-xs text-muted-foreground">% MG</p>
+                    <div className="flex items-center gap-1">
+                      <p className="text-lg font-bold text-primary">{latestComposition.body_fat_percentage}%</p>
+                      <Badge variant="outline" className={`text-[10px] px-1 py-0 ${getBodyFatCategory(latestComposition.body_fat_percentage).color}`}>
                         {getBodyFatCategory(latestComposition.body_fat_percentage).label}
                       </Badge>
                     </div>
@@ -156,21 +140,12 @@ export function PlayerBiometrics({ playerId, categoryId, birthYear }: PlayerBiom
 
               {/* Muscle mass if available */}
               {latestComposition?.muscle_mass_kg && (
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="p-4 bg-muted/50 rounded-lg">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Dumbbell className="h-4 w-4 text-muted-foreground" />
-                      <p className="text-sm text-muted-foreground">Masse Musculaire</p>
-                    </div>
-                    <p className="text-2xl font-bold text-primary">
-                      {latestComposition.muscle_mass_kg} kg
-                    </p>
-                    {weight && (
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {((latestComposition.muscle_mass_kg / weight) * 100).toFixed(1)}% du poids total
-                      </p>
-                    )}
-                  </div>
+                <div className="p-2 bg-muted/50 rounded-lg">
+                  <p className="text-xs text-muted-foreground">Masse Musculaire</p>
+                  <p className="text-lg font-bold text-primary">
+                    {latestComposition.muscle_mass_kg} kg
+                    {weight && <span className="text-xs font-normal text-muted-foreground ml-1">({((latestComposition.muscle_mass_kg / weight) * 100).toFixed(1)}%)</span>}
+                  </p>
                 </div>
               )}
 
