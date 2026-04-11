@@ -301,7 +301,14 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
                           <TableCell>{format(new Date(entry.tracking_date), "dd MMM yyyy", { locale: fr })}</TableCell>
                           <TableCell>{entry.school_absence_hours || 0}h</TableCell>
                           <TableCell className="max-w-32 truncate">{entry.absence_reason || "-"}</TableCell>
-                          <TableCell>{entry.academic_grade ? `${entry.academic_grade}/20` : "-"}</TableCell>
+                          <TableCell>
+                            {entry.academic_grade 
+                              ? `${entry.academic_grade}/${(entry as any).grade_scale || "20"}`
+                              : ((entry as any).grade_scale === "letter" && entry.notes) 
+                                ? entry.notes.split(" - ")[0]
+                                : "-"
+                            }
+                          </TableCell>
                           <TableCell>{entry.subject || "-"}</TableCell>
                           <TableCell className="max-w-40 truncate">{entry.notes || "-"}</TableCell>
                         </TableRow>
@@ -454,10 +461,34 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
                 </SelectContent>
               </Select>
             </div>
+            <div>
+              <Label>Barème</Label>
+              <Select value={gradeScale} onValueChange={(val) => { setGradeScale(val); setAcademicGrade(""); }}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="5">Sur 5</SelectItem>
+                  <SelectItem value="10">Sur 10</SelectItem>
+                  <SelectItem value="20">Sur 20</SelectItem>
+                  <SelectItem value="letter">Lettres (A, B, C, D)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>Note (/20)</Label>
-                <Input type="number" value={academicGrade} onChange={(e) => setAcademicGrade(e.target.value)} placeholder="15" />
+                <Label>Note</Label>
+                {gradeScale === "letter" ? (
+                  <Select value={academicGrade} onValueChange={setAcademicGrade}>
+                    <SelectTrigger><SelectValue placeholder="Choisir" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="A">A</SelectItem>
+                      <SelectItem value="B">B</SelectItem>
+                      <SelectItem value="C">C</SelectItem>
+                      <SelectItem value="D">D</SelectItem>
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Input type="number" value={academicGrade} onChange={(e) => setAcademicGrade(e.target.value)} placeholder={`/${gradeScale}`} min="0" max={gradeScale} />
+                )}
               </div>
               <div>
                 <Label>Matière</Label>
