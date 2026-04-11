@@ -1,5 +1,5 @@
 import { Tabs, TabsContent } from "@/components/ui/tabs";
-import { ClipboardCheck, Users, FileSpreadsheet, FileText, UserSearch, FolderOpen, Truck, BarChart3 } from "lucide-react";
+import { ClipboardCheck, Users, FileSpreadsheet, FileText, UserSearch, FolderOpen, BarChart3 } from "lucide-react";
 import { AttendanceTab } from "@/components/category/attendance/AttendanceTab";
 import { CategoryCollaborationTab } from "@/components/category/CategoryCollaborationTab";
 
@@ -7,7 +7,7 @@ import { MatchSheetsSection } from "@/components/category/admin/MatchSheetsSecti
 
 import { RecruitmentSection } from "@/components/category/admin/RecruitmentSection";
 import { DocumentsSection } from "@/components/category/admin/DocumentsSection";
-import { LogisticsSection } from "@/components/category/admin/LogisticsSection";
+
 import { ReportsTab } from "@/components/category/ReportsTab";
 import { ColoredSubTabsList, ColoredSubTabsTrigger } from "@/components/ui/colored-subtabs";
 import { useQuery } from "@tanstack/react-query";
@@ -76,14 +76,6 @@ export function AdminTab({ categoryId }: AdminTabProps) {
             <span className="sm:hidden">Docs</span>
           </ColoredSubTabsTrigger>
           <ColoredSubTabsTrigger 
-            value="logistics" 
-            colorKey="admin"
-            icon={<Truck className="h-4 w-4" />}
-          >
-            <span className="hidden sm:inline">Logistique</span>
-            <span className="sm:hidden">Logi</span>
-          </ColoredSubTabsTrigger>
-          <ColoredSubTabsTrigger 
             value="reports" 
             colorKey="admin"
             icon={<BarChart3 className="h-4 w-4" />}
@@ -112,9 +104,6 @@ export function AdminTab({ categoryId }: AdminTabProps) {
         </TabsContent>
       )}
 
-      <TabsContent value="logistics">
-        <LogisticsSection categoryId={categoryId} />
-      </TabsContent>
 
       <TabsContent value="recruitment">
         <RecruitmentSection categoryId={categoryId} />
