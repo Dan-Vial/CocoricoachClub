@@ -519,7 +519,7 @@ export function DocumentsSection({ categoryId }: DocumentsSectionProps) {
               </div>
               <Button
                 onClick={() => addDocumentMutation.mutate(formData)}
-                disabled={!formData.title || !selectedFile || addDocumentMutation.isPending || isUploading}
+                disabled={!formData.title || !selectedFile || addDocumentMutation.isPending || isUploading || (formData.document_type === "custom" && !customDocumentType.trim())}
                 className="w-full"
               >
                 {isUploading ? (
