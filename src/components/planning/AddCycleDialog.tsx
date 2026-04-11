@@ -14,6 +14,7 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { CycleFormFields } from "./CycleFormFields";
 
 
 interface AddCycleDialogProps {
@@ -33,6 +34,9 @@ export function AddCycleDialog({ open, onOpenChange, categoryId, categories, pre
   const [endDate, setEndDate] = useState<Date>();
   const [objective, setObjective] = useState("");
   const [notes, setNotes] = useState("");
+  const [cycleType, setCycleType] = useState("");
+  const [intensity, setIntensity] = useState(0);
+  const [volume, setVolume] = useState(0);
   const queryClient = useQueryClient();
 
   const selectedCategory = categories.find(c => c.id === periodizationCategoryId);
@@ -61,6 +65,9 @@ export function AddCycleDialog({ open, onOpenChange, categoryId, categories, pre
         end_date: format(endDate, "yyyy-MM-dd"),
         objective: objective || null,
         notes: notes || null,
+        cycle_type: cycleType || null,
+        intensity: intensity || null,
+        volume: volume || null,
       });
       if (error) throw error;
     },
@@ -79,6 +86,9 @@ export function AddCycleDialog({ open, onOpenChange, categoryId, categories, pre
     setEndDate(undefined);
     setObjective("");
     setNotes("");
+    setCycleType("");
+    setIntensity(0);
+    setVolume(0);
   };
 
   const isValid = name.trim() && periodizationCategoryId && startDate && endDate && endDate >= startDate;
@@ -118,7 +128,14 @@ export function AddCycleDialog({ open, onOpenChange, categoryId, categories, pre
             />
           </div>
 
-
+          <CycleFormFields
+            cycleType={cycleType}
+            onCycleTypeChange={setCycleType}
+            intensity={intensity}
+            onIntensityChange={setIntensity}
+            volume={volume}
+            onVolumeChange={setVolume}
+          />
 
           <div className="grid grid-cols-2 gap-3">
             <div>

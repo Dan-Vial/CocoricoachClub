@@ -36,6 +36,9 @@ interface PeriodizationCycle {
   end_date: string;
   objective: string | null;
   notes: string | null;
+  cycle_type: string | null;
+  intensity: number | null;
+  volume: number | null;
 }
 
 export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
