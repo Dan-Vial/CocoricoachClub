@@ -43,7 +43,7 @@ const DOCUMENT_TYPES = [
   { value: "insurance", label: "Assurance" },
   { value: "parental_authorization", label: "Autorisation parentale" },
   { value: "image_rights", label: "Droit à l'image" },
-  { value: "other", label: "Autre" },
+  { value: "custom", label: "Autre (personnalisé)" },
 ];
 
 const ACCEPTED_FILE_TYPES = ".pdf,.jpg,.jpeg,.png,.webp,.heic,.gif,.bmp,.tiff,.tif";
