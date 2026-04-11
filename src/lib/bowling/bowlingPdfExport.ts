@@ -810,7 +810,10 @@ export async function exportBowlingPdf(playerName: string, games: BowlingGameDat
     doc.text(blocTitle, margin + 3, y + 5);
     doc.setFontSize(7);
     doc.setFont("helvetica", "normal");
-    doc.text(`${matchGames.length} parties | Moy: ${matchAvg.toFixed(1)} | High: ${matchHigh}`, margin + 3, y + 10);
+    const subParts = [];
+    if (blocSubtitle) subParts.push(blocSubtitle);
+    subParts.push(`${matchGames.length} parties | Moy: ${matchAvg.toFixed(1)} | High: ${matchHigh}`);
+    doc.text(subParts.join(" — "), margin + 3, y + 10);
     y += 15;
 
     // Separator line under bloc header
