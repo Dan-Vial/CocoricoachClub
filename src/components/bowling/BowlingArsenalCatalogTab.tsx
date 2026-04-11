@@ -586,6 +586,14 @@ export function BowlingArsenalCatalogTab({ categoryId }: BowlingArsenalCatalogTa
                         {item.purchase_date && <span>Achat: {format(new Date(item.purchase_date), "dd/MM/yyyy")}</span>}
                       </div>
                     </div>
+                    <div className="flex flex-col gap-1">
+                      <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handleEditArsenalItem(item)}>
+                        <Edit2 className="h-4 w-4" />
+                      </Button>
+                      <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => removeArsenalBallMutation.mutate(item.id)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 );
               })}
