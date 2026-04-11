@@ -50,6 +50,9 @@ export function ClientCategoryOptionsDialog({
   const queryClient = useQueryClient();
   const [expandedClubs, setExpandedClubs] = useState<Set<string>>(new Set());
   const [addingForClub, setAddingForClub] = useState<string | null>(null);
+  const [addingClub, setAddingClub] = useState(false);
+  const [newClubName, setNewClubName] = useState("");
+  const [newClubSport, setNewClubSport] = useState<MainSportCategory>("rugby");
   const [newCat, setNewCat] = useState({
     name: "",
     gender: "male",
@@ -150,6 +153,36 @@ export function ClientCategoryOptionsDialog({
     },
     onError: (err: any) => {
       toast.error(err.message || "Erreur lors de la création");
+    },
+  });
+
+  const createClub = useMutation({
+    mutationFn: async () => {
+      if (!newClubName.trim()) throw new Error("Nom requis");
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Non authentifié");
+      
+      const { error } = await supabase
+        .from("clubs")
+        .insert({
+          name: newClubName.trim(),
+          sport: newClubSport,
+          user_id: user.id,
+          client_id: clientId,
+          timezone: "Europe/Paris",
+        });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["client-clubs-categories", clientId] });
+      queryClient.invalidateQueries({ queryKey: ["super-admin-clubs"] });
+      toast.success("Club créé avec succès");
+      setNewClubName("");
+      setNewClubSport("rugby");
+      setAddingClub(false);
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Erreur lors de la création du club");
     },
   });
 
@@ -402,6 +435,61 @@ export function ClientCategoryOptionsDialog({
                 </Collapsible>
               ))}
             </div>
+          )}
+
+          {/* Add club form */}
+          {addingClub ? (
+            <div className="mt-4 p-3 rounded-lg border border-primary/30 bg-primary/5 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-semibold flex items-center gap-2">
+                  <Building2 className="h-4 w-4" />
+                  Nouveau club / structure
+                </span>
+                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => { setAddingClub(false); setNewClubName(""); }}>
+                  <X className="h-3 w-3" />
+                </Button>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <Label className="text-xs">Nom</Label>
+                  <Input
+                    value={newClubName}
+                    onChange={(e) => setNewClubName(e.target.value)}
+                    placeholder="Ex: CREPS Toulouse..."
+                    className="h-8 text-sm"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Sport principal</Label>
+                  <Select value={newClubSport} onValueChange={(v) => setNewClubSport(v as MainSportCategory)}>
+                    <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {MAIN_SPORTS.map((s) => (
+                        <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <Button
+                size="sm"
+                className="w-full"
+                disabled={!newClubName.trim() || createClub.isPending}
+                onClick={() => createClub.mutate()}
+              >
+                {createClub.isPending ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Plus className="h-3 w-3 mr-1" />}
+                Créer le club
+              </Button>
+            </div>
+          ) : (
+            <Button
+              variant="outline"
+              className="mt-4 w-full"
+              onClick={() => setAddingClub(true)}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Ajouter un club / structure
+            </Button>
           )}
         </div>
 
