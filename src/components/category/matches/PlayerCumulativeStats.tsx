@@ -132,30 +132,6 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
     enabled: activeMatchIds.length > 0,
   });
 
-  // Build kicking stats from player_match_stats (sport_data contains attempts)
-  const kickingByPlayer = useMemo(() => {
-    if (!isRugby || activeMatchIds.length === 0) return {} as Record<string, {
-      total: number; success: number;
-      penalty: { total: number; success: number };
-      conversion: { total: number; success: number };
-      drop: { total: number; success: number };
-      byMatch: Record<string, { total: number; success: number }>;
-    }>;
-
-    // We already have stats data aggregated - but we need per-match data for byMatch
-    // Use the stats query data directly
-    const map: Record<string, {
-      total: number; success: number;
-      penalty: { total: number; success: number };
-      conversion: { total: number; success: number };
-      drop: { total: number; success: number };
-      byMatch: Record<string, { total: number; success: number }>;
-    }> = {};
-
-    // We need the raw per-match data, let's use matchesDataForCharts or re-fetch
-    return map;
-  }, [isRugby, activeMatchIds]);
-
   // Fetch per-match kicking data from player_match_stats for rugby
   const { data: kickingData = [] } = useQuery({
     queryKey: ["kicking-from-match-stats", categoryId, activeMatchIds],
