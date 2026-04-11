@@ -195,15 +195,15 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
   });
 
   const handleDateRangeSelect = useCallback((start: Date, end: Date) => {
+    setPrefilledStartDate(start);
+    setPrefilledEndDate(end);
     if (activeCategoryId) {
-      quickCreateCycle.mutate({ catId: activeCategoryId, start, end });
+      setAddCyclePreselectedCategory(activeCategoryId);
     } else {
-      setPrefilledStartDate(start);
-      setPrefilledEndDate(end);
       setAddCyclePreselectedCategory(null);
-      setAddCycleOpen(true);
     }
-  }, [activeCategoryId, quickCreateCycle]);
+    setAddCycleOpen(true);
+  }, [activeCategoryId]);
 
   return (
     <div className="space-y-4">
