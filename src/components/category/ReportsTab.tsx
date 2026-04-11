@@ -1024,6 +1024,172 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
         }
       }
 
+      // ===== KICKING MAP for Rugby =====
+      const kickingAttempts = (kickingRes.data || []) as any[];
+      if (isRugbySport && kickingAttempts.length > 0) {
+        yPos += 10;
+        yPos = localCheckPageBreak(pdf, yPos, 100);
+
+        pdf.setFontSize(12);
+        pdf.setFont("helvetica", "bold");
+        pdf.setTextColor(...defaultColors.dark);
+        pdf.text("CARTOGRAPHIE DES TIRS AU BUT", margin, yPos);
+        yPos += 8;
+
+        // Draw rugby field
+        const fieldW = contentWidth;
+        const fieldH = fieldW * 0.6;
+        const fieldX = margin;
+        const fieldY = yPos;
+
+        // Check page break for field
+        if (fieldY + fieldH + 30 > pdf.internal.pageSize.getHeight() - 20) {
+          pdf.addPage();
+          yPos = 25;
+        }
+        const fY = yPos;
+
+        // Field background
+        pdf.setFillColor(21, 128, 61); // emerald-700
+        pdf.roundedRect(fieldX, fY, fieldW, fieldH, 2, 2, 'F');
+        
+        // Field outline
+        pdf.setDrawColor(255, 255, 255);
+        pdf.setLineWidth(0.5);
+        const innerMargin = fieldW * 0.033;
+        pdf.rect(fieldX + innerMargin, fY + innerMargin * 0.6, fieldW - 2 * innerMargin, fieldH - innerMargin * 1.2);
+
+        // Goalposts on right
+        const goalX = fieldX + fieldW * 0.967;
+        pdf.setLineWidth(1.2);
+        pdf.line(goalX, fY + fieldH * 0.425, goalX, fY + fieldH * 0.575);
+        
+        // Try line
+        pdf.setLineWidth(0.4);
+        const tryLineX = fieldX + fieldW * 0.9;
+        pdf.line(tryLineX, fY + innerMargin * 0.6, tryLineX, fY + fieldH - innerMargin * 0.6);
+        
+        // 22m line
+        const line22 = fieldX + fieldW * 0.733;
+        pdf.setLineWidth(0.3);
+        pdf.line(line22, fY + innerMargin * 0.6, line22, fY + fieldH - innerMargin * 0.6);
+        
+        // Halfway line
+        const halfwayX = fieldX + fieldW * 0.4;
+        pdf.setLineWidth(0.5);
+        pdf.line(halfwayX, fY + innerMargin * 0.6, halfwayX, fY + fieldH - innerMargin * 0.6);
+
+        // Line labels
+        pdf.setFontSize(5);
+        pdf.setTextColor(255, 255, 255);
+        pdf.setFont("helvetica", "normal");
+        pdf.text("En-but", tryLineX, fY + fieldH - 1, { align: "center" });
+        pdf.text("22m", line22, fY + fieldH - 1, { align: "center" });
+        pdf.text("50m", halfwayX, fY + fieldH - 1, { align: "center" });
+
+        // Draw kick attempts
+        const typeColors: Record<string, [number, number, number]> = {
+          conversion: [59, 130, 246], // blue
+          penalty: [245, 158, 11], // amber
+          drop: [139, 92, 246], // purple
+        };
+
+        kickingAttempts.forEach((attempt: any) => {
+          const cx = fieldX + (attempt.zone_x / 100) * fieldW;
+          const cy = fY + (attempt.zone_y / 100) * fieldH;
+          const r = Math.max(2.5, fieldW * 0.012);
+          
+          // Circle fill: green for success, red for miss
+          if (attempt.success) {
+            pdf.setFillColor(34, 197, 94);
+          } else {
+            pdf.setFillColor(239, 68, 68);
+          }
+          
+          // Border color by type
+          const borderColor = typeColors[attempt.kick_type] || defaultColors.primary;
+          pdf.setDrawColor(...borderColor);
+          pdf.setLineWidth(0.6);
+          pdf.circle(cx, cy, r, 'FD');
+          
+          // Symbol
+          pdf.setFontSize(5);
+          pdf.setTextColor(255, 255, 255);
+          pdf.setFont("helvetica", "bold");
+          pdf.text(attempt.success ? "✓" : "✗", cx, cy + 1.5, { align: "center" });
+        });
+
+        yPos = fY + fieldH + 5;
+
+        // Legend
+        pdf.setFontSize(7);
+        pdf.setFont("helvetica", "normal");
+        pdf.setTextColor(...defaultColors.dark);
+        
+        let legendX = margin;
+        // Success/fail legend
+        pdf.setFillColor(34, 197, 94);
+        pdf.circle(legendX + 2, yPos, 2, 'F');
+        pdf.text("Réussi", legendX + 6, yPos + 1.5);
+        legendX += 25;
+        pdf.setFillColor(239, 68, 68);
+        pdf.circle(legendX + 2, yPos, 2, 'F');
+        pdf.text("Raté", legendX + 6, yPos + 1.5);
+        legendX += 20;
+        
+        // Type legend
+        Object.entries(typeColors).forEach(([type, color]) => {
+          pdf.setDrawColor(...color);
+          pdf.setLineWidth(1);
+          pdf.line(legendX, yPos - 1, legendX + 6, yPos - 1);
+          const typeLabel = type === "conversion" ? "Transfo." : type === "penalty" ? "Pénalité" : "Drop";
+          pdf.setTextColor(...defaultColors.dark);
+          pdf.text(typeLabel, legendX + 8, yPos + 1);
+          legendX += 28;
+        });
+        
+        yPos += 8;
+
+        // Stats summary by player
+        const kicksByPlayer = new Map<string, { name: string; total: number; success: number; byType: Record<string, { total: number; success: number }> }>();
+        kickingAttempts.forEach((a: any) => {
+          const pid = a.player_id;
+          const pName = a.players ? [a.players.first_name, a.players.name].filter(Boolean).join(" ") : "Inconnu";
+          if (!kicksByPlayer.has(pid)) kicksByPlayer.set(pid, { name: pName, total: 0, success: 0, byType: {} });
+          const pData = kicksByPlayer.get(pid)!;
+          pData.total++;
+          if (a.success) pData.success++;
+          if (!pData.byType[a.kick_type]) pData.byType[a.kick_type] = { total: 0, success: 0 };
+          pData.byType[a.kick_type].total++;
+          if (a.success) pData.byType[a.kick_type].success++;
+        });
+
+        if (kicksByPlayer.size > 0) {
+          const kickHeaders = ["Buteur", "Total", "Réussis", "%", "Transfo.", "Pénalités", "Drops"];
+          const kickColWidths = [45, 20, 20, 20, 25, 25, 25];
+          yPos = drawTableHeaderPdf(pdf, kickHeaders, kickColWidths, yPos, margin, contentWidth);
+
+          let kidx = 0;
+          kicksByPlayer.forEach((pData) => {
+            yPos = localCheckPageBreak(pdf, yPos, 10);
+            const rate = pData.total > 0 ? Math.round((pData.success / pData.total) * 100) : 0;
+            const transfo = pData.byType["conversion"];
+            const penal = pData.byType["penalty"];
+            const drop = pData.byType["drop"];
+            yPos = drawTableRowPdf(pdf, [
+              pData.name,
+              String(pData.total),
+              String(pData.success),
+              `${rate}%`,
+              transfo ? `${transfo.success}/${transfo.total}` : "-",
+              penal ? `${penal.success}/${penal.total}` : "-",
+              drop ? `${drop.success}/${drop.total}` : "-",
+            ], kickColWidths, yPos, kidx % 2 === 1, margin, contentWidth);
+            kidx++;
+          });
+        }
+      }
+
       // ===== COMPETITION ROUNDS for individual sports (Judo, Bowling, Athletics, Aviron) =====
       const competitionRounds = competitionRoundsRes.data || [];
       if (isIndividualSport && competitionRounds.length > 0) {
