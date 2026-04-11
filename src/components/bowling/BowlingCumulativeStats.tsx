@@ -16,6 +16,7 @@ import { BowlingFrameAnalysis } from "./BowlingFrameAnalysis";
 import { BowlingGameHistory } from "./BowlingGameHistory";
 import { getStatColor } from "@/lib/bowling/statColors";
 import { exportBowlingPdf, exportBowlingTeamPdf } from "@/lib/bowling/bowlingPdfExport";
+import { resolveBallCatalogImages } from "@/lib/bowling/bowlingBallImageResolver";
 import type { FrameData } from "@/components/athlete-portal/BowlingScoreSheet";
 
 interface BowlingCumulativeStatsProps {
@@ -370,14 +371,16 @@ export function BowlingCumulativeStats({ categoryId, playerId: fixedPlayerId }: 
                         oilPatternName = oilResult.data[0].name;
                         oilPatternImageUrl = oilResult.data[0].image_url_male || oilResult.data[0].image_url_female || null;
                       }
-                      const catalogMap = new Map((catalogResult.data as any[] || []).map((b: any) => [b.id, b]));
+                      const catalogBalls = (catalogResult.data as any[] || []);
+                      const catalogMap = new Map(catalogBalls.map((b: any) => [b.id, b]));
+                      const imageMap = await resolveBallCatalogImages(catalogBalls);
                       const arsenalBalls = ((arsenalResult.data as any[]) || []).map((item: any) => {
                         const cat = item.ball_catalog_id ? catalogMap.get(item.ball_catalog_id) : null;
                         const name = cat ? `${cat.brand} ${cat.model}` : `${item.custom_ball_brand || ""} ${item.custom_ball_name || "Custom"}`.trim();
                         return {
                           name,
                           drillingLayout: item.drilling_layout || item.balance_type || null,
-                          imageUrl: cat?.image_url || null,
+                          imageUrl: (item.ball_catalog_id ? imageMap.get(item.ball_catalog_id) : null) || cat?.image_url || null,
                         };
                       });
                       await exportBowlingPdf(
@@ -424,7 +427,9 @@ export function BowlingCumulativeStats({ categoryId, playerId: fixedPlayerId }: 
                         oilPatternName = oilResult.data[0].name;
                         oilPatternImageUrl = oilResult.data[0].image_url_male || oilResult.data[0].image_url_female || null;
                       }
-                      const catalogMap = new Map((catalogResult.data as any[] || []).map((b: any) => [b.id, b]));
+                      const catalogBalls2 = (catalogResult.data as any[] || []);
+                      const catalogMap = new Map(catalogBalls2.map((b: any) => [b.id, b]));
+                      const imageMap = await resolveBallCatalogImages(catalogBalls2);
                       const allArsenal = (arsenalResult.data as any[]) || [];
                       const teamPlayers = players.map(p => {
                         const playerArsenal = allArsenal.filter((a: any) => a.player_id === p.id);
@@ -436,7 +441,7 @@ export function BowlingCumulativeStats({ categoryId, playerId: fixedPlayerId }: 
                           arsenalBalls: playerArsenal.map((item: any) => {
                             const cat = item.ball_catalog_id ? catalogMap.get(item.ball_catalog_id) : null;
                             const name = cat ? `${cat.brand} ${cat.model}` : `${item.custom_ball_brand || ""} ${item.custom_ball_name || "Custom"}`.trim();
-                            return { name, drillingLayout: item.drilling_layout || item.balance_type || null, imageUrl: cat?.image_url || null };
+                            return { name, drillingLayout: item.drilling_layout || item.balance_type || null, imageUrl: (item.ball_catalog_id ? imageMap.get(item.ball_catalog_id) : null) || cat?.image_url || null };
                           }),
                         };
                       });
