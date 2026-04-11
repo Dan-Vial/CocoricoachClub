@@ -8,8 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Target, Trash2, Plus, BarChart3 } from "lucide-react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Target, Trash2, BarChart3 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -20,34 +20,18 @@ interface KickingTrackerProps {
   sportType?: string;
 }
 
-// Rugby field zones with approximate positions
-const FIELD_ZONES = [
-  { id: "left-22", label: "Gauche 22m", x: 15, y: 25 },
-  { id: "left-40", label: "Gauche 40m", x: 15, y: 50 },
-  { id: "left-halfway", label: "Gauche 50m", x: 15, y: 75 },
-  { id: "center-22", label: "Centre 22m", x: 50, y: 25 },
-  { id: "center-40", label: "Centre 40m", x: 50, y: 50 },
-  { id: "center-halfway", label: "Centre 50m", x: 50, y: 75 },
-  { id: "right-22", label: "Droite 22m", x: 85, y: 25 },
-  { id: "right-40", label: "Droite 40m", x: 85, y: 50 },
-  { id: "right-halfway", label: "Droite 50m", x: 85, y: 75 },
-  { id: "center-10", label: "Centre 10m", x: 50, y: 12 },
-  { id: "left-10", label: "Gauche 10m", x: 20, y: 12 },
-  { id: "right-10", label: "Droite 10m", x: 80, y: 12 },
-];
-
 export function KickingTracker({ categoryId, sportType }: KickingTrackerProps) {
   const queryClient = useQueryClient();
   const { isViewer } = useViewerModeContext();
   const [selectedMatchId, setSelectedMatchId] = useState<string>("");
   const [selectedPlayerId, setSelectedPlayerId] = useState<string>("");
   const [kickType, setKickType] = useState<string>("penalty");
+  const [kickingSide, setKickingSide] = useState<"left" | "right">("right");
   const [clickPos, setClickPos] = useState<{ x: number; y: number } | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [minute, setMinute] = useState<string>("");
   const [half, setHalf] = useState<string>("1");
 
-  // Fetch matches
   const { data: matches = [] } = useQuery({
     queryKey: ["matches-kicking", categoryId],
     queryFn: async () => {
@@ -62,7 +46,6 @@ export function KickingTracker({ categoryId, sportType }: KickingTrackerProps) {
     },
   });
 
-  // Fetch players
   const { data: players = [] } = useQuery({
     queryKey: ["players-kicking", categoryId],
     queryFn: async () => {
@@ -76,7 +59,6 @@ export function KickingTracker({ categoryId, sportType }: KickingTrackerProps) {
     },
   });
 
-  // Fetch kicking attempts
   const { data: attempts = [] } = useQuery({
     queryKey: ["kicking-attempts", categoryId, selectedMatchId, selectedPlayerId],
     queryFn: async () => {
@@ -85,10 +67,8 @@ export function KickingTracker({ categoryId, sportType }: KickingTrackerProps) {
         .select("*, players(name, first_name), matches(opponent, match_date)")
         .eq("category_id", categoryId)
         .order("created_at", { ascending: false });
-
       if (selectedMatchId) query = query.eq("match_id", selectedMatchId);
       if (selectedPlayerId) query = query.eq("player_id", selectedPlayerId);
-
       const { data, error } = await query;
       if (error) throw error;
       return data || [];
@@ -98,11 +78,22 @@ export function KickingTracker({ categoryId, sportType }: KickingTrackerProps) {
   const addAttempt = useMutation({
     mutationFn: async (data: { x: number; y: number; success: boolean }) => {
       if (!selectedMatchId || !selectedPlayerId) throw new Error("Sélectionnez un match et un joueur");
-      const zone = FIELD_ZONES.reduce((closest, z) => {
-        const dist = Math.sqrt((z.x - data.x) ** 2 + (z.y - data.y) ** 2);
-        const closestDist = Math.sqrt((closest.x - data.x) ** 2 + (closest.y - data.y) ** 2);
-        return dist < closestDist ? z : closest;
-      }, FIELD_ZONES[0]);
+
+      // Build zone label from position
+      const yPct = data.y;
+      let distLabel = "";
+      if (yPct < 20) distLabel = "10m";
+      else if (yPct < 40) distLabel = "22m";
+      else if (yPct < 65) distLabel = "40m";
+      else distLabel = "50m";
+
+      const xPct = data.x;
+      let sideLabel = "";
+      if (xPct < 35) sideLabel = "Gauche";
+      else if (xPct > 65) sideLabel = "Droite";
+      else sideLabel = "Centre";
+
+      const zoneLabel = `${sideLabel} ${distLabel}`;
 
       const { error } = await supabase.from("kicking_attempts").insert({
         match_id: selectedMatchId,
@@ -111,7 +102,7 @@ export function KickingTracker({ categoryId, sportType }: KickingTrackerProps) {
         kick_type: kickType,
         zone_x: data.x,
         zone_y: data.y,
-        zone_label: zone.label,
+        zone_label: zoneLabel,
         success: data.success,
         half: parseInt(half) || 1,
         minute: minute ? parseInt(minute) : null,
@@ -139,7 +130,6 @@ export function KickingTracker({ categoryId, sportType }: KickingTrackerProps) {
     },
   });
 
-  // Stats
   const kickStats = useMemo(() => {
     const total = attempts.length;
     const success = attempts.filter(a => a.success).length;
@@ -167,6 +157,11 @@ export function KickingTracker({ categoryId, sportType }: KickingTrackerProps) {
     conversion: "Transformation",
     drop: "Drop",
   };
+
+  // Field rendering: goalposts on one side only based on kickingSide
+  // kickingSide="right" → the player kicks toward the RIGHT (goalposts on right)
+  // kickingSide="left" → the player kicks toward the LEFT (goalposts on left)
+  const goalsOnRight = kickingSide === "right";
 
   return (
     <div className="space-y-6">
@@ -209,6 +204,27 @@ export function KickingTracker({ categoryId, sportType }: KickingTrackerProps) {
             </SelectContent>
           </Select>
         </div>
+        <div className="space-y-1">
+          <Label className="text-xs">Côté de tir</Label>
+          <div className="flex gap-2">
+            <Button
+              variant={kickingSide === "left" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setKickingSide("left")}
+              className="text-xs"
+            >
+              ← Vers la gauche
+            </Button>
+            <Button
+              variant={kickingSide === "right" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setKickingSide("right")}
+              className="text-xs"
+            >
+              Vers la droite →
+            </Button>
+          </div>
+        </div>
       </div>
 
       {/* Stats summary */}
@@ -233,7 +249,7 @@ export function KickingTracker({ categoryId, sportType }: KickingTrackerProps) {
         ))}
       </div>
 
-      {/* Rugby field */}
+      {/* Rugby field — half field with goalposts on ONE side only */}
       <Card className="bg-gradient-card">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -251,29 +267,56 @@ export function KickingTracker({ categoryId, sportType }: KickingTrackerProps) {
               className="w-full border-2 border-primary/20 rounded-lg cursor-crosshair bg-emerald-700/90 dark:bg-emerald-900/80"
               onClick={handleFieldClick}
             >
-              {/* Field markings */}
-              {/* Outline */}
+              {/* Field outline */}
               <rect x="20" y="10" width="560" height="380" fill="none" stroke="white" strokeWidth="2" opacity={0.6} />
-              {/* Try lines */}
-              <line x1="80" y1="10" x2="80" y2="390" stroke="white" strokeWidth="1.5" strokeDasharray="8 4" opacity={0.5} />
-              <line x1="520" y1="10" x2="520" y2="390" stroke="white" strokeWidth="1.5" strokeDasharray="8 4" opacity={0.5} />
-              {/* 22m lines */}
-              <line x1="140" y1="10" x2="140" y2="390" stroke="white" strokeWidth="1.5" opacity={0.5} />
-              <line x1="460" y1="10" x2="460" y2="390" stroke="white" strokeWidth="1.5" opacity={0.5} />
-              {/* 10m lines */}
-              <line x1="240" y1="10" x2="240" y2="390" stroke="white" strokeWidth="1" strokeDasharray="5 5" opacity={0.4} />
-              <line x1="360" y1="10" x2="360" y2="390" stroke="white" strokeWidth="1" strokeDasharray="5 5" opacity={0.4} />
-              {/* Halfway */}
-              <line x1="300" y1="10" x2="300" y2="390" stroke="white" strokeWidth="2" opacity={0.6} />
-              {/* Center circle */}
-              <circle cx="300" cy="200" r="30" fill="none" stroke="white" strokeWidth="1" opacity={0.4} />
-              {/* Goal posts */}
-              <line x1="20" y1="175" x2="20" y2="225" stroke="white" strokeWidth="4" opacity={0.8} />
-              <line x1="580" y1="175" x2="580" y2="225" stroke="white" strokeWidth="4" opacity={0.8} />
-              {/* Labels */}
-              <text x="140" y="400" textAnchor="middle" fill="white" fontSize="10" opacity={0.6}>22m</text>
-              <text x="460" y="400" textAnchor="middle" fill="white" fontSize="10" opacity={0.6}>22m</text>
-              <text x="300" y="400" textAnchor="middle" fill="white" fontSize="10" opacity={0.6}>50m</text>
+
+              {/* Horizontal field lines */}
+              {goalsOnRight ? (
+                <>
+                  {/* Goalposts on RIGHT side */}
+                  <line x1="580" y1="170" x2="580" y2="230" stroke="white" strokeWidth="5" opacity={0.9} />
+                  <rect x="565" y="170" width="15" height="60" fill="none" stroke="white" strokeWidth="2" opacity={0.5} />
+                  {/* Try line */}
+                  <line x1="540" y1="10" x2="540" y2="390" stroke="white" strokeWidth="2" opacity={0.6} />
+                  <text x="540" y="400" textAnchor="middle" fill="white" fontSize="9" opacity={0.5}>Ligne d'en-but</text>
+                  {/* 22m */}
+                  <line x1="440" y1="10" x2="440" y2="390" stroke="white" strokeWidth="1.5" opacity={0.5} />
+                  <text x="440" y="400" textAnchor="middle" fill="white" fontSize="9" opacity={0.5}>22m</text>
+                  {/* 10m */}
+                  <line x1="340" y1="10" x2="340" y2="390" stroke="white" strokeWidth="1" strokeDasharray="5 5" opacity={0.4} />
+                  {/* Halfway */}
+                  <line x1="240" y1="10" x2="240" y2="390" stroke="white" strokeWidth="2" opacity={0.6} />
+                  <text x="240" y="400" textAnchor="middle" fill="white" fontSize="9" opacity={0.5}>50m</text>
+                  {/* 40m label */}
+                  <text x="340" y="400" textAnchor="middle" fill="white" fontSize="9" opacity={0.5}>40m</text>
+                  {/* Arrow indicating kick direction */}
+                  <polygon points="570,200 555,190 555,210" fill="white" opacity={0.3} />
+                </>
+              ) : (
+                <>
+                  {/* Goalposts on LEFT side */}
+                  <line x1="20" y1="170" x2="20" y2="230" stroke="white" strokeWidth="5" opacity={0.9} />
+                  <rect x="20" y="170" width="15" height="60" fill="none" stroke="white" strokeWidth="2" opacity={0.5} />
+                  {/* Try line */}
+                  <line x1="60" y1="10" x2="60" y2="390" stroke="white" strokeWidth="2" opacity={0.6} />
+                  <text x="60" y="400" textAnchor="middle" fill="white" fontSize="9" opacity={0.5}>Ligne d'en-but</text>
+                  {/* 22m */}
+                  <line x1="160" y1="10" x2="160" y2="390" stroke="white" strokeWidth="1.5" opacity={0.5} />
+                  <text x="160" y="400" textAnchor="middle" fill="white" fontSize="9" opacity={0.5}>22m</text>
+                  {/* 10m */}
+                  <line x1="260" y1="10" x2="260" y2="390" stroke="white" strokeWidth="1" strokeDasharray="5 5" opacity={0.4} />
+                  {/* Halfway */}
+                  <line x1="360" y1="10" x2="360" y2="390" stroke="white" strokeWidth="2" opacity={0.6} />
+                  <text x="360" y="400" textAnchor="middle" fill="white" fontSize="9" opacity={0.5}>50m</text>
+                  {/* 40m label */}
+                  <text x="260" y="400" textAnchor="middle" fill="white" fontSize="9" opacity={0.5}>40m</text>
+                  {/* Arrow indicating kick direction */}
+                  <polygon points="30,200 45,190 45,210" fill="white" opacity={0.3} />
+                </>
+              )}
+
+              {/* Center circle (decorative) */}
+              <circle cx="300" cy="200" r="25" fill="none" stroke="white" strokeWidth="1" opacity={0.3} />
 
               {/* Kicking attempts markers */}
               {attempts.map((attempt) => {
@@ -331,7 +374,7 @@ export function KickingTracker({ categoryId, sportType }: KickingTrackerProps) {
                           {typeLabels[a.kick_type] || a.kick_type} — {a.zone_label || "Zone inconnue"}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {player ? [player.first_name, player.name].filter(Boolean).join(" ") : ""} 
+                          {player ? [player.first_name, player.name].filter(Boolean).join(" ") : ""}
                           {match ? ` • vs ${match.opponent}` : ""}
                           {a.minute ? ` • ${a.minute}'` : ""}
                         </p>
@@ -350,7 +393,7 @@ export function KickingTracker({ categoryId, sportType }: KickingTrackerProps) {
         </Card>
       )}
 
-      {/* Dialog: confirm kick success/failure */}
+      {/* Dialog: confirm kick */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>
@@ -374,7 +417,7 @@ export function KickingTracker({ categoryId, sportType }: KickingTrackerProps) {
               </div>
             </div>
             <p className="text-sm text-muted-foreground">
-              Type: <strong>{typeLabels[kickType]}</strong> — Position: ({clickPos?.x}, {clickPos?.y})
+              Type: <strong>{typeLabels[kickType]}</strong>
             </p>
           </div>
           <DialogFooter className="flex gap-3">
