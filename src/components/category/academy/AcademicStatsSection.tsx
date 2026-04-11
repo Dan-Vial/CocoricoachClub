@@ -103,6 +103,40 @@ export function AcademicStatsSection({ categoryId }: AcademicStatsSectionProps) 
     })).sort((a, b) => b.avg - a.avg);
   }, [gradeEntries]);
 
+  // Subject evolution data: each point is a grade with its date, grouped for the line chart
+  const subjectEvolutionData = useMemo(() => {
+    // Collect all grade entries with dates per subject
+    const subjectEntries: Record<string, { date: string; grade: number }[]> = {};
+    gradeEntries.forEach(e => {
+      const subj = e.subject || "Non spécifié";
+      const n = normalizeGrade(e.academic_grade, e.grade_scale);
+      if (n !== null) {
+        if (!subjectEntries[subj]) subjectEntries[subj] = [];
+        subjectEntries[subj].push({ date: e.tracking_date, grade: Math.round(n * 100) / 100 });
+      }
+    });
+
+    // Get all unique dates across all subjects, sorted
+    const allDates = [...new Set(gradeEntries.map(e => e.tracking_date))].sort();
+    
+    // Build chart data: one row per date, one key per subject
+    const subjects = Object.keys(subjectEntries).sort();
+    const chartData = allDates.map(date => {
+      const row: Record<string, any> = {
+        date,
+        label: new Date(date).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" }),
+      };
+      subjects.forEach(subj => {
+        // Find grade for this subject on this date
+        const entry = subjectEntries[subj]?.find(e => e.date === date);
+        row[subj] = entry ? entry.grade : null;
+      });
+      return row;
+    });
+
+    return { chartData, subjects };
+  }, [gradeEntries]);
+
   // Per-player stats
   const playerStats = useMemo(() => {
     const players: Record<string, { grades: number[]; name: string; absences: number }> = {};
