@@ -39,6 +39,8 @@ interface CumulativeStats {
   playerName: string;
   matchesPlayed: number;
   sportData: Record<string, number>;
+  avatarUrl?: string;
+  position?: string;
 }
 
 export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCumulativeStatsProps) {
