@@ -314,12 +314,12 @@ export function PlayerBowlingArsenal({ playerId, categoryId, isViewer }: PlayerB
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <Label className="text-xs">Surface actuelle</Label>
-          <Input value={currentSurface} onChange={e => setCurrentSurface(e.target.value)} placeholder="1500 Grit..." />
-        </div>
-        <div>
           <Label className="text-xs">Date d'achat</Label>
           <Input type="date" value={purchaseDate} onChange={e => setPurchaseDate(e.target.value)} />
+        </div>
+        <div>
+          <Label className="text-xs">Parties jouées</Label>
+          <Input type="number" value={gamesPlayed} onChange={e => setGamesPlayed(e.target.value)} min="0" />
         </div>
       </div>
 
