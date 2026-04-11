@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Card, CardContent } from "@/components/ui/card";
-import { Search, Upload, Image as ImageIcon, Loader2, X, Plus, Users, CircleDot, Check } from "lucide-react";
+import { Search, Upload, Image as ImageIcon, Loader2, X, Plus, Users, CircleDot, Check, Edit2, Trash2 } from "lucide-react";
 import { getCoverTypeLabel, getCoreTypeLabel, BOWLING_BALL_BRANDS, COVER_TYPES, CORE_TYPES, BALL_WEIGHTS } from "@/lib/constants/bowlingBallBrands";
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
