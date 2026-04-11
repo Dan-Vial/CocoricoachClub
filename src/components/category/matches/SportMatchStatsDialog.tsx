@@ -633,6 +633,28 @@ export function SportMatchStatsDialog({
             }))}
           />
         )}
+
+        {/* Kicking Field Dialog for Rugby */}
+        {isRugbyType(sportType) && kickingFieldPlayer && (
+          <MatchKickingFieldDialog
+            open={!!kickingFieldPlayer}
+            onOpenChange={(open) => { if (!open) setKickingFieldPlayer(null); }}
+            playerName={kickingFieldPlayer.name}
+            playerId={kickingFieldPlayer.id}
+            onComplete={(kickStats) => {
+              const playerId = kickingFieldPlayer.id;
+              // Update all kicking stats for this player
+              updateStat(playerId, "conversions", kickStats.conversions);
+              updateStat(playerId, "conversionAttempts", kickStats.conversionAttempts);
+              updateStat(playerId, "penaltiesScored", kickStats.penaltiesScored);
+              updateStat(playerId, "penaltyAttempts", kickStats.penaltyAttempts);
+              updateStat(playerId, "dropGoals", kickStats.dropGoals);
+              updateStat(playerId, "dropAttempts", kickStats.dropAttempts);
+              updateStat(playerId, "points", kickStats.points);
+              setKickingFieldPlayer(null);
+            }}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );
