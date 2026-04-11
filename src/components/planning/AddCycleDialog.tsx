@@ -42,7 +42,6 @@ export function AddCycleDialog({ open, onOpenChange, categoryId, categories, pre
 
   const selectedCategory = categories.find(c => c.id === periodizationCategoryId);
   const color = selectedCategory?.color || "#3b82f6";
-  const queryClient = useQueryClient();
 
   useEffect(() => {
     if (preselectedCategoryId) {
