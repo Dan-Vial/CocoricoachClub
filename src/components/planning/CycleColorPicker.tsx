@@ -16,23 +16,22 @@ interface CycleColorPickerProps {
 export function CycleColorPicker({ categoryId, color, customColor, onCustomColorChange }: CycleColorPickerProps) {
   const queryClient = useQueryClient();
 
-  // Fetch saved custom colors for this category
   const { data: savedColors = [] } = useQuery({
     queryKey: ["saved_cycle_colors", categoryId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("periodization_saved_colors")
         .select("color")
         .eq("category_id", categoryId)
         .order("created_at");
       if (error) throw error;
-      return data.map(d => d.color);
+      return (data as { color: string }[]).map(d => d.color);
     },
   });
 
   const saveColor = useMutation({
     mutationFn: async (colorToSave: string) => {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from("periodization_saved_colors")
         .upsert(
           { category_id: categoryId, color: colorToSave },
