@@ -419,40 +419,187 @@ export async function exportBowlingPdf(playerName: string, games: BowlingGameDat
   });
   y += 24;
 
-  // Detailed stats table with color coding
-  const statsRowsDef: { label1: string; value1: string; stat1?: string; pct1?: number; label2: string; value2: string; stat2?: string; pct2?: number }[] = [
-    { label1: "% Strikes", value1: `${avgStrikeRate.toFixed(1)}%`, stat1: "strike", pct1: avgStrikeRate, label2: "% Spares", value2: `${avgSpareRate.toFixed(1)}%`, stat2: "spare", pct2: avgSpareRate },
-    { label1: "% Poches", value1: `${avgPocketRate.toFixed(1)}%`, stat1: "pocket", pct1: avgPocketRate, label2: "% Quilles seules", value2: `${singlePinConvRate.toFixed(1)}%`, stat2: "singlePin", pct2: singlePinConvRate },
-    { label1: "% Conv. splits", value1: `${splitConvRate.toFixed(1)}%`, label2: "% Frames ouvertes", value2: `${openFramePercentage.toFixed(1)}%` },
-    { label1: "Strikes total", value1: String(totalStrikes), label2: "Spares total", value2: String(totalSpares) },
-    { label1: "Splits total", value1: String(totalSplits), label2: "Frames ouvertes", value2: String(totalOpenFrames) },
+  // ---- Side by side: Stats (left) + Référentiel (right) ----
+  const colGap = 4;
+  const leftColW = (contentWidth - colGap) / 2;
+  const rightColW = (contentWidth - colGap) / 2;
+  const leftX = margin;
+  const rightX = margin + leftColW + colGap;
+  const sideStartY = y;
+
+  // === LEFT: Statistiques détaillées ===
+  doc.setTextColor(...COLORS.text);
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "bold");
+  doc.text("Statistiques detaillees", leftX + 2, y + 4);
+  y += 7;
+
+  const statsRows: { label: string; value: string; stat?: string; pct?: number }[] = [
+    { label: "% Strikes", value: `${avgStrikeRate.toFixed(1)}%`, stat: "strike", pct: avgStrikeRate },
+    { label: "% Spares", value: `${avgSpareRate.toFixed(1)}%`, stat: "spare", pct: avgSpareRate },
+    { label: "% Poches", value: `${avgPocketRate.toFixed(1)}%`, stat: "pocket", pct: avgPocketRate },
+    { label: "% Quilles seules", value: `${singlePinConvRate.toFixed(1)}%`, stat: "singlePin", pct: singlePinConvRate },
+    { label: "% Conv. splits", value: `${splitConvRate.toFixed(1)}%` },
+    { label: "% Frames ouvertes", value: `${openFramePercentage.toFixed(1)}%` },
   ];
 
-  statsRowsDef.forEach((row, i) => {
-    const rowY = y + i * 7;
+  statsRows.forEach((row, i) => {
+    const rowY = y + i * 6.5;
     if (i % 2 === 0) {
       doc.setFillColor(...COLORS.lightBg);
-      doc.rect(margin, rowY, contentWidth, 7, "F");
+      doc.rect(leftX, rowY, leftColW, 6.5, "F");
     }
+    doc.setTextColor(...COLORS.text);
+    doc.setFontSize(7.5);
+    doc.setFont("helvetica", "normal");
+    doc.text(row.label, leftX + 2, rowY + 4.5);
+    doc.setFont("helvetica", "bold");
+    if (row.stat && row.pct !== undefined) {
+      // Draw colored badge
+      const color = getStatLevelColor(row.stat, row.pct);
+      const tw = doc.getTextWidth(row.value);
+      const badgeW = tw + 4;
+      const badgeX = leftX + leftColW - badgeW - 2;
+      doc.setFillColor(...color);
+      doc.roundedRect(badgeX, rowY + 0.5, badgeW, 5.5, 1, 1, "F");
+      doc.setTextColor(...COLORS.white);
+      doc.text(row.value, badgeX + badgeW / 2, rowY + 4.5, { align: "center" });
+    } else {
+      doc.setTextColor(...COLORS.text);
+      doc.text(row.value, leftX + leftColW - 3, rowY + 4.5, { align: "right" });
+    }
+  });
+
+  // Totals below stats
+  const totalsStartY = y + statsRows.length * 6.5 + 3;
+  doc.setDrawColor(...COLORS.border);
+  doc.line(leftX, totalsStartY - 1, leftX + leftColW, totalsStartY - 1);
+  const totalsRows = [
+    { label: "Strikes total", value: String(totalStrikes) },
+    { label: "Spares total", value: String(totalSpares) },
+    { label: "Splits", value: String(totalSplits) },
+    { label: "Frames ouvertes", value: String(totalOpenFrames) },
+  ];
+  totalsRows.forEach((row, i) => {
+    const rowY = totalsStartY + i * 6;
+    doc.setTextColor(...COLORS.text);
+    doc.setFontSize(7.5);
+    doc.setFont("helvetica", "normal");
+    doc.text(row.label, leftX + 2, rowY + 4);
+    doc.setFont("helvetica", "bold");
+    doc.text(row.value, leftX + leftColW - 3, rowY + 4, { align: "right" });
+  });
+
+  // === RIGHT: Référentiel de performance ===
+  let ry = sideStartY;
+  doc.setTextColor(...COLORS.text);
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "bold");
+  doc.text("Referentiel de performance", rightX + 2, ry + 4);
+  ry += 7;
+
+  // Table header
+  const refCols = ["Niveau", "Poches", "Strikes", "Spares", "9/", ">=8"];
+  const refColW = rightColW / refCols.length;
+  doc.setFillColor(...COLORS.header);
+  doc.rect(rightX, ry, rightColW, 6, "F");
+  doc.setTextColor(...COLORS.white);
+  doc.setFontSize(5.5);
+  doc.setFont("helvetica", "bold");
+  refCols.forEach((col, i) => {
+    doc.text(col, rightX + i * refColW + refColW / 2, ry + 4, { align: "center" });
+  });
+  ry += 6;
+
+  // Référentiel rows with colored backgrounds
+  const refRows: { label: string; bg: [number, number, number]; textColor: [number, number, number]; pocket: string; strike: string; spare: string; single: string; fb8: string }[] = [
+    { label: "Orange", bg: [194, 65, 12], textColor: COLORS.white, pocket: "<50%", strike: "<20%", spare: "<50%", single: "<70%", fb8: "<50%" },
+    { label: "Verte 1", bg: [21, 128, 61], textColor: COLORS.white, pocket: "50-60%", strike: "20-30%", spare: "50-60%", single: "70-75%", fb8: "50-65%" },
+    { label: "Verte 2", bg: [21, 128, 61], textColor: COLORS.white, pocket: "60-65%", strike: "30-35%", spare: "60-70%", single: "75-80%", fb8: "65-75%" },
+    { label: "Verte 3", bg: [20, 83, 45], textColor: COLORS.white, pocket: "65-70%", strike: "35-40%", spare: "70-80%", single: "80-85%", fb8: "75-85%" },
+    { label: "Bleue 1", bg: [29, 78, 216], textColor: COLORS.white, pocket: "70-75%", strike: "40-45%", spare: "80-85%", single: "85-90%", fb8: "85-88%" },
+    { label: "Bleue 2", bg: [30, 64, 175], textColor: COLORS.white, pocket: "75-80%", strike: "45-50%", spare: "85-90%", single: "90-95%", fb8: "85-88%" },
+    { label: "Noire 1", bg: [17, 24, 39], textColor: COLORS.white, pocket: "80-85%", strike: "50-55%", spare: "90-95%", single: "95-99%", fb8: "88-92%" },
+    { label: "Noire 2", bg: [0, 0, 0], textColor: [220, 38, 38], pocket: ">=85%", strike: ">=55%", spare: ">=95%", single: "100%", fb8: ">=92%" },
+  ];
+
+  refRows.forEach((row) => {
+    const vals = [row.label, row.pocket, row.strike, row.spare, row.single, row.fb8];
+    doc.setFillColor(...row.bg);
+    doc.rect(rightX, ry, rightColW, 6, "F");
+    doc.setTextColor(...row.textColor);
+    doc.setFontSize(5.5);
+    doc.setFont("helvetica", "bold");
+    vals.forEach((val, i) => {
+      doc.text(val, rightX + i * refColW + refColW / 2, ry + 4, { align: "center" });
+    });
+    ry += 6;
+  });
+
+  // Determine bottom of both columns
+  const leftBottom = totalsStartY + totalsRows.length * 6 + 4;
+  const rightBottom = ry + 2;
+  y = Math.max(leftBottom, rightBottom) + 4;
+
+  // === Score Evolution Bars ===
+  if (games.length >= 2) {
+    y = checkPageBreak(doc, y, 40);
     doc.setTextColor(...COLORS.text);
     doc.setFontSize(9);
-    doc.setFont("helvetica", "normal");
-    doc.text(row.label1, margin + 2, rowY + 5);
     doc.setFont("helvetica", "bold");
-    if (row.stat1 && row.pct1 !== undefined) {
-      doc.setTextColor(...getStatLevelColor(row.stat1, row.pct1));
+    doc.text("Evolution des scores", margin + 2, y + 4);
+    y += 8;
+
+    const barAreaH = 30;
+    const barMaxH = barAreaH;
+    const minBase = 100;
+    const maxScore = Math.max(...games.map(g => g.score), 300);
+    const range = maxScore - minBase;
+    const maxBars = Math.min(games.length, 80);
+    const barGap = 1;
+    const barW = Math.max(2, Math.min(8, (contentWidth - maxBars * barGap) / maxBars));
+
+    const barsStartX = margin + (contentWidth - maxBars * (barW + barGap)) / 2;
+
+    // Draw bars
+    for (let i = 0; i < maxBars; i++) {
+      const game = games[i];
+      const clampedScore = Math.max(game.score, minBase);
+      const h = range > 0 ? ((clampedScore - minBase) / range) * barMaxH : barMaxH * 0.5;
+      const barH = Math.max(h, 2);
+      const bx = barsStartX + i * (barW + barGap);
+      const by = y + barAreaH - barH;
+
+      const color = getScoreColor(game.score);
+      doc.setFillColor(...color);
+      doc.roundedRect(bx, by, barW, barH, 0.5, 0.5, "F");
     }
-    doc.text(row.value1, margin + contentWidth / 2 - 5, rowY + 5, { align: "right" });
-    doc.setTextColor(...COLORS.text);
-    doc.setFont("helvetica", "normal");
-    doc.text(row.label2, margin + contentWidth / 2 + 5, rowY + 5);
-    doc.setFont("helvetica", "bold");
-    if (row.stat2 && row.pct2 !== undefined) {
-      doc.setTextColor(...getStatLevelColor(row.stat2, row.pct2));
-    }
-    doc.text(row.value2, margin + contentWidth - 2, rowY + 5, { align: "right" });
-  });
-  y += statsRowsDef.length * 7 + 8;
+    y += barAreaH + 3;
+
+    // Score legend
+    const scoreLegends = [
+      { color: COLORS.scoreRed, label: "<150" },
+      { color: COLORS.scoreOrange, label: "151-179" },
+      { color: COLORS.scoreGreenLight, label: "180-209" },
+      { color: COLORS.scoreGreen, label: "210-239" },
+      { color: COLORS.scoreGold, label: "240+" },
+    ];
+    let slx = margin + contentWidth / 2 - 40;
+    doc.setFontSize(5.5);
+    scoreLegends.forEach(l => {
+      doc.setFillColor(...l.color);
+      doc.circle(slx + 1, y + 1, 1.2, "F");
+      doc.setTextColor(...COLORS.muted);
+      doc.setFont("helvetica", "normal");
+      doc.text(l.label, slx + 3, y + 2);
+      slx += 16;
+    });
+    doc.setTextColor(...COLORS.muted);
+    doc.setFontSize(5.5);
+    doc.text(`${games.length} parties`, margin + contentWidth / 2, y + 7, { align: "center" });
+    y += 12;
+  }
+  y += 4;
 
   // ===================== SECTION 2: ANALYSE PAR FRAME =====================
   y = checkPageBreak(doc, y, 80);
