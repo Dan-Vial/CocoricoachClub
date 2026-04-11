@@ -12,7 +12,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { GraduationCap, Award, Star, BookOpen, Clock, BarChart3 } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
+import { GraduationCap, Award, Star, BookOpen, Clock, BarChart3, CalendarIcon, Plus } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { toast } from "sonner";
@@ -39,6 +42,9 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
   const [academicGrade, setAcademicGrade] = useState("");
   const [gradeScale, setGradeScale] = useState("20");
   const [subject, setSubject] = useState("");
+  const [newSubject, setNewSubject] = useState("");
+  const [isAddingSubject, setIsAddingSubject] = useState(false);
+  const [gradeDate, setGradeDate] = useState<Date>(new Date());
   const [academicNotes, setAcademicNotes] = useState("");
 
 
@@ -80,12 +86,14 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
         academic_grade: gradeScale !== "letter" && academicGrade ? parseFloat(academicGrade) : null,
         grade_scale: gradeScale,
         subject: subject || null,
+        tracking_date: format(gradeDate, "yyyy-MM-dd"),
         notes: gradeScale === "letter" ? `${academicGrade}${academicNotes ? ` - ${academicNotes}` : ""}` : (academicNotes || null),
       });
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["academic_tracking", categoryId] });
+      queryClient.invalidateQueries({ queryKey: ["academic_subjects", categoryId] });
       toast.success("Note scolaire ajoutée");
       resetAcademicForm();
       setAcademicDialogOpen(false);
@@ -118,6 +126,9 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
     setAcademicGrade("");
     setGradeScale("20");
     setSubject("");
+    setNewSubject("");
+    setIsAddingSubject(false);
+    setGradeDate(new Date());
     setAcademicNotes("");
   };
 
@@ -128,6 +139,19 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
   };
 
 
+  const { data: existingSubjects } = useQuery({
+    queryKey: ["academic_subjects", categoryId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("player_academic_tracking")
+        .select("subject")
+        .eq("category_id", categoryId)
+        .not("subject", "is", null);
+      if (error) throw error;
+      const subjects = [...new Set(data.map(d => d.subject).filter(Boolean))] as string[];
+      return subjects.sort();
+    },
+  });
 
 
   return (
@@ -282,9 +306,53 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
                 )}
               </div>
               <div>
-                <Label>Matière</Label>
-                <Input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Mathématiques" />
+                <Label>Date</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !gradeDate && "text-muted-foreground")}>
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {gradeDate ? format(gradeDate, "dd MMM yyyy", { locale: fr }) : "Choisir une date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar mode="single" selected={gradeDate} onSelect={(d) => d && setGradeDate(d)} initialFocus className="p-3 pointer-events-auto" locale={fr} />
+                  </PopoverContent>
+                </Popover>
               </div>
+            </div>
+            <div>
+              <Label>Matière</Label>
+              {isAddingSubject ? (
+                <div className="flex gap-2">
+                  <Input 
+                    value={newSubject} 
+                    onChange={(e) => setNewSubject(e.target.value)} 
+                    placeholder="Nouvelle matière..." 
+                    className="flex-1"
+                  />
+                  <Button type="button" size="sm" onClick={() => {
+                    if (newSubject.trim()) {
+                      setSubject(newSubject.trim());
+                      setIsAddingSubject(false);
+                    }
+                  }}>OK</Button>
+                  <Button type="button" size="sm" variant="outline" onClick={() => { setIsAddingSubject(false); setNewSubject(""); }}>Annuler</Button>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <Select value={subject} onValueChange={setSubject}>
+                    <SelectTrigger className="flex-1"><SelectValue placeholder="Sélectionner une matière" /></SelectTrigger>
+                    <SelectContent>
+                      {existingSubjects?.map((s) => (
+                        <SelectItem key={s} value={s}>{s}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button type="button" size="icon" variant="outline" onClick={() => setIsAddingSubject(true)} title="Ajouter une matière">
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
             </div>
             <div>
               <Label>Commentaires</Label>
