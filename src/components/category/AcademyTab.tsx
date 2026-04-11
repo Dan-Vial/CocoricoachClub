@@ -43,6 +43,7 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
   const [absenceHours, setAbsenceHours] = useState("");
   const [absenceReason, setAbsenceReason] = useState("");
   const [academicGrade, setAcademicGrade] = useState("");
+  const [gradeScale, setGradeScale] = useState("20");
   const [subject, setSubject] = useState("");
   const [academicNotes, setAcademicNotes] = useState("");
 
@@ -114,9 +115,10 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
         player_id: selectedPlayer,
         category_id: categoryId,
         school_absence_hours: 0,
-        academic_grade: academicGrade ? parseFloat(academicGrade) : null,
+        academic_grade: gradeScale !== "letter" && academicGrade ? parseFloat(academicGrade) : null,
+        grade_scale: gradeScale,
         subject: subject || null,
-        notes: academicNotes || null,
+        notes: gradeScale === "letter" ? `${academicGrade}${academicNotes ? ` - ${academicNotes}` : ""}` : (academicNotes || null),
       });
       if (error) throw error;
     },
@@ -193,6 +195,7 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
   const resetAcademicForm = () => {
     setSelectedPlayer("");
     setAcademicGrade("");
+    setGradeScale("20");
     setSubject("");
     setAcademicNotes("");
   };
