@@ -282,7 +282,7 @@ export async function exportBowlingPdf(playerName: string, games: BowlingGameDat
 
   // Load images in parallel
   const arsenalBalls = options?.arsenalBalls || [];
-  const imagePromises: Promise<{ data: string; width: number; height: number } | null>[] = [
+  const imagePromises: Promise<{ data: string; width: number; height: number; format: "PNG" | "JPEG" } | null>[] = [
     options?.playerAvatarUrl ? loadImageAsBase64(options.playerAvatarUrl) : Promise.resolve(null),
     options?.oilPatternImageUrl ? loadImageAsBase64(options.oilPatternImageUrl) : Promise.resolve(null),
     ...arsenalBalls.map(b => b.imageUrl ? loadImageAsBase64(b.imageUrl) : Promise.resolve(null)),
