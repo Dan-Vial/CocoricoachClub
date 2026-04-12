@@ -423,7 +423,25 @@ export function WeeklyPlanningCalendar({ categoryId }: WeeklyPlanningCalendarPro
                           variant="outline"
                           size="sm"
                           className="w-full mt-1.5 h-6 text-[10px] gap-1 border-amber-500/30 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10"
-                          onClick={() => setPrecisionTrackerOpen(true)}
+                          onClick={async () => {
+                            const itemDate = format(addDays(currentWeekStart, dayIdx), "yyyy-MM-dd");
+                            setPrecisionItemDate(itemDate);
+                            // Find matching training session for this date
+                            const { data: sessions } = await supabase
+                              .from("training_sessions")
+                              .select("id")
+                              .eq("category_id", categoryId)
+                              .eq("session_date", itemDate)
+                              .eq("training_type", "precision")
+                              .order("created_at", { ascending: false })
+                              .limit(1);
+                            if (sessions && sessions.length > 0) {
+                              setPrecisionSessionId(sessions[0].id);
+                            } else {
+                              setPrecisionSessionId(null);
+                            }
+                            setPrecisionTrackerOpen(true);
+                          }}
                         >
                           <Target className="h-3 w-3" />
                           Saisir stats
