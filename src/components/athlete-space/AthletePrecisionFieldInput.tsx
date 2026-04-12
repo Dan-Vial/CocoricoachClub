@@ -113,13 +113,15 @@ export function AthletePrecisionFieldInput({
     setDialogOpen(true);
   }, [exerciseType, goalsOnRight, currentExercise]);
 
-  const handleLineoutClick = (position: typeof LINEOUT_POSITIONS[0]) => {
+  const handleLineoutZoneClick = (zone: LineoutZone) => {
     const exLabel = currentExercise?.label || exerciseType;
-    setClickPos({ x: 50, y: position.y });
-    setClickLabel(`${exLabel} - ${position.label}`);
+    const legacyY = zone.distanceKey === "devant" ? 20 : zone.distanceKey === "milieu" ? 50 : 80;
+    setClickPos({ x: 50, y: legacyY });
+    setClickLabel(`${exLabel} - ${zone.label}`);
     setPendingKickType(null);
     setAttempts("1");
     setSuccesses("0");
+    (window as any).__pendingLineoutZone = zone;
     setDialogOpen(true);
   };
 
