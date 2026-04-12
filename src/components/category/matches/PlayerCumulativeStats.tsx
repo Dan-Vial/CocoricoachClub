@@ -389,6 +389,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
         teamHdr.getCell(3).value = "Total";
         teamHdr.getCell(4).value = "Moy/match";
 
+        let tRow = teamStartRow + 1;
         // Add score section first
         const matchesWithScores = allMatches.filter(m => activeMatchIds.includes(m.id) && m.score_home != null && m.score_away != null);
         if (matchesWithScores.length > 0) {
