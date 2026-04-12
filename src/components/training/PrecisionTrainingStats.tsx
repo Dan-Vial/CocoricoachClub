@@ -485,7 +485,7 @@ export function PrecisionTrainingStats({ categoryId }: PrecisionTrainingStatsPro
       doc.rect(0, 0, pageW, 28, "F");
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(16);
-      doc.text("Stats entraînement - Précision", 14, 12);
+      doc.text(`Stats entraînement - Précision${singlePlayerName ? ` — ${singlePlayerName}` : ""}`, 14, 12);
       doc.setFontSize(10);
       doc.text(`${clubName || ""} • ${categoryName || ""} • ${seasonName || ""}`, 14, 20);
       doc.text(format(new Date(), "dd/MM/yyyy"), pageW - 14, 20, { align: "right" });
