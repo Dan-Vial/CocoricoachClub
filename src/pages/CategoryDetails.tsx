@@ -361,7 +361,7 @@ function CategoryDetailsContent() {
                   value="competition" 
                   colorKey="competition"
                   icon={<Trophy className="h-6 w-6 sm:h-7 sm:w-7" />}
-                  label="Compétition"
+                  label="Compétition & Stats"
                   shortLabel="Compét"
                 />
               )}

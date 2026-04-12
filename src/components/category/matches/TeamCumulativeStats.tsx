@@ -114,15 +114,21 @@ export function TeamCumulativeStats({ stats, matchesData, sportStats, sportType 
     return <Badge variant="outline" className="text-xs text-muted-foreground"><Minus className="h-3 w-3" /></Badge>;
   };
 
-  // Radar chart data for team overview
+  // Radar chart data for team overview — normalize to 0-100 scale per category
   const radarData = useMemo(() => {
-    return statCategories.map(cat => {
+    const rawValues = statCategories.map(cat => {
       const catStats = sportStats.filter(s => s.category === cat.key && !s.computedFrom);
-      const avg = catStats.length > 0
-        ? Math.round(catStats.reduce((sum, s) => sum + (teamTotals.totals[s.key] || 0), 0) / catStats.length)
+      const total = catStats.length > 0
+        ? catStats.reduce((sum, s) => sum + (teamTotals.totals[s.key] || 0), 0)
         : 0;
-      return { category: cat.label, value: avg };
+      return { category: cat.label, rawValue: total };
     });
+    const maxVal = Math.max(...rawValues.map(v => v.rawValue), 1);
+    return rawValues.map(v => ({
+      category: v.category,
+      value: Math.round((v.rawValue / maxVal) * 100),
+      rawValue: v.rawValue,
+    }));
   }, [statCategories, sportStats, teamTotals]);
 
   return (
@@ -140,8 +146,9 @@ export function TeamCumulativeStats({ stats, matchesData, sportStats, sportType 
               <RadarChart data={radarData}>
                 <PolarGrid strokeDasharray="3 3" opacity={0.3} />
                 <PolarAngleAxis dataKey="category" tick={{ fontSize: 11 }} />
-                <PolarRadiusAxis tick={{ fontSize: 9 }} />
+                <PolarRadiusAxis tick={{ fontSize: 9 }} domain={[0, 100]} />
                 <Radar name="Équipe" dataKey="value" stroke="hsl(var(--primary))" fill="hsl(var(--primary))" fillOpacity={0.3} />
+                <Tooltip formatter={(value: number, _name: string, props: any) => [props.payload.rawValue, "Total"]} />
               </RadarChart>
             </ResponsiveContainer>
           </div>
