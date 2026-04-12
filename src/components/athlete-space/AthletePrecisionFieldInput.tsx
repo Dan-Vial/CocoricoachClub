@@ -105,17 +105,26 @@ export function AthletePrecisionFieldInput({
     setDialogOpen(true);
   }, [exerciseType, goalsOnRight, currentExercise]);
 
-  // Zone kicks mode: click for attempts/successes
+  // Zone kicks mode: TWO-CLICK flow - first origin, then target
   const handleZoneKickClick = useCallback((xPct: number, yPct: number) => {
-    const posLabel = getPositionLabel(xPct, yPct, goalsOnRight);
-    const exLabel = currentExercise?.label || exerciseType;
-    setClickPos({ x: xPct, y: yPct });
-    setClickLabel(`${exLabel} - ${posLabel}`);
-    setPendingKickType(null);
-    setAttempts("1");
-    setSuccesses("0");
-    setDialogOpen(true);
-  }, [exerciseType, goalsOnRight, currentExercise]);
+    if (zoneKickStep === "origin") {
+      // First click: record kick origin
+      setZoneKickOrigin({ x: xPct, y: yPct });
+      setZoneKickStep("target");
+      toast.info("📍 Position de frappe enregistrée. Clique maintenant sur la zone ciblée.");
+    } else {
+      // Second click: record target zone and open dialog
+      const posLabel = getPositionLabel(xPct, yPct, goalsOnRight);
+      const originLabel = getPositionLabel(zoneKickOrigin!.x, zoneKickOrigin!.y, goalsOnRight);
+      const exLabel = currentExercise?.label || exerciseType;
+      setClickPos({ x: xPct, y: yPct });
+      setClickLabel(`${exLabel} - De: ${originLabel} → Cible: ${posLabel}`);
+      setPendingKickType(null);
+      setAttempts("1");
+      setSuccesses("0");
+      setDialogOpen(true);
+    }
+  }, [exerciseType, goalsOnRight, currentExercise, zoneKickStep, zoneKickOrigin]);
 
   const handleLineoutZoneClick = (zone: LineoutZone) => {
     const exLabel = currentExercise?.label || exerciseType;
