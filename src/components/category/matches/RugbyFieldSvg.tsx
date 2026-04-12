@@ -37,6 +37,7 @@ export function RugbyFieldSvg({
   const fh = fieldBottom - fieldTop;
   const stripeCount = 10;
   const stripeW = fw / stripeCount;
+  const centerX = fieldLeft + fw * 0.5;
   const centerY = fieldTop + fh * 0.5;
 
   return (
