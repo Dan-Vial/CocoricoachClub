@@ -74,6 +74,8 @@ export function WeeklyPlanningCalendar({ categoryId }: WeeklyPlanningCalendarPro
   const [isHomeMatch, setIsHomeMatch] = useState(true);
   const [precisionCategory, setPrecisionCategory] = useState<string>("buteur");
   const [precisionTrackerOpen, setPrecisionTrackerOpen] = useState(false);
+  const [precisionItemDate, setPrecisionItemDate] = useState<string | null>(null);
+  const [precisionSessionId, setPrecisionSessionId] = useState<string | null>(null);
 
   const { user } = useAuth();
   const queryClient = useQueryClient();
