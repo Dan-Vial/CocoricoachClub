@@ -203,8 +203,24 @@ export function WeeklyPlanningCalendar({ categoryId }: WeeklyPlanningCalendarPro
       );
       resetAddDialog();
       // Auto-open precision tracker after creating precision session
-      if (wasPrecision) {
-        setTimeout(() => setPrecisionTrackerOpen(true), 300);
+      if (wasPrecision && selectedDay !== null) {
+        const itemDate = format(addDays(currentWeekStart, selectedDay), "yyyy-MM-dd");
+        setPrecisionItemDate(itemDate);
+        // Find the just-created session
+        setTimeout(async () => {
+          const { data: sessions } = await supabase
+            .from("training_sessions")
+            .select("id")
+            .eq("category_id", categoryId)
+            .eq("session_date", itemDate)
+            .eq("training_type", "precision")
+            .order("created_at", { ascending: false })
+            .limit(1);
+          if (sessions && sessions.length > 0) {
+            setPrecisionSessionId(sessions[0].id);
+          }
+          setPrecisionTrackerOpen(true);
+        }, 500);
       }
     },
     onError: () => {
