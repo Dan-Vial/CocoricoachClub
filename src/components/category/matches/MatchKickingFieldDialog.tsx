@@ -153,6 +153,26 @@ export function MatchKickingFieldDialog({
             </div>
           )}
 
+          {/* Legend */}
+          <div className="flex flex-wrap gap-3 text-xs text-muted-foreground flex-shrink-0">
+            <div className="flex items-center gap-1.5">
+              <svg width="14" height="14"><circle cx="7" cy="7" r="6" fill="none" stroke="#3b82f6" strokeWidth="2" /></svg>
+              <span>Transformation</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <svg width="14" height="14"><rect x="1" y="1" width="12" height="12" rx="2" fill="none" stroke="#f59e0b" strokeWidth="2" /></svg>
+              <span>Pénalité</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <svg width="14" height="14"><polygon points="7,1 13,7 7,13 1,7" fill="none" stroke="#8b5cf6" strokeWidth="2" /></svg>
+              <span>Drop</span>
+            </div>
+            <div className="flex items-center gap-2 ml-2">
+              <div className="w-3 h-3 rounded-full bg-green-500" /> Réussi
+              <div className="w-3 h-3 rounded-full bg-red-500" /> Raté
+            </div>
+          </div>
+
           {/* Rugby field */}
           <div className="relative w-full max-w-2xl mx-auto flex-shrink-0">
             <RugbyFieldSVG
