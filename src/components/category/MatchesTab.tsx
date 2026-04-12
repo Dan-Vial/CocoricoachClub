@@ -91,16 +91,11 @@ export function MatchesTab({ categoryId, sportType }: MatchesTabProps) {
               {itemLabelPluralCapital}
             </ColoredSubTabsTrigger>
             <ColoredSubTabsTrigger value="stats" colorKey="competition" icon={<BarChart3 className="h-4 w-4" />}>
-              Stats cumulées
+              Stats compétition
             </ColoredSubTabsTrigger>
             {hasTrainingStats && (
               <ColoredSubTabsTrigger value="training_stats" colorKey="competition" icon={<Target className="h-4 w-4" />}>
                 Stats entraînement
-              </ColoredSubTabsTrigger>
-            )}
-            {isRugby && (
-              <ColoredSubTabsTrigger value="kicking" colorKey="competition" icon={<Crosshair className="h-4 w-4" />}>
-                Buteur
               </ColoredSubTabsTrigger>
             )}
             <ColoredSubTabsTrigger value="photos" colorKey="competition" icon={<Camera className="h-4 w-4" />}>
