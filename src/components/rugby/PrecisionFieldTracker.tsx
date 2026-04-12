@@ -142,6 +142,11 @@ export function PrecisionFieldTracker({ categoryId }: PrecisionFieldTrackerProps
         zone_x: data.x,
         zone_y: data.y,
       };
+      // Add kick origin for zone kicks
+      if (zoneKickOrigin) {
+        insertData.kick_origin_x = zoneKickOrigin.x;
+        insertData.kick_origin_y = zoneKickOrigin.y;
+      }
       if (lineoutZone) {
         insertData.lineout_distance = lineoutZone.distanceKey;
         insertData.lineout_height = lineoutZone.heightKey;
@@ -158,6 +163,8 @@ export function PrecisionFieldTracker({ categoryId }: PrecisionFieldTrackerProps
       setClickLabel("");
       setAttempts("1");
       setSuccesses("0");
+      setZoneKickOrigin(null);
+      setZoneKickStep("origin");
       toast.success("Exercice enregistré !");
     },
     onError: (e: Error) => toast.error(e.message),
