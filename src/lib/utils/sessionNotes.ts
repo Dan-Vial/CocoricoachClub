@@ -4,7 +4,10 @@
  */
 export function getDisplayNotes(notes: string | null | undefined): string {
   if (!notes) return "";
-  return notes.replace(/<!--TESTS:.*?-->/g, "").trim();
+  return notes
+    .replace(/\n?<!--TESTS:.*?-->/g, "")
+    .replace(/\n?<!--PRECISION_EXERCISE:.*?-->/g, "")
+    .trim();
 }
 
 /**
@@ -18,5 +21,25 @@ export function parseTestsFromNotes(notes: string | null | undefined): Array<{ t
     return JSON.parse(match[1]);
   } catch {
     return [];
+  }
+}
+
+export function parsePrecisionExerciseFromNotes(notes: string | null | undefined): { id: string | null; label: string } | null {
+  if (!notes) return null;
+  const match = notes.match(/<!--PRECISION_EXERCISE:(.*?)-->/);
+  if (!match) return null;
+
+  try {
+    const parsed = JSON.parse(match[1]);
+    if (!parsed || typeof parsed.label !== "string" || !parsed.label.trim()) {
+      return null;
+    }
+
+    return {
+      id: typeof parsed.id === "string" && parsed.id.trim() ? parsed.id : null,
+      label: parsed.label.trim(),
+    };
+  } catch {
+    return null;
   }
 }

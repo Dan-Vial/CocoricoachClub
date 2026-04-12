@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,25 +11,15 @@ import { Badge } from "@/components/ui/badge";
 import { Target, Check } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { RUGBY_PRECISION_EXERCISES, type RugbyPrecisionExerciseMode } from "@/lib/constants/rugbyPrecisionExercises";
 
 interface AthletePrecisionFieldInputProps {
   playerId: string;
   categoryId: string;
   sessionId: string;
   onEntryAdded?: () => void;
+  initialExerciseType?: string | null;
 }
-
-type ExerciseMode = "field" | "zone" | "lineout";
-
-const EXERCISE_TYPES = [
-  { value: "Coup de pied", label: "Coup de pied", mode: "field" as ExerciseMode },
-  { value: "Passe au pied", label: "Passe au pied", mode: "field" as ExerciseMode },
-  { value: "Chandelle", label: "Chandelle", mode: "field" as ExerciseMode },
-  { value: "Jeu au pied rasant", label: "Jeu au pied rasant", mode: "field" as ExerciseMode },
-  { value: "Drop", label: "Drop", mode: "field" as ExerciseMode },
-  { value: "Jeu de zone", label: "Jeu de zone", mode: "zone" as ExerciseMode },
-  { value: "Touche", label: "Touche (lanceurs)", mode: "lineout" as ExerciseMode },
-];
 
 const ZONE_GRID = [
   { row: 0, col: 0, label: "Zone 1" }, { row: 0, col: 1, label: "Zone 2" }, { row: 0, col: 2, label: "Zone 3" }, { row: 0, col: 3, label: "Zone 4" },
@@ -43,9 +33,15 @@ const LINEOUT_POSITIONS = [
   { key: "fond", label: "Fond", y: 80, description: "12-15m du lanceur" },
 ];
 
-export function AthletePrecisionFieldInput({ playerId, categoryId, sessionId, onEntryAdded }: AthletePrecisionFieldInputProps) {
+export function AthletePrecisionFieldInput({
+  playerId,
+  categoryId,
+  sessionId,
+  onEntryAdded,
+  initialExerciseType,
+}: AthletePrecisionFieldInputProps) {
   const queryClient = useQueryClient();
-  const [exerciseType, setExerciseType] = useState("Coup de pied");
+  const [exerciseType, setExerciseType] = useState(initialExerciseType || RUGBY_PRECISION_EXERCISES[0].value);
   const [kickingSide, setKickingSide] = useState<"left" | "right">("right");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [clickPos, setClickPos] = useState<{ x: number; y: number } | null>(null);
@@ -55,8 +51,16 @@ export function AthletePrecisionFieldInput({ playerId, categoryId, sessionId, on
   const [saving, setSaving] = useState(false);
   const [savedEntries, setSavedEntries] = useState<Array<{ label: string; attempts: number; successes: number }>>([]);
 
-  const currentMode = EXERCISE_TYPES.find(e => e.value === exerciseType)?.mode || "field";
+  const currentMode = (RUGBY_PRECISION_EXERCISES.find(e => e.value === exerciseType)?.mode || "field") as RugbyPrecisionExerciseMode;
   const goalsOnRight = kickingSide === "right";
+
+  useEffect(() => {
+    if (!initialExerciseType) return;
+    const hasMatchingOption = RUGBY_PRECISION_EXERCISES.some((exercise) => exercise.value === initialExerciseType);
+    if (hasMatchingOption) {
+      setExerciseType(initialExerciseType);
+    }
+  }, [initialExerciseType]);
 
   // Load existing entries for this session today
   const { data: existingEntries = [] } = useQuery({
@@ -223,7 +227,7 @@ export function AthletePrecisionFieldInput({ playerId, categoryId, sessionId, on
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {EXERCISE_TYPES.map(et => (
+              {RUGBY_PRECISION_EXERCISES.map(et => (
                 <SelectItem key={et.value} value={et.value}>{et.label}</SelectItem>
               ))}
             </SelectContent>
