@@ -688,6 +688,238 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
     }
   }, [stats, sportStats, statCategories, categoryId, selectedCount, allMatches, activeMatchIds, playerProgressions, isRugby, kickingByPlayerFinal]);
 
+  // Enhanced individual player PDF export with photo, club, category, matches, kicking map
+  const handleExportPlayerPdf = useCallback(async (playerId: string) => {
+    if (!stats) return;
+    const player = stats.find(p => p.playerId === playerId);
+    if (!player) return;
+    try {
+      const { settings, clubName, categoryName, seasonName } = await preparePdfWithSettings(categoryId);
+      const doc = new jsPDF({ orientation: "portrait" });
+      const pageW = doc.internal.pageSize.getWidth();
+      const pageH = doc.internal.pageSize.getHeight();
+      const hc = (settings?.header_color || "#224378").replace("#", "");
+      const hcR = parseInt(hc.substring(0, 2), 16);
+      const hcG = parseInt(hc.substring(2, 4), 16);
+      const hcB = parseInt(hc.substring(4, 6), 16);
+
+      // Header bar
+      doc.setFillColor(hcR, hcG, hcB);
+      doc.rect(0, 0, pageW, 32, "F");
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(16);
+      doc.setFont("helvetica", "bold");
+      doc.text("Rapport individuel — Compétition", 14, 14);
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.text(`${clubName || ""} • ${categoryName || ""} • ${seasonName || ""}`, 14, 24);
+      doc.text(format(new Date(), "dd/MM/yyyy"), pageW - 14, 24, { align: "right" });
+
+      let y = 40;
+
+      // Player info section with avatar
+      if (player.avatarUrl) {
+        try {
+          const response = await fetch(player.avatarUrl + (player.avatarUrl.includes("?") ? "&" : "?") + "t=" + Date.now(), { mode: "cors" });
+          if (response.ok) {
+            const blob = await response.blob();
+            const dataUrl = await new Promise<string>((resolve) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve(reader.result as string);
+              reader.readAsDataURL(blob);
+            });
+            const imgFormat = dataUrl.includes("image/png") ? "PNG" : "JPEG";
+            doc.addImage(dataUrl, imgFormat, 14, y, 22, 22);
+          }
+        } catch { /* skip photo */ }
+      }
+
+      const infoX = player.avatarUrl ? 42 : 14;
+      doc.setTextColor(30, 41, 59);
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      doc.text(player.playerName, infoX, y + 8);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.setTextColor(100, 116, 139);
+      doc.text(`Poste : ${player.position || "—"}  •  ${player.matchesPlayed} matchs joués`, infoX, y + 15);
+      doc.text(`Club : ${clubName || "—"}  •  Catégorie : ${categoryName || "—"}`, infoX, y + 21);
+      y += 30;
+
+      // Selected matches list
+      const selectedMatches = allMatches.filter(m => activeMatchIds.includes(m.id));
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(30, 41, 59);
+      doc.text("Matchs inclus", 14, y);
+      y += 5;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7);
+      doc.setTextColor(100, 116, 139);
+      selectedMatches.forEach((m) => {
+        if (y > pageH - 30) { doc.addPage(); y = 15; }
+        const lieu = m.is_home ? "DOM" : "EXT";
+        const comp = m.competition ? ` — ${m.competition}` : "";
+        doc.text(`${format(new Date(m.match_date), "dd/MM/yyyy")} • vs ${m.opponent} [${lieu}]${comp}`, 18, y);
+        y += 4;
+      });
+      y += 6;
+
+      // Stats by category
+      statCategories.forEach(cat => {
+        const categoryStats = sportStats.filter(s => s.category === cat.key);
+        if (categoryStats.length === 0) return;
+
+        if (y > pageH - 40) { doc.addPage(); y = 15; }
+
+        doc.setTextColor(30, 41, 59);
+        doc.setFontSize(11);
+        doc.setFont("helvetica", "bold");
+        doc.text(cat.label, 14, y);
+        y += 5;
+
+        // Header row
+        doc.setFillColor(241, 245, 249);
+        doc.rect(14, y, pageW - 28, 7, "F");
+        doc.setFontSize(7);
+        let x = 14;
+        const colW = Math.min(30, (pageW - 28) / categoryStats.length);
+        categoryStats.forEach(s => {
+          doc.text(s.shortLabel.substring(0, 12), x + 1, y + 5);
+          x += colW;
+        });
+        y += 9;
+
+        // Values row
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(30, 41, 59);
+        x = 14;
+        categoryStats.forEach(s => {
+          const val = player.sportData[s.key] || 0;
+          doc.text(s.computedFrom ? `${val}%` : String(val), x + 1, y + 4);
+          x += colW;
+        });
+        y += 10;
+      });
+
+      // Kicking section for rugby
+      if (isRugby && kickingByPlayerFinal[playerId]) {
+        const k = kickingByPlayerFinal[playerId];
+        if (k.total > 0) {
+          if (y > pageH - 100) { doc.addPage(); y = 15; }
+
+          doc.setFontSize(11);
+          doc.setFont("helvetica", "bold");
+          doc.setTextColor(30, 41, 59);
+          doc.text("Statistiques Buteur", 14, y);
+          y += 6;
+
+          // Stats summary
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(8);
+          const rate = Math.round((k.success / k.total) * 100);
+          const penRate = k.penalty.total > 0 ? Math.round((k.penalty.success / k.penalty.total) * 100) : 0;
+          const convRate = k.conversion.total > 0 ? Math.round((k.conversion.success / k.conversion.total) * 100) : 0;
+          const dropRate = k.drop.total > 0 ? Math.round((k.drop.success / k.drop.total) * 100) : 0;
+          doc.text(`Global: ${k.success}/${k.total} (${rate}%)  •  Transformations: ${k.conversion.success}/${k.conversion.total} (${convRate}%)  •  Pénalités: ${k.penalty.success}/${k.penalty.total} (${penRate}%)  •  Drops: ${k.drop.success}/${k.drop.total} (${dropRate}%)`, 14, y);
+          y += 8;
+
+          // Legend
+          doc.setFontSize(7);
+          doc.setTextColor(100, 116, 139);
+          // Transformation legend (blue circle)
+          doc.setFillColor(59, 130, 246);
+          doc.circle(18, y - 1, 2, "F");
+          doc.text("Transformation", 22, y);
+          // Penalty legend (orange square)
+          doc.setFillColor(249, 115, 22);
+          doc.rect(56, y - 3, 4, 4, "F");
+          doc.text("Pénalité", 62, y);
+          // Drop legend (purple diamond)
+          doc.setFillColor(139, 92, 246);
+          const dx = 90, dy = y - 1;
+          (doc as any).triangle(dx, dy - 2.5, dx + 2.5, dy, dx, dy + 2.5, "F");
+          (doc as any).triangle(dx, dy - 2.5, dx - 2.5, dy, dx, dy + 2.5, "F");
+          doc.text("Drop", 94, y);
+          // Success colors
+          doc.setFillColor(34, 197, 94);
+          doc.circle(118, y - 1, 2, "F");
+          doc.text("Réussi", 122, y);
+          doc.setFillColor(239, 68, 68);
+          doc.circle(144, y - 1, 2, "F");
+          doc.text("Raté", 148, y);
+          y += 6;
+
+          // Draw field
+          const mapW = pageW - 28;
+          const mapH = 70;
+          // Field background
+          doc.setFillColor(21, 128, 61);
+          doc.rect(14, y, mapW, mapH, "F");
+          doc.setDrawColor(255, 255, 255);
+          doc.setLineWidth(0.3);
+          doc.rect(14, y, mapW, mapH, "S");
+          // Distance lines
+          [0, 10, 22, 30, 40, 50].forEach(m => {
+            const lx = 14 + (m / 100) * mapW;
+            doc.setLineDashPattern([1, 1], 0);
+            doc.line(lx, y, lx, y + mapH);
+          });
+          doc.setLineDashPattern([], 0);
+          // Posts
+          doc.setLineWidth(1);
+          doc.line(14 + mapW, y + mapH * 0.4, 14 + mapW, y + mapH * 0.6);
+          doc.setLineWidth(0.3);
+
+          // Draw kicks
+          k.allKicks.forEach(kick => {
+            const kx = 14 + (kick.x / 100) * mapW;
+            const ky2 = y + (kick.y / 100) * mapH;
+            const r = 3;
+            const fillColor: [number, number, number] = kick.success ? [34, 197, 94] : [239, 68, 68];
+            doc.setFillColor(...fillColor);
+
+            if (kick.kickType === "conversion") {
+              doc.circle(kx, ky2, r, "F");
+              doc.setDrawColor(59, 130, 246);
+              doc.circle(kx, ky2, r, "S");
+            } else if (kick.kickType === "penalty") {
+              doc.rect(kx - r, ky2 - r, r * 2, r * 2, "F");
+              doc.setDrawColor(249, 115, 22);
+              doc.rect(kx - r, ky2 - r, r * 2, r * 2, "S");
+            } else {
+              const pts = [
+                { x: kx, y: ky2 - r * 1.2 },
+                { x: kx + r * 1.2, y: ky2 },
+                { x: kx, y: ky2 + r * 1.2 },
+                { x: kx - r * 1.2, y: ky2 },
+              ];
+              doc.setFillColor(...fillColor);
+              (doc as any).triangle(pts[0].x, pts[0].y, pts[1].x, pts[1].y, pts[2].x, pts[2].y, "F");
+              (doc as any).triangle(pts[0].x, pts[0].y, pts[2].x, pts[2].y, pts[3].x, pts[3].y, "F");
+              doc.setDrawColor(139, 92, 246);
+            }
+          });
+
+          y += mapH + 8;
+        }
+      }
+
+      // Footer
+      if (settings?.footer_text) {
+        doc.setFontSize(7);
+        doc.setTextColor(148, 163, 184);
+        doc.text(settings.footer_text, pageW / 2, pageH - 8, { align: "center" });
+      }
+
+      doc.save(`rapport-${player.playerName.replace(/\s+/g, '-')}-${format(new Date(), "yyyy-MM-dd")}.pdf`);
+      toast.success("Rapport PDF téléchargé !");
+    } catch (e) {
+      console.error(e);
+      toast.error("Erreur lors de l'export PDF");
+    }
+  }, [stats, sportStats, statCategories, categoryId, allMatches, activeMatchIds, isRugby, kickingByPlayerFinal]);
+
   const getCategoryIcon = (catKey: string) => {
     switch (catKey) {
       case "scoring": return <Trophy className="h-4 w-4 text-primary" />;
@@ -875,21 +1107,35 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
 
         {/* RIGHT: Individual Stats */}
         <div>
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
             <h3 className="text-lg font-semibold flex items-center gap-2">
               <User className="h-5 w-5 text-primary" />
               Statistiques individuelles
             </h3>
-            <Select value={selectedPlayerId || (stats[0]?.playerId || "")} onValueChange={setSelectedPlayerId}>
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Choisir un joueur" />
-              </SelectTrigger>
-              <SelectContent>
-                {stats.map(p => (
-                  <SelectItem key={p.playerId} value={p.playerId}>{p.playerName}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex items-center gap-2">
+              <Select value={selectedPlayerId || (stats[0]?.playerId || "")} onValueChange={setSelectedPlayerId}>
+                <SelectTrigger className="w-[180px] h-8 text-xs">
+                  <SelectValue placeholder="Choisir un joueur" />
+                </SelectTrigger>
+                <SelectContent>
+                  {stats.map(p => (
+                    <SelectItem key={p.playerId} value={p.playerId}>{p.playerName}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button variant="outline" size="sm" className="gap-1 h-8" onClick={() => {
+                const pid = selectedPlayerId || stats[0]?.playerId;
+                if (pid) handleExportExcel("single", pid);
+              }}>
+                <FileSpreadsheet className="h-3.5 w-3.5" />
+              </Button>
+              <Button variant="outline" size="sm" className="gap-1 h-8" onClick={() => {
+                const pid = selectedPlayerId || stats[0]?.playerId;
+                if (pid) handleExportPlayerPdf(pid);
+              }}>
+                <Download className="h-3.5 w-3.5" />
+              </Button>
+            </div>
           </div>
 
           {(() => {
