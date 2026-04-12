@@ -15,7 +15,7 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/contexts/AuthContext";
-import { ExerciseMediaViewer } from "@/components/library/ExerciseMediaViewer";
+import { Dialog as MediaDialog, DialogContent as MediaDialogContent, DialogHeader as MediaDialogHeader, DialogTitle as MediaDialogTitle } from "@/components/ui/dialog";
 
 interface ProphylaxisProgramDialogProps {
   categoryId: string;
