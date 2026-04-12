@@ -2963,9 +2963,7 @@ export function SessionFormDialog({
                                   ))}
                                 </SelectContent>
                               </Select>
-                            </div>
-                          );
-                        })()}
+                        )}
 
                         <p className="text-xs text-muted-foreground flex items-center gap-1.5">
                           🏉 Le choix fait ici sera repris par défaut dans la saisie athlète.
@@ -2974,7 +2972,8 @@ export function SessionFormDialog({
                           📊 Tu pourras saisir tes stats de précision (réussites / tentatives) lors de la saisie RPE via le terrain interactif.
                         </p>
                       </div>
-                    )}
+                      );
+                    })()}
 
                     <div className="space-y-2">
                       <Label htmlFor="notes">Notes</Label>
