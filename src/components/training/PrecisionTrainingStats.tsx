@@ -524,7 +524,7 @@ export function PrecisionTrainingStats({ categoryId }: PrecisionTrainingStatsPro
   };
 
   // Export PDF
-  const handleExportPdf = async (singlePlayerId?: string) => {
+  const handleExportPdf = async (singlePlayerId?: string, mode: "exercise" | "session" | "both" = "both") => {
     const exportData = singlePlayerId ? filtered.filter((r: any) => r.player_id === singlePlayerId) : filtered;
     const singlePlayerName = singlePlayerId ? players.find(pl => pl.id === singlePlayerId)?.name : undefined;
     const exportTotalAttempts = exportData.reduce((s: number, r: any) => s + (r.attempts || 0), 0);
