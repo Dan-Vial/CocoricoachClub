@@ -2,6 +2,8 @@ import { useState, useMemo } from "react";
 import { LineoutFieldSVG, aggregateLineoutStats } from "@/components/rugby/LineoutFieldSVG";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { RugbyFieldSVG } from "@/components/rugby/RugbyFieldSVG";
+import { BUTEUR_EXERCISES } from "@/lib/constants/rugbyPrecisionExercises";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
