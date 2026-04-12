@@ -32,7 +32,7 @@ const LINEOUT_POSITIONS = [
   { key: "fond", label: "Fond", y: 80, description: "12-15m du lanceur" },
 ];
 
-export function PrecisionFieldTracker({ categoryId }: PrecisionFieldTrackerProps) {
+export function PrecisionFieldTracker({ categoryId, sessionId: propSessionId, sessionDate: propSessionDate }: PrecisionFieldTrackerProps) {
   const queryClient = useQueryClient();
   const { isViewer } = useViewerModeContext();
   const [selectedPlayerId, setSelectedPlayerId] = useState<string>("");
