@@ -79,6 +79,27 @@ export function AthleteSpaceCalendar({ playerId, categoryId, sportType }: Props)
     },
   });
 
+  // Fetch prophylaxis programs assigned to this player
+  const { data: prophylaxisPrograms = [] } = useQuery({
+    queryKey: ["athlete-prophylaxis", playerId, categoryId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("prophylaxis_assignments")
+        .select(`
+          id, is_active, start_date, end_date,
+          prophylaxis_programs(
+            id, name, body_zone, frequency, description, is_active,
+            prophylaxis_exercises(*)
+          )
+        `)
+        .eq("player_id", playerId)
+        .eq("category_id", categoryId)
+        .eq("is_active", true);
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
   const completedSessionIds = new Set(submittedRpes.map(r => r.training_session_id));
 
   // trainingTypes not needed anymore - handled by AddSessionDialog
