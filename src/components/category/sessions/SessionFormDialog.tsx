@@ -93,7 +93,7 @@ import { SessionTestBlock, type SessionTest } from "./SessionTestBlock";
 import { SessionBlocksManager, type SessionBlock } from "./SessionBlocksManager";
 import { PrecisionExerciseSelector } from "@/components/precision/PrecisionExerciseSelector";
 import { getDisplayNotes, parsePrecisionExerciseFromNotes } from "@/lib/utils/sessionNotes";
-import { RUGBY_PRECISION_EXERCISES } from "@/lib/constants/rugbyPrecisionExercises";
+import { RUGBY_PRECISION_EXERCISES, EXERCISE_CATEGORIES } from "@/lib/constants/rugbyPrecisionExercises";
 
 interface SessionFormDialogProps {
   open: boolean;
