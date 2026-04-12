@@ -6968,6 +6968,8 @@ export type Database = {
           exercise_label: string
           exercise_type_id: string | null
           id: string
+          kick_origin_x: number | null
+          kick_origin_y: number | null
           lineout_distance: string | null
           lineout_height: string | null
           notes: string | null
@@ -6987,6 +6989,8 @@ export type Database = {
           exercise_label: string
           exercise_type_id?: string | null
           id?: string
+          kick_origin_x?: number | null
+          kick_origin_y?: number | null
           lineout_distance?: string | null
           lineout_height?: string | null
           notes?: string | null
@@ -7006,6 +7010,8 @@ export type Database = {
           exercise_label?: string
           exercise_type_id?: string | null
           id?: string
+          kick_origin_x?: number | null
+          kick_origin_y?: number | null
           lineout_distance?: string | null
           lineout_height?: string | null
           notes?: string | null
