@@ -87,7 +87,7 @@ export function CumulativeKickingMap({ kicks, playerName, hasKickingStats }: Cum
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="relative w-full" style={{ aspectRatio: "7/4" }}>
+        <div className="relative w-full" style={{ aspectRatio: "3/2" }}>
           <svg viewBox={`0 0 ${SVG_W} ${SVG_H}`} className="w-full h-full">
             <RugbyFieldSvg
               svgW={SVG_W} svgH={SVG_H}
@@ -95,10 +95,10 @@ export function CumulativeKickingMap({ kicks, playerName, hasKickingStats }: Cum
               fieldTop={FIELD_TOP} fieldBottom={FIELD_BOTTOM}
             />
 
-            {/* Kick markers */}
+            {/* Kick markers — coordinates are stored as % of SVG dimensions */}
             {kicks.map((kick, i) => {
-              const cx = FIELD_LEFT + (kick.x / 100) * FIELD_W;
-              const cy = FIELD_TOP + (kick.y / 100) * FIELD_H;
+              const cx = (kick.x / 100) * SVG_W;
+              const cy = (kick.y / 100) * SVG_H;
               const style = KICK_STYLES[kick.kickType] || KICK_STYLES.penalty;
               const fill = kick.success ? "#22c55e" : "#ef4444";
               const stroke = style.color;
