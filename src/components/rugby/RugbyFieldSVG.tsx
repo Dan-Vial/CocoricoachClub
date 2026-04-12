@@ -38,12 +38,19 @@ function mToSvgY(meters: number): number {
 }
 
 const DISTANCE_LINES = [
+  { m: -5, label: "Ballon mort", solid: true, thick: false },
   { m: 0, label: "En-but", solid: true, thick: true },
+  { m: 5, label: "5m", solid: false, thick: false },
   { m: 10, label: "10m", solid: false, thick: false },
   { m: 22, label: "22m", solid: true, thick: false },
-  { m: 30, label: "30m", solid: false, thick: false },
   { m: 40, label: "40m", solid: false, thick: false },
   { m: 50, label: "½", solid: true, thick: true },
+  { m: 60, label: "40m", solid: false, thick: false },
+  { m: 78, label: "22m", solid: true, thick: false },
+  { m: 90, label: "10m", solid: false, thick: false },
+  { m: 95, label: "5m", solid: false, thick: false },
+  { m: 100, label: "En-but", solid: true, thick: true },
+  { m: 105, label: "Ballon mort", solid: true, thick: false },
 ];
 
 /** Width marks (from each touchline) at 5m and 15m */
