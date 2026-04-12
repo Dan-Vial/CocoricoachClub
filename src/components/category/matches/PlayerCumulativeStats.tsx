@@ -1115,8 +1115,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
 
           // Draw kicks using inner field bounds
           k.allKicks.forEach(kick => {
-            const kx = fieldBounds.fx + (kick.x / 100) * fieldBounds.fw;
-            const ky2 = fieldBounds.fy + (kick.y / 100) * fieldBounds.fh;
+            const { kx, ky: ky2 } = svgPctToPdfPos(kick, fieldBounds);
             const r = 3;
             const fillColor: [number, number, number] = kick.success ? [34, 197, 94] : [239, 68, 68];
             doc.setFillColor(...fillColor);
