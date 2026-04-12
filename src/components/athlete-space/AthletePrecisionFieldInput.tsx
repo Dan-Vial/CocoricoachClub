@@ -393,17 +393,41 @@ export function AthletePrecisionFieldInput({
         </div>
       )}
 
-      {/* ZONE KICKS MODE - click on target zone, enter attempts */}
+      {/* ZONE KICKS MODE - two-click: origin then target */}
       {currentMode === "zone_kicks" && (
         <div className="relative w-full">
-          <p className="text-xs text-muted-foreground mb-1">
-            Clique sur la zone visée — entre le nombre de tirs ({currentExercise?.label})
-          </p>
+          <div className="flex items-center gap-2 mb-1">
+            <p className="text-xs text-muted-foreground">
+              {zoneKickStep === "origin"
+                ? `📍 Étape 1 : Clique sur la position de frappe (${currentExercise?.label})`
+                : `🎯 Étape 2 : Clique sur la zone ciblée`}
+            </p>
+            {zoneKickStep === "target" && (
+              <Button variant="ghost" size="sm" className="h-6 text-[10px]" onClick={() => { setZoneKickOrigin(null); setZoneKickStep("origin"); }}>
+                ↩ Annuler
+              </Button>
+            )}
+          </div>
           <RugbyFieldSVG
             goalsOnRight={goalsOnRight}
             onClick={handleZoneKickClick}
             showCursorTracker
           >
+            {/* Show origin marker if set */}
+            {zoneKickOrigin && (
+              (() => {
+                const ox = 20 + (zoneKickOrigin.x / 100) * 560;
+                const oy = 10 + (zoneKickOrigin.y / 100) * 380;
+                return (
+                  <g>
+                    <circle cx={ox} cy={oy} r={10} fill="none" stroke="#f59e0b" strokeWidth={2.5} strokeDasharray="4 2" opacity={0.9} />
+                    <circle cx={ox} cy={oy} r={3} fill="#f59e0b" opacity={0.9} />
+                    <text x={ox} y={oy - 14} textAnchor="middle" fill="#f59e0b" fontSize="8" fontWeight="bold">FRAPPE</text>
+                  </g>
+                );
+              })()
+            )}
+            {/* Zone stats */}
             {zoneStats.map((zone, i) => {
               const cx = (zone.x / 100) * 600;
               const cy = (zone.y / 100) * 400;
