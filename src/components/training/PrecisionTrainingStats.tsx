@@ -9,8 +9,9 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { BarChart3, Target, CalendarIcon, Users, Download, FileSpreadsheet, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { BarChart3, Target, CalendarIcon, Users, User, Download, FileSpreadsheet, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from "@/components/ui/dropdown-menu";
 import { format, isAfter, isBefore, startOfDay, endOfDay } from "date-fns";
 import { fr } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -38,6 +39,7 @@ export function PrecisionTrainingStats({ categoryId }: PrecisionTrainingStatsPro
   const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
   const [selectedPlayerId, setSelectedPlayerId] = useState<string>("all");
   const [selectedExercise, setSelectedExercise] = useState<string>("all");
+  const [exportPlayerId, setExportPlayerId] = useState<string>("");
 
   const { data: rawData, isLoading } = useQuery({
     queryKey: ["precision-training-stats", categoryId],
@@ -152,12 +154,28 @@ export function PrecisionTrainingStats({ categoryId }: PrecisionTrainingStatsPro
   }, [filtered]);
 
   // Export Excel
-  const handleExportExcel = async () => {
+  const handleExportExcel = async (singlePlayerId?: string) => {
+    const exportData = singlePlayerId ? filtered.filter((r: any) => r.player_id === singlePlayerId) : filtered;
+    const singlePlayerName = singlePlayerId ? players.find(pl => pl.id === singlePlayerId)?.name : undefined;
+    // Recalculate by-exercise and by-player for filtered data
+    const recomputeByExercise = (data: any[]) => {
+      const map = new Map<string, { attempts: number; successes: number }>();
+      data.forEach((r: any) => {
+        const key = r.exercise_label || "Inconnu";
+        const prev = map.get(key) || { attempts: 0, successes: 0 };
+        map.set(key, { attempts: prev.attempts + (r.attempts || 0), successes: prev.successes + (r.successes || 0) });
+      });
+      return Array.from(map.entries()).map(([label, v]) => ({
+        label, ...v, rate: v.attempts > 0 ? Math.round((v.successes / v.attempts) * 100) : 0, progression: 0,
+      }));
+    };
+    const exportByExercise = singlePlayerId ? recomputeByExercise(exportData) : byExercise;
+    const exportByPlayer = singlePlayerId ? byPlayer.filter(p => p.name === singlePlayerName) : byPlayer;
     try {
       const branding = await getExcelBranding(categoryId);
       const wb = new ExcelJS.Workbook();
 
-      // Sheet 1: By exercise
+      const titleSuffix = singlePlayerName ? ` - ${singlePlayerName}` : "";
       const ws1 = wb.addWorksheet("Par exercice");
       ws1.columns = [
         { header: "Exercice", key: "label", width: 25 },
@@ -166,39 +184,42 @@ export function PrecisionTrainingStats({ categoryId }: PrecisionTrainingStatsPro
         { header: "Taux %", key: "rate", width: 12 },
         { header: "Progression", key: "progression", width: 14 },
       ];
-      const startRow1 = addBrandedHeader(ws1, "Stats entraînement - Par exercice", branding, [
+      const startRow1 = addBrandedHeader(ws1, `Stats entraînement - Par exercice${titleSuffix}`, branding, [
         ["Période", `${dateFrom ? format(dateFrom, "dd/MM/yyyy") : "Début"} → ${dateTo ? format(dateTo, "dd/MM/yyyy") : "Fin"}`],
+        ...(singlePlayerName ? [["Athlète", singlePlayerName] as [string, string]] : []),
       ]);
       styleDataHeaderRow(ws1, startRow1, 5, branding.headerColor);
       ws1.getRow(startRow1).values = ["Exercice", "Tentatives", "Réussites", "Taux %", "Progression"];
-      byExercise.forEach((ex, i) => {
+      exportByExercise.forEach((ex, i) => {
         const row = ws1.getRow(startRow1 + 1 + i);
         row.values = [ex.label, ex.attempts, ex.successes, ex.rate, ex.progression > 0 ? `+${ex.progression}%` : `${ex.progression}%`];
         const progCell = row.getCell(5);
         progCell.font = { color: { argb: ex.progression > 0 ? "FF16A34A" : ex.progression < 0 ? "FFDC2626" : "FF64748B" } };
       });
-      addZebraRows(ws1, startRow1 + 1, startRow1 + byExercise.length, 5);
-      addFooter(ws1, startRow1 + byExercise.length + 1, 5, branding.footerText);
+      addZebraRows(ws1, startRow1 + 1, startRow1 + exportByExercise.length, 5);
+      addFooter(ws1, startRow1 + exportByExercise.length + 1, 5, branding.footerText);
 
-      // Sheet 2: By player
-      const ws2 = wb.addWorksheet("Par athlète");
-      ws2.columns = [
-        { header: "Athlète", key: "name", width: 25 },
-        { header: "Tentatives", key: "attempts", width: 14 },
-        { header: "Réussites", key: "successes", width: 14 },
-        { header: "Taux %", key: "rate", width: 12 },
-        { header: "Progression", key: "progression", width: 14 },
-      ];
-      const startRow2 = addBrandedHeader(ws2, "Stats entraînement - Par athlète", branding);
-      styleDataHeaderRow(ws2, startRow2, 5, branding.headerColor);
-      ws2.getRow(startRow2).values = ["Athlète", "Tentatives", "Réussites", "Taux %", "Progression"];
-      byPlayer.forEach((p, i) => {
-        const row = ws2.getRow(startRow2 + 1 + i);
-        row.values = [p.name, p.attempts, p.successes, p.rate, p.progression > 0 ? `+${p.progression}%` : `${p.progression}%`];
-        const progCell = row.getCell(5);
-        progCell.font = { color: { argb: p.progression > 0 ? "FF16A34A" : p.progression < 0 ? "FFDC2626" : "FF64748B" } };
-      });
-      addZebraRows(ws2, startRow2 + 1, startRow2 + byPlayer.length, 5);
+      // Sheet 2: By player (skip if single player export)
+      if (!singlePlayerId) {
+        const ws2 = wb.addWorksheet("Par athlète");
+        ws2.columns = [
+          { header: "Athlète", key: "name", width: 25 },
+          { header: "Tentatives", key: "attempts", width: 14 },
+          { header: "Réussites", key: "successes", width: 14 },
+          { header: "Taux %", key: "rate", width: 12 },
+          { header: "Progression", key: "progression", width: 14 },
+        ];
+        const startRow2 = addBrandedHeader(ws2, "Stats entraînement - Par athlète", branding);
+        styleDataHeaderRow(ws2, startRow2, 5, branding.headerColor);
+        ws2.getRow(startRow2).values = ["Athlète", "Tentatives", "Réussites", "Taux %", "Progression"];
+        exportByPlayer.forEach((p, i) => {
+          const row = ws2.getRow(startRow2 + 1 + i);
+          row.values = [p.name, p.attempts, p.successes, p.rate, p.progression > 0 ? `+${p.progression}%` : `${p.progression}%`];
+          const progCell = row.getCell(5);
+          progCell.font = { color: { argb: p.progression > 0 ? "FF16A34A" : p.progression < 0 ? "FFDC2626" : "FF64748B" } };
+        });
+        addZebraRows(ws2, startRow2 + 1, startRow2 + exportByPlayer.length, 5);
+      }
 
       // Sheet 3: Raw data
       const ws3 = wb.addWorksheet("Données brutes");
@@ -210,10 +231,10 @@ export function PrecisionTrainingStats({ categoryId }: PrecisionTrainingStatsPro
         { header: "Réussites", key: "successes", width: 14 },
         { header: "Taux %", key: "rate", width: 12 },
       ];
-      const startRow3 = addBrandedHeader(ws3, "Stats entraînement - Données brutes", branding);
+      const startRow3 = addBrandedHeader(ws3, `Stats entraînement - Données brutes${titleSuffix}`, branding);
       styleDataHeaderRow(ws3, startRow3, 6, branding.headerColor);
       ws3.getRow(startRow3).values = ["Date", "Athlète", "Exercice", "Tentatives", "Réussites", "Taux %"];
-      filtered.forEach((r: any, i: number) => {
+      exportData.forEach((r: any, i: number) => {
         const p = r.players as any;
         const row = ws3.getRow(startRow3 + 1 + i);
         row.values = [
@@ -225,9 +246,10 @@ export function PrecisionTrainingStats({ categoryId }: PrecisionTrainingStatsPro
           r.success_rate || 0,
         ];
       });
-      addZebraRows(ws3, startRow3 + 1, startRow3 + filtered.length, 6);
+      addZebraRows(ws3, startRow3 + 1, startRow3 + exportData.length, 6);
 
-      await downloadWorkbook(wb, `stats-entrainement-${format(new Date(), "yyyy-MM-dd")}.xlsx`);
+      const fileSuffix = singlePlayerName ? `-${singlePlayerName.replace(/\s+/g, '-')}` : "";
+      await downloadWorkbook(wb, `stats-entrainement${fileSuffix}-${format(new Date(), "yyyy-MM-dd")}.xlsx`);
       toast.success("Export Excel téléchargé !");
     } catch (e) {
       toast.error("Erreur lors de l'export Excel");
@@ -440,7 +462,12 @@ export function PrecisionTrainingStats({ categoryId }: PrecisionTrainingStatsPro
   };
 
   // Export PDF
-  const handleExportPdf = async () => {
+  const handleExportPdf = async (singlePlayerId?: string) => {
+    const exportData = singlePlayerId ? filtered.filter((r: any) => r.player_id === singlePlayerId) : filtered;
+    const singlePlayerName = singlePlayerId ? players.find(pl => pl.id === singlePlayerId)?.name : undefined;
+    const exportTotalAttempts = exportData.reduce((s: number, r: any) => s + (r.attempts || 0), 0);
+    const exportTotalSuccesses = exportData.reduce((s: number, r: any) => s + (r.successes || 0), 0);
+    const exportGlobalRate = exportTotalAttempts > 0 ? Math.round((exportTotalSuccesses / exportTotalAttempts) * 100) : 0;
     try {
       const { settings, logoBase64, clubName, categoryName, seasonName } = await preparePdfWithSettings(categoryId);
       const doc = new jsPDF({ orientation: "landscape" });
@@ -458,7 +485,7 @@ export function PrecisionTrainingStats({ categoryId }: PrecisionTrainingStatsPro
       doc.rect(0, 0, pageW, 28, "F");
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(16);
-      doc.text("Stats entraînement - Précision", 14, 12);
+      doc.text(`Stats entraînement - Précision${singlePlayerName ? ` — ${singlePlayerName}` : ""}`, 14, 12);
       doc.setFontSize(10);
       doc.text(`${clubName || ""} • ${categoryName || ""} • ${seasonName || ""}`, 14, 20);
       doc.text(format(new Date(), "dd/MM/yyyy"), pageW - 14, 20, { align: "right" });
@@ -473,7 +500,7 @@ export function PrecisionTrainingStats({ categoryId }: PrecisionTrainingStatsPro
       y += 8;
       doc.setFontSize(10);
       doc.setFont("helvetica", "normal");
-      doc.text(`Enregistrements: ${filtered.length}  |  Tentatives: ${totalAttempts}  |  Réussites: ${totalSuccesses}  |  Taux: ${globalRate}%`, 14, y);
+      doc.text(`Enregistrements: ${exportData.length}  |  Tentatives: ${exportTotalAttempts}  |  Réussites: ${exportTotalSuccesses}  |  Taux: ${exportGlobalRate}%`, 14, y);
       y += 12;
 
       // ===== TERRAIN VISUALS =====
@@ -606,7 +633,8 @@ export function PrecisionTrainingStats({ categoryId }: PrecisionTrainingStatsPro
         y += 7;
       });
 
-      doc.save(`stats-entrainement-${format(new Date(), "yyyy-MM-dd")}.pdf`);
+      const fileSuffix = singlePlayerName ? `-${singlePlayerName.replace(/\s+/g, '-')}` : "";
+      doc.save(`stats-entrainement${fileSuffix}-${format(new Date(), "yyyy-MM-dd")}.pdf`);
       toast.success("Export PDF téléchargé !");
     } catch (e) {
       toast.error("Erreur lors de l'export PDF");
@@ -715,15 +743,60 @@ export function PrecisionTrainingStats({ categoryId }: PrecisionTrainingStatsPro
               )}
             </div>
 
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={handleExportExcel} className="gap-1">
-                <FileSpreadsheet className="h-4 w-4" />
-                <span className="hidden sm:inline">Excel</span>
-              </Button>
-              <Button variant="outline" size="sm" onClick={handleExportPdf} className="gap-1">
-                <Download className="h-4 w-4" />
-                <span className="hidden sm:inline">PDF</span>
-              </Button>
+            <div className="flex gap-2 items-center">
+              <Select value={exportPlayerId} onValueChange={setExportPlayerId}>
+                <SelectTrigger className="w-[180px] h-8 text-xs">
+                  <SelectValue placeholder="Exporter un athlète" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">Tous les athlètes</SelectItem>
+                  {players.map(p => (
+                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-1">
+                    <FileSpreadsheet className="h-4 w-4" /><span className="hidden sm:inline">Excel</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel className="text-xs">Exporter en Excel</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {exportPlayerId && exportPlayerId !== "__all__" ? (
+                    <DropdownMenuItem onClick={() => handleExportExcel(exportPlayerId)}>
+                      <User className="h-3.5 w-3.5 mr-2" />{players.find(p => p.id === exportPlayerId)?.name || "Athlète"}
+                    </DropdownMenuItem>
+                  ) : (
+                    <DropdownMenuItem onClick={() => handleExportExcel()}>
+                      <Users className="h-3.5 w-3.5 mr-2" />Tous les athlètes
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-1">
+                    <Download className="h-4 w-4" /><span className="hidden sm:inline">PDF</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel className="text-xs">Exporter en PDF</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {exportPlayerId && exportPlayerId !== "__all__" ? (
+                    <DropdownMenuItem onClick={() => handleExportPdf(exportPlayerId)}>
+                      <User className="h-3.5 w-3.5 mr-2" />{players.find(p => p.id === exportPlayerId)?.name || "Athlète"}
+                    </DropdownMenuItem>
+                  ) : (
+                    <DropdownMenuItem onClick={() => handleExportPdf()}>
+                      <Users className="h-3.5 w-3.5 mr-2" />Tous les athlètes
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </CardContent>
