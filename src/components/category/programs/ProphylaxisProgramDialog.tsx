@@ -177,19 +177,6 @@ export function ProphylaxisProgramDialog({ categoryId, programId, open, onOpenCh
     }]);
   }, []);
 
-  const addFromLibrary = useCallback((libEx: any) => {
-    setExercises(prev => [...prev, {
-      exercise_name: libEx.name,
-      library_exercise_id: libEx.id,
-      sets: 3,
-      reps: "10",
-      duration_seconds: null,
-      rest_seconds: 30,
-      notes: "",
-      order_index: prev.length,
-    }]);
-    toast.success(`${libEx.name} ajouté`);
-  }, []);
 
   const updateExercise = (index: number, field: keyof ExerciseRow, value: any) => {
     setExercises(prev => prev.map((e, i) => i === index ? { ...e, [field]: value } : e));
