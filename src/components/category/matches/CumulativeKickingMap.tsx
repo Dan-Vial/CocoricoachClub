@@ -22,12 +22,13 @@ const KICK_STYLES: Record<string, { label: string; shape: "circle" | "square" | 
   drop: { label: "Drop", shape: "diamond", color: "#8b5cf6" },
 };
 
-const SVG_W = 700;
+// Match the RugbyFieldSVG coordinate system (600x400) so stored % map correctly
+const SVG_W = 600;
 const SVG_H = 400;
 const FIELD_LEFT = 20;
-const FIELD_RIGHT = 680;
-const FIELD_TOP = 10;
-const FIELD_BOTTOM = 390;
+const FIELD_RIGHT = 580;
+const FIELD_TOP = 14;
+const FIELD_BOTTOM = 386;
 const FIELD_W = FIELD_RIGHT - FIELD_LEFT;
 const FIELD_H = FIELD_BOTTOM - FIELD_TOP;
 const FIELD_LENGTH_M = 100;
