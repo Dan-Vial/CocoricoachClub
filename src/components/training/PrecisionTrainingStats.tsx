@@ -154,8 +154,10 @@ export function PrecisionTrainingStats({ categoryId }: PrecisionTrainingStatsPro
   }, [filtered]);
 
   // Export Excel
-  const handleExportExcel = async () => {
-    try {
+  const handleExportExcel = async (singlePlayerId?: string) => {
+    const exportData = singlePlayerId ? filtered.filter((r: any) => r.player_id === singlePlayerId) : filtered;
+    const exportByExercise = singlePlayerId ? byExercise : byExercise;
+    const exportByPlayer = singlePlayerId ? byPlayer.filter(p => p.name === players.find(pl => pl.id === singlePlayerId)?.name) : byPlayer;
       const branding = await getExcelBranding(categoryId);
       const wb = new ExcelJS.Workbook();
 
