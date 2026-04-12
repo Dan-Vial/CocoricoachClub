@@ -413,12 +413,10 @@ export function PrecisionTrainingStats({ categoryId }: PrecisionTrainingStatsPro
       { pct: 1, label: "BM", solid: true, thick: false },
     ];
 
-    // In-goal shading
-    doc.setFillColor(255, 255, 255);
-    doc.setGState(new (doc as any).GState({ opacity: 0.08 }));
+    // In-goal shading (lighter green)
+    doc.setFillColor(34, 160, 80);
     doc.rect(fx, fy, fw * 0.05, fh, "F");
     doc.rect(fx + fw * 0.95, fy, fw * 0.05, fh, "F");
-    doc.setGState(new (doc as any).GState({ opacity: 1 }));
 
     doc.setFontSize(4);
     doc.setTextColor(255, 255, 255);
