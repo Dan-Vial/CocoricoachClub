@@ -314,7 +314,7 @@ export function ExerciseLibrarySidebar({ sportType, onClickExercise }: ExerciseL
         </ScrollArea>
 
         <div className="p-2 border-t text-xs text-center text-muted-foreground bg-background">
-          Glissez-déposez dans les séances
+          {onClickExercise ? "Cliquez pour ajouter un exercice" : "Glissez-déposez dans les séances"}
         </div>
       </div>
 
