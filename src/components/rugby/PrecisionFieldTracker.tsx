@@ -40,9 +40,13 @@ export function PrecisionFieldTracker({ categoryId }: PrecisionFieldTrackerProps
   const [attempts, setAttempts] = useState<string>("1");
   const [successes, setSuccesses] = useState<string>("0");
   const [pendingKickType, setPendingKickType] = useState<string | null>(null);
+  // Zone kicks: two-click flow
+  const [zoneKickOrigin, setZoneKickOrigin] = useState<{ x: number; y: number } | null>(null);
+  const [zoneKickStep, setZoneKickStep] = useState<"origin" | "target">("origin");
 
   const currentExercise = RUGBY_PRECISION_EXERCISES.find(e => e.value === exerciseType);
   const currentMode: RugbyPrecisionExerciseMode = currentExercise?.mode || "kicking";
+  const currentCategory = EXERCISE_CATEGORIES.find(c => c.exercises.some(e => e.value === exerciseType));
 
   const { data: players = [] } = useQuery({
     queryKey: ["players-precision-field", categoryId],
