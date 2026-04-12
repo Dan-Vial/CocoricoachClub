@@ -25,7 +25,7 @@ import { TeamCumulativeStats } from "./TeamCumulativeStats";
 import { CumulativeKickingMap } from "./CumulativeKickingMap";
 import { getExcelBranding, addBrandedHeader, styleDataHeaderRow, addZebraRows, addFooter, downloadWorkbook } from "@/lib/excelExport";
 import { preparePdfWithSettings } from "@/lib/pdfExport";
-import { drawPdfRugbyField, drawPdfZoneStatsGrid } from "@/lib/pdfRugbyField";
+import { drawPdfRugbyField, drawPdfZoneStatsGrid, svgPctToPdfPos } from "@/lib/pdfRugbyField";
 
 interface PlayerCumulativeStatsProps {
   categoryId: string;
