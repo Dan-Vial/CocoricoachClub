@@ -228,12 +228,12 @@ export function ProphylaxisProgramDialog({ categoryId, programId, open, onOpenCh
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Athlète assigné</Label>
-              <Select value={playerId} onValueChange={setPlayerId}>
+              <Select value={playerId || "__all__"} onValueChange={(v) => setPlayerId(v === "__all__" ? "" : v)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Tous (général)" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Tous (programme général)</SelectItem>
+                  <SelectItem value="__all__">Tous (programme général)</SelectItem>
                   {players?.map(p => (
                     <SelectItem key={p.id} value={p.id}>
                       {p.first_name} {p.name}
