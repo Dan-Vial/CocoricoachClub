@@ -108,13 +108,14 @@ export function RugbyFieldSvg({
         );
       })}
 
-      {/* Center circle */}
-      <circle cx={centerX} cy={centerY} r={circleR}
-        fill="none" stroke="white" strokeWidth="1.5" opacity={0.4} />
-      {/* Center spot */}
-      <circle cx={centerX} cy={centerY} r={3} fill="white" opacity={0.5} />
+      {/* Goal-line drop-out spots (on the try line) */}
+      {[0.05, 0.95].map(pct => (
+        <circle key={`spot-en-but-${pct}`}
+          cx={fieldLeft + pct * fw} cy={centerY} r={2.5}
+          fill="white" opacity={0.4} />
+      ))}
 
-      {/* 22m drop-out spots */}
+      {/* 22m drop-out spots (exactly on the 22m solid line) */}
       {[0.27, 0.73].map(pct => (
         <circle key={`spot-${pct}`}
           cx={fieldLeft + pct * fw} cy={centerY} r={2.5}
