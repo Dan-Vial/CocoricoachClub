@@ -50,9 +50,13 @@ export function AthletePrecisionFieldInput({
   const [savedEntries, setSavedEntries] = useState<Array<{ label: string; attempts: number; successes: number }>>([]);
   // For buteur mode: pending kick result
   const [pendingKickType, setPendingKickType] = useState<string | null>(null);
+  // For zone kicks: two-click flow (origin then target)
+  const [zoneKickOrigin, setZoneKickOrigin] = useState<{ x: number; y: number } | null>(null);
+  const [zoneKickStep, setZoneKickStep] = useState<"origin" | "target">("origin");
 
   const currentExercise = RUGBY_PRECISION_EXERCISES.find(e => e.value === exerciseType);
   const currentMode: RugbyPrecisionExerciseMode = currentExercise?.mode || "kicking";
+  const currentCategory = EXERCISE_CATEGORIES.find(c => c.exercises.some(e => e.value === exerciseType));
   const goalsOnRight = kickingSide === "right";
 
   useEffect(() => {
