@@ -14,6 +14,7 @@ import { format } from "date-fns";
 import { RUGBY_PRECISION_EXERCISES, EXERCISE_CATEGORIES, BUTEUR_EXERCISES, type RugbyPrecisionExerciseMode } from "@/lib/constants/rugbyPrecisionExercises";
 import { RugbyFieldSVG } from "@/components/rugby/RugbyFieldSVG";
 import { getPositionLabel } from "@/lib/utils/kickingFieldZones";
+import { LineoutFieldSVG, aggregateLineoutStats, type LineoutZone } from "@/components/rugby/LineoutFieldSVG";
 
 interface AthletePrecisionFieldInputProps {
   playerId: string;
@@ -23,6 +24,7 @@ interface AthletePrecisionFieldInputProps {
   initialExerciseType?: string | null;
 }
 
+// Legacy positions
 const LINEOUT_POSITIONS = [
   { key: "devant", label: "Devant", y: 20, description: "2-4m du lanceur" },
   { key: "milieu", label: "Milieu", y: 50, description: "6-8m du lanceur" },
