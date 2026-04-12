@@ -199,25 +199,27 @@ export function PrecisionTrainingStats({ categoryId }: PrecisionTrainingStatsPro
       addZebraRows(ws1, startRow1 + 1, startRow1 + exportByExercise.length, 5);
       addFooter(ws1, startRow1 + exportByExercise.length + 1, 5, branding.footerText);
 
-      // Sheet 2: By player
-      const ws2 = wb.addWorksheet("Par athlète");
-      ws2.columns = [
-        { header: "Athlète", key: "name", width: 25 },
-        { header: "Tentatives", key: "attempts", width: 14 },
-        { header: "Réussites", key: "successes", width: 14 },
-        { header: "Taux %", key: "rate", width: 12 },
-        { header: "Progression", key: "progression", width: 14 },
-      ];
-      const startRow2 = addBrandedHeader(ws2, "Stats entraînement - Par athlète", branding);
-      styleDataHeaderRow(ws2, startRow2, 5, branding.headerColor);
-      ws2.getRow(startRow2).values = ["Athlète", "Tentatives", "Réussites", "Taux %", "Progression"];
-      byPlayer.forEach((p, i) => {
-        const row = ws2.getRow(startRow2 + 1 + i);
-        row.values = [p.name, p.attempts, p.successes, p.rate, p.progression > 0 ? `+${p.progression}%` : `${p.progression}%`];
-        const progCell = row.getCell(5);
-        progCell.font = { color: { argb: p.progression > 0 ? "FF16A34A" : p.progression < 0 ? "FFDC2626" : "FF64748B" } };
-      });
-      addZebraRows(ws2, startRow2 + 1, startRow2 + byPlayer.length, 5);
+      // Sheet 2: By player (skip if single player export)
+      if (!singlePlayerId) {
+        const ws2 = wb.addWorksheet("Par athlète");
+        ws2.columns = [
+          { header: "Athlète", key: "name", width: 25 },
+          { header: "Tentatives", key: "attempts", width: 14 },
+          { header: "Réussites", key: "successes", width: 14 },
+          { header: "Taux %", key: "rate", width: 12 },
+          { header: "Progression", key: "progression", width: 14 },
+        ];
+        const startRow2 = addBrandedHeader(ws2, "Stats entraînement - Par athlète", branding);
+        styleDataHeaderRow(ws2, startRow2, 5, branding.headerColor);
+        ws2.getRow(startRow2).values = ["Athlète", "Tentatives", "Réussites", "Taux %", "Progression"];
+        exportByPlayer.forEach((p, i) => {
+          const row = ws2.getRow(startRow2 + 1 + i);
+          row.values = [p.name, p.attempts, p.successes, p.rate, p.progression > 0 ? `+${p.progression}%` : `${p.progression}%`];
+          const progCell = row.getCell(5);
+          progCell.font = { color: { argb: p.progression > 0 ? "FF16A34A" : p.progression < 0 ? "FFDC2626" : "FF64748B" } };
+        });
+        addZebraRows(ws2, startRow2 + 1, startRow2 + exportByPlayer.length, 5);
+      }
 
       // Sheet 3: Raw data
       const ws3 = wb.addWorksheet("Données brutes");
@@ -229,10 +231,10 @@ export function PrecisionTrainingStats({ categoryId }: PrecisionTrainingStatsPro
         { header: "Réussites", key: "successes", width: 14 },
         { header: "Taux %", key: "rate", width: 12 },
       ];
-      const startRow3 = addBrandedHeader(ws3, "Stats entraînement - Données brutes", branding);
+      const startRow3 = addBrandedHeader(ws3, `Stats entraînement - Données brutes${titleSuffix}`, branding);
       styleDataHeaderRow(ws3, startRow3, 6, branding.headerColor);
       ws3.getRow(startRow3).values = ["Date", "Athlète", "Exercice", "Tentatives", "Réussites", "Taux %"];
-      filtered.forEach((r: any, i: number) => {
+      exportData.forEach((r: any, i: number) => {
         const p = r.players as any;
         const row = ws3.getRow(startRow3 + 1 + i);
         row.values = [
@@ -244,9 +246,10 @@ export function PrecisionTrainingStats({ categoryId }: PrecisionTrainingStatsPro
           r.success_rate || 0,
         ];
       });
-      addZebraRows(ws3, startRow3 + 1, startRow3 + filtered.length, 6);
+      addZebraRows(ws3, startRow3 + 1, startRow3 + exportData.length, 6);
 
-      await downloadWorkbook(wb, `stats-entrainement-${format(new Date(), "yyyy-MM-dd")}.xlsx`);
+      const fileSuffix = singlePlayerName ? `-${singlePlayerName.replace(/\s+/g, '-')}` : "";
+      await downloadWorkbook(wb, `stats-entrainement${fileSuffix}-${format(new Date(), "yyyy-MM-dd")}.xlsx`);
       toast.success("Export Excel téléchargé !");
     } catch (e) {
       toast.error("Erreur lors de l'export Excel");
