@@ -482,7 +482,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
           y += 9;
           doc.setFont("helvetica", "normal");
 
-          const sorted = [...stats].sort((a, b) => {
+          const sorted = [...exportStats].sort((a, b) => {
             const firstStat = chunk[0]?.key;
             return firstStat ? (b.sportData[firstStat] || 0) - (a.sportData[firstStat] || 0) : 0;
           });
@@ -586,7 +586,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
         ky += 6;
 
         // For each player with kicks
-        const kickerIds = Object.keys(kickingByPlayerFinal).filter(pid => kickingByPlayerFinal[pid].allKicks.length > 0);
+        const kickerIds = Object.keys(kickingByPlayerFinal).filter(pid => kickingByPlayerFinal[pid].allKicks.length > 0 && (!singlePlayerId || pid === singlePlayerId));
         kickerIds.forEach(pid => {
           const kicker = kickingByPlayerFinal[pid];
           const playerInfo = stats?.find(s => s.playerId === pid);
@@ -619,7 +619,8 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
         });
       }
 
-      const suffix = mode === "team" ? "-equipe" : mode === "individual" ? "-individuelles" : "";
+      const playerLabel = singlePlayerId ? exportStats[0]?.playerName?.replace(/\s+/g, '-') : "";
+      const suffix = mode === "team" ? "-equipe" : mode === "single" ? `-${playerLabel}` : mode === "individual" ? "-individuelles" : "";
       doc.save(`stats-competition${suffix}-${format(new Date(), "yyyy-MM-dd")}.pdf`);
       toast.success("Export PDF téléchargé !");
     } catch (e) {
