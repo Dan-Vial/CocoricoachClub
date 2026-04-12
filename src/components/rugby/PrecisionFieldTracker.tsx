@@ -65,7 +65,7 @@ export function PrecisionFieldTracker({ categoryId, sessionId: propSessionId, se
     },
   });
 
-  // Check if there are active training sessions today
+  // Check if there are active training sessions today (fallback when no sessionId prop)
   const { data: todaySessions = [] } = useQuery({
     queryKey: ["today-training-sessions", categoryId],
     queryFn: async () => {
@@ -79,9 +79,11 @@ export function PrecisionFieldTracker({ categoryId, sessionId: propSessionId, se
       if (error) throw error;
       return data || [];
     },
+    enabled: !propSessionId,
   });
 
-  const activeSessionId = todaySessions.length > 0 ? todaySessions[0].id : null;
+  const activeSessionId = propSessionId || (todaySessions.length > 0 ? todaySessions[0].id : null);
+  const activeSessionDate = propSessionDate || (todaySessions.length > 0 ? todaySessions[0].session_date : format(new Date(), "yyyy-MM-dd"));
 
   const { data: entries = [] } = useQuery({
     queryKey: ["precision-field-entries", categoryId, selectedPlayerId, exerciseType],
