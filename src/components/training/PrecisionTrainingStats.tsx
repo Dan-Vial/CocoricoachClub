@@ -633,7 +633,8 @@ export function PrecisionTrainingStats({ categoryId }: PrecisionTrainingStatsPro
         y += 7;
       });
 
-      doc.save(`stats-entrainement-${format(new Date(), "yyyy-MM-dd")}.pdf`);
+      const fileSuffix = singlePlayerName ? `-${singlePlayerName.replace(/\s+/g, '-')}` : "";
+      doc.save(`stats-entrainement${fileSuffix}-${format(new Date(), "yyyy-MM-dd")}.pdf`);
       toast.success("Export PDF téléchargé !");
     } catch (e) {
       toast.error("Erreur lors de l'export PDF");
