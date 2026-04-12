@@ -618,25 +618,9 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
           }
         };
 
-        // Draw field background
-        const drawFieldBg = (doc: jsPDF, fx: number, fy: number, fw: number, fh: number) => {
-          doc.setFillColor(21, 128, 61);
-          doc.rect(fx, fy, fw, fh, "F");
-          doc.setDrawColor(255, 255, 255);
-          doc.setLineWidth(0.3);
-          doc.rect(fx, fy, fw, fh, "S");
-          // Distance lines
-          const lines = [0, 10, 22, 30, 40, 50];
-          lines.forEach(m => {
-            const lx = fx + (m / 100) * fw;
-            doc.setLineDashPattern([1, 1], 0);
-            doc.line(lx, fy, lx, fy + fh);
-          });
-          doc.setLineDashPattern([], 0);
-          // Posts
-          doc.setLineWidth(1);
-          doc.line(fx + fw, fy + fh * 0.4, fx + fw, fy + fh * 0.6);
-          doc.setLineWidth(0.3);
+        // Draw field background using shared helper
+        const drawFieldBg = (doc: jsPDF, bx: number, by: number, bw: number, bh: number) => {
+          return drawPdfRugbyField(doc, bx, by, bw, bh, { showLabels: false });
         };
 
         // Legend
