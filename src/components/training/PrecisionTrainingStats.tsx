@@ -500,7 +500,7 @@ export function PrecisionTrainingStats({ categoryId }: PrecisionTrainingStatsPro
       y += 8;
       doc.setFontSize(10);
       doc.setFont("helvetica", "normal");
-      doc.text(`Enregistrements: ${filtered.length}  |  Tentatives: ${totalAttempts}  |  Réussites: ${totalSuccesses}  |  Taux: ${globalRate}%`, 14, y);
+      doc.text(`Enregistrements: ${exportData.length}  |  Tentatives: ${exportTotalAttempts}  |  Réussites: ${exportTotalSuccesses}  |  Taux: ${exportGlobalRate}%`, 14, y);
       y += 12;
 
       // ===== TERRAIN VISUALS =====
