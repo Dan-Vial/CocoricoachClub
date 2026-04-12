@@ -456,20 +456,27 @@ export function AthletePrecisionFieldInput({
             onClick={handleZoneKickClick}
             showCursorTracker
           >
-            {/* Show origin marker if set */}
-            {zoneKickOrigin && (
-              (() => {
-                const ox = 20 + (zoneKickOrigin.x / 100) * 560;
-                const oy = 10 + (zoneKickOrigin.y / 100) * 380;
-                return (
-                  <g>
-                    <circle cx={ox} cy={oy} r={10} fill="none" stroke="#f59e0b" strokeWidth={2.5} strokeDasharray="4 2" opacity={0.9} />
-                    <circle cx={ox} cy={oy} r={3} fill="#f59e0b" opacity={0.9} />
-                    <text x={ox} y={oy - 14} textAnchor="middle" fill="#f59e0b" fontSize="8" fontWeight="bold">FRAPPE</text>
-                  </g>
-                );
-              })()
-            )}
+            {/* Show origin marker - fixed or user-set */}
+            {(() => {
+              const origin = getFixedOrigin() || zoneKickOrigin;
+              if (!origin) return null;
+              const ox = 20 + (origin.x / 100) * 560;
+              const oy = 10 + (origin.y / 100) * 380;
+              const isFixed = !!getFixedOrigin();
+              return (
+                <g>
+                  {isFixed ? (
+                    // Fixed origin: show a line across the field width
+                    <line x1={ox} y1={10} x2={ox} y2={390} stroke="#f59e0b" strokeWidth={2} strokeDasharray="6 3" opacity={0.6} />
+                  ) : null}
+                  <circle cx={ox} cy={oy} r={10} fill="none" stroke="#f59e0b" strokeWidth={2.5} strokeDasharray="4 2" opacity={0.9} />
+                  <circle cx={ox} cy={oy} r={3} fill="#f59e0b" opacity={0.9} />
+                  <text x={ox} y={oy - 14} textAnchor="middle" fill="#f59e0b" fontSize="8" fontWeight="bold">
+                    {isFixed ? currentExercise?.label?.toUpperCase() : "FRAPPE"}
+                  </text>
+                </g>
+              );
+            })()}
             {/* Zone stats */}
             {zoneStats.map((zone, i) => {
               const cx = (zone.x / 100) * 600;
