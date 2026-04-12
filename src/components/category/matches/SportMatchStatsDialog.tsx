@@ -239,6 +239,16 @@ export function SportMatchStatsDialog({
           return playerStats;
         });
         setStatsData(stats);
+
+        // Load existing kick positions from sport_data
+        const loadedKicks: Record<string, KickAttempt[]> = {};
+        existingStats?.forEach((existing) => {
+          const sd = (existing as { sport_data?: Record<string, any> }).sport_data;
+          if (sd?.kickAttempts && Array.isArray(sd.kickAttempts)) {
+            loadedKicks[existing.player_id] = sd.kickAttempts;
+          }
+        });
+        setPlayerKicks(loadedKicks);
       }
       setStatsInitialized(true);
       setLastCustomStatsCount(customStatFields.length);
