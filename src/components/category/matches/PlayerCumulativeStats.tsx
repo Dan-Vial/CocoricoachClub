@@ -764,8 +764,8 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
           const mapH = 55;
           const fb = drawPdfRugbyField(doc, 14, y, mapW, mapH);
           allKicks.forEach(kick => {
-            const { kx, ky: ky2 } = svgPctToPdfPos(kick, fb);
-            const kx2 = kx; const ky = ky2;
+            const pos = svgPctToPdfPos(kick, fb);
+            const kx = pos.kx; const ky = pos.ky;
             const r = 2.5;
             const fillColor: [number, number, number] = kick.success ? [34, 197, 94] : [239, 68, 68];
             doc.setFillColor(...fillColor);
