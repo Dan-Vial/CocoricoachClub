@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Target, Check } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { RUGBY_PRECISION_EXERCISES, type RugbyPrecisionExerciseMode } from "@/lib/constants/rugbyPrecisionExercises";
+import { RUGBY_PRECISION_EXERCISES, EXERCISE_CATEGORIES, BUTEUR_EXERCISES, type RugbyPrecisionExerciseMode } from "@/lib/constants/rugbyPrecisionExercises";
 import { RugbyFieldSVG } from "@/components/rugby/RugbyFieldSVG";
 import { getPositionLabel } from "@/lib/utils/kickingFieldZones";
 
@@ -22,12 +22,6 @@ interface AthletePrecisionFieldInputProps {
   onEntryAdded?: () => void;
   initialExerciseType?: string | null;
 }
-
-const ZONE_GRID = [
-  { row: 0, col: 0, label: "Zone 1" }, { row: 0, col: 1, label: "Zone 2" }, { row: 0, col: 2, label: "Zone 3" }, { row: 0, col: 3, label: "Zone 4" },
-  { row: 1, col: 0, label: "Zone 5" }, { row: 1, col: 1, label: "Zone 6" }, { row: 1, col: 2, label: "Zone 7" }, { row: 1, col: 3, label: "Zone 8" },
-  { row: 2, col: 0, label: "Zone 9" }, { row: 2, col: 1, label: "Zone 10" }, { row: 2, col: 2, label: "Zone 11" }, { row: 2, col: 3, label: "Zone 12" },
-];
 
 const LINEOUT_POSITIONS = [
   { key: "devant", label: "Devant", y: 20, description: "2-4m du lanceur" },
@@ -52,8 +46,11 @@ export function AthletePrecisionFieldInput({
   const [successes, setSuccesses] = useState("0");
   const [saving, setSaving] = useState(false);
   const [savedEntries, setSavedEntries] = useState<Array<{ label: string; attempts: number; successes: number }>>([]);
+  // For buteur mode: pending kick result
+  const [pendingKickType, setPendingKickType] = useState<string | null>(null);
 
-  const currentMode = (RUGBY_PRECISION_EXERCISES.find(e => e.value === exerciseType)?.mode || "field") as RugbyPrecisionExerciseMode;
+  const currentExercise = RUGBY_PRECISION_EXERCISES.find(e => e.value === exerciseType);
+  const currentMode: RugbyPrecisionExerciseMode = currentExercise?.mode || "kicking";
   const goalsOnRight = kickingSide === "right";
 
   useEffect(() => {
@@ -64,7 +61,7 @@ export function AthletePrecisionFieldInput({
     }
   }, [initialExerciseType]);
 
-  // Load existing entries for this session today
+  // Load existing entries for this session
   const { data: existingEntries = [] } = useQuery({
     queryKey: ["athlete-precision-entries", categoryId, playerId, sessionId],
     queryFn: async () => {
@@ -92,31 +89,70 @@ export function AthletePrecisionFieldInput({
   const totalSuccesses = allEntries.reduce((s, e) => s + e.successes, 0);
   const globalRate = totalAttempts > 0 ? Math.round((totalSuccesses / totalAttempts) * 100) : 0;
 
-  const handleFieldClick = useCallback((xPct: number, yPct: number) => {
+  // Buteur mode: click = instant record with success/fail dialog
+  const handleButeurClick = useCallback((xPct: number, yPct: number) => {
     const posLabel = getPositionLabel(xPct, yPct, goalsOnRight);
+    const exLabel = currentExercise?.label || exerciseType;
     setClickPos({ x: xPct, y: yPct });
-    setClickLabel(`${exerciseType} - ${posLabel}`);
-    setAttempts("1");
-    setSuccesses("0");
+    setClickLabel(`${exLabel} - ${posLabel}`);
+    setPendingKickType(exerciseType);
     setDialogOpen(true);
-  }, [exerciseType, goalsOnRight]);
+  }, [exerciseType, goalsOnRight, currentExercise]);
 
-  const handleZoneClick = (row: number, col: number, label: string) => {
-    setClickPos({ x: col, y: row });
-    setClickLabel(`${exerciseType} - ${label}`);
+  // Zone kicks mode: click for attempts/successes
+  const handleZoneKickClick = useCallback((xPct: number, yPct: number) => {
+    const posLabel = getPositionLabel(xPct, yPct, goalsOnRight);
+    const exLabel = currentExercise?.label || exerciseType;
+    setClickPos({ x: xPct, y: yPct });
+    setClickLabel(`${exLabel} - ${posLabel}`);
+    setPendingKickType(null);
     setAttempts("1");
     setSuccesses("0");
     setDialogOpen(true);
-  };
+  }, [exerciseType, goalsOnRight, currentExercise]);
 
   const handleLineoutClick = (position: typeof LINEOUT_POSITIONS[0]) => {
+    const exLabel = currentExercise?.label || exerciseType;
     setClickPos({ x: 50, y: position.y });
-    setClickLabel(`${exerciseType} - ${position.label}`);
+    setClickLabel(`${exLabel} - ${position.label}`);
+    setPendingKickType(null);
     setAttempts("1");
     setSuccesses("0");
     setDialogOpen(true);
   };
 
+  // Save buteur kick (1 attempt, success or fail)
+  const saveButeurKick = async (success: boolean) => {
+    if (!clickPos) return;
+    setSaving(true);
+    try {
+      const { error } = await supabase.from("precision_training").insert({
+        player_id: playerId,
+        category_id: categoryId,
+        training_session_id: sessionId,
+        exercise_label: clickLabel,
+        attempts: 1,
+        successes: success ? 1 : 0,
+        session_date: format(new Date(), "yyyy-MM-dd"),
+        zone_x: clickPos.x,
+        zone_y: clickPos.y,
+      });
+      if (error) throw error;
+
+      setSavedEntries(prev => [...prev, { label: clickLabel, attempts: 1, successes: success ? 1 : 0 }]);
+      queryClient.invalidateQueries({ queryKey: ["athlete-precision-entries"] });
+      setDialogOpen(false);
+      setClickPos(null);
+      toast.success(success ? "✅ Réussi !" : "❌ Raté");
+      onEntryAdded?.();
+    } catch (err: any) {
+      toast.error(err.message || "Erreur");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Save zone/lineout entry (multiple attempts)
   const handleSaveEntry = async () => {
     if (!clickPos) return;
     const att = parseInt(attempts) || 0;
@@ -143,7 +179,7 @@ export function AthletePrecisionFieldInput({
       queryClient.invalidateQueries({ queryKey: ["athlete-precision-entries"] });
       setDialogOpen(false);
       setClickPos(null);
-      toast.success("Tir enregistré !");
+      toast.success("Enregistré !");
       onEntryAdded?.();
     } catch (err: any) {
       toast.error(err.message || "Erreur");
@@ -152,30 +188,31 @@ export function AthletePrecisionFieldInput({
     }
   };
 
-  // Zone grid stats from existing entries
-  const zoneStats = useMemo(() => {
-    const map = new Map<string, { attempts: number; successes: number; x: number; y: number }>();
-    existingEntries.forEach((e: any) => {
-      if (e.zone_x == null || e.zone_y == null) return;
-      const zoneKey = `${Math.round(e.zone_x / 15) * 15}-${Math.round(e.zone_y / 15) * 15}`;
-      const prev = map.get(zoneKey) || { attempts: 0, successes: 0, x: Math.round(e.zone_x / 15) * 15, y: Math.round(e.zone_y / 15) * 15 };
-      prev.attempts += e.attempts || 0;
-      prev.successes += e.successes || 0;
-      map.set(zoneKey, prev);
-    });
-    return Array.from(map.values());
+  // Buteur kick markers from entries
+  const kickMarkers = useMemo(() => {
+    return existingEntries
+      .filter((e: any) => e.zone_x != null && e.zone_y != null && BUTEUR_EXERCISES.some(b => e.exercise_label?.startsWith(b.label)))
+      .map((e: any) => ({
+        x: e.zone_x,
+        y: e.zone_y,
+        success: (e.successes || 0) > 0,
+        kickType: BUTEUR_EXERCISES.find(b => e.exercise_label?.startsWith(b.label))?.value || "penalty",
+      }));
   }, [existingEntries]);
 
-  const zoneGridStats = useMemo(() => {
-    const map: Record<string, { attempts: number; successes: number }> = {};
-    existingEntries.forEach((e: any) => {
-      if (e.zone_x == null || e.zone_y == null) return;
-      const key = `${e.zone_x}-${e.zone_y}`;
-      if (!map[key]) map[key] = { attempts: 0, successes: 0 };
-      map[key].attempts += e.attempts || 0;
-      map[key].successes += e.successes || 0;
-    });
-    return map;
+  // Zone stats for non-buteur modes
+  const zoneStats = useMemo(() => {
+    const map = new Map<string, { attempts: number; successes: number; x: number; y: number }>();
+    existingEntries
+      .filter((e: any) => e.zone_x != null && e.zone_y != null && !BUTEUR_EXERCISES.some(b => e.exercise_label?.startsWith(b.label)))
+      .forEach((e: any) => {
+        const zoneKey = `${Math.round(e.zone_x / 15) * 15}-${Math.round(e.zone_y / 15) * 15}`;
+        const prev = map.get(zoneKey) || { attempts: 0, successes: 0, x: Math.round(e.zone_x / 15) * 15, y: Math.round(e.zone_y / 15) * 15 };
+        prev.attempts += e.attempts || 0;
+        prev.successes += e.successes || 0;
+        map.set(zoneKey, prev);
+      });
+    return Array.from(map.values());
   }, [existingEntries]);
 
   const lineoutStats = useMemo(() => {
@@ -192,11 +229,6 @@ export function AthletePrecisionFieldInput({
     return map;
   }, [existingEntries]);
 
-  const getZoneGridStat = (row: number, col: number) => {
-    const key = `${col}-${row}`;
-    return zoneGridStats[key] || { attempts: 0, successes: 0 };
-  };
-
   return (
     <div className="space-y-3 rounded-lg border border-accent/30 p-3">
       <div className="flex items-center gap-2 mb-2">
@@ -204,7 +236,7 @@ export function AthletePrecisionFieldInput({
         <span className="font-medium text-sm">Entraînement de précision</span>
       </div>
 
-      {/* Exercise type selector */}
+      {/* Exercise type selector - grouped */}
       <div className="flex flex-wrap gap-2 items-end">
         <div className="flex-1 min-w-[150px]">
           <Label className="text-xs">Type d'exercice</Label>
@@ -213,13 +245,23 @@ export function AthletePrecisionFieldInput({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {RUGBY_PRECISION_EXERCISES.map(et => (
-                <SelectItem key={et.value} value={et.value}>{et.label}</SelectItem>
+              {EXERCISE_CATEGORIES.map(cat => (
+                <div key={cat.key}>
+                  <div className="px-2 py-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">{cat.label}</div>
+                  {cat.exercises.map(et => (
+                    <SelectItem key={et.value} value={et.value}>
+                      <span className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: et.color }} />
+                        {et.label}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </div>
               ))}
             </SelectContent>
           </Select>
         </div>
-        {currentMode === "field" && (
+        {(currentMode === "kicking" || currentMode === "zone_kicks") && (
           <div className="flex gap-1">
             <Button variant={kickingSide === "left" ? "default" : "outline"} size="sm" className="text-xs h-8" onClick={() => setKickingSide("left")}>← G</Button>
             <Button variant={kickingSide === "right" ? "default" : "outline"} size="sm" className="text-xs h-8" onClick={() => setKickingSide("right")}>D →</Button>
@@ -236,13 +278,61 @@ export function AthletePrecisionFieldInput({
         </div>
       )}
 
-      {/* FIELD MODE */}
-      {currentMode === "field" && (
+      {/* BUTEUR MODE - click-by-click like match stats */}
+      {currentMode === "kicking" && (
         <div className="relative w-full">
-          <p className="text-xs text-muted-foreground mb-1">Clique sur le terrain pour enregistrer un tir</p>
+          <p className="text-xs text-muted-foreground mb-1">
+            Clique sur le terrain — chaque clic = 1 tir ({currentExercise?.label})
+          </p>
           <RugbyFieldSVG
             goalsOnRight={goalsOnRight}
-            onClick={handleFieldClick}
+            onClick={handleButeurClick}
+            showCursorTracker
+          >
+            {/* Show kick markers with distinct shapes */}
+            {kickMarkers.map((kick, i) => {
+              const cx = 20 + (kick.x / 100) * 560;
+              const cy = 10 + (kick.y / 100) * 380;
+              const exDef = BUTEUR_EXERCISES.find(b => b.value === kick.kickType);
+              const fill = kick.success ? "#22c55e" : "#ef4444";
+              const stroke = exDef?.color || "#f97316";
+              const r = 7;
+              if (exDef?.shape === "circle") {
+                return <circle key={i} cx={cx} cy={cy} r={r} fill={fill} stroke={stroke} strokeWidth={2} opacity={0.85} />;
+              }
+              if (exDef?.shape === "square") {
+                return <rect key={i} x={cx - r} y={cy - r} width={r * 2} height={r * 2} fill={fill} stroke={stroke} strokeWidth={2} opacity={0.85} rx={2} />;
+              }
+              return (
+                <polygon key={i}
+                  points={`${cx},${cy - r} ${cx + r},${cy} ${cx},${cy + r} ${cx - r},${cy}`}
+                  fill={fill} stroke={stroke} strokeWidth={2} opacity={0.85} />
+              );
+            })}
+          </RugbyFieldSVG>
+          {/* Buteur legend */}
+          <div className="flex flex-wrap gap-3 mt-2 justify-center text-[10px]">
+            {BUTEUR_EXERCISES.map(b => (
+              <span key={b.value} className="flex items-center gap-1">
+                <span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: b.color }} />
+                {b.label}
+              </span>
+            ))}
+            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-green-500" /> Réussi</span>
+            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-red-500" /> Raté</span>
+          </div>
+        </div>
+      )}
+
+      {/* ZONE KICKS MODE - click on target zone, enter attempts */}
+      {currentMode === "zone_kicks" && (
+        <div className="relative w-full">
+          <p className="text-xs text-muted-foreground mb-1">
+            Clique sur la zone visée — entre le nombre de tirs ({currentExercise?.label})
+          </p>
+          <RugbyFieldSVG
+            goalsOnRight={goalsOnRight}
+            onClick={handleZoneKickClick}
             showCursorTracker
           >
             {zoneStats.map((zone, i) => {
@@ -259,40 +349,6 @@ export function AthletePrecisionFieldInput({
               );
             })}
           </RugbyFieldSVG>
-        </div>
-      )}
-
-      {/* ZONE GRID MODE */}
-      {currentMode === "zone" && (
-        <div className="w-full">
-          <p className="text-xs text-muted-foreground mb-1">Clique sur une zone</p>
-          <div className="bg-emerald-700/90 dark:bg-emerald-900/80 rounded-lg border-2 border-primary/20 p-2">
-            <div className="grid grid-cols-4 gap-1">
-              {ZONE_GRID.map((zone, i) => {
-                const stat = getZoneGridStat(zone.row, zone.col);
-                const rate = stat.attempts > 0 ? Math.round((stat.successes / stat.attempts) * 100) : -1;
-                const bgColor = rate < 0 ? "bg-white/10 hover:bg-white/20" :
-                  rate >= 75 ? "bg-green-500/60" : rate >= 50 ? "bg-yellow-500/60" : "bg-red-500/60";
-                return (
-                  <button
-                    key={i}
-                    className={`${bgColor} border border-white/30 rounded p-2 min-h-[60px] flex flex-col items-center justify-center transition-all cursor-pointer`}
-                    onClick={() => handleZoneClick(zone.row, zone.col, zone.label)}
-                  >
-                    <span className="text-white/60 text-[10px] font-medium">{zone.label}</span>
-                    {stat.attempts > 0 ? (
-                      <>
-                        <span className="text-white text-lg font-bold">{rate}%</span>
-                        <span className="text-white/80 text-[10px]">{stat.successes}/{stat.attempts}</span>
-                      </>
-                    ) : (
-                      <span className="text-white/40 text-[10px]">—</span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
         </div>
       )}
 
@@ -358,36 +414,65 @@ export function AthletePrecisionFieldInput({
         </div>
       )}
 
-      {/* Dialog for entering attempts/successes */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="text-sm">{clickLabel}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
-            <div>
-              <Label className="text-xs">Tentatives</Label>
-              <Input type="number" min={1} value={attempts} onChange={e => setAttempts(e.target.value)} className="h-9" />
+      {/* Dialog - Buteur mode: simple success/fail buttons */}
+      {pendingKickType && (
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <DialogContent className="max-w-xs">
+            <DialogHeader>
+              <DialogTitle className="text-sm">{clickLabel}</DialogTitle>
+            </DialogHeader>
+            <div className="flex gap-3">
+              <Button
+                className="flex-1 h-16 text-lg bg-green-600 hover:bg-green-700"
+                onClick={() => saveButeurKick(true)}
+                disabled={saving}
+              >
+                ✅ Réussi
+              </Button>
+              <Button
+                className="flex-1 h-16 text-lg bg-red-600 hover:bg-red-700"
+                onClick={() => saveButeurKick(false)}
+                disabled={saving}
+              >
+                ❌ Raté
+              </Button>
             </div>
-            <div>
-              <Label className="text-xs">Réussites</Label>
-              <Input type="number" min={0} value={successes} onChange={e => setSuccesses(e.target.value)} className="h-9" />
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Dialog - Zone/Lineout mode: attempts + successes */}
+      {!pendingKickType && (
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle className="text-sm">{clickLabel}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3">
+              <div>
+                <Label className="text-xs">Tentatives</Label>
+                <Input type="number" min={1} value={attempts} onChange={e => setAttempts(e.target.value)} className="h-9" />
+              </div>
+              <div>
+                <Label className="text-xs">Réussites</Label>
+                <Input type="number" min={0} value={successes} onChange={e => setSuccesses(e.target.value)} className="h-9" />
+              </div>
+              {parseInt(attempts) > 0 && parseInt(successes) >= 0 && parseInt(successes) <= parseInt(attempts) && (
+                <p className="text-center text-lg font-bold text-primary">
+                  {Math.round((parseInt(successes) / parseInt(attempts)) * 100)}%
+                </p>
+              )}
             </div>
-            {parseInt(attempts) > 0 && parseInt(successes) >= 0 && parseInt(successes) <= parseInt(attempts) && (
-              <p className="text-xs text-muted-foreground">
-                Taux : {Math.round((parseInt(successes) / parseInt(attempts)) * 100)}%
-              </p>
-            )}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" size="sm" onClick={() => setDialogOpen(false)}>Annuler</Button>
-            <Button size="sm" onClick={handleSaveEntry} disabled={saving}>
-              <Check className="h-3.5 w-3.5 mr-1" />
-              {saving ? "..." : "Enregistrer"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            <DialogFooter>
+              <Button variant="outline" size="sm" onClick={() => setDialogOpen(false)}>Annuler</Button>
+              <Button size="sm" onClick={handleSaveEntry} disabled={saving}>
+                <Check className="h-3.5 w-3.5 mr-1" />
+                {saving ? "..." : "Enregistrer"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
