@@ -157,12 +157,14 @@ export function WeeklyPlanningCalendar({ categoryId }: WeeklyPlanningCalendarPro
       // If precision session, also create a training_session
       if (sessionMode === "precision") {
         const catLabel = EXERCISE_CATEGORIES.find(c => c.key === precisionCategory)?.label || "Précision";
+        const firstExercise = EXERCISE_CATEGORIES.find(c => c.key === precisionCategory)?.exercises[0];
+        const precisionMeta = JSON.stringify({ id: firstExercise?.value || precisionCategory, label: catLabel });
         const { error: tsError } = await supabase.from("training_sessions").insert({
           category_id: categoryId,
           session_date: itemDate,
           session_start_time: newItemTime || null,
           training_type: "precision",
-          notes: `[precision_exercise:${precisionCategory}|${catLabel}]`,
+          notes: `<!--PRECISION_EXERCISE:${precisionMeta}-->`,
         });
         if (tsError) throw tsError;
       }
