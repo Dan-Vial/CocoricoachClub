@@ -92,30 +92,14 @@ export function AthletePrecisionFieldInput({
   const totalSuccesses = allEntries.reduce((s, e) => s + e.successes, 0);
   const globalRate = totalAttempts > 0 ? Math.round((totalSuccesses / totalAttempts) * 100) : 0;
 
-  const handleFieldClick = useCallback((e: React.MouseEvent<SVGSVGElement>) => {
-    const svg = e.currentTarget;
-    const rect = svg.getBoundingClientRect();
-    const x = Math.round(((e.clientX - rect.left) / rect.width) * 100);
-    const y = Math.round(((e.clientY - rect.top) / rect.height) * 100);
-
-    const yPct = y;
-    let distLabel = "";
-    if (yPct < 20) distLabel = "10m";
-    else if (yPct < 40) distLabel = "22m";
-    else if (yPct < 65) distLabel = "40m";
-    else distLabel = "50m";
-    const xPct = x;
-    let sideLabel = "";
-    if (xPct < 35) sideLabel = "Gauche";
-    else if (xPct > 65) sideLabel = "Droite";
-    else sideLabel = "Centre";
-
-    setClickPos({ x, y });
-    setClickLabel(`${exerciseType} - ${sideLabel} ${distLabel}`);
+  const handleFieldClick = useCallback((xPct: number, yPct: number) => {
+    const posLabel = getPositionLabel(xPct, yPct, goalsOnRight);
+    setClickPos({ x: xPct, y: yPct });
+    setClickLabel(`${exerciseType} - ${posLabel}`);
     setAttempts("1");
     setSuccesses("0");
     setDialogOpen(true);
-  }, [exerciseType]);
+  }, [exerciseType, goalsOnRight]);
 
   const handleZoneClick = (row: number, col: number, label: string) => {
     setClickPos({ x: col, y: row });
