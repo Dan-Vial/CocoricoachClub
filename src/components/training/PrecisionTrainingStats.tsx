@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { LineoutFieldSVG, aggregateLineoutStats } from "@/components/rugby/LineoutFieldSVG";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -260,15 +261,26 @@ export function PrecisionTrainingStats({ categoryId }: PrecisionTrainingStatsPro
   }, [filtered]);
 
   const lineoutEntries = useMemo(() => {
+    // Legacy format for PDF
     const map: Record<string, { attempts: number; successes: number }> = {};
     ["devant", "milieu", "fond"].forEach(k => { map[k] = { attempts: 0, successes: 0 }; });
     filtered.forEach((e: any) => {
       if (!e.exercise_label?.startsWith("Touche")) return;
-      if (e.zone_y === 20 && map["devant"]) { map["devant"].attempts += e.attempts || 0; map["devant"].successes += e.successes || 0; }
-      if (e.zone_y === 50 && map["milieu"]) { map["milieu"].attempts += e.attempts || 0; map["milieu"].successes += e.successes || 0; }
-      if (e.zone_y === 80 && map["fond"]) { map["fond"].attempts += e.attempts || 0; map["fond"].successes += e.successes || 0; }
+      if (e.lineout_distance) {
+        const k = e.lineout_distance;
+        if (map[k]) { map[k].attempts += e.attempts || 0; map[k].successes += e.successes || 0; }
+      } else {
+        if (e.zone_y === 20 && map["devant"]) { map["devant"].attempts += e.attempts || 0; map["devant"].successes += e.successes || 0; }
+        if (e.zone_y === 50 && map["milieu"]) { map["milieu"].attempts += e.attempts || 0; map["milieu"].successes += e.successes || 0; }
+        if (e.zone_y === 80 && map["fond"]) { map["fond"].attempts += e.attempts || 0; map["fond"].successes += e.successes || 0; }
+      }
     });
     return map;
+  }, [filtered]);
+
+  // Lineout zone stats for the visual mapping
+  const lineoutZoneStats = useMemo(() => {
+    return aggregateLineoutStats(filtered as any[]);
   }, [filtered]);
 
   const kickFieldEntries = useMemo(() => {
