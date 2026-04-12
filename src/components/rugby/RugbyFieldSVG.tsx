@@ -121,9 +121,43 @@ export function RugbyFieldSVG({
         {/* Field outline */}
         <rect x={FIELD_LEFT} y={FIELD_TOP} width={FIELD_W} height={FIELD_H} fill="none" stroke="white" strokeWidth="2" opacity={0.6} />
 
-        {/* Posts */}
+        {/* In-goal area shading */}
+        {(() => {
+          const enbutLeftX = mToSvgX(0, goalsOnRight);
+          const deadLeftX = mToSvgX(-5, goalsOnRight);
+          const enbutRightX = mToSvgX(100, goalsOnRight);
+          const deadRightX = mToSvgX(105, goalsOnRight);
+          return (
+            <>
+              <rect
+                x={Math.min(enbutLeftX, deadLeftX)} y={FIELD_TOP}
+                width={Math.abs(enbutLeftX - deadLeftX)} height={FIELD_H}
+                fill="white" opacity={0.06}
+              />
+              <rect
+                x={Math.min(enbutRightX, deadRightX)} y={FIELD_TOP}
+                width={Math.abs(enbutRightX - deadRightX)} height={FIELD_H}
+                fill="white" opacity={0.06}
+              />
+            </>
+          );
+        })()}
+
+        {/* Posts (both sides) */}
         <line x1={postsX} y1={170} x2={postsX} y2={230} stroke="white" strokeWidth="5" opacity={0.9} />
         <rect x={postsRectX} y={170} width={15} height={60} fill="none" stroke="white" strokeWidth="2" opacity={0.5} />
+        {/* Posts on other side */}
+        {(() => {
+          const otherPostsX = goalsOnRight ? 20 : 580;
+          const otherRectX = goalsOnRight ? 20 : 565;
+          return (
+            <>
+              <line x1={otherPostsX} y1={170} x2={otherPostsX} y2={230} stroke="white" strokeWidth="3" opacity={0.4} />
+              <rect x={otherRectX} y={170} width={15} height={60} fill="none" stroke="white" strokeWidth="1" opacity={0.25} />
+            </>
+          );
+        })()}
+
         {/* Goal direction arrow */}
         {goalsOnRight ? (
           <polygon points="570,200 555,190 555,210" fill="white" opacity={0.3} />
@@ -131,11 +165,23 @@ export function RugbyFieldSVG({
           <polygon points="30,200 45,190 45,210" fill="white" opacity={0.3} />
         )}
 
+        {/* Center circle at halfway */}
+        {(() => {
+          const centerX = mToSvgX(50, goalsOnRight);
+          const centerY = mToSvgY(35);
+          const radiusM = 10;
+          const radiusSvg = (radiusM / FIELD_WIDTH_M) * FIELD_H;
+          return (
+            <circle cx={centerX} cy={centerY} r={radiusSvg} fill="none" stroke="white" strokeWidth="1" opacity={0.3} />
+          );
+        })()}
+
         {/* Distance lines */}
         {DISTANCE_LINES.map((line) => {
           const x = mToSvgX(line.m, goalsOnRight);
+          if (x < FIELD_LEFT - 2 || x > FIELD_RIGHT + 2) return null;
           return (
-            <g key={line.m}>
+            <g key={`${line.m}-${line.label}`}>
               <line
                 x1={x} y1={FIELD_TOP} x2={x} y2={FIELD_BOTTOM}
                 stroke="white"
