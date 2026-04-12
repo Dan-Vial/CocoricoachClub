@@ -473,9 +473,12 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
       const pageW = doc.internal.pageSize.getWidth();
       const pageH = doc.internal.pageSize.getHeight();
       const hc = (settings?.header_color || "#224378").replace("#", "");
+      const hcR = parseInt(hc.substring(0, 2), 16);
+      const hcG = parseInt(hc.substring(2, 4), 16);
+      const hcB = parseInt(hc.substring(4, 6), 16);
 
       const drawHeader = (title: string) => {
-        doc.setFillColor(parseInt(hc.substring(0, 2), 16), parseInt(hc.substring(2, 4), 16), parseInt(hc.substring(4, 6), 16));
+        doc.setFillColor(hcR, hcG, hcB);
         doc.rect(0, 0, pageW, 28, "F");
         doc.setTextColor(255, 255, 255);
         doc.setFontSize(16);
@@ -491,14 +494,15 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
       const selectedMatches = allMatches.filter(m => activeMatchIds.includes(m.id));
       doc.setTextColor(30, 41, 59);
       doc.setFontSize(8);
-      selectedMatches.slice(0, 6).forEach((m, i) => {
+      selectedMatches.slice(0, 6).forEach((m) => {
         const lieu = m.is_home ? "DOM" : "EXT";
         const loc = m.location ? ` — ${m.location}` : "";
         const comp = m.competition || "";
         const stage = m.competition_stage ? ` (${m.competition_stage})` : "";
         const time = m.match_time ? ` ${m.match_time}` : "";
+        const score = (m.score_home != null && m.score_away != null) ? ` ${m.score_home}-${m.score_away}` : "";
         doc.text(
-          `${format(new Date(m.match_date), "dd/MM/yy")} • vs ${m.opponent} [${lieu}]${loc}${time} ${comp}${stage}`,
+          `${format(new Date(m.match_date), "dd/MM/yy")} • vs ${m.opponent} [${lieu}]${score}${loc}${time} ${comp}${stage}`,
           14, y
         );
         y += 4;
@@ -509,161 +513,384 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
       }
       y += 4;
 
-      statCategories.forEach((cat, catIdx) => {
-        const categoryStats = sportStats.filter(s => s.category === cat.key);
-        if (categoryStats.length === 0) return;
+      // ===== TEAM MODE: Global team stats only (no individual players) =====
+      if (mode === "team") {
+        // Compute team totals
+        const teamStats: Record<string, number> = {};
+        sportStats.forEach(stat => {
+          if (stat.computedFrom) return;
+          teamStats[stat.key] = stats.reduce((sum, p) => sum + (p.sportData[stat.key] || 0), 0);
+        });
+        sportStats.forEach(stat => {
+          if (stat.computedFrom) {
+            const { successKey, totalKey, failureKey } = stat.computedFrom;
+            const success = teamStats[successKey] || 0;
+            const total = totalKey ? (teamStats[totalKey] || 0) : success + (teamStats[failureKey!] || 0);
+            teamStats[stat.key] = total > 0 ? Math.round((success / total) * 100) : 0;
+          }
+        });
 
-        // Paginate: max 6 stat columns per page section
-        const chunks: StatField[][] = [];
-        for (let i = 0; i < categoryStats.length; i += 6) {
-          chunks.push(categoryStats.slice(i, i + 6));
+        // Compute team progression (first match vs last match)
+        const teamProgression: Record<string, number> = {};
+        if (matchesDataForCharts.length >= 2) {
+          const firstMatch = matchesDataForCharts[0];
+          const lastMatch = matchesDataForCharts[matchesDataForCharts.length - 1];
+          sportStats.forEach(stat => {
+            if (stat.computedFrom) return;
+            const firstVal = Object.values(firstMatch.players).reduce((s, p) => s + (p.sportData[stat.key] || 0), 0);
+            const lastVal = Object.values(lastMatch.players).reduce((s, p) => s + (p.sportData[stat.key] || 0), 0);
+            teamProgression[stat.key] = lastVal - firstVal;
+          });
         }
 
-        chunks.forEach((chunk, chunkIdx) => {
-          if (y > pageH - 50) {
-            doc.addPage();
-            y = 15;
-          }
+        // ---- Points scored / conceded section ----
+        const matchesWithScores = selectedMatches.filter(m => m.score_home != null && m.score_away != null);
+        if (matchesWithScores.length > 0) {
+          let totalScored = 0;
+          let totalConceded = 0;
+          let wins = 0, draws = 0, losses = 0;
+          matchesWithScores.forEach(m => {
+            const scored = m.is_home ? (m.score_home || 0) : (m.score_away || 0);
+            const conceded = m.is_home ? (m.score_away || 0) : (m.score_home || 0);
+            totalScored += scored;
+            totalConceded += conceded;
+            if (scored > conceded) wins++;
+            else if (scored < conceded) losses++;
+            else draws++;
+          });
+          const avgScored = Math.round((totalScored / matchesWithScores.length) * 10) / 10;
+          const avgConceded = Math.round((totalConceded / matchesWithScores.length) * 10) / 10;
+          const diff = totalScored - totalConceded;
+
+          // Section title
+          doc.setFontSize(12);
+          doc.setFont("helvetica", "bold");
+          doc.setTextColor(30, 41, 59);
+          doc.text("Bilan & Score", 14, y);
+          y += 7;
+
+          // Cards row
+          const cardW = (pageW - 28 - 15) / 4;
+          const cards = [
+            { label: "Points marqués", value: String(totalScored), sub: `Moy: ${avgScored}/match`, color: [34, 197, 94] as [number, number, number] },
+            { label: "Points encaissés", value: String(totalConceded), sub: `Moy: ${avgConceded}/match`, color: [239, 68, 68] as [number, number, number] },
+            { label: "Différentiel", value: (diff >= 0 ? "+" : "") + diff, sub: "", color: diff >= 0 ? [34, 197, 94] as [number, number, number] : [239, 68, 68] as [number, number, number] },
+            { label: "Bilan", value: `${wins}V ${draws}N ${losses}D`, sub: `${matchesWithScores.length} matchs`, color: [hcR, hcG, hcB] as [number, number, number] },
+          ];
+          cards.forEach((card, i) => {
+            const cx = 14 + i * (cardW + 5);
+            doc.setFillColor(248, 250, 252);
+            doc.roundedRect(cx, y, cardW, 22, 2, 2, "F");
+            doc.setDrawColor(226, 232, 240);
+            doc.roundedRect(cx, y, cardW, 22, 2, 2, "S");
+            doc.setFontSize(16);
+            doc.setFont("helvetica", "bold");
+            doc.setTextColor(...card.color);
+            doc.text(card.value, cx + cardW / 2, y + 10, { align: "center" });
+            doc.setFontSize(7);
+            doc.setFont("helvetica", "normal");
+            doc.setTextColor(100, 116, 139);
+            doc.text(card.label, cx + cardW / 2, y + 16, { align: "center" });
+            if (card.sub) {
+              doc.setFontSize(6);
+              doc.text(card.sub, cx + cardW / 2, y + 20, { align: "center" });
+            }
+          });
+          y += 28;
+        }
+
+        // ---- Stats by category (team totals + avg + progression) ----
+        statCategories.forEach(cat => {
+          const categoryStats = sportStats.filter(s => s.category === cat.key);
+          if (categoryStats.length === 0) return;
+
+          if (y > pageH - 45) { doc.addPage(); y = 15; }
 
           doc.setTextColor(30, 41, 59);
           doc.setFontSize(12);
           doc.setFont("helvetica", "bold");
-          doc.text(`${cat.label}${chunks.length > 1 ? ` (${chunkIdx + 1}/${chunks.length})` : ""}`, 14, y);
+          doc.text(cat.label, 14, y);
           y += 6;
 
-          const colWidths = [55, 18, ...chunk.flatMap(() => [20, 16])];
-          const headers = ["Athlète", "M", ...chunk.flatMap(s => [s.shortLabel, "+/-"])];
+          // Header row
+          const colW = [70, 30, 30, 30];
+          const totalRowW = colW.reduce((a, b) => a + b, 0);
+          const startX = (pageW - totalRowW) / 2;
           doc.setFillColor(241, 245, 249);
-          doc.rect(14, y, pageW - 28, 7, "F");
-          doc.setFontSize(7);
+          doc.roundedRect(startX, y, totalRowW, 8, 1.5, 1.5, "F");
+          doc.setFontSize(8);
           doc.setFont("helvetica", "bold");
-          let x = 14;
-          headers.forEach((h, i) => {
-            doc.text(h.substring(0, 10), x + 1, y + 5);
-            x += colWidths[i] || 18;
-          });
-          y += 9;
+          doc.setTextColor(71, 85, 105);
+          doc.text("Statistique", startX + 3, y + 5.5);
+          doc.text("Total", startX + colW[0] + colW[1] / 2, y + 5.5, { align: "center" });
+          doc.text("Moy/match", startX + colW[0] + colW[1] + colW[2] / 2, y + 5.5, { align: "center" });
+          doc.text("Progression", startX + colW[0] + colW[1] + colW[2] + colW[3] / 2, y + 5.5, { align: "center" });
+          y += 10;
+
           doc.setFont("helvetica", "normal");
+          categoryStats.forEach((s, idx) => {
+            if (y > pageH - 12) { doc.addPage(); y = 15; }
+            const val = teamStats[s.key] || 0;
+            const avg = s.computedFrom ? "" : String(Math.round((val / Math.max(selectedCount, 1)) * 10) / 10);
+            const prog = teamProgression[s.key] || 0;
 
-          const sorted = [...exportStats].sort((a, b) => {
-            const firstStat = chunk[0]?.key;
-            return firstStat ? (b.sportData[firstStat] || 0) - (a.sportData[firstStat] || 0) : 0;
-          });
-
-          sorted.forEach((p) => {
-            if (y > pageH - 15) {
-              doc.addPage();
-              y = 15;
+            // Zebra
+            if (idx % 2 === 0) {
+              doc.setFillColor(248, 250, 252);
+              doc.rect(startX, y - 1, totalRowW, 7, "F");
             }
-            x = 14;
+
             doc.setTextColor(30, 41, 59);
-            doc.setFontSize(7);
-            doc.text(p.playerName.substring(0, 18), x + 1, y + 4);
-            x += colWidths[0];
-            doc.text(String(p.matchesPlayed), x + 1, y + 4);
-            x += colWidths[1];
-            chunk.forEach((s, i) => {
-              const val = p.sportData[s.key] || 0;
-              doc.setTextColor(30, 41, 59);
-              doc.text(s.computedFrom ? `${val}%` : String(val), x + 1, y + 4);
-              x += colWidths[2 + i * 2];
-              const prog = playerProgressions[p.playerId]?.[s.key] || 0;
+            doc.setFontSize(8);
+            doc.text(s.label, startX + 3, y + 4);
+            doc.text(s.computedFrom ? `${val}%` : String(val), startX + colW[0] + colW[1] / 2, y + 4, { align: "center" });
+            doc.text(avg, startX + colW[0] + colW[1] + colW[2] / 2, y + 4, { align: "center" });
+
+            // Progression with color
+            if (matchesDataForCharts.length >= 2 && !s.computedFrom) {
               if (prog > 0) doc.setTextColor(22, 163, 74);
               else if (prog < 0) doc.setTextColor(220, 38, 38);
               else doc.setTextColor(100, 116, 139);
-              doc.text(prog > 0 ? `+${prog}` : String(prog), x + 1, y + 4);
-              x += colWidths[3 + i * 2] || 16;
+              doc.text(prog > 0 ? `+${prog}` : String(prog), startX + colW[0] + colW[1] + colW[2] + colW[3] / 2, y + 4, { align: "center" });
+            } else {
+              doc.setTextColor(100, 116, 139);
+              doc.text("—", startX + colW[0] + colW[1] + colW[2] + colW[3] / 2, y + 4, { align: "center" });
+            }
+            y += 7;
+          });
+          y += 5;
+        });
+
+        // ---- Evolution per match (table showing per-match team totals for key stats) ----
+        if (matchesDataForCharts.length >= 2) {
+          if (y > pageH - 50) { doc.addPage(); y = 15; }
+
+          doc.setFontSize(12);
+          doc.setFont("helvetica", "bold");
+          doc.setTextColor(30, 41, 59);
+          doc.text("Évolution par match", 14, y);
+          y += 7;
+
+          // Pick key stats (first 6 non-computed)
+          const keyStats = sportStats.filter(s => !s.computedFrom).slice(0, 6);
+          const evColW = [35, ...keyStats.map(() => Math.min(30, (pageW - 35 - 28) / keyStats.length))];
+
+          // Header
+          doc.setFillColor(241, 245, 249);
+          doc.roundedRect(14, y, pageW - 28, 8, 1.5, 1.5, "F");
+          doc.setFontSize(7);
+          doc.setFont("helvetica", "bold");
+          doc.setTextColor(71, 85, 105);
+          doc.text("Match", 16, y + 5.5);
+          let hx = 14 + evColW[0];
+          keyStats.forEach((s, i) => {
+            doc.text(s.shortLabel.substring(0, 8), hx + evColW[i + 1] / 2, y + 5.5, { align: "center" });
+            hx += evColW[i + 1];
+          });
+          y += 10;
+
+          doc.setFont("helvetica", "normal");
+          matchesDataForCharts.forEach((match, mIdx) => {
+            if (y > pageH - 12) { doc.addPage(); y = 15; }
+            if (mIdx % 2 === 0) {
+              doc.setFillColor(248, 250, 252);
+              doc.rect(14, y - 1, pageW - 28, 7, "F");
+            }
+
+            doc.setTextColor(30, 41, 59);
+            doc.setFontSize(7);
+            doc.text(match.matchLabel.substring(0, 14), 16, y + 4);
+
+            let rx = 14 + evColW[0];
+            keyStats.forEach((s, i) => {
+              const teamVal = Object.values(match.players).reduce((sum, p) => sum + (p.sportData[s.key] || 0), 0);
+              doc.text(String(teamVal), rx + evColW[i + 1] / 2, y + 4, { align: "center" });
+              rx += evColW[i + 1];
             });
             y += 7;
           });
-          y += 6;
-        });
-      });
+          y += 5;
+        }
 
-      // Kicking map page (rugby only) - unified map with different symbols
-      if (isRugby && Object.keys(kickingByPlayerFinal).length > 0) {
-        doc.addPage();
-        drawHeader("Cartographie des tirs au but");
-        let ky = 36;
-
-        // Helper to draw a kick on the PDF
-        const drawKickOnMap = (
-          doc: jsPDF,
-          kick: { x: number; y: number; kickType: string; success: boolean },
-          mapX: number, mapY: number, mapW: number, mapH: number
-        ) => {
-          const kx = mapX + (kick.x / 100) * mapW;
-          const kyy = mapY + (kick.y / 100) * mapH;
-          const r = 3;
-          const fillColor: [number, number, number] = kick.success ? [34, 197, 94] : [239, 68, 68];
-          doc.setFillColor(...fillColor);
-
-          if (kick.kickType === "conversion") {
-            doc.circle(kx, kyy, r, "F");
-            doc.setDrawColor(59, 130, 246);
-            doc.circle(kx, kyy, r, "S");
-          } else if (kick.kickType === "penalty") {
-            doc.rect(kx - r, kyy - r, r * 2, r * 2, "F");
-            doc.setDrawColor(245, 158, 11);
-            doc.rect(kx - r, kyy - r, r * 2, r * 2, "S");
-          } else {
-            // Diamond for drop
-            const pts = [
-              { x: kx, y: kyy - r * 1.2 },
-              { x: kx + r * 1.2, y: kyy },
-              { x: kx, y: kyy + r * 1.2 },
-              { x: kx - r * 1.2, y: kyy },
-            ];
-            doc.setFillColor(...fillColor);
-            (doc as any).triangle(pts[0].x, pts[0].y, pts[1].x, pts[1].y, pts[2].x, pts[2].y, "F");
-            (doc as any).triangle(pts[0].x, pts[0].y, pts[2].x, pts[2].y, pts[3].x, pts[3].y, "F");
-            doc.setDrawColor(139, 92, 246);
-          }
-        };
-
-        // Draw field background using shared helper
-        const drawFieldBg = (doc: jsPDF, bx: number, by: number, bw: number, bh: number) => {
-          return drawPdfRugbyField(doc, bx, by, bw, bh, { showLabels: false });
-        };
-
-        // Legend
-        doc.setFontSize(7);
-        doc.setTextColor(100, 116, 139);
-        doc.text("● Transformation   ■ Pénalité   ◆ Drop   |   Vert = réussi   Rouge = raté", 14, ky);
-        ky += 6;
-
-        // For each player with kicks
-        const kickerIds = Object.keys(kickingByPlayerFinal).filter(pid => kickingByPlayerFinal[pid].allKicks.length > 0 && (!singlePlayerId || pid === singlePlayerId));
-        kickerIds.forEach(pid => {
-          const kicker = kickingByPlayerFinal[pid];
-          const playerInfo = stats?.find(s => s.playerId === pid);
-          const name = playerInfo?.playerName || "Buteur";
-
-          if (ky > pageH - 70) {
-            doc.addPage();
-            ky = 15;
-          }
-
-          doc.setTextColor(30, 41, 59);
-          doc.setFontSize(10);
+        // Kicking map for team (rugby only)
+        if (isRugby && Object.keys(kickingByPlayerFinal).length > 0) {
+          if (y > pageH - 60) { doc.addPage(); y = 15; }
+          doc.setFontSize(12);
           doc.setFont("helvetica", "bold");
-          doc.text(name, 14, ky);
-          doc.setFont("helvetica", "normal");
+          doc.setTextColor(30, 41, 59);
+          doc.text("Cartographie des tirs au but — Équipe", 14, y);
+          y += 5;
           doc.setFontSize(7);
-          const rate = kicker.total > 0 ? Math.round((kicker.success / kicker.total) * 100) : 0;
-          doc.text(`${kicker.success}/${kicker.total} (${rate}%)  —  T: ${kicker.conversion.success}/${kicker.conversion.total}  P: ${kicker.penalty.success}/${kicker.penalty.total}  D: ${kicker.drop.success}/${kicker.drop.total}`, 14, ky + 5);
-          ky += 10;
+          doc.setTextColor(100, 116, 139);
+          doc.text("● Transformation   ■ Pénalité   ◆ Drop   |   Vert = réussi   Rouge = raté", 14, y);
+          y += 5;
 
+          const allKicks = Object.values(kickingByPlayerFinal).flatMap(k => k.allKicks);
           const mapW = pageW - 28;
-          const mapH = 45;
-          drawFieldBg(doc, 14, ky, mapW, mapH);
-
-          kicker.allKicks.forEach(kick => {
-            drawKickOnMap(doc, kick, 14, ky, mapW, mapH);
+          const mapH = 55;
+          const fb = drawPdfRugbyField(doc, 14, y, mapW, mapH);
+          allKicks.forEach(kick => {
+            const kx = fb.fx + (kick.x / 100) * fb.fw;
+            const ky = fb.fy + (kick.y / 100) * fb.fh;
+            const r = 2.5;
+            const fillColor: [number, number, number] = kick.success ? [34, 197, 94] : [239, 68, 68];
+            doc.setFillColor(...fillColor);
+            if (kick.kickType === "conversion") {
+              doc.circle(kx, ky, r, "F");
+            } else if (kick.kickType === "penalty") {
+              doc.rect(kx - r, ky - r, r * 2, r * 2, "F");
+            } else {
+              const pts = [
+                { x: kx, y: ky - r * 1.2 },
+                { x: kx + r * 1.2, y: ky },
+                { x: kx, y: ky + r * 1.2 },
+                { x: kx - r * 1.2, y: ky },
+              ];
+              (doc as any).triangle(pts[0].x, pts[0].y, pts[1].x, pts[1].y, pts[2].x, pts[2].y, "F");
+              (doc as any).triangle(pts[0].x, pts[0].y, pts[2].x, pts[2].y, pts[3].x, pts[3].y, "F");
+            }
           });
+          y += mapH + 5;
 
-          ky += mapH + 8;
+          // Zone stats grid
+          const kicks = allKicks.map(k => ({ x: k.x, y: k.y, success: k.success }));
+          y = drawPdfZoneStatsGrid(doc, kicks, pageW, y, pageH);
+        }
+
+      } else {
+        // ===== ALL / INDIVIDUAL / SINGLE: show individual player tables =====
+        statCategories.forEach((cat) => {
+          const categoryStats = sportStats.filter(s => s.category === cat.key);
+          if (categoryStats.length === 0) return;
+
+          const chunks: StatField[][] = [];
+          for (let i = 0; i < categoryStats.length; i += 6) {
+            chunks.push(categoryStats.slice(i, i + 6));
+          }
+
+          chunks.forEach((chunk, chunkIdx) => {
+            if (y > pageH - 50) { doc.addPage(); y = 15; }
+
+            doc.setTextColor(30, 41, 59);
+            doc.setFontSize(12);
+            doc.setFont("helvetica", "bold");
+            doc.text(`${cat.label}${chunks.length > 1 ? ` (${chunkIdx + 1}/${chunks.length})` : ""}`, 14, y);
+            y += 6;
+
+            const colWidths = [55, 18, ...chunk.flatMap(() => [20, 16])];
+            const headers = ["Athlète", "M", ...chunk.flatMap(s => [s.shortLabel, "+/-"])];
+            doc.setFillColor(241, 245, 249);
+            doc.rect(14, y, pageW - 28, 7, "F");
+            doc.setFontSize(7);
+            doc.setFont("helvetica", "bold");
+            let x = 14;
+            headers.forEach((h, i) => {
+              doc.text(h.substring(0, 10), x + 1, y + 5);
+              x += colWidths[i] || 18;
+            });
+            y += 9;
+            doc.setFont("helvetica", "normal");
+
+            const sorted = [...exportStats].sort((a, b) => {
+              const firstStat = chunk[0]?.key;
+              return firstStat ? (b.sportData[firstStat] || 0) - (a.sportData[firstStat] || 0) : 0;
+            });
+
+            sorted.forEach((p) => {
+              if (y > pageH - 15) { doc.addPage(); y = 15; }
+              x = 14;
+              doc.setTextColor(30, 41, 59);
+              doc.setFontSize(7);
+              doc.text(p.playerName.substring(0, 18), x + 1, y + 4);
+              x += colWidths[0];
+              doc.text(String(p.matchesPlayed), x + 1, y + 4);
+              x += colWidths[1];
+              chunk.forEach((s, i) => {
+                const val = p.sportData[s.key] || 0;
+                doc.setTextColor(30, 41, 59);
+                doc.text(s.computedFrom ? `${val}%` : String(val), x + 1, y + 4);
+                x += colWidths[2 + i * 2];
+                const prog = playerProgressions[p.playerId]?.[s.key] || 0;
+                if (prog > 0) doc.setTextColor(22, 163, 74);
+                else if (prog < 0) doc.setTextColor(220, 38, 38);
+                else doc.setTextColor(100, 116, 139);
+                doc.text(prog > 0 ? `+${prog}` : String(prog), x + 1, y + 4);
+                x += colWidths[3 + i * 2] || 16;
+              });
+              y += 7;
+            });
+            y += 6;
+          });
         });
+
+        // Kicking map page (rugby only) - unified map with different symbols
+        if (isRugby && Object.keys(kickingByPlayerFinal).length > 0) {
+          doc.addPage();
+          drawHeader("Cartographie des tirs au but");
+          let ky = 36;
+
+          const drawKickOnMap = (
+            doc: jsPDF,
+            kick: { x: number; y: number; kickType: string; success: boolean },
+            fb: { fx: number; fy: number; fw: number; fh: number }
+          ) => {
+            const kx = fb.fx + (kick.x / 100) * fb.fw;
+            const kyy = fb.fy + (kick.y / 100) * fb.fh;
+            const r = 3;
+            const fillColor: [number, number, number] = kick.success ? [34, 197, 94] : [239, 68, 68];
+            doc.setFillColor(...fillColor);
+            if (kick.kickType === "conversion") {
+              doc.circle(kx, kyy, r, "F");
+              doc.setDrawColor(59, 130, 246);
+              doc.circle(kx, kyy, r, "S");
+            } else if (kick.kickType === "penalty") {
+              doc.rect(kx - r, kyy - r, r * 2, r * 2, "F");
+              doc.setDrawColor(245, 158, 11);
+              doc.rect(kx - r, kyy - r, r * 2, r * 2, "S");
+            } else {
+              const pts = [
+                { x: kx, y: kyy - r * 1.2 },
+                { x: kx + r * 1.2, y: kyy },
+                { x: kx, y: kyy + r * 1.2 },
+                { x: kx - r * 1.2, y: kyy },
+              ];
+              doc.setFillColor(...fillColor);
+              (doc as any).triangle(pts[0].x, pts[0].y, pts[1].x, pts[1].y, pts[2].x, pts[2].y, "F");
+              (doc as any).triangle(pts[0].x, pts[0].y, pts[2].x, pts[2].y, pts[3].x, pts[3].y, "F");
+              doc.setDrawColor(139, 92, 246);
+            }
+          };
+
+          doc.setFontSize(7);
+          doc.setTextColor(100, 116, 139);
+          doc.text("● Transformation   ■ Pénalité   ◆ Drop   |   Vert = réussi   Rouge = raté", 14, ky);
+          ky += 6;
+
+          const kickerIds = Object.keys(kickingByPlayerFinal).filter(pid => kickingByPlayerFinal[pid].allKicks.length > 0 && (!singlePlayerId || pid === singlePlayerId));
+          kickerIds.forEach(pid => {
+            const kicker = kickingByPlayerFinal[pid];
+            const playerInfo = stats?.find(s => s.playerId === pid);
+            const name = playerInfo?.playerName || "Buteur";
+
+            if (ky > pageH - 70) { doc.addPage(); ky = 15; }
+
+            doc.setTextColor(30, 41, 59);
+            doc.setFontSize(10);
+            doc.setFont("helvetica", "bold");
+            doc.text(name, 14, ky);
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(7);
+            const rate = kicker.total > 0 ? Math.round((kicker.success / kicker.total) * 100) : 0;
+            doc.text(`${kicker.success}/${kicker.total} (${rate}%)  —  T: ${kicker.conversion.success}/${kicker.conversion.total}  P: ${kicker.penalty.success}/${kicker.penalty.total}  D: ${kicker.drop.success}/${kicker.drop.total}`, 14, ky + 5);
+            ky += 10;
+
+            const mapW = pageW - 28;
+            const mapH = 45;
+            const fb = drawPdfRugbyField(doc, 14, ky, mapW, mapH, { showLabels: false });
+            kicker.allKicks.forEach(kick => drawKickOnMap(doc, kick, fb));
+            ky += mapH + 8;
+          });
+        }
       }
 
       const playerLabel = singlePlayerId ? exportStats[0]?.playerName?.replace(/\s+/g, '-') : "";
@@ -673,7 +900,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
     } catch (e) {
       toast.error("Erreur lors de l'export PDF");
     }
-  }, [stats, sportStats, statCategories, categoryId, selectedCount, allMatches, activeMatchIds, playerProgressions, isRugby, kickingByPlayerFinal]);
+  }, [stats, sportStats, statCategories, categoryId, selectedCount, allMatches, activeMatchIds, playerProgressions, matchesDataForCharts, isRugby, kickingByPlayerFinal]);
 
   // Enhanced individual player PDF export with photo, club, category, matches, kicking map
   const handleExportPlayerPdf = useCallback(async (playerId: string) => {
