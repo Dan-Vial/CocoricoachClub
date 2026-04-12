@@ -611,6 +611,7 @@ export function ImprovedCalendarView({
                       sportType={sportType}
                       isViewer={isViewer}
                       onDayClick={handleDayClickWithAdd}
+                      onShowAllEvents={onDayClick}
                       onPreviewSession={(session) => onViewSession?.(session)}
                       onEditSession={(session) => onEditSession?.(session)}
                       onFeedbackSession={(session) => setFeedbackSession(session)}
