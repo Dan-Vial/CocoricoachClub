@@ -71,10 +71,20 @@ export function ProphylaxisProgramDialog({ categoryId, programId, open, onOpenCh
   const [saving, setSaving] = useState(false);
   const [showPlayers, setShowPlayers] = useState(false);
 
-  // Library sidebar state
-  const [libSearch, setLibSearch] = useState("");
-  const [libCategory, setLibCategory] = useState("all");
-  const [previewExercise, setPreviewExercise] = useState<any>(null);
+  // Library click-to-add handler
+  const handleLibraryClick = useCallback((exercise: { id: string; name: string; category: string }) => {
+    setExercises(prev => [...prev, {
+      exercise_name: exercise.name,
+      library_exercise_id: exercise.id,
+      sets: 3,
+      reps: "10",
+      duration_seconds: null,
+      rest_seconds: 30,
+      notes: "",
+      order_index: prev.length,
+    }]);
+    toast.success(`${exercise.name} ajouté`);
+  }, []);
 
   const { data: players } = useQuery({
     queryKey: ["players-prophylaxis", categoryId],
