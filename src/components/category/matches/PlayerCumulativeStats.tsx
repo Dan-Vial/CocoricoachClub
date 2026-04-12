@@ -22,6 +22,7 @@ import ExcelJS from "exceljs";
 import jsPDF from "jspdf";
 import { CumulativeStatsCharts } from "./CumulativeStatsCharts";
 import { TeamCumulativeStats } from "./TeamCumulativeStats";
+import { CumulativeKickingMap } from "./CumulativeKickingMap";
 import { getExcelBranding, addBrandedHeader, styleDataHeaderRow, addZebraRows, addFooter, downloadWorkbook } from "@/lib/excelExport";
 import { preparePdfWithSettings } from "@/lib/pdfExport";
 
@@ -884,6 +885,13 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
                     </Card>
                   );
                 })()}
+                {/* Kicking field map */}
+                {isRugby && kickingByPlayerFinal[player.playerId]?.allKicks?.length > 0 && (
+                  <CumulativeKickingMap
+                    kicks={kickingByPlayerFinal[player.playerId].allKicks}
+                    playerName={player.playerName}
+                  />
+                )}
               </div>
             );
           })()}
