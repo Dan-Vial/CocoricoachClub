@@ -56,6 +56,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
   const [selectedMatchIds, setSelectedMatchIds] = useState<string[]>([]);
   const [filterOpen, setFilterOpen] = useState(false);
   const [selectedPlayerId, setSelectedPlayerId] = useState<string>("");
+  const [exportPlayerId, setExportPlayerId] = useState<string>("");
   const isRugby = isRugbyType(sportType);
 
   const { stats: sportStats, isLoading: loadingPrefs } = useStatPreferences({ categoryId, sportType });
@@ -285,8 +286,9 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
   const selectedPlayer = stats?.find(p => p.playerId === selectedPlayerId);
 
   // Export Excel
-  const handleExportExcel = useCallback(async (mode: "all" | "team" | "individual" = "all") => {
+  const handleExportExcel = useCallback(async (mode: "all" | "team" | "individual" | "single" = "all", singlePlayerId?: string) => {
     if (!stats || stats.length === 0) return;
+    const exportStats = singlePlayerId ? stats.filter(p => p.playerId === singlePlayerId) : stats;
     try {
       const branding = await getExcelBranding(categoryId);
       const wb = new ExcelJS.Workbook();
@@ -341,7 +343,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
         addFooter(wsTeam, tRow, 4, branding.footerText);
       }
 
-      if (mode === "all" || mode === "individual") {
+      if (mode === "all" || mode === "individual" || mode === "single") {
         // Individual sheets per category
         statCategories.forEach(cat => {
           const categoryStats = sportStats.filter(s => s.category === cat.key);
@@ -367,7 +369,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
             headerRow.getCell(3 + i * 2).value = s.shortLabel;
             headerRow.getCell(4 + i * 2).value = "+/-";
           });
-          const sorted = [...stats].sort((a, b) => {
+          const sorted = [...exportStats].sort((a, b) => {
             const firstStat = categoryStats[0]?.key;
             return firstStat ? (b.sportData[firstStat] || 0) - (a.sportData[firstStat] || 0) : 0;
           });
@@ -389,7 +391,8 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
         });
       }
 
-      const suffix = mode === "team" ? "-equipe" : mode === "individual" ? "-individuelles" : "";
+      const playerLabel = singlePlayerId ? exportStats[0]?.playerName?.replace(/\s+/g, '-') : "";
+      const suffix = mode === "team" ? "-equipe" : mode === "single" ? `-${playerLabel}` : mode === "individual" ? "-individuelles" : "";
       await downloadWorkbook(wb, `stats-competition${suffix}-${format(new Date(), "yyyy-MM-dd")}.xlsx`);
       toast.success("Export Excel téléchargé !");
     } catch (e) {
@@ -398,8 +401,9 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
   }, [stats, sportStats, statCategories, categoryId, selectedCount, allMatches, playerProgressions]);
 
   // Export PDF
-  const handleExportPdf = useCallback(async (mode: "all" | "team" | "individual" = "all") => {
+  const handleExportPdf = useCallback(async (mode: "all" | "team" | "individual" | "single" = "all", singlePlayerId?: string) => {
     if (!stats || stats.length === 0) return;
+    const exportStats = singlePlayerId ? stats.filter(p => p.playerId === singlePlayerId) : stats;
     try {
       const { settings, clubName, categoryName, seasonName } = await preparePdfWithSettings(categoryId);
       const doc = new jsPDF({ orientation: "landscape" });
@@ -478,7 +482,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
           y += 9;
           doc.setFont("helvetica", "normal");
 
-          const sorted = [...stats].sort((a, b) => {
+          const sorted = [...exportStats].sort((a, b) => {
             const firstStat = chunk[0]?.key;
             return firstStat ? (b.sportData[firstStat] || 0) - (a.sportData[firstStat] || 0) : 0;
           });
@@ -582,7 +586,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
         ky += 6;
 
         // For each player with kicks
-        const kickerIds = Object.keys(kickingByPlayerFinal).filter(pid => kickingByPlayerFinal[pid].allKicks.length > 0);
+        const kickerIds = Object.keys(kickingByPlayerFinal).filter(pid => kickingByPlayerFinal[pid].allKicks.length > 0 && (!singlePlayerId || pid === singlePlayerId));
         kickerIds.forEach(pid => {
           const kicker = kickingByPlayerFinal[pid];
           const playerInfo = stats?.find(s => s.playerId === pid);
@@ -615,7 +619,8 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
         });
       }
 
-      const suffix = mode === "team" ? "-equipe" : mode === "individual" ? "-individuelles" : "";
+      const playerLabel = singlePlayerId ? exportStats[0]?.playerName?.replace(/\s+/g, '-') : "";
+      const suffix = mode === "team" ? "-equipe" : mode === "single" ? `-${playerLabel}` : mode === "individual" ? "-individuelles" : "";
       doc.save(`stats-competition${suffix}-${format(new Date(), "yyyy-MM-dd")}.pdf`);
       toast.success("Export PDF téléchargé !");
     } catch (e) {
@@ -714,7 +719,20 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
           )}
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
+          {/* Player selector for single export */}
+          <Select value={exportPlayerId} onValueChange={setExportPlayerId}>
+            <SelectTrigger className="w-[180px] h-8 text-xs">
+              <SelectValue placeholder="Exporter un athlète" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__all__">Tous les athlètes</SelectItem>
+              {stats.map(p => (
+                <SelectItem key={p.playerId} value={p.playerId}>{p.playerName}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" className="gap-1">
@@ -724,15 +742,23 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
             <DropdownMenuContent align="end">
               <DropdownMenuLabel className="text-xs">Exporter en Excel</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => handleExportExcel("all")}>
-                <Users className="h-3.5 w-3.5 mr-2" />Tout (équipe + individuel)
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleExportExcel("team")}>
-                <Users className="h-3.5 w-3.5 mr-2" />Statistiques équipe
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleExportExcel("individual")}>
-                <User className="h-3.5 w-3.5 mr-2" />Statistiques individuelles
-              </DropdownMenuItem>
+              {exportPlayerId && exportPlayerId !== "__all__" ? (
+                <DropdownMenuItem onClick={() => handleExportExcel("single", exportPlayerId)}>
+                  <User className="h-3.5 w-3.5 mr-2" />{stats.find(p => p.playerId === exportPlayerId)?.playerName || "Athlète"}
+                </DropdownMenuItem>
+              ) : (
+                <>
+                  <DropdownMenuItem onClick={() => handleExportExcel("all")}>
+                    <Users className="h-3.5 w-3.5 mr-2" />Tout (équipe + individuel)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleExportExcel("team")}>
+                    <Users className="h-3.5 w-3.5 mr-2" />Statistiques équipe
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleExportExcel("individual")}>
+                    <User className="h-3.5 w-3.5 mr-2" />Statistiques individuelles
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
           <DropdownMenu>
@@ -744,15 +770,23 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
             <DropdownMenuContent align="end">
               <DropdownMenuLabel className="text-xs">Exporter en PDF</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => handleExportPdf("all")}>
-                <Users className="h-3.5 w-3.5 mr-2" />Tout (équipe + individuel)
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleExportPdf("team")}>
-                <Users className="h-3.5 w-3.5 mr-2" />Statistiques équipe
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleExportPdf("individual")}>
-                <User className="h-3.5 w-3.5 mr-2" />Statistiques individuelles
-              </DropdownMenuItem>
+              {exportPlayerId && exportPlayerId !== "__all__" ? (
+                <DropdownMenuItem onClick={() => handleExportPdf("single", exportPlayerId)}>
+                  <User className="h-3.5 w-3.5 mr-2" />{stats.find(p => p.playerId === exportPlayerId)?.playerName || "Athlète"} + cartographie
+                </DropdownMenuItem>
+              ) : (
+                <>
+                  <DropdownMenuItem onClick={() => handleExportPdf("all")}>
+                    <Users className="h-3.5 w-3.5 mr-2" />Tout (équipe + individuel)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleExportPdf("team")}>
+                    <Users className="h-3.5 w-3.5 mr-2" />Statistiques équipe
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleExportPdf("individual")}>
+                    <User className="h-3.5 w-3.5 mr-2" />Statistiques individuelles
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -760,7 +794,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
 
       {/* Charts */}
       {stats.length > 0 && (
-        <CumulativeStatsCharts stats={stats} matchesData={matchesDataForCharts} sportStats={sportStats} selectedMatchIds={activeMatchIds} />
+        <CumulativeStatsCharts stats={stats} matchesData={matchesDataForCharts} sportStats={sportStats} selectedMatchIds={activeMatchIds} sportType={sportType} />
       )}
 
       {/* SPLIT SCREEN: Team (left) + Individual (right) */}
