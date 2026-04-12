@@ -79,7 +79,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
       if (uniqueMatchIds.length === 0) return [] as MatchInfo[];
       const { data, error } = await supabase
         .from("matches")
-        .select("id, match_date, opponent, is_home, location, match_time, competition, competition_stage, event_type")
+        .select("id, match_date, opponent, is_home, location, match_time, competition, competition_stage, event_type, score_home, score_away")
         .in("id", uniqueMatchIds)
         .order("match_date", { ascending: false });
       if (error) throw error;
