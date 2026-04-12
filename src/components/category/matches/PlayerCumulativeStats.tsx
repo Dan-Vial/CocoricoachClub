@@ -156,6 +156,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
       conversion: { total: number; success: number };
       drop: { total: number; success: number };
       byMatch: Record<string, { total: number; success: number }>;
+      allKicks: { x: number; y: number; kickType: string; success: boolean }[];
     }> = {};
 
     kickingData.forEach((row: any) => {
@@ -180,6 +181,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
           conversion: { total: 0, success: 0 },
           drop: { total: 0, success: 0 },
           byMatch: {},
+          allKicks: [],
         };
       }
       const p = map[row.player_id];
@@ -194,6 +196,11 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
       if (!p.byMatch[row.match_id]) p.byMatch[row.match_id] = { total: 0, success: 0 };
       p.byMatch[row.match_id].total += totalAttempts;
       p.byMatch[row.match_id].success += totalSuccess;
+
+      // Collect individual kick positions
+      if (Array.isArray(sportData.kickAttempts)) {
+        p.allKicks.push(...sportData.kickAttempts);
+      }
     });
 
     return map;
