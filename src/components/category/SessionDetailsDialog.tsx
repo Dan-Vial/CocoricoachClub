@@ -514,6 +514,29 @@ export function SessionDetailsDialog({
                   </Badge>
                 ) : null;
               })()}
+              {/* Precision exercise theme badge */}
+              {session.training_type === "precision" && (() => {
+                const precisionEx = parsePrecisionExerciseFromNotes(session.notes);
+                if (!precisionEx) return null;
+                const exerciseConfig = RUGBY_PRECISION_EXERCISES.find(e => e.value === precisionEx.id);
+                const categoryConfig = exerciseConfig 
+                  ? EXERCISE_CATEGORIES.find(c => c.exercises.some(e => e.value === exerciseConfig.value))
+                  : null;
+                return (
+                  <>
+                    {categoryConfig && (
+                      <Badge variant="outline" className="flex items-center gap-1 border-accent text-accent">
+                        <Target className="h-3 w-3" />
+                        {categoryConfig.label}
+                      </Badge>
+                    )}
+                    <Badge className="flex items-center gap-1" style={{ backgroundColor: exerciseConfig?.color || 'hsl(var(--accent))' }}>
+                      {exerciseConfig?.shape === "square" ? "■" : exerciseConfig?.shape === "diamond" ? "◆" : "●"}{" "}
+                      {precisionEx.label}
+                    </Badge>
+                  </>
+                );
+              })()}
             </div>
           )}
 
