@@ -541,11 +541,24 @@ export function ProphylaxisProgramDialog({ categoryId, programId, open, onOpenCh
 
       {/* Media preview */}
       {previewExercise && (
-        <ExerciseMediaViewer
-          exercise={previewExercise}
-          open={!!previewExercise}
-          onOpenChange={(open) => !open && setPreviewExercise(null)}
-        />
+        <MediaDialog open={!!previewExercise} onOpenChange={(o) => !o && setPreviewExercise(null)}>
+          <MediaDialogContent className="max-w-lg">
+            <MediaDialogHeader>
+              <MediaDialogTitle>{previewExercise.name}</MediaDialogTitle>
+            </MediaDialogHeader>
+            {previewExercise.youtube_url && (() => {
+              const videoId = previewExercise.youtube_url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&]+)/)?.[1];
+              return videoId ? (
+                <div className="aspect-video w-full">
+                  <iframe src={`https://www.youtube.com/embed/${videoId}`} className="w-full h-full rounded-lg" allowFullScreen />
+                </div>
+              ) : null;
+            })()}
+            {previewExercise.image_url && !previewExercise.youtube_url && (
+              <img src={previewExercise.image_url} alt={previewExercise.name} className="w-full rounded-lg" />
+            )}
+          </MediaDialogContent>
+        </MediaDialog>
       )}
     </Dialog>
   );
