@@ -512,13 +512,115 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
         });
       });
 
+      // Kicking map page (rugby only) - unified map with different symbols
+      if (isRugby && Object.keys(kickingByPlayerFinal).length > 0) {
+        doc.addPage();
+        drawHeader("Cartographie des tirs au but");
+        let ky = 36;
+
+        // Helper to draw a kick on the PDF
+        const drawKickOnMap = (
+          doc: jsPDF,
+          kick: { x: number; y: number; kickType: string; success: boolean },
+          mapX: number, mapY: number, mapW: number, mapH: number
+        ) => {
+          const kx = mapX + (kick.x / 100) * mapW;
+          const kyy = mapY + (kick.y / 100) * mapH;
+          const r = 3;
+          const fillColor: [number, number, number] = kick.success ? [34, 197, 94] : [239, 68, 68];
+          doc.setFillColor(...fillColor);
+
+          if (kick.kickType === "conversion") {
+            doc.circle(kx, kyy, r, "F");
+            doc.setDrawColor(59, 130, 246);
+            doc.circle(kx, kyy, r, "S");
+          } else if (kick.kickType === "penalty") {
+            doc.rect(kx - r, kyy - r, r * 2, r * 2, "F");
+            doc.setDrawColor(245, 158, 11);
+            doc.rect(kx - r, kyy - r, r * 2, r * 2, "S");
+          } else {
+            // Diamond for drop
+            const pts = [
+              { x: kx, y: kyy - r * 1.2 },
+              { x: kx + r * 1.2, y: kyy },
+              { x: kx, y: kyy + r * 1.2 },
+              { x: kx - r * 1.2, y: kyy },
+            ];
+            doc.setFillColor(...fillColor);
+            (doc as any).triangle(pts[0].x, pts[0].y, pts[1].x, pts[1].y, pts[2].x, pts[2].y, "F");
+            (doc as any).triangle(pts[0].x, pts[0].y, pts[2].x, pts[2].y, pts[3].x, pts[3].y, "F");
+            doc.setDrawColor(139, 92, 246);
+          }
+        };
+
+        // Draw field background
+        const drawFieldBg = (doc: jsPDF, fx: number, fy: number, fw: number, fh: number) => {
+          doc.setFillColor(21, 128, 61);
+          doc.rect(fx, fy, fw, fh, "F");
+          doc.setDrawColor(255, 255, 255);
+          doc.setLineWidth(0.3);
+          doc.rect(fx, fy, fw, fh, "S");
+          // Distance lines
+          const lines = [0, 10, 22, 30, 40, 50];
+          lines.forEach(m => {
+            const lx = fx + (m / 100) * fw;
+            doc.setLineDashPattern([1, 1], 0);
+            doc.line(lx, fy, lx, fy + fh);
+          });
+          doc.setLineDashPattern([], 0);
+          // Posts
+          doc.setLineWidth(1);
+          doc.line(fx + fw, fy + fh * 0.4, fx + fw, fy + fh * 0.6);
+          doc.setLineWidth(0.3);
+        };
+
+        // Legend
+        doc.setFontSize(7);
+        doc.setTextColor(100, 116, 139);
+        doc.text("● Transformation   ■ Pénalité   ◆ Drop   |   Vert = réussi   Rouge = raté", 14, ky);
+        ky += 6;
+
+        // For each player with kicks
+        const kickerIds = Object.keys(kickingByPlayerFinal).filter(pid => kickingByPlayerFinal[pid].allKicks.length > 0);
+        kickerIds.forEach(pid => {
+          const kicker = kickingByPlayerFinal[pid];
+          const playerInfo = stats?.find(s => s.playerId === pid);
+          const name = playerInfo?.playerName || "Buteur";
+
+          if (ky > pageH - 70) {
+            doc.addPage();
+            ky = 15;
+          }
+
+          doc.setTextColor(30, 41, 59);
+          doc.setFontSize(10);
+          doc.setFont("helvetica", "bold");
+          doc.text(name, 14, ky);
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(7);
+          const rate = kicker.total > 0 ? Math.round((kicker.success / kicker.total) * 100) : 0;
+          doc.text(`${kicker.success}/${kicker.total} (${rate}%)  —  T: ${kicker.conversion.success}/${kicker.conversion.total}  P: ${kicker.penalty.success}/${kicker.penalty.total}  D: ${kicker.drop.success}/${kicker.drop.total}`, 14, ky + 5);
+          ky += 10;
+
+          const mapW = pageW - 28;
+          const mapH = 45;
+          drawFieldBg(doc, 14, ky, mapW, mapH);
+
+          kicker.allKicks.forEach(kick => {
+            drawKickOnMap(doc, kick, 14, ky, mapW, mapH);
+          });
+
+          ky += mapH + 8;
+        });
+      }
+
       const suffix = mode === "team" ? "-equipe" : mode === "individual" ? "-individuelles" : "";
       doc.save(`stats-competition${suffix}-${format(new Date(), "yyyy-MM-dd")}.pdf`);
       toast.success("Export PDF téléchargé !");
     } catch (e) {
       toast.error("Erreur lors de l'export PDF");
     }
-  }, [stats, sportStats, statCategories, categoryId, selectedCount, allMatches, activeMatchIds, playerProgressions]);
+  }, [stats, sportStats, statCategories, categoryId, selectedCount, allMatches, activeMatchIds, playerProgressions, isRugby, kickingByPlayerFinal]);
 
   const getCategoryIcon = (catKey: string) => {
     switch (catKey) {
