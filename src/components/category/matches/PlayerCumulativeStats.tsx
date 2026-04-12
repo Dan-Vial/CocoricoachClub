@@ -920,6 +920,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
     }
   }, [stats, sportStats, statCategories, categoryId, allMatches, activeMatchIds, isRugby, kickingByPlayerFinal]);
 
+  const getCategoryIcon = (catKey: string) => {
     switch (catKey) {
       case "scoring": return <Trophy className="h-4 w-4 text-primary" />;
       case "attack": return <Target className="h-4 w-4 text-primary" />;
