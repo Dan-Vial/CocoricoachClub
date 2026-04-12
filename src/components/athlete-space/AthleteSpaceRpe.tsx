@@ -22,6 +22,7 @@ import { GroupedExerciseList } from "@/components/category/GroupedExerciseList";
 import { PrecisionExerciseSelector } from "@/components/precision/PrecisionExerciseSelector";
 import { AthletePrecisionFieldInput } from "./AthletePrecisionFieldInput";
 import { isRugbyType } from "@/lib/constants/sportTypes";
+import { RUGBY_PRECISION_EXERCISES, EXERCISE_CATEGORIES } from "@/lib/constants/rugbyPrecisionExercises";
 
 interface Props {
   playerId: string;
