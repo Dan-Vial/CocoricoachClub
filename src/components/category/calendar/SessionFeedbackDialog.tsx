@@ -809,14 +809,21 @@ export function SessionFeedbackDialog({
 
         <div className="flex justify-end gap-2 pt-4 border-t">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Annuler
+            {activeTab === "precision" ? "Fermer" : "Annuler"}
           </Button>
-          <Button
-            onClick={() => saveData.mutate()}
-            disabled={saveData.isPending || (!hasNewRpeValues && !hasTestResults && !hasWeightLogs)}
-          >
-            {saveData.isPending ? "Enregistrement..." : "Enregistrer"}
-          </Button>
+          {activeTab !== "precision" && (
+            <Button
+              onClick={() => saveData.mutate()}
+              disabled={saveData.isPending || (!hasNewRpeValues && !hasTestResults && !hasWeightLogs)}
+            >
+              {saveData.isPending ? "Enregistrement..." : "Enregistrer"}
+            </Button>
+          )}
+          {activeTab === "precision" && (
+            <p className="text-xs text-muted-foreground self-center">
+              ✅ Les données de précision sont sauvegardées automatiquement à chaque saisie.
+            </p>
+          )}
         </div>
       </DialogContent>
     </Dialog>
