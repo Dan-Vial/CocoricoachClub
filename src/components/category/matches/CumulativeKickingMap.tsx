@@ -22,12 +22,13 @@ const KICK_STYLES: Record<string, { label: string; shape: "circle" | "square" | 
   drop: { label: "Drop", shape: "diamond", color: "#8b5cf6" },
 };
 
-const SVG_W = 700;
+// Match the RugbyFieldSVG coordinate system (600x400) so stored % map correctly
+const SVG_W = 600;
 const SVG_H = 400;
 const FIELD_LEFT = 20;
-const FIELD_RIGHT = 680;
-const FIELD_TOP = 10;
-const FIELD_BOTTOM = 390;
+const FIELD_RIGHT = 580;
+const FIELD_TOP = 14;
+const FIELD_BOTTOM = 386;
 const FIELD_W = FIELD_RIGHT - FIELD_LEFT;
 const FIELD_H = FIELD_BOTTOM - FIELD_TOP;
 const FIELD_LENGTH_M = 100;
@@ -36,17 +37,25 @@ const FIELD_WIDTH_M = 70;
 export function CumulativeKickingMap({ kicks, playerName, hasKickingStats }: CumulativeKickingMapProps) {
   const zoneStats = useMemo(() => {
     const zones: Record<string, { success: number; total: number }> = {};
+    // k.x and k.y are 0-100 percentages of the SVG element (600x400)
+    // Convert to field-relative position first
+    const tryLineSvgPct = (FIELD_LEFT + 0.95 * FIELD_W) / SVG_W * 100; // ~92%
+    const leftTryLineSvgPct = (FIELD_LEFT + 0.05 * FIELD_W) / SVG_W * 100; // ~8%
+    const fieldSvgSpan = tryLineSvgPct - leftTryLineSvgPct; // ~84%
+    const fieldTopSvgPct = FIELD_TOP / SVG_H * 100;
+    const fieldBotSvgPct = FIELD_BOTTOM / SVG_H * 100;
+    const fieldSvgHeight = fieldBotSvgPct - fieldTopSvgPct;
+
     kicks.forEach(k => {
-      // k.x and k.y are 0-100 percentages of the field area
-      // Right try line is at 95% of the field, left try line at 5%
-      // Distance between try lines (90% of field) = 100m
-      const tryLinePct = 95;
-      const distPct = Math.abs(tryLinePct - k.x);
-      const distM = Math.round((distPct / 90) * FIELD_LENGTH_M);
+      // Distance from right try line in meters
+      const distPct = Math.abs(tryLineSvgPct - k.x);
+      const distM = Math.round((distPct / fieldSvgSpan) * FIELD_LENGTH_M);
       const row = distM < 22 ? "proche" : distM < 40 ? "moyen" : "loin";
 
-      // Lateral: k.y 0=top, 100=bottom, center=50. Field is 70m wide.
-      const lateralM = ((k.y - 50) / 100) * FIELD_WIDTH_M;
+      // Lateral: convert SVG % to field-relative, then to meters
+      const fieldCenterSvgPct = (fieldTopSvgPct + fieldBotSvgPct) / 2;
+      const lateralFromCenter = k.y - fieldCenterSvgPct;
+      const lateralM = (lateralFromCenter / fieldSvgHeight) * FIELD_WIDTH_M;
       const col = lateralM < -10 ? "gauche" : lateralM > 10 ? "droite" : "centre";
 
       const key = `${row}-${col}`;
@@ -86,7 +95,7 @@ export function CumulativeKickingMap({ kicks, playerName, hasKickingStats }: Cum
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="relative w-full" style={{ aspectRatio: "7/4" }}>
+        <div className="relative w-full" style={{ aspectRatio: "3/2" }}>
           <svg viewBox={`0 0 ${SVG_W} ${SVG_H}`} className="w-full h-full">
             <RugbyFieldSvg
               svgW={SVG_W} svgH={SVG_H}
@@ -94,10 +103,10 @@ export function CumulativeKickingMap({ kicks, playerName, hasKickingStats }: Cum
               fieldTop={FIELD_TOP} fieldBottom={FIELD_BOTTOM}
             />
 
-            {/* Kick markers */}
+            {/* Kick markers — coordinates are stored as % of SVG dimensions */}
             {kicks.map((kick, i) => {
-              const cx = FIELD_LEFT + (kick.x / 100) * FIELD_W;
-              const cy = FIELD_TOP + (kick.y / 100) * FIELD_H;
+              const cx = (kick.x / 100) * SVG_W;
+              const cy = (kick.y / 100) * SVG_H;
               const style = KICK_STYLES[kick.kickType] || KICK_STYLES.penalty;
               const fill = kick.success ? "#22c55e" : "#ef4444";
               const stroke = style.color;

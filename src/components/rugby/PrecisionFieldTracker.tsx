@@ -459,8 +459,8 @@ export function PrecisionFieldTracker({ categoryId, sessionId: propSessionId, se
                 showCursorTracker
               >
                 {kickMarkers.map((kick, i) => {
-                  const cx = 20 + (kick.x / 100) * 560;
-                  const cy = 10 + (kick.y / 100) * 380;
+                  const cx = (kick.x / 100) * 600;
+                  const cy = (kick.y / 100) * 400;
                   const exDef = BUTEUR_EXERCISES.find(b => b.value === kick.kickType);
                   const fill = kick.success ? "#22c55e" : "#ef4444";
                   const stroke = exDef?.color || "#f97316";
@@ -569,8 +569,8 @@ export function PrecisionFieldTracker({ categoryId, sessionId: propSessionId, se
                 {(() => {
                   const origin = getFixedOrigin() || zoneKickOrigin;
                   if (!origin) return null;
-                  const ox = 20 + (origin.x / 100) * 560;
-                  const oy = 10 + (origin.y / 100) * 380;
+                  const ox = (origin.x / 100) * 600;
+                  const oy = (origin.y / 100) * 400;
                   const isFixed = !!getFixedOrigin();
                   return (
                     <g>

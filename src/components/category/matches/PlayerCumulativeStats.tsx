@@ -25,7 +25,7 @@ import { TeamCumulativeStats } from "./TeamCumulativeStats";
 import { CumulativeKickingMap } from "./CumulativeKickingMap";
 import { getExcelBranding, addBrandedHeader, styleDataHeaderRow, addZebraRows, addFooter, downloadWorkbook } from "@/lib/excelExport";
 import { preparePdfWithSettings } from "@/lib/pdfExport";
-import { drawPdfRugbyField, drawPdfZoneStatsGrid } from "@/lib/pdfRugbyField";
+import { drawPdfRugbyField, drawPdfZoneStatsGrid, svgPctToPdfPos } from "@/lib/pdfRugbyField";
 
 interface PlayerCumulativeStatsProps {
   categoryId: string;
@@ -764,8 +764,8 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
           const mapH = 55;
           const fb = drawPdfRugbyField(doc, 14, y, mapW, mapH);
           allKicks.forEach(kick => {
-            const kx = fb.fx + (kick.x / 100) * fb.fw;
-            const ky = fb.fy + (kick.y / 100) * fb.fh;
+            const pos = svgPctToPdfPos(kick, fb);
+            const kx = pos.kx; const ky = pos.ky;
             const r = 2.5;
             const fillColor: [number, number, number] = kick.success ? [34, 197, 94] : [239, 68, 68];
             doc.setFillColor(...fillColor);
@@ -868,8 +868,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
             kick: { x: number; y: number; kickType: string; success: boolean },
             fb: { fx: number; fy: number; fw: number; fh: number }
           ) => {
-            const kx = fb.fx + (kick.x / 100) * fb.fw;
-            const kyy = fb.fy + (kick.y / 100) * fb.fh;
+            const { kx, ky: kyy } = svgPctToPdfPos(kick, fb);
             const r = 3;
             const fillColor: [number, number, number] = kick.success ? [34, 197, 94] : [239, 68, 68];
             doc.setFillColor(...fillColor);
@@ -1116,8 +1115,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
 
           // Draw kicks using inner field bounds
           k.allKicks.forEach(kick => {
-            const kx = fieldBounds.fx + (kick.x / 100) * fieldBounds.fw;
-            const ky2 = fieldBounds.fy + (kick.y / 100) * fieldBounds.fh;
+            const { kx, ky: ky2 } = svgPctToPdfPos(kick, fieldBounds);
             const r = 3;
             const fillColor: [number, number, number] = kick.success ? [34, 197, 94] : [239, 68, 68];
             doc.setFillColor(...fillColor);

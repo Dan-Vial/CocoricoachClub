@@ -184,17 +184,26 @@ export function drawPdfZoneStatsGrid(
 ): number {
   // Compute zone stats from kicks
   const zoneStats: Record<string, { success: number; total: number }> = {};
+  // Coordinates are stored as % of a 600x400 SVG
+  // Field inner area: x=20..580 (560px), y=14..386 (372px) within 600x400
+  const svgW = 600, svgH = 400;
+  const fLeft = 20, fRight = 580, fTop = 14, fBot = 386;
+  const fW = fRight - fLeft; // 560
+  const fH = fBot - fTop; // 372
+  // Try line positions in SVG-% coordinates
+  const rightTryLineSvgPct = (fLeft + 0.95 * fW) / svgW * 100; // ~92%
+  const leftTryLineSvgPct = (fLeft + 0.05 * fW) / svgW * 100; // ~8%
+  const fieldSvgSpan = rightTryLineSvgPct - leftTryLineSvgPct;
+  const fieldCenterYSvgPct = (fTop + fH / 2) / svgH * 100; // ~50%
+  const fieldHeightSvgPct = fH / svgH * 100; // ~93%
+
   kicks.forEach(kick => {
-    // kick.x and kick.y are 0-100 percentages of the field area
-    // Right try line is at 95% of the field, left try line at 5%
-    // Distance between try lines (90% of field) = 100m
-    const tryLinePct = 95;
-    const distPct = Math.abs(tryLinePct - kick.x);
-    const distM = Math.round((distPct / 90) * 100);
+    const distPct = Math.abs(rightTryLineSvgPct - kick.x);
+    const distM = Math.round((distPct / fieldSvgSpan) * 100);
     const row = distM < 22 ? "proche" : distM < 40 ? "moyen" : "loin";
 
-    // Lateral: kick.y 0=top, 100=bottom, center=50. Field is 70m wide.
-    const lateralM = ((kick.y - 50) / 100) * 70;
+    const lateralFromCenter = kick.y - fieldCenterYSvgPct;
+    const lateralM = (lateralFromCenter / fieldHeightSvgPct) * 70;
     const col = lateralM < -10 ? "gauche" : lateralM > 10 ? "droite" : "centre";
 
     const key = `${row}-${col}`;
@@ -275,4 +284,27 @@ export function drawPdfZoneStatsGrid(
   y += 6;
 
   return y;
+}
+
+/**
+ * Convert stored SVG-% coordinates (from a 600x400 RugbyFieldSVG click) 
+ * to PDF field-relative positions.
+ * SVG field inner area: x=20..580, y=14..386 within 600x400
+ */
+export function svgPctToPdfPos(
+  kick: { x: number; y: number },
+  fb: { fx: number; fy: number; fw: number; fh: number }
+): { kx: number; ky: number } {
+  const svgW = 600, svgH = 400;
+  const fLeft = 20, fTop = 14;
+  const fW = 560, fH = 372;
+  // Convert SVG-% to field-relative fraction
+  const svgPixelX = (kick.x / 100) * svgW;
+  const svgPixelY = (kick.y / 100) * svgH;
+  const fieldFracX = (svgPixelX - fLeft) / fW;
+  const fieldFracY = (svgPixelY - fTop) / fH;
+  return {
+    kx: fb.fx + fieldFracX * fb.fw,
+    ky: fb.fy + fieldFracY * fb.fh,
+  };
 }
