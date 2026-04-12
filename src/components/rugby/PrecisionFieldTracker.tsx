@@ -15,11 +15,13 @@ import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 import { RugbyFieldSVG } from "@/components/rugby/RugbyFieldSVG";
 import { getPositionLabel } from "@/lib/utils/kickingFieldZones";
 import { RUGBY_PRECISION_EXERCISES, EXERCISE_CATEGORIES, BUTEUR_EXERCISES, type RugbyPrecisionExerciseMode } from "@/lib/constants/rugbyPrecisionExercises";
+import { LineoutFieldSVG, aggregateLineoutStats, type LineoutZone } from "@/components/rugby/LineoutFieldSVG";
 
 interface PrecisionFieldTrackerProps {
   categoryId: string;
 }
 
+// Legacy positions kept for backward compat only
 const LINEOUT_POSITIONS = [
   { key: "devant", label: "Devant", y: 20, description: "2-4m du lanceur" },
   { key: "milieu", label: "Milieu", y: 50, description: "6-8m du lanceur" },
@@ -189,18 +191,8 @@ export function PrecisionFieldTracker({ categoryId }: PrecisionFieldTrackerProps
     return Array.from(map.values());
   }, [entries]);
 
-  const lineoutStats = useMemo(() => {
-    const map: Record<string, { attempts: number; successes: number }> = {};
-    LINEOUT_POSITIONS.forEach(p => { map[p.key] = { attempts: 0, successes: 0 }; });
-    entries.forEach((e: any) => {
-      if (e.zone_y == null) return;
-      const key = LINEOUT_POSITIONS.find(p => p.y === e.zone_y)?.key;
-      if (key && map[key]) {
-        map[key].attempts += e.attempts || 0;
-        map[key].successes += e.successes || 0;
-      }
-    });
-    return map;
+  const lineoutZoneStats = useMemo(() => {
+    return aggregateLineoutStats(entries as any[]);
   }, [entries]);
 
   const totalAttempts = entries.reduce((s: number, e: any) => s + (e.attempts || 0), 0);
@@ -229,14 +221,18 @@ export function PrecisionFieldTracker({ categoryId }: PrecisionFieldTrackerProps
     setDialogOpen(true);
   };
 
-  const handleLineoutClick = (position: typeof LINEOUT_POSITIONS[0]) => {
+  const handleLineoutZoneClick = (zone: LineoutZone) => {
     if (isViewer || !selectedPlayerId || !activeSessionId) return;
     const exLabel = currentExercise?.label || exerciseType;
-    setClickPos({ x: 50, y: position.y });
-    setClickLabel(`${exLabel} - ${position.label}`);
+    // Store distance/height in clickPos for save; use y as legacy compat
+    const legacyY = zone.distanceKey === "devant" ? 20 : zone.distanceKey === "milieu" ? 50 : 80;
+    setClickPos({ x: 50, y: legacyY });
+    setClickLabel(`${exLabel} - ${zone.label}`);
     setPendingKickType(null);
     setAttempts("1");
     setSuccesses("0");
+    // Store lineout zone info for save
+    (window as any).__pendingLineoutZone = zone;
     setDialogOpen(true);
   };
 
