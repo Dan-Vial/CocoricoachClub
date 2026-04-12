@@ -74,6 +74,8 @@ export function WeeklyPlanningCalendar({ categoryId }: WeeklyPlanningCalendarPro
   const [isHomeMatch, setIsHomeMatch] = useState(true);
   const [precisionCategory, setPrecisionCategory] = useState<string>("buteur");
   const [precisionTrackerOpen, setPrecisionTrackerOpen] = useState(false);
+  const [precisionItemDate, setPrecisionItemDate] = useState<string | null>(null);
+  const [precisionSessionId, setPrecisionSessionId] = useState<string | null>(null);
 
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -201,8 +203,24 @@ export function WeeklyPlanningCalendar({ categoryId }: WeeklyPlanningCalendarPro
       );
       resetAddDialog();
       // Auto-open precision tracker after creating precision session
-      if (wasPrecision) {
-        setTimeout(() => setPrecisionTrackerOpen(true), 300);
+      if (wasPrecision && selectedDay !== null) {
+        const itemDate = format(addDays(currentWeekStart, selectedDay), "yyyy-MM-dd");
+        setPrecisionItemDate(itemDate);
+        // Find the just-created session
+        setTimeout(async () => {
+          const { data: sessions } = await supabase
+            .from("training_sessions")
+            .select("id")
+            .eq("category_id", categoryId)
+            .eq("session_date", itemDate)
+            .eq("training_type", "precision")
+            .order("created_at", { ascending: false })
+            .limit(1);
+          if (sessions && sessions.length > 0) {
+            setPrecisionSessionId(sessions[0].id);
+          }
+          setPrecisionTrackerOpen(true);
+        }, 500);
       }
     },
     onError: () => {
@@ -421,7 +439,25 @@ export function WeeklyPlanningCalendar({ categoryId }: WeeklyPlanningCalendarPro
                           variant="outline"
                           size="sm"
                           className="w-full mt-1.5 h-6 text-[10px] gap-1 border-amber-500/30 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10"
-                          onClick={() => setPrecisionTrackerOpen(true)}
+                          onClick={async () => {
+                            const itemDate = format(addDays(currentWeekStart, index), "yyyy-MM-dd");
+                            setPrecisionItemDate(itemDate);
+                            // Find matching training session for this date
+                            const { data: sessions } = await supabase
+                              .from("training_sessions")
+                              .select("id")
+                              .eq("category_id", categoryId)
+                              .eq("session_date", itemDate)
+                              .eq("training_type", "precision")
+                              .order("created_at", { ascending: false })
+                              .limit(1);
+                            if (sessions && sessions.length > 0) {
+                              setPrecisionSessionId(sessions[0].id);
+                            } else {
+                              setPrecisionSessionId(null);
+                            }
+                            setPrecisionTrackerOpen(true);
+                          }}
                         >
                           <Target className="h-3 w-3" />
                           Saisir stats
@@ -651,9 +687,18 @@ export function WeeklyPlanningCalendar({ categoryId }: WeeklyPlanningCalendarPro
               <DialogTitle className="flex items-center gap-2">
                 <Target className="h-5 w-5 text-primary" />
                 Saisie de précision
+                {precisionItemDate && (
+                  <span className="text-sm font-normal text-muted-foreground ml-2">
+                    — {format(new Date(precisionItemDate), "d MMMM yyyy", { locale: fr })}
+                  </span>
+                )}
               </DialogTitle>
             </DialogHeader>
-            <PrecisionFieldTracker categoryId={categoryId} />
+            <PrecisionFieldTracker 
+              categoryId={categoryId} 
+              sessionId={precisionSessionId || undefined}
+              sessionDate={precisionItemDate || undefined}
+            />
           </DialogContent>
         </Dialog>
       )}
