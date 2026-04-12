@@ -28,6 +28,7 @@ interface MatchKickingFieldDialogProps {
     dropGoals: number;
     dropAttempts: number;
     points: number;
+    kicks: KickAttempt[];
   }) => void;
   initialKicks?: KickAttempt[];
 }
@@ -86,7 +87,7 @@ export function MatchKickingFieldDialog({
 
   const removeKick = (id: string) => setKicks((prev) => prev.filter((k) => k.id !== id));
 
-  const handleValidate = () => { onComplete(stats); onOpenChange(false); };
+  const handleValidate = () => { onComplete({ ...stats, kicks }); onOpenChange(false); };
 
   const kicksByType = useMemo(() => {
     const result: Record<string, { total: number; success: number }> = {};
