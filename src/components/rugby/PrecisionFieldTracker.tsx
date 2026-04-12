@@ -267,7 +267,7 @@ export function PrecisionFieldTracker({ categoryId }: PrecisionFieldTrackerProps
       {activeSessionId && todaySessions[0] && (
         <div className="flex items-center gap-2 text-sm bg-primary/10 text-primary rounded-lg px-3 py-2">
           <CalendarPlus className="h-4 w-4" />
-          <span>Séance active : <strong>{todaySessions[0].title || "Séance du jour"}</strong></span>
+          <span>Séance active : <strong>Séance du {format(new Date(todaySessions[0].session_date), "dd/MM/yyyy", { locale: fr })}</strong></span>
         </div>
       )}
 
