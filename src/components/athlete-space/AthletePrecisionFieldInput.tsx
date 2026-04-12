@@ -255,33 +255,57 @@ export function AthletePrecisionFieldInput({
       <div className="flex items-center gap-2 mb-2">
         <Target className="h-4 w-4 text-primary" />
         <span className="font-medium text-sm">Entraînement de précision</span>
+        {currentCategory && (
+          <Badge variant="outline" className="text-[10px]">{currentCategory.label}</Badge>
+        )}
       </div>
 
-      {/* Exercise type selector - grouped */}
+      {/* Category selector + exercise type */}
       <div className="flex flex-wrap gap-2 items-end">
-        <div className="flex-1 min-w-[150px]">
-          <Label className="text-xs">Type d'exercice</Label>
-          <Select value={exerciseType} onValueChange={setExerciseType}>
+        <div className="min-w-[140px]">
+          <Label className="text-xs">Catégorie</Label>
+          <Select value={currentCategory?.key || "buteur"} onValueChange={(cat) => {
+            const first = EXERCISE_CATEGORIES.find(c => c.key === cat)?.exercises[0];
+            if (first) {
+              setExerciseType(first.value);
+              setZoneKickOrigin(null);
+              setZoneKickStep("origin");
+            }
+          }}>
             <SelectTrigger className="h-8 text-xs mt-1">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               {EXERCISE_CATEGORIES.map(cat => (
-                <div key={cat.key}>
-                  <div className="px-2 py-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">{cat.label}</div>
-                  {cat.exercises.map(et => (
-                    <SelectItem key={et.value} value={et.value}>
-                      <span className="flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: et.color }} />
-                        {et.label}
-                      </span>
-                    </SelectItem>
-                  ))}
-                </div>
+                <SelectItem key={cat.key} value={cat.key}>{cat.label}</SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
+        {currentMode !== "kicking" && (
+          <div className="min-w-[140px]">
+            <Label className="text-xs">Exercice</Label>
+            <Select value={exerciseType} onValueChange={(v) => {
+              setExerciseType(v);
+              setZoneKickOrigin(null);
+              setZoneKickStep("origin");
+            }}>
+              <SelectTrigger className="h-8 text-xs mt-1">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {EXERCISE_CATEGORIES.find(c => c.key === currentCategory?.key)?.exercises.map(et => (
+                  <SelectItem key={et.value} value={et.value}>
+                    <span className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full" style={{ backgroundColor: et.color }} />
+                      {et.label}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
         {(currentMode === "kicking" || currentMode === "zone_kicks") && (
           <div className="flex gap-1">
             <Button variant={kickingSide === "left" ? "default" : "outline"} size="sm" className="text-xs h-8" onClick={() => setKickingSide("left")}>← G</Button>
@@ -289,6 +313,30 @@ export function AthletePrecisionFieldInput({
           </div>
         )}
       </div>
+
+      {/* Buteur: inline type selector */}
+      {currentMode === "kicking" && (
+        <div className="flex items-center gap-2 flex-wrap">
+          <Label className="text-xs text-muted-foreground mr-1">Type de tir :</Label>
+          {BUTEUR_EXERCISES.map(b => {
+            const isActive = exerciseType === b.value;
+            const ShapeIcon = b.shape === "circle" ? "●" : b.shape === "square" ? "■" : "◆";
+            return (
+              <Button
+                key={b.value}
+                variant={isActive ? "default" : "outline"}
+                size="sm"
+                className="text-xs gap-1.5 h-7"
+                style={isActive ? { backgroundColor: b.color, borderColor: b.color } : {}}
+                onClick={() => setExerciseType(b.value)}
+              >
+                <span style={{ color: isActive ? "white" : b.color }}>{ShapeIcon}</span>
+                {b.label}
+              </Button>
+            );
+          })}
+        </div>
+      )}
 
       {/* Stats summary */}
       {totalAttempts > 0 && (
