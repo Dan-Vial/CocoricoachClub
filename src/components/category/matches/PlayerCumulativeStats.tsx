@@ -286,8 +286,9 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
   const selectedPlayer = stats?.find(p => p.playerId === selectedPlayerId);
 
   // Export Excel
-  const handleExportExcel = useCallback(async (mode: "all" | "team" | "individual" = "all") => {
+  const handleExportExcel = useCallback(async (mode: "all" | "team" | "individual" | "single" = "all", singlePlayerId?: string) => {
     if (!stats || stats.length === 0) return;
+    const exportStats = singlePlayerId ? stats.filter(p => p.playerId === singlePlayerId) : stats;
     try {
       const branding = await getExcelBranding(categoryId);
       const wb = new ExcelJS.Workbook();
