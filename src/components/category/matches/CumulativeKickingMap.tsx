@@ -21,8 +21,6 @@ const KICK_STYLES: Record<string, { label: string; shape: "circle" | "square" | 
 };
 
 export function CumulativeKickingMap({ kicks, playerName }: CumulativeKickingMapProps) {
-  if (!kicks || kicks.length === 0) return null;
-
   const SVG_W = 600;
   const SVG_H = 400;
   const FIELD_LEFT = 20;
@@ -44,6 +42,8 @@ export function CumulativeKickingMap({ kicks, playerName }: CumulativeKickingMap
     });
     return zones;
   }, [kicks]);
+
+  if (!kicks || kicks.length === 0) return null;
 
   return (
     <Card className="mt-4 border-primary/20">
