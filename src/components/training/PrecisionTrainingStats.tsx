@@ -1,6 +1,9 @@
 import { useState, useMemo } from "react";
+import { LineoutFieldSVG, aggregateLineoutStats } from "@/components/rugby/LineoutFieldSVG";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { RugbyFieldSVG } from "@/components/rugby/RugbyFieldSVG";
+import { BUTEUR_EXERCISES } from "@/lib/constants/rugbyPrecisionExercises";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -260,15 +263,26 @@ export function PrecisionTrainingStats({ categoryId }: PrecisionTrainingStatsPro
   }, [filtered]);
 
   const lineoutEntries = useMemo(() => {
+    // Legacy format for PDF
     const map: Record<string, { attempts: number; successes: number }> = {};
     ["devant", "milieu", "fond"].forEach(k => { map[k] = { attempts: 0, successes: 0 }; });
     filtered.forEach((e: any) => {
       if (!e.exercise_label?.startsWith("Touche")) return;
-      if (e.zone_y === 20 && map["devant"]) { map["devant"].attempts += e.attempts || 0; map["devant"].successes += e.successes || 0; }
-      if (e.zone_y === 50 && map["milieu"]) { map["milieu"].attempts += e.attempts || 0; map["milieu"].successes += e.successes || 0; }
-      if (e.zone_y === 80 && map["fond"]) { map["fond"].attempts += e.attempts || 0; map["fond"].successes += e.successes || 0; }
+      if (e.lineout_distance) {
+        const k = e.lineout_distance;
+        if (map[k]) { map[k].attempts += e.attempts || 0; map[k].successes += e.successes || 0; }
+      } else {
+        if (e.zone_y === 20 && map["devant"]) { map["devant"].attempts += e.attempts || 0; map["devant"].successes += e.successes || 0; }
+        if (e.zone_y === 50 && map["milieu"]) { map["milieu"].attempts += e.attempts || 0; map["milieu"].successes += e.successes || 0; }
+        if (e.zone_y === 80 && map["fond"]) { map["fond"].attempts += e.attempts || 0; map["fond"].successes += e.successes || 0; }
+      }
     });
     return map;
+  }, [filtered]);
+
+  // Lineout zone stats for the visual mapping
+  const lineoutZoneStats = useMemo(() => {
+    return aggregateLineoutStats(filtered as any[]);
   }, [filtered]);
 
   const kickFieldEntries = useMemo(() => {
@@ -822,6 +836,62 @@ export function PrecisionTrainingStats({ categoryId }: PrecisionTrainingStatsPro
                   </div>
                 </div>
               ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Buteur kick mapping visual */}
+      {kickFieldEntries.length > 0 && (
+        <Card className="bg-gradient-card shadow-md">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              🎯 Cartographie Buteur (Entraînement)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="max-w-3xl mx-auto">
+              <RugbyFieldSVG goalsOnRight showCursorTracker={false}>
+                {kickFieldEntries.map((zone, i) => {
+                  const cx = 20 + (zone.x / 100) * 560;
+                  const cy = 10 + (zone.y / 100) * 380;
+                  const rate = zone.attempts > 0 ? Math.round((zone.successes / zone.attempts) * 100) : 0;
+                  const color = rate >= 75 ? "#22c55e" : rate >= 50 ? "#f59e0b" : "#ef4444";
+                  return (
+                    <g key={i}>
+                      <circle cx={cx} cy={cy} r={16} fill={color} opacity={0.7} stroke="white" strokeWidth="2" />
+                      <text x={cx} y={cy - 2} textAnchor="middle" fill="white" fontSize="9" fontWeight="bold">{rate}%</text>
+                      <text x={cx} y={cy + 9} textAnchor="middle" fill="white" fontSize="6" opacity={0.9}>{zone.successes}/{zone.attempts}</text>
+                    </g>
+                  );
+                })}
+              </RugbyFieldSVG>
+              <div className="flex flex-wrap gap-3 mt-2 justify-center text-xs">
+                {BUTEUR_EXERCISES.map(b => (
+                  <span key={b.value} className="flex items-center gap-1">
+                    <span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: b.color }} />
+                    {b.label}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {lineoutZoneStats.length > 0 && (
+        <Card className="bg-gradient-card shadow-md">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              📏 Cartographie Touche (Lanceur)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="max-w-2xl mx-auto">
+              <LineoutFieldSVG
+                zoneStats={lineoutZoneStats}
+                disabled
+              />
             </div>
           </CardContent>
         </Card>

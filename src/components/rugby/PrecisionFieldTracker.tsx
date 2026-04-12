@@ -15,11 +15,13 @@ import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 import { RugbyFieldSVG } from "@/components/rugby/RugbyFieldSVG";
 import { getPositionLabel } from "@/lib/utils/kickingFieldZones";
 import { RUGBY_PRECISION_EXERCISES, EXERCISE_CATEGORIES, BUTEUR_EXERCISES, type RugbyPrecisionExerciseMode } from "@/lib/constants/rugbyPrecisionExercises";
+import { LineoutFieldSVG, aggregateLineoutStats, type LineoutZone } from "@/components/rugby/LineoutFieldSVG";
 
 interface PrecisionFieldTrackerProps {
   categoryId: string;
 }
 
+// Legacy positions kept for backward compat only
 const LINEOUT_POSITIONS = [
   { key: "devant", label: "Devant", y: 20, description: "2-4m du lanceur" },
   { key: "milieu", label: "Milieu", y: 50, description: "6-8m du lanceur" },
@@ -124,7 +126,8 @@ export function PrecisionFieldTracker({ categoryId }: PrecisionFieldTrackerProps
       if (att <= 0) throw new Error("Le nombre de tentatives doit être > 0");
       if (suc > att) throw new Error("Les réussites ne peuvent pas dépasser les tentatives");
 
-      const { error } = await supabase.from("precision_training").insert({
+      const lineoutZone = (window as any).__pendingLineoutZone as LineoutZone | undefined;
+      const insertData: any = {
         player_id: selectedPlayerId,
         category_id: categoryId,
         training_session_id: activeSessionId,
@@ -134,8 +137,14 @@ export function PrecisionFieldTracker({ categoryId }: PrecisionFieldTrackerProps
         session_date: format(new Date(), "yyyy-MM-dd"),
         zone_x: data.x,
         zone_y: data.y,
-      });
+      };
+      if (lineoutZone) {
+        insertData.lineout_distance = lineoutZone.distanceKey;
+        insertData.lineout_height = lineoutZone.heightKey;
+      }
+      const { error } = await supabase.from("precision_training").insert(insertData);
       if (error) throw error;
+      (window as any).__pendingLineoutZone = undefined;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["precision-field-entries"] });
@@ -189,18 +198,8 @@ export function PrecisionFieldTracker({ categoryId }: PrecisionFieldTrackerProps
     return Array.from(map.values());
   }, [entries]);
 
-  const lineoutStats = useMemo(() => {
-    const map: Record<string, { attempts: number; successes: number }> = {};
-    LINEOUT_POSITIONS.forEach(p => { map[p.key] = { attempts: 0, successes: 0 }; });
-    entries.forEach((e: any) => {
-      if (e.zone_y == null) return;
-      const key = LINEOUT_POSITIONS.find(p => p.y === e.zone_y)?.key;
-      if (key && map[key]) {
-        map[key].attempts += e.attempts || 0;
-        map[key].successes += e.successes || 0;
-      }
-    });
-    return map;
+  const lineoutZoneStats = useMemo(() => {
+    return aggregateLineoutStats(entries as any[]);
   }, [entries]);
 
   const totalAttempts = entries.reduce((s: number, e: any) => s + (e.attempts || 0), 0);
@@ -229,14 +228,18 @@ export function PrecisionFieldTracker({ categoryId }: PrecisionFieldTrackerProps
     setDialogOpen(true);
   };
 
-  const handleLineoutClick = (position: typeof LINEOUT_POSITIONS[0]) => {
+  const handleLineoutZoneClick = (zone: LineoutZone) => {
     if (isViewer || !selectedPlayerId || !activeSessionId) return;
     const exLabel = currentExercise?.label || exerciseType;
-    setClickPos({ x: 50, y: position.y });
-    setClickLabel(`${exLabel} - ${position.label}`);
+    // Store distance/height in clickPos for save; use y as legacy compat
+    const legacyY = zone.distanceKey === "devant" ? 20 : zone.distanceKey === "milieu" ? 50 : 80;
+    setClickPos({ x: 50, y: legacyY });
+    setClickLabel(`${exLabel} - ${zone.label}`);
     setPendingKickType(null);
     setAttempts("1");
     setSuccesses("0");
+    // Store lineout zone info for save
+    (window as any).__pendingLineoutZone = zone;
     setDialogOpen(true);
   };
 
@@ -439,7 +442,7 @@ export function PrecisionFieldTracker({ categoryId }: PrecisionFieldTrackerProps
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Target className="h-5 w-5 text-primary" />
-              Touche — Sélectionnez la zone de lancer
+              Touche — Cliquez sur la zone de lancer
             </CardTitle>
             {!selectedPlayerId && !isViewer && (
               <p className="text-xs text-muted-foreground">Sélectionnez un joueur pour commencer</p>
@@ -447,50 +450,11 @@ export function PrecisionFieldTracker({ categoryId }: PrecisionFieldTrackerProps
           </CardHeader>
           <CardContent>
             <div className="w-full max-w-3xl mx-auto">
-              <div className="bg-emerald-700/90 dark:bg-emerald-900/80 rounded-lg border-2 border-primary/20 p-6">
-                <div className="text-center mb-4">
-                  <div className="border-t-4 border-white/70 w-full mb-2" />
-                  <span className="text-white/60 text-xs font-medium">Ligne de touche (lanceur)</span>
-                </div>
-                <div className="flex flex-col gap-4">
-                  {LINEOUT_POSITIONS.map(pos => {
-                    const stat = lineoutStats[pos.key] || { attempts: 0, successes: 0 };
-                    const rate = stat.attempts > 0 ? Math.round((stat.successes / stat.attempts) * 100) : -1;
-                    const bgColor = rate < 0 ? "bg-white/10 hover:bg-white/20" :
-                      rate >= 75 ? "bg-green-500/60 hover:bg-green-500/70" :
-                      rate >= 50 ? "bg-yellow-500/60 hover:bg-yellow-500/70" :
-                      "bg-red-500/60 hover:bg-red-500/70";
-                    return (
-                      <button
-                        key={pos.key}
-                        className={`${bgColor} border border-white/30 rounded-lg p-6 flex items-center justify-between transition-all cursor-pointer`}
-                        onClick={() => handleLineoutClick(pos)}
-                        disabled={isViewer || !selectedPlayerId}
-                      >
-                        <div className="flex flex-col items-start">
-                          <span className="text-white text-lg font-bold">{pos.label}</span>
-                          <span className="text-white/60 text-xs">{pos.description}</span>
-                        </div>
-                        <div className="flex flex-col items-center">
-                          {stat.attempts > 0 ? (
-                            <>
-                              <span className="text-white text-3xl font-bold">{rate}%</span>
-                              <span className="text-white/80 text-sm">{stat.successes}/{stat.attempts}</span>
-                            </>
-                          ) : (
-                            <span className="text-white/40 text-sm">—</span>
-                          )}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-                <div className="mt-4 flex items-center justify-center gap-2">
-                  <span className="text-white/50 text-xs">← Lanceur</span>
-                  <div className="flex-1 border-t border-dashed border-white/30" />
-                  <span className="text-white/50 text-xs">Fond de touche →</span>
-                </div>
-              </div>
+              <LineoutFieldSVG
+                onZoneClick={handleLineoutZoneClick}
+                zoneStats={lineoutZoneStats}
+                disabled={isViewer || !selectedPlayerId}
+              />
             </div>
           </CardContent>
         </Card>

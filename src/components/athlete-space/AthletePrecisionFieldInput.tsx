@@ -14,6 +14,7 @@ import { format } from "date-fns";
 import { RUGBY_PRECISION_EXERCISES, EXERCISE_CATEGORIES, BUTEUR_EXERCISES, type RugbyPrecisionExerciseMode } from "@/lib/constants/rugbyPrecisionExercises";
 import { RugbyFieldSVG } from "@/components/rugby/RugbyFieldSVG";
 import { getPositionLabel } from "@/lib/utils/kickingFieldZones";
+import { LineoutFieldSVG, aggregateLineoutStats, type LineoutZone } from "@/components/rugby/LineoutFieldSVG";
 
 interface AthletePrecisionFieldInputProps {
   playerId: string;
@@ -23,6 +24,7 @@ interface AthletePrecisionFieldInputProps {
   initialExerciseType?: string | null;
 }
 
+// Legacy positions
 const LINEOUT_POSITIONS = [
   { key: "devant", label: "Devant", y: 20, description: "2-4m du lanceur" },
   { key: "milieu", label: "Milieu", y: 50, description: "6-8m du lanceur" },
@@ -111,13 +113,15 @@ export function AthletePrecisionFieldInput({
     setDialogOpen(true);
   }, [exerciseType, goalsOnRight, currentExercise]);
 
-  const handleLineoutClick = (position: typeof LINEOUT_POSITIONS[0]) => {
+  const handleLineoutZoneClick = (zone: LineoutZone) => {
     const exLabel = currentExercise?.label || exerciseType;
-    setClickPos({ x: 50, y: position.y });
-    setClickLabel(`${exLabel} - ${position.label}`);
+    const legacyY = zone.distanceKey === "devant" ? 20 : zone.distanceKey === "milieu" ? 50 : 80;
+    setClickPos({ x: 50, y: legacyY });
+    setClickLabel(`${exLabel} - ${zone.label}`);
     setPendingKickType(null);
     setAttempts("1");
     setSuccesses("0");
+    (window as any).__pendingLineoutZone = zone;
     setDialogOpen(true);
   };
 
@@ -162,7 +166,8 @@ export function AthletePrecisionFieldInput({
 
     setSaving(true);
     try {
-      const { error } = await supabase.from("precision_training").insert({
+      const lineoutZone = (window as any).__pendingLineoutZone as LineoutZone | undefined;
+      const insertData: any = {
         player_id: playerId,
         category_id: categoryId,
         training_session_id: sessionId,
@@ -172,7 +177,14 @@ export function AthletePrecisionFieldInput({
         session_date: format(new Date(), "yyyy-MM-dd"),
         zone_x: clickPos.x,
         zone_y: clickPos.y,
-      });
+      };
+      if (lineoutZone) {
+        insertData.lineout_distance = lineoutZone.distanceKey;
+        insertData.lineout_height = lineoutZone.heightKey;
+      }
+      const { error } = await supabase.from("precision_training").insert(insertData);
+      if (error) throw error;
+      (window as any).__pendingLineoutZone = undefined;
       if (error) throw error;
 
       setSavedEntries(prev => [...prev, { label: clickLabel, attempts: att, successes: suc }]);
@@ -215,18 +227,8 @@ export function AthletePrecisionFieldInput({
     return Array.from(map.values());
   }, [existingEntries]);
 
-  const lineoutStats = useMemo(() => {
-    const map: Record<string, { attempts: number; successes: number }> = {};
-    LINEOUT_POSITIONS.forEach(p => { map[p.key] = { attempts: 0, successes: 0 }; });
-    existingEntries.forEach((e: any) => {
-      if (e.zone_y == null) return;
-      const key = LINEOUT_POSITIONS.find(p => p.y === e.zone_y)?.key;
-      if (key && map[key]) {
-        map[key].attempts += e.attempts || 0;
-        map[key].successes += e.successes || 0;
-      }
-    });
-    return map;
+  const lineoutZoneStats = useMemo(() => {
+    return aggregateLineoutStats(existingEntries as any[]);
   }, [existingEntries]);
 
   return (
@@ -356,38 +358,10 @@ export function AthletePrecisionFieldInput({
       {currentMode === "lineout" && (
         <div className="w-full">
           <p className="text-xs text-muted-foreground mb-1">Clique sur la zone de lancer</p>
-          <div className="bg-emerald-700/90 dark:bg-emerald-900/80 rounded-lg border-2 border-primary/20 p-3">
-            <div className="border-t-4 border-white/70 w-full mb-3" />
-            <span className="text-white/60 text-[10px] block text-center mb-3">Ligne de touche</span>
-            <div className="space-y-2">
-              {LINEOUT_POSITIONS.map(pos => {
-                const stat = lineoutStats[pos.key] || { attempts: 0, successes: 0 };
-                const rate = stat.attempts > 0 ? Math.round((stat.successes / stat.attempts) * 100) : -1;
-                const bgColor = rate < 0 ? "bg-white/10 hover:bg-white/20" :
-                  rate >= 75 ? "bg-green-500/50" : rate >= 50 ? "bg-yellow-500/50" : "bg-red-500/50";
-                return (
-                  <button
-                    key={pos.key}
-                    className={`${bgColor} w-full border border-white/30 rounded-lg p-3 flex items-center justify-between transition-all cursor-pointer`}
-                    onClick={() => handleLineoutClick(pos)}
-                  >
-                    <div>
-                      <span className="text-white font-semibold text-sm">{pos.label}</span>
-                      <span className="text-white/60 text-xs ml-2">{pos.description}</span>
-                    </div>
-                    {stat.attempts > 0 ? (
-                      <div className="text-right">
-                        <span className="text-white font-bold">{rate}%</span>
-                        <span className="text-white/70 text-xs ml-1">{stat.successes}/{stat.attempts}</span>
-                      </div>
-                    ) : (
-                      <span className="text-white/40 text-xs">—</span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+          <LineoutFieldSVG
+            onZoneClick={handleLineoutZoneClick}
+            zoneStats={lineoutZoneStats}
+          />
         </div>
       )}
 
