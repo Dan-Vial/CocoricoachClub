@@ -1061,8 +1061,8 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
         };
 
         kickingAttempts.forEach((attempt: any) => {
-          const cx = fieldX + (attempt.zone_x / 100) * fieldW;
-          const cy = fY + (attempt.zone_y / 100) * fieldH;
+          const cx = fieldBounds.fx + (attempt.zone_x / 100) * fieldBounds.fw;
+          const cy = fieldBounds.fy + (attempt.zone_y / 100) * fieldBounds.fh;
           const r = Math.max(2.5, fieldW * 0.012);
           
           // Circle fill: green for success, red for miss
