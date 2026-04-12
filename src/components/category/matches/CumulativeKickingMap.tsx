@@ -37,17 +37,25 @@ const FIELD_WIDTH_M = 70;
 export function CumulativeKickingMap({ kicks, playerName, hasKickingStats }: CumulativeKickingMapProps) {
   const zoneStats = useMemo(() => {
     const zones: Record<string, { success: number; total: number }> = {};
+    // k.x and k.y are 0-100 percentages of the SVG element (600x400)
+    // Convert to field-relative position first
+    const tryLineSvgPct = (FIELD_LEFT + 0.95 * FIELD_W) / SVG_W * 100; // ~92%
+    const leftTryLineSvgPct = (FIELD_LEFT + 0.05 * FIELD_W) / SVG_W * 100; // ~8%
+    const fieldSvgSpan = tryLineSvgPct - leftTryLineSvgPct; // ~84%
+    const fieldTopSvgPct = FIELD_TOP / SVG_H * 100;
+    const fieldBotSvgPct = FIELD_BOTTOM / SVG_H * 100;
+    const fieldSvgHeight = fieldBotSvgPct - fieldTopSvgPct;
+
     kicks.forEach(k => {
-      // k.x and k.y are 0-100 percentages of the field area
-      // Right try line is at 95% of the field, left try line at 5%
-      // Distance between try lines (90% of field) = 100m
-      const tryLinePct = 95;
-      const distPct = Math.abs(tryLinePct - k.x);
-      const distM = Math.round((distPct / 90) * FIELD_LENGTH_M);
+      // Distance from right try line in meters
+      const distPct = Math.abs(tryLineSvgPct - k.x);
+      const distM = Math.round((distPct / fieldSvgSpan) * FIELD_LENGTH_M);
       const row = distM < 22 ? "proche" : distM < 40 ? "moyen" : "loin";
 
-      // Lateral: k.y 0=top, 100=bottom, center=50. Field is 70m wide.
-      const lateralM = ((k.y - 50) / 100) * FIELD_WIDTH_M;
+      // Lateral: convert SVG % to field-relative, then to meters
+      const fieldCenterSvgPct = (fieldTopSvgPct + fieldBotSvgPct) / 2;
+      const lateralFromCenter = k.y - fieldCenterSvgPct;
+      const lateralM = (lateralFromCenter / fieldSvgHeight) * FIELD_WIDTH_M;
       const col = lateralM < -10 ? "gauche" : lateralM > 10 ? "droite" : "centre";
 
       const key = `${row}-${col}`;
