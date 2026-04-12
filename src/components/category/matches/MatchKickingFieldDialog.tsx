@@ -28,6 +28,7 @@ interface MatchKickingFieldDialogProps {
     dropGoals: number;
     dropAttempts: number;
     points: number;
+    kicks: KickAttempt[];
   }) => void;
   initialKicks?: KickAttempt[];
 }
@@ -86,7 +87,7 @@ export function MatchKickingFieldDialog({
 
   const removeKick = (id: string) => setKicks((prev) => prev.filter((k) => k.id !== id));
 
-  const handleValidate = () => { onComplete(stats); onOpenChange(false); };
+  const handleValidate = () => { onComplete({ ...stats, kicks }); onOpenChange(false); };
 
   const kicksByType = useMemo(() => {
     const result: Record<string, { total: number; success: number }> = {};
@@ -152,6 +153,26 @@ export function MatchKickingFieldDialog({
             </div>
           )}
 
+          {/* Legend */}
+          <div className="flex flex-wrap gap-3 text-xs text-muted-foreground flex-shrink-0">
+            <div className="flex items-center gap-1.5">
+              <svg width="14" height="14"><circle cx="7" cy="7" r="6" fill="none" stroke="#3b82f6" strokeWidth="2" /></svg>
+              <span>Transformation</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <svg width="14" height="14"><rect x="1" y="1" width="12" height="12" rx="2" fill="none" stroke="#f59e0b" strokeWidth="2" /></svg>
+              <span>Pénalité</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <svg width="14" height="14"><polygon points="7,1 13,7 7,13 1,7" fill="none" stroke="#8b5cf6" strokeWidth="2" /></svg>
+              <span>Drop</span>
+            </div>
+            <div className="flex items-center gap-2 ml-2">
+              <div className="w-3 h-3 rounded-full bg-green-500" /> Réussi
+              <div className="w-3 h-3 rounded-full bg-red-500" /> Raté
+            </div>
+          </div>
+
           {/* Rugby field */}
           <div className="relative w-full max-w-2xl mx-auto flex-shrink-0">
             <RugbyFieldSVG
@@ -161,14 +182,24 @@ export function MatchKickingFieldDialog({
               showZones={showZones}
               showCursorTracker
             >
-              {/* Existing kicks */}
+              {/* Existing kicks - different shapes per type */}
               {kicks.map((k) => {
                 const cx = (k.x / 100) * 600;
                 const cy = (k.y / 100) * 400;
-                const typeColor = k.kickType === "conversion" ? "#3b82f6" : k.kickType === "penalty" ? "#f59e0b" : "#8b5cf6";
+                const fillColor = k.success ? "#22c55e" : "#ef4444";
+                const strokeColor = k.kickType === "conversion" ? "#3b82f6" : k.kickType === "penalty" ? "#f59e0b" : "#8b5cf6";
                 return (
                   <g key={k.id} className="cursor-pointer" onClick={(e) => { e.stopPropagation(); removeKick(k.id); }}>
-                    <circle cx={cx} cy={cy} r={12} fill={k.success ? "#22c55e" : "#ef4444"} opacity={0.85} stroke={typeColor} strokeWidth="3" />
+                    {k.kickType === "conversion" ? (
+                      /* Circle for conversions */
+                      <circle cx={cx} cy={cy} r={12} fill={fillColor} opacity={0.85} stroke={strokeColor} strokeWidth="3" />
+                    ) : k.kickType === "penalty" ? (
+                      /* Square for penalties */
+                      <rect x={cx - 10} y={cy - 10} width={20} height={20} rx={3} fill={fillColor} opacity={0.85} stroke={strokeColor} strokeWidth="3" />
+                    ) : (
+                      /* Diamond for drops */
+                      <polygon points={`${cx},${cy - 12} ${cx + 12},${cy} ${cx},${cy + 12} ${cx - 12},${cy}`} fill={fillColor} opacity={0.85} stroke={strokeColor} strokeWidth="3" />
+                    )}
                     <text x={cx} y={cy + 4} textAnchor="middle" fill="white" fontSize="10" fontWeight="bold">{k.success ? "✓" : "✗"}</text>
                   </g>
                 );
