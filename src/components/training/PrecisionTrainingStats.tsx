@@ -841,7 +841,44 @@ export function PrecisionTrainingStats({ categoryId }: PrecisionTrainingStatsPro
         </Card>
       )}
 
-      {/* Lineout mapping visual */}
+      {/* Buteur kick mapping visual */}
+      {kickFieldEntries.length > 0 && (
+        <Card className="bg-gradient-card shadow-md">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              🎯 Cartographie Buteur (Entraînement)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="max-w-3xl mx-auto">
+              <RugbyFieldSVG goalsOnRight showCursorTracker={false}>
+                {kickFieldEntries.map((zone, i) => {
+                  const cx = 20 + (zone.x / 100) * 560;
+                  const cy = 10 + (zone.y / 100) * 380;
+                  const rate = zone.attempts > 0 ? Math.round((zone.successes / zone.attempts) * 100) : 0;
+                  const color = rate >= 75 ? "#22c55e" : rate >= 50 ? "#f59e0b" : "#ef4444";
+                  return (
+                    <g key={i}>
+                      <circle cx={cx} cy={cy} r={16} fill={color} opacity={0.7} stroke="white" strokeWidth="2" />
+                      <text x={cx} y={cy - 2} textAnchor="middle" fill="white" fontSize="9" fontWeight="bold">{rate}%</text>
+                      <text x={cx} y={cy + 9} textAnchor="middle" fill="white" fontSize="6" opacity={0.9}>{zone.successes}/{zone.attempts}</text>
+                    </g>
+                  );
+                })}
+              </RugbyFieldSVG>
+              <div className="flex flex-wrap gap-3 mt-2 justify-center text-xs">
+                {BUTEUR_EXERCISES.map(b => (
+                  <span key={b.value} className="flex items-center gap-1">
+                    <span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: b.color }} />
+                    {b.label}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {lineoutZoneStats.length > 0 && (
         <Card className="bg-gradient-card shadow-md">
           <CardHeader className="pb-2">
