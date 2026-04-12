@@ -657,8 +657,11 @@ export function SportMatchStatsDialog({
             onOpenChange={(open) => { if (!open) setKickingFieldPlayer(null); }}
             playerName={kickingFieldPlayer.name}
             playerId={kickingFieldPlayer.id}
+            initialKicks={playerKicks[kickingFieldPlayer.id] || []}
             onComplete={(kickStats) => {
               const playerId = kickingFieldPlayer.id;
+              // Save kick positions
+              setPlayerKicks(prev => ({ ...prev, [playerId]: kickStats.kicks }));
               // Update all kicking stats for this player
               updateStat(playerId, "conversions", kickStats.conversions);
               updateStat(playerId, "conversionAttempts", kickStats.conversionAttempts);
