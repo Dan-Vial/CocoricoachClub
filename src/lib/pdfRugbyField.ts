@@ -285,3 +285,26 @@ export function drawPdfZoneStatsGrid(
 
   return y;
 }
+
+/**
+ * Convert stored SVG-% coordinates (from a 600x400 RugbyFieldSVG click) 
+ * to PDF field-relative positions.
+ * SVG field inner area: x=20..580, y=14..386 within 600x400
+ */
+export function svgPctToPdfPos(
+  kick: { x: number; y: number },
+  fb: { fx: number; fy: number; fw: number; fh: number }
+): { kx: number; ky: number } {
+  const svgW = 600, svgH = 400;
+  const fLeft = 20, fTop = 14;
+  const fW = 560, fH = 372;
+  // Convert SVG-% to field-relative fraction
+  const svgPixelX = (kick.x / 100) * svgW;
+  const svgPixelY = (kick.y / 100) * svgH;
+  const fieldFracX = (svgPixelX - fLeft) / fW;
+  const fieldFracY = (svgPixelY - fTop) / fH;
+  return {
+    kx: fb.fx + fieldFracX * fb.fw,
+    ky: fb.fy + fieldFracY * fb.fh,
+  };
+}
