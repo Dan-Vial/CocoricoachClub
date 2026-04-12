@@ -12,6 +12,8 @@ import { Target, Check } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { RUGBY_PRECISION_EXERCISES, type RugbyPrecisionExerciseMode } from "@/lib/constants/rugbyPrecisionExercises";
+import { RugbyFieldSVG } from "@/components/rugby/RugbyFieldSVG";
+import { getPositionLabel } from "@/lib/utils/kickingFieldZones";
 
 interface AthletePrecisionFieldInputProps {
   playerId: string;
