@@ -191,6 +191,11 @@ export function AthletePrecisionFieldInput({
         zone_x: clickPos.x,
         zone_y: clickPos.y,
       };
+      // Add kick origin for zone kicks
+      if (zoneKickOrigin) {
+        insertData.kick_origin_x = zoneKickOrigin.x;
+        insertData.kick_origin_y = zoneKickOrigin.y;
+      }
       if (lineoutZone) {
         insertData.lineout_distance = lineoutZone.distanceKey;
         insertData.lineout_height = lineoutZone.heightKey;
@@ -198,12 +203,13 @@ export function AthletePrecisionFieldInput({
       const { error } = await supabase.from("precision_training").insert(insertData);
       if (error) throw error;
       (window as any).__pendingLineoutZone = undefined;
-      if (error) throw error;
 
       setSavedEntries(prev => [...prev, { label: clickLabel, attempts: att, successes: suc }]);
       queryClient.invalidateQueries({ queryKey: ["athlete-precision-entries"] });
       setDialogOpen(false);
       setClickPos(null);
+      setZoneKickOrigin(null);
+      setZoneKickStep("origin");
       toast.success("Enregistré !");
       onEntryAdded?.();
     } catch (err: any) {
