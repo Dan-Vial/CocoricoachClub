@@ -760,7 +760,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
 
       {/* Charts */}
       {stats.length > 0 && (
-        <CumulativeStatsCharts stats={stats} matchesData={matchesDataForCharts} sportStats={sportStats} selectedMatchIds={activeMatchIds} />
+        <CumulativeStatsCharts stats={stats} matchesData={matchesDataForCharts} sportStats={sportStats} selectedMatchIds={activeMatchIds} sportType={sportType} />
       )}
 
       {/* SPLIT SCREEN: Team (left) + Individual (right) */}
