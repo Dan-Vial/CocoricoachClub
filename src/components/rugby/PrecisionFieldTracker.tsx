@@ -111,7 +111,7 @@ export function PrecisionFieldTracker({ categoryId, sessionId: propSessionId, se
         exercise_label: clickLabel,
         attempts: 1,
         successes: success ? 1 : 0,
-        session_date: format(new Date(), "yyyy-MM-dd"),
+        session_date: activeSessionDate,
         zone_x: clickPos.x,
         zone_y: clickPos.y,
       });
@@ -144,7 +144,7 @@ export function PrecisionFieldTracker({ categoryId, sessionId: propSessionId, se
         exercise_label: data.label || clickLabel,
         attempts: att,
         successes: suc,
-        session_date: format(new Date(), "yyyy-MM-dd"),
+        session_date: activeSessionDate,
         zone_x: data.x,
         zone_y: data.y,
       };
