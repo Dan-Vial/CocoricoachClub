@@ -105,15 +105,56 @@ export function AthletePrecisionFieldInput({
     setDialogOpen(true);
   }, [exerciseType, goalsOnRight, currentExercise]);
 
+  // Get fixed origin position for specific zone kick exercises
+  const getFixedOrigin = useCallback((): { x: number; y: number } | null => {
+    if (!currentExercise || currentMode !== "zone_kicks") return null;
+    // Center of field (y=50) for lateral, convert meter position to percentage
+    const centerY = 50;
+    if (currentExercise.value === "kickoff") {
+      // Kick-off from center (50m line)
+      const x50 = goalsOnRight ? ((540 - ((50 / 100) * 560)) / 600) * 100 : ((60 + ((50 / 100) * 560)) / 600) * 100;
+      // Simpler: 50m line is at center of field
+      return { x: 50, y: centerY };
+    }
+    if (currentExercise.value === "goal_line_restart") {
+      // Renvoi en-but from try line (0m / goal line)
+      return { x: goalsOnRight ? (540 / 600) * 100 : (60 / 600) * 100, y: centerY };
+    }
+    if (currentExercise.value === "22m_restart") {
+      // Renvoi 22m from 22m line
+      const x22 = goalsOnRight
+        ? ((540 - ((22 / 100) * 560)) / 600) * 100
+        : ((60 + ((22 / 100) * 560)) / 600) * 100;
+      return { x: x22, y: centerY };
+    }
+    // tactical_kick = free origin click
+    return null;
+  }, [currentExercise, currentMode, goalsOnRight]);
+
   // Zone kicks mode: TWO-CLICK flow - first origin, then target
+  // For kickoff/renvoi, origin is fixed → only one click needed (target)
   const handleZoneKickClick = useCallback((xPct: number, yPct: number) => {
-    if (zoneKickStep === "origin") {
-      // First click: record kick origin
+    const fixedOrigin = getFixedOrigin();
+    
+    if (fixedOrigin) {
+      // Fixed origin: every click is a target
+      const posLabel = getPositionLabel(xPct, yPct, goalsOnRight);
+      const originLabel = getPositionLabel(fixedOrigin.x, fixedOrigin.y, goalsOnRight);
+      const exLabel = currentExercise?.label || exerciseType;
+      setZoneKickOrigin(fixedOrigin);
+      setClickPos({ x: xPct, y: yPct });
+      setClickLabel(`${exLabel} - De: ${originLabel} → Cible: ${posLabel}`);
+      setPendingKickType(null);
+      setAttempts("1");
+      setSuccesses("0");
+      setDialogOpen(true);
+    } else if (zoneKickStep === "origin") {
+      // Free origin: first click = origin
       setZoneKickOrigin({ x: xPct, y: yPct });
       setZoneKickStep("target");
       toast.info("📍 Position de frappe enregistrée. Clique maintenant sur la zone ciblée.");
     } else {
-      // Second click: record target zone and open dialog
+      // Free origin: second click = target
       const posLabel = getPositionLabel(xPct, yPct, goalsOnRight);
       const originLabel = getPositionLabel(zoneKickOrigin!.x, zoneKickOrigin!.y, goalsOnRight);
       const exLabel = currentExercise?.label || exerciseType;
@@ -124,7 +165,7 @@ export function AthletePrecisionFieldInput({
       setSuccesses("0");
       setDialogOpen(true);
     }
-  }, [exerciseType, goalsOnRight, currentExercise, zoneKickStep, zoneKickOrigin]);
+  }, [exerciseType, goalsOnRight, currentExercise, zoneKickStep, zoneKickOrigin, getFixedOrigin]);
 
   const handleLineoutZoneClick = (zone: LineoutZone) => {
     const exLabel = currentExercise?.label || exerciseType;
