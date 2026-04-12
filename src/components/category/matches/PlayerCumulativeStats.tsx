@@ -838,23 +838,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
           // Draw field
           const mapW = pageW - 28;
           const mapH = 70;
-          // Field background
-          doc.setFillColor(21, 128, 61);
-          doc.rect(14, y, mapW, mapH, "F");
-          doc.setDrawColor(255, 255, 255);
-          doc.setLineWidth(0.3);
-          doc.rect(14, y, mapW, mapH, "S");
-          // Distance lines
-          [0, 10, 22, 30, 40, 50].forEach(m => {
-            const lx = 14 + (m / 100) * mapW;
-            doc.setLineDashPattern([1, 1], 0);
-            doc.line(lx, y, lx, y + mapH);
-          });
-          doc.setLineDashPattern([], 0);
-          // Posts
-          doc.setLineWidth(1);
-          doc.line(14 + mapW, y + mapH * 0.4, 14 + mapW, y + mapH * 0.6);
-          doc.setLineWidth(0.3);
+          const fieldBounds = drawPdfRugbyField(doc, 14, y, mapW, mapH);
 
           // Draw kicks
           k.allKicks.forEach(kick => {
