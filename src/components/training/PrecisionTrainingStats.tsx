@@ -39,6 +39,7 @@ export function PrecisionTrainingStats({ categoryId }: PrecisionTrainingStatsPro
   const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
   const [selectedPlayerId, setSelectedPlayerId] = useState<string>("all");
   const [selectedExercise, setSelectedExercise] = useState<string>("all");
+  const [exportPlayerId, setExportPlayerId] = useState<string>("");
 
   const { data: rawData, isLoading } = useQuery({
     queryKey: ["precision-training-stats", categoryId],
