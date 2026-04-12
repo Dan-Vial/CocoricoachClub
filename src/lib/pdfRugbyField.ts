@@ -14,8 +14,8 @@ export function drawPdfRugbyField(
 ): { fx: number; fy: number; fw: number; fh: number } {
   const showLabels = options?.showLabels !== false;
 
-  // Green background
-  doc.setFillColor(21, 128, 61);
+  // Base green background
+  doc.setFillColor(26, 122, 66);
   doc.roundedRect(x, y, w, h, 2, 2, "F");
 
   const margin = 3;
@@ -24,15 +24,34 @@ export function drawPdfRugbyField(
   const fw = w - margin * 2;
   const fh = h - 4;
 
-  // Field outline
-  doc.setDrawColor(255, 255, 255);
-  doc.setLineWidth(0.5);
-  doc.rect(fx, fy, fw, fh);
+  // Alternating grass stripes (lighter/darker bands)
+  const stripeCount = 10;
+  const stripeW = fw / stripeCount;
+  for (let i = 0; i < stripeCount; i++) {
+    if (i % 2 === 0) {
+      doc.setFillColor(34, 140, 72);
+    } else {
+      doc.setFillColor(30, 120, 60);
+    }
+    doc.rect(fx + i * stripeW, fy, stripeW, fh, "F");
+  }
 
-  // In-goal shading (lighter green)
-  doc.setFillColor(34, 160, 80);
+  // In-goal shading (darker green)
+  doc.setFillColor(22, 100, 50);
   doc.rect(fx, fy, fw * 0.05, fh, "F");
   doc.rect(fx + fw * 0.95, fy, fw * 0.05, fh, "F");
+
+  // Surround area (slightly darker outside)
+  doc.setFillColor(18, 90, 45);
+  doc.rect(x, y, margin, h, "F");
+  doc.rect(x + w - margin, y, margin, h, "F");
+  doc.rect(x, y, w, 2, "F");
+  doc.rect(x, y + h - 2, w, 2, "F");
+
+  // Field outline - thick white border
+  doc.setDrawColor(255, 255, 255);
+  doc.setLineWidth(0.7);
+  doc.rect(fx, fy, fw, fh);
 
   // All regulation lines
   const fieldLines: { pct: number; label: string; solid: boolean; thick: boolean }[] = [
@@ -56,7 +75,7 @@ export function drawPdfRugbyField(
   fieldLines.forEach((line) => {
     const lx = fx + line.pct * fw;
     doc.setDrawColor(255, 255, 255);
-    doc.setLineWidth(line.thick ? 0.5 : 0.3);
+    doc.setLineWidth(line.thick ? 0.6 : 0.3);
     if (!line.solid) {
       const dashLen = 2, gapLen = 2;
       for (let dy = fy; dy < fy + fh; dy += dashLen + gapLen) {
@@ -66,6 +85,8 @@ export function drawPdfRugbyField(
       doc.line(lx, fy, lx, fy + fh);
     }
     if (showLabels) {
+      doc.setFontSize(3.5);
+      doc.setTextColor(255, 255, 255);
       doc.text(line.label, lx, y + h + 3, { align: "center" });
     }
   });
@@ -82,18 +103,49 @@ export function drawPdfRugbyField(
     }
   });
 
-  // Center circle
+  // Center circle (10m radius proportional)
   doc.setDrawColor(255, 255, 255);
-  doc.setLineWidth(0.3);
-  doc.circle(fx + fw * 0.5, fy + fh * 0.5, fh * 0.14, "S");
+  doc.setLineWidth(0.4);
+  const centerX = fx + fw * 0.5;
+  const centerY = fy + fh * 0.5;
+  const circleR = fh * 0.14;
+  doc.circle(centerX, centerY, circleR, "S");
 
-  // Goals (both sides)
-  doc.setDrawColor(255, 255, 255);
-  const gy1 = fy + fh * 0.35, gy2 = fy + fh * 0.65;
-  doc.setLineWidth(1);
-  doc.line(fx + fw * 0.95, gy1, fx + fw * 0.95, gy2);
-  doc.setLineWidth(0.5);
-  doc.line(fx + fw * 0.05, gy1, fx + fw * 0.05, gy2);
+  // Center spot
+  doc.setFillColor(255, 255, 255);
+  doc.circle(centerX, centerY, 0.8, "F");
+
+  // 22m drop-out spots
+  [0.27, 0.73].forEach(pct => {
+    const spotX = fx + pct * fw;
+    doc.setFillColor(255, 255, 255);
+    doc.circle(spotX, centerY, 0.6, "F");
+  });
+
+  // Goal posts - H shape (both sides)
+  [0.05, 0.95].forEach(pct => {
+    const gx = fx + pct * fw;
+    const postTop = fy + fh * 0.38;
+    const postBot = fy + fh * 0.62;
+    // Crossbar
+    doc.setDrawColor(255, 255, 255);
+    doc.setLineWidth(1.2);
+    doc.line(gx, postTop, gx, postBot);
+    // Uprights extending outward
+    const outward = pct < 0.5 ? -1 : 1;
+    const upLen = Math.min(8, fw * 0.04);
+    doc.setLineWidth(0.6);
+    doc.line(gx, postTop, gx + outward * upLen, postTop);
+    doc.line(gx, postBot, gx + outward * upLen, postBot);
+  });
+
+  // "Ligne de touche" labels
+  if (showLabels) {
+    doc.setFontSize(3);
+    doc.setTextColor(255, 255, 255);
+    doc.text("Ligne de touche", fx + fw / 2, fy - 0.5, { align: "center" });
+    doc.text("Ligne de touche", fx + fw / 2, fy + fh + 2.5, { align: "center" });
+  }
 
   return { fx, fy, fw, fh };
 }
@@ -117,4 +169,109 @@ export function drawPdfFieldLegend(doc: jsPDF, x: number, y: number) {
     doc.text(l.label, lx + 3, y + 1);
     lx += 20;
   });
+}
+
+/**
+ * Draw a "Statistiques par zone" 3x3 grid table below cartography.
+ * Returns the new Y position after the grid.
+ */
+export function drawPdfZoneStatsGrid(
+  doc: jsPDF,
+  kicks: Array<{ x: number; y: number; success: boolean }>,
+  pageW: number,
+  startY: number,
+  pageH: number
+): number {
+  // Compute zone stats from kicks
+  const zoneStats: Record<string, { success: number; total: number }> = {};
+  kicks.forEach(kick => {
+    // Map x/y percentages to distance/lateral zones
+    // Assuming goalsOnRight: tryLine is at ~90% SVG x (540/600)
+    const svgX = (kick.x / 100) * 600;
+    const svgY = (kick.y / 100) * 400;
+    const tryLineX = 540;
+    const rawDist = Math.abs(svgX - tryLineX);
+    const distM = Math.round((rawDist / 560) * 100);
+    const row = distM < 22 ? "proche" : distM < 40 ? "moyen" : "loin";
+    const centreY = 200;
+    const lateralM = ((svgY - centreY) / 380) * 70;
+    const col = lateralM < -10 ? "gauche" : lateralM > 10 ? "droite" : "centre";
+    const key = `${row}-${col}`;
+    if (!zoneStats[key]) zoneStats[key] = { success: 0, total: 0 };
+    zoneStats[key].total++;
+    if (kick.success) zoneStats[key].success++;
+  });
+
+  if (Object.keys(zoneStats).length === 0) return startY;
+
+  let y = startY;
+  if (y > pageH - 55) { doc.addPage(); y = 15; }
+
+  // Title
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(30, 41, 59);
+  doc.text("Statistiques par zone", pageW / 2, y, { align: "center" });
+  y += 5;
+
+  const rows = ["proche", "moyen", "loin"];
+  const cols = ["gauche", "centre", "droite"];
+  const colLabels = ["Gauche", "Centre", "Droite"];
+  const rowLabels = ["0-22m", "22-40m", "40m+"];
+  const cellW = 40;
+  const cellH = 11;
+  const gridW = cellW * 3;
+  const startX = pageW / 2 - gridW / 2;
+
+  // Column headers
+  doc.setFontSize(7);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(100, 116, 139);
+  colLabels.forEach((l, i) => {
+    doc.text(l, startX + i * cellW + cellW / 2, y, { align: "center" });
+  });
+  y += 4;
+
+  rows.forEach((row, ri) => {
+    cols.forEach((col, ci) => {
+      const key = `${row}-${col}`;
+      const zone = zoneStats[key];
+      const cx = startX + ci * cellW;
+      if (zone && zone.total > 0) {
+        const zRate = Math.round((zone.success / zone.total) * 100);
+        // Color-coded background
+        if (zRate >= 70) doc.setFillColor(220, 252, 231);
+        else if (zRate >= 40) doc.setFillColor(254, 249, 195);
+        else doc.setFillColor(254, 226, 226);
+        doc.roundedRect(cx + 1, y, cellW - 2, cellH, 1.5, 1.5, "F");
+        // Text
+        doc.setTextColor(30, 41, 59);
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "bold");
+        doc.text(`${zRate}%`, cx + cellW / 2, y + 5, { align: "center" });
+        doc.setFontSize(6);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(100, 116, 139);
+        doc.text(`(${zone.success}/${zone.total})`, cx + cellW / 2, y + 9, { align: "center" });
+      } else {
+        doc.setFillColor(248, 250, 252);
+        doc.roundedRect(cx + 1, y, cellW - 2, cellH, 1.5, 1.5, "F");
+        doc.setTextColor(180, 190, 200);
+        doc.setFontSize(9);
+        doc.text("—", cx + cellW / 2, y + 6.5, { align: "center" });
+      }
+    });
+    y += cellH + 1;
+  });
+
+  // Row labels below
+  doc.setFontSize(6);
+  doc.setTextColor(100, 116, 139);
+  doc.setFont("helvetica", "normal");
+  rowLabels.forEach((l, i) => {
+    doc.text(l, startX + i * cellW + cellW / 2, y + 2, { align: "center" });
+  });
+  y += 6;
+
+  return y;
 }
