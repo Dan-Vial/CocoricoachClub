@@ -671,9 +671,18 @@ export function WeeklyPlanningCalendar({ categoryId }: WeeklyPlanningCalendarPro
               <DialogTitle className="flex items-center gap-2">
                 <Target className="h-5 w-5 text-primary" />
                 Saisie de précision
+                {precisionItemDate && (
+                  <span className="text-sm font-normal text-muted-foreground ml-2">
+                    — {format(new Date(precisionItemDate), "d MMMM yyyy", { locale: fr })}
+                  </span>
+                )}
               </DialogTitle>
             </DialogHeader>
-            <PrecisionFieldTracker categoryId={categoryId} />
+            <PrecisionFieldTracker 
+              categoryId={categoryId} 
+              sessionId={precisionSessionId || undefined}
+              sessionDate={precisionItemDate || undefined}
+            />
           </DialogContent>
         </Dialog>
       )}
