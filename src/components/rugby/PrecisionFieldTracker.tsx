@@ -290,26 +290,37 @@ export function PrecisionFieldTracker({ categoryId }: PrecisionFieldTrackerProps
           </Select>
         </div>
         <div className="space-y-1">
-          <Label className="text-xs">Type d'exercice</Label>
-          <Select value={exerciseType} onValueChange={setExerciseType}>
-            <SelectTrigger className="w-[220px]"><SelectValue /></SelectTrigger>
+          <Label className="text-xs">Catégorie</Label>
+          <Select value={currentExercise?.category || "buteur"} onValueChange={(cat) => {
+            const first = EXERCISE_CATEGORIES.find(c => c.key === cat)?.exercises[0];
+            if (first) setExerciseType(first.value);
+          }}>
+            <SelectTrigger className="w-[200px]"><SelectValue /></SelectTrigger>
             <SelectContent>
               {EXERCISE_CATEGORIES.map(cat => (
-                <div key={cat.key}>
-                  <div className="px-2 py-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">{cat.label}</div>
-                  {cat.exercises.map(et => (
-                    <SelectItem key={et.value} value={et.value}>
-                      <span className="flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: et.color }} />
-                        {et.label}
-                      </span>
-                    </SelectItem>
-                  ))}
-                </div>
+                <SelectItem key={cat.key} value={cat.key}>{cat.label}</SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
+        {currentMode !== "kicking" && (
+          <div className="space-y-1">
+            <Label className="text-xs">Type d'exercice</Label>
+            <Select value={exerciseType} onValueChange={setExerciseType}>
+              <SelectTrigger className="w-[220px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {EXERCISE_CATEGORIES.find(c => c.key === currentExercise?.category)?.exercises.map(et => (
+                  <SelectItem key={et.value} value={et.value}>
+                    <span className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full" style={{ backgroundColor: et.color }} />
+                      {et.label}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
         {(currentMode === "kicking" || currentMode === "zone_kicks") && (
           <div className="space-y-1">
             <Label className="text-xs">Côté</Label>
@@ -320,6 +331,30 @@ export function PrecisionFieldTracker({ categoryId }: PrecisionFieldTrackerProps
           </div>
         )}
       </div>
+
+      {/* Buteur: inline exercise type selector (all 3 on same line) */}
+      {currentMode === "kicking" && (
+        <div className="flex items-center gap-2 flex-wrap">
+          <Label className="text-xs text-muted-foreground mr-1">Type de tir :</Label>
+          {BUTEUR_EXERCISES.map(b => {
+            const isActive = exerciseType === b.value;
+            const ShapeIcon = b.shape === "circle" ? "●" : b.shape === "square" ? "■" : "◆";
+            return (
+              <Button
+                key={b.value}
+                variant={isActive ? "default" : "outline"}
+                size="sm"
+                className="text-xs gap-1.5 h-8"
+                style={isActive ? { backgroundColor: b.color, borderColor: b.color } : {}}
+                onClick={() => setExerciseType(b.value)}
+              >
+                <span style={{ color: isActive ? "white" : b.color }}>{ShapeIcon}</span>
+                {b.label}
+              </Button>
+            );
+          })}
+        </div>
+      )}
 
       {/* Stats summary */}
       <div className="grid grid-cols-3 gap-4">
