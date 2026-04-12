@@ -410,6 +410,54 @@ export function AthleteSpaceCalendar({ playerId, categoryId, sportType }: Props)
         </CardContent>
       </Card>
 
+      {/* Prophylaxis programs section */}
+      {prophylaxisPrograms.length > 0 && (
+        <Card className="bg-gradient-card shadow-md">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <ShieldCheck className="h-4 w-4 text-emerald-500" />
+              Mes routines de prophylaxie
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {prophylaxisPrograms.map((assignment: any) => {
+                const prog = assignment.prophylaxis_programs;
+                if (!prog || !prog.is_active) return null;
+                const exercises = prog.prophylaxis_exercises || [];
+                return (
+                  <div key={assignment.id} className="p-3 rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20">
+                    <div className="flex items-center gap-2 mb-1">
+                      <ShieldCheck className="h-4 w-4 text-emerald-600" />
+                      <span className="font-medium text-sm">{prog.name}</span>
+                    </div>
+                    <div className="text-xs text-muted-foreground space-y-0.5">
+                      <p>🎯 {prog.body_zone}</p>
+                      <p>📅 {prog.frequency || "quotidien"}</p>
+                      {prog.description && <p className="italic">{prog.description}</p>}
+                    </div>
+                    {exercises.length > 0 && (
+                      <div className="mt-2 space-y-1">
+                        {exercises
+                          .sort((a: any, b: any) => a.order_index - b.order_index)
+                          .map((ex: any, i: number) => (
+                            <div key={ex.id} className="text-xs p-1.5 bg-background/60 rounded">
+                              <span className="font-medium">{i + 1}. {ex.exercise_name}</span>
+                              <span className="text-muted-foreground ml-1">
+                                {ex.sets && `${ex.sets}×`}{ex.reps || ""}{ex.duration_seconds ? ` ${ex.duration_seconds}s` : ""}
+                              </span>
+                            </div>
+                          ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <SessionFormDialog
         open={isCreateOpen}
         onOpenChange={setIsCreateOpen}
