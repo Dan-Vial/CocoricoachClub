@@ -785,6 +785,7 @@ export function SessionDetailsDialog({
               </TabsContent>
             )}
 
+            <TabsContent value="rpe" className="h-full m-0 data-[state=active]:flex data-[state=active]:flex-col">
               <ScrollArea className="flex-1 h-[50vh] max-h-[50vh]">
                 <div className="space-y-2 pr-4">
                   <p className="text-sm text-muted-foreground mb-4">
