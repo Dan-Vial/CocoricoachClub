@@ -92,6 +92,24 @@ export function SessionDetailsDialog({
   const [isNotifyOpen, setIsNotifyOpen] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
 
+  // Fetch category to determine sport type
+  const { data: category } = useQuery({
+    queryKey: ["category-sport", categoryId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("categories")
+        .select("rugby_type, club_id, clubs(sport)")
+        .eq("id", categoryId)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: open,
+  });
+
+  const sportType = (category as any)?.clubs?.sport || "rugby";
+  const isRugby = isRugbyType(sportType);
+
   const handlePrint = async () => {
     if (!session) return;
     try {
