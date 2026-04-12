@@ -74,6 +74,8 @@ export function SessionFeedbackDialog({
   });
 
   const sportType = category?.rugby_type || "";
+  const isRugby = isRugbyType(sportType);
+  const isPrecisionSession = sessionType === "precision" && isRugby;
   const testCategories = getTestCategoriesForSport(sportType);
 
   // Fetch session details to get default duration and notes (for test config)
