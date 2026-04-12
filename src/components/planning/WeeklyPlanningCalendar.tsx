@@ -289,6 +289,13 @@ export function WeeklyPlanningCalendar({ categoryId }: WeeklyPlanningCalendarPro
     return item.notes?.startsWith("precision:") || item.custom_title?.startsWith("🎯");
   };
 
+  const getPrecisionTheme = (item: PlanningItem): string | null => {
+    if (!isPrecisionItem(item)) return null;
+    const catKey = item.notes?.replace("precision:", "");
+    const cat = EXERCISE_CATEGORIES.find(c => c.key === catKey);
+    return cat?.label || null;
+  };
+
   return (
     <>
       <Card>
@@ -389,6 +396,11 @@ export function WeeklyPlanningCalendar({ categoryId }: WeeklyPlanningCalendarPro
                         <p className="font-medium truncate">
                         {item.template?.name || item.custom_title || "Séance"}
                       </p>
+                      {isPrecisionItem(item) && (
+                        <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 border-amber-500/40 text-amber-700 dark:text-amber-400 mt-0.5">
+                          {getPrecisionTheme(item) || "Précision"}
+                        </Badge>
+                      )}
                       {item.time_slot && (
                         <div className="flex items-center gap-1 text-muted-foreground mt-1">
                           <Clock className="h-3 w-3" />
