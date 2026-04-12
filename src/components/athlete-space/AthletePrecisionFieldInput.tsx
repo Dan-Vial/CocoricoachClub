@@ -200,6 +200,8 @@ export function AthletePrecisionFieldInput({
 
       setSavedEntries(prev => [...prev, { label: clickLabel, attempts: 1, successes: success ? 1 : 0 }]);
       queryClient.invalidateQueries({ queryKey: ["athlete-precision-entries"] });
+      queryClient.invalidateQueries({ queryKey: ["precision-training-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["precision-field-entries"] });
       setDialogOpen(false);
       setClickPos(null);
       toast.success(success ? "✅ Réussi !" : "❌ Raté");
@@ -248,6 +250,8 @@ export function AthletePrecisionFieldInput({
 
       setSavedEntries(prev => [...prev, { label: clickLabel, attempts: att, successes: suc }]);
       queryClient.invalidateQueries({ queryKey: ["athlete-precision-entries"] });
+      queryClient.invalidateQueries({ queryKey: ["precision-training-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["precision-field-entries"] });
       setDialogOpen(false);
       setClickPos(null);
       setZoneKickOrigin(null);
