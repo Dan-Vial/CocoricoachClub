@@ -1,6 +1,6 @@
 import { useState, useRef, useMemo } from "react";
 import { getObjectiveLabel } from "@/lib/constants/sessionBlockOptions";
-import { getDisplayNotes } from "@/lib/utils/sessionNotes";
+import { getDisplayNotes, parsePrecisionExerciseFromNotes } from "@/lib/utils/sessionNotes";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -18,7 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { Dumbbell, Users, Activity, Clock, Calendar, Printer, Calculator, Info, Bell } from "lucide-react";
+import { Dumbbell, Users, Activity, Clock, Calendar, Printer, Calculator, Info, Bell, Target } from "lucide-react";
 import { getCategoryLabel } from "@/lib/constants/exerciseCategories";
 import { printElement, exportSessionToPdf, preparePdfWithSettings } from "@/lib/pdfExport";
 import { TEST_CATEGORIES } from "@/lib/constants/testCategories";
@@ -30,7 +30,9 @@ import { getTrainingTypeLabel } from "@/lib/constants/trainingTypes";
 import { NotifyAthletesDialog } from "@/components/notifications/NotifyAthletesDialog";
 import { BowlingSessionContent } from "@/components/bowling/BowlingSessionContent";
 import { TennisDrillTraining } from "@/components/tennis/TennisDrillTraining";
-
+import { PrecisionFieldTracker } from "@/components/rugby/PrecisionFieldTracker";
+import { RUGBY_PRECISION_EXERCISES, EXERCISE_CATEGORIES } from "@/lib/constants/rugbyPrecisionExercises";
+import { isRugbyType } from "@/lib/constants/sportTypes";
 interface SessionDetailsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -89,6 +91,24 @@ export function SessionDetailsDialog({
   const [rpeValues, setRpeValues] = useState<Record<string, { rpe: string; duration: string }>>({});
   const [isNotifyOpen, setIsNotifyOpen] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
+
+  // Fetch category to determine sport type
+  const { data: category } = useQuery({
+    queryKey: ["category-sport", categoryId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("categories")
+        .select("rugby_type, club_id, clubs(sport)")
+        .eq("id", categoryId)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: open,
+  });
+
+  const sportType = (category as any)?.clubs?.sport || "rugby";
+  const isRugby = isRugbyType(sportType);
 
   const handlePrint = async () => {
     if (!session) return;
@@ -494,6 +514,29 @@ export function SessionDetailsDialog({
                   </Badge>
                 ) : null;
               })()}
+              {/* Precision exercise theme badge */}
+              {session.training_type === "precision" && (() => {
+                const precisionEx = parsePrecisionExerciseFromNotes(session.notes);
+                if (!precisionEx) return null;
+                const exerciseConfig = RUGBY_PRECISION_EXERCISES.find(e => e.value === precisionEx.id);
+                const categoryConfig = exerciseConfig 
+                  ? EXERCISE_CATEGORIES.find(c => c.exercises.some(e => e.value === exerciseConfig.value))
+                  : null;
+                return (
+                  <>
+                    {categoryConfig && (
+                      <Badge variant="outline" className="flex items-center gap-1 border-accent text-accent">
+                        <Target className="h-3 w-3" />
+                        {categoryConfig.label}
+                      </Badge>
+                    )}
+                    <Badge className="flex items-center gap-1" style={{ backgroundColor: exerciseConfig?.color || 'hsl(var(--accent))' }}>
+                      {exerciseConfig?.shape === "square" ? "■" : exerciseConfig?.shape === "diamond" ? "◆" : "●"}{" "}
+                      {precisionEx.label}
+                    </Badge>
+                  </>
+                );
+              })()}
             </div>
           )}
 
@@ -690,8 +733,8 @@ export function SessionDetailsDialog({
           )}
         </div>
 
-        <Tabs defaultValue="exercises" className="flex-1 flex flex-col min-h-0">
-          <TabsList className="grid w-full grid-cols-2 shrink-0">
+        <Tabs defaultValue={session?.training_type === "precision" && isRugby ? "precision_stats" : "exercises"} className="flex-1 flex flex-col min-h-0">
+          <TabsList className={cn("grid w-full shrink-0", session?.training_type === "precision" && isRugby ? "grid-cols-3" : "grid-cols-2")}>
             <TabsTrigger value="exercises" className="flex items-center gap-1">
               <Dumbbell className="h-4 w-4" />
               Exercices
@@ -699,6 +742,12 @@ export function SessionDetailsDialog({
                 <Badge variant="secondary" className="ml-1">{exercises.length}</Badge>
               )}
             </TabsTrigger>
+            {session?.training_type === "precision" && isRugby && (
+              <TabsTrigger value="precision_stats" className="flex items-center gap-1">
+                <Target className="h-4 w-4" />
+                Saisie stats
+              </TabsTrigger>
+            )}
             <TabsTrigger value="rpe" className="flex items-center gap-1">
               <Activity className="h-4 w-4" />
               Saisie RPE
@@ -724,6 +773,17 @@ export function SessionDetailsDialog({
                 )}
               </ScrollArea>
             </TabsContent>
+
+            {/* Precision stats tab with field cartography */}
+            {session?.training_type === "precision" && isRugby && (
+              <TabsContent value="precision_stats" className="h-full m-0 data-[state=active]:flex data-[state=active]:flex-col">
+                <ScrollArea className="flex-1 h-[60vh]">
+                  <div className="pr-4">
+                    <PrecisionFieldTracker categoryId={categoryId} />
+                  </div>
+                </ScrollArea>
+              </TabsContent>
+            )}
 
             <TabsContent value="rpe" className="h-full m-0 data-[state=active]:flex data-[state=active]:flex-col">
               <ScrollArea className="flex-1 h-[50vh] max-h-[50vh]">

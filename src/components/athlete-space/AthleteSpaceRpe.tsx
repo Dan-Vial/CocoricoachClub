@@ -22,6 +22,7 @@ import { GroupedExerciseList } from "@/components/category/GroupedExerciseList";
 import { PrecisionExerciseSelector } from "@/components/precision/PrecisionExerciseSelector";
 import { AthletePrecisionFieldInput } from "./AthletePrecisionFieldInput";
 import { isRugbyType } from "@/lib/constants/sportTypes";
+import { RUGBY_PRECISION_EXERCISES, EXERCISE_CATEGORIES } from "@/lib/constants/rugbyPrecisionExercises";
 
 interface Props {
   playerId: string;
@@ -319,6 +320,21 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
 
   const getSessionTrainingLabel = (session: SessionRow) => {
     const baseLabel = getTrainingTypeLabel(session.training_type);
+    
+    // Show precision exercise theme for rugby precision sessions
+    if (session.training_type === "precision") {
+      const precisionEx = parsePrecisionExerciseFromNotes(session.notes);
+      if (precisionEx) {
+        const exerciseConfig = RUGBY_PRECISION_EXERCISES.find(e => e.value === precisionEx.id);
+        const categoryConfig = exerciseConfig 
+          ? EXERCISE_CATEGORIES.find(c => c.exercises.some(e => e.value === exerciseConfig.value))
+          : null;
+        const symbol = exerciseConfig?.shape === "square" ? "■" : exerciseConfig?.shape === "diamond" ? "◆" : "●";
+        return `${baseLabel} — ${categoryConfig ? categoryConfig.label + " " : ""}${symbol} ${precisionEx.label}`;
+      }
+      return baseLabel;
+    }
+    
     if (session.training_type !== "bowling_spare") return baseLabel;
 
     const selectedExerciseLabel =
