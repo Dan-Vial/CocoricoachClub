@@ -562,7 +562,7 @@ export function WeeklyPlanningCalendar({ categoryId }: WeeklyPlanningCalendarPro
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent position="popper" className="z-[200]">
                       {EXERCISE_CATEGORIES.map((cat) => (
                         <SelectItem key={cat.key} value={cat.key}>
                           {cat.label}
