@@ -8,14 +8,14 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Plus, Trash2, GripVertical, Library, Users, Search, Eye, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, Trash2, GripVertical, Library, Users, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 import { PAIN_ZONES } from "@/lib/constants/pain-locations";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/contexts/AuthContext";
-import { Dialog as MediaDialog, DialogContent as MediaDialogContent, DialogHeader as MediaDialogHeader, DialogTitle as MediaDialogTitle } from "@/components/ui/dialog";
+import { ExerciseLibrarySidebar } from "./ExerciseLibrarySidebar";
 
 interface ProphylaxisProgramDialogProps {
   categoryId: string;
