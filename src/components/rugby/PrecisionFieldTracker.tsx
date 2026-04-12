@@ -384,7 +384,7 @@ export function PrecisionFieldTracker({ categoryId }: PrecisionFieldTrackerProps
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Target className="h-5 w-5 text-primary" />
-              {currentExercise?.label} — Cliquez pour enregistrer chaque tir
+              Buteur — Cliquez sur le terrain pour enregistrer chaque tir
             </CardTitle>
             {!selectedPlayerId && !isViewer && (
               <p className="text-xs text-muted-foreground">Sélectionnez un joueur pour commencer</p>
