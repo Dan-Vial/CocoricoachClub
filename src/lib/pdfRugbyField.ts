@@ -185,17 +185,18 @@ export function drawPdfZoneStatsGrid(
   // Compute zone stats from kicks
   const zoneStats: Record<string, { success: number; total: number }> = {};
   kicks.forEach(kick => {
-    // Map x/y percentages to distance/lateral zones
-    // Assuming goalsOnRight: tryLine is at ~90% SVG x (540/600)
-    const svgX = (kick.x / 100) * 600;
-    const svgY = (kick.y / 100) * 400;
-    const tryLineX = 540;
-    const rawDist = Math.abs(svgX - tryLineX);
-    const distM = Math.round((rawDist / 560) * 100);
+    // kick.x and kick.y are 0-100 percentages of the field area
+    // Right try line is at 95% of the field, left try line at 5%
+    // Distance between try lines (90% of field) = 100m
+    const tryLinePct = 95;
+    const distPct = Math.abs(tryLinePct - kick.x);
+    const distM = Math.round((distPct / 90) * 100);
     const row = distM < 22 ? "proche" : distM < 40 ? "moyen" : "loin";
-    const centreY = 200;
-    const lateralM = ((svgY - centreY) / 380) * 70;
+
+    // Lateral: kick.y 0=top, 100=bottom, center=50. Field is 70m wide.
+    const lateralM = ((kick.y - 50) / 100) * 70;
     const col = lateralM < -10 ? "gauche" : lateralM > 10 ? "droite" : "centre";
+
     const key = `${row}-${col}`;
     if (!zoneStats[key]) zoneStats[key] = { success: 0, total: 0 };
     zoneStats[key].total++;

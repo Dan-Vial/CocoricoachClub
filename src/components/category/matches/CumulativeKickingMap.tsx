@@ -37,15 +37,18 @@ export function CumulativeKickingMap({ kicks, playerName, hasKickingStats }: Cum
   const zoneStats = useMemo(() => {
     const zones: Record<string, { success: number; total: number }> = {};
     kicks.forEach(k => {
-      const svgX = (k.x / 100) * SVG_W;
-      const svgY = (k.y / 100) * SVG_H;
-      const tryLineX = FIELD_LEFT + 0.95 * FIELD_W;
-      const rawDist = Math.abs(svgX - tryLineX);
-      const distM = Math.round((rawDist / FIELD_W) * FIELD_LENGTH_M);
+      // k.x and k.y are 0-100 percentages of the field area
+      // Right try line is at 95% of the field, left try line at 5%
+      // Distance between try lines (90% of field) = 100m
+      const tryLinePct = 95;
+      const distPct = Math.abs(tryLinePct - k.x);
+      const distM = Math.round((distPct / 90) * FIELD_LENGTH_M);
       const row = distM < 22 ? "proche" : distM < 40 ? "moyen" : "loin";
-      const centreY = (FIELD_TOP + FIELD_BOTTOM) / 2;
-      const lateralM = ((svgY - centreY) / FIELD_H) * FIELD_WIDTH_M;
+
+      // Lateral: k.y 0=top, 100=bottom, center=50. Field is 70m wide.
+      const lateralM = ((k.y - 50) / 100) * FIELD_WIDTH_M;
       const col = lateralM < -10 ? "gauche" : lateralM > 10 ? "droite" : "centre";
+
       const key = `${row}-${col}`;
       if (!zones[key]) zones[key] = { success: 0, total: 0 };
       zones[key].total++;
