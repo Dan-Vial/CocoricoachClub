@@ -2963,6 +2963,7 @@ export function SessionFormDialog({
                                   ))}
                                 </SelectContent>
                               </Select>
+                            </div>
                         )}
 
                         <p className="text-xs text-muted-foreground flex items-center gap-1.5">
