@@ -62,7 +62,7 @@ export function PrecisionFieldTracker({ categoryId }: PrecisionFieldTrackerProps
       const today = format(new Date(), "yyyy-MM-dd");
       const { data, error } = await supabase
         .from("training_sessions")
-        .select("id, title, session_date")
+        .select("id, session_date")
         .eq("category_id", categoryId)
         .eq("session_date", today)
         .order("created_at", { ascending: false });
