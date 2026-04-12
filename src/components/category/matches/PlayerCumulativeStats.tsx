@@ -391,7 +391,8 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
         });
       }
 
-      const suffix = mode === "team" ? "-equipe" : mode === "individual" ? "-individuelles" : "";
+      const playerLabel = singlePlayerId ? exportStats[0]?.playerName?.replace(/\s+/g, '-') : "";
+      const suffix = mode === "team" ? "-equipe" : mode === "single" ? `-${playerLabel}` : mode === "individual" ? "-individuelles" : "";
       await downloadWorkbook(wb, `stats-competition${suffix}-${format(new Date(), "yyyy-MM-dd")}.xlsx`);
       toast.success("Export Excel téléchargé !");
     } catch (e) {
