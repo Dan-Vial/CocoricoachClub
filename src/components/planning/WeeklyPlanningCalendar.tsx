@@ -187,16 +187,21 @@ export function WeeklyPlanningCalendar({ categoryId }: WeeklyPlanningCalendarPro
       if (error) throw error;
     },
     onSuccess: () => {
+      const wasPrecision = sessionMode === "precision";
       queryClient.invalidateQueries({ queryKey: ["weekly-planning", categoryId, weekStartStr] });
       queryClient.invalidateQueries({ queryKey: ["matches", categoryId] });
       queryClient.invalidateQueries({ queryKey: ["weekly-planning-all", categoryId] });
       queryClient.invalidateQueries({ queryKey: ["today-training-sessions", categoryId] });
       toast.success(
         sessionMode === "match" ? "Match ajouté" : 
-        sessionMode === "precision" ? "Séance de précision ajoutée" : 
+        wasPrecision ? "Séance de précision ajoutée" : 
         "Séance ajoutée"
       );
       resetAddDialog();
+      // Auto-open precision tracker after creating precision session
+      if (wasPrecision) {
+        setTimeout(() => setPrecisionTrackerOpen(true), 300);
+      }
     },
     onError: () => {
       toast.error("Erreur lors de l'ajout");
