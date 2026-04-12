@@ -439,11 +439,13 @@ export function AthletePrecisionFieldInput({
         <div className="relative w-full">
           <div className="flex items-center gap-2 mb-1">
             <p className="text-xs text-muted-foreground">
-              {zoneKickStep === "origin"
-                ? `📍 Étape 1 : Clique sur la position de frappe (${currentExercise?.label})`
-                : `🎯 Étape 2 : Clique sur la zone ciblée`}
+              {getFixedOrigin()
+                ? `🎯 Clique sur la zone ciblée (${currentExercise?.label} — départ fixe)`
+                : zoneKickStep === "origin"
+                  ? `📍 Étape 1 : Clique sur la position de frappe (${currentExercise?.label})`
+                  : `🎯 Étape 2 : Clique sur la zone ciblée`}
             </p>
-            {zoneKickStep === "target" && (
+            {zoneKickStep === "target" && !getFixedOrigin() && (
               <Button variant="ghost" size="sm" className="h-6 text-[10px]" onClick={() => { setZoneKickOrigin(null); setZoneKickStep("origin"); }}>
                 ↩ Annuler
               </Button>
