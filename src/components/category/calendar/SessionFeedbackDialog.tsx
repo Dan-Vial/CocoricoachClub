@@ -575,7 +575,7 @@ export function SessionFeedbackDialog({
           {/* Precision tab */}
           {isPrecisionSession && (
             <TabsContent value="precision" className="flex-1 flex flex-col min-h-0 mt-4">
-              <div className="flex-1 min-h-0 overflow-y-auto" style={{ maxHeight: "calc(90vh - 200px)" }}>
+              <div className="flex-1 min-h-0 overflow-y-auto pr-1" style={{ maxHeight: "calc(95vh - 180px)" }}>
                 <PrecisionFieldTracker
                   categoryId={categoryId}
                   sessionId={sessionId}
