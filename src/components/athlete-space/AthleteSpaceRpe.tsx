@@ -16,7 +16,7 @@ import { format, parseISO, addDays } from "date-fns";
 import { fr } from "date-fns/locale";
 import { getTrainingTypeLabel } from "@/lib/constants/trainingTypes";
 import { getTestLabel } from "@/lib/constants/testCategories";
-import { getDisplayNotes } from "@/lib/utils/sessionNotes";
+import { getDisplayNotes, parsePrecisionExerciseFromNotes } from "@/lib/utils/sessionNotes";
 import { SPARE_EXERCISE_TYPES } from "@/lib/constants/bowlingBallBrands";
 import { GroupedExerciseList } from "@/components/category/GroupedExerciseList";
 import { PrecisionExerciseSelector } from "@/components/precision/PrecisionExerciseSelector";
@@ -279,6 +279,10 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
   const selectedSessionData = useMemo(
     () => todaySessions.find((s) => s.id === selectedSession),
     [todaySessions, selectedSession]
+  );
+  const selectedPrecisionExercise = useMemo(
+    () => parsePrecisionExerciseFromNotes(selectedSessionData?.notes),
+    [selectedSessionData?.notes]
   );
   const isBowlingPrecision = selectedSessionData?.training_type === "bowling_spare";
   const isGenericPrecision = selectedSessionData?.training_type === "precision";
@@ -697,6 +701,7 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
                         playerId={playerId}
                         categoryId={categoryId}
                         sessionId={selectedSession}
+                        initialExerciseType={selectedPrecisionExercise?.id ?? selectedPrecisionExercise?.label}
                       />
                     )}
 

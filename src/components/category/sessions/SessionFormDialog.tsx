@@ -92,6 +92,8 @@ import { TrainingMethodSelect } from "./TrainingMethodSelect";
 import { SessionTestBlock, type SessionTest } from "./SessionTestBlock";
 import { SessionBlocksManager, type SessionBlock } from "./SessionBlocksManager";
 import { PrecisionExerciseSelector } from "@/components/precision/PrecisionExerciseSelector";
+import { getDisplayNotes, parsePrecisionExerciseFromNotes } from "@/lib/utils/sessionNotes";
+import { RUGBY_PRECISION_EXERCISES } from "@/lib/constants/rugbyPrecisionExercises";
 
 interface SessionFormDialogProps {
   open: boolean;
@@ -288,6 +290,8 @@ export function SessionFormDialog({
   const [sessionTests, setSessionTests] = useState<SessionTest[]>([]);
   const [sessionBlocks, setSessionBlocks] = useState<SessionBlock[]>([]);
   const [activeTab, setActiveTab] = useState("details");
+  const [precisionExerciseId, setPrecisionExerciseId] = useState<string | null>(null);
+  const [precisionExerciseLabel, setPrecisionExerciseLabel] = useState("");
   
   // Block configurations for groups
   const [blockConfigs, setBlockConfigs] = useState<Record<string, BlockConfig>>({});
@@ -490,9 +494,10 @@ export function SessionFormDialog({
       setType(editSession.training_type || "");
       setIntensity(editSession.intensity?.toString() || "");
 
-      // Strip <!--TESTS:...--> from visible notes
-      const rawNotes = editSession.notes || "";
-      setNotes(rawNotes.replace(/\n?<!--TESTS:.*?-->/g, "").trim());
+      const precisionExercise = parsePrecisionExerciseFromNotes(editSession.notes);
+      setPrecisionExerciseId(precisionExercise?.id ?? precisionExercise?.label ?? null);
+      setPrecisionExerciseLabel(precisionExercise?.label ?? "");
+      setNotes(getDisplayNotes(editSession.notes));
       setPlayerSelectionMode((prev) => (prev === "all" ? prev : "all"));
       setSelectedPlayers((prev) => (prev.length === 0 ? prev : []));
       return;
@@ -687,6 +692,11 @@ export function SessionFormDialog({
 
       // Build notes with embedded test config for test sessions
       let finalNotes = notes || "";
+      if (mainType === "precision" && precisionExerciseLabel) {
+        finalNotes =
+          (finalNotes ? `${finalNotes}\n` : "") +
+          `<!--PRECISION_EXERCISE:${JSON.stringify({ id: precisionExerciseId, label: precisionExerciseLabel })}-->`;
+      }
       if (sessionTests.length > 0) {
         const testConfig = sessionTests
           .filter(t => t.test_type)
@@ -1047,11 +1057,17 @@ export function SessionFormDialog({
     setGpsData([]);
     setSessionTests([]);
     setSessionBlocks([]);
+    setPrecisionExerciseId(null);
+    setPrecisionExerciseLabel("");
     setActiveTab("details");
   };
 
   const handleTypeChange = (newType: string) => {
     setType(newType);
+    if (newType !== "precision") {
+      setPrecisionExerciseId(null);
+      setPrecisionExerciseLabel("");
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -2859,8 +2875,11 @@ export function SessionFormDialog({
                         <PrecisionExerciseSelector
                           categoryId={categoryId}
                           sportType={sportType}
-                          selectedExerciseId={null}
-                          onExerciseChange={() => {}}
+                          selectedExerciseId={precisionExerciseId}
+                          onExerciseChange={(id, label) => {
+                            setPrecisionExerciseId(id);
+                            setPrecisionExerciseLabel(label);
+                          }}
                           allowCreate={!isAthleteMode}
                         />
                         <p className="text-[10px] text-muted-foreground">
@@ -2871,8 +2890,30 @@ export function SessionFormDialog({
                     )}
                     {type === "precision" && isRugbyType(sportType || "") && (
                       <div className="rounded-lg border border-accent/30 p-3 space-y-2">
+                        <div className="space-y-2">
+                          <Label className="text-sm">Exercice de précision</Label>
+                          <Select
+                            value={precisionExerciseId ?? undefined}
+                            onValueChange={(value) => {
+                              const exercise = RUGBY_PRECISION_EXERCISES.find((item) => item.value === value);
+                              setPrecisionExerciseId(value);
+                              setPrecisionExerciseLabel(exercise?.label || value);
+                            }}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Choisir l'exercice" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {RUGBY_PRECISION_EXERCISES.map((exercise) => (
+                                <SelectItem key={exercise.value} value={exercise.value}>
+                                  {exercise.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
                         <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                          🏉 Exercices disponibles : Drop, Pénalités, Coup de pied, Chandelle, Passe au pied, Jeu de zone, Touche…
+                          🏉 Le choix fait ici sera repris par défaut dans la saisie athlète.
                         </p>
                         <p className="text-[10px] text-muted-foreground">
                           📊 Tu pourras saisir tes stats de précision (réussites / tentatives) lors de la saisie RPE via le terrain interactif.
