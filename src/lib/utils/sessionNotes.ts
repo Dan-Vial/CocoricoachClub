@@ -7,6 +7,7 @@ export function getDisplayNotes(notes: string | null | undefined): string {
   return notes
     .replace(/\n?<!--TESTS:.*?-->/g, "")
     .replace(/\n?<!--PRECISION_EXERCISE:.*?-->/g, "")
+    .replace(/\n?\[precision_exercise:.*?\]/g, "")
     .trim();
 }
 
