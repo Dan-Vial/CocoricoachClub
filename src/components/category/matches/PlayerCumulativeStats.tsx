@@ -881,6 +881,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
             }
           });
 
+          y += mapH + 6;
 
           // Zone stats grid below cartography
           const zoneKicks = k.allKicks.map((kick: any) => ({
@@ -889,7 +890,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
             success: !!kick.success,
           }));
           y = drawPdfZoneStatsGrid(doc, zoneKicks, pageW, y, pageH);
-
+        }
       }
 
       // Footer
