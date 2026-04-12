@@ -150,7 +150,23 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
     enabled: isRugby && activeMatchIds.length > 0,
   });
 
-  // Aggregate kicking stats per player from player_match_stats
+  // Fetch individual kicking attempts from the dedicated table
+  const { data: kickingAttempts = [] } = useQuery({
+    queryKey: ["kicking-attempts-cumulative", categoryId, activeMatchIds],
+    queryFn: async () => {
+      if (activeMatchIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from("kicking_attempts")
+        .select("player_id, match_id, kick_type, zone_x, zone_y, success")
+        .eq("category_id", categoryId)
+        .in("match_id", activeMatchIds);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: isRugby && activeMatchIds.length > 0,
+  });
+
+  // Aggregate kicking stats per player from player_match_stats + kicking_attempts table
   const kickingByPlayerFinal = useMemo(() => {
     const map: Record<string, {
       total: number; success: number;
@@ -161,6 +177,21 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
       allKicks: { x: number; y: number; kickType: string; success: boolean }[];
     }> = {};
 
+    const ensurePlayer = (playerId: string) => {
+      if (!map[playerId]) {
+        map[playerId] = {
+          total: 0, success: 0,
+          penalty: { total: 0, success: 0 },
+          conversion: { total: 0, success: 0 },
+          drop: { total: 0, success: 0 },
+          byMatch: {},
+          allKicks: [],
+        };
+      }
+      return map[playerId];
+    };
+
+    // First pass: aggregate from player_match_stats (numeric totals)
     kickingData.forEach((row: any) => {
       const sportData = row.sport_data || {};
       const convSuccess = Number(row.conversions) || 0;
@@ -173,20 +204,9 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
       const totalAttempts = convAttempts + penAttempts + dropAttempts;
       const totalSuccess = convSuccess + penSuccess + dropSuccess;
 
-      // Skip players with no kicking activity
       if (totalAttempts === 0) return;
 
-      if (!map[row.player_id]) {
-        map[row.player_id] = {
-          total: 0, success: 0,
-          penalty: { total: 0, success: 0 },
-          conversion: { total: 0, success: 0 },
-          drop: { total: 0, success: 0 },
-          byMatch: {},
-          allKicks: [],
-        };
-      }
-      const p = map[row.player_id];
+      const p = ensurePlayer(row.player_id);
       p.total += totalAttempts;
       p.success += totalSuccess;
       p.penalty.total += penAttempts;
@@ -199,14 +219,54 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
       p.byMatch[row.match_id].total += totalAttempts;
       p.byMatch[row.match_id].success += totalSuccess;
 
-      // Collect individual kick positions
+      // Collect individual kick positions from sport_data (legacy)
       if (Array.isArray(sportData.kickAttempts)) {
         p.allKicks.push(...sportData.kickAttempts);
       }
     });
 
+    // Second pass: add kick positions from kicking_attempts table
+    kickingAttempts.forEach((attempt: any) => {
+      const p = ensurePlayer(attempt.player_id);
+      p.allKicks.push({
+        x: attempt.zone_x,
+        y: attempt.zone_y,
+        kickType: attempt.kick_type,
+        success: attempt.success,
+      });
+
+      // If player had no match stats rows, also count totals from kicking_attempts
+      // Check if this match was already counted from player_match_stats
+      const alreadyCounted = kickingData.some(
+        (row: any) => row.player_id === attempt.player_id && row.match_id === attempt.match_id
+      );
+      if (!alreadyCounted) {
+        p.total += 1;
+        if (attempt.success) p.success += 1;
+        const typeKey = attempt.kick_type as "penalty" | "conversion" | "drop";
+        if (p[typeKey]) {
+          p[typeKey].total += 1;
+          if (attempt.success) p[typeKey].success += 1;
+        }
+        if (!p.byMatch[attempt.match_id]) p.byMatch[attempt.match_id] = { total: 0, success: 0 };
+        p.byMatch[attempt.match_id].total += 1;
+        if (attempt.success) p.byMatch[attempt.match_id].success += 1;
+      }
+    });
+
+    // Deduplicate allKicks (remove duplicates if same position from both sources)
+    Object.values(map).forEach(p => {
+      const seen = new Set<string>();
+      p.allKicks = p.allKicks.filter(k => {
+        const key = `${k.x}-${k.y}-${k.kickType}-${k.success}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+    });
+
     return map;
-  }, [kickingData]);
+  }, [kickingData, kickingAttempts]);
 
   const { data: matchesDataForCharts = [] } = useQuery({
     queryKey: ["per_match_player_stats", categoryId, sportType, activeMatchIds],
