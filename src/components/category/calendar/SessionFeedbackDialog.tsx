@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 import { Badge } from "@/components/ui/badge";
-import { Activity, ClipboardCheck, Dumbbell, Plus, X } from "lucide-react";
+import { Activity, ClipboardCheck, Dumbbell, Plus, Target, X } from "lucide-react";
 import { SessionWeightLogTab } from "./SessionWeightLogTab";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,6 +22,8 @@ import {
 import { getTestCategoriesForSport, TestCategory } from "@/lib/constants/testCategories";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
+import { isRugbyType } from "@/lib/constants/sportTypes";
+import { PrecisionFieldTracker } from "@/components/rugby/PrecisionFieldTracker";
 
 interface SessionFeedbackDialogProps {
   open: boolean;
@@ -53,7 +55,7 @@ export function SessionFeedbackDialog({
   const [rpeValues, setRpeValues] = useState<Record<string, { rpe: string; duration: string }>>({});
   const [sessionTests, setSessionTests] = useState<SessionTest[]>([]);
   const [weightLogs, setWeightLogs] = useState<Record<string, Record<string, { weight: string; sets: string; reps: string }>>>({});
-  const [activeTab, setActiveTab] = useState(sessionType === "test" ? "tests" : "rpe");
+  const [activeTab, setActiveTab] = useState(sessionType === "test" ? "tests" : sessionType === "precision" ? "precision" : "rpe");
   const queryClient = useQueryClient();
 
   // Fetch category to get sport type
@@ -72,6 +74,8 @@ export function SessionFeedbackDialog({
   });
 
   const sportType = category?.rugby_type || "";
+  const isRugby = isRugbyType(sportType);
+  const isPrecisionSession = sessionType === "precision" && isRugby;
   const testCategories = getTestCategoriesForSport(sportType);
 
   // Fetch session details to get default duration and notes (for test config)
@@ -241,7 +245,7 @@ export function SessionFeedbackDialog({
       setRpeValues({});
       setSessionTests([]);
       setWeightLogs({});
-      setActiveTab(sessionType === "test" ? "tests" : "rpe");
+      setActiveTab(sessionType === "test" ? "tests" : sessionType === "precision" ? "precision" : "rpe");
     }
   }, [open, sessionType]);
 
@@ -518,7 +522,7 @@ export function SessionFeedbackDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col">
+      <DialogContent className={cn("max-h-[90vh] flex flex-col", isPrecisionSession ? "max-w-4xl" : "max-w-lg")}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Activity className="h-5 w-5 text-primary" />
@@ -528,6 +532,12 @@ export function SessionFeedbackDialog({
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
           <TabsList className="w-full">
+            {isPrecisionSession && (
+              <TabsTrigger value="precision" className="flex-1 gap-2">
+                <Target className="h-4 w-4" />
+                🎯 Précision
+              </TabsTrigger>
+            )}
             <TabsTrigger value="rpe" className="flex-1 gap-2">
               <Activity className="h-4 w-4" />
               RPE
@@ -561,6 +571,19 @@ export function SessionFeedbackDialog({
               )}
             </TabsTrigger>
           </TabsList>
+
+          {/* Precision tab */}
+          {isPrecisionSession && (
+            <TabsContent value="precision" className="flex-1 flex flex-col min-h-0 mt-4">
+              <div className="flex-1 min-h-0 overflow-y-auto" style={{ maxHeight: "calc(90vh - 200px)" }}>
+                <PrecisionFieldTracker
+                  categoryId={categoryId}
+                  sessionId={sessionId}
+                  sessionDate={session?.session_date}
+                />
+              </div>
+            </TabsContent>
+          )}
 
           <TabsContent value="rpe" className="flex-1 flex flex-col min-h-0 mt-4">
             <p className="text-sm text-muted-foreground mb-3">

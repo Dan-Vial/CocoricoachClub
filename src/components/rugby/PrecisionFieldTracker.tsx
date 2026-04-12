@@ -21,6 +21,8 @@ import { LineoutFieldSVG, aggregateLineoutStats, type LineoutZone } from "@/comp
 
 interface PrecisionFieldTrackerProps {
   categoryId: string;
+  sessionId?: string;
+  sessionDate?: string;
 }
 
 // Legacy positions kept for backward compat only
@@ -30,7 +32,7 @@ const LINEOUT_POSITIONS = [
   { key: "fond", label: "Fond", y: 80, description: "12-15m du lanceur" },
 ];
 
-export function PrecisionFieldTracker({ categoryId }: PrecisionFieldTrackerProps) {
+export function PrecisionFieldTracker({ categoryId, sessionId: propSessionId, sessionDate: propSessionDate }: PrecisionFieldTrackerProps) {
   const queryClient = useQueryClient();
   const { isViewer } = useViewerModeContext();
   const [selectedPlayerId, setSelectedPlayerId] = useState<string>("");
@@ -63,7 +65,7 @@ export function PrecisionFieldTracker({ categoryId }: PrecisionFieldTrackerProps
     },
   });
 
-  // Check if there are active training sessions today
+  // Check if there are active training sessions today (fallback when no sessionId prop)
   const { data: todaySessions = [] } = useQuery({
     queryKey: ["today-training-sessions", categoryId],
     queryFn: async () => {
@@ -77,9 +79,11 @@ export function PrecisionFieldTracker({ categoryId }: PrecisionFieldTrackerProps
       if (error) throw error;
       return data || [];
     },
+    enabled: !propSessionId,
   });
 
-  const activeSessionId = todaySessions.length > 0 ? todaySessions[0].id : null;
+  const activeSessionId = propSessionId || (todaySessions.length > 0 ? todaySessions[0].id : null);
+  const activeSessionDate = propSessionDate || (todaySessions.length > 0 ? todaySessions[0].session_date : format(new Date(), "yyyy-MM-dd"));
 
   const { data: entries = [] } = useQuery({
     queryKey: ["precision-field-entries", categoryId, selectedPlayerId, exerciseType],
@@ -107,7 +111,7 @@ export function PrecisionFieldTracker({ categoryId }: PrecisionFieldTrackerProps
         exercise_label: clickLabel,
         attempts: 1,
         successes: success ? 1 : 0,
-        session_date: format(new Date(), "yyyy-MM-dd"),
+        session_date: activeSessionDate,
         zone_x: clickPos.x,
         zone_y: clickPos.y,
       });
@@ -140,7 +144,7 @@ export function PrecisionFieldTracker({ categoryId }: PrecisionFieldTrackerProps
         exercise_label: data.label || clickLabel,
         attempts: att,
         successes: suc,
-        session_date: format(new Date(), "yyyy-MM-dd"),
+        session_date: activeSessionDate,
         zone_x: data.x,
         zone_y: data.y,
       };
