@@ -840,10 +840,10 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
           const mapH = 70;
           const fieldBounds = drawPdfRugbyField(doc, 14, y, mapW, mapH);
 
-          // Draw kicks
+          // Draw kicks using inner field bounds
           k.allKicks.forEach(kick => {
-            const kx = 14 + (kick.x / 100) * mapW;
-            const ky2 = y + (kick.y / 100) * mapH;
+            const kx = fieldBounds.fx + (kick.x / 100) * fieldBounds.fw;
+            const ky2 = fieldBounds.fy + (kick.y / 100) * fieldBounds.fh;
             const r = 3;
             const fillColor: [number, number, number] = kick.success ? [34, 197, 94] : [239, 68, 68];
             doc.setFillColor(...fillColor);
