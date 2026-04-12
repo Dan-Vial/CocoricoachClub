@@ -838,6 +838,25 @@ export function PrecisionTrainingStats({ categoryId }: PrecisionTrainingStatsPro
           </CardContent>
         </Card>
       )}
+
+      {/* Lineout mapping visual */}
+      {lineoutZoneStats.length > 0 && (
+        <Card className="bg-gradient-card shadow-md">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              📏 Cartographie Touche (Lanceur)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="max-w-2xl mx-auto">
+              <LineoutFieldSVG
+                zoneStats={lineoutZoneStats}
+                disabled
+              />
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
