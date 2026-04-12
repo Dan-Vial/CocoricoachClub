@@ -14,7 +14,7 @@ import jsPDF from "jspdf";
 import ExcelJS from "exceljs";
 import { getExcelBranding, addBrandedHeader, styleDataHeaderRow, addZebraRows, addFooter, downloadWorkbook } from "@/lib/excelExport";
 import { preparePdfWithSettings, drawPdfHeader as drawPdfHeaderCustom, drawSectionTitle, drawTableHeader as drawTableHeaderLib, drawTableRow as drawTableRowLib, checkPageBreak as checkPageBreakLib, type PdfCustomSettings } from "@/lib/pdfExport";
-import { drawPdfRugbyField } from "@/lib/pdfRugbyField";
+import { drawPdfRugbyField, drawPdfZoneStatsGrid } from "@/lib/pdfRugbyField";
 import { getStatsForSport, supportsCompetitionRounds, getBaseSport, type StatField } from "@/lib/constants/sportStats";
 import { TEST_CATEGORIES, getTestLabel } from "@/lib/constants/testCategories";
 
@@ -1115,6 +1115,14 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
         });
         
         yPos += 8;
+
+        // Zone stats grid below cartography
+        const zoneKicks = kickingAttempts.map((a: any) => ({
+          x: a.zone_x,
+          y: a.zone_y,
+          success: !!a.success,
+        }));
+        yPos = drawPdfZoneStatsGrid(pdf, zoneKicks, contentWidth + margin * 2, yPos, pdf.internal.pageSize.getHeight() - 20);
 
         // Stats summary by player
         const kicksByPlayer = new Map<string, { name: string; total: number; success: number; byType: Record<string, { total: number; success: number }> }>();
