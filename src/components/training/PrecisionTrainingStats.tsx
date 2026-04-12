@@ -156,8 +156,22 @@ export function PrecisionTrainingStats({ categoryId }: PrecisionTrainingStatsPro
   // Export Excel
   const handleExportExcel = async (singlePlayerId?: string) => {
     const exportData = singlePlayerId ? filtered.filter((r: any) => r.player_id === singlePlayerId) : filtered;
-    const exportByExercise = singlePlayerId ? byExercise : byExercise;
-    const exportByPlayer = singlePlayerId ? byPlayer.filter(p => p.name === players.find(pl => pl.id === singlePlayerId)?.name) : byPlayer;
+    const singlePlayerName = singlePlayerId ? players.find(pl => pl.id === singlePlayerId)?.name : undefined;
+    // Recalculate by-exercise and by-player for filtered data
+    const recomputeByExercise = (data: any[]) => {
+      const map = new Map<string, { attempts: number; successes: number }>();
+      data.forEach((r: any) => {
+        const key = r.exercise_label || "Inconnu";
+        const prev = map.get(key) || { attempts: 0, successes: 0 };
+        map.set(key, { attempts: prev.attempts + (r.attempts || 0), successes: prev.successes + (r.successes || 0) });
+      });
+      return Array.from(map.entries()).map(([label, v]) => ({
+        label, ...v, rate: v.attempts > 0 ? Math.round((v.successes / v.attempts) * 100) : 0, progression: 0,
+      }));
+    };
+    const exportByExercise = singlePlayerId ? recomputeByExercise(exportData) : byExercise;
+    const exportByPlayer = singlePlayerId ? byPlayer.filter(p => p.name === singlePlayerName) : byPlayer;
+    try {
       const branding = await getExcelBranding(categoryId);
       const wb = new ExcelJS.Workbook();
 
