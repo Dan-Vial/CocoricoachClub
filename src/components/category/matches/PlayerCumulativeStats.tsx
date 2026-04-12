@@ -343,7 +343,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
         addFooter(wsTeam, tRow, 4, branding.footerText);
       }
 
-      if (mode === "all" || mode === "individual") {
+      if (mode === "all" || mode === "individual" || mode === "single") {
         // Individual sheets per category
         statCategories.forEach(cat => {
           const categoryStats = sportStats.filter(s => s.category === cat.key);
@@ -369,7 +369,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
             headerRow.getCell(3 + i * 2).value = s.shortLabel;
             headerRow.getCell(4 + i * 2).value = "+/-";
           });
-          const sorted = [...stats].sort((a, b) => {
+          const sorted = [...exportStats].sort((a, b) => {
             const firstStat = categoryStats[0]?.key;
             return firstStat ? (b.sportData[firstStat] || 0) - (a.sportData[firstStat] || 0) : 0;
           });
