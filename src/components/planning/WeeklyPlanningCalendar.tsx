@@ -505,22 +505,55 @@ export function WeeklyPlanningCalendar({ categoryId }: WeeklyPlanningCalendarPro
             )}
 
             {sessionMode === "precision" && (
-              <div className="space-y-2">
-                <Label>Thématique de précision *</Label>
-                <Select value={precisionCategory} onValueChange={setPrecisionCategory}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {EXERCISE_CATEGORIES.map((cat) => (
-                      <SelectItem key={cat.key} value={cat.key}>
-                        {cat.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <Label>Thématique de précision *</Label>
+                  <Select value={precisionCategory} onValueChange={setPrecisionCategory}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {EXERCISE_CATEGORIES.map((cat) => (
+                        <SelectItem key={cat.key} value={cat.key}>
+                          {cat.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {/* Preview of what will be available */}
+                <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 space-y-2">
+                  {precisionCategory === "buteur" && (
+                    <>
+                      <p className="text-xs font-medium text-primary">🎯 Exercices disponibles sur le terrain :</p>
+                      <div className="flex items-center gap-3 flex-wrap">
+                        {EXERCISE_CATEGORIES.find(c => c.key === "buteur")?.exercises.map(ex => (
+                          <span key={ex.value} className="flex items-center gap-1.5 text-xs">
+                            <span style={{ color: ex.color }}>
+                              {ex.shape === "circle" ? "●" : ex.shape === "square" ? "■" : "◆"}
+                            </span>
+                            {ex.label}
+                          </span>
+                        ))}
+                      </div>
+                      <p className="text-[10px] text-muted-foreground">
+                        Les 3 types de tir seront disponibles simultanément sur la cartographie, comme en match.
+                      </p>
+                    </>
+                  )}
+                  {precisionCategory === "zone_kicks" && (
+                    <p className="text-xs text-muted-foreground">
+                      🦶 Coups de pied de zone : coup d'envoi, renvoi en-but, renvoi 22m, coup de pied tactique.
+                    </p>
+                  )}
+                  {precisionCategory === "lineout" && (
+                    <p className="text-xs text-muted-foreground">
+                      📏 Touche : saisie des lancers par zone (devant/milieu/fond × hauteur).
+                    </p>
+                  )}
+                </div>
                 <p className="text-xs text-muted-foreground">
-                  La séance de précision sera créée automatiquement. Vous pourrez saisir les stats joueur par joueur depuis le calendrier.
+                  La cartographie s'ouvrira automatiquement après la création pour saisir les stats joueur par joueur.
                 </p>
               </div>
             )}
