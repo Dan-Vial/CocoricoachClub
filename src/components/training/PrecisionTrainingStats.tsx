@@ -765,15 +765,15 @@ export function PrecisionTrainingStats({ categoryId }: PrecisionTrainingStatsPro
                 <DropdownMenuContent align="end">
                   <DropdownMenuLabel className="text-xs">Exporter en Excel</DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  {exportPlayerId && exportPlayerId !== "__all__" ? (
-                    <DropdownMenuItem onClick={() => handleExportExcel(exportPlayerId)}>
-                      <User className="h-3.5 w-3.5 mr-2" />{players.find(p => p.id === exportPlayerId)?.name || "Athlète"}
-                    </DropdownMenuItem>
-                  ) : (
-                    <DropdownMenuItem onClick={() => handleExportExcel()}>
-                      <Users className="h-3.5 w-3.5 mr-2" />Tous les athlètes
-                    </DropdownMenuItem>
-                  )}
+                  <DropdownMenuItem onClick={() => handleExportExcel(exportPlayerId && exportPlayerId !== "__all__" ? exportPlayerId : undefined, "both")}>
+                    📊 Par exercice + entraînement
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleExportExcel(exportPlayerId && exportPlayerId !== "__all__" ? exportPlayerId : undefined, "exercise")}>
+                    🎯 Par exercice uniquement
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleExportExcel(exportPlayerId && exportPlayerId !== "__all__" ? exportPlayerId : undefined, "session")}>
+                    📅 Par entraînement uniquement
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
 
@@ -786,15 +786,15 @@ export function PrecisionTrainingStats({ categoryId }: PrecisionTrainingStatsPro
                 <DropdownMenuContent align="end">
                   <DropdownMenuLabel className="text-xs">Exporter en PDF</DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  {exportPlayerId && exportPlayerId !== "__all__" ? (
-                    <DropdownMenuItem onClick={() => handleExportPdf(exportPlayerId)}>
-                      <User className="h-3.5 w-3.5 mr-2" />{players.find(p => p.id === exportPlayerId)?.name || "Athlète"}
-                    </DropdownMenuItem>
-                  ) : (
-                    <DropdownMenuItem onClick={() => handleExportPdf()}>
-                      <Users className="h-3.5 w-3.5 mr-2" />Tous les athlètes
-                    </DropdownMenuItem>
-                  )}
+                  <DropdownMenuItem onClick={() => handleExportPdf(exportPlayerId && exportPlayerId !== "__all__" ? exportPlayerId : undefined, "both")}>
+                    📊 Par exercice + entraînement
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleExportPdf(exportPlayerId && exportPlayerId !== "__all__" ? exportPlayerId : undefined, "exercise")}>
+                    🎯 Par exercice uniquement
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleExportPdf(exportPlayerId && exportPlayerId !== "__all__" ? exportPlayerId : undefined, "session")}>
+                    📅 Par entraînement uniquement
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
