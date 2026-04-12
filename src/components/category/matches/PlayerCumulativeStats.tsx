@@ -719,7 +719,20 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
           )}
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
+          {/* Player selector for single export */}
+          <Select value={exportPlayerId} onValueChange={setExportPlayerId}>
+            <SelectTrigger className="w-[180px] h-8 text-xs">
+              <SelectValue placeholder="Exporter un athlète" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__all__">Tous les athlètes</SelectItem>
+              {stats.map(p => (
+                <SelectItem key={p.playerId} value={p.playerId}>{p.playerName}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" className="gap-1">
@@ -729,15 +742,23 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
             <DropdownMenuContent align="end">
               <DropdownMenuLabel className="text-xs">Exporter en Excel</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => handleExportExcel("all")}>
-                <Users className="h-3.5 w-3.5 mr-2" />Tout (équipe + individuel)
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleExportExcel("team")}>
-                <Users className="h-3.5 w-3.5 mr-2" />Statistiques équipe
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleExportExcel("individual")}>
-                <User className="h-3.5 w-3.5 mr-2" />Statistiques individuelles
-              </DropdownMenuItem>
+              {exportPlayerId && exportPlayerId !== "__all__" ? (
+                <DropdownMenuItem onClick={() => handleExportExcel("single", exportPlayerId)}>
+                  <User className="h-3.5 w-3.5 mr-2" />{stats.find(p => p.playerId === exportPlayerId)?.playerName || "Athlète"}
+                </DropdownMenuItem>
+              ) : (
+                <>
+                  <DropdownMenuItem onClick={() => handleExportExcel("all")}>
+                    <Users className="h-3.5 w-3.5 mr-2" />Tout (équipe + individuel)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleExportExcel("team")}>
+                    <Users className="h-3.5 w-3.5 mr-2" />Statistiques équipe
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleExportExcel("individual")}>
+                    <User className="h-3.5 w-3.5 mr-2" />Statistiques individuelles
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
           <DropdownMenu>
@@ -749,15 +770,23 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
             <DropdownMenuContent align="end">
               <DropdownMenuLabel className="text-xs">Exporter en PDF</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => handleExportPdf("all")}>
-                <Users className="h-3.5 w-3.5 mr-2" />Tout (équipe + individuel)
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleExportPdf("team")}>
-                <Users className="h-3.5 w-3.5 mr-2" />Statistiques équipe
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleExportPdf("individual")}>
-                <User className="h-3.5 w-3.5 mr-2" />Statistiques individuelles
-              </DropdownMenuItem>
+              {exportPlayerId && exportPlayerId !== "__all__" ? (
+                <DropdownMenuItem onClick={() => handleExportPdf("single", exportPlayerId)}>
+                  <User className="h-3.5 w-3.5 mr-2" />{stats.find(p => p.playerId === exportPlayerId)?.playerName || "Athlète"} + cartographie
+                </DropdownMenuItem>
+              ) : (
+                <>
+                  <DropdownMenuItem onClick={() => handleExportPdf("all")}>
+                    <Users className="h-3.5 w-3.5 mr-2" />Tout (équipe + individuel)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleExportPdf("team")}>
+                    <Users className="h-3.5 w-3.5 mr-2" />Statistiques équipe
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleExportPdf("individual")}>
+                    <User className="h-3.5 w-3.5 mr-2" />Statistiques individuelles
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
