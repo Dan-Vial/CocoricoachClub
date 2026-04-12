@@ -2956,7 +2956,7 @@ export function SessionFormDialog({
                                 <SelectTrigger>
                                   <SelectValue placeholder="Choisir l'exercice" />
                                 </SelectTrigger>
-                                <SelectContent>
+                                <SelectContent position="popper" className="z-[200]">
                                   {selectedCat?.exercises.map((exercise) => (
                                     <SelectItem key={exercise.value} value={exercise.value}>
                                       <span className="flex items-center gap-2">
