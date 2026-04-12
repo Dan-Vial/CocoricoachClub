@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MapPin, Info } from "lucide-react";
+import { RugbyFieldSvg } from "./RugbyFieldSvg";
 
 interface KickAttempt {
   x: number;
@@ -12,7 +13,6 @@ interface KickAttempt {
 interface CumulativeKickingMapProps {
   kicks: KickAttempt[];
   playerName: string;
-  /** Show even when no kicks, with a message */
   hasKickingStats?: boolean;
 }
 
@@ -22,10 +22,10 @@ const KICK_STYLES: Record<string, { label: string; shape: "circle" | "square" | 
   drop: { label: "Drop", shape: "diamond", color: "#8b5cf6" },
 };
 
-const SVG_W = 600;
+const SVG_W = 700;
 const SVG_H = 400;
 const FIELD_LEFT = 20;
-const FIELD_RIGHT = 580;
+const FIELD_RIGHT = 680;
 const FIELD_TOP = 10;
 const FIELD_BOTTOM = 390;
 const FIELD_W = FIELD_RIGHT - FIELD_LEFT;
@@ -33,45 +33,19 @@ const FIELD_H = FIELD_BOTTOM - FIELD_TOP;
 const FIELD_LENGTH_M = 100;
 const FIELD_WIDTH_M = 70;
 
-function mToSvgX(meters: number, goalsOnRight: boolean): number {
-  const tryLineX = goalsOnRight ? 540 : 60;
-  const mToSvg = FIELD_W / FIELD_LENGTH_M;
-  return goalsOnRight ? tryLineX - meters * mToSvg : tryLineX + meters * mToSvg;
-}
-
-function mToSvgY(meters: number): number {
-  return FIELD_TOP + (meters / FIELD_WIDTH_M) * FIELD_H;
-}
-
-const DISTANCE_LINES = [
-  { m: 0, label: "En-but", solid: true, thick: true },
-  { m: 10, label: "10m", solid: false, thick: false },
-  { m: 22, label: "22m", solid: true, thick: false },
-  { m: 30, label: "30m", solid: false, thick: false },
-  { m: 40, label: "40m", solid: false, thick: false },
-  { m: 50, label: "½", solid: true, thick: true },
-];
-
-const WIDTH_MARKS = [5, 15];
-
 export function CumulativeKickingMap({ kicks, playerName, hasKickingStats }: CumulativeKickingMapProps) {
-  const goalsOnRight = true;
-
-  // Zone stats based on distance/lateral zones
   const zoneStats = useMemo(() => {
     const zones: Record<string, { success: number; total: number }> = {};
     kicks.forEach(k => {
       const svgX = (k.x / 100) * SVG_W;
       const svgY = (k.y / 100) * SVG_H;
-      const tryLineX = 540;
+      const tryLineX = FIELD_LEFT + 0.95 * FIELD_W;
       const rawDist = Math.abs(svgX - tryLineX);
       const distM = Math.round((rawDist / FIELD_W) * FIELD_LENGTH_M);
       const row = distM < 22 ? "proche" : distM < 40 ? "moyen" : "loin";
-      
       const centreY = (FIELD_TOP + FIELD_BOTTOM) / 2;
       const lateralM = ((svgY - centreY) / FIELD_H) * FIELD_WIDTH_M;
       const col = lateralM < -10 ? "gauche" : lateralM > 10 ? "droite" : "centre";
-      
       const key = `${row}-${col}`;
       if (!zones[key]) zones[key] = { success: 0, total: 0 };
       zones[key].total++;
@@ -109,56 +83,15 @@ export function CumulativeKickingMap({ kicks, playerName, hasKickingStats }: Cum
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="relative w-full" style={{ aspectRatio: "3/2" }}>
+        <div className="relative w-full" style={{ aspectRatio: "7/4" }}>
           <svg viewBox={`0 0 ${SVG_W} ${SVG_H}`} className="w-full h-full">
-            {/* Field background */}
-            <rect x={FIELD_LEFT} y={FIELD_TOP} width={FIELD_W} height={FIELD_H}
-              fill="#2d8a4e" rx="4" />
-            
-            {/* Field outline */}
-            <rect x={FIELD_LEFT} y={FIELD_TOP} width={FIELD_W} height={FIELD_H}
-              fill="none" stroke="white" strokeWidth="2" opacity={0.6} />
+            <RugbyFieldSvg
+              svgW={SVG_W} svgH={SVG_H}
+              fieldLeft={FIELD_LEFT} fieldRight={FIELD_RIGHT}
+              fieldTop={FIELD_TOP} fieldBottom={FIELD_BOTTOM}
+            />
 
-            {/* Distance lines */}
-            {DISTANCE_LINES.map(line => {
-              const x = mToSvgX(line.m, goalsOnRight);
-              return (
-                <g key={line.m}>
-                  <line x1={x} y1={FIELD_TOP} x2={x} y2={FIELD_BOTTOM}
-                    stroke="white"
-                    strokeWidth={line.thick ? 2 : line.solid ? 1.5 : 1}
-                    strokeDasharray={line.solid ? undefined : "5 5"}
-                    opacity={line.thick ? 0.6 : line.solid ? 0.5 : 0.35} />
-                  <text x={x} y={SVG_H} textAnchor="middle" fill="white" fontSize={line.thick ? 9 : 8} opacity={0.5}>
-                    {line.label}
-                  </text>
-                </g>
-              );
-            })}
-
-            {/* Width marks (5m and 15m from each touchline) */}
-            {WIDTH_MARKS.map(wm => {
-              const yTop = mToSvgY(wm);
-              const yBot = mToSvgY(FIELD_WIDTH_M - wm);
-              return (
-                <g key={`wm-${wm}`}>
-                  <line x1={FIELD_LEFT} y1={yTop} x2={FIELD_RIGHT} y2={yTop}
-                    stroke="white" strokeWidth="0.5" strokeDasharray="3 8" opacity={0.25} />
-                  <line x1={FIELD_LEFT} y1={yBot} x2={FIELD_RIGHT} y2={yBot}
-                    stroke="white" strokeWidth="0.5" strokeDasharray="3 8" opacity={0.25} />
-                  <text x={FIELD_LEFT - 2} y={yTop + 3} textAnchor="end" fill="white" fontSize="7" opacity={0.3}>{wm}m</text>
-                  <text x={FIELD_LEFT - 2} y={yBot + 3} textAnchor="end" fill="white" fontSize="7" opacity={0.3}>{wm}m</text>
-                </g>
-              );
-            })}
-
-            {/* Posts (right side) */}
-            <line x1={FIELD_RIGHT} y1={SVG_H / 2 - 15} x2={FIELD_RIGHT} y2={SVG_H / 2 + 15}
-              stroke="white" strokeWidth="4" opacity={0.9} />
-            <rect x={565} y={170} width={15} height={60} fill="none" stroke="white" strokeWidth="2" opacity={0.5} />
-            <polygon points="570,200 555,190 555,210" fill="white" opacity={0.3} />
-
-            {/* Kick markers with distinct shapes */}
+            {/* Kick markers */}
             {kicks.map((kick, i) => {
               const cx = FIELD_LEFT + (kick.x / 100) * FIELD_W;
               const cy = FIELD_TOP + (kick.y / 100) * FIELD_H;
