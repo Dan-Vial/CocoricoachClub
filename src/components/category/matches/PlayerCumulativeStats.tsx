@@ -25,6 +25,7 @@ import { TeamCumulativeStats } from "./TeamCumulativeStats";
 import { CumulativeKickingMap } from "./CumulativeKickingMap";
 import { getExcelBranding, addBrandedHeader, styleDataHeaderRow, addZebraRows, addFooter, downloadWorkbook } from "@/lib/excelExport";
 import { preparePdfWithSettings } from "@/lib/pdfExport";
+import { drawPdfRugbyField } from "@/lib/pdfRugbyField";
 
 interface PlayerCumulativeStatsProps {
   categoryId: string;
@@ -618,25 +619,9 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
           }
         };
 
-        // Draw field background
-        const drawFieldBg = (doc: jsPDF, fx: number, fy: number, fw: number, fh: number) => {
-          doc.setFillColor(21, 128, 61);
-          doc.rect(fx, fy, fw, fh, "F");
-          doc.setDrawColor(255, 255, 255);
-          doc.setLineWidth(0.3);
-          doc.rect(fx, fy, fw, fh, "S");
-          // Distance lines
-          const lines = [0, 10, 22, 30, 40, 50];
-          lines.forEach(m => {
-            const lx = fx + (m / 100) * fw;
-            doc.setLineDashPattern([1, 1], 0);
-            doc.line(lx, fy, lx, fy + fh);
-          });
-          doc.setLineDashPattern([], 0);
-          // Posts
-          doc.setLineWidth(1);
-          doc.line(fx + fw, fy + fh * 0.4, fx + fw, fy + fh * 0.6);
-          doc.setLineWidth(0.3);
+        // Draw field background using shared helper
+        const drawFieldBg = (doc: jsPDF, bx: number, by: number, bw: number, bh: number) => {
+          return drawPdfRugbyField(doc, bx, by, bw, bh, { showLabels: false });
         };
 
         // Legend
@@ -853,28 +838,12 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
           // Draw field
           const mapW = pageW - 28;
           const mapH = 70;
-          // Field background
-          doc.setFillColor(21, 128, 61);
-          doc.rect(14, y, mapW, mapH, "F");
-          doc.setDrawColor(255, 255, 255);
-          doc.setLineWidth(0.3);
-          doc.rect(14, y, mapW, mapH, "S");
-          // Distance lines
-          [0, 10, 22, 30, 40, 50].forEach(m => {
-            const lx = 14 + (m / 100) * mapW;
-            doc.setLineDashPattern([1, 1], 0);
-            doc.line(lx, y, lx, y + mapH);
-          });
-          doc.setLineDashPattern([], 0);
-          // Posts
-          doc.setLineWidth(1);
-          doc.line(14 + mapW, y + mapH * 0.4, 14 + mapW, y + mapH * 0.6);
-          doc.setLineWidth(0.3);
+          const fieldBounds = drawPdfRugbyField(doc, 14, y, mapW, mapH);
 
-          // Draw kicks
+          // Draw kicks using inner field bounds
           k.allKicks.forEach(kick => {
-            const kx = 14 + (kick.x / 100) * mapW;
-            const ky2 = y + (kick.y / 100) * mapH;
+            const kx = fieldBounds.fx + (kick.x / 100) * fieldBounds.fw;
+            const ky2 = fieldBounds.fy + (kick.y / 100) * fieldBounds.fh;
             const r = 3;
             const fillColor: [number, number, number] = kick.success ? [34, 197, 94] : [239, 68, 68];
             doc.setFillColor(...fillColor);

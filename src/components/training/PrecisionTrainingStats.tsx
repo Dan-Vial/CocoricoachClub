@@ -29,6 +29,7 @@ import {
 } from "recharts";
 import { getExcelBranding, addBrandedHeader, styleDataHeaderRow, addZebraRows, addFooter, downloadWorkbook } from "@/lib/excelExport";
 import { preparePdfWithSettings, drawPdfHeader as drawPdfHeaderCustom, type PdfCustomSettings } from "@/lib/pdfExport";
+import { drawPdfRugbyField, drawPdfFieldLegend } from "@/lib/pdfRugbyField";
 
 interface PrecisionTrainingStatsProps {
   categoryId: string;
@@ -387,34 +388,14 @@ export function PrecisionTrainingStats({ categoryId }: PrecisionTrainingStatsPro
 
   // PDF drawing helpers
   const drawPdfField = (doc: jsPDF, x: number, y: number, w: number, h: number, zones: { x: number; y: number; attempts: number; successes: number }[]) => {
-    // Green field background
-    doc.setFillColor(21, 128, 61);
-    doc.roundedRect(x, y, w, h, 3, 3, "F");
-    // Field outline
-    doc.setDrawColor(255, 255, 255);
-    doc.setLineWidth(0.5);
-    doc.rect(x + 3, y + 2, w - 6, h - 4);
-    // Field lines
-    const lines = [0.15, 0.35, 0.55, 0.75];
-    const labels = ["En-but", "22m", "40m", "50m"];
-    doc.setFontSize(5);
-    doc.setTextColor(255, 255, 255);
-    lines.forEach((pct, i) => {
-      const lx = x + 3 + pct * (w - 6);
-      doc.setLineWidth(0.3);
-      doc.line(lx, y + 2, lx, y + h - 2);
-      doc.text(labels[i], lx, y + h + 3, { align: "center" });
-    });
-    // Goals
-    const gx = x + w - 5;
-    doc.setLineWidth(1);
-    doc.line(gx, y + h * 0.35, gx, y + h * 0.65);
-    // Zone bubbles
+    const { fx, fy, fw, fh } = drawPdfRugbyField(doc, x, y, w, h);
+
+    // Zone bubbles with color coding
     zones.forEach(z => {
-      const cx = x + 3 + (z.x / 100) * (w - 6);
-      const cy = y + 2 + (z.y / 100) * (h - 4);
+      const cx = fx + (z.x / 100) * fw;
+      const cy = fy + (z.y / 100) * fh;
       const rate = z.attempts > 0 ? Math.round((z.successes / z.attempts) * 100) : 0;
-      if (rate >= 75) doc.setFillColor(34, 197, 94);
+      if (rate >= 70) doc.setFillColor(34, 197, 94);
       else if (rate >= 50) doc.setFillColor(245, 158, 11);
       else doc.setFillColor(239, 68, 68);
       doc.circle(cx, cy, 5, "F");
@@ -429,6 +410,9 @@ export function PrecisionTrainingStats({ categoryId }: PrecisionTrainingStatsPro
       doc.setFont("helvetica", "normal");
       doc.text(`${z.successes}/${z.attempts}`, cx, cy + 2.5, { align: "center" });
     });
+
+    // Legend
+    drawPdfFieldLegend(doc, x + 5, y + h + 7);
   };
 
   const drawPdfZoneGrid = (doc: jsPDF, x: number, y: number, w: number, h: number, zones: Record<string, { attempts: number; successes: number }>) => {

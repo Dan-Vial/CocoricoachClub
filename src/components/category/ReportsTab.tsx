@@ -14,6 +14,7 @@ import jsPDF from "jspdf";
 import ExcelJS from "exceljs";
 import { getExcelBranding, addBrandedHeader, styleDataHeaderRow, addZebraRows, addFooter, downloadWorkbook } from "@/lib/excelExport";
 import { preparePdfWithSettings, drawPdfHeader as drawPdfHeaderCustom, drawSectionTitle, drawTableHeader as drawTableHeaderLib, drawTableRow as drawTableRowLib, checkPageBreak as checkPageBreakLib, type PdfCustomSettings } from "@/lib/pdfExport";
+import { drawPdfRugbyField } from "@/lib/pdfRugbyField";
 import { getStatsForSport, supportsCompetitionRounds, getBaseSport, type StatField } from "@/lib/constants/sportStats";
 import { TEST_CATEGORIES, getTestLabel } from "@/lib/constants/testCategories";
 
@@ -1049,43 +1050,8 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
         }
         const fY = yPos;
 
-        // Field background
-        pdf.setFillColor(21, 128, 61); // emerald-700
-        pdf.roundedRect(fieldX, fY, fieldW, fieldH, 2, 2, 'F');
-        
-        // Field outline
-        pdf.setDrawColor(255, 255, 255);
-        pdf.setLineWidth(0.5);
-        const innerMargin = fieldW * 0.033;
-        pdf.rect(fieldX + innerMargin, fY + innerMargin * 0.6, fieldW - 2 * innerMargin, fieldH - innerMargin * 1.2);
-
-        // Goalposts on right
-        const goalX = fieldX + fieldW * 0.967;
-        pdf.setLineWidth(1.2);
-        pdf.line(goalX, fY + fieldH * 0.425, goalX, fY + fieldH * 0.575);
-        
-        // Try line
-        pdf.setLineWidth(0.4);
-        const tryLineX = fieldX + fieldW * 0.9;
-        pdf.line(tryLineX, fY + innerMargin * 0.6, tryLineX, fY + fieldH - innerMargin * 0.6);
-        
-        // 22m line
-        const line22 = fieldX + fieldW * 0.733;
-        pdf.setLineWidth(0.3);
-        pdf.line(line22, fY + innerMargin * 0.6, line22, fY + fieldH - innerMargin * 0.6);
-        
-        // Halfway line
-        const halfwayX = fieldX + fieldW * 0.4;
-        pdf.setLineWidth(0.5);
-        pdf.line(halfwayX, fY + innerMargin * 0.6, halfwayX, fY + fieldH - innerMargin * 0.6);
-
-        // Line labels
-        pdf.setFontSize(5);
-        pdf.setTextColor(255, 255, 255);
-        pdf.setFont("helvetica", "normal");
-        pdf.text("En-but", tryLineX, fY + fieldH - 1, { align: "center" });
-        pdf.text("22m", line22, fY + fieldH - 1, { align: "center" });
-        pdf.text("50m", halfwayX, fY + fieldH - 1, { align: "center" });
+        // Field background using shared helper
+        const fieldBounds = drawPdfRugbyField(pdf, fieldX, fY, fieldW, fieldH);
 
         // Draw kick attempts
         const typeColors: Record<string, [number, number, number]> = {
@@ -1095,8 +1061,8 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
         };
 
         kickingAttempts.forEach((attempt: any) => {
-          const cx = fieldX + (attempt.zone_x / 100) * fieldW;
-          const cy = fY + (attempt.zone_y / 100) * fieldH;
+          const cx = fieldBounds.fx + (attempt.zone_x / 100) * fieldBounds.fw;
+          const cy = fieldBounds.fy + (attempt.zone_y / 100) * fieldBounds.fh;
           const r = Math.max(2.5, fieldW * 0.012);
           
           // Circle fill: green for success, red for miss
