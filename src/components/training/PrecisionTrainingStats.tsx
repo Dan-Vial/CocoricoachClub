@@ -462,7 +462,12 @@ export function PrecisionTrainingStats({ categoryId }: PrecisionTrainingStatsPro
   };
 
   // Export PDF
-  const handleExportPdf = async () => {
+  const handleExportPdf = async (singlePlayerId?: string) => {
+    const exportData = singlePlayerId ? filtered.filter((r: any) => r.player_id === singlePlayerId) : filtered;
+    const singlePlayerName = singlePlayerId ? players.find(pl => pl.id === singlePlayerId)?.name : undefined;
+    const exportTotalAttempts = exportData.reduce((s: number, r: any) => s + (r.attempts || 0), 0);
+    const exportTotalSuccesses = exportData.reduce((s: number, r: any) => s + (r.successes || 0), 0);
+    const exportGlobalRate = exportTotalAttempts > 0 ? Math.round((exportTotalSuccesses / exportTotalAttempts) * 100) : 0;
     try {
       const { settings, logoBase64, clubName, categoryName, seasonName } = await preparePdfWithSettings(categoryId);
       const doc = new jsPDF({ orientation: "landscape" });
