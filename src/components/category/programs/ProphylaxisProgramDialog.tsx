@@ -14,7 +14,7 @@ import { PAIN_ZONES } from "@/lib/constants/pain-locations";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface ProphylaxisProgramDialogProps {
   categoryId: string;
