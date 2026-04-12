@@ -105,15 +105,56 @@ export function AthletePrecisionFieldInput({
     setDialogOpen(true);
   }, [exerciseType, goalsOnRight, currentExercise]);
 
+  // Get fixed origin position for specific zone kick exercises
+  const getFixedOrigin = useCallback((): { x: number; y: number } | null => {
+    if (!currentExercise || currentMode !== "zone_kicks") return null;
+    // Center of field (y=50) for lateral, convert meter position to percentage
+    const centerY = 50;
+    if (currentExercise.value === "kickoff") {
+      // Kick-off from center (50m line)
+      const x50 = goalsOnRight ? ((540 - ((50 / 100) * 560)) / 600) * 100 : ((60 + ((50 / 100) * 560)) / 600) * 100;
+      // Simpler: 50m line is at center of field
+      return { x: 50, y: centerY };
+    }
+    if (currentExercise.value === "goal_line_restart") {
+      // Renvoi en-but from try line (0m / goal line)
+      return { x: goalsOnRight ? (540 / 600) * 100 : (60 / 600) * 100, y: centerY };
+    }
+    if (currentExercise.value === "22m_restart") {
+      // Renvoi 22m from 22m line
+      const x22 = goalsOnRight
+        ? ((540 - ((22 / 100) * 560)) / 600) * 100
+        : ((60 + ((22 / 100) * 560)) / 600) * 100;
+      return { x: x22, y: centerY };
+    }
+    // tactical_kick = free origin click
+    return null;
+  }, [currentExercise, currentMode, goalsOnRight]);
+
   // Zone kicks mode: TWO-CLICK flow - first origin, then target
+  // For kickoff/renvoi, origin is fixed → only one click needed (target)
   const handleZoneKickClick = useCallback((xPct: number, yPct: number) => {
-    if (zoneKickStep === "origin") {
-      // First click: record kick origin
+    const fixedOrigin = getFixedOrigin();
+    
+    if (fixedOrigin) {
+      // Fixed origin: every click is a target
+      const posLabel = getPositionLabel(xPct, yPct, goalsOnRight);
+      const originLabel = getPositionLabel(fixedOrigin.x, fixedOrigin.y, goalsOnRight);
+      const exLabel = currentExercise?.label || exerciseType;
+      setZoneKickOrigin(fixedOrigin);
+      setClickPos({ x: xPct, y: yPct });
+      setClickLabel(`${exLabel} - De: ${originLabel} → Cible: ${posLabel}`);
+      setPendingKickType(null);
+      setAttempts("1");
+      setSuccesses("0");
+      setDialogOpen(true);
+    } else if (zoneKickStep === "origin") {
+      // Free origin: first click = origin
       setZoneKickOrigin({ x: xPct, y: yPct });
       setZoneKickStep("target");
       toast.info("📍 Position de frappe enregistrée. Clique maintenant sur la zone ciblée.");
     } else {
-      // Second click: record target zone and open dialog
+      // Free origin: second click = target
       const posLabel = getPositionLabel(xPct, yPct, goalsOnRight);
       const originLabel = getPositionLabel(zoneKickOrigin!.x, zoneKickOrigin!.y, goalsOnRight);
       const exLabel = currentExercise?.label || exerciseType;
@@ -124,7 +165,7 @@ export function AthletePrecisionFieldInput({
       setSuccesses("0");
       setDialogOpen(true);
     }
-  }, [exerciseType, goalsOnRight, currentExercise, zoneKickStep, zoneKickOrigin]);
+  }, [exerciseType, goalsOnRight, currentExercise, zoneKickStep, zoneKickOrigin, getFixedOrigin]);
 
   const handleLineoutZoneClick = (zone: LineoutZone) => {
     const exLabel = currentExercise?.label || exerciseType;
@@ -398,11 +439,13 @@ export function AthletePrecisionFieldInput({
         <div className="relative w-full">
           <div className="flex items-center gap-2 mb-1">
             <p className="text-xs text-muted-foreground">
-              {zoneKickStep === "origin"
-                ? `📍 Étape 1 : Clique sur la position de frappe (${currentExercise?.label})`
-                : `🎯 Étape 2 : Clique sur la zone ciblée`}
+              {getFixedOrigin()
+                ? `🎯 Clique sur la zone ciblée (${currentExercise?.label} — départ fixe)`
+                : zoneKickStep === "origin"
+                  ? `📍 Étape 1 : Clique sur la position de frappe (${currentExercise?.label})`
+                  : `🎯 Étape 2 : Clique sur la zone ciblée`}
             </p>
-            {zoneKickStep === "target" && (
+            {zoneKickStep === "target" && !getFixedOrigin() && (
               <Button variant="ghost" size="sm" className="h-6 text-[10px]" onClick={() => { setZoneKickOrigin(null); setZoneKickStep("origin"); }}>
                 ↩ Annuler
               </Button>
@@ -413,20 +456,27 @@ export function AthletePrecisionFieldInput({
             onClick={handleZoneKickClick}
             showCursorTracker
           >
-            {/* Show origin marker if set */}
-            {zoneKickOrigin && (
-              (() => {
-                const ox = 20 + (zoneKickOrigin.x / 100) * 560;
-                const oy = 10 + (zoneKickOrigin.y / 100) * 380;
-                return (
-                  <g>
-                    <circle cx={ox} cy={oy} r={10} fill="none" stroke="#f59e0b" strokeWidth={2.5} strokeDasharray="4 2" opacity={0.9} />
-                    <circle cx={ox} cy={oy} r={3} fill="#f59e0b" opacity={0.9} />
-                    <text x={ox} y={oy - 14} textAnchor="middle" fill="#f59e0b" fontSize="8" fontWeight="bold">FRAPPE</text>
-                  </g>
-                );
-              })()
-            )}
+            {/* Show origin marker - fixed or user-set */}
+            {(() => {
+              const origin = getFixedOrigin() || zoneKickOrigin;
+              if (!origin) return null;
+              const ox = 20 + (origin.x / 100) * 560;
+              const oy = 10 + (origin.y / 100) * 380;
+              const isFixed = !!getFixedOrigin();
+              return (
+                <g>
+                  {isFixed ? (
+                    // Fixed origin: show a line across the field width
+                    <line x1={ox} y1={10} x2={ox} y2={390} stroke="#f59e0b" strokeWidth={2} strokeDasharray="6 3" opacity={0.6} />
+                  ) : null}
+                  <circle cx={ox} cy={oy} r={10} fill="none" stroke="#f59e0b" strokeWidth={2.5} strokeDasharray="4 2" opacity={0.9} />
+                  <circle cx={ox} cy={oy} r={3} fill="#f59e0b" opacity={0.9} />
+                  <text x={ox} y={oy - 14} textAnchor="middle" fill="#f59e0b" fontSize="8" fontWeight="bold">
+                    {isFixed ? currentExercise?.label?.toUpperCase() : "FRAPPE"}
+                  </text>
+                </g>
+              );
+            })()}
             {/* Zone stats */}
             {zoneStats.map((zone, i) => {
               const cx = (zone.x / 100) * 600;
