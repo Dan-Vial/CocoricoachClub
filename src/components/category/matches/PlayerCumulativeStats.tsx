@@ -401,8 +401,9 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
   }, [stats, sportStats, statCategories, categoryId, selectedCount, allMatches, playerProgressions]);
 
   // Export PDF
-  const handleExportPdf = useCallback(async (mode: "all" | "team" | "individual" = "all") => {
+  const handleExportPdf = useCallback(async (mode: "all" | "team" | "individual" | "single" = "all", singlePlayerId?: string) => {
     if (!stats || stats.length === 0) return;
+    const exportStats = singlePlayerId ? stats.filter(p => p.playerId === singlePlayerId) : stats;
     try {
       const { settings, clubName, categoryName, seasonName } = await preparePdfWithSettings(categoryId);
       const doc = new jsPDF({ orientation: "landscape" });
