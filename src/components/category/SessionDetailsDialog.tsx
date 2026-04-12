@@ -733,8 +733,8 @@ export function SessionDetailsDialog({
           )}
         </div>
 
-        <Tabs defaultValue="exercises" className="flex-1 flex flex-col min-h-0">
-          <TabsList className="grid w-full grid-cols-2 shrink-0">
+        <Tabs defaultValue={session?.training_type === "precision" && isRugby ? "precision_stats" : "exercises"} className="flex-1 flex flex-col min-h-0">
+          <TabsList className={cn("grid w-full shrink-0", session?.training_type === "precision" && isRugby ? "grid-cols-3" : "grid-cols-2")}>
             <TabsTrigger value="exercises" className="flex items-center gap-1">
               <Dumbbell className="h-4 w-4" />
               Exercices
@@ -742,6 +742,12 @@ export function SessionDetailsDialog({
                 <Badge variant="secondary" className="ml-1">{exercises.length}</Badge>
               )}
             </TabsTrigger>
+            {session?.training_type === "precision" && isRugby && (
+              <TabsTrigger value="precision_stats" className="flex items-center gap-1">
+                <Target className="h-4 w-4" />
+                Saisie stats
+              </TabsTrigger>
+            )}
             <TabsTrigger value="rpe" className="flex items-center gap-1">
               <Activity className="h-4 w-4" />
               Saisie RPE
