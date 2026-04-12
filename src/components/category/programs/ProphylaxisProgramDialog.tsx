@@ -46,18 +46,6 @@ const FREQUENCIES = [
   { value: "apres_entrainement", label: "Après entraînement" },
 ];
 
-const CATEGORY_LABELS: Record<string, string> = {
-  upper_body: "Haut du corps",
-  lower_body: "Bas du corps",
-  full_body: "Full body",
-  cardio: "Cardio",
-  mobility: "Mobilité",
-  core: "Gainage",
-  plyometrics: "Pliométrie",
-  olympic: "Haltérophilie",
-  machine: "Machine",
-  autre: "Autre",
-};
 
 export function ProphylaxisProgramDialog({ categoryId, programId, open, onOpenChange }: ProphylaxisProgramDialogProps) {
   const { user } = useAuth();
