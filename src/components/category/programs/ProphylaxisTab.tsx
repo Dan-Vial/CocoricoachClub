@@ -117,9 +117,12 @@ export function ProphylaxisTab({ categoryId }: ProphylaxisTabProps) {
             const assignments = program.prophylaxis_assignments || [];
             const isExpanded = expandedId === program.id;
             const assignedNames = assignments.length > 0
-              ? assignments.map((a: any) => `${a.players?.first_name || ""} ${a.players?.name || ""}`.trim()).filter(Boolean)
-              : program.players
-                ? [`${program.players.first_name || ""} ${program.players.name}`.trim()]
+              ? assignments.map((a: any) => {
+                  const p = a.player_info;
+                  return p ? `${p.first_name || ""} ${p.name || ""}`.trim() : "";
+                }).filter(Boolean)
+              : program.player_info
+                ? [`${program.player_info.first_name || ""} ${program.player_info.name}`.trim()]
                 : [];
 
             return (
