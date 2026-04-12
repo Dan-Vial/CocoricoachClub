@@ -26,13 +26,40 @@ export function ProphylaxisTab({ categoryId }: ProphylaxisTabProps) {
         .from("prophylaxis_programs")
         .select(`
           *,
-          players(name, first_name, photo_url),
           prophylaxis_exercises(*),
-          prophylaxis_assignments(id, player_id, is_active, players(name, first_name))
+          prophylaxis_assignments(id, player_id, is_active)
         `)
         .eq("category_id", categoryId)
         .order("created_at", { ascending: false });
       if (error) throw error;
+      
+      // Fetch player names for assignments separately
+      if (data && data.length > 0) {
+        const playerIds = new Set<string>();
+        data.forEach((p: any) => {
+          if (p.player_id) playerIds.add(p.player_id);
+          (p.prophylaxis_assignments || []).forEach((a: any) => {
+            if (a.player_id) playerIds.add(a.player_id);
+          });
+        });
+        
+        if (playerIds.size > 0) {
+          const { data: players } = await supabase
+            .from("players")
+            .select("id, name, first_name, photo_url")
+            .in("id", Array.from(playerIds));
+          
+          const playerMap = new Map((players || []).map(p => [p.id, p]));
+          
+          data.forEach((p: any) => {
+            if (p.player_id) p.player_info = playerMap.get(p.player_id);
+            (p.prophylaxis_assignments || []).forEach((a: any) => {
+              a.player_info = playerMap.get(a.player_id);
+            });
+          });
+        }
+      }
+      
       return data;
     },
   });
