@@ -774,7 +774,17 @@ export function SessionDetailsDialog({
               </ScrollArea>
             </TabsContent>
 
-            <TabsContent value="rpe" className="h-full m-0 data-[state=active]:flex data-[state=active]:flex-col">
+            {/* Precision stats tab with field cartography */}
+            {session?.training_type === "precision" && isRugby && (
+              <TabsContent value="precision_stats" className="h-full m-0 data-[state=active]:flex data-[state=active]:flex-col">
+                <ScrollArea className="flex-1 h-[60vh]">
+                  <div className="pr-4">
+                    <PrecisionFieldTracker categoryId={categoryId} />
+                  </div>
+                </ScrollArea>
+              </TabsContent>
+            )}
+
               <ScrollArea className="flex-1 h-[50vh] max-h-[50vh]">
                 <div className="space-y-2 pr-4">
                   <p className="text-sm text-muted-foreground mb-4">
