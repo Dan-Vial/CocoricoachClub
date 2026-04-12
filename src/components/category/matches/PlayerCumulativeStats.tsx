@@ -42,6 +42,8 @@ interface MatchInfo {
   competition?: string;
   competition_stage?: string;
   event_type?: string;
+  score_home?: number | null;
+  score_away?: number | null;
 }
 
 interface CumulativeStats {
