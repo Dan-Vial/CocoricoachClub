@@ -222,14 +222,21 @@ export function PrecisionFieldTracker({ categoryId }: PrecisionFieldTrackerProps
 
   const handleZoneKickClick = (xPct: number, yPct: number) => {
     if (isViewer || !selectedPlayerId || !activeSessionId) return;
-    const posLabel = getPositionLabel(xPct, yPct, goalsOnRight);
-    const exLabel = currentExercise?.label || exerciseType;
-    setClickPos({ x: xPct, y: yPct });
-    setClickLabel(`${exLabel} - ${posLabel}`);
-    setPendingKickType(null);
-    setAttempts("1");
-    setSuccesses("0");
-    setDialogOpen(true);
+    if (zoneKickStep === "origin") {
+      setZoneKickOrigin({ x: xPct, y: yPct });
+      setZoneKickStep("target");
+      toast.info("📍 Position de frappe enregistrée. Cliquez maintenant sur la zone ciblée.");
+    } else {
+      const posLabel = getPositionLabel(xPct, yPct, goalsOnRight);
+      const originLabel = getPositionLabel(zoneKickOrigin!.x, zoneKickOrigin!.y, goalsOnRight);
+      const exLabel = currentExercise?.label || exerciseType;
+      setClickPos({ x: xPct, y: yPct });
+      setClickLabel(`${exLabel} - De: ${originLabel} → Cible: ${posLabel}`);
+      setPendingKickType(null);
+      setAttempts("1");
+      setSuccesses("0");
+      setDialogOpen(true);
+    }
   };
 
   const handleLineoutZoneClick = (zone: LineoutZone) => {
