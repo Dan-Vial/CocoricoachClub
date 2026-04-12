@@ -25,7 +25,7 @@ import { TeamCumulativeStats } from "./TeamCumulativeStats";
 import { CumulativeKickingMap } from "./CumulativeKickingMap";
 import { getExcelBranding, addBrandedHeader, styleDataHeaderRow, addZebraRows, addFooter, downloadWorkbook } from "@/lib/excelExport";
 import { preparePdfWithSettings } from "@/lib/pdfExport";
-import { drawPdfRugbyField } from "@/lib/pdfRugbyField";
+import { drawPdfRugbyField, drawPdfZoneStatsGrid } from "@/lib/pdfRugbyField";
 
 interface PlayerCumulativeStatsProps {
   categoryId: string;
@@ -883,92 +883,13 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
 
           y += mapH + 6;
 
-          // Zone stats table below cartography
-          const zoneStats: Record<string, { success: number; total: number }> = {};
-          k.allKicks.forEach((kick: any) => {
-            const svgX = (kick.x / 100) * 600;
-            const svgY2 = (kick.y / 100) * 400;
-            const tryLineX = 540;
-            const rawDist = Math.abs(svgX - tryLineX);
-            const distM = Math.round((rawDist / 560) * 100);
-            const row = distM < 22 ? "proche" : distM < 40 ? "moyen" : "loin";
-            const centreY = 200;
-            const lateralM = ((svgY2 - centreY) / 380) * 70;
-            const col = lateralM < -10 ? "gauche" : lateralM > 10 ? "droite" : "centre";
-            const key = `${row}-${col}`;
-            if (!zoneStats[key]) zoneStats[key] = { success: 0, total: 0 };
-            zoneStats[key].total++;
-            if (kick.success) zoneStats[key].success++;
-          });
-
-          if (Object.keys(zoneStats).length > 0) {
-            if (y > pageH - 50) { doc.addPage(); y = 15; }
-            doc.setFontSize(9);
-            doc.setFont("helvetica", "bold");
-            doc.setTextColor(30, 41, 59);
-            doc.text("Statistiques par zone", pageW / 2, y, { align: "center" });
-            y += 5;
-
-            const rows = ["proche", "moyen", "loin"];
-            const cols = ["gauche", "centre", "droite"];
-            const colLabels = ["Gauche", "Centre", "Droite"];
-            const rowLabels = ["0-22m", "22-40m", "40m+"];
-            const cellW = 40;
-            const cellH = 10;
-            const startX = pageW / 2 - (cellW * 3) / 2;
-
-            // Column headers
-            doc.setFontSize(7);
-            doc.setFont("helvetica", "bold");
-            colLabels.forEach((l, i) => {
-              doc.text(l, startX + i * cellW + cellW / 2, y, { align: "center" });
-            });
-            y += 3;
-
-            rows.forEach((row, ri) => {
-              cols.forEach((col, ci) => {
-                const key = `${row}-${col}`;
-                const zone = zoneStats[key];
-                const cx = startX + ci * cellW;
-                if (zone && zone.total > 0) {
-                  const zRate = Math.round((zone.success / zone.total) * 100);
-                  if (zRate >= 70) doc.setFillColor(220, 252, 231);
-                  else if (zRate >= 40) doc.setFillColor(254, 249, 195);
-                  else doc.setFillColor(254, 226, 226);
-                  doc.rect(cx, y, cellW, cellH, "F");
-                  doc.setDrawColor(200, 210, 220);
-                  doc.setLineWidth(0.2);
-                  doc.rect(cx, y, cellW, cellH, "S");
-                  doc.setTextColor(30, 41, 59);
-                  doc.setFontSize(8);
-                  doc.setFont("helvetica", "bold");
-                  doc.text(`${zRate}%`, cx + cellW / 2, y + 5, { align: "center" });
-                  doc.setFontSize(6);
-                  doc.setFont("helvetica", "normal");
-                  doc.text(`(${zone.success}/${zone.total})`, cx + cellW / 2, y + 8.5, { align: "center" });
-                } else {
-                  doc.setFillColor(248, 250, 252);
-                  doc.rect(cx, y, cellW, cellH, "F");
-                  doc.setDrawColor(200, 210, 220);
-                  doc.setLineWidth(0.2);
-                  doc.rect(cx, y, cellW, cellH, "S");
-                  doc.setTextColor(148, 163, 184);
-                  doc.setFontSize(8);
-                  doc.text("—", cx + cellW / 2, y + 6, { align: "center" });
-                }
-              });
-              y += cellH;
-            });
-
-            // Row labels below
-            doc.setFontSize(6);
-            doc.setTextColor(100, 116, 139);
-            doc.setFont("helvetica", "normal");
-            rowLabels.forEach((l, i) => {
-              doc.text(l, startX + i * cellW + cellW / 2, y + 3, { align: "center" });
-            });
-            y += 8;
-          }
+          // Zone stats grid below cartography
+          const zoneKicks = k.allKicks.map((kick: any) => ({
+            x: kick.x as number,
+            y: kick.y as number,
+            success: !!kick.success,
+          }));
+          y = drawPdfZoneStatsGrid(doc, zoneKicks, pageW, y, pageH);
         }
       }
 
