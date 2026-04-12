@@ -21,6 +21,8 @@ import { LineoutFieldSVG, aggregateLineoutStats, type LineoutZone } from "@/comp
 
 interface PrecisionFieldTrackerProps {
   categoryId: string;
+  sessionId?: string;
+  sessionDate?: string;
 }
 
 // Legacy positions kept for backward compat only
