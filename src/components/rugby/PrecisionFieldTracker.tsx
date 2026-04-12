@@ -12,6 +12,8 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useViewerModeContext } from "@/contexts/ViewerModeContext";
+import { RugbyFieldSVG } from "@/components/rugby/RugbyFieldSVG";
+import { getPositionLabel } from "@/lib/utils/kickingFieldZones";
 
 interface PrecisionFieldTrackerProps {
   categoryId: string;
