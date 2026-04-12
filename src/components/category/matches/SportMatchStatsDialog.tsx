@@ -314,11 +314,16 @@ export function SportMatchStatsDialog({
             }
           });
           
-          const sportData: Record<string, number> = {};
+          const sportData: Record<string, any> = {};
           mergedStats.forEach((stat) => {
             const val = Number(s[stat.key]) || 0;
             if (val !== 0) sportData[stat.key] = val;
           });
+          // Include kick attempt positions if available
+          const kicks = playerKicks[s.playerId];
+          if (kicks && kicks.length > 0) {
+            sportData.kickAttempts = kicks.map(k => ({ x: k.x, y: k.y, kickType: k.kickType, success: k.success }));
+          }
 
           return {
             match_id: matchId,
