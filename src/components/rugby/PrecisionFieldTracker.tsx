@@ -219,7 +219,9 @@ export function PrecisionFieldTracker({ categoryId }: PrecisionFieldTrackerProps
   const globalRate = totalAttempts > 0 ? Math.round((totalSuccesses / totalAttempts) * 100) : 0;
 
   const handleButeurClick = (xPct: number, yPct: number) => {
-    if (isViewer || !selectedPlayerId || !activeSessionId) return;
+    if (isViewer) return;
+    if (!selectedPlayerId) { toast.error("Sélectionnez d'abord un joueur"); return; }
+    if (!activeSessionId) { toast.error("Aucune séance planifiée aujourd'hui"); return; }
     const posLabel = getPositionLabel(xPct, yPct, goalsOnRight);
     const exLabel = currentExercise?.label || exerciseType;
     setClickPos({ x: xPct, y: yPct });
@@ -248,7 +250,9 @@ export function PrecisionFieldTracker({ categoryId }: PrecisionFieldTrackerProps
   };
 
   const handleZoneKickClick = (xPct: number, yPct: number) => {
-    if (isViewer || !selectedPlayerId || !activeSessionId) return;
+    if (isViewer) return;
+    if (!selectedPlayerId) { toast.error("Sélectionnez d'abord un joueur"); return; }
+    if (!activeSessionId) { toast.error("Aucune séance planifiée aujourd'hui"); return; }
     const fixedOrigin = getFixedOrigin();
 
     if (fixedOrigin) {
