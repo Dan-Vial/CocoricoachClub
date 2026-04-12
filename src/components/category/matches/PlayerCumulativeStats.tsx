@@ -56,6 +56,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
   const [selectedMatchIds, setSelectedMatchIds] = useState<string[]>([]);
   const [filterOpen, setFilterOpen] = useState(false);
   const [selectedPlayerId, setSelectedPlayerId] = useState<string>("");
+  const [exportPlayerId, setExportPlayerId] = useState<string>("");
   const isRugby = isRugbyType(sportType);
 
   const { stats: sportStats, isLoading: loadingPrefs } = useStatPreferences({ categoryId, sportType });
