@@ -32,6 +32,8 @@ import { cn } from "@/lib/utils";
 
 interface ExerciseLibrarySidebarProps {
   sportType?: string;
+  /** If provided, exercises are clickable (no drag). Used in prophylaxis dialog etc. */
+  onClickExercise?: (exercise: { id: string; name: string; category: string; youtube_url?: string | null; image_url?: string | null }) => void;
 }
 
 interface DraggableExerciseProps {
