@@ -634,69 +634,129 @@ export function PrecisionTrainingStats({ categoryId }: PrecisionTrainingStatsPro
       }
 
       // By exercise table
-      if (y > pageH - 50) { doc.addPage(); y = 15; }
-      doc.setFontSize(12);
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(30, 41, 59);
-      doc.text("Par exercice", 14, y);
-      y += 6;
-      const cols = [14, 120, 155, 190, 225];
-      const headers = ["Exercice", "Tentatives", "Réussites", "Taux", "Évolution"];
-      doc.setFillColor(241, 245, 249);
-      doc.rect(14, y, pageW - 28, 7, "F");
-      doc.setFontSize(9);
-      doc.setFont("helvetica", "bold");
-      headers.forEach((h, i) => doc.text(h, cols[i], y + 5));
-      y += 9;
-      doc.setFont("helvetica", "normal");
-
-      byExercise.forEach((ex) => {
-        if (y > pageH - 20) { doc.addPage(); y = 15; }
+      if (mode === "exercise" || mode === "both") {
+        if (y > pageH - 50) { doc.addPage(); y = 15; }
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "bold");
         doc.setTextColor(30, 41, 59);
-        doc.text(ex.label, cols[0], y + 4);
-        doc.text(String(ex.attempts), cols[1], y + 4);
-        doc.text(String(ex.successes), cols[2], y + 4);
-        doc.text(`${ex.rate}%`, cols[3], y + 4);
-        if (ex.progression > 0) doc.setTextColor(22, 163, 74);
-        else if (ex.progression < 0) doc.setTextColor(220, 38, 38);
-        else doc.setTextColor(100, 116, 139);
-        doc.text(ex.progression > 0 ? `+${ex.progression}%` : `${ex.progression}%`, cols[4], y + 4);
-        y += 7;
-      });
+        doc.text("Par exercice", 14, y);
+        y += 6;
+        const cols = [14, 120, 155, 190, 225];
+        const headers = ["Exercice", "Tentatives", "Réussites", "Taux", "Évolution"];
+        doc.setFillColor(241, 245, 249);
+        doc.rect(14, y, pageW - 28, 7, "F");
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "bold");
+        headers.forEach((h, i) => doc.text(h, cols[i], y + 5));
+        y += 9;
+        doc.setFont("helvetica", "normal");
 
-      // By player table
-      y += 8;
-      if (y > pageH - 40) { doc.addPage(); y = 15; }
-      doc.setTextColor(30, 41, 59);
-      doc.setFontSize(12);
-      doc.setFont("helvetica", "bold");
-      doc.text("Par athlète", 14, y);
-      y += 6;
-      doc.setFillColor(241, 245, 249);
-      doc.rect(14, y, pageW - 28, 7, "F");
-      doc.setFontSize(9);
-      doc.setFont("helvetica", "bold");
-      const headers2 = ["Athlète", "Tentatives", "Réussites", "Taux", "Évolution"];
-      headers2.forEach((h, i) => doc.text(h, cols[i], y + 5));
-      y += 9;
-      doc.setFont("helvetica", "normal");
+        byExercise.forEach((ex) => {
+          if (y > pageH - 20) { doc.addPage(); y = 15; }
+          doc.setTextColor(30, 41, 59);
+          doc.text(ex.label, cols[0], y + 4);
+          doc.text(String(ex.attempts), cols[1], y + 4);
+          doc.text(String(ex.successes), cols[2], y + 4);
+          doc.text(`${ex.rate}%`, cols[3], y + 4);
+          if (ex.progression > 0) doc.setTextColor(22, 163, 74);
+          else if (ex.progression < 0) doc.setTextColor(220, 38, 38);
+          else doc.setTextColor(100, 116, 139);
+          doc.text(ex.progression > 0 ? `+${ex.progression}%` : `${ex.progression}%`, cols[4], y + 4);
+          y += 7;
+        });
 
-      byPlayer.forEach((p) => {
-        if (y > pageH - 20) { doc.addPage(); y = 15; }
+        // By player table
+        if (!singlePlayerId) {
+          y += 8;
+          if (y > pageH - 40) { doc.addPage(); y = 15; }
+          doc.setTextColor(30, 41, 59);
+          doc.setFontSize(12);
+          doc.setFont("helvetica", "bold");
+          doc.text("Par athlète", 14, y);
+          y += 6;
+          doc.setFillColor(241, 245, 249);
+          doc.rect(14, y, pageW - 28, 7, "F");
+          doc.setFontSize(9);
+          doc.setFont("helvetica", "bold");
+          const cols2 = [14, 120, 155, 190, 225];
+          const headers2 = ["Athlète", "Tentatives", "Réussites", "Taux", "Évolution"];
+          headers2.forEach((h, i) => doc.text(h, cols2[i], y + 5));
+          y += 9;
+          doc.setFont("helvetica", "normal");
+
+          byPlayer.forEach((p) => {
+            if (y > pageH - 20) { doc.addPage(); y = 15; }
+            doc.setTextColor(30, 41, 59);
+            doc.text(p.name, cols2[0], y + 4);
+            doc.text(String(p.attempts), cols2[1], y + 4);
+            doc.text(String(p.successes), cols2[2], y + 4);
+            doc.text(`${p.rate}%`, cols2[3], y + 4);
+            if (p.progression > 0) doc.setTextColor(22, 163, 74);
+            else if (p.progression < 0) doc.setTextColor(220, 38, 38);
+            else doc.setTextColor(100, 116, 139);
+            doc.text(p.progression > 0 ? `+${p.progression}%` : `${p.progression}%`, cols2[4], y + 4);
+            y += 7;
+          });
+        }
+      }
+
+      // By training session table
+      if (mode === "session" || mode === "both") {
+        const sessions = groupBySession(exportData);
+        if (y > pageH - 50) { doc.addPage(); y = 15; }
+        y += 8;
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "bold");
         doc.setTextColor(30, 41, 59);
-        doc.text(p.name, cols[0], y + 4);
-        doc.text(String(p.attempts), cols[1], y + 4);
-        doc.text(String(p.successes), cols[2], y + 4);
-        doc.text(`${p.rate}%`, cols[3], y + 4);
-        if (p.progression > 0) doc.setTextColor(22, 163, 74);
-        else if (p.progression < 0) doc.setTextColor(220, 38, 38);
-        else doc.setTextColor(100, 116, 139);
-        doc.text(p.progression > 0 ? `+${p.progression}%` : `${p.progression}%`, cols[4], y + 4);
-        y += 7;
-      });
+        doc.text("Par entraînement", 14, y);
+        y += 6;
 
+        const sCols = [14, 50, 160, 195, 230];
+        const sHeaders = ["Date", "Exercice", "Tentatives", "Réussites", "Taux"];
+        doc.setFillColor(241, 245, 249);
+        doc.rect(14, y, pageW - 28, 7, "F");
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "bold");
+        sHeaders.forEach((h, i) => doc.text(h, sCols[i], y + 5));
+        y += 9;
+        doc.setFont("helvetica", "normal");
+
+        sessions.forEach((s) => {
+          const dateStr = format(new Date(s.date), "dd/MM/yyyy");
+          let firstRow = true;
+          s.exercises.forEach((v, exLabel) => {
+            if (y > pageH - 20) { doc.addPage(); y = 15; }
+            doc.setTextColor(30, 41, 59);
+            doc.text(firstRow ? dateStr : "", sCols[0], y + 4);
+            doc.text(exLabel, sCols[1], y + 4);
+            doc.text(String(v.attempts), sCols[2], y + 4);
+            doc.text(String(v.successes), sCols[3], y + 4);
+            const rate = v.attempts > 0 ? Math.round((v.successes / v.attempts) * 100) : 0;
+            doc.text(`${rate}%`, sCols[4], y + 4);
+            y += 7;
+            firstRow = false;
+          });
+          // Session total
+          const totalA = Array.from(s.exercises.values()).reduce((sum, v) => sum + v.attempts, 0);
+          const totalS = Array.from(s.exercises.values()).reduce((sum, v) => sum + v.successes, 0);
+          const totalRate = totalA > 0 ? Math.round((totalS / totalA) * 100) : 0;
+          if (y > pageH - 20) { doc.addPage(); y = 15; }
+          doc.setFillColor(241, 245, 249);
+          doc.rect(14, y, pageW - 28, 7, "F");
+          doc.setFont("helvetica", "bold");
+          doc.text("", sCols[0], y + 5);
+          doc.text("TOTAL SÉANCE", sCols[1], y + 5);
+          doc.text(String(totalA), sCols[2], y + 5);
+          doc.text(String(totalS), sCols[3], y + 5);
+          doc.text(`${totalRate}%`, sCols[4], y + 5);
+          doc.setFont("helvetica", "normal");
+          y += 9;
+        });
+      }
+
+      const modeLabel = mode === "exercise" ? "-exercices" : mode === "session" ? "-seances" : "";
       const fileSuffix = singlePlayerName ? `-${singlePlayerName.replace(/\s+/g, '-')}` : "";
-      doc.save(`stats-entrainement${fileSuffix}-${format(new Date(), "yyyy-MM-dd")}.pdf`);
+      doc.save(`stats-entrainement${modeLabel}${fileSuffix}-${format(new Date(), "yyyy-MM-dd")}.pdf`);
       toast.success("Export PDF téléchargé !");
     } catch (e) {
       toast.error("Erreur lors de l'export PDF");
