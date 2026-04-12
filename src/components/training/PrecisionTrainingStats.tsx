@@ -743,15 +743,60 @@ export function PrecisionTrainingStats({ categoryId }: PrecisionTrainingStatsPro
               )}
             </div>
 
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={handleExportExcel} className="gap-1">
-                <FileSpreadsheet className="h-4 w-4" />
-                <span className="hidden sm:inline">Excel</span>
-              </Button>
-              <Button variant="outline" size="sm" onClick={handleExportPdf} className="gap-1">
-                <Download className="h-4 w-4" />
-                <span className="hidden sm:inline">PDF</span>
-              </Button>
+            <div className="flex gap-2 items-center">
+              <Select value={exportPlayerId} onValueChange={setExportPlayerId}>
+                <SelectTrigger className="w-[180px] h-8 text-xs">
+                  <SelectValue placeholder="Exporter un athlète" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">Tous les athlètes</SelectItem>
+                  {players.map(p => (
+                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-1">
+                    <FileSpreadsheet className="h-4 w-4" /><span className="hidden sm:inline">Excel</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel className="text-xs">Exporter en Excel</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {exportPlayerId && exportPlayerId !== "__all__" ? (
+                    <DropdownMenuItem onClick={() => handleExportExcel(exportPlayerId)}>
+                      <User className="h-3.5 w-3.5 mr-2" />{players.find(p => p.id === exportPlayerId)?.name || "Athlète"}
+                    </DropdownMenuItem>
+                  ) : (
+                    <DropdownMenuItem onClick={() => handleExportExcel()}>
+                      <Users className="h-3.5 w-3.5 mr-2" />Tous les athlètes
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-1">
+                    <Download className="h-4 w-4" /><span className="hidden sm:inline">PDF</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel className="text-xs">Exporter en PDF</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {exportPlayerId && exportPlayerId !== "__all__" ? (
+                    <DropdownMenuItem onClick={() => handleExportPdf(exportPlayerId)}>
+                      <User className="h-3.5 w-3.5 mr-2" />{players.find(p => p.id === exportPlayerId)?.name || "Athlète"}
+                    </DropdownMenuItem>
+                  ) : (
+                    <DropdownMenuItem onClick={() => handleExportPdf()}>
+                      <Users className="h-3.5 w-3.5 mr-2" />Tous les athlètes
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </CardContent>
