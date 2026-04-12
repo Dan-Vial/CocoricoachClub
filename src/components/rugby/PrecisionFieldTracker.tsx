@@ -442,7 +442,7 @@ export function PrecisionFieldTracker({ categoryId }: PrecisionFieldTrackerProps
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Target className="h-5 w-5 text-primary" />
-              Touche — Sélectionnez la zone de lancer
+              Touche — Cliquez sur la zone de lancer
             </CardTitle>
             {!selectedPlayerId && !isViewer && (
               <p className="text-xs text-muted-foreground">Sélectionnez un joueur pour commencer</p>
@@ -450,50 +450,11 @@ export function PrecisionFieldTracker({ categoryId }: PrecisionFieldTrackerProps
           </CardHeader>
           <CardContent>
             <div className="w-full max-w-3xl mx-auto">
-              <div className="bg-emerald-700/90 dark:bg-emerald-900/80 rounded-lg border-2 border-primary/20 p-6">
-                <div className="text-center mb-4">
-                  <div className="border-t-4 border-white/70 w-full mb-2" />
-                  <span className="text-white/60 text-xs font-medium">Ligne de touche (lanceur)</span>
-                </div>
-                <div className="flex flex-col gap-4">
-                  {LINEOUT_POSITIONS.map(pos => {
-                    const stat = lineoutStats[pos.key] || { attempts: 0, successes: 0 };
-                    const rate = stat.attempts > 0 ? Math.round((stat.successes / stat.attempts) * 100) : -1;
-                    const bgColor = rate < 0 ? "bg-white/10 hover:bg-white/20" :
-                      rate >= 75 ? "bg-green-500/60 hover:bg-green-500/70" :
-                      rate >= 50 ? "bg-yellow-500/60 hover:bg-yellow-500/70" :
-                      "bg-red-500/60 hover:bg-red-500/70";
-                    return (
-                      <button
-                        key={pos.key}
-                        className={`${bgColor} border border-white/30 rounded-lg p-6 flex items-center justify-between transition-all cursor-pointer`}
-                        onClick={() => handleLineoutClick(pos)}
-                        disabled={isViewer || !selectedPlayerId}
-                      >
-                        <div className="flex flex-col items-start">
-                          <span className="text-white text-lg font-bold">{pos.label}</span>
-                          <span className="text-white/60 text-xs">{pos.description}</span>
-                        </div>
-                        <div className="flex flex-col items-center">
-                          {stat.attempts > 0 ? (
-                            <>
-                              <span className="text-white text-3xl font-bold">{rate}%</span>
-                              <span className="text-white/80 text-sm">{stat.successes}/{stat.attempts}</span>
-                            </>
-                          ) : (
-                            <span className="text-white/40 text-sm">—</span>
-                          )}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-                <div className="mt-4 flex items-center justify-center gap-2">
-                  <span className="text-white/50 text-xs">← Lanceur</span>
-                  <div className="flex-1 border-t border-dashed border-white/30" />
-                  <span className="text-white/50 text-xs">Fond de touche →</span>
-                </div>
-              </div>
+              <LineoutFieldSVG
+                onZoneClick={handleLineoutZoneClick}
+                zoneStats={lineoutZoneStats}
+                disabled={isViewer || !selectedPlayerId}
+              />
             </div>
           </CardContent>
         </Card>
