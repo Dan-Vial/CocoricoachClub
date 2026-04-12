@@ -97,7 +97,7 @@ function DraggableExercise({ exercise }: DraggableExerciseProps) {
   );
 }
 
-export function ExerciseLibrarySidebar({ sportType }: ExerciseLibrarySidebarProps) {
+export function ExerciseLibrarySidebar({ sportType, onClickExercise }: ExerciseLibrarySidebarProps) {
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -272,7 +272,42 @@ export function ExerciseLibrarySidebar({ sportType }: ExerciseLibrarySidebarProp
               <p className="text-center text-muted-foreground py-4 text-sm">Aucun exercice trouvé</p>
             ) : (
               filteredExercises.map((exercise) => (
-                <DraggableExercise key={exercise.id} exercise={exercise} />
+                onClickExercise ? (
+                  <button
+                    key={exercise.id}
+                    type="button"
+                    className={cn(
+                      "w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md border cursor-pointer transition-all hover:shadow-sm",
+                      getCategoryColor(exercise.category).borderColor,
+                      getCategoryColor(exercise.category).bgColor,
+                    )}
+                    onClick={() => onClickExercise(exercise)}
+                  >
+                    <Plus className={cn("h-3.5 w-3.5 shrink-0", getCategoryColor(exercise.category).color)} />
+                    <p className="font-medium text-xs truncate flex-1 min-w-0 text-left">{exercise.name}</p>
+                    {(exercise.youtube_url || exercise.image_url) && (
+                      <ExerciseMediaViewer
+                        exerciseName={exercise.name}
+                        imageUrl={exercise.image_url}
+                        youtubeUrl={exercise.youtube_url}
+                      >
+                        <span
+                          className="shrink-0 p-0.5 rounded hover:bg-background/80 transition-colors"
+                          onClick={(e) => e.stopPropagation()}
+                          title="Voir le média"
+                        >
+                          {exercise.youtube_url ? (
+                            <Video className="h-3.5 w-3.5 text-primary" />
+                          ) : (
+                            <ImageIcon className="h-3.5 w-3.5 text-primary" />
+                          )}
+                        </span>
+                      </ExerciseMediaViewer>
+                    )}
+                  </button>
+                ) : (
+                  <DraggableExercise key={exercise.id} exercise={exercise} />
+                )
               ))
             )}
           </div>
