@@ -763,25 +763,36 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
         doc.text(cat.label, 14, y);
         y += 5;
 
+        const tableW = pageW - 28;
+        const colW = tableW / categoryStats.length;
+
         // Header row
         doc.setFillColor(241, 245, 249);
-        doc.rect(14, y, pageW - 28, 7, "F");
+        doc.rect(14, y, tableW, 7, "F");
+        doc.setDrawColor(200, 210, 220);
+        doc.setLineWidth(0.3);
+        doc.rect(14, y, tableW, 7, "S");
         doc.setFontSize(7);
+        doc.setFont("helvetica", "bold");
         let x = 14;
-        const colW = Math.min(30, (pageW - 28) / categoryStats.length);
-        categoryStats.forEach(s => {
+        categoryStats.forEach((s, i) => {
+          if (i > 0) doc.line(x, y, x, y + 7);
           doc.text(s.shortLabel.substring(0, 12), x + 1, y + 5);
           x += colW;
         });
-        y += 9;
+        y += 7;
 
         // Values row
+        doc.setFillColor(255, 255, 255);
+        doc.rect(14, y, tableW, 7, "F");
+        doc.rect(14, y, tableW, 7, "S");
         doc.setFont("helvetica", "normal");
         doc.setTextColor(30, 41, 59);
         x = 14;
-        categoryStats.forEach(s => {
+        categoryStats.forEach((s, i) => {
+          if (i > 0) doc.line(x, y, x, y + 7);
           const val = player.sportData[s.key] || 0;
-          doc.text(s.computedFrom ? `${val}%` : String(val), x + 1, y + 4);
+          doc.text(s.computedFrom ? `${val}%` : String(val), x + 1, y + 5);
           x += colW;
         });
         y += 10;
