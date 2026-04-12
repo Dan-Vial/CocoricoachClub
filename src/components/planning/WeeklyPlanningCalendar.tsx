@@ -424,7 +424,7 @@ export function WeeklyPlanningCalendar({ categoryId }: WeeklyPlanningCalendarPro
                           size="sm"
                           className="w-full mt-1.5 h-6 text-[10px] gap-1 border-amber-500/30 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10"
                           onClick={async () => {
-                            const itemDate = format(addDays(currentWeekStart, dayIdx), "yyyy-MM-dd");
+                            const itemDate = format(addDays(currentWeekStart, index), "yyyy-MM-dd");
                             setPrecisionItemDate(itemDate);
                             // Find matching training session for this date
                             const { data: sessions } = await supabase
