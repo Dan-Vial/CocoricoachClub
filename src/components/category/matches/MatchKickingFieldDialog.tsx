@@ -162,14 +162,24 @@ export function MatchKickingFieldDialog({
               showZones={showZones}
               showCursorTracker
             >
-              {/* Existing kicks */}
+              {/* Existing kicks - different shapes per type */}
               {kicks.map((k) => {
                 const cx = (k.x / 100) * 600;
                 const cy = (k.y / 100) * 400;
-                const typeColor = k.kickType === "conversion" ? "#3b82f6" : k.kickType === "penalty" ? "#f59e0b" : "#8b5cf6";
+                const fillColor = k.success ? "#22c55e" : "#ef4444";
+                const strokeColor = k.kickType === "conversion" ? "#3b82f6" : k.kickType === "penalty" ? "#f59e0b" : "#8b5cf6";
                 return (
                   <g key={k.id} className="cursor-pointer" onClick={(e) => { e.stopPropagation(); removeKick(k.id); }}>
-                    <circle cx={cx} cy={cy} r={12} fill={k.success ? "#22c55e" : "#ef4444"} opacity={0.85} stroke={typeColor} strokeWidth="3" />
+                    {k.kickType === "conversion" ? (
+                      /* Circle for conversions */
+                      <circle cx={cx} cy={cy} r={12} fill={fillColor} opacity={0.85} stroke={strokeColor} strokeWidth="3" />
+                    ) : k.kickType === "penalty" ? (
+                      /* Square for penalties */
+                      <rect x={cx - 10} y={cy - 10} width={20} height={20} rx={3} fill={fillColor} opacity={0.85} stroke={strokeColor} strokeWidth="3" />
+                    ) : (
+                      /* Diamond for drops */
+                      <polygon points={`${cx},${cy - 12} ${cx + 12},${cy} ${cx},${cy + 12} ${cx - 12},${cy}`} fill={fillColor} opacity={0.85} stroke={strokeColor} strokeWidth="3" />
+                    )}
                     <text x={cx} y={cy + 4} textAnchor="middle" fill="white" fontSize="10" fontWeight="bold">{k.success ? "✓" : "✗"}</text>
                   </g>
                 );
