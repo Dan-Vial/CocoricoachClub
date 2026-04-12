@@ -240,42 +240,11 @@ export function AthletePrecisionFieldInput({
       {currentMode === "field" && (
         <div className="relative w-full">
           <p className="text-xs text-muted-foreground mb-1">Clique sur le terrain pour enregistrer un tir</p>
-          <svg
-            viewBox="0 0 600 400"
-            className="w-full border-2 border-primary/20 rounded-lg cursor-crosshair bg-emerald-700/90 dark:bg-emerald-900/80"
+          <RugbyFieldSVG
+            goalsOnRight={goalsOnRight}
             onClick={handleFieldClick}
+            showCursorTracker
           >
-            <rect x="20" y="10" width="560" height="380" fill="none" stroke="white" strokeWidth="2" opacity={0.6} />
-            {goalsOnRight ? (
-              <>
-                <line x1="580" y1="170" x2="580" y2="230" stroke="white" strokeWidth="5" opacity={0.9} />
-                <rect x="565" y="170" width="15" height="60" fill="none" stroke="white" strokeWidth="2" opacity={0.5} />
-                <line x1="540" y1="10" x2="540" y2="390" stroke="white" strokeWidth="2" opacity={0.6} />
-                <text x="540" y="400" textAnchor="middle" fill="white" fontSize="9" opacity={0.5}>En-but</text>
-                <line x1="440" y1="10" x2="440" y2="390" stroke="white" strokeWidth="1.5" opacity={0.5} />
-                <text x="440" y="400" textAnchor="middle" fill="white" fontSize="9" opacity={0.5}>22m</text>
-                <line x1="340" y1="10" x2="340" y2="390" stroke="white" strokeWidth="1" strokeDasharray="5 5" opacity={0.4} />
-                <text x="340" y="400" textAnchor="middle" fill="white" fontSize="9" opacity={0.5}>40m</text>
-                <line x1="240" y1="10" x2="240" y2="390" stroke="white" strokeWidth="2" opacity={0.6} />
-                <text x="240" y="400" textAnchor="middle" fill="white" fontSize="9" opacity={0.5}>50m</text>
-                <polygon points="570,200 555,190 555,210" fill="white" opacity={0.3} />
-              </>
-            ) : (
-              <>
-                <line x1="20" y1="170" x2="20" y2="230" stroke="white" strokeWidth="5" opacity={0.9} />
-                <rect x="20" y="170" width="15" height="60" fill="none" stroke="white" strokeWidth="2" opacity={0.5} />
-                <line x1="60" y1="10" x2="60" y2="390" stroke="white" strokeWidth="2" opacity={0.6} />
-                <text x="60" y="400" textAnchor="middle" fill="white" fontSize="9" opacity={0.5}>En-but</text>
-                <line x1="160" y1="10" x2="160" y2="390" stroke="white" strokeWidth="1.5" opacity={0.5} />
-                <text x="160" y="400" textAnchor="middle" fill="white" fontSize="9" opacity={0.5}>22m</text>
-                <line x1="260" y1="10" x2="260" y2="390" stroke="white" strokeWidth="1" strokeDasharray="5 5" opacity={0.4} />
-                <text x="260" y="400" textAnchor="middle" fill="white" fontSize="9" opacity={0.5}>40m</text>
-                <line x1="360" y1="10" x2="360" y2="390" stroke="white" strokeWidth="2" opacity={0.6} />
-                <text x="360" y="400" textAnchor="middle" fill="white" fontSize="9" opacity={0.5}>50m</text>
-                <polygon points="30,200 45,190 45,210" fill="white" opacity={0.3} />
-              </>
-            )}
-            <circle cx="300" cy="200" r="25" fill="none" stroke="white" strokeWidth="1" opacity={0.3} />
             {zoneStats.map((zone, i) => {
               const cx = (zone.x / 100) * 600;
               const cy = (zone.y / 100) * 400;
@@ -289,7 +258,7 @@ export function AthletePrecisionFieldInput({
                 </g>
               );
             })}
-          </svg>
+          </RugbyFieldSVG>
         </div>
       )}
 
