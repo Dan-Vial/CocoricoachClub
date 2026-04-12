@@ -920,10 +920,11 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
                   );
                 })()}
                 {/* Kicking field map */}
-                {isRugby && kickingByPlayerFinal[player.playerId]?.allKicks?.length > 0 && (
+                {isRugby && kickingByPlayerFinal[player.playerId] && (
                   <CumulativeKickingMap
                     kicks={kickingByPlayerFinal[player.playerId].allKicks}
                     playerName={player.playerName}
+                    hasKickingStats={kickingByPlayerFinal[player.playerId].total > 0}
                   />
                 )}
               </div>
