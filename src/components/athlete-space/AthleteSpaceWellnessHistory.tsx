@@ -73,7 +73,12 @@ export function AthleteSpaceWellnessHistory({ playerId, categoryId }: Props) {
 
   // Latest recovery score
   const latestRecovery = chartData[chartData.length - 1]?.recovery_score || 0;
-  const avgSleep = (wellnessHistory.reduce((s, w: any) => s + (w.sleep_duration || 0), 0) / wellnessHistory.length).toFixed(1);
+  // Convert sleep_duration score (1-5) to approximate hours: 1=>8.5, 2=>7.5, 3=>6.5, 4=>5.5, 5=>4.5
+  const sleepScoreToHours = (score: number) => 9.5 - score;
+  const sleepEntries = wellnessHistory.filter((w: any) => w.sleep_duration != null && w.sleep_duration > 0);
+  const avgSleep = sleepEntries.length > 0
+    ? (sleepEntries.reduce((s: number, w: any) => s + sleepScoreToHours(w.sleep_duration), 0) / sleepEntries.length).toFixed(1)
+    : "—";
 
   const getRecoveryColor = (score: number) => {
     if (score >= 80) return "text-status-optimal";
