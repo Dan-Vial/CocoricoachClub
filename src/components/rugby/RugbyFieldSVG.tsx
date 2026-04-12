@@ -16,10 +16,12 @@ interface RugbyFieldSVGProps {
 // Field SVG constants
 const SVG_W = 600;
 const SVG_H = 400;
-const FIELD_LEFT = 20;
-const FIELD_RIGHT = 580;
-const FIELD_TOP = 10;
-const FIELD_BOTTOM = 390;
+const MARGIN_X = 20;
+const MARGIN_Y = 14;
+const FIELD_LEFT = MARGIN_X;
+const FIELD_RIGHT = SVG_W - MARGIN_X;
+const FIELD_TOP = MARGIN_Y;
+const FIELD_BOTTOM = SVG_H - MARGIN_Y;
 const FIELD_W = FIELD_RIGHT - FIELD_LEFT;
 const FIELD_H = FIELD_BOTTOM - FIELD_TOP;
 const FIELD_LENGTH_M = 100;
@@ -37,37 +39,25 @@ function mToSvgY(meters: number): number {
   return FIELD_TOP + (meters / FIELD_WIDTH_M) * FIELD_H;
 }
 
-const DISTANCE_LINES = [
-  { m: -5, label: "BM", solid: true, thick: false },
-  { m: 0, label: "En-but", solid: true, thick: true },
-  { m: 5, label: "5m", solid: false, thick: false },
-  { m: 10, label: "10m", solid: false, thick: false },
-  { m: 22, label: "22m", solid: true, thick: false },
-  { m: 40, label: "40m", solid: false, thick: false },
-  { m: 50, label: "½", solid: true, thick: true },
-  { m: 60, label: "40m", solid: false, thick: false },
-  { m: 78, label: "22m", solid: true, thick: false },
-  { m: 90, label: "10m", solid: false, thick: false },
-  { m: 95, label: "5m", solid: false, thick: false },
-  { m: 100, label: "En-but", solid: true, thick: true },
-  { m: 105, label: "BM", solid: true, thick: false },
+// Regulation field lines with percentage positions (matching PDF)
+const FIELD_LINES: { pct: number; label: string; solid: boolean; thick: boolean }[] = [
+  { pct: 0, label: "BM", solid: true, thick: false },
+  { pct: 0.05, label: "En-but", solid: true, thick: true },
+  { pct: 0.1, label: "5m", solid: false, thick: false },
+  { pct: 0.15, label: "10m", solid: false, thick: false },
+  { pct: 0.27, label: "22m", solid: true, thick: false },
+  { pct: 0.45, label: "40m", solid: false, thick: false },
+  { pct: 0.5, label: "½", solid: true, thick: true },
+  { pct: 0.55, label: "40m", solid: false, thick: false },
+  { pct: 0.73, label: "22m", solid: true, thick: false },
+  { pct: 0.85, label: "10m", solid: false, thick: false },
+  { pct: 0.9, label: "5m", solid: false, thick: false },
+  { pct: 0.95, label: "En-but", solid: true, thick: true },
+  { pct: 1, label: "BM", solid: true, thick: false },
 ];
 
 /** Width marks (from each touchline) at 5m and 15m */
 const WIDTH_MARKS = [5, 15];
-
-/** Generate grass stripe positions (every ~5m of field width mapped to SVG) */
-function getGrassStripes(goalsOnRight: boolean): Array<{ x: number; w: number }> {
-  const stripes: Array<{ x: number; w: number }> = [];
-  const stripeCount = 10; // 10 stripes across the field length
-  const stripeW = FIELD_W / stripeCount;
-  for (let i = 0; i < stripeCount; i++) {
-    if (i % 2 === 0) {
-      stripes.push({ x: FIELD_LEFT + i * stripeW, w: stripeW });
-    }
-  }
-  return stripes;
-}
 
 export function RugbyFieldSVG({
   goalsOnRight,
@@ -117,193 +107,190 @@ export function RugbyFieldSVG({
 
   const handleMouseLeave = useCallback(() => setCursorPos(null), []);
 
-  const grassStripes = useMemo(() => getGrassStripes(goalsOnRight), [goalsOnRight]);
-
   // Posts position
-  const postsX = goalsOnRight ? 580 : 20;
-  const centerX = mToSvgX(50, goalsOnRight);
-  const centerY = mToSvgY(35);
+  const centerX = FIELD_LEFT + FIELD_W * 0.5;
+  const centerY = FIELD_TOP + FIELD_H * 0.5;
+  const circleR = FIELD_H * 0.14;
+
+  // Stripe data
+  const stripeCount = 10;
+  const stripeW = FIELD_W / stripeCount;
 
   return (
     <div className="relative w-full">
       <svg
         ref={svgRef}
         viewBox={`0 0 ${SVG_W} ${SVG_H}`}
-        className={`w-full border-2 border-primary/20 rounded-lg ${onClick ? "cursor-crosshair" : ""} ${className}`}
+        className={`w-full rounded-xl shadow-lg ${onClick ? "cursor-crosshair" : ""} ${className}`}
+        style={{ background: "transparent" }}
         onClick={handleClick}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
       >
         <defs>
-          {/* Grass gradient for each stripe */}
-          <linearGradient id="fieldGradient" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#2d8a4e" />
-            <stop offset="50%" stopColor="#3a9d5e" />
-            <stop offset="100%" stopColor="#2d8a4e" />
+          <linearGradient id="fieldBg" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#1a7a42" />
+            <stop offset="50%" stopColor="#1e8a4a" />
+            <stop offset="100%" stopColor="#1a7a42" />
           </linearGradient>
-          {/* Subtle noise/texture filter */}
-          <filter id="grassNoise" x="0" y="0" width="100%" height="100%">
-            <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="4" result="noise" />
-            <feColorMatrix type="saturate" values="0" in="noise" result="grayNoise" />
-            <feBlend in="SourceGraphic" in2="grayNoise" mode="multiply" />
+          <linearGradient id="surroundGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#125a2d" />
+            <stop offset="100%" stopColor="#0e4a24" />
+          </linearGradient>
+          {/* Subtle inner shadow for depth */}
+          <filter id="innerGlow">
+            <feGaussianBlur in="SourceAlpha" stdDeviation="4" result="blur" />
+            <feOffset dx="0" dy="0" />
+            <feComposite in2="SourceAlpha" operator="arithmetic" k2="-1" k3="1" />
+            <feFlood floodColor="#000000" floodOpacity="0.15" />
+            <feComposite in2="SourceGraphic" operator="in" />
+            <feComposite in="SourceGraphic" />
           </filter>
+          <clipPath id="fieldClip">
+            <rect x={FIELD_LEFT} y={FIELD_TOP} width={FIELD_W} height={FIELD_H} />
+          </clipPath>
         </defs>
 
-        {/* Base green background */}
-        <rect x={0} y={0} width={SVG_W} height={SVG_H} fill="#2a7a42" rx={6} />
+        {/* Outer surround - dark green border area */}
+        <rect x={0} y={0} width={SVG_W} height={SVG_H} fill="url(#surroundGrad)" rx={10} />
 
-        {/* Grass stripes - alternating lighter/darker */}
-        {grassStripes.map((stripe, i) => (
+        {/* Inner field base */}
+        <rect x={FIELD_LEFT} y={FIELD_TOP} width={FIELD_W} height={FIELD_H} fill="url(#fieldBg)" />
+
+        {/* Alternating grass stripes (matching PDF: dark/light alternation) */}
+        {Array.from({ length: stripeCount }).map((_, i) => (
           <rect
             key={`stripe-${i}`}
-            x={stripe.x} y={FIELD_TOP}
-            width={stripe.w} height={FIELD_H}
-            fill="#339955" opacity={0.25}
+            x={FIELD_LEFT + i * stripeW}
+            y={FIELD_TOP}
+            width={stripeW}
+            height={FIELD_H}
+            fill={i % 2 === 0 ? "#228c48" : "#1e7838"}
+            opacity={0.85}
           />
         ))}
 
-        {/* Surround area (outside touchlines) - slightly darker */}
-        <rect x={0} y={0} width={SVG_W} height={FIELD_TOP} fill="#1f5e30" opacity={0.5} rx={6} />
-        <rect x={0} y={FIELD_BOTTOM} width={SVG_W} height={SVG_H - FIELD_BOTTOM} fill="#1f5e30" opacity={0.5} rx={6} />
-        <rect x={0} y={0} width={FIELD_LEFT} height={SVG_H} fill="#1f5e30" opacity={0.3} />
-        <rect x={FIELD_RIGHT} y={0} width={SVG_W - FIELD_RIGHT} height={SVG_H} fill="#1f5e30" opacity={0.3} />
+        {/* In-goal area shading (darker) */}
+        <rect x={FIELD_LEFT} y={FIELD_TOP} width={FIELD_W * 0.05} height={FIELD_H} fill="#166432" opacity={0.7} />
+        <rect x={FIELD_LEFT + FIELD_W * 0.95} y={FIELD_TOP} width={FIELD_W * 0.05} height={FIELD_H} fill="#166432" opacity={0.7} />
 
-        {/* In-goal area shading */}
-        {(() => {
-          const enbutLeftX = mToSvgX(0, goalsOnRight);
-          const deadLeftX = mToSvgX(-5, goalsOnRight);
-          const enbutRightX = mToSvgX(100, goalsOnRight);
-          const deadRightX = mToSvgX(105, goalsOnRight);
+        {/* Field outline - crisp white border */}
+        <rect x={FIELD_LEFT} y={FIELD_TOP} width={FIELD_W} height={FIELD_H} fill="none" stroke="white" strokeWidth="2.5" opacity={0.9} />
+
+        {/* Distance lines with labels */}
+        {FIELD_LINES.map((line) => {
+          const lx = FIELD_LEFT + line.pct * FIELD_W;
           return (
-            <>
-              <rect
-                x={Math.min(enbutLeftX, deadLeftX)} y={FIELD_TOP}
-                width={Math.abs(enbutLeftX - deadLeftX)} height={FIELD_H}
-                fill="#1a6e35" opacity={0.4}
-              />
-              <rect
-                x={Math.min(enbutRightX, deadRightX)} y={FIELD_TOP}
-                width={Math.abs(enbutRightX - deadRightX)} height={FIELD_H}
-                fill="#1a6e35" opacity={0.4}
-              />
-            </>
-          );
-        })()}
-
-        {/* Field outline - thick white border */}
-        <rect x={FIELD_LEFT} y={FIELD_TOP} width={FIELD_W} height={FIELD_H} fill="none" stroke="white" strokeWidth="2.5" opacity={0.85} />
-
-        {/* Distance lines */}
-        {DISTANCE_LINES.map((line) => {
-          const x = mToSvgX(line.m, goalsOnRight);
-          if (x < FIELD_LEFT - 2 || x > FIELD_RIGHT + 2) return null;
-          return (
-            <g key={`${line.m}-${line.label}`}>
+            <g key={`line-${line.pct}-${line.label}`}>
               <line
-                x1={x} y1={FIELD_TOP} x2={x} y2={FIELD_BOTTOM}
+                x1={lx} y1={FIELD_TOP} x2={lx} y2={FIELD_BOTTOM}
                 stroke="white"
-                strokeWidth={line.thick ? 2.5 : line.solid ? 1.5 : 1}
-                strokeDasharray={line.solid ? undefined : "6 6"}
-                opacity={line.thick ? 0.8 : line.solid ? 0.6 : 0.35}
+                strokeWidth={line.thick ? 2.5 : line.solid ? 1.5 : 0.8}
+                strokeDasharray={line.solid ? undefined : "5 5"}
+                opacity={line.thick ? 0.85 : line.solid ? 0.6 : 0.3}
               />
-              <text x={x} y={SVG_H} textAnchor="middle" fill="white" fontSize={line.thick ? 9 : 7} opacity={0.5} fontWeight={line.thick ? "bold" : "normal"}>
+              {/* Labels below field */}
+              <text
+                x={lx} y={SVG_H - 1}
+                textAnchor="middle" fill="white" fontSize={line.thick ? 9 : 7}
+                opacity={0.6} fontWeight={line.thick ? "bold" : "normal"}
+                fontFamily="system-ui, sans-serif"
+              >
                 {line.label}
               </text>
             </g>
           );
         })}
 
-        {/* Width marks: perpendicular dashes at 5m and 15m from each touchline */}
+        {/* Width marks: perpendicular tick marks at 5m and 15m from each touchline */}
         {WIDTH_MARKS.map((wm) => {
           const yTop = mToSvgY(wm);
           const yBot = mToSvgY(FIELD_WIDTH_M - wm);
-          // Draw small perpendicular tick marks along the field
           const ticks: React.ReactNode[] = [];
-          for (let mDist = 0; mDist <= 105; mDist += 5) {
-            const tx = mToSvgX(mDist, goalsOnRight);
-            if (tx < FIELD_LEFT || tx > FIELD_RIGHT) continue;
+          // Tick marks every 5% along the field
+          for (let p = 0; p <= 1; p += 0.05) {
+            const tx = FIELD_LEFT + p * FIELD_W;
             ticks.push(
-              <g key={`tick-${wm}-${mDist}`}>
-                <line x1={tx - 3} y1={yTop} x2={tx + 3} y2={yTop} stroke="white" strokeWidth="1" opacity={0.3} />
-                <line x1={tx - 3} y1={yBot} x2={tx + 3} y2={yBot} stroke="white" strokeWidth="1" opacity={0.3} />
+              <g key={`tick-${wm}-${p}`}>
+                <line x1={tx - 3} y1={yTop} x2={tx + 3} y2={yTop} stroke="white" strokeWidth="0.8" opacity={0.35} />
+                <line x1={tx - 3} y1={yBot} x2={tx + 3} y2={yBot} stroke="white" strokeWidth="0.8" opacity={0.35} />
               </g>
             );
           }
           return (
             <g key={`wm-${wm}`}>
-              {/* Full dashed line */}
-              <line x1={FIELD_LEFT} y1={yTop} x2={FIELD_RIGHT} y2={yTop} stroke="white" strokeWidth="0.5" strokeDasharray="3 10" opacity={0.15} />
-              <line x1={FIELD_LEFT} y1={yBot} x2={FIELD_RIGHT} y2={yBot} stroke="white" strokeWidth="0.5" strokeDasharray="3 10" opacity={0.15} />
+              {/* Subtle dashed guide lines */}
+              <line x1={FIELD_LEFT} y1={yTop} x2={FIELD_RIGHT} y2={yTop} stroke="white" strokeWidth="0.4" strokeDasharray="2 8" opacity={0.12} />
+              <line x1={FIELD_LEFT} y1={yBot} x2={FIELD_RIGHT} y2={yBot} stroke="white" strokeWidth="0.4" strokeDasharray="2 8" opacity={0.12} />
               {ticks}
-              {/* Labels */}
-              <text x={FIELD_LEFT - 3} y={yTop + 3} textAnchor="end" fill="white" fontSize="6" opacity={0.35}>{wm}m</text>
-              <text x={FIELD_LEFT - 3} y={yBot + 3} textAnchor="end" fill="white" fontSize="6" opacity={0.35}>{wm}m</text>
             </g>
           );
         })}
 
-        {/* Center spot / cross */}
-        <circle cx={centerX} cy={centerY} r={2.5} fill="white" opacity={0.7} />
-        <line x1={centerX - 6} y1={centerY} x2={centerX + 6} y2={centerY} stroke="white" strokeWidth="1.5" opacity={0.5} />
-        <line x1={centerX} y1={centerY - 6} x2={centerX} y2={centerY + 6} stroke="white" strokeWidth="1.5" opacity={0.5} />
+        {/* Center circle (10m radius proportional) */}
+        <circle cx={centerX} cy={centerY} r={circleR} fill="none" stroke="white" strokeWidth="1.5" opacity={0.45} />
 
-        {/* Center circle at halfway (10m radius) */}
-        {(() => {
-          const radiusM = 10;
-          const radiusSvg = (radiusM / FIELD_WIDTH_M) * FIELD_H;
-          return (
-            <circle cx={centerX} cy={centerY} r={radiusSvg} fill="none" stroke="white" strokeWidth="1.5" opacity={0.4} />
-          );
-        })()}
+        {/* Center spot */}
+        <circle cx={centerX} cy={centerY} r={3} fill="white" opacity={0.75} />
+        <line x1={centerX - 7} y1={centerY} x2={centerX + 7} y2={centerY} stroke="white" strokeWidth="1.5" opacity={0.4} />
+        <line x1={centerX} y1={centerY - 7} x2={centerX} y2={centerY + 7} stroke="white" strokeWidth="1.5" opacity={0.4} />
 
-        {/* 22m drop-out spots (center of 22m lines) */}
-        {[22, 78].map(m => {
-          const spotX = mToSvgX(m, goalsOnRight);
+        {/* 22m drop-out spots */}
+        {[0.27, 0.73].map(pct => {
+          const spotX = FIELD_LEFT + pct * FIELD_W;
           return (
-            <g key={`spot-${m}`}>
-              <circle cx={spotX} cy={centerY} r={2} fill="white" opacity={0.4} />
-              <line x1={spotX - 4} y1={centerY} x2={spotX + 4} y2={centerY} stroke="white" strokeWidth="1" opacity={0.3} />
+            <g key={`spot-${pct}`}>
+              <circle cx={spotX} cy={centerY} r={2.2} fill="white" opacity={0.5} />
+              <line x1={spotX - 5} y1={centerY} x2={spotX + 5} y2={centerY} stroke="white" strokeWidth="1" opacity={0.3} />
             </g>
           );
         })}
 
-        {/* Goal posts - H shape (both sides) */}
-        {[true, false].map((isPrimary) => {
-          const gx = isPrimary
-            ? (goalsOnRight ? FIELD_RIGHT : FIELD_LEFT)
-            : (goalsOnRight ? FIELD_LEFT : FIELD_RIGHT);
-          const postTop = mToSvgY(32.14); // ~32.14m from top (posts 5.6m apart, centered)
-          const postBot = mToSvgY(37.86);
-          const crossbarY = (postTop + postBot) / 2;
-          const outward = isPrimary ? (goalsOnRight ? 1 : -1) : (goalsOnRight ? -1 : 1);
-          const opacity = isPrimary ? 0.9 : 0.4;
-          const postLen = 18;
+        {/* Goal posts - H shape (both sides, matching PDF style) */}
+        {[0.05, 0.95].map(pct => {
+          const gx = FIELD_LEFT + pct * FIELD_W;
+          const postTop = FIELD_TOP + FIELD_H * 0.38;
+          const postBot = FIELD_TOP + FIELD_H * 0.62;
+          const isPrimary = (goalsOnRight && pct === 0.95) || (!goalsOnRight && pct === 0.05);
+          const outward = pct < 0.5 ? -1 : 1;
+          const upLen = Math.min(18, FIELD_W * 0.04);
+          const opacity = isPrimary ? 0.95 : 0.45;
           return (
-            <g key={`posts-${isPrimary ? "main" : "other"}`}>
-              {/* Left upright */}
-              <line x1={gx} y1={postTop} x2={gx + outward * postLen} y2={postTop} stroke="white" strokeWidth={isPrimary ? 3 : 1.5} opacity={opacity} strokeLinecap="round" />
-              {/* Right upright */}
-              <line x1={gx} y1={postBot} x2={gx + outward * postLen} y2={postBot} stroke="white" strokeWidth={isPrimary ? 3 : 1.5} opacity={opacity} strokeLinecap="round" />
-              {/* Crossbar */}
-              <line x1={gx} y1={postTop} x2={gx} y2={postBot} stroke="white" strokeWidth={isPrimary ? 4 : 2} opacity={opacity} strokeLinecap="round" />
-              {/* Center post extending out */}
-              <line x1={gx + outward * postLen} y1={crossbarY - 3} x2={gx + outward * postLen} y2={crossbarY + 3} stroke="white" strokeWidth={isPrimary ? 2 : 1} opacity={opacity * 0.5} />
+            <g key={`posts-${pct}`}>
+              {/* Crossbar - thicker */}
+              <line x1={gx} y1={postTop} x2={gx} y2={postBot}
+                stroke="white" strokeWidth={isPrimary ? 4 : 2}
+                opacity={opacity} strokeLinecap="round" />
+              {/* Uprights */}
+              <line x1={gx} y1={postTop} x2={gx + outward * upLen} y2={postTop}
+                stroke="white" strokeWidth={isPrimary ? 2.5 : 1.2}
+                opacity={opacity} strokeLinecap="round" />
+              <line x1={gx} y1={postBot} x2={gx + outward * upLen} y2={postBot}
+                stroke="white" strokeWidth={isPrimary ? 2.5 : 1.2}
+                opacity={opacity} strokeLinecap="round" />
+              {/* Small tip circles for polish */}
+              {isPrimary && (
+                <>
+                  <circle cx={gx + outward * upLen} cy={postTop} r={1.5} fill="white" opacity={0.6} />
+                  <circle cx={gx + outward * upLen} cy={postBot} r={1.5} fill="white" opacity={0.6} />
+                </>
+              )}
             </g>
           );
         })}
 
-        {/* Goal direction arrow */}
+        {/* Direction arrow */}
         {goalsOnRight ? (
-          <polygon points="570,200 558,192 558,208" fill="white" opacity={0.2} />
+          <polygon points="570,200 556,191 556,209" fill="white" opacity={0.15} />
         ) : (
-          <polygon points="30,200 42,192 42,208" fill="white" opacity={0.2} />
+          <polygon points="30,200 44,191 44,209" fill="white" opacity={0.15} />
         )}
 
         {/* Touchline labels */}
-        <text x={SVG_W / 2} y={FIELD_TOP - 1} textAnchor="middle" fill="white" fontSize="7" opacity={0.3} fontStyle="italic">
+        <text x={SVG_W / 2} y={FIELD_TOP - 3} textAnchor="middle" fill="white" fontSize="7" opacity={0.4} fontStyle="italic" fontFamily="system-ui, sans-serif">
           Ligne de touche
         </text>
-        <text x={SVG_W / 2} y={FIELD_BOTTOM + 9} textAnchor="middle" fill="white" fontSize="7" opacity={0.3} fontStyle="italic">
+        <text x={SVG_W / 2} y={FIELD_BOTTOM + 10} textAnchor="middle" fill="white" fontSize="7" opacity={0.4} fontStyle="italic" fontFamily="system-ui, sans-serif">
           Ligne de touche
         </text>
 
@@ -315,20 +302,22 @@ export function RugbyFieldSVG({
               <rect
                 x={z.svgRect.x} y={z.svgRect.y}
                 width={z.svgRect.w} height={z.svgRect.h}
-                fill={color} opacity={0.15}
-                stroke={color} strokeWidth="1" strokeDasharray="4 2"
+                fill={color} opacity={0.18}
+                stroke={color} strokeWidth="1.5" strokeDasharray="4 3" rx={3}
               />
               <text
                 x={z.svgRect.x + z.svgRect.w / 2}
                 y={z.svgRect.y + z.svgRect.h / 2 - 6}
-                textAnchor="middle" fill="white" fontSize="11" fontWeight="bold"
+                textAnchor="middle" fill="white" fontSize="12" fontWeight="bold"
+                fontFamily="system-ui, sans-serif"
               >
                 {z.rate}%
               </text>
               <text
                 x={z.svgRect.x + z.svgRect.w / 2}
-                y={z.svgRect.y + z.svgRect.h / 2 + 8}
-                textAnchor="middle" fill="white" fontSize="9" opacity={0.8}
+                y={z.svgRect.y + z.svgRect.h / 2 + 9}
+                textAnchor="middle" fill="white" fontSize="10" opacity={0.85}
+                fontFamily="system-ui, sans-serif"
               >
                 {z.success}/{z.total}
               </text>
@@ -343,33 +332,33 @@ export function RugbyFieldSVG({
         {cursorPos && showCursorTracker && (
           <g pointerEvents="none">
             {/* Crosshair lines */}
-            <line x1={cursorPos.svgX} y1={FIELD_TOP} x2={cursorPos.svgX} y2={FIELD_BOTTOM} stroke="rgba(255,255,255,0.6)" strokeWidth="0.7" strokeDasharray="3 4" />
-            <line x1={FIELD_LEFT} y1={cursorPos.svgY} x2={FIELD_RIGHT} y2={cursorPos.svgY} stroke="rgba(255,255,255,0.6)" strokeWidth="0.7" strokeDasharray="3 4" />
+            <line x1={cursorPos.svgX} y1={FIELD_TOP} x2={cursorPos.svgX} y2={FIELD_BOTTOM} stroke="rgba(255,255,255,0.5)" strokeWidth="0.7" strokeDasharray="4 4" />
+            <line x1={FIELD_LEFT} y1={cursorPos.svgY} x2={FIELD_RIGHT} y2={cursorPos.svgY} stroke="rgba(255,255,255,0.5)" strokeWidth="0.7" strokeDasharray="4 4" />
             {/* Distance label (top) */}
             <rect
-              x={cursorPos.svgX - 28} y={FIELD_TOP - 2}
-              width={56} height={14} rx={3}
-              fill="rgba(0,0,0,0.75)"
+              x={cursorPos.svgX - 30} y={FIELD_TOP - 4}
+              width={60} height={16} rx={4}
+              fill="rgba(0,0,0,0.8)"
             />
-            <text x={cursorPos.svgX} y={FIELD_TOP + 9} textAnchor="middle" fill="white" fontSize="9" fontWeight="bold">
+            <text x={cursorPos.svgX} y={FIELD_TOP + 8} textAnchor="middle" fill="white" fontSize="9" fontWeight="bold" fontFamily="system-ui, sans-serif">
               {cursorPos.distM}m
             </text>
             {/* Lateral label (left side) */}
             <rect
-              x={FIELD_LEFT - 1} y={cursorPos.svgY - 7}
-              width={42} height={14} rx={3}
-              fill="rgba(0,0,0,0.75)"
+              x={FIELD_LEFT - 2} y={cursorPos.svgY - 8}
+              width={44} height={16} rx={4}
+              fill="rgba(0,0,0,0.8)"
             />
-            <text x={FIELD_LEFT + 20} y={cursorPos.svgY + 4} textAnchor="middle" fill="white" fontSize="8" fontWeight="bold">
+            <text x={FIELD_LEFT + 20} y={cursorPos.svgY + 4} textAnchor="middle" fill="white" fontSize="8" fontWeight="bold" fontFamily="system-ui, sans-serif">
               {cursorPos.touchLeftM}m
             </text>
             {/* Right side label */}
             <rect
-              x={FIELD_RIGHT - 41} y={cursorPos.svgY - 7}
-              width={42} height={14} rx={3}
-              fill="rgba(0,0,0,0.75)"
+              x={FIELD_RIGHT - 42} y={cursorPos.svgY - 8}
+              width={44} height={16} rx={4}
+              fill="rgba(0,0,0,0.8)"
             />
-            <text x={FIELD_RIGHT - 20} y={cursorPos.svgY + 4} textAnchor="middle" fill="white" fontSize="8" fontWeight="bold">
+            <text x={FIELD_RIGHT - 20} y={cursorPos.svgY + 4} textAnchor="middle" fill="white" fontSize="8" fontWeight="bold" fontFamily="system-ui, sans-serif">
               {cursorPos.touchRightM}m
             </text>
           </g>
@@ -378,7 +367,7 @@ export function RugbyFieldSVG({
 
       {/* Bottom coordinate bar */}
       {cursorPos && showCursorTracker && (
-        <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[11px] font-mono px-2 py-0.5 rounded-b-lg flex justify-between pointer-events-none">
+        <div className="absolute bottom-0 left-0 right-0 bg-black/70 backdrop-blur-sm text-white text-[11px] font-mono px-3 py-1 rounded-b-xl flex justify-between pointer-events-none">
           <span>📍 {cursorPos.distM}m des poteaux</span>
           <span>
             {Math.abs(cursorPos.lateralM) <= 5
