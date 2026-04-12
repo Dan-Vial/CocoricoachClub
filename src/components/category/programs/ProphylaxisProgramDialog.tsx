@@ -100,36 +100,6 @@ export function ProphylaxisProgramDialog({ categoryId, programId, open, onOpenCh
     enabled: open,
   });
 
-  const { data: libraryExercises, isLoading: libLoading } = useQuery({
-    queryKey: ["exercise-library-prophylaxis", user?.id],
-    queryFn: async () => {
-      if (!user) return [];
-      const { data, error } = await supabase
-        .from("exercise_library")
-        .select("id, name, category, subcategory, youtube_url, image_url, is_system")
-        .or(`user_id.eq.${user.id},is_system.eq.true`)
-        .order("name");
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user && open,
-  });
-
-  const libCategories = useMemo(() => {
-    if (!libraryExercises) return [];
-    const cats = new Set(libraryExercises.map(e => e.category));
-    return Array.from(cats).sort();
-  }, [libraryExercises]);
-
-  const filteredLibrary = useMemo(() => {
-    let list = libraryExercises || [];
-    if (libCategory !== "all") list = list.filter(e => e.category === libCategory);
-    if (libSearch) {
-      const q = libSearch.toLowerCase();
-      list = list.filter(e => e.name.toLowerCase().includes(q) || e.category.toLowerCase().includes(q));
-    }
-    return list.slice(0, 50);
-  }, [libraryExercises, libCategory, libSearch]);
 
   const { data: existingProgram } = useQuery({
     queryKey: ["prophylaxis-program-edit", programId],
