@@ -1065,8 +1065,13 @@ export function PrecisionTrainingStats({ categoryId }: PrecisionTrainingStatsPro
                   <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Tous</SelectItem>
-                    {exerciseLabels.map((l) => (
-                      <SelectItem key={l} value={l}>{l}</SelectItem>
+                    {EXERCISE_CATEGORIES.map((cat) => (
+                      <div key={cat.key}>
+                        <div className="px-2 py-1 text-xs font-semibold text-muted-foreground">{cat.label}</div>
+                        {cat.exercises.map((ex) => (
+                          <SelectItem key={ex.value} value={ex.label}>{ex.label}</SelectItem>
+                        ))}
+                      </div>
                     ))}
                   </SelectContent>
                 </Select>
