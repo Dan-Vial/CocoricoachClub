@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { Target, Trash2, BarChart3, CalendarPlus, Info } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -40,9 +41,13 @@ export function PrecisionFieldTracker({ categoryId }: PrecisionFieldTrackerProps
   const [attempts, setAttempts] = useState<string>("1");
   const [successes, setSuccesses] = useState<string>("0");
   const [pendingKickType, setPendingKickType] = useState<string | null>(null);
+  // Zone kicks: two-click flow
+  const [zoneKickOrigin, setZoneKickOrigin] = useState<{ x: number; y: number } | null>(null);
+  const [zoneKickStep, setZoneKickStep] = useState<"origin" | "target">("origin");
 
   const currentExercise = RUGBY_PRECISION_EXERCISES.find(e => e.value === exerciseType);
   const currentMode: RugbyPrecisionExerciseMode = currentExercise?.mode || "kicking";
+  const currentCategory = EXERCISE_CATEGORIES.find(c => c.exercises.some(e => e.value === exerciseType));
 
   const { data: players = [] } = useQuery({
     queryKey: ["players-precision-field", categoryId],
@@ -138,6 +143,11 @@ export function PrecisionFieldTracker({ categoryId }: PrecisionFieldTrackerProps
         zone_x: data.x,
         zone_y: data.y,
       };
+      // Add kick origin for zone kicks
+      if (zoneKickOrigin) {
+        insertData.kick_origin_x = zoneKickOrigin.x;
+        insertData.kick_origin_y = zoneKickOrigin.y;
+      }
       if (lineoutZone) {
         insertData.lineout_distance = lineoutZone.distanceKey;
         insertData.lineout_height = lineoutZone.heightKey;
@@ -154,6 +164,8 @@ export function PrecisionFieldTracker({ categoryId }: PrecisionFieldTrackerProps
       setClickLabel("");
       setAttempts("1");
       setSuccesses("0");
+      setZoneKickOrigin(null);
+      setZoneKickStep("origin");
       toast.success("Exercice enregistré !");
     },
     onError: (e: Error) => toast.error(e.message),
@@ -218,14 +230,21 @@ export function PrecisionFieldTracker({ categoryId }: PrecisionFieldTrackerProps
 
   const handleZoneKickClick = (xPct: number, yPct: number) => {
     if (isViewer || !selectedPlayerId || !activeSessionId) return;
-    const posLabel = getPositionLabel(xPct, yPct, goalsOnRight);
-    const exLabel = currentExercise?.label || exerciseType;
-    setClickPos({ x: xPct, y: yPct });
-    setClickLabel(`${exLabel} - ${posLabel}`);
-    setPendingKickType(null);
-    setAttempts("1");
-    setSuccesses("0");
-    setDialogOpen(true);
+    if (zoneKickStep === "origin") {
+      setZoneKickOrigin({ x: xPct, y: yPct });
+      setZoneKickStep("target");
+      toast.info("📍 Position de frappe enregistrée. Cliquez maintenant sur la zone ciblée.");
+    } else {
+      const posLabel = getPositionLabel(xPct, yPct, goalsOnRight);
+      const originLabel = getPositionLabel(zoneKickOrigin!.x, zoneKickOrigin!.y, goalsOnRight);
+      const exLabel = currentExercise?.label || exerciseType;
+      setClickPos({ x: xPct, y: yPct });
+      setClickLabel(`${exLabel} - De: ${originLabel} → Cible: ${posLabel}`);
+      setPendingKickType(null);
+      setAttempts("1");
+      setSuccesses("0");
+      setDialogOpen(true);
+    }
   };
 
   const handleLineoutZoneClick = (zone: LineoutZone) => {
@@ -439,11 +458,27 @@ export function PrecisionFieldTracker({ categoryId }: PrecisionFieldTrackerProps
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Target className="h-5 w-5 text-primary" />
-              {currentExercise?.label} — Cliquez sur la zone visée
+              {currentExercise?.label} — {zoneKickStep === "origin" ? "Cliquez sur la position de frappe" : "Cliquez sur la zone ciblée"}
             </CardTitle>
-            {!selectedPlayerId && !isViewer && (
-              <p className="text-xs text-muted-foreground">Sélectionnez un joueur pour commencer</p>
-            )}
+            <div className="flex items-center gap-2">
+              {!selectedPlayerId && !isViewer && (
+                <p className="text-xs text-muted-foreground">Sélectionnez un joueur pour commencer</p>
+              )}
+              {zoneKickStep === "target" && (
+                <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={() => { setZoneKickOrigin(null); setZoneKickStep("origin"); }}>
+                  ↩ Annuler position
+                </Button>
+              )}
+            </div>
+            <div className="flex items-center gap-2 text-xs">
+              <Badge variant={zoneKickStep === "origin" ? "default" : "secondary"} className="text-[10px]">
+                1. Position de frappe {zoneKickStep === "target" ? "✓" : ""}
+              </Badge>
+              <span>→</span>
+              <Badge variant={zoneKickStep === "target" ? "default" : "outline"} className="text-[10px]">
+                2. Zone ciblée
+              </Badge>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="relative w-full max-w-3xl mx-auto">
@@ -452,6 +487,21 @@ export function PrecisionFieldTracker({ categoryId }: PrecisionFieldTrackerProps
                 onClick={handleZoneKickClick}
                 showCursorTracker
               >
+                {/* Origin marker */}
+                {zoneKickOrigin && (
+                  (() => {
+                    const ox = 20 + (zoneKickOrigin.x / 100) * 560;
+                    const oy = 10 + (zoneKickOrigin.y / 100) * 380;
+                    return (
+                      <g>
+                        <circle cx={ox} cy={oy} r={12} fill="none" stroke="#f59e0b" strokeWidth={2.5} strokeDasharray="4 2" opacity={0.9} />
+                        <circle cx={ox} cy={oy} r={3} fill="#f59e0b" opacity={0.9} />
+                        <text x={ox} y={oy - 16} textAnchor="middle" fill="#f59e0b" fontSize="9" fontWeight="bold">FRAPPE</text>
+                      </g>
+                    );
+                  })()
+                )}
+                {/* Zone stats */}
                 {zoneStats.map((zone, i) => {
                   const cx = (zone.x / 100) * 600;
                   const cy = (zone.y / 100) * 400;

@@ -93,7 +93,7 @@ import { SessionTestBlock, type SessionTest } from "./SessionTestBlock";
 import { SessionBlocksManager, type SessionBlock } from "./SessionBlocksManager";
 import { PrecisionExerciseSelector } from "@/components/precision/PrecisionExerciseSelector";
 import { getDisplayNotes, parsePrecisionExerciseFromNotes } from "@/lib/utils/sessionNotes";
-import { RUGBY_PRECISION_EXERCISES } from "@/lib/constants/rugbyPrecisionExercises";
+import { RUGBY_PRECISION_EXERCISES, EXERCISE_CATEGORIES } from "@/lib/constants/rugbyPrecisionExercises";
 
 interface SessionFormDialogProps {
   open: boolean;
@@ -2889,29 +2889,88 @@ export function SessionFormDialog({
                       </div>
                     )}
                     {type === "precision" && isRugbyType(sportType || "") && (
-                      <div className="rounded-lg border border-accent/30 p-3 space-y-2">
+                      <div className="rounded-lg border border-accent/30 p-3 space-y-3">
                         <div className="space-y-2">
-                          <Label className="text-sm">Exercice de précision</Label>
+                          <Label className="text-sm">Catégorie de précision</Label>
                           <Select
-                            value={precisionExerciseId ?? undefined}
-                            onValueChange={(value) => {
-                              const exercise = RUGBY_PRECISION_EXERCISES.find((item) => item.value === value);
-                              setPrecisionExerciseId(value);
-                              setPrecisionExerciseLabel(exercise?.label || value);
+                            value={(() => {
+                              const cat = EXERCISE_CATEGORIES.find(c => c.exercises.some(e => e.value === precisionExerciseId));
+                              return cat?.key || "buteur";
+                            })()}
+                            onValueChange={(catKey) => {
+                              const cat = EXERCISE_CATEGORIES.find(c => c.key === catKey);
+                              const first = cat?.exercises[0];
+                              if (first) {
+                                setPrecisionExerciseId(first.value);
+                                setPrecisionExerciseLabel(first.label);
+                              }
                             }}
                           >
                             <SelectTrigger>
-                              <SelectValue placeholder="Choisir l'exercice" />
+                              <SelectValue placeholder="Choisir la catégorie" />
                             </SelectTrigger>
                             <SelectContent>
-                              {RUGBY_PRECISION_EXERCISES.map((exercise) => (
-                                <SelectItem key={exercise.value} value={exercise.value}>
-                                  {exercise.label}
+                              {EXERCISE_CATEGORIES.map((cat) => (
+                                <SelectItem key={cat.key} value={cat.key}>
+                                  {cat.label}
                                 </SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
                         </div>
+
+                        {/* Show specific exercise for non-buteur */}
+                        {(() => {
+                          const selectedCat = EXERCISE_CATEGORIES.find(c => c.exercises.some(e => e.value === precisionExerciseId));
+                          if (selectedCat?.key === "buteur") {
+                            return (
+                              <div className="rounded-lg bg-primary/5 border border-primary/20 p-2.5 space-y-1.5">
+                                <p className="text-xs font-medium text-primary">🎯 Exercices buteur disponibles :</p>
+                                <div className="flex items-center gap-3 flex-wrap">
+                                  {selectedCat.exercises.map(ex => (
+                                    <span key={ex.value} className="flex items-center gap-1.5 text-xs">
+                                      <span style={{ color: ex.color }}>
+                                        {ex.shape === "circle" ? "●" : ex.shape === "square" ? "■" : "◆"}
+                                      </span>
+                                      {ex.label}
+                                    </span>
+                                  ))}
+                                </div>
+                                <p className="text-[10px] text-muted-foreground">
+                                  Les 3 types seront disponibles simultanément sur la cartographie.
+                                </p>
+                              </div>
+                            );
+                          }
+                          return (
+                            <div className="space-y-2">
+                              <Label className="text-sm">Exercice spécifique</Label>
+                              <Select
+                                value={precisionExerciseId ?? undefined}
+                                onValueChange={(value) => {
+                                  const exercise = RUGBY_PRECISION_EXERCISES.find((item) => item.value === value);
+                                  setPrecisionExerciseId(value);
+                                  setPrecisionExerciseLabel(exercise?.label || value);
+                                }}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Choisir l'exercice" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {selectedCat?.exercises.map((exercise) => (
+                                    <SelectItem key={exercise.value} value={exercise.value}>
+                                      <span className="flex items-center gap-2">
+                                        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: exercise.color }} />
+                                        {exercise.label}
+                                      </span>
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          );
+                        })()}
+
                         <p className="text-xs text-muted-foreground flex items-center gap-1.5">
                           🏉 Le choix fait ici sera repris par défaut dans la saisie athlète.
                         </p>
