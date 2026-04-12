@@ -7307,12 +7307,75 @@ export type Database = {
           },
         ]
       }
+      prophylaxis_assignments: {
+        Row: {
+          category_id: string
+          created_at: string
+          end_date: string | null
+          id: string
+          is_active: boolean
+          player_id: string
+          program_id: string
+          start_date: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          is_active?: boolean
+          player_id: string
+          program_id: string
+          start_date?: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          is_active?: boolean
+          player_id?: string
+          program_id?: string
+          start_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prophylaxis_assignments_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prophylaxis_assignments_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prophylaxis_assignments_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prophylaxis_assignments_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "prophylaxis_programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       prophylaxis_exercises: {
         Row: {
           created_at: string
           duration_seconds: number | null
           exercise_name: string
           id: string
+          library_exercise_id: string | null
           notes: string | null
           order_index: number
           program_id: string
@@ -7325,6 +7388,7 @@ export type Database = {
           duration_seconds?: number | null
           exercise_name: string
           id?: string
+          library_exercise_id?: string | null
           notes?: string | null
           order_index?: number
           program_id: string
@@ -7337,6 +7401,7 @@ export type Database = {
           duration_seconds?: number | null
           exercise_name?: string
           id?: string
+          library_exercise_id?: string | null
           notes?: string | null
           order_index?: number
           program_id?: string
@@ -7345,6 +7410,13 @@ export type Database = {
           sets?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "prophylaxis_exercises_library_exercise_id_fkey"
+            columns: ["library_exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercise_library"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "prophylaxis_exercises_program_id_fkey"
             columns: ["program_id"]

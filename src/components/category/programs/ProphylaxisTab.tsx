@@ -27,7 +27,8 @@ export function ProphylaxisTab({ categoryId }: ProphylaxisTabProps) {
         .select(`
           *,
           players(name, first_name, photo_url),
-          prophylaxis_exercises(*)
+          prophylaxis_exercises(*),
+          prophylaxis_assignments(id, player_id, is_active, players(name, first_name))
         `)
         .eq("category_id", categoryId)
         .order("created_at", { ascending: false });
@@ -86,10 +87,13 @@ export function ProphylaxisTab({ categoryId }: ProphylaxisTabProps) {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {programs.map((program: any) => {
             const exercises = program.prophylaxis_exercises || [];
+            const assignments = program.prophylaxis_assignments || [];
             const isExpanded = expandedId === program.id;
-            const playerName = program.players
-              ? `${program.players.first_name || ""} ${program.players.name}`.trim()
-              : "Non assigné";
+            const assignedNames = assignments.length > 0
+              ? assignments.map((a: any) => `${a.players?.first_name || ""} ${a.players?.name || ""}`.trim()).filter(Boolean)
+              : program.players
+                ? [`${program.players.first_name || ""} ${program.players.name}`.trim()]
+                : [];
 
             return (
               <Card key={program.id} className="relative">
@@ -114,7 +118,7 @@ export function ProphylaxisTab({ categoryId }: ProphylaxisTabProps) {
                   </div>
 
                   <div className="text-xs text-muted-foreground space-y-1">
-                    <p>👤 {playerName}</p>
+                    <p>👤 {assignedNames.length > 0 ? (assignedNames.length <= 2 ? assignedNames.join(", ") : `${assignedNames.length} athlètes`) : "Non assigné"}</p>
                     <p>📅 Fréquence : {program.frequency || "quotidien"}</p>
                     <p>📋 {exercises.length} exercice{exercises.length > 1 ? "s" : ""}</p>
                     {!program.is_active && <Badge variant="secondary" className="text-xs">Inactif</Badge>}
