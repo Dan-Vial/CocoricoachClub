@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Calendar, BarChart3, Settings2, Dumbbell, Target, Camera, Crosshair } from "lucide-react";
+import { Plus, Calendar, BarChart3, Settings2, Dumbbell, Target, Camera } from "lucide-react";
 import { AddMatchCalendarDialog } from "./matches/AddMatchCalendarDialog";
 import { MatchCard } from "./matches/MatchCard";
 import { PlayerCumulativeStats } from "./matches/PlayerCumulativeStats";
@@ -10,7 +10,7 @@ import { BowlingTrainingStats } from "@/components/bowling/BowlingTrainingStats"
 import { TennisTrainingStats } from "@/components/tennis/TennisTrainingStats";
 import { PrecisionTrainingStats } from "@/components/training/PrecisionTrainingStats";
 import { PrecisionFieldTracker } from "@/components/rugby/PrecisionFieldTracker";
-import { KickingTracker } from "@/components/rugby/KickingTracker";
+
 import { CategoryPhotosTab } from "./photos/CategoryPhotosTab";
 import { isFuture, isPast, format } from "date-fns";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
@@ -214,11 +214,6 @@ export function MatchesTab({ categoryId, sportType }: MatchesTabProps) {
           )}
         </TabsContent>
 
-        {isRugby && (
-          <TabsContent value="kicking">
-            <KickingTracker categoryId={categoryId} sportType={sportType} />
-          </TabsContent>
-        )}
 
         <TabsContent value="photos">
           <CategoryPhotosTab categoryId={categoryId} />
