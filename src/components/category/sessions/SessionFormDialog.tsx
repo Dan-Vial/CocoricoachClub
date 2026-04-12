@@ -2888,15 +2888,16 @@ export function SessionFormDialog({
                         </p>
                       </div>
                     )}
-                    {type === "precision" && isRugbyType(sportType || "") && (
+                    {type === "precision" && isRugbyType(sportType || "") && (() => {
+                      const resolvedCat = EXERCISE_CATEGORIES.find(c => c.exercises.some(e => e.value === precisionExerciseId));
+                      const activeCatKey = resolvedCat?.key || "buteur";
+                      const activeCat = resolvedCat || EXERCISE_CATEGORIES.find(c => c.key === "buteur")!;
+                      return (
                       <div className="rounded-lg border border-accent/30 p-3 space-y-3">
                         <div className="space-y-2">
                           <Label className="text-sm">Catégorie de précision</Label>
                           <Select
-                            value={(() => {
-                              const cat = EXERCISE_CATEGORIES.find(c => c.exercises.some(e => e.value === precisionExerciseId));
-                              return cat?.key || "buteur";
-                            })()}
+                            value={activeCatKey}
                             onValueChange={(catKey) => {
                               const cat = EXERCISE_CATEGORIES.find(c => c.key === catKey);
                               const first = cat?.exercises[0];
@@ -2920,14 +2921,11 @@ export function SessionFormDialog({
                         </div>
 
                         {/* Show specific exercise for non-buteur */}
-                        {(() => {
-                          const selectedCat = EXERCISE_CATEGORIES.find(c => c.exercises.some(e => e.value === precisionExerciseId));
-                          if (selectedCat?.key === "buteur") {
-                            return (
+                        {activeCatKey === "buteur" ? (
                               <div className="rounded-lg bg-primary/5 border border-primary/20 p-2.5 space-y-1.5">
                                 <p className="text-xs font-medium text-primary">🎯 Exercices buteur disponibles :</p>
                                 <div className="flex items-center gap-3 flex-wrap">
-                                  {selectedCat.exercises.map(ex => (
+                                  {activeCat.exercises.map(ex => (
                                     <span key={ex.value} className="flex items-center gap-1.5 text-xs">
                                       <span style={{ color: ex.color }}>
                                         {ex.shape === "circle" ? "●" : ex.shape === "square" ? "■" : "◆"}
@@ -2940,9 +2938,7 @@ export function SessionFormDialog({
                                   Les 3 types seront disponibles simultanément sur la cartographie.
                                 </p>
                               </div>
-                            );
-                          }
-                          return (
+                        ) : (
                             <div className="space-y-2">
                               <Label className="text-sm">Exercice spécifique</Label>
                               <Select
@@ -2957,7 +2953,7 @@ export function SessionFormDialog({
                                   <SelectValue placeholder="Choisir l'exercice" />
                                 </SelectTrigger>
                                 <SelectContent position="popper" className="z-[200]">
-                                  {selectedCat?.exercises.map((exercise) => (
+                                  {activeCat.exercises.map((exercise) => (
                                     <SelectItem key={exercise.value} value={exercise.value}>
                                       <span className="flex items-center gap-2">
                                         <span className="w-2 h-2 rounded-full" style={{ backgroundColor: exercise.color }} />
@@ -2968,8 +2964,7 @@ export function SessionFormDialog({
                                 </SelectContent>
                               </Select>
                             </div>
-                          );
-                        })()}
+                        )}
 
                         <p className="text-xs text-muted-foreground flex items-center gap-1.5">
                           🏉 Le choix fait ici sera repris par défaut dans la saisie athlète.
@@ -2978,7 +2973,8 @@ export function SessionFormDialog({
                           📊 Tu pourras saisir tes stats de précision (réussites / tentatives) lors de la saisie RPE via le terrain interactif.
                         </p>
                       </div>
-                    )}
+                      );
+                    })()}
 
                     <div className="space-y-2">
                       <Label htmlFor="notes">Notes</Label>
