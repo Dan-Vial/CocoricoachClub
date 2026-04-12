@@ -15,7 +15,8 @@ import { fr } from "date-fns/locale";
 import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 import { RugbyFieldSVG } from "@/components/rugby/RugbyFieldSVG";
 import { getPositionLabel } from "@/lib/utils/kickingFieldZones";
-import { RUGBY_PRECISION_EXERCISES, EXERCISE_CATEGORIES, BUTEUR_EXERCISES, type RugbyPrecisionExerciseMode } from "@/lib/constants/rugbyPrecisionExercises";
+import { RUGBY_PRECISION_EXERCISES, EXERCISE_CATEGORIES, BUTEUR_EXERCISES, ZONE_KICK_EXERCISES, type RugbyPrecisionExerciseMode } from "@/lib/constants/rugbyPrecisionExercises";
+import { cn } from "@/lib/utils";
 import { LineoutFieldSVG, aggregateLineoutStats, type LineoutZone } from "@/components/rugby/LineoutFieldSVG";
 
 interface PrecisionFieldTrackerProps {
@@ -219,7 +220,9 @@ export function PrecisionFieldTracker({ categoryId }: PrecisionFieldTrackerProps
   const globalRate = totalAttempts > 0 ? Math.round((totalSuccesses / totalAttempts) * 100) : 0;
 
   const handleButeurClick = (xPct: number, yPct: number) => {
-    if (isViewer || !selectedPlayerId || !activeSessionId) return;
+    if (isViewer) return;
+    if (!selectedPlayerId) { toast.error("Sélectionnez d'abord un joueur"); return; }
+    if (!activeSessionId) { toast.error("Aucune séance planifiée aujourd'hui"); return; }
     const posLabel = getPositionLabel(xPct, yPct, goalsOnRight);
     const exLabel = currentExercise?.label || exerciseType;
     setClickPos({ x: xPct, y: yPct });
@@ -248,7 +251,9 @@ export function PrecisionFieldTracker({ categoryId }: PrecisionFieldTrackerProps
   };
 
   const handleZoneKickClick = (xPct: number, yPct: number) => {
-    if (isViewer || !selectedPlayerId || !activeSessionId) return;
+    if (isViewer) return;
+    if (!selectedPlayerId) { toast.error("Sélectionnez d'abord un joueur"); return; }
+    if (!activeSessionId) { toast.error("Aucune séance planifiée aujourd'hui"); return; }
     const fixedOrigin = getFixedOrigin();
 
     if (fixedOrigin) {
@@ -488,31 +493,63 @@ export function PrecisionFieldTracker({ categoryId }: PrecisionFieldTrackerProps
       {/* ====== ZONE KICKS MODE ====== */}
       {currentMode === "zone_kicks" && (
         <Card className="bg-gradient-card">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
               <Target className="h-5 w-5 text-primary" />
-              {currentExercise?.label} — {getFixedOrigin()
-                ? "Cliquez sur la zone ciblée (départ fixe)"
-                : zoneKickStep === "origin" ? "Cliquez sur la position de frappe" : "Cliquez sur la zone ciblée"}
+              Coups de pied de zone
             </CardTitle>
-            <div className="flex items-center gap-2">
-              {!selectedPlayerId && !isViewer && (
-                <p className="text-xs text-muted-foreground">Sélectionnez un joueur pour commencer</p>
+            {/* Inline exercise type buttons */}
+            <div className="flex items-center gap-2 flex-wrap mt-1">
+              {ZONE_KICK_EXERCISES.map(ex => {
+                const isActive = exerciseType === ex.value;
+                return (
+                  <Button
+                    key={ex.value}
+                    variant={isActive ? "default" : "outline"}
+                    size="sm"
+                    className="text-xs gap-1.5 h-7"
+                    style={isActive ? { backgroundColor: ex.color, borderColor: ex.color } : {}}
+                    onClick={() => { setExerciseType(ex.value); setZoneKickOrigin(null); setZoneKickStep("origin"); }}
+                  >
+                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: isActive ? "white" : ex.color }} />
+                    {ex.label}
+                  </Button>
+                );
+              })}
+            </div>
+            {/* Instruction banner */}
+            <div className={cn(
+              "flex items-center gap-2 text-xs px-3 py-2 rounded-md mt-2",
+              getFixedOrigin() 
+                ? "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300 border border-amber-300/50"
+                : zoneKickStep === "origin"
+                  ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-300/50"
+                  : "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 border border-green-300/50"
+            )}>
+              {getFixedOrigin() ? (
+                <>🎯 <strong>{currentExercise?.label}</strong> : le départ est fixe sur la ligne — cliquez sur la <strong>zone ciblée</strong></>
+              ) : zoneKickStep === "origin" ? (
+                <>📍 <strong>Étape 1</strong> : cliquez sur la <strong>position de frappe</strong> du joueur</>
+              ) : (
+                <>🎯 <strong>Étape 2</strong> : cliquez sur la <strong>zone ciblée</strong></>
               )}
               {zoneKickStep === "target" && !getFixedOrigin() && (
-                <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={() => { setZoneKickOrigin(null); setZoneKickStep("origin"); }}>
-                  ↩ Annuler position
+                <Button variant="ghost" size="sm" className="h-5 text-[10px] ml-auto" onClick={() => { setZoneKickOrigin(null); setZoneKickStep("origin"); }}>
+                  ↩ Annuler
                 </Button>
               )}
             </div>
+            {!selectedPlayerId && !isViewer && (
+              <p className="text-xs text-destructive font-medium mt-1">⚠ Sélectionnez un joueur pour commencer</p>
+            )}
             {!getFixedOrigin() && (
-              <div className="flex items-center gap-2 text-xs">
+              <div className="flex items-center gap-2 text-xs mt-1">
                 <Badge variant={zoneKickStep === "origin" ? "default" : "secondary"} className="text-[10px]">
-                  1. Position de frappe {zoneKickStep === "target" ? "✓" : ""}
+                  1. Frappe {zoneKickStep === "target" ? "✓" : ""}
                 </Badge>
                 <span>→</span>
                 <Badge variant={zoneKickStep === "target" ? "default" : "outline"} className="text-[10px]">
-                  2. Zone ciblée
+                  2. Cible
                 </Badge>
               </div>
             )}

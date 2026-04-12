@@ -11,7 +11,8 @@ import { Badge } from "@/components/ui/badge";
 import { Target, Check } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { RUGBY_PRECISION_EXERCISES, EXERCISE_CATEGORIES, BUTEUR_EXERCISES, type RugbyPrecisionExerciseMode } from "@/lib/constants/rugbyPrecisionExercises";
+import { RUGBY_PRECISION_EXERCISES, EXERCISE_CATEGORIES, BUTEUR_EXERCISES, ZONE_KICK_EXERCISES, type RugbyPrecisionExerciseMode } from "@/lib/constants/rugbyPrecisionExercises";
+import { cn } from "@/lib/utils";
 import { RugbyFieldSVG } from "@/components/rugby/RugbyFieldSVG";
 import { getPositionLabel } from "@/lib/utils/kickingFieldZones";
 import { LineoutFieldSVG, aggregateLineoutStats, type LineoutZone } from "@/components/rugby/LineoutFieldSVG";
@@ -436,17 +437,44 @@ export function AthletePrecisionFieldInput({
 
       {/* ZONE KICKS MODE - two-click: origin then target */}
       {currentMode === "zone_kicks" && (
-        <div className="relative w-full">
-          <div className="flex items-center gap-2 mb-1">
-            <p className="text-xs text-muted-foreground">
-              {getFixedOrigin()
-                ? `🎯 Clique sur la zone ciblée (${currentExercise?.label} — départ fixe)`
-                : zoneKickStep === "origin"
-                  ? `📍 Étape 1 : Clique sur la position de frappe (${currentExercise?.label})`
-                  : `🎯 Étape 2 : Clique sur la zone ciblée`}
-            </p>
+        <div className="relative w-full space-y-2">
+          {/* Inline exercise type buttons */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {ZONE_KICK_EXERCISES.map(ex => {
+              const isActive = exerciseType === ex.value;
+              return (
+                <Button
+                  key={ex.value}
+                  variant={isActive ? "default" : "outline"}
+                  size="sm"
+                  className="text-[10px] gap-1 h-6"
+                  style={isActive ? { backgroundColor: ex.color, borderColor: ex.color } : {}}
+                  onClick={() => { setExerciseType(ex.value); setZoneKickOrigin(null); setZoneKickStep("origin"); }}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: isActive ? "white" : ex.color }} />
+                  {ex.label}
+                </Button>
+              );
+            })}
+          </div>
+          {/* Instruction banner */}
+          <div className={cn(
+            "flex items-center gap-2 text-[11px] px-2.5 py-1.5 rounded-md",
+            getFixedOrigin()
+              ? "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300 border border-amber-300/50"
+              : zoneKickStep === "origin"
+                ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-300/50"
+                : "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 border border-green-300/50"
+          )}>
+            {getFixedOrigin() ? (
+              <>🎯 <strong>{currentExercise?.label}</strong> : départ fixe — clique sur la <strong>zone ciblée</strong></>
+            ) : zoneKickStep === "origin" ? (
+              <>📍 <strong>Étape 1</strong> : clique sur la <strong>position de frappe</strong></>
+            ) : (
+              <>🎯 <strong>Étape 2</strong> : clique sur la <strong>zone ciblée</strong></>
+            )}
             {zoneKickStep === "target" && !getFixedOrigin() && (
-              <Button variant="ghost" size="sm" className="h-6 text-[10px]" onClick={() => { setZoneKickOrigin(null); setZoneKickStep("origin"); }}>
+              <Button variant="ghost" size="sm" className="h-5 text-[10px] ml-auto" onClick={() => { setZoneKickOrigin(null); setZoneKickStep("origin"); }}>
                 ↩ Annuler
               </Button>
             )}

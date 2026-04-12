@@ -157,12 +157,14 @@ export function WeeklyPlanningCalendar({ categoryId }: WeeklyPlanningCalendarPro
       // If precision session, also create a training_session
       if (sessionMode === "precision") {
         const catLabel = EXERCISE_CATEGORIES.find(c => c.key === precisionCategory)?.label || "Précision";
+        const firstExercise = EXERCISE_CATEGORIES.find(c => c.key === precisionCategory)?.exercises[0];
+        const precisionMeta = JSON.stringify({ id: firstExercise?.value || precisionCategory, label: catLabel });
         const { error: tsError } = await supabase.from("training_sessions").insert({
           category_id: categoryId,
           session_date: itemDate,
           session_start_time: newItemTime || null,
           training_type: "precision",
-          notes: `[precision_exercise:${precisionCategory}|${catLabel}]`,
+          notes: `<!--PRECISION_EXERCISE:${precisionMeta}-->`,
         });
         if (tsError) throw tsError;
       }
@@ -289,6 +291,13 @@ export function WeeklyPlanningCalendar({ categoryId }: WeeklyPlanningCalendarPro
     return item.notes?.startsWith("precision:") || item.custom_title?.startsWith("🎯");
   };
 
+  const getPrecisionTheme = (item: PlanningItem): string | null => {
+    if (!isPrecisionItem(item)) return null;
+    const catKey = item.notes?.replace("precision:", "");
+    const cat = EXERCISE_CATEGORIES.find(c => c.key === catKey);
+    return cat?.label || null;
+  };
+
   return (
     <>
       <Card>
@@ -389,6 +398,11 @@ export function WeeklyPlanningCalendar({ categoryId }: WeeklyPlanningCalendarPro
                         <p className="font-medium truncate">
                         {item.template?.name || item.custom_title || "Séance"}
                       </p>
+                      {isPrecisionItem(item) && (
+                        <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 border-amber-500/40 text-amber-700 dark:text-amber-400 mt-0.5">
+                          {getPrecisionTheme(item) || "Précision"}
+                        </Badge>
+                      )}
                       {item.time_slot && (
                         <div className="flex items-center gap-1 text-muted-foreground mt-1">
                           <Clock className="h-3 w-3" />

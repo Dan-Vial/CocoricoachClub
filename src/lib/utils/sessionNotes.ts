@@ -7,6 +7,7 @@ export function getDisplayNotes(notes: string | null | undefined): string {
   return notes
     .replace(/\n?<!--TESTS:.*?-->/g, "")
     .replace(/\n?<!--PRECISION_EXERCISE:.*?-->/g, "")
+    .replace(/\n?\[precision_exercise:.*?\]/g, "")
     .trim();
 }
 
@@ -26,20 +27,32 @@ export function parseTestsFromNotes(notes: string | null | undefined): Array<{ t
 
 export function parsePrecisionExerciseFromNotes(notes: string | null | undefined): { id: string | null; label: string } | null {
   if (!notes) return null;
-  const match = notes.match(/<!--PRECISION_EXERCISE:(.*?)-->/);
-  if (!match) return null;
 
-  try {
-    const parsed = JSON.parse(match[1]);
-    if (!parsed || typeof parsed.label !== "string" || !parsed.label.trim()) {
+  // New format: <!--PRECISION_EXERCISE:{"id":"...","label":"..."}-->
+  const match = notes.match(/<!--PRECISION_EXERCISE:(.*?)-->/);
+  if (match) {
+    try {
+      const parsed = JSON.parse(match[1]);
+      if (!parsed || typeof parsed.label !== "string" || !parsed.label.trim()) {
+        return null;
+      }
+      return {
+        id: typeof parsed.id === "string" && parsed.id.trim() ? parsed.id : null,
+        label: parsed.label.trim(),
+      };
+    } catch {
       return null;
     }
-
-    return {
-      id: typeof parsed.id === "string" && parsed.id.trim() ? parsed.id : null,
-      label: parsed.label.trim(),
-    };
-  } catch {
-    return null;
   }
+
+  // Legacy format: [precision_exercise:category|label]
+  const legacyMatch = notes.match(/\[precision_exercise:(.*?)\|(.*?)\]/);
+  if (legacyMatch) {
+    return {
+      id: legacyMatch[1] || null,
+      label: legacyMatch[2] || "Précision",
+    };
+  }
+
+  return null;
 }
