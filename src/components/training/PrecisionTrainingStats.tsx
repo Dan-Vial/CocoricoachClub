@@ -175,7 +175,7 @@ export function PrecisionTrainingStats({ categoryId }: PrecisionTrainingStatsPro
       const branding = await getExcelBranding(categoryId);
       const wb = new ExcelJS.Workbook();
 
-      // Sheet 1: By exercise
+      const titleSuffix = singlePlayerName ? ` - ${singlePlayerName}` : "";
       const ws1 = wb.addWorksheet("Par exercice");
       ws1.columns = [
         { header: "Exercice", key: "label", width: 25 },
@@ -184,19 +184,20 @@ export function PrecisionTrainingStats({ categoryId }: PrecisionTrainingStatsPro
         { header: "Taux %", key: "rate", width: 12 },
         { header: "Progression", key: "progression", width: 14 },
       ];
-      const startRow1 = addBrandedHeader(ws1, "Stats entraînement - Par exercice", branding, [
+      const startRow1 = addBrandedHeader(ws1, `Stats entraînement - Par exercice${titleSuffix}`, branding, [
         ["Période", `${dateFrom ? format(dateFrom, "dd/MM/yyyy") : "Début"} → ${dateTo ? format(dateTo, "dd/MM/yyyy") : "Fin"}`],
+        ...(singlePlayerName ? [["Athlète", singlePlayerName] as [string, string]] : []),
       ]);
       styleDataHeaderRow(ws1, startRow1, 5, branding.headerColor);
       ws1.getRow(startRow1).values = ["Exercice", "Tentatives", "Réussites", "Taux %", "Progression"];
-      byExercise.forEach((ex, i) => {
+      exportByExercise.forEach((ex, i) => {
         const row = ws1.getRow(startRow1 + 1 + i);
         row.values = [ex.label, ex.attempts, ex.successes, ex.rate, ex.progression > 0 ? `+${ex.progression}%` : `${ex.progression}%`];
         const progCell = row.getCell(5);
         progCell.font = { color: { argb: ex.progression > 0 ? "FF16A34A" : ex.progression < 0 ? "FFDC2626" : "FF64748B" } };
       });
-      addZebraRows(ws1, startRow1 + 1, startRow1 + byExercise.length, 5);
-      addFooter(ws1, startRow1 + byExercise.length + 1, 5, branding.footerText);
+      addZebraRows(ws1, startRow1 + 1, startRow1 + exportByExercise.length, 5);
+      addFooter(ws1, startRow1 + exportByExercise.length + 1, 5, branding.footerText);
 
       // Sheet 2: By player
       const ws2 = wb.addWorksheet("Par athlète");
