@@ -970,6 +970,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
             y += 8;
           }
         }
+      }
 
       // Footer
       if (settings?.footer_text) {
