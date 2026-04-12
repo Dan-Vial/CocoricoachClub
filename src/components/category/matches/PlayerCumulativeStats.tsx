@@ -389,7 +389,40 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
         teamHdr.getCell(3).value = "Total";
         teamHdr.getCell(4).value = "Moy/match";
 
-        let tRow = teamStartRow + 1;
+        // Add score section first
+        const matchesWithScores = allMatches.filter(m => activeMatchIds.includes(m.id) && m.score_home != null && m.score_away != null);
+        if (matchesWithScores.length > 0) {
+          let totalScored = 0, totalConceded = 0, wins = 0, draws = 0, losses = 0;
+          matchesWithScores.forEach(m => {
+            const scored = m.is_home ? (m.score_home || 0) : (m.score_away || 0);
+            const conceded = m.is_home ? (m.score_away || 0) : (m.score_home || 0);
+            totalScored += scored;
+            totalConceded += conceded;
+            if (scored > conceded) wins++;
+            else if (scored < conceded) losses++;
+            else draws++;
+          });
+          const scoreRows = [
+            { cat: "Bilan", stat: "Points marqués", total: totalScored, avg: Math.round((totalScored / matchesWithScores.length) * 10) / 10 },
+            { cat: "Bilan", stat: "Points encaissés", total: totalConceded, avg: Math.round((totalConceded / matchesWithScores.length) * 10) / 10 },
+            { cat: "Bilan", stat: "Différentiel", total: totalScored - totalConceded, avg: "" },
+            { cat: "Bilan", stat: "Bilan V/N/D", total: `${wins}V ${draws}N ${losses}D`, avg: "" },
+          ];
+          scoreRows.forEach(sr => {
+            const row = wsTeam.getRow(tRow);
+            row.getCell(1).value = sr.cat;
+            row.getCell(2).value = sr.stat;
+            row.getCell(3).value = sr.total;
+            row.getCell(4).value = sr.avg;
+            if (typeof sr.total === "number" && sr.stat === "Différentiel") {
+              row.getCell(3).font = { color: { argb: sr.total >= 0 ? "FF16A34A" : "FFDC2626" } };
+            }
+            tRow++;
+          });
+          // Separator row
+          tRow++;
+        }
+
         statCategories.forEach(cat => {
           const catStats = sportStats.filter(s => s.category === cat.key);
           catStats.forEach(s => {
