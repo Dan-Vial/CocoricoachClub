@@ -321,7 +321,7 @@ export function AthletePrecisionFieldInput({
             <SelectTrigger className="h-8 text-xs mt-1">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent position="popper" className="z-[200]">
               {EXERCISE_CATEGORIES.map(cat => (
                 <SelectItem key={cat.key} value={cat.key}>{cat.label}</SelectItem>
               ))}
@@ -339,7 +339,7 @@ export function AthletePrecisionFieldInput({
               <SelectTrigger className="h-8 text-xs mt-1">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent position="popper" className="z-[200]">
                 {EXERCISE_CATEGORIES.find(c => c.key === currentCategory?.key)?.exercises.map(et => (
                   <SelectItem key={et.value} value={et.value}>
                     <span className="flex items-center gap-2">
