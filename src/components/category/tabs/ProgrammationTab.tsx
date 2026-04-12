@@ -1,10 +1,9 @@
 import { Tabs, TabsContent } from "@/components/ui/tabs";
-import { CalendarDays, FolderOpen, ClipboardCheck, Bell, Target } from "lucide-react";
+import { CalendarDays, FolderOpen, ClipboardCheck, Bell } from "lucide-react";
 import { TestsTab } from "@/components/category/TestsTab";
 import { SessionsTab } from "@/components/category/sessions/SessionsTab";
 import { ProgramsTab } from "@/components/category/programs/ProgramsTab";
 import { TestRemindersTab } from "@/components/category/TestRemindersTab";
-import { LoadObjectivesSection } from "@/components/periodization/LoadObjectivesSection";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ColoredSubTabsList, ColoredSubTabsTrigger } from "@/components/ui/colored-subtabs";
@@ -51,14 +50,6 @@ export function ProgrammationTab({ categoryId }: ProgrammationTabProps) {
             <span className="sm:hidden">Prog</span>
           </ColoredSubTabsTrigger>
           <ColoredSubTabsTrigger 
-            value="objectives" 
-            colorKey="programmation"
-            icon={<Target className="h-4 w-4" />}
-          >
-            <span className="hidden sm:inline">Objectifs</span>
-            <span className="sm:hidden">Obj</span>
-          </ColoredSubTabsTrigger>
-          <ColoredSubTabsTrigger 
             value="tests" 
             colorKey="programmation"
             icon={<ClipboardCheck className="h-4 w-4" />}
@@ -83,11 +74,6 @@ export function ProgrammationTab({ categoryId }: ProgrammationTabProps) {
       <TabsContent value="programs">
         <ProgramsTab categoryId={categoryId} />
       </TabsContent>
-
-      <TabsContent value="objectives">
-        <LoadObjectivesSection categoryId={categoryId} />
-      </TabsContent>
-
 
       <TabsContent value="tests">
         <TestsTab categoryId={categoryId} sportType={sportType} />
