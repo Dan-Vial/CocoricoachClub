@@ -539,6 +539,65 @@ export function PrecisionTrainingStats({ categoryId }: PrecisionTrainingStatsPro
       y = 36;
       doc.setTextColor(30, 41, 59);
 
+      // Player photo + info for single player export
+      if (singlePlayerId) {
+        const { data: playerData } = await supabase
+          .from("players")
+          .select("avatar_url, position, name, first_name")
+          .eq("id", singlePlayerId)
+          .maybeSingle();
+        
+        if (playerData?.avatar_url) {
+          try {
+            const response = await fetch(playerData.avatar_url + (playerData.avatar_url.includes("?") ? "&" : "?") + "t=" + Date.now(), { mode: "cors" });
+            if (response.ok) {
+              const blob = await response.blob();
+              const dataUrl = await new Promise<string>((resolve) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result as string);
+                reader.readAsDataURL(blob);
+              });
+              const imgFormat = dataUrl.includes("image/png") ? "PNG" : "JPEG";
+              doc.addImage(dataUrl, imgFormat, 14, y, 18, 18);
+            }
+          } catch { /* skip photo */ }
+        }
+
+        const infoX = playerData?.avatar_url ? 36 : 14;
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "bold");
+        doc.text(singlePlayerName || "", infoX, y + 6);
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(100, 116, 139);
+        doc.text(`Poste : ${playerData?.position || "—"}  •  Club : ${clubName || "—"}  •  Catégorie : ${categoryName || "—"}`, infoX, y + 12);
+        
+        // Period info
+        const sessionDates = [...new Set(exportData.map((r: any) => r.session_date))].sort();
+        if (sessionDates.length > 0) {
+          const periodStr = sessionDates.length === 1 
+            ? `Séance du ${format(new Date(sessionDates[0]), "dd/MM/yyyy")}`
+            : `Période : ${format(new Date(sessionDates[0]), "dd/MM/yyyy")} → ${format(new Date(sessionDates[sessionDates.length - 1]), "dd/MM/yyyy")} (${sessionDates.length} séances)`;
+          doc.text(periodStr, infoX, y + 17);
+        }
+        y += 24;
+        doc.setTextColor(30, 41, 59);
+      } else {
+        // Period info for team exports
+        const sessionDates = [...new Set(exportData.map((r: any) => r.session_date))].sort();
+        if (sessionDates.length > 0) {
+          doc.setFontSize(8);
+          doc.setFont("helvetica", "normal");
+          doc.setTextColor(100, 116, 139);
+          const periodStr = sessionDates.length === 1 
+            ? `Séance du ${format(new Date(sessionDates[0]), "dd/MM/yyyy")}`
+            : `Période : ${format(new Date(sessionDates[0]), "dd/MM/yyyy")} → ${format(new Date(sessionDates[sessionDates.length - 1]), "dd/MM/yyyy")} (${sessionDates.length} séances)`;
+          doc.text(periodStr, 14, y);
+          y += 6;
+          doc.setTextColor(30, 41, 59);
+        }
+      }
+
       // Summary
       doc.setFontSize(12);
       doc.setFont("helvetica", "bold");
@@ -549,8 +608,25 @@ export function PrecisionTrainingStats({ categoryId }: PrecisionTrainingStatsPro
       doc.text(`Enregistrements: ${exportData.length}  |  Tentatives: ${exportTotalAttempts}  |  Réussites: ${exportTotalSuccesses}  |  Taux: ${exportGlobalRate}%`, 14, y);
       y += 12;
 
-      // ===== TERRAIN VISUALS =====
-      if (hasZoneData) {
+      // ===== TERRAIN VISUALS - Separate cartographies by exercise type =====
+      // Categorize export data
+      const buteurLabels = ["Pénalité", "Transformation", "Drop"];
+      const zoneKickLabels = ["Coup d'envoi", "Renvoi en-but", "Renvoi 22m", "Coup de pied de zone"];
+      
+      const buteurEntries = exportData.filter((e: any) => e.zone_x != null && e.zone_y != null && buteurLabels.includes(e.exercise_label));
+      const zoneKickByType = new Map<string, any[]>();
+      exportData.forEach((e: any) => {
+        if (e.zone_x == null || e.zone_y == null) return;
+        if (zoneKickLabels.includes(e.exercise_label)) {
+          const arr = zoneKickByType.get(e.exercise_label) || [];
+          arr.push(e);
+          zoneKickByType.set(e.exercise_label, arr);
+        }
+      });
+      const lineoutData = exportData.filter((e: any) => e.exercise_label?.startsWith("Touche"));
+      const hasAnyVisuals = buteurEntries.length > 0 || zoneKickByType.size > 0 || lineoutData.length > 0;
+
+      if (hasAnyVisuals) {
         doc.setFontSize(12);
         doc.setFont("helvetica", "bold");
         doc.text("Cartographie terrain", 14, y);
@@ -558,63 +634,187 @@ export function PrecisionTrainingStats({ categoryId }: PrecisionTrainingStatsPro
 
         const fieldW = 120;
         const fieldH = 70;
-        let fieldX = 14;
 
-        // Draw kick field if there are kick entries
-        if (kickFieldEntries.length > 0) {
-          doc.setFontSize(8);
+        // 1. Buteur cartography with kick symbols (circle/square/diamond)
+        if (buteurEntries.length > 0) {
+          if (y > pageH - fieldH - 25) { doc.addPage(); y = 15; }
+          const fieldX = 14;
+          doc.setFontSize(9);
           doc.setFont("helvetica", "bold");
           doc.setTextColor(30, 41, 59);
-          doc.text("Coups de pied / Passes", fieldX + fieldW / 2, y, { align: "center" });
-          drawPdfField(doc, fieldX, y + 2, fieldW, fieldH, kickFieldEntries);
-          // Stats below field
-          const kickTotal = kickFieldEntries.reduce((s, z) => s + z.attempts, 0);
-          const kickSuccess = kickFieldEntries.reduce((s, z) => s + z.successes, 0);
-          const kickRate = kickTotal > 0 ? Math.round((kickSuccess / kickTotal) * 100) : 0;
+          doc.text("Coups de pied de précision (Buteur)", fieldX, y);
+          y += 3;
+          
+          // Legend with symbols
+          doc.setFontSize(6);
+          doc.setFont("helvetica", "normal");
+          doc.setTextColor(100, 116, 139);
+          // Transformation - blue circle
+          doc.setFillColor(59, 130, 246);
+          doc.circle(fieldX + 2, y + 1, 1.5, "F");
+          doc.text("Transformation", fieldX + 5, y + 2.5);
+          // Penalty - orange square
+          doc.setFillColor(249, 115, 22);
+          doc.rect(fieldX + 38, y - 0.5, 3, 3, "F");
+          doc.text("Pénalité", fieldX + 43, y + 2.5);
+          // Drop - purple diamond
+          doc.setFillColor(139, 92, 246);
+          const ddx = fieldX + 68, ddy = y + 1;
+          (doc as any).triangle(ddx, ddy - 1.5, ddx + 1.5, ddy, ddx, ddy + 1.5, "F");
+          (doc as any).triangle(ddx, ddy - 1.5, ddx - 1.5, ddy, ddx, ddy + 1.5, "F");
+          doc.text("Drop", fieldX + 72, y + 2.5);
+          // Success colors
+          doc.setFillColor(34, 197, 94);
+          doc.circle(fieldX + 92, y + 1, 1.5, "F");
+          doc.text("Réussi", fieldX + 95, y + 2.5);
+          doc.setFillColor(239, 68, 68);
+          doc.circle(fieldX + 112, y + 1, 1.5, "F");
+          doc.text("Raté", fieldX + 115, y + 2.5);
+          y += 5;
+
+          const fb = drawPdfRugbyField(doc, fieldX, y, fieldW * 1.5, fieldH);
+
+          // Aggregate by zone, grouped by exercise type
+          const buteurByZone = new Map<string, { x: number; y: number; byType: Record<string, { attempts: number; successes: number }> }>();
+          buteurEntries.forEach((e: any) => {
+            const zoneKey = `${Math.round(e.zone_x / 15) * 15}-${Math.round(e.zone_y / 15) * 15}`;
+            if (!buteurByZone.has(zoneKey)) {
+              buteurByZone.set(zoneKey, { x: Math.round(e.zone_x / 15) * 15, y: Math.round(e.zone_y / 15) * 15, byType: {} });
+            }
+            const zone = buteurByZone.get(zoneKey)!;
+            const label = e.exercise_label;
+            if (!zone.byType[label]) zone.byType[label] = { attempts: 0, successes: 0 };
+            zone.byType[label].attempts += e.attempts || 0;
+            zone.byType[label].successes += e.successes || 0;
+          });
+
+          // Draw markers with symbols
+          buteurByZone.forEach((zone) => {
+            const cx = fb.fx + (zone.x / 100) * fb.fw;
+            const cy = fb.fy + (zone.y / 100) * fb.fh;
+            let offset = 0;
+            const typeCount = Object.keys(zone.byType).length;
+            
+            Object.entries(zone.byType).forEach(([label, stat]) => {
+              const rate = stat.attempts > 0 ? Math.round((stat.successes / stat.attempts) * 100) : 0;
+              const fillColor: [number, number, number] = rate >= 70 ? [34, 197, 94] : rate >= 40 ? [245, 158, 11] : [239, 68, 68];
+              const r = 4;
+              const mx = cx + (typeCount > 1 ? (offset - (typeCount - 1) / 2) * (r * 2.5) : 0);
+              doc.setFillColor(...fillColor);
+
+              if (label === "Transformation") {
+                doc.circle(mx, cy, r, "F");
+                doc.setDrawColor(59, 130, 246);
+                doc.setLineWidth(0.5);
+                doc.circle(mx, cy, r, "S");
+              } else if (label === "Pénalité") {
+                doc.rect(mx - r, cy - r, r * 2, r * 2, "F");
+                doc.setDrawColor(249, 115, 22);
+                doc.setLineWidth(0.5);
+                doc.rect(mx - r, cy - r, r * 2, r * 2, "S");
+              } else {
+                // Diamond for Drop
+                const pts = [
+                  { x: mx, y: cy - r * 1.2 },
+                  { x: mx + r * 1.2, y: cy },
+                  { x: mx, y: cy + r * 1.2 },
+                  { x: mx - r * 1.2, y: cy },
+                ];
+                (doc as any).triangle(pts[0].x, pts[0].y, pts[1].x, pts[1].y, pts[2].x, pts[2].y, "F");
+                (doc as any).triangle(pts[0].x, pts[0].y, pts[2].x, pts[2].y, pts[3].x, pts[3].y, "F");
+                doc.setDrawColor(139, 92, 246);
+                doc.setLineWidth(0.5);
+              }
+              // Rate label
+              doc.setTextColor(255, 255, 255);
+              doc.setFontSize(5);
+              doc.setFont("helvetica", "bold");
+              doc.text(`${rate}%`, mx, cy - 0.5, { align: "center" });
+              doc.setFontSize(3.5);
+              doc.setFont("helvetica", "normal");
+              doc.text(`${stat.successes}/${stat.attempts}`, mx, cy + 2.5, { align: "center" });
+              offset++;
+            });
+          });
+
+          y += fieldH + 4;
+          // Buteur stats summary
+          const bTotal = buteurEntries.reduce((s: number, r: any) => s + (r.attempts || 0), 0);
+          const bSuccess = buteurEntries.reduce((s: number, r: any) => s + (r.successes || 0), 0);
+          const bRate = bTotal > 0 ? Math.round((bSuccess / bTotal) * 100) : 0;
           doc.setFontSize(7);
           doc.setFont("helvetica", "normal");
           doc.setTextColor(30, 41, 59);
-          doc.text(`${kickSuccess}/${kickTotal} — ${kickRate}%`, fieldX + fieldW / 2, y + fieldH + 7, { align: "center" });
-          fieldX += fieldW + 10;
+          doc.text(`Total buteur: ${bSuccess}/${bTotal} — ${bRate}%`, 14, y);
+          
+          // Per-type breakdown
+          buteurLabels.forEach((label, i) => {
+            const typeData = buteurEntries.filter((e: any) => e.exercise_label === label);
+            const ta = typeData.reduce((s: number, r: any) => s + (r.attempts || 0), 0);
+            const ts = typeData.reduce((s: number, r: any) => s + (r.successes || 0), 0);
+            if (ta > 0) {
+              const tr = Math.round((ts / ta) * 100);
+              doc.text(`${label}: ${ts}/${ta} (${tr}%)`, 14 + (i + 1) * 55, y);
+            }
+          });
+          y += 8;
+          drawPdfFieldLegend(doc, 14, y);
+          y += 8;
         }
 
-        // Draw zone grid if there are zone entries
-        const hasZoneGrid = Object.values(zoneGridEntries).some(v => v.attempts > 0);
-        if (hasZoneGrid) {
-          doc.setFontSize(8);
+        // 2. Separate cartography for each zone kick type
+        zoneKickByType.forEach((entries, label) => {
+          if (y > pageH - 90) { doc.addPage(); y = 15; }
+          const fieldX = 14;
+          doc.setFontSize(9);
           doc.setFont("helvetica", "bold");
           doc.setTextColor(30, 41, 59);
-          doc.text("Jeu de zone", fieldX + fieldW / 2, y, { align: "center" });
-          drawPdfZoneGrid(doc, fieldX, y + 2, fieldW, fieldH, zoneGridEntries);
-          const zgTotal = Object.values(zoneGridEntries).reduce((s, v) => s + v.attempts, 0);
-          const zgSuccess = Object.values(zoneGridEntries).reduce((s, v) => s + v.successes, 0);
-          const zgRate = zgTotal > 0 ? Math.round((zgSuccess / zgTotal) * 100) : 0;
+          doc.text(label, fieldX, y);
+          y += 3;
+
+          const zoneMap = new Map<string, { x: number; y: number; attempts: number; successes: number }>();
+          entries.forEach((e: any) => {
+            const zoneKey = `${Math.round(e.zone_x / 15) * 15}-${Math.round(e.zone_y / 15) * 15}`;
+            const prev = zoneMap.get(zoneKey) || { x: Math.round(e.zone_x / 15) * 15, y: Math.round(e.zone_y / 15) * 15, attempts: 0, successes: 0 };
+            prev.attempts += e.attempts || 0;
+            prev.successes += e.successes || 0;
+            zoneMap.set(zoneKey, prev);
+          });
+          
+          drawPdfField(doc, fieldX, y, fieldW * 1.5, fieldH, Array.from(zoneMap.values()));
+          y += fieldH + 4;
+
+          const zTotal = entries.reduce((s: number, r: any) => s + (r.attempts || 0), 0);
+          const zSuccess = entries.reduce((s: number, r: any) => s + (r.successes || 0), 0);
+          const zRate = zTotal > 0 ? Math.round((zSuccess / zTotal) * 100) : 0;
           doc.setFontSize(7);
           doc.setFont("helvetica", "normal");
           doc.setTextColor(30, 41, 59);
-          doc.text(`${zgSuccess}/${zgTotal} — ${zgRate}%`, fieldX + fieldW / 2, y + fieldH + 7, { align: "center" });
-          fieldX += fieldW + 10;
-        }
+          doc.text(`${zSuccess}/${zTotal} — ${zRate}%`, fieldX, y);
+          y += 8;
+        });
 
-        // Draw lineout if there are lineout entries
+        // 3. Lineout
         const hasLineout = Object.values(lineoutEntries).some(v => v.attempts > 0);
         if (hasLineout) {
+          if (y > pageH - 90) { doc.addPage(); y = 15; }
           const lineoutW = 80;
-          doc.setFontSize(8);
+          doc.setFontSize(9);
           doc.setFont("helvetica", "bold");
           doc.setTextColor(30, 41, 59);
-          doc.text("Touches", fieldX + lineoutW / 2, y, { align: "center" });
-          drawPdfLineout(doc, fieldX, y + 2, lineoutW, fieldH, lineoutEntries);
+          doc.text("Touches", 14, y);
+          y += 3;
+          drawPdfLineout(doc, 14, y, lineoutW, fieldH, lineoutEntries);
+          y += fieldH + 4;
           const ltTotal = Object.values(lineoutEntries).reduce((s, v) => s + v.attempts, 0);
           const ltSuccess = Object.values(lineoutEntries).reduce((s, v) => s + v.successes, 0);
           const ltRate = ltTotal > 0 ? Math.round((ltSuccess / ltTotal) * 100) : 0;
           doc.setFontSize(7);
           doc.setFont("helvetica", "normal");
           doc.setTextColor(30, 41, 59);
-          doc.text(`${ltSuccess}/${ltTotal} — ${ltRate}%`, fieldX + lineoutW / 2, y + fieldH + 7, { align: "center" });
+          doc.text(`${ltSuccess}/${ltTotal} — ${ltRate}%`, 14, y);
+          y += 8;
         }
-
-        y += fieldH + 16;
       }
 
       // By exercise table
@@ -627,25 +827,50 @@ export function PrecisionTrainingStats({ categoryId }: PrecisionTrainingStatsPro
         y += 6;
         const cols = [14, 120, 155, 190, 225];
         const headers = ["Exercice", "Tentatives", "Réussites", "Taux", "Évolution"];
+        const tableW = pageW - 28;
         doc.setFillColor(241, 245, 249);
-        doc.rect(14, y, pageW - 28, 7, "F");
+        doc.rect(14, y, tableW, 7, "F");
+        doc.setDrawColor(200, 210, 220);
+        doc.setLineWidth(0.3);
+        doc.rect(14, y, tableW, 7, "S");
         doc.setFontSize(9);
         doc.setFont("helvetica", "bold");
-        headers.forEach((h, i) => doc.text(h, cols[i], y + 5));
-        y += 9;
+        headers.forEach((h, i) => {
+          doc.text(h, cols[i], y + 5);
+          if (i > 0) doc.line(cols[i] - 2, y, cols[i] - 2, y + 7);
+        });
+        y += 7;
         doc.setFont("helvetica", "normal");
 
-        byExercise.forEach((ex) => {
+        // Recompute for single player
+        const recomputeByEx = (data: any[]) => {
+          const map = new Map<string, { attempts: number; successes: number }>();
+          data.forEach((r: any) => {
+            const key = r.exercise_label || "Inconnu";
+            const prev = map.get(key) || { attempts: 0, successes: 0 };
+            map.set(key, { attempts: prev.attempts + (r.attempts || 0), successes: prev.successes + (r.successes || 0) });
+          });
+          return Array.from(map.entries()).map(([label, v]) => ({
+            label, ...v, rate: v.attempts > 0 ? Math.round((v.successes / v.attempts) * 100) : 0, progression: 0,
+          }));
+        };
+        const exportByExercise = singlePlayerId ? recomputeByEx(exportData) : byExercise;
+
+        exportByExercise.forEach((ex) => {
           if (y > pageH - 20) { doc.addPage(); y = 15; }
+          doc.setDrawColor(220, 225, 230);
+          doc.setLineWidth(0.15);
+          doc.rect(14, y, tableW, 7, "S");
+          cols.forEach((c, i) => { if (i > 0) doc.line(c - 2, y, c - 2, y + 7); });
           doc.setTextColor(30, 41, 59);
-          doc.text(ex.label, cols[0], y + 4);
-          doc.text(String(ex.attempts), cols[1], y + 4);
-          doc.text(String(ex.successes), cols[2], y + 4);
-          doc.text(`${ex.rate}%`, cols[3], y + 4);
+          doc.text(ex.label, cols[0], y + 5);
+          doc.text(String(ex.attempts), cols[1], y + 5);
+          doc.text(String(ex.successes), cols[2], y + 5);
+          doc.text(`${ex.rate}%`, cols[3], y + 5);
           if (ex.progression > 0) doc.setTextColor(22, 163, 74);
           else if (ex.progression < 0) doc.setTextColor(220, 38, 38);
           else doc.setTextColor(100, 116, 139);
-          doc.text(ex.progression > 0 ? `+${ex.progression}%` : `${ex.progression}%`, cols[4], y + 4);
+          doc.text(ex.progression > 0 ? `+${ex.progression}%` : `${ex.progression}%`, cols[4], y + 5);
           y += 7;
         });
 
@@ -659,26 +884,36 @@ export function PrecisionTrainingStats({ categoryId }: PrecisionTrainingStatsPro
           doc.text("Par athlète", 14, y);
           y += 6;
           doc.setFillColor(241, 245, 249);
-          doc.rect(14, y, pageW - 28, 7, "F");
+          doc.rect(14, y, tableW, 7, "F");
+          doc.setDrawColor(200, 210, 220);
+          doc.setLineWidth(0.3);
+          doc.rect(14, y, tableW, 7, "S");
           doc.setFontSize(9);
           doc.setFont("helvetica", "bold");
           const cols2 = [14, 120, 155, 190, 225];
           const headers2 = ["Athlète", "Tentatives", "Réussites", "Taux", "Évolution"];
-          headers2.forEach((h, i) => doc.text(h, cols2[i], y + 5));
-          y += 9;
+          headers2.forEach((h, i) => {
+            doc.text(h, cols2[i], y + 5);
+            if (i > 0) doc.line(cols2[i] - 2, y, cols2[i] - 2, y + 7);
+          });
+          y += 7;
           doc.setFont("helvetica", "normal");
 
           byPlayer.forEach((p) => {
             if (y > pageH - 20) { doc.addPage(); y = 15; }
+            doc.setDrawColor(220, 225, 230);
+            doc.setLineWidth(0.15);
+            doc.rect(14, y, tableW, 7, "S");
+            cols2.forEach((c, i) => { if (i > 0) doc.line(c - 2, y, c - 2, y + 7); });
             doc.setTextColor(30, 41, 59);
-            doc.text(p.name, cols2[0], y + 4);
-            doc.text(String(p.attempts), cols2[1], y + 4);
-            doc.text(String(p.successes), cols2[2], y + 4);
-            doc.text(`${p.rate}%`, cols2[3], y + 4);
+            doc.text(p.name, cols2[0], y + 5);
+            doc.text(String(p.attempts), cols2[1], y + 5);
+            doc.text(String(p.successes), cols2[2], y + 5);
+            doc.text(`${p.rate}%`, cols2[3], y + 5);
             if (p.progression > 0) doc.setTextColor(22, 163, 74);
             else if (p.progression < 0) doc.setTextColor(220, 38, 38);
             else doc.setTextColor(100, 116, 139);
-            doc.text(p.progression > 0 ? `+${p.progression}%` : `${p.progression}%`, cols2[4], y + 4);
+            doc.text(p.progression > 0 ? `+${p.progression}%` : `${p.progression}%`, cols2[4], y + 5);
             y += 7;
           });
         }
@@ -695,14 +930,21 @@ export function PrecisionTrainingStats({ categoryId }: PrecisionTrainingStatsPro
         doc.text("Par entraînement", 14, y);
         y += 6;
 
+        const tableW = pageW - 28;
         const sCols = [14, 50, 160, 195, 230];
         const sHeaders = ["Date", "Exercice", "Tentatives", "Réussites", "Taux"];
         doc.setFillColor(241, 245, 249);
-        doc.rect(14, y, pageW - 28, 7, "F");
+        doc.rect(14, y, tableW, 7, "F");
+        doc.setDrawColor(200, 210, 220);
+        doc.setLineWidth(0.3);
+        doc.rect(14, y, tableW, 7, "S");
         doc.setFontSize(9);
         doc.setFont("helvetica", "bold");
-        sHeaders.forEach((h, i) => doc.text(h, sCols[i], y + 5));
-        y += 9;
+        sHeaders.forEach((h, i) => {
+          doc.text(h, sCols[i], y + 5);
+          if (i > 0) doc.line(sCols[i] - 2, y, sCols[i] - 2, y + 7);
+        });
+        y += 7;
         doc.setFont("helvetica", "normal");
 
         sessions.forEach((s) => {
@@ -710,13 +952,17 @@ export function PrecisionTrainingStats({ categoryId }: PrecisionTrainingStatsPro
           let firstRow = true;
           s.exercises.forEach((v, exLabel) => {
             if (y > pageH - 20) { doc.addPage(); y = 15; }
+            doc.setDrawColor(220, 225, 230);
+            doc.setLineWidth(0.15);
+            doc.rect(14, y, tableW, 7, "S");
+            sCols.forEach((c, i) => { if (i > 0) doc.line(c - 2, y, c - 2, y + 7); });
             doc.setTextColor(30, 41, 59);
-            doc.text(firstRow ? dateStr : "", sCols[0], y + 4);
-            doc.text(exLabel, sCols[1], y + 4);
-            doc.text(String(v.attempts), sCols[2], y + 4);
-            doc.text(String(v.successes), sCols[3], y + 4);
+            doc.text(firstRow ? dateStr : "", sCols[0], y + 5);
+            doc.text(exLabel, sCols[1], y + 5);
+            doc.text(String(v.attempts), sCols[2], y + 5);
+            doc.text(String(v.successes), sCols[3], y + 5);
             const rate = v.attempts > 0 ? Math.round((v.successes / v.attempts) * 100) : 0;
-            doc.text(`${rate}%`, sCols[4], y + 4);
+            doc.text(`${rate}%`, sCols[4], y + 5);
             y += 7;
             firstRow = false;
           });
@@ -726,7 +972,9 @@ export function PrecisionTrainingStats({ categoryId }: PrecisionTrainingStatsPro
           const totalRate = totalA > 0 ? Math.round((totalS / totalA) * 100) : 0;
           if (y > pageH - 20) { doc.addPage(); y = 15; }
           doc.setFillColor(241, 245, 249);
-          doc.rect(14, y, pageW - 28, 7, "F");
+          doc.rect(14, y, tableW, 7, "F");
+          doc.setDrawColor(200, 210, 220);
+          doc.rect(14, y, tableW, 7, "S");
           doc.setFont("helvetica", "bold");
           doc.text("", sCols[0], y + 5);
           doc.text("TOTAL SÉANCE", sCols[1], y + 5);
