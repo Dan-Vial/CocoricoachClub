@@ -126,7 +126,8 @@ export function PrecisionFieldTracker({ categoryId }: PrecisionFieldTrackerProps
       if (att <= 0) throw new Error("Le nombre de tentatives doit être > 0");
       if (suc > att) throw new Error("Les réussites ne peuvent pas dépasser les tentatives");
 
-      const { error } = await supabase.from("precision_training").insert({
+      const lineoutZone = (window as any).__pendingLineoutZone as LineoutZone | undefined;
+      const insertData: any = {
         player_id: selectedPlayerId,
         category_id: categoryId,
         training_session_id: activeSessionId,
@@ -136,8 +137,14 @@ export function PrecisionFieldTracker({ categoryId }: PrecisionFieldTrackerProps
         session_date: format(new Date(), "yyyy-MM-dd"),
         zone_x: data.x,
         zone_y: data.y,
-      });
+      };
+      if (lineoutZone) {
+        insertData.lineout_distance = lineoutZone.distanceKey;
+        insertData.lineout_height = lineoutZone.heightKey;
+      }
+      const { error } = await supabase.from("precision_training").insert(insertData);
       if (error) throw error;
+      (window as any).__pendingLineoutZone = undefined;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["precision-field-entries"] });
