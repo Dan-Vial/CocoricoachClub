@@ -393,28 +393,84 @@ export function PrecisionTrainingStats({ categoryId }: PrecisionTrainingStatsPro
     // Field outline
     doc.setDrawColor(255, 255, 255);
     doc.setLineWidth(0.5);
-    doc.rect(x + 3, y + 2, w - 6, h - 4);
-    // Field lines
-    const lines = [0.15, 0.35, 0.55, 0.75];
-    const labels = ["En-but", "22m", "40m", "50m"];
-    doc.setFontSize(5);
+    const fx = x + 3, fy = y + 2, fw = w - 6, fh = h - 4;
+    doc.rect(fx, fy, fw, fh);
+
+    // All regulation rugby field lines
+    const fieldLines = [
+      { pct: 0, label: "BM", solid: true, thick: false },
+      { pct: 0.05, label: "En-but", solid: true, thick: true },
+      { pct: 0.1, label: "5m", solid: false, thick: false },
+      { pct: 0.15, label: "10m", solid: false, thick: false },
+      { pct: 0.27, label: "22m", solid: true, thick: false },
+      { pct: 0.45, label: "40m", solid: false, thick: false },
+      { pct: 0.5, label: "½", solid: true, thick: true },
+      { pct: 0.55, label: "40m", solid: false, thick: false },
+      { pct: 0.73, label: "22m", solid: true, thick: false },
+      { pct: 0.85, label: "10m", solid: false, thick: false },
+      { pct: 0.9, label: "5m", solid: false, thick: false },
+      { pct: 0.95, label: "En-but", solid: true, thick: true },
+      { pct: 1, label: "BM", solid: true, thick: false },
+    ];
+
+    // In-goal shading
+    doc.setFillColor(255, 255, 255);
+    doc.setGState(new (doc as any).GState({ opacity: 0.08 }));
+    doc.rect(fx, fy, fw * 0.05, fh, "F");
+    doc.rect(fx + fw * 0.95, fy, fw * 0.05, fh, "F");
+    doc.setGState(new (doc as any).GState({ opacity: 1 }));
+
+    doc.setFontSize(4);
     doc.setTextColor(255, 255, 255);
-    lines.forEach((pct, i) => {
-      const lx = x + 3 + pct * (w - 6);
-      doc.setLineWidth(0.3);
-      doc.line(lx, y + 2, lx, y + h - 2);
-      doc.text(labels[i], lx, y + h + 3, { align: "center" });
+    fieldLines.forEach((line) => {
+      const lx = fx + line.pct * fw;
+      doc.setDrawColor(255, 255, 255);
+      doc.setLineWidth(line.thick ? 0.5 : 0.3);
+      if (!line.solid) {
+        // Dashed
+        const dashLen = 2, gapLen = 2;
+        for (let dy = fy; dy < fy + fh; dy += dashLen + gapLen) {
+          doc.line(lx, dy, lx, Math.min(dy + dashLen, fy + fh));
+        }
+      } else {
+        doc.line(lx, fy, lx, fy + fh);
+      }
+      doc.text(line.label, lx, y + h + 3, { align: "center" });
     });
-    // Goals
-    const gx = x + w - 5;
+
+    // Width marks (5m and 15m)
+    [5, 15].forEach(wm => {
+      const yTop = fy + (wm / 70) * fh;
+      const yBot = fy + ((70 - wm) / 70) * fh;
+      doc.setDrawColor(255, 255, 255);
+      doc.setLineWidth(0.15);
+      for (let dx = fx; dx < fx + fw; dx += 5) {
+        doc.line(dx, yTop, Math.min(dx + 1.5, fx + fw), yTop);
+        doc.line(dx, yBot, Math.min(dx + 1.5, fx + fw), yBot);
+      }
+    });
+
+    // Center circle
+    const centerX = fx + fw * 0.5;
+    const centerY = fy + fh * 0.5;
+    doc.setDrawColor(255, 255, 255);
+    doc.setLineWidth(0.3);
+    doc.circle(centerX, centerY, fh * 0.14, "S");
+
+    // Goals (both sides)
+    doc.setDrawColor(255, 255, 255);
     doc.setLineWidth(1);
-    doc.line(gx, y + h * 0.35, gx, y + h * 0.65);
-    // Zone bubbles
+    const gy1 = fy + fh * 0.35, gy2 = fy + fh * 0.65;
+    doc.line(fx + fw * 0.95, gy1, fx + fw * 0.95, gy2);
+    doc.setLineWidth(0.5);
+    doc.line(fx + fw * 0.05, gy1, fx + fw * 0.05, gy2);
+
+    // Zone bubbles with color coding
     zones.forEach(z => {
-      const cx = x + 3 + (z.x / 100) * (w - 6);
-      const cy = y + 2 + (z.y / 100) * (h - 4);
+      const cx = fx + (z.x / 100) * fw;
+      const cy = fy + (z.y / 100) * fh;
       const rate = z.attempts > 0 ? Math.round((z.successes / z.attempts) * 100) : 0;
-      if (rate >= 75) doc.setFillColor(34, 197, 94);
+      if (rate >= 70) doc.setFillColor(34, 197, 94);
       else if (rate >= 50) doc.setFillColor(245, 158, 11);
       else doc.setFillColor(239, 68, 68);
       doc.circle(cx, cy, 5, "F");
@@ -429,6 +485,25 @@ export function PrecisionTrainingStats({ categoryId }: PrecisionTrainingStatsPro
       doc.setFont("helvetica", "normal");
       doc.text(`${z.successes}/${z.attempts}`, cx, cy + 2.5, { align: "center" });
     });
+
+    // Legend
+    doc.setFontSize(5);
+    doc.setFont("helvetica", "normal");
+    const legendY = y + h + 7;
+    const legends = [
+      { label: "≥ 70%", r: 34, g: 197, b: 94 },
+      { label: "50-69%", r: 245, g: 158, b: 11 },
+      { label: "< 50%", r: 239, g: 68, b: 68 },
+    ];
+    let legendX = x + 5;
+    legends.forEach(l => {
+      doc.setFillColor(l.r, l.g, l.b);
+      doc.circle(legendX, legendY, 1.5, "F");
+      doc.setTextColor(30, 41, 59);
+      doc.text(l.label, legendX + 3, legendY + 1);
+      legendX += 20;
+    });
+  };
   };
 
   const drawPdfZoneGrid = (doc: jsPDF, x: number, y: number, w: number, h: number, zones: Record<string, { attempts: number; successes: number }>) => {
