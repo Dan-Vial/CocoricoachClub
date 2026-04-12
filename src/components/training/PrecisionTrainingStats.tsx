@@ -756,10 +756,18 @@ export function PrecisionTrainingStats({ categoryId }: PrecisionTrainingStatsPro
               const tr = Math.round((ts / ta) * 100);
               doc.text(`${label}: ${ts}/${ta} (${tr}%)`, 14 + (i + 1) * 55, y);
             }
-          });
+           });
           y += 8;
           drawPdfFieldLegend(doc, 14, y);
-          y += 8;
+          y += 6;
+
+          // Zone stats grid below buteur cartography
+          const buteurKicks = buteurEntries.map((e: any) => ({
+            x: e.zone_x as number,
+            y: e.zone_y as number,
+            success: (e.successes || 0) > 0,
+          }));
+          y = drawPdfZoneStatsGrid(doc, buteurKicks, pageW, y, pageH);
         }
 
         // 2. Separate cartography for each zone kick type
