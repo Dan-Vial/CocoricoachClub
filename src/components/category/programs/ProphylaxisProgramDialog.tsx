@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -8,14 +8,14 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Plus, Trash2, GripVertical, Library, Users, Search, Eye, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, Trash2, GripVertical, Library, Users, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 import { PAIN_ZONES } from "@/lib/constants/pain-locations";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/contexts/AuthContext";
-import { Dialog as MediaDialog, DialogContent as MediaDialogContent, DialogHeader as MediaDialogHeader, DialogTitle as MediaDialogTitle } from "@/components/ui/dialog";
+import { ExerciseLibrarySidebar } from "./ExerciseLibrarySidebar";
 
 interface ProphylaxisProgramDialogProps {
   categoryId: string;
@@ -46,18 +46,6 @@ const FREQUENCIES = [
   { value: "apres_entrainement", label: "Après entraînement" },
 ];
 
-const CATEGORY_LABELS: Record<string, string> = {
-  upper_body: "Haut du corps",
-  lower_body: "Bas du corps",
-  full_body: "Full body",
-  cardio: "Cardio",
-  mobility: "Mobilité",
-  core: "Gainage",
-  plyometrics: "Pliométrie",
-  olympic: "Haltérophilie",
-  machine: "Machine",
-  autre: "Autre",
-};
 
 export function ProphylaxisProgramDialog({ categoryId, programId, open, onOpenChange }: ProphylaxisProgramDialogProps) {
   const { user } = useAuth();
@@ -71,10 +59,20 @@ export function ProphylaxisProgramDialog({ categoryId, programId, open, onOpenCh
   const [saving, setSaving] = useState(false);
   const [showPlayers, setShowPlayers] = useState(false);
 
-  // Library sidebar state
-  const [libSearch, setLibSearch] = useState("");
-  const [libCategory, setLibCategory] = useState("all");
-  const [previewExercise, setPreviewExercise] = useState<any>(null);
+  // Library click-to-add handler
+  const handleLibraryClick = useCallback((exercise: { id: string; name: string; category: string }) => {
+    setExercises(prev => [...prev, {
+      exercise_name: exercise.name,
+      library_exercise_id: exercise.id,
+      sets: 3,
+      reps: "10",
+      duration_seconds: null,
+      rest_seconds: 30,
+      notes: "",
+      order_index: prev.length,
+    }]);
+    toast.success(`${exercise.name} ajouté`);
+  }, []);
 
   const { data: players } = useQuery({
     queryKey: ["players-prophylaxis", categoryId],
@@ -90,36 +88,6 @@ export function ProphylaxisProgramDialog({ categoryId, programId, open, onOpenCh
     enabled: open,
   });
 
-  const { data: libraryExercises, isLoading: libLoading } = useQuery({
-    queryKey: ["exercise-library-prophylaxis", user?.id],
-    queryFn: async () => {
-      if (!user) return [];
-      const { data, error } = await supabase
-        .from("exercise_library")
-        .select("id, name, category, subcategory, youtube_url, image_url, is_system")
-        .or(`user_id.eq.${user.id},is_system.eq.true`)
-        .order("name");
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user && open,
-  });
-
-  const libCategories = useMemo(() => {
-    if (!libraryExercises) return [];
-    const cats = new Set(libraryExercises.map(e => e.category));
-    return Array.from(cats).sort();
-  }, [libraryExercises]);
-
-  const filteredLibrary = useMemo(() => {
-    let list = libraryExercises || [];
-    if (libCategory !== "all") list = list.filter(e => e.category === libCategory);
-    if (libSearch) {
-      const q = libSearch.toLowerCase();
-      list = list.filter(e => e.name.toLowerCase().includes(q) || e.category.toLowerCase().includes(q));
-    }
-    return list.slice(0, 50);
-  }, [libraryExercises, libCategory, libSearch]);
 
   const { data: existingProgram } = useQuery({
     queryKey: ["prophylaxis-program-edit", programId],
@@ -209,19 +177,6 @@ export function ProphylaxisProgramDialog({ categoryId, programId, open, onOpenCh
     }]);
   }, []);
 
-  const addFromLibrary = useCallback((libEx: any) => {
-    setExercises(prev => [...prev, {
-      exercise_name: libEx.name,
-      library_exercise_id: libEx.id,
-      sets: 3,
-      reps: "10",
-      duration_seconds: null,
-      rest_seconds: 30,
-      notes: "",
-      order_index: prev.length,
-    }]);
-    toast.success(`${libEx.name} ajouté`);
-  }, []);
 
   const updateExercise = (index: number, field: keyof ExerciseRow, value: any) => {
     setExercises(prev => prev.map((e, i) => i === index ? { ...e, [field]: value } : e));
@@ -470,96 +425,10 @@ export function ProphylaxisProgramDialog({ categoryId, programId, open, onOpenCh
             </div>
           </ScrollArea>
 
-          {/* Right: Exercise Library Sidebar */}
-          <div className="w-72 border-l bg-muted/30 flex flex-col min-h-0">
-            <div className="p-3 border-b space-y-2">
-              <h3 className="text-sm font-semibold flex items-center gap-1.5">
-                <Library className="h-4 w-4" />
-                Bibliothèque
-              </h3>
-              <div className="relative">
-                <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                <Input
-                  placeholder="Rechercher..."
-                  value={libSearch}
-                  onChange={e => setLibSearch(e.target.value)}
-                  className="pl-8 h-8 text-xs"
-                />
-              </div>
-              <Select value={libCategory} onValueChange={setLibCategory}>
-                <SelectTrigger className="h-8 text-xs">
-                  <SelectValue placeholder="Catégorie" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Toutes les catégories</SelectItem>
-                  {libCategories.map(cat => (
-                    <SelectItem key={cat} value={cat}>{CATEGORY_LABELS[cat] || cat}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <ScrollArea className="flex-1">
-              <div className="p-2 space-y-0.5">
-                {libLoading ? (
-                  <p className="text-xs text-muted-foreground text-center py-4">Chargement...</p>
-                ) : filteredLibrary.length === 0 ? (
-                  <p className="text-xs text-muted-foreground text-center py-4">Aucun exercice trouvé</p>
-                ) : (
-                  filteredLibrary.map(libEx => (
-                    <button
-                      key={libEx.id}
-                      type="button"
-                      className="w-full text-left px-2 py-1.5 rounded hover:bg-accent/50 text-xs flex items-center gap-1.5 group transition-colors"
-                      onClick={() => addFromLibrary(libEx)}
-                    >
-                      <Plus className="h-3 w-3 text-muted-foreground group-hover:text-primary shrink-0 transition-colors" />
-                      <span className="flex-1 truncate">{libEx.name}</span>
-                      {(libEx.youtube_url || libEx.image_url) && (
-                        <button
-                          type="button"
-                          className="opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setPreviewExercise(libEx);
-                          }}
-                        >
-                          <Eye className="h-3 w-3 text-muted-foreground hover:text-primary" />
-                        </button>
-                      )}
-                      {libEx.is_system && (
-                        <Badge variant="outline" className="text-[8px] h-4 px-1 shrink-0">SYS</Badge>
-                      )}
-                    </button>
-                  ))
-                )}
-              </div>
-            </ScrollArea>
-          </div>
+          {/* Right: Exercise Library Sidebar (shared component) */}
+          <ExerciseLibrarySidebar onClickExercise={handleLibraryClick} />
         </div>
       </DialogContent>
-
-      {/* Media preview */}
-      {previewExercise && (
-        <MediaDialog open={!!previewExercise} onOpenChange={(o) => !o && setPreviewExercise(null)}>
-          <MediaDialogContent className="max-w-lg">
-            <MediaDialogHeader>
-              <MediaDialogTitle>{previewExercise.name}</MediaDialogTitle>
-            </MediaDialogHeader>
-            {previewExercise.youtube_url && (() => {
-              const videoId = previewExercise.youtube_url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&]+)/)?.[1];
-              return videoId ? (
-                <div className="aspect-video w-full">
-                  <iframe src={`https://www.youtube.com/embed/${videoId}`} className="w-full h-full rounded-lg" allowFullScreen />
-                </div>
-              ) : null;
-            })()}
-            {previewExercise.image_url && !previewExercise.youtube_url && (
-              <img src={previewExercise.image_url} alt={previewExercise.name} className="w-full rounded-lg" />
-            )}
-          </MediaDialogContent>
-        </MediaDialog>
-      )}
     </Dialog>
   );
 }
