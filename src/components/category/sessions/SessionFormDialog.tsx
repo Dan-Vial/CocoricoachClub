@@ -2909,7 +2909,7 @@ export function SessionFormDialog({
                             <SelectTrigger>
                               <SelectValue placeholder="Choisir la catégorie" />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent position="popper" className="z-[200]">
                               {EXERCISE_CATEGORIES.map((cat) => (
                                 <SelectItem key={cat.key} value={cat.key}>
                                   {cat.label}
