@@ -245,7 +245,7 @@ export function SessionFeedbackDialog({
       setRpeValues({});
       setSessionTests([]);
       setWeightLogs({});
-      setActiveTab(sessionType === "test" ? "tests" : "rpe");
+      setActiveTab(sessionType === "test" ? "tests" : sessionType === "precision" ? "precision" : "rpe");
     }
   }, [open, sessionType]);
 
@@ -522,7 +522,7 @@ export function SessionFeedbackDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col">
+      <DialogContent className={cn("max-h-[90vh] flex flex-col", isPrecisionSession ? "max-w-4xl" : "max-w-lg")}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Activity className="h-5 w-5 text-primary" />
@@ -532,6 +532,12 @@ export function SessionFeedbackDialog({
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
           <TabsList className="w-full">
+            {isPrecisionSession && (
+              <TabsTrigger value="precision" className="flex-1 gap-2">
+                <Target className="h-4 w-4" />
+                🎯 Précision
+              </TabsTrigger>
+            )}
             <TabsTrigger value="rpe" className="flex-1 gap-2">
               <Activity className="h-4 w-4" />
               RPE
@@ -565,6 +571,19 @@ export function SessionFeedbackDialog({
               )}
             </TabsTrigger>
           </TabsList>
+
+          {/* Precision tab */}
+          {isPrecisionSession && (
+            <TabsContent value="precision" className="flex-1 flex flex-col min-h-0 mt-4">
+              <div className="flex-1 min-h-0 overflow-y-auto" style={{ maxHeight: "calc(90vh - 200px)" }}>
+                <PrecisionFieldTracker
+                  categoryId={categoryId}
+                  sessionId={sessionId}
+                  sessionDate={session?.session_date}
+                />
+              </div>
+            </TabsContent>
+          )}
 
           <TabsContent value="rpe" className="flex-1 flex flex-col min-h-0 mt-4">
             <p className="text-sm text-muted-foreground mb-3">
