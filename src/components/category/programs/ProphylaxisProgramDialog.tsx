@@ -450,96 +450,10 @@ export function ProphylaxisProgramDialog({ categoryId, programId, open, onOpenCh
             </div>
           </ScrollArea>
 
-          {/* Right: Exercise Library Sidebar */}
-          <div className="w-72 border-l bg-muted/30 flex flex-col min-h-0">
-            <div className="p-3 border-b space-y-2">
-              <h3 className="text-sm font-semibold flex items-center gap-1.5">
-                <Library className="h-4 w-4" />
-                Bibliothèque
-              </h3>
-              <div className="relative">
-                <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                <Input
-                  placeholder="Rechercher..."
-                  value={libSearch}
-                  onChange={e => setLibSearch(e.target.value)}
-                  className="pl-8 h-8 text-xs"
-                />
-              </div>
-              <Select value={libCategory} onValueChange={setLibCategory}>
-                <SelectTrigger className="h-8 text-xs">
-                  <SelectValue placeholder="Catégorie" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Toutes les catégories</SelectItem>
-                  {libCategories.map(cat => (
-                    <SelectItem key={cat} value={cat}>{CATEGORY_LABELS[cat] || cat}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <ScrollArea className="flex-1">
-              <div className="p-2 space-y-0.5">
-                {libLoading ? (
-                  <p className="text-xs text-muted-foreground text-center py-4">Chargement...</p>
-                ) : filteredLibrary.length === 0 ? (
-                  <p className="text-xs text-muted-foreground text-center py-4">Aucun exercice trouvé</p>
-                ) : (
-                  filteredLibrary.map(libEx => (
-                    <button
-                      key={libEx.id}
-                      type="button"
-                      className="w-full text-left px-2 py-1.5 rounded hover:bg-accent/50 text-xs flex items-center gap-1.5 group transition-colors"
-                      onClick={() => addFromLibrary(libEx)}
-                    >
-                      <Plus className="h-3 w-3 text-muted-foreground group-hover:text-primary shrink-0 transition-colors" />
-                      <span className="flex-1 truncate">{libEx.name}</span>
-                      {(libEx.youtube_url || libEx.image_url) && (
-                        <button
-                          type="button"
-                          className="opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setPreviewExercise(libEx);
-                          }}
-                        >
-                          <Eye className="h-3 w-3 text-muted-foreground hover:text-primary" />
-                        </button>
-                      )}
-                      {libEx.is_system && (
-                        <Badge variant="outline" className="text-[8px] h-4 px-1 shrink-0">SYS</Badge>
-                      )}
-                    </button>
-                  ))
-                )}
-              </div>
-            </ScrollArea>
-          </div>
+          {/* Right: Exercise Library Sidebar (shared component) */}
+          <ExerciseLibrarySidebar onClickExercise={handleLibraryClick} />
         </div>
       </DialogContent>
-
-      {/* Media preview */}
-      {previewExercise && (
-        <MediaDialog open={!!previewExercise} onOpenChange={(o) => !o && setPreviewExercise(null)}>
-          <MediaDialogContent className="max-w-lg">
-            <MediaDialogHeader>
-              <MediaDialogTitle>{previewExercise.name}</MediaDialogTitle>
-            </MediaDialogHeader>
-            {previewExercise.youtube_url && (() => {
-              const videoId = previewExercise.youtube_url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&]+)/)?.[1];
-              return videoId ? (
-                <div className="aspect-video w-full">
-                  <iframe src={`https://www.youtube.com/embed/${videoId}`} className="w-full h-full rounded-lg" allowFullScreen />
-                </div>
-              ) : null;
-            })()}
-            {previewExercise.image_url && !previewExercise.youtube_url && (
-              <img src={previewExercise.image_url} alt={previewExercise.name} className="w-full rounded-lg" />
-            )}
-          </MediaDialogContent>
-        </MediaDialog>
-      )}
     </Dialog>
   );
 }
