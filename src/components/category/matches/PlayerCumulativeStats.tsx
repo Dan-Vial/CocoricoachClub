@@ -875,21 +875,35 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
 
         {/* RIGHT: Individual Stats */}
         <div>
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
             <h3 className="text-lg font-semibold flex items-center gap-2">
               <User className="h-5 w-5 text-primary" />
               Statistiques individuelles
             </h3>
-            <Select value={selectedPlayerId || (stats[0]?.playerId || "")} onValueChange={setSelectedPlayerId}>
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Choisir un joueur" />
-              </SelectTrigger>
-              <SelectContent>
-                {stats.map(p => (
-                  <SelectItem key={p.playerId} value={p.playerId}>{p.playerName}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex items-center gap-2">
+              <Select value={selectedPlayerId || (stats[0]?.playerId || "")} onValueChange={setSelectedPlayerId}>
+                <SelectTrigger className="w-[180px] h-8 text-xs">
+                  <SelectValue placeholder="Choisir un joueur" />
+                </SelectTrigger>
+                <SelectContent>
+                  {stats.map(p => (
+                    <SelectItem key={p.playerId} value={p.playerId}>{p.playerName}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button variant="outline" size="sm" className="gap-1 h-8" onClick={() => {
+                const pid = selectedPlayerId || stats[0]?.playerId;
+                if (pid) handleExportExcel("single", pid);
+              }}>
+                <FileSpreadsheet className="h-3.5 w-3.5" />
+              </Button>
+              <Button variant="outline" size="sm" className="gap-1 h-8" onClick={() => {
+                const pid = selectedPlayerId || stats[0]?.playerId;
+                if (pid) handleExportPlayerPdf(pid);
+              }}>
+                <Download className="h-3.5 w-3.5" />
+              </Button>
+            </div>
           </div>
 
           {(() => {
