@@ -51,6 +51,7 @@ interface CalendarDayCellProps {
   onViewMatch?: (match: Match) => void;
   onStatsMatch?: (match: Match) => void;
   onDeleteMatch?: (matchId: string) => void;
+  onShowAllEvents?: (day: Date) => void;
   playerNamesMap?: Record<string, string>;
 }
 
@@ -71,6 +72,7 @@ export function CalendarDayCell({
   onViewMatch,
   onStatsMatch,
   onDeleteMatch,
+  onShowAllEvents,
   playerNamesMap,
 }: CalendarDayCellProps) {
   const dateStr = format(day, "yyyy-MM-dd");
@@ -179,8 +181,15 @@ export function CalendarDayCell({
         {/* More indicator */}
         {(sessions.length + matches.length) > 3 && (
           <div 
-            className="text-[10px] text-muted-foreground pl-1 cursor-pointer hover:text-primary"
-            onClick={() => onDayClick(day)}
+            className="text-[10px] text-muted-foreground pl-1 cursor-pointer hover:text-primary font-medium"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (onShowAllEvents) {
+                onShowAllEvents(day);
+              } else {
+                onDayClick(day);
+              }
+            }}
           >
             +{sessions.length + matches.length - 3} autre(s)
           </div>
