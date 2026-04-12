@@ -55,7 +55,7 @@ export function SessionFeedbackDialog({
   const [rpeValues, setRpeValues] = useState<Record<string, { rpe: string; duration: string }>>({});
   const [sessionTests, setSessionTests] = useState<SessionTest[]>([]);
   const [weightLogs, setWeightLogs] = useState<Record<string, Record<string, { weight: string; sets: string; reps: string }>>>({});
-  const [activeTab, setActiveTab] = useState(sessionType === "test" ? "tests" : "rpe");
+  const [activeTab, setActiveTab] = useState(sessionType === "test" ? "tests" : sessionType === "precision" ? "precision" : "rpe");
   const queryClient = useQueryClient();
 
   // Fetch category to get sport type
