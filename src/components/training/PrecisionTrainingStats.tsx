@@ -504,7 +504,6 @@ export function PrecisionTrainingStats({ categoryId }: PrecisionTrainingStatsPro
       legendX += 20;
     });
   };
-  };
 
   const drawPdfZoneGrid = (doc: jsPDF, x: number, y: number, w: number, h: number, zones: Record<string, { attempts: number; successes: number }>) => {
     doc.setFillColor(21, 128, 61);
