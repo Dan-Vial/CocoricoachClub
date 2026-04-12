@@ -491,27 +491,31 @@ export function PrecisionFieldTracker({ categoryId }: PrecisionFieldTrackerProps
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Target className="h-5 w-5 text-primary" />
-              {currentExercise?.label} — {zoneKickStep === "origin" ? "Cliquez sur la position de frappe" : "Cliquez sur la zone ciblée"}
+              {currentExercise?.label} — {getFixedOrigin()
+                ? "Cliquez sur la zone ciblée (départ fixe)"
+                : zoneKickStep === "origin" ? "Cliquez sur la position de frappe" : "Cliquez sur la zone ciblée"}
             </CardTitle>
             <div className="flex items-center gap-2">
               {!selectedPlayerId && !isViewer && (
                 <p className="text-xs text-muted-foreground">Sélectionnez un joueur pour commencer</p>
               )}
-              {zoneKickStep === "target" && (
+              {zoneKickStep === "target" && !getFixedOrigin() && (
                 <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={() => { setZoneKickOrigin(null); setZoneKickStep("origin"); }}>
                   ↩ Annuler position
                 </Button>
               )}
             </div>
-            <div className="flex items-center gap-2 text-xs">
-              <Badge variant={zoneKickStep === "origin" ? "default" : "secondary"} className="text-[10px]">
-                1. Position de frappe {zoneKickStep === "target" ? "✓" : ""}
-              </Badge>
-              <span>→</span>
-              <Badge variant={zoneKickStep === "target" ? "default" : "outline"} className="text-[10px]">
-                2. Zone ciblée
-              </Badge>
-            </div>
+            {!getFixedOrigin() && (
+              <div className="flex items-center gap-2 text-xs">
+                <Badge variant={zoneKickStep === "origin" ? "default" : "secondary"} className="text-[10px]">
+                  1. Position de frappe {zoneKickStep === "target" ? "✓" : ""}
+                </Badge>
+                <span>→</span>
+                <Badge variant={zoneKickStep === "target" ? "default" : "outline"} className="text-[10px]">
+                  2. Zone ciblée
+                </Badge>
+              </div>
+            )}
           </CardHeader>
           <CardContent>
             <div className="relative w-full max-w-3xl mx-auto">
@@ -520,20 +524,26 @@ export function PrecisionFieldTracker({ categoryId }: PrecisionFieldTrackerProps
                 onClick={handleZoneKickClick}
                 showCursorTracker
               >
-                {/* Origin marker */}
-                {zoneKickOrigin && (
-                  (() => {
-                    const ox = 20 + (zoneKickOrigin.x / 100) * 560;
-                    const oy = 10 + (zoneKickOrigin.y / 100) * 380;
-                    return (
-                      <g>
-                        <circle cx={ox} cy={oy} r={12} fill="none" stroke="#f59e0b" strokeWidth={2.5} strokeDasharray="4 2" opacity={0.9} />
-                        <circle cx={ox} cy={oy} r={3} fill="#f59e0b" opacity={0.9} />
-                        <text x={ox} y={oy - 16} textAnchor="middle" fill="#f59e0b" fontSize="9" fontWeight="bold">FRAPPE</text>
-                      </g>
-                    );
-                  })()
-                )}
+                {/* Origin marker - fixed or user-set */}
+                {(() => {
+                  const origin = getFixedOrigin() || zoneKickOrigin;
+                  if (!origin) return null;
+                  const ox = 20 + (origin.x / 100) * 560;
+                  const oy = 10 + (origin.y / 100) * 380;
+                  const isFixed = !!getFixedOrigin();
+                  return (
+                    <g>
+                      {isFixed && (
+                        <line x1={ox} y1={10} x2={ox} y2={390} stroke="#f59e0b" strokeWidth={2} strokeDasharray="6 3" opacity={0.6} />
+                      )}
+                      <circle cx={ox} cy={oy} r={12} fill="none" stroke="#f59e0b" strokeWidth={2.5} strokeDasharray="4 2" opacity={0.9} />
+                      <circle cx={ox} cy={oy} r={3} fill="#f59e0b" opacity={0.9} />
+                      <text x={ox} y={oy - 16} textAnchor="middle" fill="#f59e0b" fontSize="9" fontWeight="bold">
+                        {isFixed ? currentExercise?.label?.toUpperCase() : "FRAPPE"}
+                      </text>
+                    </g>
+                  );
+                })()}
                 {/* Zone stats */}
                 {zoneStats.map((zone, i) => {
                   const cx = (zone.x / 100) * 600;
