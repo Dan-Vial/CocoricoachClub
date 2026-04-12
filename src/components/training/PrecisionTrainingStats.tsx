@@ -29,6 +29,7 @@ import {
 } from "recharts";
 import { getExcelBranding, addBrandedHeader, styleDataHeaderRow, addZebraRows, addFooter, downloadWorkbook } from "@/lib/excelExport";
 import { preparePdfWithSettings, drawPdfHeader as drawPdfHeaderCustom, type PdfCustomSettings } from "@/lib/pdfExport";
+import { drawPdfRugbyField, drawPdfFieldLegend } from "@/lib/pdfRugbyField";
 
 interface PrecisionTrainingStatsProps {
   categoryId: string;
