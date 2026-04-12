@@ -46,7 +46,7 @@ export function ProphylaxisTab({ categoryId }: ProphylaxisTabProps) {
         if (playerIds.size > 0) {
           const { data: players } = await supabase
             .from("players")
-            .select("id, name, first_name, photo_url")
+            .select("id, name, first_name")
             .in("id", Array.from(playerIds));
           
           const playerMap = new Map((players || []).map(p => [p.id, p]));
