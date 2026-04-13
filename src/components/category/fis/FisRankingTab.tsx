@@ -6,21 +6,28 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { TrendingUp, TrendingDown, Target, Calculator, Trophy, Clock, AlertTriangle } from "lucide-react";
-import { format, addWeeks, differenceInDays } from "date-fns";
+import { TrendingUp, TrendingDown, Target, Calculator, Trophy, Clock, AlertTriangle, Medal, Flag } from "lucide-react";
+import { format, differenceInDays } from "date-fns";
 import { fr } from "date-fns/locale";
-import { calculateTotalPoints, getBestResults, simulatePoints, calculateRacePenalty } from "@/lib/fis/fisPointsEngine";
+import { calculateTotalPoints, getBestResults, simulatePoints, calculateRacePenalty, DISCIPLINE_F_VALUES } from "@/lib/fis/fisPointsEngine";
+import { Progress } from "@/components/ui/progress";
 
 interface FisRankingTabProps {
   categoryId: string;
 }
 
+/** Well-known qualification thresholds */
+const QUALIFICATION_TARGETS = [
+  { label: "Jeux Olympiques (JO)", icon: "🏅", pointsRequired: 500, description: "Top 24 mondial requis" },
+  { label: "Championnats du Monde", icon: "🌍", pointsRequired: 300, description: "Top 30 mondial requis" },
+  { label: "Coupe du Monde", icon: "🏆", pointsRequired: 150, description: "Quota national + classement FIS" },
+  { label: "Coupe d'Europe", icon: "🇪🇺", pointsRequired: 50, description: "Classement FIS continental" },
+];
+
 export function FisRankingTab({ categoryId }: FisRankingTabProps) {
   const [selectedPlayer, setSelectedPlayer] = useState("");
   const [simPosition, setSimPosition] = useState("");
-  const [simLevel, setSimLevel] = useState("fis");
-  const [simParticipants, setSimParticipants] = useState("30");
+  const [simFValue, setSimFValue] = useState("500");
   const [simTopAvg, setSimTopAvg] = useState("800");
 
   const { data: players } = useQuery({
@@ -80,24 +87,25 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
   });
 
   // Simulation
-  const simPenalty = simulateRacePenalty();
-  const simPoints = simPosition ? simulatePoints(Number(simPosition), simPenalty) : null;
-
-  function simulateRacePenalty() {
+  const simFVal = Number(simFValue) || 500;
+  const simPenalty = (() => {
     const avg = Number(simTopAvg) || 800;
-    const fVal = 500; // Default F-value for freestyle
     return calculateRacePenalty({
       topRiderPoints: [avg, avg, avg, avg, avg],
       topClassifiedPoints: [avg, avg, avg, avg, avg],
-      fValue: fVal,
+      fValue: simFVal,
     });
-  }
+  })();
+  const simPoints = simPosition ? simulatePoints(Number(simPosition), simPenalty) : null;
 
   // Objective calculation
   const objective = player?.fis_objective;
   const objectiveDate = player?.fis_objective_date;
   const objectivePoints = objective ? Number(objective.match(/\d+/)?.[0]) : null;
   const pointsNeeded = objectivePoints ? Math.max(0, objectivePoints - totalPoints) : null;
+
+  // New total if simulation is applied
+  const simNewTotal = simPoints !== null ? totalPoints + simPoints : null;
 
   return (
     <div className="space-y-4">
@@ -172,6 +180,14 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
                       Échéance : {format(new Date(objectiveDate), "d MMMM yyyy", { locale: fr })}
                     </p>
                   )}
+                  {pointsNeeded != null && objectivePoints != null && (
+                    <>
+                      <Progress value={Math.min(100, (totalPoints / objectivePoints) * 100)} className="h-2" />
+                      <p className="text-xs text-muted-foreground">
+                        {totalPoints.toFixed(0)} / {objectivePoints} pts ({Math.min(100, (totalPoints / objectivePoints) * 100).toFixed(0)}%)
+                      </p>
+                    </>
+                  )}
                   {pointsNeeded != null && pointsNeeded > 0 && (
                     <div className="bg-muted/50 rounded-md p-3 space-y-1">
                       <p className="text-sm font-semibold text-primary">
@@ -179,7 +195,7 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
                       </p>
                       {objectiveDate && (
                         <p className="text-xs text-muted-foreground">
-                          avant le {format(new Date(objectiveDate), "d MMMM", { locale: fr })}
+                          avant le {format(new Date(objectiveDate), "d MMMM yyyy", { locale: fr })}
                         </p>
                       )}
                     </div>
@@ -237,6 +253,45 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
 
       {selectedPlayer && (
         <>
+          {/* Qualification tracker */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Medal className="h-4 w-4 text-primary" />
+                Seuils de qualification estimés
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-xs text-muted-foreground mb-3">
+                Estimation basée sur les seuils FIS habituels (peuvent varier selon la saison et la fédération nationale)
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {QUALIFICATION_TARGETS.map((target) => {
+                  const reached = totalPoints >= target.pointsRequired;
+                  const pct = Math.min(100, (totalPoints / target.pointsRequired) * 100);
+                  const missing = Math.max(0, target.pointsRequired - totalPoints);
+                  return (
+                    <div key={target.label} className={`border rounded-lg p-3 space-y-2 ${reached ? "border-primary/30 bg-primary/5" : ""}`}>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium">{target.icon} {target.label}</span>
+                        {reached ? (
+                          <Badge variant="default" className="text-xs">✅ Qualifié</Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-xs font-mono">-{missing.toFixed(0)} pts</Badge>
+                        )}
+                      </div>
+                      <Progress value={pct} className="h-1.5" />
+                      <div className="flex justify-between text-[10px] text-muted-foreground">
+                        <span>{totalPoints.toFixed(0)} / {target.pointsRequired} pts</span>
+                        <span>{target.description}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Results history */}
           <Card>
             <CardHeader className="pb-2">
@@ -306,60 +361,82 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
             </CardHeader>
             <CardContent>
               <p className="text-xs text-muted-foreground mb-3">
-                "Si mon athlète fait Xe → combien de points ?"
+                Formule réelle : Points = Race Points (table) − Race Penalty • P = (A + B − C) / 10 + F
               </p>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <Label className="text-xs">Position</Label>
+                  <Label className="text-xs">Position visée</Label>
                   <Input type="number" min="1" value={simPosition} onChange={(e) => setSimPosition(e.target.value)} placeholder="Ex: 3" />
                 </div>
                 <div>
-                  <Label className="text-xs">Niveau</Label>
-                  <Select value={simLevel} onValueChange={setSimLevel}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="world_cup">Coupe du Monde</SelectItem>
-                      <SelectItem value="continental_cup">Coupe Continentale</SelectItem>
-                      <SelectItem value="fis">FIS Race</SelectItem>
-                      <SelectItem value="national">National</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label className="text-xs">Moy. pts top 5</Label>
+                  <Input type="number" value={simTopAvg} onChange={(e) => setSimTopAvg(e.target.value)} placeholder="800" />
                 </div>
                 <div>
-                  <Label className="text-xs">Participants</Label>
-                  <Input type="number" value={simParticipants} onChange={(e) => setSimParticipants(e.target.value)} />
-                </div>
-                <div>
-                  <Label className="text-xs">Moy. top 5 (pts)</Label>
-                  <Input type="number" value={simTopAvg} onChange={(e) => setSimTopAvg(e.target.value)} />
+                  <Label className="text-xs">F-value discipline</Label>
+                  <Input type="number" value={simFValue} onChange={(e) => setSimFValue(e.target.value)} placeholder="500" />
                 </div>
               </div>
 
               {simPoints !== null && Number(simPosition) > 0 && (
-                <div className="mt-4 bg-primary/5 rounded-lg p-4 flex items-center justify-between">
-                  <div>
-                    <p className="text-sm">
-                      En finissant <span className="font-bold">{simPosition}e</span> :
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Race Penalty: {simPenalty.toFixed(2)}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-2xl font-bold text-primary">{simPoints.toFixed(0)}</p>
-                    <p className="text-xs text-muted-foreground">points FIS gagnés</p>
-                    {pointsNeeded != null && pointsNeeded > 0 && (
-                      <p className="text-xs mt-1">
-                        {simPoints >= pointsNeeded ? (
-                          <span className="text-primary font-medium">✅ Objectif atteint !</span>
-                        ) : (
-                          <span className="text-muted-foreground">
-                            Reste {(pointsNeeded - simPoints).toFixed(0)} pts après
-                          </span>
-                        )}
+                <div className="mt-4 bg-primary/5 rounded-lg p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm">
+                        En finissant <span className="font-bold">{simPosition}e</span> :
                       </p>
-                    )}
+                      <p className="text-xs text-muted-foreground">
+                        Race Penalty: {simPenalty.toFixed(2)} (F={simFVal})
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-2xl font-bold text-primary">{simPoints.toFixed(0)}</p>
+                      <p className="text-xs text-muted-foreground">points FIS gagnés</p>
+                    </div>
                   </div>
+
+                  {/* Impact on qualification targets */}
+                  {simNewTotal !== null && (
+                    <div className="border-t pt-3 space-y-2">
+                      <p className="text-xs font-medium flex items-center gap-1">
+                        <TrendingUp className="h-3 w-3" />
+                        Nouveau total projeté : <span className="font-bold">{simNewTotal.toFixed(0)} pts</span>
+                      </p>
+                      <div className="grid grid-cols-2 gap-2">
+                        {QUALIFICATION_TARGETS.map((target) => {
+                          const wasReached = totalPoints >= target.pointsRequired;
+                          const wouldReach = simNewTotal >= target.pointsRequired;
+                          const newlyReached = !wasReached && wouldReach;
+                          return (
+                            <div key={target.label} className="flex items-center justify-between text-xs">
+                              <span>{target.icon} {target.label.split(" (")[0]}</span>
+                              {newlyReached ? (
+                                <Badge variant="default" className="text-[10px]">🎉 Qualifié !</Badge>
+                              ) : wouldReach ? (
+                                <Badge variant="outline" className="text-[10px] text-primary">✅</Badge>
+                              ) : (
+                                <span className="text-muted-foreground font-mono">
+                                  -{(target.pointsRequired - simNewTotal).toFixed(0)}
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {pointsNeeded != null && pointsNeeded > 0 && (
+                    <div className="border-t pt-2">
+                      {simPoints >= pointsNeeded ? (
+                        <p className="text-xs text-primary font-medium">✅ Objectif personnel atteint !</p>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">
+                          Reste {(pointsNeeded - simPoints).toFixed(0)} pts pour l'objectif personnel
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
             </CardContent>
