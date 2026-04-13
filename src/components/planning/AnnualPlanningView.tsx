@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Plus, Calendar, Settings2, ChevronLeft, ChevronRight, Check, LayoutGrid, BarChart3, Clock } from "lucide-react";
+import { Plus, Calendar, Settings2, ChevronLeft, ChevronRight, Check, LayoutGrid, BarChart3, Clock, Trash2 } from "lucide-react";
 import { format, startOfYear, endOfYear, addYears, subYears } from "date-fns";
 import { fr } from "date-fns/locale";
 import { YearCalendarGrid } from "./YearCalendarGrid";
@@ -173,6 +173,23 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
     },
   });
 
+  const deleteAllCycles = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from("periodization_cycles")
+        .delete()
+        .eq("category_id", categoryId)
+        .gte("end_date", format(yearStart, "yyyy-MM-dd"))
+        .lte("start_date", format(yearEnd, "yyyy-MM-dd"));
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["periodization_cycles", categoryId] });
+      toast.success("Tous les cycles ont été supprimés");
+    },
+    onError: () => toast.error("Erreur lors de la suppression"),
+  });
+
   const handleAddCycle = (periodizationCategoryId: string) => {
     setAddCyclePreselectedCategory(periodizationCategoryId);
     setAddCycleOpen(true);
@@ -238,6 +255,22 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
             {/* Actions */}
             {!isViewer && (
               <div className="flex gap-1.5">
+                {cycles.length > 0 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 gap-1 text-xs text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/30"
+                    onClick={() => {
+                      if (confirm(`Supprimer tous les cycles de ${selectedYear.getFullYear()} ? Cette action est irréversible.`)) {
+                        deleteAllCycles.mutate();
+                      }
+                    }}
+                    disabled={deleteAllCycles.isPending}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">Supprimer la planification</span>
+                  </Button>
+                )}
                 <Button variant="outline" size="sm" className="h-8 gap-1 text-xs" onClick={() => setAddCategoryOpen(true)}>
                   <Settings2 className="h-3.5 w-3.5" />
                   <span className="hidden sm:inline">Ligne</span>
