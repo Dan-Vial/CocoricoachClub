@@ -86,33 +86,7 @@ export function AnnualTimelineView({
   const months = eachMonthOfInterval({ start: yearStart, end: yearEnd });
   const totalDays = differenceInDays(yearEnd, yearStart) + 1;
 
-  // Derive macrocycle phases from cycles
-  const macrocyclePhases = useMemo(() => {
-    const phaseMap = new Map<string, { start: string; end: string; type: string }[]>();
-    cycles.forEach(c => {
-      if (!c.cycle_type) return;
-      if (!phaseMap.has(c.cycle_type)) phaseMap.set(c.cycle_type, []);
-      phaseMap.get(c.cycle_type)!.push({ start: c.start_date, end: c.end_date, type: c.cycle_type });
-    });
-
-    // Merge overlapping ranges per type
-    const merged: { type: string; start: string; end: string }[] = [];
-    phaseMap.forEach((ranges, type) => {
-      const sorted = [...ranges].sort((a, b) => a.start.localeCompare(b.start));
-      let current = { ...sorted[0] };
-      for (let i = 1; i < sorted.length; i++) {
-        if (sorted[i].start <= current.end) {
-          current.end = current.end > sorted[i].end ? current.end : sorted[i].end;
-        } else {
-          merged.push({ ...current, type });
-          current = { ...sorted[i] };
-        }
-      }
-      if (current) merged.push({ ...current, type });
-    });
-
-    return merged.sort((a, b) => a.start.localeCompare(b.start));
-  }, [cycles]);
+  // No longer needed: macrocycle phases are shown inline per category row
 
   const getPosition = (startDate: string, endDate: string) => {
     const cs = new Date(startDate);
