@@ -22,7 +22,7 @@ import { toast } from "sonner";
 import { AlertTriangle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { playerSchema } from "@/lib/validations";
-import { ATHLETISME_DISCIPLINES, ATHLETISME_SPECIALTIES, JUDO_WEIGHT_CATEGORIES, AVIRON_ROLES, isAthletismeCategory, isJudoCategory, isIndividualSport, isSkiCategory, SKI_DISCIPLINES } from "@/lib/constants/sportTypes";
+import { ATHLETISME_DISCIPLINES, ATHLETISME_SPECIALTIES, JUDO_WEIGHT_CATEGORIES, AVIRON_ROLES, isAthletismeCategory, isJudoCategory, isIndividualSport, isSkiCategory, SKI_DISCIPLINES, getSkiDisciplinesForCategory } from "@/lib/constants/sportTypes";
 import { getPositionsForSport } from "@/lib/constants/sportPositions";
 
 interface AddPlayerDialogProps {
@@ -400,24 +400,27 @@ export function AddPlayerDialog({
               </div>
             )}
 
-            {/* Ski/Snow discipline selector */}
-            {isSki && (
-              <div className="space-y-2">
-                <Label htmlFor="skiDiscipline">Discipline *</Label>
-                <Select value={discipline} onValueChange={setDiscipline}>
-                  <SelectTrigger className="w-full bg-background">
-                    <SelectValue placeholder="Sélectionner une discipline" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-background border z-50 max-h-[300px]">
-                    {SKI_DISCIPLINES.map((disc) => (
-                      <SelectItem key={disc.value} value={disc.value}>
-                        {disc.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
+            {/* Ski/Snow discipline selector - filtered */}
+            {isSki && (() => {
+              const filteredDisciplines = getSkiDisciplinesForCategory(category?.rugby_type || "");
+              return filteredDisciplines.length > 1 ? (
+                <div className="space-y-2">
+                  <Label htmlFor="skiDiscipline">Discipline</Label>
+                  <Select value={discipline} onValueChange={setDiscipline}>
+                    <SelectTrigger className="w-full bg-background">
+                      <SelectValue placeholder="Sélectionner une discipline" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-background border z-50 max-h-[300px]">
+                      {filteredDisciplines.map((disc) => (
+                        <SelectItem key={disc.value} value={disc.value}>
+                          {disc.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              ) : null;
+            })()}
 
             {/* FIS fields for ski/snow */}
             {isSki && (
