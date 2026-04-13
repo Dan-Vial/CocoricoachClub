@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,22 +12,14 @@ import { calculateRacePenalty } from "@/lib/fis/fisPointsEngine";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Mountain, Users, Trophy } from "lucide-react";
+import { getDisciplinesForClubSport } from "@/lib/constants/skiDisciplines";
 
 interface CreateFisCompetitionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   categoryId: string;
+  clubSport?: string;
 }
-
-const DISCIPLINES = [
-  { value: "slopestyle", label: "Slopestyle" },
-  { value: "big_air", label: "Big Air" },
-  { value: "halfpipe", label: "Halfpipe" },
-  { value: "snowboardcross", label: "Snowboardcross" },
-  { value: "parallel_gs", label: "Slalom Géant Parallèle" },
-  { value: "parallel_slalom", label: "Slalom Parallèle" },
-  { value: "other", label: "Autre" },
-];
 
 const LEVELS = [
   { value: "world_cup", label: "Coupe du Monde" },
@@ -36,10 +28,11 @@ const LEVELS = [
   { value: "national", label: "Compétition Nationale" },
 ];
 
-export function CreateFisCompetitionDialog({ open, onOpenChange, categoryId }: CreateFisCompetitionDialogProps) {
+export function CreateFisCompetitionDialog({ open, onOpenChange, categoryId, clubSport }: CreateFisCompetitionDialogProps) {
+  const disciplines = useMemo(() => getDisciplinesForClubSport(clubSport), [clubSport]);
   const [name, setName] = useState("");
   const [date, setDate] = useState("");
-  const [discipline, setDiscipline] = useState("slopestyle");
+  const [discipline, setDiscipline] = useState(disciplines[0]?.value || "slopestyle");
   const [level, setLevel] = useState("fis");
   const [location, setLocation] = useState("");
   const [totalParticipants, setTotalParticipants] = useState("");
@@ -134,7 +127,7 @@ export function CreateFisCompetitionDialog({ open, onOpenChange, categoryId }: C
                 <Select value={discipline} onValueChange={setDiscipline}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {DISCIPLINES.map((d) => <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>)}
+                    {disciplines.map((d) => <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>

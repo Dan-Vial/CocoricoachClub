@@ -9,6 +9,7 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { CreateFisCompetitionDialog } from "./CreateFisCompetitionDialog";
 import { AddFisResultDialog } from "./AddFisResultDialog";
+import { getDisciplineLabel } from "@/lib/constants/skiDisciplines";
 
 interface FisCompetitionsTabProps {
   categoryId: string;
@@ -21,21 +22,24 @@ const LEVEL_LABELS: Record<string, string> = {
   national: "National",
 };
 
-const DISCIPLINE_LABELS: Record<string, string> = {
-  slopestyle: "Slopestyle",
-  big_air: "Big Air",
-  halfpipe: "Halfpipe",
-  snowboardcross: "Snowboardcross",
-  parallel_gs: "Slalom Géant //",
-  parallel_slalom: "Slalom //",
-  other: "Autre",
-};
-
 export function FisCompetitionsTab({ categoryId }: FisCompetitionsTabProps) {
   const [createOpen, setCreateOpen] = useState(false);
   const [resultComp, setResultComp] = useState<{
     id: string; name: string; category_id: string; race_penalty: number | null; total_participants: number | null;
   } | null>(null);
+
+  // Fetch club sport for discipline filtering
+  const { data: clubSport } = useQuery({
+    queryKey: ["club-sport-for-category", categoryId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("categories")
+        .select("clubs(sport)")
+        .eq("id", categoryId)
+        .single();
+      return (data as Record<string, unknown>)?.clubs as { sport: string } | null;
+    },
+  });
 
   const { data: competitions, isLoading } = useQuery({
     queryKey: ["fis-competitions", categoryId],
@@ -115,7 +119,7 @@ export function FisCompetitionsTab({ categoryId }: FisCompetitionsTabProps) {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Badge variant="outline">{DISCIPLINE_LABELS[comp.discipline] || comp.discipline}</Badge>
+                      <Badge variant="outline">{getDisciplineLabel(comp.discipline)}</Badge>
                       <Badge variant="secondary">{LEVEL_LABELS[comp.level] || comp.level}</Badge>
                     </div>
                   </div>
@@ -187,7 +191,7 @@ export function FisCompetitionsTab({ categoryId }: FisCompetitionsTabProps) {
         </div>
       )}
 
-      <CreateFisCompetitionDialog open={createOpen} onOpenChange={setCreateOpen} categoryId={categoryId} />
+      <CreateFisCompetitionDialog open={createOpen} onOpenChange={setCreateOpen} categoryId={categoryId} clubSport={clubSport?.sport} />
       {resultComp && (
         <AddFisResultDialog open={!!resultComp} onOpenChange={(o) => !o && setResultComp(null)} competition={resultComp} />
       )}
