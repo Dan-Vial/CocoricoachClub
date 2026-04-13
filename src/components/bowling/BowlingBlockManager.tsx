@@ -363,6 +363,7 @@ export function BowlingBlockManager({
                         Statistiques de poches
                       </Label>
                     </div>
+                  </div>
 
                   {/* Games within block */}
                   {blockRounds.length === 0 ? (
