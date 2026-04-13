@@ -38,3 +38,6 @@ devops/supabase/supabase
 
 devops/frontend/.lock
 dev-dist
+
+# bun test
+coverage

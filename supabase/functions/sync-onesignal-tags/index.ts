@@ -90,13 +90,13 @@ serve(async (req: Request) => {
     // ── 3. Upsert user via OneSignal REST API ─────────────────────────────────
     // First try PATCH (update existing user by external_id)
     const patchUrl = `https://api.onesignal.com/apps/${ONESIGNAL_APP_ID}/users/by/external_id/${user_id}`;
-    let patchResponse = await fetch(patchUrl, {
+    const patchResponse = await fetch(patchUrl, {
       method: "PATCH",
       headers: baseHeaders,
       body: JSON.stringify({ tags }),
     });
 
-    let patchResult = await patchResponse.text();
+    const patchResult = await patchResponse.text();
     console.log(`[sync-onesignal-tags] PATCH response (${patchResponse.status}):`, patchResult);
 
     // If user not found (404/400), try to CREATE via POST (v2 API)

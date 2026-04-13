@@ -9,12 +9,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Dumbbell, 
-  Stethoscope, 
-  Video, 
-  ClipboardList, 
-  Users, 
+import {
+  Dumbbell,
+  Stethoscope,
+  Video,
+  ClipboardList,
+  Users,
   Calendar,
   Swords,
   Clock,
@@ -124,7 +124,7 @@ export function CreateEventDialog({
   const [notes, setNotes] = useState("");
   const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
   const [selectAll, setSelectAll] = useState(false);
-  
+
   const queryClient = useQueryClient();
 
   // Fetch players
@@ -162,7 +162,7 @@ export function CreateEventDialog({
 
   const handleTypeSelect = (typeId: string) => {
     const eventType = EVENT_TYPES.find(t => t.id === typeId);
-    
+
     if (eventType?.useExistingDialog && onSelectExternalType) {
       const action: "session" | "match" = (typeId === "session" || typeId === "test") ? "session" : "match";
       resetForm();
@@ -197,7 +197,7 @@ export function CreateEventDialog({
   };
 
   const togglePlayer = (playerId: string) => {
-    setSelectedPlayers(prev => 
+    setSelectedPlayers(prev =>
       prev.includes(playerId)
         ? prev.filter(id => id !== playerId)
         : [...prev, playerId]
@@ -215,9 +215,9 @@ export function CreateEventDialog({
           session_date: format(date, "yyyy-MM-dd"),
           session_start_time: startTime,
           session_end_time: endTime,
-          training_type: selectedType === "medical" ? "medical" : 
-                         selectedType === "video" ? "video_analyse" :
-                         selectedType === "team_meeting" ? "reunion" : "autre",
+          training_type: selectedType === "medical" ? "medical" :
+            selectedType === "video" ? "video_analyse" :
+              selectedType === "team_meeting" ? "reunion" : "autre",
           notes: `${title}${location ? ` - ${location}` : ""}${notes ? `\n${notes}` : ""}`,
           intensity: 1,
         })
@@ -263,7 +263,7 @@ export function CreateEventDialog({
                 session_id: session.id,
                 event_details: eventDetails,
                 target_user_ids: targetUserIds,
-                url: `https://cocoricoachclub.com/categories/${categoryId}?session=${session.id}`,
+                url: `${import.meta.env.VITE_WEBSITE_URL}/categories/${categoryId}?session=${session.id}`,
               },
             });
             console.log(`[CreateEvent] Auto-notification sent to ${targetUserIds.length} user(s) for session ${session.id}`);
@@ -434,7 +434,7 @@ export function CreateEventDialog({
                     </span>
                   </div>
                 </div>
-                
+
                 <div className="border rounded-lg p-2 max-h-[200px] overflow-y-auto">
                   <div className="grid grid-cols-2 gap-2">
                     {players?.map((player) => {
@@ -445,8 +445,8 @@ export function CreateEventDialog({
                           onClick={() => togglePlayer(player.id)}
                           className={cn(
                             "flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-all",
-                            isSelected 
-                              ? "bg-primary/10 border-2 border-primary" 
+                            isSelected
+                              ? "bg-primary/10 border-2 border-primary"
                               : "bg-muted/50 border-2 border-transparent hover:bg-muted"
                           )}
                         >
@@ -470,7 +470,7 @@ export function CreateEventDialog({
                     })}
                   </div>
                 </div>
-                
+
                 {selectedPlayers.length > 0 && (
                   <Badge variant="secondary" className="w-fit">
                     {selectedPlayers.length} participant{selectedPlayers.length > 1 ? "s" : ""} sélectionné{selectedPlayers.length > 1 ? "s" : ""}

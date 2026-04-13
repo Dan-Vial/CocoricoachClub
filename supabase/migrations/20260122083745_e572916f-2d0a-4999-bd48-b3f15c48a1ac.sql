@@ -5,7 +5,7 @@ ADD COLUMN IF NOT EXISTS email text;
 -- Create athlete access tokens table for individual athlete portal access
 CREATE TABLE public.athlete_access_tokens (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  token text NOT NULL UNIQUE DEFAULT encode(gen_random_bytes(32), 'hex'),
+  token text NOT NULL UNIQUE DEFAULT encode(extensions.gen_random_bytes(32), 'hex'),
   player_id uuid NOT NULL REFERENCES public.players(id) ON DELETE CASCADE,
   category_id uuid NOT NULL REFERENCES public.categories(id) ON DELETE CASCADE,
   created_by uuid NOT NULL,

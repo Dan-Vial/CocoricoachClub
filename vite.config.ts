@@ -7,7 +7,7 @@ import { VitePWA } from 'vite-plugin-pwa';
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
-  const PORT = Number(env.VITE_PORT || 8080);
+  const PORT = Number(env.VITE_PORT);
 
   // TODO: Séparation des config:
   // - développement
@@ -19,6 +19,10 @@ export default defineConfig(({ mode }) => {
     server: {
       host: "::",
       port: PORT,
+      cors: {
+        origin: [/^https:\/\/.*\.supabase\.co$/, 'https://api.onesignal.com'],
+
+      }
     },
     preview: {
       host: "::",

@@ -1,0 +1,22 @@
+[test]
+
+pathIgnorePatterns = [
+  "node_modules/**",
+  "devops/**",
+  "dist/**",
+  "dev-dist/**",
+  "docs/**",
+]
+
+coverage = true
+coverageReporter = ["text", "lcov"]
+coverageDir = "./coverage"
+
+coveragePathIgnorePatterns = [
+  "**/*.spec.ts",
+  "**/*.test.ts",
+  "*.config.js",
+  "generated/**",
+  "node_modules/**",
+  "tests/**",
+]

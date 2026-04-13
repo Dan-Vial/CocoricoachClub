@@ -4,6 +4,7 @@ RUN dnf -y update \
   && dnf -y install \
   git \
   openssl \
+  node \
   && dnf clean all \
   && rm -rf /var/cache/dnf
 
@@ -20,5 +21,6 @@ RUN mkdir supabase-project \
   && cp supabase/docker/.env.example supabase-project/.env
 
 WORKDIR /app/supabase-project
-RUN chmod +x ./utils/generate-keys.sh \
-  && sh ./utils/generate-keys.sh
+RUN chmod +x ./utils/* \
+  && sh ./utils/generate-keys.sh --update-env \
+  && sh ./utils/add-new-auth-keys.sh --update-env

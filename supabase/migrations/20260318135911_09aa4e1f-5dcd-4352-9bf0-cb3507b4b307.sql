@@ -3,7 +3,9 @@
 ALTER TABLE public.exercise_library ADD COLUMN image_url text DEFAULT NULL;
 
 -- Create storage bucket for exercise images
-INSERT INTO storage.buckets (id, name, public) VALUES ('exercise-images', 'exercise-images', true);
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('exercise-images', 'exercise-images', true)
+ON CONFLICT (id) DO NOTHING;
 
 -- Allow authenticated users to upload exercise images
 CREATE POLICY "Authenticated users can upload exercise images"

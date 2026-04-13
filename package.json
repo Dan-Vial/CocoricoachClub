@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "predev": "echo 'skip init'",
+    "dev:init": "./devops/frontend/init_app.sh",
     "dev": "vite --mode development",
     "build": "vite build --mode production",
     "build:dev": "vite build --mode development",
@@ -64,6 +64,7 @@
     "react-router-dom": "^6.30.1",
     "recharts": "^2.15.4",
     "sonner": "^1.7.4",
+    "supabase": "^2.84.0",
     "tailwind-merge": "^2.6.0",
     "tailwindcss-animate": "^1.0.7",
     "vaul": "^0.9.9",
@@ -75,6 +76,8 @@
   "devDependencies": {
     "@eslint/js": "^9.32.0",
     "@tailwindcss/typography": "^0.5.16",
+    "@types/bun": "^1.3.11",
+    "@types/deno": "^2.5.0",
     "@types/node": "^22.16.5",
     "@types/react": "^18.3.23",
     "@types/react-dom": "^18.3.7",

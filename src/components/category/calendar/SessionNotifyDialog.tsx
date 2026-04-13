@@ -34,26 +34,26 @@ interface SessionNotifyDialogProps {
 }
 
 const NOTIFICATION_TYPES = [
-  { 
-    value: "event_added", 
+  {
+    value: "event_added",
     label: "Événement ajouté au calendrier",
     icon: CalendarPlus,
     defaultMessage: "Une nouvelle séance a été programmée. Merci de confirmer votre présence."
   },
-  { 
-    value: "schedule_changed", 
+  {
+    value: "schedule_changed",
     label: "Horaire décalé",
     icon: Clock,
     defaultMessage: "Attention, l'horaire de la séance a été modifié. Veuillez prendre note du nouvel horaire."
   },
-  { 
-    value: "training_cancelled", 
+  {
+    value: "training_cancelled",
     label: "Entraînement annulé",
     icon: XCircle,
     defaultMessage: "La séance d'entraînement a été annulée. Nous vous tiendrons informés de la reprogrammation."
   },
-  { 
-    value: "appointment_cancelled", 
+  {
+    value: "appointment_cancelled",
     label: "RDV annulé",
     icon: XCircle,
     defaultMessage: "Le rendez-vous a été annulé. Nous vous tiendrons informés de la reprogrammation."
@@ -159,7 +159,7 @@ export function SessionNotifyDialog({
         event_type: "session",
         session_id: session.id,
         event_details: eventDetails,
-        url: `https://cocoricoachclub.com/categories/${categoryId}`,
+        url: `${import.meta.env.VITE_WEBSITE_URL}/categories/${categoryId}`,
       };
 
       if (targetUserIds.length > 0) {
@@ -179,7 +179,7 @@ export function SessionNotifyDialog({
         console.error("[SessionNotification] ❌ Error:", error.message);
         throw new Error(error.message);
       }
-      
+
       if (data) {
         results.pushSent = data.pushSent || 0;
         results.emailsSent = data.emailsSent || 0;
@@ -195,7 +195,7 @@ export function SessionNotifyDialog({
       const parts = [];
       if (data.emailsSent > 0) parts.push(`${data.emailsSent} email(s)`);
       if (data.pushSent > 0) parts.push(`${data.pushSent} push`);
-      
+
       toast.success(`Notifications envoyées : ${parts.join(", ") || "aucune"}`);
       onOpenChange(false);
       setMessage("");
@@ -226,106 +226,105 @@ export function SessionNotifyDialog({
 
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
           <div className="flex-1 overflow-y-auto space-y-4 pr-1">
-          {/* Athletes summary */}
-          <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
-            <Users className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm">
-              <strong>{athletes.length}</strong> athlète(s)
-              {sessionPlayers?.fromSession ? " (inscrits à la séance)" : " (tous)"} •{" "}
-              <span className="text-muted-foreground">{athletesWithEmail} avec email</span>
-              {" • "}
-              <span className="text-muted-foreground">{athletesWithPush} avec push</span>
-            </span>
-          </div>
+            {/* Athletes summary */}
+            <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
+              <Users className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm">
+                <strong>{athletes.length}</strong> athlète(s)
+                {sessionPlayers?.fromSession ? " (inscrits à la séance)" : " (tous)"} •{" "}
+                <span className="text-muted-foreground">{athletesWithEmail} avec email</span>
+                {" • "}
+                <span className="text-muted-foreground">{athletesWithPush} avec push</span>
+              </span>
+            </div>
 
-          {/* Notification type */}
-          <div className="space-y-3">
-            <Label>Type de notification</Label>
-            <RadioGroup value={notificationType} onValueChange={setNotificationType} className="space-y-2">
-              {NOTIFICATION_TYPES.map((type) => {
-                const Icon = type.icon;
-                return (
+            {/* Notification type */}
+            <div className="space-y-3">
+              <Label>Type de notification</Label>
+              <RadioGroup value={notificationType} onValueChange={setNotificationType} className="space-y-2">
+                {NOTIFICATION_TYPES.map((type) => {
+                  const Icon = type.icon;
+                  return (
+                    <label
+                      key={type.value}
+                      className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${notificationType === type.value
+                          ? "border-primary bg-primary/5"
+                          : "border-border hover:bg-muted/50"
+                        }`}
+                    >
+                      <RadioGroupItem value={type.value} id={type.value} />
+                      <Icon className="h-4 w-4 text-muted-foreground" />
+                      <span className="font-medium">{type.label}</span>
+                    </label>
+                  );
+                })}
+              </RadioGroup>
+            </div>
+
+            {/* Notification channels */}
+            <div className="space-y-3">
+              <Label>Canaux de notification</Label>
+              <div className="flex flex-wrap gap-4">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="sendEmail"
+                    checked={sendEmail}
+                    onCheckedChange={(checked) => setSendEmail(checked as boolean)}
+                    disabled={athletesWithEmail === 0}
+                  />
                   <label
-                    key={type.value}
-                    className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
-                      notificationType === type.value 
-                        ? "border-primary bg-primary/5" 
-                        : "border-border hover:bg-muted/50"
-                    }`}
+                    htmlFor="sendEmail"
+                    className="flex items-center gap-2 text-sm font-medium cursor-pointer"
                   >
-                    <RadioGroupItem value={type.value} id={type.value} />
-                    <Icon className="h-4 w-4 text-muted-foreground" />
-                    <span className="font-medium">{type.label}</span>
+                    <Mail className="h-4 w-4" />
+                    Email
+                    <Badge variant="secondary" className="text-xs">
+                      {athletesWithEmail}
+                    </Badge>
                   </label>
-                );
-              })}
-            </RadioGroup>
-          </div>
+                </div>
 
-          {/* Notification channels */}
-          <div className="space-y-3">
-            <Label>Canaux de notification</Label>
-            <div className="flex flex-wrap gap-4">
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="sendEmail"
-                  checked={sendEmail}
-                  onCheckedChange={(checked) => setSendEmail(checked as boolean)}
-                  disabled={athletesWithEmail === 0}
-                />
-                <label
-                  htmlFor="sendEmail"
-                  className="flex items-center gap-2 text-sm font-medium cursor-pointer"
-                >
-                  <Mail className="h-4 w-4" />
-                  Email
-                  <Badge variant="secondary" className="text-xs">
-                    {athletesWithEmail}
-                  </Badge>
-                </label>
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="sendPush"
-                  checked={sendPush}
-                  onCheckedChange={(checked) => setSendPush(checked as boolean)}
-                />
-                <label
-                  htmlFor="sendPush"
-                  className="flex items-center gap-2 text-sm font-medium cursor-pointer"
-                >
-                  <Bell className="h-4 w-4" />
-                  Push
-                  <Badge variant="secondary" className="text-xs">
-                    {athletesWithPush}
-                  </Badge>
-                </label>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="sendPush"
+                    checked={sendPush}
+                    onCheckedChange={(checked) => setSendPush(checked as boolean)}
+                  />
+                  <label
+                    htmlFor="sendPush"
+                    className="flex items-center gap-2 text-sm font-medium cursor-pointer"
+                  >
+                    <Bell className="h-4 w-4" />
+                    Push
+                    <Badge variant="secondary" className="text-xs">
+                      {athletesWithPush}
+                    </Badge>
+                  </label>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Custom message */}
-          <div className="space-y-2">
-            <Label htmlFor="message">Message personnalisé (optionnel)</Label>
-            <Textarea
-              id="message"
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              placeholder={selectedType?.defaultMessage}
-              rows={3}
-            />
-            <p className="text-xs text-muted-foreground">
-              Laissez vide pour utiliser le message par défaut
-            </p>
-          </div>
+            {/* Custom message */}
+            <div className="space-y-2">
+              <Label htmlFor="message">Message personnalisé (optionnel)</Label>
+              <Textarea
+                id="message"
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder={selectedType?.defaultMessage}
+                rows={3}
+              />
+              <p className="text-xs text-muted-foreground">
+                Laissez vide pour utiliser le message par défaut
+              </p>
+            </div>
 
-          {/* Event details preview */}
-          <div className="p-3 bg-accent/20 rounded-lg text-sm space-y-1">
-            <p className="font-medium text-muted-foreground">Détails inclus automatiquement :</p>
-            <p>📅 {format(new Date(session.session_date), "EEEE d MMMM yyyy", { locale: fr })}</p>
-            {session.session_start_time && <p>🕐 {session.session_start_time.substring(0, 5)}</p>}
-          </div>
+            {/* Event details preview */}
+            <div className="p-3 bg-accent/20 rounded-lg text-sm space-y-1">
+              <p className="font-medium text-muted-foreground">Détails inclus automatiquement :</p>
+              <p>📅 {format(new Date(session.session_date), "EEEE d MMMM yyyy", { locale: fr })}</p>
+              {session.session_start_time && <p>🕐 {session.session_start_time.substring(0, 5)}</p>}
+            </div>
           </div>{/* end scrollable area */}
 
           <DialogFooter className="flex-shrink-0 pt-4 border-t">

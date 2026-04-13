@@ -11,6 +11,13 @@ Make sure you have installed:
 - [Docker](https://www.docker.com/) or [Podman](https://podman.io/) with Compose
 - A [Supabase](https://supabase.com/) account and project
 - A [OneSignal](https://onesignal.com/) account and project
+- Installed Bun and Bunx optional dependencies
+
+> Windows users may need to install
+>
+> - [WSL2](https://learn.microsoft.com/en-us/windows/wsl/install)
+> - [Docker Desktop](https://www.docker.com/products/docker-desktop/)
+> to run the project.
 
 ---
 
@@ -78,6 +85,28 @@ Access the frontend container:
 docker compose exec frontend bash
 ```
 
+First, install initialize:
+
+```bash
+# Cleanup node_modules
+rm -rf node_modules
+
+# Installing dependencies with bun
+bun install --frozen-lockfile
+
+# Connect to your supabase account (SUPABASE_ACCESS_TOKEN)
+bunx supabase link --project-ref "$SUPABASE_PROJECT_ID"
+
+# Add secrets
+bunx supabase secrets set SECRET_EXEMPLE="SECRET_VALUE"
+
+# Migrate database
+bunx supabase db push --linked
+
+# Deploy edge Functions
+bunx supabase functions deploy
+```
+
 Then start the dev server:
 
 ```bash
@@ -86,10 +115,17 @@ bun run dev
 
 ---
 
-## Useful commands
+## Add user to super_admin_users
 
-```bash
-bun run build
-bun run build:dev
-bunx supabase --help
+After inscription and email confirmation, go to Supabase SQL Editor:
+
+```sql
+-- Get your user_id
+SELECT id, email FROM auth.users WHERE email = 'your@email.com';
+
+-- Insert into super_admin_users
+INSERT INTO public.super_admin_users (user_id, granted_by)
+SELECT id, id FROM auth.users WHERE email = 'your@email.com';
 ```
+
+---

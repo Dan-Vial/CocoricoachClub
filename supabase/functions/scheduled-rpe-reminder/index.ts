@@ -34,9 +34,12 @@ serve(async (req) => {
     const thirtyMinutesAgo = new Date(now.getTime() - 30 * 60 * 1000);
     const today = now.toISOString().split("T")[0];
     const currentTime = now.toTimeString().split(" ")[0].substring(0, 5);
-    const thirtyMinAgoTime = thirtyMinutesAgo.toTimeString().split(" ")[0].substring(0, 5);
+    const thirtyMinAgoTime = thirtyMinutesAgo.toTimeString().split(" ")[0]
+      .substring(0, 5);
 
-    console.log(`[rpe] Checking sessions ending between ${thirtyMinAgoTime} and ${currentTime} on ${today}`);
+    console.log(
+      `[rpe] Checking sessions ending between ${thirtyMinAgoTime} and ${currentTime} on ${today}`,
+    );
 
     // Get sessions that ended in the last 30 minutes
     const { data: sessions, error: sessionsError } = await supabase
@@ -64,7 +67,7 @@ serve(async (req) => {
     if (!sessions || sessions.length === 0) {
       return new Response(
         JSON.stringify({ message: "No sessions ended in the last 30 minutes" }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
@@ -105,16 +108,22 @@ serve(async (req) => {
         .eq("training_session_id", session.id)
         .in("player_id", playerIds);
 
-      const submittedPlayerIds = new Set(existingRpe?.map((r) => r.player_id) || []);
-      const pendingPlayerIds = playerIds.filter((pid) => !submittedPlayerIds.has(pid));
+      const submittedPlayerIds = new Set(
+        existingRpe?.map((r) => r.player_id) || [],
+      );
+      const pendingPlayerIds = playerIds.filter((pid) =>
+        !submittedPlayerIds.has(pid)
+      );
 
       if (pendingPlayerIds.length === 0) {
-        console.log(`[rpe] Session ${session.id}: all ${playerIds.length} players already submitted RPE, skipping`);
+        console.log(
+          `[rpe] Session ${session.id}: all ${playerIds.length} players already submitted RPE, skipping`,
+        );
         continue;
       }
 
       console.log(
-        `[rpe] Session ${session.id}: ${pendingPlayerIds.length}/${playerIds.length} players pending RPE`
+        `[rpe] Session ${session.id}: ${pendingPlayerIds.length}/${playerIds.length} players pending RPE`,
       );
 
       // Get player contact info for pending players
@@ -129,22 +138,26 @@ serve(async (req) => {
       const trainingTypeLabel = getTrainingTypeLabel(session.training_type);
 
       // Deep link URL for quick access
-      const appBaseUrl = "https://cocoricoachclub.com";
+      const appBaseUrl = Deno.env.get("VITE_WEBSITE_URL");
       const rpeDeepLink = `${appBaseUrl}/athlete-space?tab=rpe`;
 
       // ── EMAIL via OneSignal ──────────────────────────────────────────────
-      const emailRecipients = players.filter((p) => p.email).map((p) => p.email!);
+      const emailRecipients = players.filter((p) => p.email).map((p) =>
+        p.email!
+      );
 
       if (emailRecipients.length > 0) {
         try {
-          const response = await fetch("https://api.onesignal.com/notifications", {
-            method: "POST",
-            headers: baseHeaders,
-            body: JSON.stringify({
-              app_id: oneSignalAppId,
-              include_email_tokens: emailRecipients,
-              email_subject: `📊 RPE - Comment as-tu ressenti la séance ?`,
-              email_body: `
+          const response = await fetch(
+            "https://api.onesignal.com/notifications",
+            {
+              method: "POST",
+              headers: baseHeaders,
+              body: JSON.stringify({
+                app_id: oneSignalAppId,
+                include_email_tokens: emailRecipients,
+                email_subject: `📊 RPE - Comment as-tu ressenti la séance ?`,
+                email_body: `
                 <html>
                   <body style="font-family: Arial, sans-serif; padding: 20px; background-color: #f4f4f5;">
                     <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
@@ -166,8 +179,9 @@ serve(async (req) => {
                   </body>
                 </html>
               `,
-            }),
-          });
+              }),
+            },
+          );
 
           if (response.ok) {
             totalEmailsSent += emailRecipients.length;
@@ -187,36 +201,45 @@ serve(async (req) => {
 
       if (pushUserIds.length > 0) {
         try {
-          const response = await fetch("https://api.onesignal.com/notifications", {
-            method: "POST",
-            headers: baseHeaders,
-            body: JSON.stringify({
-              app_id: oneSignalAppId,
-              include_aliases: { external_id: pushUserIds },
-              target_channel: "push",
-              headings: {
-                fr: "Comment s'est passée la séance ? 💪",
-                en: "Comment s'est passée la séance ? 💪",
-              },
-              contents: {
-                fr: `"${trainingTypeLabel}" (${category.name}) est terminée. Donne ton RPE en 10 secondes !`,
-                en: `"${trainingTypeLabel}" (${category.name}) est terminée. Donne ton RPE en 10 secondes !`,
-              },
-              url: rpeDeepLink,
-              ttl: 7200,
-              data: {
-                type: "rpe_reminder",
-                session_id: session.id,
-                category_id: session.category_id,
+          const response = await fetch(
+            "https://api.onesignal.com/notifications",
+            {
+              method: "POST",
+              headers: baseHeaders,
+              body: JSON.stringify({
+                app_id: oneSignalAppId,
+                include_aliases: { external_id: pushUserIds },
+                target_channel: "push",
+                headings: {
+                  fr: "Comment s'est passée la séance ? 💪",
+                  en: "Comment s'est passée la séance ? 💪",
+                },
+                contents: {
+                  fr:
+                    `"${trainingTypeLabel}" (${category.name}) est terminée. Donne ton RPE en 10 secondes !`,
+                  en:
+                    `"${trainingTypeLabel}" (${category.name}) est terminée. Donne ton RPE en 10 secondes !`,
+                },
                 url: rpeDeepLink,
-              },
-            }),
-          });
+                ttl: 7200,
+                data: {
+                  type: "rpe_reminder",
+                  session_id: session.id,
+                  category_id: session.category_id,
+                  url: rpeDeepLink,
+                },
+              }),
+            },
+          );
 
           const json = await response.json();
           if (response.ok) {
             totalPushSent += json.recipients ?? pushUserIds.length;
-            console.log(`[rpe] Push sent to ${json.recipients ?? pushUserIds.length} device(s) for session ${session.id}`);
+            console.log(
+              `[rpe] Push sent to ${
+                json.recipients ?? pushUserIds.length
+              } device(s) for session ${session.id}`,
+            );
           } else {
             console.error(`[rpe] Push error for session ${session.id}:`, json);
           }
@@ -237,7 +260,9 @@ serve(async (req) => {
       });
     }
 
-    console.log(`[rpe] Total: ${totalEmailsSent} emails, ${totalPushSent} push sent`);
+    console.log(
+      `[rpe] Total: ${totalEmailsSent} emails, ${totalPushSent} push sent`,
+    );
 
     return new Response(
       JSON.stringify({
@@ -247,13 +272,16 @@ serve(async (req) => {
         pushSent: totalPushSent,
         results,
       }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (error: any) {
     console.error("Error in scheduled-rpe-reminder:", error);
     return new Response(
       JSON.stringify({ error: error?.message || "Unknown error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
     );
   }
 });

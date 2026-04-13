@@ -17,7 +17,7 @@ const VoiceAssistant = ({ categoryId }: VoiceAssistantProps) => {
   const [transcript, setTranscript] = useState("");
   const [status, setStatus] = useState<string>("Prêt");
   const [lastSaved, setLastSaved] = useState<string>("");
-  
+
   const wsRef = useRef<WebSocket | null>(null);
   const recorderRef = useRef<AudioRecorder | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -31,13 +31,13 @@ const VoiceAssistant = ({ categoryId }: VoiceAssistantProps) => {
   const connect = async () => {
     try {
       setStatus("Demande d'accès au micro...");
-      
+
       // IMPORTANT: Request microphone FIRST (required for iOS)
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
           audio: true
         });
-        
+
         // Store stream for later use
         recorderRef.current = new AudioRecorder((audioData) => {
           if (wsRef.current?.readyState === WebSocket.OPEN) {
@@ -48,11 +48,11 @@ const VoiceAssistant = ({ categoryId }: VoiceAssistantProps) => {
             }));
           }
         });
-        
+
         // Initialize with the stream
         await recorderRef.current.start();
         console.log("[Microphone] Access granted and started");
-        
+
       } catch (micError) {
         console.error("[Microphone Error]", micError);
         toast({
@@ -62,9 +62,9 @@ const VoiceAssistant = ({ categoryId }: VoiceAssistantProps) => {
         });
         return;
       }
-      
+
       setStatus("Connexion...");
-      
+
       // Get auth session for secure connection
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
@@ -75,14 +75,14 @@ const VoiceAssistant = ({ categoryId }: VoiceAssistantProps) => {
         });
         return;
       }
-      
+
       // Initialize audio context
       audioContextRef.current = new AudioContext({ sampleRate: 24000 });
 
       // Connect to WebSocket with auth token in URL
-      const projectId = "mbloebaovvvgfwxsdzgo";
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
       const wsUrl = `wss://${projectId}.functions.supabase.co/functions/v1/voice-assistant?categoryId=${categoryId}&token=${session.access_token}`;
-      
+
       console.log("[Voice Assistant] Connecting to WebSocket...");
       wsRef.current = new WebSocket(wsUrl);
 
@@ -204,12 +204,12 @@ const VoiceAssistant = ({ categoryId }: VoiceAssistantProps) => {
       recorderRef.current.stop();
       recorderRef.current = null;
     }
-    
+
     if (wsRef.current) {
       wsRef.current.close();
       wsRef.current = null;
     }
-    
+
     if (audioContextRef.current) {
       audioContextRef.current.close();
       audioContextRef.current = null;
@@ -242,7 +242,7 @@ const VoiceAssistant = ({ categoryId }: VoiceAssistantProps) => {
         </div>
 
         {!isConnected ? (
-          <Button 
+          <Button
             onClick={connect}
             className="w-full"
             size="lg"
@@ -268,7 +268,7 @@ const VoiceAssistant = ({ categoryId }: VoiceAssistantProps) => {
                   </span>
                 </div>
               )}
-              <Button 
+              <Button
                 onClick={disconnect}
                 variant="outline"
                 size="sm"

@@ -29,15 +29,15 @@ set +a
 
 echo "Linking project: $SUPABASE_PROJECT_ID"
 
-if [ -z "$SUPABASE_ACCESS_TOKEN" ]; then
-  echo "Missing SUPABASE_ACCESS_TOKEN"
-  exit 1
-fi
-
-if [ -z "$SUPABASE_PROJECT_ID" ]; then
-  echo "Missing SUPABASE_PROJECT_ID"
-  exit 1
-fi
+# if [ -z "$SUPABASE_ACCESS_TOKEN" ]; then
+#   echo "Missing SUPABASE_ACCESS_TOKEN"
+#   exit 1
+# fi
+#
+# if [ -z "$SUPABASE_PROJECT_ID" ]; then
+#   echo "Missing SUPABASE_PROJECT_ID"
+#   exit 1
+# fi
 
 echo "Cleanup node_modules"
 rm -rf node_modules
@@ -49,9 +49,14 @@ echo "Connect to your supabase account"
 # bunx supabase login
 bunx supabase link --project-ref "$SUPABASE_PROJECT_ID"
 
-echo "Migrate database"
-bunx supabase db lint --linked
-bunx supabase db push
+# echo "Migrate database"
+# bunx supabase db lint --linked
+# bunx supabase db reset --linked
+# bunx supabase migration up --linked
+# bunx supabase db push --linked
+
+# Déployer toutes les fonctions
+# bunx supabase functions deploy
 
 touch "$LOCK_FILE"
 

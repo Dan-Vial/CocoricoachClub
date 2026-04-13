@@ -1,7 +1,7 @@
 -- Create public access tokens table for viewer access without authentication
 CREATE TABLE public.public_access_tokens (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  token text NOT NULL UNIQUE DEFAULT encode(gen_random_bytes(32), 'hex'),
+  token text NOT NULL UNIQUE DEFAULT encode(extensions.gen_random_bytes(32), 'hex'),
   club_id uuid REFERENCES public.clubs(id) ON DELETE CASCADE,
   category_id uuid REFERENCES public.categories(id) ON DELETE CASCADE,
   created_by uuid NOT NULL,

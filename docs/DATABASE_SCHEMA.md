@@ -1175,7 +1175,7 @@
 | accepted_by | uuid | NULL | - |
 | email | text | NOT NULL | - |
 | name | text | NULL | - |
-| token | text | NOT NULL | encode(gen_random_bytes(32), 'hex') |
+| token | text | NOT NULL | encode(extensions.gen_random_bytes(32), 'hex') |
 | status | text | NOT NULL | 'pending' |
 
 #### `public_access_tokens`
@@ -1189,7 +1189,7 @@
 | created_at | timestamp with time zone | NOT NULL | now() |
 | last_used_at | timestamp with time zone | NULL | - |
 | is_active | boolean | NOT NULL | true |
-| token | text | NOT NULL | encode(gen_random_bytes(32), 'hex') |
+| token | text | NOT NULL | encode(extensions.gen_random_bytes(32), 'hex') |
 | label | text | NULL | - |
 | access_type | text | NOT NULL | 'viewer' |
 
