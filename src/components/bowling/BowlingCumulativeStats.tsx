@@ -52,6 +52,7 @@ interface BowlingGameData {
   blockDebriefing?: string;
   blockId?: string;
   roundDate?: string;
+  trackPockets?: boolean;
 }
 
 function ColoredStatRow({ label, value, statType, percentage }: { label: string; value: string; statType?: "pocket" | "strike" | "spare" | "singlePin" | "firstBallGte8"; percentage?: number }) {
@@ -135,6 +136,7 @@ export function BowlingCumulativeStats({ categoryId, playerId: fixedPlayerId }: 
             blockDebriefing: statData.blockDebriefing as string | undefined,
             blockId: statData.blockId as string | undefined,
             roundDate: statData.roundDate as string | undefined,
+            trackPockets: statData.trackPockets !== false,
           });
         }
       }
@@ -165,7 +167,9 @@ export function BowlingCumulativeStats({ categoryId, playerId: fixedPlayerId }: 
     const totalOpenFrames = playerGames.reduce((s, g) => s + g.openFrames, 0);
     const totalSplits = playerGames.reduce((s, g) => s + g.splitCount, 0);
     const totalSplitsConverted = playerGames.reduce((s, g) => s + g.splitConverted, 0);
-    const totalPocket = playerGames.reduce((s, g) => s + g.pocketCount, 0);
+    const pocketGames = playerGames.filter(g => g.trackPockets !== false);
+    const totalPocket = pocketGames.reduce((s, g) => s + g.pocketCount, 0);
+    const hasPocketData = pocketGames.length > 0;
     const totalSinglePin = playerGames.reduce((s, g) => s + g.singlePinCount, 0);
     const totalSinglePinConverted = playerGames.reduce((s, g) => s + g.singlePinConverted, 0);
     const highGame = Math.max(...playerGames.map(g => g.score));
@@ -173,7 +177,9 @@ export function BowlingCumulativeStats({ categoryId, playerId: fixedPlayerId }: 
     const avgScore = totalScore / totalGames;
     const avgStrikeRate = playerGames.reduce((s, g) => s + g.strikePercentage, 0) / totalGames;
     const avgSpareRate = playerGames.reduce((s, g) => s + g.sparePercentage, 0) / totalGames;
-    const avgPocketRate = playerGames.reduce((s, g) => s + g.pocketPercentage, 0) / totalGames;
+    const avgPocketRate = hasPocketData
+      ? pocketGames.reduce((s, g) => s + g.pocketPercentage, 0) / pocketGames.length
+      : 0;
     const totalFrames = totalGames * 10;
     const openFramePercentage = totalFrames > 0 ? (totalOpenFrames / totalFrames) * 100 : 0;
 
@@ -211,7 +217,7 @@ export function BowlingCumulativeStats({ categoryId, playerId: fixedPlayerId }: 
       totalStrikes, totalSpares, totalOpenFrames,
       totalSplits, totalSplitsConverted,
       totalPocket, totalSinglePin, totalSinglePinConverted,
-      avgStrikeRate, avgSpareRate, avgPocketRate,
+      avgStrikeRate, avgSpareRate, avgPocketRate, hasPocketData,
       openFramePercentage,
       splitConversionRate: totalSplits > 0 ? (totalSplitsConverted / totalSplits) * 100 : 0,
       singlePinConversionRate: totalSinglePin > 0 ? (totalSinglePinConverted / totalSinglePin) * 100 : 0,
@@ -248,7 +254,7 @@ export function BowlingCumulativeStats({ categoryId, playerId: fixedPlayerId }: 
         ["Partie basse", cumulativeStats.lowGame],
         ["% Strikes", `${cumulativeStats.avgStrikeRate.toFixed(1)}%`],
         ["% Spares", `${cumulativeStats.avgSpareRate.toFixed(1)}%`],
-        ["% Poches", `${cumulativeStats.avgPocketRate.toFixed(1)}%`],
+        ...(cumulativeStats.hasPocketData ? [["% Poches", `${cumulativeStats.avgPocketRate.toFixed(1)}%`]] : []),
         ["% Quilles seules", `${cumulativeStats.singlePinConversionRate.toFixed(1)}%`],
         ["% Conversion splits", `${cumulativeStats.splitConversionRate.toFixed(1)}%`],
         ["% Boules ≥8", `${cumulativeStats.firstBallGte8Percentage.toFixed(1)}%`],
@@ -569,7 +575,7 @@ export function BowlingCumulativeStats({ categoryId, playerId: fixedPlayerId }: 
                   <CardContent className="space-y-2">
                     <ColoredStatRow label="% Strikes" value={`${cumulativeStats.avgStrikeRate.toFixed(1)}%`} statType="strike" percentage={cumulativeStats.avgStrikeRate} />
                     <ColoredStatRow label="% Spares" value={`${cumulativeStats.avgSpareRate.toFixed(1)}%`} statType="spare" percentage={cumulativeStats.avgSpareRate} />
-                    <ColoredStatRow label="% Poches" value={`${cumulativeStats.avgPocketRate.toFixed(1)}%`} statType="pocket" percentage={cumulativeStats.avgPocketRate} />
+                    {cumulativeStats.hasPocketData && <ColoredStatRow label="% Poches" value={`${cumulativeStats.avgPocketRate.toFixed(1)}%`} statType="pocket" percentage={cumulativeStats.avgPocketRate} />}
                     <ColoredStatRow label="% Quilles seules" value={`${cumulativeStats.singlePinConversionRate.toFixed(1)}%`} statType="singlePin" percentage={cumulativeStats.singlePinConversionRate} />
                     <ColoredStatRow label="% Conversion splits" value={`${cumulativeStats.splitConversionRate.toFixed(1)}%`} />
                     <ColoredStatRow label="% Boules ≥8" value={`${cumulativeStats.firstBallGte8Percentage.toFixed(1)}%`} statType="firstBallGte8" percentage={cumulativeStats.firstBallGte8Percentage} />

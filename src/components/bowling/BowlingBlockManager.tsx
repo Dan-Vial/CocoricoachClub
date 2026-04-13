@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -53,6 +54,7 @@ export interface BowlingBlock {
   notes: string;
   debriefing: string;
   isCollapsed: boolean;
+  trackPockets: boolean;
 }
 
 export interface Round {
@@ -130,6 +132,7 @@ export function BowlingBlockManager({
       notes: "",
       debriefing: "",
       isCollapsed: false,
+      trackPockets: true,
     };
     onBlocksChange([...blocks, newBlock]);
   };
@@ -350,6 +353,16 @@ export function BowlingBlockManager({
                         
                       />
                     </div>
+                    <div className="col-span-2 sm:col-span-4 flex items-center gap-2">
+                      <Checkbox
+                        id={`trackPockets-${block.id}`}
+                        checked={block.trackPockets !== false}
+                        onCheckedChange={(checked) => updateBlock(block.id, { trackPockets: !!checked })}
+                      />
+                      <Label htmlFor={`trackPockets-${block.id}`} className="text-xs font-medium cursor-pointer">
+                        Statistiques de poches
+                      </Label>
+                    </div>
                   </div>
 
                   {/* Games within block */}
@@ -441,6 +454,7 @@ export function BowlingBlockManager({
                           )}
                           <CardContent className="pt-0">
                             <BowlingScoreSheet
+                              trackPockets={block.trackPockets !== false}
                               key={`bowling-${round.round_number}-${round.isLocked}`}
                               initialFrames={round.bowlingFrames}
                               playerId={playerId}

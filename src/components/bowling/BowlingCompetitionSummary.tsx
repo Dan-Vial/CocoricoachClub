@@ -25,6 +25,7 @@ interface DetailedStats {
   singlePinConvRate: number;
   splitConvRate: number;
   pocketPct: number;
+  hasPocketData: boolean;
 }
 
 interface BlockDetailedStats extends DetailedStats {
@@ -56,7 +57,7 @@ function StatTooltip({ text }: { text: string }) {
   );
 }
 
-function computeDetailedStats(roundsWithScores: Round[]): DetailedStats | null {
+function computeDetailedStats(roundsWithScores: Round[], blocks?: BowlingBlock[]): DetailedStats | null {
   const total = roundsWithScores.length;
   if (total === 0) return null;
   const totalPins = roundsWithScores.reduce((s, r) => s + (r.stats["gameScore"] || 0), 0);
@@ -70,7 +71,18 @@ function computeDetailedStats(roundsWithScores: Round[]): DetailedStats | null {
   const convertedSP = roundsWithScores.reduce((s, r) => s + (r.stats["singlePinConverted"] || 0), 0);
   const totalSplits = roundsWithScores.reduce((s, r) => s + (r.stats["splitCount"] || 0), 0);
   const totalSplitsConverted = roundsWithScores.reduce((s, r) => s + (r.stats["splitConverted"] || 0), 0);
-  const pocketPct = roundsWithScores.reduce((s, r) => s + (r.stats["pocketPercentage"] || 0), 0) / total;
+
+  // Only compute pocket stats from rounds in blocks with trackPockets enabled
+  const pocketBlockIds = blocks
+    ? new Set(blocks.filter(b => b.trackPockets !== false).map(b => b.id))
+    : null;
+  const pocketRounds = pocketBlockIds
+    ? roundsWithScores.filter(r => r.blockId && pocketBlockIds.has(r.blockId))
+    : roundsWithScores;
+  const hasPocketData = pocketRounds.length > 0;
+  const pocketPct = hasPocketData
+    ? pocketRounds.reduce((s, r) => s + (r.stats["pocketPercentage"] || 0), 0) / pocketRounds.length
+    : 0;
 
   return {
     games: total,
@@ -83,6 +95,7 @@ function computeDetailedStats(roundsWithScores: Round[]): DetailedStats | null {
     singlePinConvRate: totalSP > 0 ? (convertedSP / totalSP) * 100 : 0,
     splitConvRate: totalSplits > 0 ? (totalSplitsConverted / totalSplits) * 100 : 0,
     pocketPct,
+    hasPocketData,
   };
 }
 
@@ -137,15 +150,15 @@ export function BowlingCompetitionSummary({
   const allRoundsWithScores = rounds.filter(r => (r.stats["gameScore"] || 0) > 0);
   const total = allRoundsWithScores.length;
 
-  const overall = useMemo(() => computeDetailedStats(allRoundsWithScores), [allRoundsWithScores]);
+  const overall = useMemo(() => computeDetailedStats(allRoundsWithScores, blocks), [allRoundsWithScores, blocks]);
 
   // Stats per block
   const blockStats: BlockDetailedStats[] = useMemo(() => {
     return blocks.map((block, idx) => {
       const blockRounds = allRoundsWithScores.filter(r => r.blockId === block.id);
-      const stats = computeDetailedStats(blockRounds);
+      const stats = computeDetailedStats(blockRounds, [block]);
       if (!stats) {
-        return { block, blockIndex: idx, games: 0, totalPins: 0, average: 0, high: 0, low: 0, avgStrikeRate: 0, avgSpareRate: 0, singlePinConvRate: 0, splitConvRate: 0, pocketPct: 0 };
+        return { block, blockIndex: idx, games: 0, totalPins: 0, average: 0, high: 0, low: 0, avgStrikeRate: 0, avgSpareRate: 0, singlePinConvRate: 0, splitConvRate: 0, pocketPct: 0, hasPocketData: block.trackPockets !== false };
       }
       return { ...stats, block, blockIndex: idx };
     }).filter(b => b.games > 0);
@@ -249,10 +262,12 @@ export function BowlingCompetitionSummary({
               <p className="text-lg font-bold text-orange-600">{overall.splitConvRate.toFixed(0)}%</p>
               <p className="text-[9px] text-muted-foreground">% Split conv.</p>
             </div>
-            <div className={`p-2 rounded-lg ${getStatColor("pocket", overall.pocketPct).bg}`}>
-              <p className={`text-lg font-bold ${getStatColor("pocket", overall.pocketPct).text.includes("text-red") ? "text-red-600" : "text-white"}`}>{overall.pocketPct.toFixed(0)}%</p>
-              <p className="text-[9px] text-white opacity-80">% Pocket</p>
-            </div>
+            {overall.hasPocketData && (
+              <div className={`p-2 rounded-lg ${getStatColor("pocket", overall.pocketPct).bg}`}>
+                <p className={`text-lg font-bold ${getStatColor("pocket", overall.pocketPct).text.includes("text-red") ? "text-red-600" : "text-white"}`}>{overall.pocketPct.toFixed(0)}%</p>
+                <p className="text-[9px] text-white opacity-80">% Pocket</p>
+              </div>
+            )}
             <div className="p-2 rounded-lg border">
               <p className="text-lg font-bold text-red-500">{overall.low}</p>
               <p className="text-[9px] text-muted-foreground">Low Game</p>
