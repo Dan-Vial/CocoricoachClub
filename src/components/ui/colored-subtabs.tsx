@@ -2,6 +2,7 @@ import * as React from "react";
 import * as TabsPrimitive from "@radix-ui/react-tabs";
 import { cn } from "@/lib/utils";
 import { NAV_COLORS, NavColorKey } from "./colored-nav-tabs";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 // Colored SubTabs for consistent sub-navigation styling
 interface ColoredSubTabsListProps extends React.ComponentPropsWithoutRef<typeof TabsPrimitive.List> {
