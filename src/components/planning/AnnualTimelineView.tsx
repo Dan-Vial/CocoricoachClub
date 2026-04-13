@@ -235,7 +235,7 @@ export function AnnualTimelineView({
               </div>
 
               {/* Timeline area */}
-              <div className="flex-1 relative" style={{ minHeight: "52px" }}>
+              <div className="flex-1 relative" style={{ minHeight: "68px" }}>
                 {/* Month grid lines */}
                 <div className="absolute inset-0 flex pointer-events-none">
                   {months.map((month, i) => {
@@ -251,7 +251,7 @@ export function AnnualTimelineView({
                   })}
                 </div>
 
-                {/* Cycle blocks */}
+                {/* Cycle blocks with macrocycle badge */}
                 {sortedCycles.map((cycle) => {
                   const pos = getPosition(cycle.start_date, cycle.end_date);
                   const meta = cycle.cycle_type ? CYCLE_TYPE_META[cycle.cycle_type] : null;
@@ -261,21 +261,40 @@ export function AnnualTimelineView({
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <button
-                            className={cn(
-                              "absolute top-1.5 h-[calc(100%-12px)] rounded-lg",
-                              "flex flex-col items-center justify-center overflow-hidden",
-                              "shadow-sm hover:shadow-lg hover:scale-y-105 transition-all cursor-pointer",
-                              "border border-white/20",
-                              pos.isNarrow ? "px-0.5" : "px-2.5"
-                            )}
+                            className="absolute flex flex-col items-center"
                             style={{
                               left: pos.left,
                               width: pos.width,
-                              backgroundColor: cycle.color,
+                              top: "2px",
+                              bottom: "6px",
                               zIndex: pos.isNarrow ? 5 : 1,
                             }}
                             onClick={() => !isViewer && onEditCycle(cycle)}
                           >
+                            {/* Macrocycle type badge on top */}
+                            {meta && (
+                              <div
+                                className={cn(
+                                  "w-full flex items-center justify-center gap-0.5 rounded-t-md text-[9px] font-bold uppercase tracking-wide shrink-0",
+                                  meta.bgClass
+                                )}
+                                style={{ height: "16px", borderBottom: `2px solid ${cycle.color}` }}
+                              >
+                                <span>{meta.icon}</span>
+                                {!pos.isNarrow && <span>{meta.shortLabel}</span>}
+                              </div>
+                            )}
+                            {/* Cycle block */}
+                            <div
+                              className={cn(
+                                "w-full flex-1 flex flex-col items-center justify-center overflow-hidden",
+                                "shadow-sm hover:shadow-lg transition-all cursor-pointer",
+                                "border border-white/20",
+                                meta ? "rounded-b-lg" : "rounded-lg",
+                                pos.isNarrow ? "px-0.5" : "px-2.5"
+                              )}
+                              style={{ backgroundColor: cycle.color }}
+                            >
                             {pos.isNarrow ? (
                               <span className="text-white text-[9px] font-bold">{pos.duration}j</span>
                             ) : (
