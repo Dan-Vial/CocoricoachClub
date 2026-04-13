@@ -295,17 +295,16 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
       <Tabs defaultValue="annual" className="space-y-4">
         <div className="flex justify-center">
           <ColoredSubTabsList colorKey="planification" className="inline-flex w-max">
-          <ColoredSubTabsTrigger value="annual" colorKey="planification" icon={<LayoutGrid className="h-4 w-4" />}>
+          <ColoredSubTabsTrigger value="annual" colorKey="planification" icon={<LayoutGrid className="h-4 w-4" />} tooltip="Planification annuelle : cycles de périodisation, macrocycles et calendrier des compétitions sur l'année">
             <span className="hidden sm:inline">Vue Annuelle</span>
             <span className="sm:hidden">Annuel</span>
           </ColoredSubTabsTrigger>
-          <ColoredSubTabsTrigger value="global" colorKey="planification" icon={<CalendarIcon className="h-4 w-4" />}>
+          <ColoredSubTabsTrigger value="global" colorKey="planification" icon={<CalendarIcon className="h-4 w-4" />} tooltip="Calendrier hebdomadaire interactif avec les séances, matchs et événements jour par jour">
             <span className="hidden sm:inline">Calendrier Global</span>
             <span className="sm:hidden">Global</span>
           </ColoredSubTabsTrigger>
-          {/* Objectifs - Grisé en mode viewer */}
           {!isViewer && (
-            <ColoredSubTabsTrigger value="objectives" colorKey="planification" icon={<Target className="h-4 w-4" />}>
+            <ColoredSubTabsTrigger value="objectives" colorKey="planification" icon={<Target className="h-4 w-4" />} tooltip="Définir et suivre les objectifs de saison pour l'équipe et chaque athlète">
               <span className="hidden sm:inline">Objectifs</span>
               <span className="sm:hidden">Obj.</span>
             </ColoredSubTabsTrigger>
