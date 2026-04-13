@@ -134,7 +134,7 @@ export function AddPlayerDialog({
   const availableSpecialties = discipline && isAthletics ? ATHLETISME_SPECIALTIES[discipline] || [] : [];
 
   const addPlayer = useMutation({
-    mutationFn: async (data: { name: string; email?: string; phone?: string; birth_year?: number; birth_date?: string; discipline?: string; specialty?: string; position?: string }) => {
+    mutationFn: async (data: { name: string; email?: string; phone?: string; birth_year?: number; birth_date?: string; discipline?: string; specialty?: string; position?: string; fis_ranking?: number; fis_points?: number; fis_objective?: string; fis_objective_date?: string }) => {
       const { error } = await supabase
         .from("players")
         .insert({ 
@@ -148,7 +148,11 @@ export function AddPlayerDialog({
           specialty: data.specialty || null,
           position: data.position || null,
           season_id: activeSeason?.id || null,
-        });
+          fis_ranking: data.fis_ranking || null,
+          fis_points: data.fis_points || null,
+          fis_objective: data.fis_objective || null,
+          fis_objective_date: data.fis_objective_date || null,
+        } as any);
       if (error) throw error;
     },
     onSuccess: () => {
