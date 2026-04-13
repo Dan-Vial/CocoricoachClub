@@ -2428,6 +2428,12 @@ export type Database = {
           location: string | null
           name: string
           notes: string | null
+          race_penalty: number | null
+          top_rider_1_pts: number | null
+          top_rider_2_pts: number | null
+          top_rider_3_pts: number | null
+          top_rider_4_pts: number | null
+          top_rider_5_pts: number | null
           total_participants: number | null
           updated_at: string
         }
@@ -2443,6 +2449,12 @@ export type Database = {
           location?: string | null
           name: string
           notes?: string | null
+          race_penalty?: number | null
+          top_rider_1_pts?: number | null
+          top_rider_2_pts?: number | null
+          top_rider_3_pts?: number | null
+          top_rider_4_pts?: number | null
+          top_rider_5_pts?: number | null
           total_participants?: number | null
           updated_at?: string
         }
@@ -2458,12 +2470,50 @@ export type Database = {
           location?: string | null
           name?: string
           notes?: string | null
+          race_penalty?: number | null
+          top_rider_1_pts?: number | null
+          top_rider_2_pts?: number | null
+          top_rider_3_pts?: number | null
+          top_rider_4_pts?: number | null
+          top_rider_5_pts?: number | null
           total_participants?: number | null
           updated_at?: string
         }
         Relationships: [
           {
             foreignKeyName: "fis_competitions_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fis_points_reference: {
+        Row: {
+          base_points: number
+          category_id: string | null
+          created_at: string
+          id: string
+          position: number
+        }
+        Insert: {
+          base_points: number
+          category_id?: string | null
+          created_at?: string
+          id?: string
+          position: number
+        }
+        Update: {
+          base_points?: number
+          category_id?: string | null
+          created_at?: string
+          id?: string
+          position?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fis_points_reference_category_id_fkey"
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categories"
@@ -2511,6 +2561,8 @@ export type Database = {
       }
       fis_results: {
         Row: {
+          base_points: number | null
+          calculated_points: number | null
           category_id: string
           competition_id: string
           created_at: string
@@ -2525,6 +2577,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          base_points?: number | null
+          calculated_points?: number | null
           category_id: string
           competition_id: string
           created_at?: string
@@ -2539,6 +2593,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          base_points?: number | null
+          calculated_points?: number | null
           category_id?: string
           competition_id?: string
           created_at?: string
