@@ -7,7 +7,7 @@ import { format, startOfYear, endOfYear, addYears, subYears } from "date-fns";
 import { fr } from "date-fns/locale";
 import { YearCalendarGrid } from "./YearCalendarGrid";
 import { AnnualTimelineView } from "./AnnualTimelineView";
-import { AnnualGlobalView } from "./AnnualGlobalView";
+import { AnnualLoadHeatmap } from "./AnnualLoadHeatmap";
 import { AnnualLoadHeatmap } from "./AnnualLoadHeatmap";
 import { AddCycleCategoryDialog } from "./AddCycleCategoryDialog";
 import { AddCycleDialog } from "./AddCycleDialog";
