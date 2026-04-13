@@ -363,6 +363,7 @@ export function CompetitionRoundsDialog({
                 notes: "",
                 debriefing: (statData.blockDebriefing as string) || "",
                 isCollapsed: false,
+                trackPockets: statData.trackPockets !== false,
               });
             }
             
