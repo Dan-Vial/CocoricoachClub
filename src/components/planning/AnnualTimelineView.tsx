@@ -137,46 +137,6 @@ export function AnnualTimelineView({
   return (
     <div className="relative overflow-x-auto">
       <div style={{ minWidth: zoomLevel === "year" ? "900px" : "1400px" }}>
-        {/* MACROCYCLE PHASE HEADER */}
-        {macrocyclePhases.length > 0 && (
-          <div className="flex mb-1">
-            <div style={{ width: labelWidth, minWidth: labelWidth }} className="shrink-0 flex items-center px-3">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Macrocycles</span>
-            </div>
-            <div className="flex-1 relative h-8">
-              {macrocyclePhases.map((phase, i) => {
-                const pos = getPosition(phase.start, phase.end);
-                const meta = CYCLE_TYPE_META[phase.type];
-                if (!meta) return null;
-                return (
-                  <TooltipProvider key={i} delayDuration={150}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div
-                          className={cn(
-                            "absolute top-0 h-full rounded-lg flex items-center justify-center gap-1 text-[11px] font-bold uppercase tracking-wide border",
-                            meta.bgClass
-                          )}
-                          style={{ left: pos.left, width: pos.width, borderColor: "currentColor", opacity: 0.9 }}
-                        >
-                          <span>{meta.icon}</span>
-                          {!pos.isNarrow && <span>{meta.shortLabel}</span>}
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p className="font-semibold">{meta.label}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {format(new Date(phase.start), "dd MMM", { locale: fr })} → {format(new Date(phase.end), "dd MMM yyyy", { locale: fr })}
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
         {/* MONTH HEADER */}
         <div className="flex border-b-2 border-border/60">
           <div style={{ width: labelWidth, minWidth: labelWidth }} className="shrink-0" />
