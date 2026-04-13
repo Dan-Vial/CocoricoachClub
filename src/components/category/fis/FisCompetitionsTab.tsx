@@ -40,10 +40,6 @@ export function FisCompetitionsTab({ categoryId }: FisCompetitionsTabProps) {
       return (data as Record<string, unknown>)?.clubs as { sport: string } | null;
     },
   });
-  const [createOpen, setCreateOpen] = useState(false);
-  const [resultComp, setResultComp] = useState<{
-    id: string; name: string; category_id: string; race_penalty: number | null; total_participants: number | null;
-  } | null>(null);
 
   const { data: competitions, isLoading } = useQuery({
     queryKey: ["fis-competitions", categoryId],
