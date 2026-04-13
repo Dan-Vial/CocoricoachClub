@@ -100,7 +100,6 @@ const ColoredNavTabsList = React.forwardRef<
     className={cn(
       "inline-flex items-center gap-2 p-2 rounded-xl shadow-sm border border-border/50",
       "bg-white",
-      // Field mode: dark background
       "field-mode:bg-[hsl(215_25%_14%)] field-mode:border-[hsl(215_25%_25%)]",
       className
     )}
@@ -129,19 +128,14 @@ const ColoredNavTabsTrigger = React.forwardRef<
         "group relative inline-flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm",
         "transition-all duration-200 ease-out",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
-        // Default state: colored text
         colors.text,
         colors.hover,
-        // Active state: colored background, white text
         "data-[state=active]:text-white data-[state=active]:shadow-md",
         className
       )}
-      style={{
-        // Use inline style for dynamic active background color
-      }}
+      style={{}}
       {...props}
     >
-      {/* Background overlay for active state */}
       <span 
         className="absolute inset-0 rounded-lg opacity-0 transition-opacity duration-200 data-[state=active]:opacity-100 -z-10"
         style={{ backgroundColor: colors.base }}
