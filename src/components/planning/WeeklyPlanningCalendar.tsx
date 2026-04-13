@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { format, startOfWeek, addDays, addWeeks, subWeeks } from "date-fns";
 import { fr } from "date-fns/locale";
-import { ChevronLeft, ChevronRight, Plus, X, Clock, MapPin, Download, Printer, Target } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, X, Clock, MapPin, Download, Printer, Target, Trophy, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { exportWeeklyPlanningToPdf, printElement } from "@/lib/pdfExport";
