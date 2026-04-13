@@ -6,11 +6,13 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { TrendingUp, TrendingDown, Target, Calculator, Trophy, Clock, AlertTriangle, Medal, Flag } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { TrendingUp, TrendingDown, Target, Calculator, Trophy, Clock, AlertTriangle, Medal, Flag, History } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { fr } from "date-fns/locale";
 import { calculateTotalPoints, getBestResults, simulatePoints, calculateRacePenalty, DISCIPLINE_F_VALUES } from "@/lib/fis/fisPointsEngine";
 import { Progress } from "@/components/ui/progress";
+import { AddHistoricalFisResultsDialog } from "./AddHistoricalFisResultsDialog";
 
 interface FisRankingTabProps {
   categoryId: string;
@@ -29,6 +31,7 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
   const [simPosition, setSimPosition] = useState("");
   const [simFValue, setSimFValue] = useState("500");
   const [simTopAvg, setSimTopAvg] = useState("800");
+  const [historicalOpen, setHistoricalOpen] = useState(false);
 
   const { data: players } = useQuery({
     queryKey: ["players-fis-ranking", categoryId],
@@ -109,7 +112,7 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 flex-wrap">
         <Label className="text-sm font-medium">Athlète</Label>
         <Select value={selectedPlayer} onValueChange={setSelectedPlayer}>
           <SelectTrigger className="w-[280px]">
@@ -124,6 +127,12 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
             ))}
           </SelectContent>
         </Select>
+        {selectedPlayer && player && (
+          <Button variant="outline" size="sm" onClick={() => setHistoricalOpen(true)}>
+            <History className="h-4 w-4 mr-1" />
+            Ajouter historique
+          </Button>
+        )}
       </div>
 
       {!selectedPlayer ? (
@@ -442,6 +451,16 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
             </CardContent>
           </Card>
         </>
+      )}
+
+      {selectedPlayer && player && (
+        <AddHistoricalFisResultsDialog
+          open={historicalOpen}
+          onOpenChange={setHistoricalOpen}
+          categoryId={categoryId}
+          playerId={selectedPlayer}
+          playerName={`${player.first_name || ""} ${player.name}`.trim()}
+        />
       )}
     </div>
   );
