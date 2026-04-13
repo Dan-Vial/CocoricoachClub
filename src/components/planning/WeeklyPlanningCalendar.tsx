@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { format, startOfWeek, addDays, addWeeks, subWeeks } from "date-fns";
 import { fr } from "date-fns/locale";
-import { ChevronLeft, ChevronRight, Plus, X, Clock, MapPin, Download, Printer, Target } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, X, Clock, MapPin, Download, Printer, Target, Trophy, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { exportWeeklyPlanningToPdf, printElement } from "@/lib/pdfExport";
@@ -115,6 +115,39 @@ export function WeeklyPlanningCalendar({ categoryId }: WeeklyPlanningCalendarPro
       return data as PlanningItem[];
     },
   });
+
+  // Fetch matches for the current week from the matches table
+  const weekEndStr = format(addDays(currentWeekStart, 6), "yyyy-MM-dd");
+  const { data: weekMatches = [] } = useQuery({
+    queryKey: ["weekly-matches", categoryId, weekStartStr],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("matches")
+        .select("id, match_date, match_time, opponent, location, is_finalized, is_home, score_home, score_away, competition, event_type")
+        .eq("category_id", categoryId)
+        .gte("match_date", weekStartStr)
+        .lte("match_date", weekEndStr);
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  // Group matches by day of week
+  const matchesByDay = useMemo(() => {
+    const result: Record<number, typeof weekMatches> = {};
+    DAYS.forEach((_, i) => { result[i] = []; });
+    weekMatches.forEach((m) => {
+      const matchDate = new Date(m.match_date + "T00:00:00");
+      const dayIndex = DAYS.findIndex((_, i) => {
+        const dayDate = format(addDays(currentWeekStart, i), "yyyy-MM-dd");
+        return dayDate === m.match_date;
+      });
+      if (dayIndex >= 0) {
+        result[dayIndex].push(m);
+      }
+    });
+    return result;
+  }, [weekMatches, currentWeekStart]);
 
   const { data: templates } = useQuery({
     queryKey: ["session-templates", categoryId],
@@ -395,6 +428,54 @@ export function WeeklyPlanningCalendar({ categoryId }: WeeklyPlanningCalendarPro
                   </div>
                 
                 <div className="space-y-1">
+                  {/* Matches from competition tab */}
+                  {matchesByDay[index]?.map((match) => (
+                    <div
+                      key={`match-${match.id}`}
+                      className="rounded p-2 text-xs bg-destructive/10 border border-destructive/30"
+                    >
+                      <div className="flex items-center gap-1 font-medium">
+                        <Trophy className="h-3 w-3 text-destructive shrink-0" />
+                        <span className="truncate">
+                          {match.opponent}
+                        </span>
+                      </div>
+                      {match.competition && (
+                        <p className="text-[10px] text-muted-foreground truncate mt-0.5">
+                          {match.competition}
+                        </p>
+                      )}
+                      {match.match_time && (
+                        <div className="flex items-center gap-1 text-muted-foreground mt-0.5">
+                          <Clock className="h-3 w-3" />
+                          {match.match_time.substring(0, 5)}
+                        </div>
+                      )}
+                      {match.location && (
+                        <div className="flex items-center gap-1 text-muted-foreground">
+                          <MapPin className="h-3 w-3" />
+                          <span className="truncate">{match.location}</span>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-1 mt-1">
+                        {match.is_finalized ? (
+                          <Badge variant="secondary" className="text-[9px] px-1 py-0 h-4 gap-0.5">
+                            <CheckCircle2 className="h-2.5 w-2.5" />
+                            Terminé
+                            {match.score_home != null && match.score_away != null && (
+                              <span className="ml-0.5">{match.score_home}-{match.score_away}</span>
+                            )}
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 border-destructive/40 text-destructive">
+                            En cours
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  
+                  {/* Planning items */}
                   {planningByDay[index]?.map((item) => (
                       <div
                         key={item.id}
@@ -442,7 +523,6 @@ export function WeeklyPlanningCalendar({ categoryId }: WeeklyPlanningCalendarPro
                           onClick={async () => {
                             const itemDate = format(addDays(currentWeekStart, index), "yyyy-MM-dd");
                             setPrecisionItemDate(itemDate);
-                            // Find matching training session for this date
                             const { data: sessions } = await supabase
                               .from("training_sessions")
                               .select("id")

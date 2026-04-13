@@ -18,7 +18,7 @@ interface YearCalendarGridProps {
   year: number;
   cycles: PeriodizationCycle[];
   sessions: { id: string; session_date: string }[];
-  matches: { id: string; match_date: string; opponent: string }[];
+  matches: { id: string; match_date: string; opponent: string; is_finalized?: boolean | null; competition?: string | null }[];
   onDateRangeSelect?: (startDate: Date, endDate: Date) => void;
   activeCategoryColor?: string;
 }
@@ -41,8 +41,8 @@ export function YearCalendarGrid({ year, cycles, sessions, matches, onDateRangeS
   }, [sessions]);
 
   const matchDates = useMemo(() => {
-    const map = new Map<string, string>();
-    matches.forEach(m => map.set(m.match_date, m.opponent));
+    const map = new Map<string, { opponent: string; is_finalized?: boolean | null; competition?: string | null }>();
+    matches.forEach(m => map.set(m.match_date, { opponent: m.opponent, is_finalized: m.is_finalized, competition: m.competition }));
     return map;
   }, [matches]);
 
@@ -122,7 +122,7 @@ export function YearCalendarGrid({ year, cycles, sessions, matches, onDateRangeS
                 const dateStr = format(day, "yyyy-MM-dd");
                 const activeCycles = getCyclesForDate(dateStr);
                 const hasSession = sessionDates.has(dateStr);
-                const matchOpponent = matchDates.get(dateStr);
+                const matchInfo = matchDates.get(dateStr);
                 const today = isToday(day);
                 const isWeekend = getDay(day) === 0 || getDay(day) === 6;
                 const cycleColor = activeCycles.length > 0 ? activeCycles[0].color : null;
@@ -154,10 +154,10 @@ export function YearCalendarGrid({ year, cycles, sessions, matches, onDateRangeS
                     onMouseEnter={() => handleMouseEnter(dateStr)}
                   >
                     <span className={cn("leading-none", today && "text-destructive")}>{day.getDate()}</span>
-                    {(hasSession || matchOpponent) && (
+                    {(hasSession || matchInfo) && (
                       <div className="flex gap-px mt-px">
                         {hasSession && <div className="w-1 h-1 rounded-full bg-primary" />}
-                        {matchOpponent && <div className="w-1 h-1 rounded-full bg-destructive" />}
+                        {matchInfo && <div className="w-1 h-1 rounded-full bg-destructive" />}
                       </div>
                     )}
                     {activeCycles.length > 1 && (
@@ -170,7 +170,7 @@ export function YearCalendarGrid({ year, cycles, sessions, matches, onDateRangeS
                   </div>
                 );
 
-                if (hasSession || matchOpponent || activeCycles.length > 0) {
+                if (hasSession || matchInfo || activeCycles.length > 0) {
                   return (
                     <TooltipProvider key={dateStr} delayDuration={150}>
                       <Tooltip>
@@ -184,7 +184,12 @@ export function YearCalendarGrid({ year, cycles, sessions, matches, onDateRangeS
                             </div>
                           ))}
                           {hasSession && <p className="text-muted-foreground mt-0.5">📋 Séance programmée</p>}
-                          {matchOpponent && <p className="text-muted-foreground mt-0.5">⚔️ vs {matchOpponent}</p>}
+                          {matchInfo && (
+                            <p className="text-muted-foreground mt-0.5">
+                              {matchInfo.is_finalized ? "✅" : "⚔️"} vs {matchInfo.opponent}
+                              {matchInfo.competition && <span className="opacity-70"> · {matchInfo.competition}</span>}
+                            </p>
+                          )}
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
