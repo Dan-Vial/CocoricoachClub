@@ -119,7 +119,7 @@ export function FisCompetitionsTab({ categoryId }: FisCompetitionsTabProps) {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Badge variant="outline">{DISCIPLINE_LABELS[comp.discipline] || comp.discipline}</Badge>
+                      <Badge variant="outline">{getDisciplineLabel(comp.discipline)}</Badge>
                       <Badge variant="secondary">{LEVEL_LABELS[comp.level] || comp.level}</Badge>
                     </div>
                   </div>
