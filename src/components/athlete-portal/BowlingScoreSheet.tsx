@@ -55,6 +55,7 @@ interface BowlingScoreSheetProps {
   playerId?: string;
   categoryId?: string;
   readOnly?: boolean;
+  trackPockets?: boolean;
 }
 
 const createEmptyFrame = (): FrameData => ({

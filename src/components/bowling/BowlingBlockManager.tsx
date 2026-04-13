@@ -454,6 +454,7 @@ export function BowlingBlockManager({
                           )}
                           <CardContent className="pt-0">
                             <BowlingScoreSheet
+                              trackPockets={block.trackPockets !== false}
                               key={`bowling-${round.round_number}-${round.isLocked}`}
                               initialFrames={round.bowlingFrames}
                               playerId={playerId}
