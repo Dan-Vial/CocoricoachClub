@@ -1,8 +1,7 @@
 import { Tabs, TabsContent } from "@/components/ui/tabs";
-import { Dumbbell, Zap, Lock, Brain, Weight, BarChart3 } from "lucide-react";
+import { Dumbbell, Zap, Lock, BarChart3 } from "lucide-react";
 import { PhysicalPreparationTab } from "@/components/category/PhysicalPreparationTab";
 import { TrainingLoadTab } from "@/components/training-load/TrainingLoadTab";
-import { MentalPerformanceSection } from "@/components/category/mental/MentalPerformanceSection";
 import { EvolutionTestsMuscuTab } from "@/components/tonnage/EvolutionTestsMuscuTab";
 import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -61,15 +60,6 @@ export function PerformanceTab({ categoryId }: PerformanceTabProps) {
             <span className="sm:hidden">Prépa</span>
           </ColoredSubTabsTrigger>
           <ColoredSubTabsTrigger 
-            value="mental" 
-            colorKey="performance"
-            icon={<Brain className="h-4 w-4" />}
-            tooltip="Suivi de la performance mentale : confiance, concentration, gestion du stress et motivation"
-          >
-            <span className="hidden sm:inline">Performance Mentale</span>
-            <span className="sm:hidden">Mental</span>
-          </ColoredSubTabsTrigger>
-          <ColoredSubTabsTrigger 
             value="evolution-tests" 
             colorKey="performance"
             icon={<BarChart3 className="h-4 w-4" />}
@@ -87,10 +77,6 @@ export function PerformanceTab({ categoryId }: PerformanceTabProps) {
 
       <TabsContent value="physical-prep">
         <PhysicalPreparationTab categoryId={categoryId} />
-      </TabsContent>
-
-      <TabsContent value="mental">
-        <MentalPerformanceSection categoryId={categoryId} />
       </TabsContent>
 
       <TabsContent value="evolution-tests">
