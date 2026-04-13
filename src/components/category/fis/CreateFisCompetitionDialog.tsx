@@ -127,7 +127,7 @@ export function CreateFisCompetitionDialog({ open, onOpenChange, categoryId, clu
                 <Select value={discipline} onValueChange={setDiscipline}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {DISCIPLINES.map((d) => <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>)}
+                    {disciplines.map((d) => <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
