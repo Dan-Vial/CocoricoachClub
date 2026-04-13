@@ -173,6 +173,23 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
     },
   });
 
+  const deleteAllCycles = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from("periodization_cycles")
+        .delete()
+        .eq("category_id", categoryId)
+        .gte("end_date", format(yearStart, "yyyy-MM-dd"))
+        .lte("start_date", format(yearEnd, "yyyy-MM-dd"));
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["periodization_cycles", categoryId] });
+      toast.success("Tous les cycles ont été supprimés");
+    },
+    onError: () => toast.error("Erreur lors de la suppression"),
+  });
+
   const handleAddCycle = (periodizationCategoryId: string) => {
     setAddCyclePreselectedCategory(periodizationCategoryId);
     setAddCycleOpen(true);
