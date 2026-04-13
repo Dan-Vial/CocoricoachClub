@@ -293,6 +293,7 @@ function CategoryDetailsContent() {
                 icon={<LayoutDashboard className="h-6 w-6 sm:h-7 sm:w-7" />}
                label="Centre de décision"
                shortLabel="Décision"
+               tooltip="Vue d'ensemble : indicateurs clés, alertes, tâches prioritaires et résumé de l'activité récente"
               />
               {canSeeMenu("administratif") && (
                 <ColoredTabTrigger
@@ -301,6 +302,7 @@ function CategoryDetailsContent() {
                   icon={<Shield className="h-6 w-6 sm:h-7 sm:w-7" />}
                   label="Administratif"
                   shortLabel="Admin"
+                  tooltip="Gestion des documents, licences, certificats médicaux et pièces administratives des athlètes"
                 />
               )}
               {canSeeMenu("academique") && isAcademy && (
@@ -310,6 +312,7 @@ function CategoryDetailsContent() {
                   icon={<GraduationCap className="h-6 w-6 sm:h-7 sm:w-7" />}
                   label="Académie"
                   shortLabel="Acad"
+                  tooltip="Suivi scolaire : notes, moyennes, absences et statistiques académiques de chaque athlète"
                 />
               )}
               {canSeeMenu("effectif") && (
@@ -319,6 +322,7 @@ function CategoryDetailsContent() {
                   icon={<Users className="h-6 w-6 sm:h-7 sm:w-7" />}
                   label="Effectif"
                   shortLabel="Équipe"
+                  tooltip="Liste des athlètes, fiches individuelles, profils athlétiques et données biométriques"
                 />
               )}
               {canSeeMenu("planification") && (
@@ -328,6 +332,7 @@ function CategoryDetailsContent() {
                   icon={<Calendar className="h-6 w-6 sm:h-7 sm:w-7" />}
                   label="Planification"
                   shortLabel="Planning"
+                  tooltip="Calendrier annuel et hebdomadaire : organisation des séances, compétitions et objectifs de saison"
                 />
               )}
               {canSeeMenu("programmation") && (
@@ -337,6 +342,7 @@ function CategoryDetailsContent() {
                   icon={<FileCode className="h-6 w-6 sm:h-7 sm:w-7" />}
                   label="Programmation"
                   shortLabel="Prog"
+                  tooltip="Création et structuration des programmes d'entraînement : blocs, semaines et séances types"
                 />
               )}
               {canSeeMenu("performance") && (
@@ -346,6 +352,7 @@ function CategoryDetailsContent() {
                   icon={<Zap className="h-6 w-6 sm:h-7 sm:w-7" />}
                   label="Data"
                   shortLabel="Data"
+                  tooltip="Monitoring de la charge (EWMA/AWCR), suivi HRV, préparation physique et évolution des tests"
                 />
               )}
               {canSeeMenu("sante") && (
@@ -354,6 +361,7 @@ function CategoryDetailsContent() {
                   colorKey="sante"
                   icon={<Heart className="h-6 w-6 sm:h-7 sm:w-7" />}
                   label="Santé"
+                  tooltip="Bien-être (wellness), blessures, récupération, cycle menstruel et prévention des risques"
                 />
               )}
               {canSeeMenu("competition") && (
@@ -363,6 +371,7 @@ function CategoryDetailsContent() {
                   icon={<Trophy className="h-6 w-6 sm:h-7 sm:w-7" />}
                   label="Compétition & Stats"
                   shortLabel="Compét"
+                  tooltip="Gestion des matchs/compétitions, saisie des résultats, statistiques individuelles et collectives"
                 />
               )}
               {isBowling && (
@@ -371,6 +380,7 @@ function CategoryDetailsContent() {
                   colorKey="performance"
                   icon={<CircleDot className="h-6 w-6 sm:h-7 sm:w-7" />}
                   label="Arsenal"
+                  tooltip="Inventaire des boules de bowling : marque, modèle, caractéristiques techniques et surface"
                 />
               )}
               {showGpsTab && (
@@ -379,6 +389,7 @@ function CategoryDetailsContent() {
                   colorKey="gps"
                   icon={<MapPin className="h-6 w-6 sm:h-7 sm:w-7" />}
                   label="GPS"
+                  tooltip="Données GPS des séances : distance, vitesse, accélérations et charge mécanique externe"
                 />
               )}
               {showVideoTab && (
@@ -388,6 +399,7 @@ function CategoryDetailsContent() {
                   icon={<Video className="h-6 w-6 sm:h-7 sm:w-7" />}
                   label="Analyse Vidéo"
                   shortLabel="Vidéo"
+                  tooltip="Import et découpage de vidéos de matchs et entraînements, clips et annotations"
                 />
               )}
               {canSeeMenu("messagerie") && (
@@ -398,6 +410,7 @@ function CategoryDetailsContent() {
                   label="Communication"
                   shortLabel="Com"
                   badge={unreadMessagesCount}
+                  tooltip="Messagerie interne : échanges avec le staff et les athlètes, discussions de groupe"
                 />
               )}
               {canSeeMenu("parametres") && (
@@ -407,6 +420,7 @@ function CategoryDetailsContent() {
                   icon={<Settings className="h-6 w-6 sm:h-7 sm:w-7" />}
                   label="Paramètres"
                   shortLabel="Param"
+                  tooltip="Configuration de la catégorie : membres, invitations, préférences et gestion des accès"
                 />
               )}
             </ColoredNavTabsList>
