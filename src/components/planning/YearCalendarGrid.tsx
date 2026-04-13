@@ -154,10 +154,10 @@ export function YearCalendarGrid({ year, cycles, sessions, matches, onDateRangeS
                     onMouseEnter={() => handleMouseEnter(dateStr)}
                   >
                     <span className={cn("leading-none", today && "text-destructive")}>{day.getDate()}</span>
-                    {(hasSession || matchOpponent) && (
+                    {(hasSession || matchInfo) && (
                       <div className="flex gap-px mt-px">
                         {hasSession && <div className="w-1 h-1 rounded-full bg-primary" />}
-                        {matchOpponent && <div className="w-1 h-1 rounded-full bg-destructive" />}
+                        {matchInfo && <div className="w-1 h-1 rounded-full bg-destructive" />}
                       </div>
                     )}
                     {activeCycles.length > 1 && (
@@ -170,7 +170,7 @@ export function YearCalendarGrid({ year, cycles, sessions, matches, onDateRangeS
                   </div>
                 );
 
-                if (hasSession || matchOpponent || activeCycles.length > 0) {
+                if (hasSession || matchInfo || activeCycles.length > 0) {
                   return (
                     <TooltipProvider key={dateStr} delayDuration={150}>
                       <Tooltip>
@@ -184,7 +184,12 @@ export function YearCalendarGrid({ year, cycles, sessions, matches, onDateRangeS
                             </div>
                           ))}
                           {hasSession && <p className="text-muted-foreground mt-0.5">📋 Séance programmée</p>}
-                          {matchOpponent && <p className="text-muted-foreground mt-0.5">⚔️ vs {matchOpponent}</p>}
+                          {matchInfo && (
+                            <p className="text-muted-foreground mt-0.5">
+                              {matchInfo.is_finalized ? "✅" : "⚔️"} vs {matchInfo.opponent}
+                              {matchInfo.competition && <span className="opacity-70"> · {matchInfo.competition}</span>}
+                            </p>
+                          )}
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
