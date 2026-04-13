@@ -399,9 +399,78 @@ export function AddPlayerDialog({
                 </p>
               </div>
             )}
+
+            {/* Ski/Snow discipline selector */}
+            {isSki && (
+              <div className="space-y-2">
+                <Label htmlFor="skiDiscipline">Discipline *</Label>
+                <Select value={discipline} onValueChange={setDiscipline}>
+                  <SelectTrigger className="w-full bg-background">
+                    <SelectValue placeholder="Sélectionner une discipline" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border z-50 max-h-[300px]">
+                    {SKI_DISCIPLINES.map((disc) => (
+                      <SelectItem key={disc.value} value={disc.value}>
+                        {disc.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* FIS fields for ski/snow */}
+            {isSki && (
+              <>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="fisRanking">Classement FIS</Label>
+                    <Input
+                      id="fisRanking"
+                      type="number"
+                      value={fisRanking}
+                      onChange={(e) => setFisRanking(e.target.value)}
+                      placeholder="Ex: 45"
+                      min="1"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="fisPoints">Points FIS</Label>
+                    <Input
+                      id="fisPoints"
+                      type="number"
+                      value={fisPointsInput}
+                      onChange={(e) => setFisPointsInput(e.target.value)}
+                      placeholder="Ex: 320.50"
+                      step="0.01"
+                      min="0"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="fisObjective">Objectif sportif</Label>
+                  <Input
+                    id="fisObjective"
+                    value={fisObjective}
+                    onChange={(e) => setFisObjective(e.target.value)}
+                    placeholder="Ex: Qualification Championnats du Monde"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="fisObjectiveDate">Date cible objectif</Label>
+                  <Input
+                    id="fisObjectiveDate"
+                    type="date"
+                    value={fisObjectiveDate}
+                    onChange={(e) => setFisObjectiveDate(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Échéance pour atteindre l'objectif FIS
+                  </p>
+                </div>
+              </>
+            )}
             
-            <div className="space-y-2">
-              <Label htmlFor="birthDate">Date de naissance (optionnel)</Label>
               <Input
                 id="birthDate"
                 type="date"
