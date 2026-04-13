@@ -85,10 +85,11 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
 
   function simulateRacePenalty() {
     const avg = Number(simTopAvg) || 800;
+    const fVal = 500; // Default F-value for freestyle
     return calculateRacePenalty({
       topRiderPoints: [avg, avg, avg, avg, avg],
-      totalParticipants: Number(simParticipants) || 30,
-      level: simLevel,
+      topClassifiedPoints: [avg, avg, avg, avg, avg],
+      fValue: fVal,
     });
   }
 
