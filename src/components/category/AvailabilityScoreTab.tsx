@@ -290,29 +290,38 @@ export function AvailabilityScoreTab({ categoryId }: AvailabilityScoreTabProps) 
                   </div>
 
                   {/* Overall Score */}
-                  <div className="mb-4">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm font-medium">Score Global</span>
-                      <span className={`text-lg font-bold ${
-                        player.overallScore >= 80 ? 'text-green-400' :
-                        player.overallScore >= 60 ? 'text-yellow-400' :
-                        player.overallScore >= 40 ? 'text-orange-400' : 'text-red-400'
-                      }`}>
-                        {player.overallScore}%
-                      </span>
+                  {player.hasAnyData ? (
+                    <div className="mb-4">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-sm font-medium">Score Global</span>
+                        <span className={`text-lg font-bold ${
+                          (player.overallScore ?? 0) >= 80 ? 'text-green-400' :
+                          (player.overallScore ?? 0) >= 60 ? 'text-yellow-400' :
+                          (player.overallScore ?? 0) >= 40 ? 'text-orange-400' : 'text-red-400'
+                        }`}>
+                          {player.overallScore ?? 0}%
+                        </span>
+                      </div>
+                      <Progress value={player.overallScore ?? 0} className={getScoreColor(player.overallScore ?? 0)} />
                     </div>
-                    <Progress value={player.overallScore} className={getScoreColor(player.overallScore)} />
-                  </div>
+                  ) : (
+                    <div className="mb-4 p-3 rounded-lg bg-muted/30 border border-dashed border-border text-center">
+                      <p className="text-sm text-muted-foreground font-medium">Aucune donnée disponible</p>
+                      <p className="text-[10px] text-muted-foreground/70 mt-1">
+                        L'athlète doit remplir son wellness dans <span className="font-semibold">Santé</span> et des séances doivent être enregistrées dans <span className="font-semibold">Programmation</span>.
+                      </p>
+                    </div>
+                  )}
 
                   {/* Sub-scores */}
                   <div className="grid grid-cols-2 gap-2 text-sm">
                     <div className="flex items-center gap-2">
                       <Activity className="h-4 w-4 text-blue-400" />
-                      <span>AWCR: {player.awcrScore}%</span>
+                      <span>AWCR: {player.awcrScore !== null ? `${player.awcrScore}%` : <span className="text-muted-foreground italic">—</span>}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Heart className="h-4 w-4 text-pink-400" />
-                      <span>Wellness: {player.wellnessScore}%</span>
+                      <span>Wellness: {player.wellnessScore !== null ? `${player.wellnessScore}%` : <span className="text-muted-foreground italic">—</span>}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <AlertTriangle className="h-4 w-4 text-orange-400" />
@@ -320,7 +329,7 @@ export function AvailabilityScoreTab({ categoryId }: AvailabilityScoreTabProps) 
                     </div>
                     <div className="flex items-center gap-2">
                       <Battery className="h-4 w-4 text-green-400" />
-                      <span>Fatigue: {player.fatigueScore}%</span>
+                      <span>Fatigue: {player.fatigueScore !== null ? `${player.fatigueScore}%` : <span className="text-muted-foreground italic">—</span>}</span>
                     </div>
                   </div>
 
