@@ -470,7 +470,9 @@ export function AddPlayerDialog({
                 </div>
               </>
             )}
-            
+
+            <div className="space-y-2">
+              <Label htmlFor="birthDate">Date de naissance (optionnel)</Label>
               <Input
                 id="birthDate"
                 type="date"
