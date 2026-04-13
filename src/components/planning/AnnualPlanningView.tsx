@@ -41,11 +41,10 @@ interface PeriodizationCycle {
   volume: number | null;
 }
 
-type ViewMode = "timeline" | "global" | "heatmap";
+type ViewMode = "timeline" | "heatmap";
 
 const VIEW_MODES: { value: ViewMode; label: string; shortLabel: string; icon: React.ReactNode }[] = [
-  { value: "timeline", label: "Vue détaillée", shortLabel: "Détail", icon: <Clock className="h-4 w-4" /> },
-  { value: "global", label: "Vue globale", shortLabel: "Global", icon: <LayoutGrid className="h-4 w-4" /> },
+  { value: "timeline", label: "Vue planification", shortLabel: "Planification", icon: <Clock className="h-4 w-4" /> },
   { value: "heatmap", label: "Vue charge", shortLabel: "Charge", icon: <BarChart3 className="h-4 w-4" /> },
 ];
 
@@ -317,15 +316,6 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
                 />
               )}
 
-              {viewMode === "global" && (
-                <AnnualGlobalView
-                  year={selectedYear.getFullYear()}
-                  categories={categories}
-                  cycles={cycles}
-                  sessions={sessions}
-                  matches={matches}
-                />
-              )}
 
               {viewMode === "heatmap" && (
                 <AnnualLoadHeatmap
