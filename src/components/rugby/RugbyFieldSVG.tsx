@@ -110,7 +110,6 @@ export function RugbyFieldSVG({
   // Posts position
   const centerX = FIELD_LEFT + FIELD_W * 0.5;
   const centerY = FIELD_TOP + FIELD_H * 0.5;
-  const circleR = FIELD_H * 0.14;
 
   // Stripe data
   const stripeCount = 10;
