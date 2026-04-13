@@ -1754,6 +1754,37 @@ export function getSpecialtyLabel(specialtyValue: string): string {
     "pentathlon": "Pentathlon",
     "heptathlon": "Heptathlon",
     "decathlon": "Décathlon",
+    // Trail
+    "trail_court": "Trail court",
+    "trail_long": "Trail long",
+    "trail_vertical": "Trail vertical",
+    "trail_montagne": "Course de montagne",
+    // Ultra-Trail
+    "ultra_80_100": "Ultra 80-100 km",
+    "ultra_100_plus": "Ultra 100+ km",
+    "ultra_24h": "24 heures",
+    "ultra_multi_etapes": "Multi-étapes",
+    // Natation
+    "50m_nl": "50m NL",
+    "100m_nl": "100m NL",
+    "200m_nl": "200m NL",
+    "400m_nl": "400m NL",
+    "800m_nl": "800m NL",
+    "1500m_nl": "1500m NL",
+    "50m_dos": "50m Dos",
+    "100m_dos": "100m Dos",
+    "200m_dos": "200m Dos",
+    "50m_brasse": "50m Brasse",
+    "100m_brasse": "100m Brasse",
+    "200m_brasse": "200m Brasse",
+    "50m_pap": "50m Papillon",
+    "100m_pap": "100m Papillon",
+    "200m_pap": "200m Papillon",
+    "200m_4n": "200m 4 Nages",
+    "400m_4n": "400m 4 Nages",
+    "5km_el": "5km Eau libre",
+    "10km_el": "10km Eau libre",
+    "25km_el": "25km Eau libre",
   };
   return allSpecialties[specialtyValue] || specialtyValue;
 }
