@@ -211,14 +211,18 @@ export function PlayersTab({ categoryId }: PlayersTabProps) {
       // For athletics, show discipline + specialty (with inline edit)
       const disciplineLabel = getDisciplineLabel(player.discipline);
       const specialtyLabel = player.specialty ? getSpecialtyLabel(player.specialty) : null;
-      const availableSpecialties = isAthletics && player.discipline ? ATHLETISME_SPECIALTIES[player.discipline] || [] : [];
+      const availableSpecialties = isAthletics && player.discipline 
+        ? ATHLETISME_SPECIALTIES[player.discipline] || [] 
+        : isNatation && player.discipline 
+          ? NATATION_SPECIALTIES[player.discipline] || []
+          : [];
       
       return (
         <div className="flex flex-wrap items-center gap-1">
           <Badge variant="outline" className="bg-primary/5">
             {disciplineLabel}
           </Badge>
-          {isAthletics && availableSpecialties.length > 0 && !isViewer ? (
+          {(isAthletics || isNatation) && availableSpecialties.length > 0 && !isViewer ? (
             <Select 
               value={player.specialty || ""} 
               onValueChange={(val) => {
