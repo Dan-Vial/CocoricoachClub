@@ -44,6 +44,10 @@ export function AddPlayerDialog({
   const [discipline, setDiscipline] = useState("");
   const [specialty, setSpecialty] = useState("");
   const [position, setPosition] = useState("");
+  const [fisRanking, setFisRanking] = useState("");
+  const [fisPointsInput, setFisPointsInput] = useState("");
+  const [fisObjective, setFisObjective] = useState("");
+  const [fisObjectiveDate, setFisObjectiveDate] = useState("");
   const [validationError, setValidationError] = useState("");
   const queryClient = useQueryClient();
 
