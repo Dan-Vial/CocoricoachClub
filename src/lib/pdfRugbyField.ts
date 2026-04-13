@@ -188,11 +188,17 @@ export function drawPdfZoneStatsGrid(
   const rightTryLineSvgPct = (fLeft + 0.95 * fW) / svgW * 100; // ~92%
   const leftTryLineSvgPct = (fLeft + 0.05 * fW) / svgW * 100; // ~8%
   const fieldSvgSpan = rightTryLineSvgPct - leftTryLineSvgPct;
+  const fieldCenterXSvgPct = (rightTryLineSvgPct + leftTryLineSvgPct) / 2; // ~50%
   const fieldCenterYSvgPct = (fTop + fH / 2) / svgH * 100; // ~50%
   const fieldHeightSvgPct = fH / svgH * 100; // ~93%
 
   kicks.forEach(kick => {
-    const distPct = Math.abs(rightTryLineSvgPct - kick.x);
+    // Determine which try line (posts) the kick is aimed at:
+    // If kick is on the right half, posts are on the right (distance from right try line)
+    // If kick is on the left half, posts are on the left (distance from left try line)
+    const distFromRight = Math.abs(rightTryLineSvgPct - kick.x);
+    const distFromLeft = Math.abs(kick.x - leftTryLineSvgPct);
+    const distPct = Math.min(distFromRight, distFromLeft);
     const distM = Math.round((distPct / fieldSvgSpan) * 100);
     const row = distM < 22 ? "proche" : distM < 40 ? "moyen" : "loin";
 
