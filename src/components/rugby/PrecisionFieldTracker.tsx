@@ -243,13 +243,14 @@ export function PrecisionFieldTracker({ categoryId, sessionId: propSessionId, se
       return { x: 50, y: centerY };
     }
     if (currentExercise.value === "goal_line_restart") {
-      return { x: goalsOnRight ? (540 / 600) * 100 : (60 / 600) * 100, y: centerY };
+      // Try line is at field line pct 0.95 (right) or 0.05 (left)
+      const pct = goalsOnRight ? 0.95 : 0.05;
+      return { x: (20 + pct * 560) / 600 * 100, y: centerY };
     }
     if (currentExercise.value === "22m_restart") {
-      const x22 = goalsOnRight
-        ? ((540 - ((22 / 100) * 560)) / 600) * 100
-        : ((60 + ((22 / 100) * 560)) / 600) * 100;
-      return { x: x22, y: centerY };
+      // 22m line is at field line pct 0.73 (right) or 0.27 (left)
+      const pct = goalsOnRight ? 0.73 : 0.27;
+      return { x: (20 + pct * 560) / 600 * 100, y: centerY };
     }
     return null;
   };

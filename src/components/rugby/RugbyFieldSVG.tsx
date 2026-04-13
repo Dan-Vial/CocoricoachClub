@@ -110,7 +110,6 @@ export function RugbyFieldSVG({
   // Posts position
   const centerX = FIELD_LEFT + FIELD_W * 0.5;
   const centerY = FIELD_TOP + FIELD_H * 0.5;
-  const circleR = FIELD_H * 0.14;
 
   // Stripe data
   const stripeCount = 10;
@@ -227,13 +226,10 @@ export function RugbyFieldSVG({
           );
         })}
 
-        {/* Center circle (10m radius proportional) */}
-        <circle cx={centerX} cy={centerY} r={circleR} fill="none" stroke="white" strokeWidth="1.5" opacity={0.45} />
-
-        {/* Center spot */}
-        <circle cx={centerX} cy={centerY} r={3} fill="white" opacity={0.75} />
-        <line x1={centerX - 7} y1={centerY} x2={centerX + 7} y2={centerY} stroke="white" strokeWidth="1.5" opacity={0.4} />
-        <line x1={centerX} y1={centerY - 7} x2={centerX} y2={centerY + 7} stroke="white" strokeWidth="1.5" opacity={0.4} />
+        {/* Center spot (small cross mark, no circle - this is rugby not football) */}
+        <circle cx={centerX} cy={centerY} r={2.5} fill="white" opacity={0.5} />
+        <line x1={centerX - 5} y1={centerY} x2={centerX + 5} y2={centerY} stroke="white" strokeWidth="1" opacity={0.3} />
+        <line x1={centerX} y1={centerY - 5} x2={centerX} y2={centerY + 5} stroke="white" strokeWidth="1" opacity={0.3} />
 
         {/* 22m drop-out spots */}
         {[0.27, 0.73].map(pct => {

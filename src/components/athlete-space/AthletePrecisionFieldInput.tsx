@@ -118,15 +118,14 @@ export function AthletePrecisionFieldInput({
       return { x: 50, y: centerY };
     }
     if (currentExercise.value === "goal_line_restart") {
-      // Renvoi en-but from try line (0m / goal line)
-      return { x: goalsOnRight ? (540 / 600) * 100 : (60 / 600) * 100, y: centerY };
+      // Renvoi en-but from try line: field line pct 0.95 (right) or 0.05 (left)
+      const pct = goalsOnRight ? 0.95 : 0.05;
+      return { x: (20 + pct * 560) / 600 * 100, y: centerY };
     }
     if (currentExercise.value === "22m_restart") {
-      // Renvoi 22m from 22m line
-      const x22 = goalsOnRight
-        ? ((540 - ((22 / 100) * 560)) / 600) * 100
-        : ((60 + ((22 / 100) * 560)) / 600) * 100;
-      return { x: x22, y: centerY };
+      // Renvoi 22m from 22m line: field line pct 0.73 (right) or 0.27 (left)
+      const pct = goalsOnRight ? 0.73 : 0.27;
+      return { x: (20 + pct * 560) / 600 * 100, y: centerY };
     }
     // tactical_kick = free origin click
     return null;
