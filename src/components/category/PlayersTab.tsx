@@ -30,7 +30,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 import { useViewerPlayers } from "@/hooks/use-viewer-data";
 import { getDisciplineLabel, getSpecialtyLabel } from "@/lib/constants/athleticProfiles";
-import { isAthletismeCategory, isJudoCategory, isIndividualSport, ATHLETISME_SPECIALTIES } from "@/lib/constants/sportTypes";
+import { isAthletismeCategory, isJudoCategory, isIndividualSport, isSkiCategory, isSurfCategory, isTriathlonCategory, isNatationCategory, ATHLETISME_SPECIALTIES, NATATION_SPECIALTIES } from "@/lib/constants/sportTypes";
 import { getPositionsForSport } from "@/lib/constants/sportPositions";
 import { getInvitationStatus } from "@/hooks/useResendInvitation";
 
@@ -100,18 +100,22 @@ export function PlayersTab({ categoryId }: PlayersTabProps) {
   const sportType = category?.rugby_type || "XV";
   const isAthletics = isAthletismeCategory(sportType);
   const isJudo = isJudoCategory(sportType);
+  const isSki = isSkiCategory(sportType);
+  const isSurf = isSurfCategory(sportType);
+  const isTriathlon = isTriathlonCategory(sportType);
+  const isNatation = isNatationCategory(sportType);
   const isAviron = sportType.toLowerCase().includes("aviron");
   const isIndividual = isIndividualSport(sportType);
   
   // Determine which attribute column to show
-  const showDiscipline = isAthletics || isJudo;
+  const showDiscipline = isAthletics || isJudo || isSki || isSurf || isTriathlon || isNatation;
   const showRole = isAviron;
   const showPosition = !isIndividual && !showDiscipline && !showRole;
   
   const attributeColumnLabel = isJudo 
     ? "Catégorie" 
-    : isAthletics 
-      ? "Discipline" 
+    : showDiscipline
+      ? "Discipline"
       : isAviron 
         ? "Rôle" 
         : "Poste";
@@ -199,14 +203,18 @@ export function PlayersTab({ categoryId }: PlayersTabProps) {
       // For athletics, show discipline + specialty (with inline edit)
       const disciplineLabel = getDisciplineLabel(player.discipline);
       const specialtyLabel = player.specialty ? getSpecialtyLabel(player.specialty) : null;
-      const availableSpecialties = isAthletics && player.discipline ? ATHLETISME_SPECIALTIES[player.discipline] || [] : [];
+      const availableSpecialties = isAthletics && player.discipline 
+        ? ATHLETISME_SPECIALTIES[player.discipline] || [] 
+        : isNatation && player.discipline 
+          ? NATATION_SPECIALTIES[player.discipline] || []
+          : [];
       
       return (
         <div className="flex flex-wrap items-center gap-1">
           <Badge variant="outline" className="bg-primary/5">
             {disciplineLabel}
           </Badge>
-          {isAthletics && availableSpecialties.length > 0 && !isViewer ? (
+          {(isAthletics || isNatation) && availableSpecialties.length > 0 && !isViewer ? (
             <Select 
               value={player.specialty || ""} 
               onValueChange={(val) => {
