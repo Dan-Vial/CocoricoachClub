@@ -2,12 +2,11 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Plus, Calendar, Settings2, ChevronLeft, ChevronRight, Check, LayoutGrid, BarChart3, Clock, Trash2 } from "lucide-react";
+import { Plus, Calendar, Settings2, ChevronLeft, ChevronRight, Check, BarChart3, Clock, Trash2 } from "lucide-react";
 import { format, startOfYear, endOfYear, addYears, subYears } from "date-fns";
 import { fr } from "date-fns/locale";
 import { YearCalendarGrid } from "./YearCalendarGrid";
 import { AnnualTimelineView } from "./AnnualTimelineView";
-import { AnnualGlobalView } from "./AnnualGlobalView";
 import { AnnualLoadHeatmap } from "./AnnualLoadHeatmap";
 import { AddCycleCategoryDialog } from "./AddCycleCategoryDialog";
 import { AddCycleDialog } from "./AddCycleDialog";
@@ -41,11 +40,10 @@ interface PeriodizationCycle {
   volume: number | null;
 }
 
-type ViewMode = "timeline" | "global" | "heatmap";
+type ViewMode = "timeline" | "heatmap";
 
 const VIEW_MODES: { value: ViewMode; label: string; shortLabel: string; icon: React.ReactNode }[] = [
-  { value: "timeline", label: "Vue détaillée", shortLabel: "Détail", icon: <Clock className="h-4 w-4" /> },
-  { value: "global", label: "Vue globale", shortLabel: "Global", icon: <LayoutGrid className="h-4 w-4" /> },
+  { value: "timeline", label: "Vue planification", shortLabel: "Planification", icon: <Clock className="h-4 w-4" /> },
   { value: "heatmap", label: "Vue charge", shortLabel: "Charge", icon: <BarChart3 className="h-4 w-4" /> },
 ];
 
@@ -317,15 +315,6 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
                 />
               )}
 
-              {viewMode === "global" && (
-                <AnnualGlobalView
-                  year={selectedYear.getFullYear()}
-                  categories={categories}
-                  cycles={cycles}
-                  sessions={sessions}
-                  matches={matches}
-                />
-              )}
 
               {viewMode === "heatmap" && (
                 <AnnualLoadHeatmap
