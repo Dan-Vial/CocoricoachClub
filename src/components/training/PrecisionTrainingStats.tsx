@@ -882,6 +882,53 @@ export function PrecisionTrainingStats({ categoryId }: PrecisionTrainingStatsPro
           y += 7;
         });
 
+        // Per-exercise mini cartographies below the table
+        const miniFieldW = 100;
+        const miniFieldH = 55;
+        exportByExercise.forEach((ex) => {
+          const exEntries = exportData.filter((e: any) => e.exercise_label === ex.label && e.zone_x != null && e.zone_y != null);
+          if (exEntries.length === 0) return;
+          
+          if (y > pageH - miniFieldH - 20) { doc.addPage(); y = 15; }
+          doc.setFontSize(8);
+          doc.setFont("helvetica", "bold");
+          doc.setTextColor(30, 41, 59);
+          doc.text(`📍 ${ex.label} — ${ex.successes}/${ex.attempts} (${ex.rate}%)`, 14, y);
+          y += 4;
+
+          // Check if it's a lineout exercise
+          if (ex.label.startsWith("Touche")) {
+            // Skip field map for lineout - handled separately
+          } else {
+            const fb = drawPdfRugbyField(doc, 14, y, miniFieldW * 1.5, miniFieldH);
+            // Draw kick/zone markers
+            const zoneMap = new Map<string, { x: number; y: number; attempts: number; successes: number }>();
+            exEntries.forEach((e: any) => {
+              const zoneKey = `${Math.round(e.zone_x / 15) * 15}-${Math.round(e.zone_y / 15) * 15}`;
+              const prev = zoneMap.get(zoneKey) || { x: Math.round(e.zone_x / 15) * 15, y: Math.round(e.zone_y / 15) * 15, attempts: 0, successes: 0 };
+              prev.attempts += e.attempts || 0;
+              prev.successes += e.successes || 0;
+              zoneMap.set(zoneKey, prev);
+            });
+            zoneMap.forEach((zone) => {
+              const cx = fb.fx + (zone.x / 100) * fb.fw;
+              const cy = fb.fy + (zone.y / 100) * fb.fh;
+              const rate = zone.attempts > 0 ? Math.round((zone.successes / zone.attempts) * 100) : 0;
+              const fillColor: [number, number, number] = rate >= 70 ? [34, 197, 94] : rate >= 40 ? [245, 158, 11] : [239, 68, 68];
+              doc.setFillColor(...fillColor);
+              doc.circle(cx, cy, 3.5, "F");
+              doc.setTextColor(255, 255, 255);
+              doc.setFontSize(5);
+              doc.setFont("helvetica", "bold");
+              doc.text(`${rate}%`, cx, cy - 0.3, { align: "center" });
+              doc.setFontSize(3.5);
+              doc.setFont("helvetica", "normal");
+              doc.text(`${zone.successes}/${zone.attempts}`, cx, cy + 2.2, { align: "center" });
+            });
+            y += miniFieldH + 6;
+          }
+        });
+
         // By player table
         if (!singlePlayerId) {
           y += 8;
