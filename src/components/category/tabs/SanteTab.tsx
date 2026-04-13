@@ -52,6 +52,7 @@ export function SanteTab({ categoryId }: SanteTabProps) {
               value="health" 
               colorKey="sante"
               icon={<Heart className="h-4 w-4" />}
+              tooltip="Suivi médical : blessures, protocoles de retour, réathlétisation et historique de santé"
             >
               Santé
             </ColoredSubTabsTrigger>
@@ -60,6 +61,7 @@ export function SanteTab({ categoryId }: SanteTabProps) {
                 value="wellness" 
                 colorKey="sante"
                 icon={<Smile className="h-4 w-4" />}
+                tooltip="Questionnaire de bien-être quotidien : sommeil, fatigue, stress, courbatures et score de récupération"
               >
                 Wellness
               </ColoredSubTabsTrigger>
@@ -69,6 +71,7 @@ export function SanteTab({ categoryId }: SanteTabProps) {
                 value="nutrition" 
                 colorKey="sante"
                 icon={<Apple className="h-4 w-4" />}
+                tooltip="Plans nutritionnels et suivi alimentaire adaptés aux objectifs de chaque athlète"
               >
                 Nutrition
               </ColoredSubTabsTrigger>

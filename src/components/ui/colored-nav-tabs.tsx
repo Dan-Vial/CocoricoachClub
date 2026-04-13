@@ -1,6 +1,7 @@
 import * as React from "react";
 import * as TabsPrimitive from "@radix-ui/react-tabs";
 import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 // Define navigation color mappings
 export const NAV_COLORS = {
@@ -163,15 +164,16 @@ interface ColoredTabTriggerProps extends Omit<ColoredNavTabsTriggerProps, "data-
   badge?: number;
   label?: string;
   shortLabel?: string;
+  tooltip?: string;
 }
 
 const ColoredTabTrigger = React.forwardRef<
   HTMLButtonElement,
   ColoredTabTriggerProps
->(({ colorKey, icon, children, className, value, badge, label, shortLabel, ...props }, ref) => {
+>(({ colorKey, icon, children, className, value, badge, label, shortLabel, tooltip, ...props }, ref) => {
   const colors = NAV_COLORS[colorKey];
   
-  return (
+  const trigger = (
     <TabsPrimitive.Trigger
       ref={ref}
       value={value}
@@ -179,10 +181,8 @@ const ColoredTabTrigger = React.forwardRef<
         "relative inline-flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm",
         "transition-all duration-200 ease-out",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-        // Default state: colored text on white
         colors.text,
         colors.hover,
-        // Active state handled by data attribute
         "data-[state=active]:text-white data-[state=active]:shadow-md",
         className
       )}
@@ -191,7 +191,6 @@ const ColoredTabTrigger = React.forwardRef<
       }}
       {...props}
     >
-      {/* Active background */}
       <span 
         className={cn(
           "absolute inset-0 rounded-lg transition-all duration-200",
@@ -200,7 +199,6 @@ const ColoredTabTrigger = React.forwardRef<
         )}
         style={{ backgroundColor: colors.base }}
       />
-      {/* Content */}
       <span className="relative z-10 flex items-center gap-2">
         {icon && <span className="shrink-0">{icon}</span>}
         <span className="whitespace-nowrap">
@@ -218,6 +216,19 @@ const ColoredTabTrigger = React.forwardRef<
         )}
       </span>
     </TabsPrimitive.Trigger>
+  );
+
+  if (!tooltip) return trigger;
+
+  return (
+    <TooltipProvider delayDuration={400}>
+      <Tooltip>
+        <TooltipTrigger asChild>{trigger}</TooltipTrigger>
+        <TooltipContent side="bottom" className="max-w-xs bg-background/95 backdrop-blur-sm border shadow-lg">
+          <p className="text-[11px] leading-relaxed text-muted-foreground">{tooltip}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 });
 ColoredTabTrigger.displayName = "ColoredTabTrigger";

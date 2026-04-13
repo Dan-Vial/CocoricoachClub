@@ -27,6 +27,7 @@ export function CompetitionTab({ categoryId, isRugby7, isNationalTeam, sportType
             value="matches" 
             colorKey="competition"
             icon={<MatchIcon className="h-4 w-4" />}
+            tooltip="Liste des matchs et compétitions : création, résultats, statistiques et gestion des rencontres"
           >
             {matchLabel}
           </ColoredSubTabsTrigger>
@@ -35,6 +36,7 @@ export function CompetitionTab({ categoryId, isRugby7, isNationalTeam, sportType
               value="tournaments" 
               colorKey="competition"
               icon={<Trophy className="h-4 w-4" />}
+              tooltip="Gestion des tournois : phases de poules, classements et résultats consolidés"
             >
               Tournois
             </ColoredSubTabsTrigger>
@@ -44,6 +46,7 @@ export function CompetitionTab({ categoryId, isRugby7, isNationalTeam, sportType
               value="national-team" 
               colorKey="competition"
               icon={<Flag className="h-4 w-4" />}
+              tooltip="Suivi des sélections en équipe nationale : convocations, performances et historique"
             >
               <span className="hidden sm:inline">Équipe Nationale</span>
               <span className="sm:hidden">National</span>

@@ -45,6 +45,7 @@ export function AdminTab({ categoryId }: AdminTabProps) {
             value="attendance" 
             colorKey="admin"
             icon={<ClipboardCheck className="h-4 w-4" />}
+            tooltip="Suivi des présences aux séances et matchs : historique, taux et statistiques de participation"
           >
             <span className="hidden sm:inline">Présences</span>
             <span className="sm:hidden">Prés</span>
@@ -54,6 +55,7 @@ export function AdminTab({ categoryId }: AdminTabProps) {
               value="matchsheets" 
               colorKey="admin"
               icon={<FileSpreadsheet className="h-4 w-4" />}
+              tooltip="Génération et gestion des feuilles de match officielles"
             >
               <span className="hidden sm:inline">Feuilles de Match</span>
               <span className="sm:hidden">Feuilles</span>
@@ -63,6 +65,7 @@ export function AdminTab({ categoryId }: AdminTabProps) {
             value="recruitment" 
             colorKey="admin"
             icon={<UserSearch className="h-4 w-4" />}
+            tooltip="Gestion du recrutement : fiches prospects, évaluations et suivi des candidatures"
           >
             <span className="hidden sm:inline">Recrutement</span>
             <span className="sm:hidden">Recru</span>
@@ -71,6 +74,7 @@ export function AdminTab({ categoryId }: AdminTabProps) {
             value="documents" 
             colorKey="admin"
             icon={<FolderOpen className="h-4 w-4" />}
+            tooltip="Centralisation des documents administratifs : licences, certificats médicaux, autorisations"
           >
             <span className="hidden sm:inline">Documents & Certificats</span>
             <span className="sm:hidden">Docs</span>
@@ -79,6 +83,7 @@ export function AdminTab({ categoryId }: AdminTabProps) {
             value="reports" 
             colorKey="admin"
             icon={<BarChart3 className="h-4 w-4" />}
+            tooltip="Rapports synthétiques : bilans de saison, statistiques générales et exports"
           >
             <span className="hidden sm:inline">Rapports</span>
             <span className="sm:hidden">Rapp</span>
@@ -87,6 +92,7 @@ export function AdminTab({ categoryId }: AdminTabProps) {
             value="staff" 
             colorKey="admin"
             icon={<Users className="h-4 w-4" />}
+            tooltip="Gestion du staff : rôles, permissions et invitations des membres de l'encadrement"
           >
             <span className="hidden sm:inline">Staff & Rôles</span>
             <span className="sm:hidden">Staff</span>

@@ -37,6 +37,7 @@ export function ProgrammationTab({ categoryId }: ProgrammationTabProps) {
             value="sessions" 
             colorKey="programmation"
             icon={<CalendarDays className="h-4 w-4" />}
+            tooltip="Créer et gérer les séances d'entraînement avec exercices, durées et intensités"
           >
             <span className="hidden sm:inline">Séances</span>
             <span className="sm:hidden">Séan</span>
@@ -45,6 +46,7 @@ export function ProgrammationTab({ categoryId }: ProgrammationTabProps) {
             value="programs" 
             colorKey="programmation"
             icon={<FolderOpen className="h-4 w-4" />}
+            tooltip="Programmes structurés en blocs et semaines pour organiser la progression à long terme"
           >
             <span className="hidden sm:inline">Programmes</span>
             <span className="sm:hidden">Prog</span>
@@ -53,6 +55,7 @@ export function ProgrammationTab({ categoryId }: ProgrammationTabProps) {
             value="tests" 
             colorKey="programmation"
             icon={<ClipboardCheck className="h-4 w-4" />}
+            tooltip="Bibliothèque de tests physiques : barèmes, saisie des résultats et évaluation des athlètes"
           >
             Tests
           </ColoredSubTabsTrigger>
@@ -60,6 +63,7 @@ export function ProgrammationTab({ categoryId }: ProgrammationTabProps) {
             value="test-reminders" 
             colorKey="programmation"
             icon={<Bell className="h-4 w-4" />}
+            tooltip="Planifier des rappels automatiques pour les tests à venir et suivre les échéances"
           >
             <span className="hidden sm:inline">Rappels tests</span>
             <span className="sm:hidden">Rappels</span>

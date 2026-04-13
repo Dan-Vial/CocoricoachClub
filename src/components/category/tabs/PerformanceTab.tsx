@@ -46,6 +46,7 @@ export function PerformanceTab({ categoryId }: PerformanceTabProps) {
             value="training-load" 
             colorKey="performance"
             icon={<Zap className="h-4 w-4" />}
+            tooltip="Monitoring de la charge interne (sRPE) et externe (HRV), ratios EWMA et AWCR pour prévenir les blessures"
           >
             <span className="hidden sm:inline">Charge d'entraînement</span>
             <span className="sm:hidden">Charge</span>
@@ -54,6 +55,7 @@ export function PerformanceTab({ categoryId }: PerformanceTabProps) {
             value="physical-prep" 
             colorKey="performance"
             icon={<Dumbbell className="h-4 w-4" />}
+            tooltip="Disponibilité des athlètes, alertes de risque de blessure et analyses prédictives par IA"
           >
             <span className="hidden sm:inline">Prépa Physique</span>
             <span className="sm:hidden">Prépa</span>
@@ -62,6 +64,7 @@ export function PerformanceTab({ categoryId }: PerformanceTabProps) {
             value="mental" 
             colorKey="performance"
             icon={<Brain className="h-4 w-4" />}
+            tooltip="Suivi de la performance mentale : confiance, concentration, gestion du stress et motivation"
           >
             <span className="hidden sm:inline">Performance Mentale</span>
             <span className="sm:hidden">Mental</span>
@@ -70,6 +73,7 @@ export function PerformanceTab({ categoryId }: PerformanceTabProps) {
             value="evolution-tests" 
             colorKey="performance"
             icon={<BarChart3 className="h-4 w-4" />}
+            tooltip="Graphiques d'évolution des tests physiques, comparaisons entre athlètes et suivi du tonnage de musculation"
           >
             <span className="hidden sm:inline">Évolution Tests / Muscu</span>
             <span className="sm:hidden">Tests</span>
