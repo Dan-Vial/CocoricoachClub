@@ -25,6 +25,7 @@ interface DetailedStats {
   singlePinConvRate: number;
   splitConvRate: number;
   pocketPct: number;
+  hasPocketData: boolean;
 }
 
 interface BlockDetailedStats extends DetailedStats {
@@ -56,7 +57,7 @@ function StatTooltip({ text }: { text: string }) {
   );
 }
 
-function computeDetailedStats(roundsWithScores: Round[]): DetailedStats | null {
+function computeDetailedStats(roundsWithScores: Round[], blocks?: BowlingBlock[]): DetailedStats | null {
   const total = roundsWithScores.length;
   if (total === 0) return null;
   const totalPins = roundsWithScores.reduce((s, r) => s + (r.stats["gameScore"] || 0), 0);
@@ -70,7 +71,18 @@ function computeDetailedStats(roundsWithScores: Round[]): DetailedStats | null {
   const convertedSP = roundsWithScores.reduce((s, r) => s + (r.stats["singlePinConverted"] || 0), 0);
   const totalSplits = roundsWithScores.reduce((s, r) => s + (r.stats["splitCount"] || 0), 0);
   const totalSplitsConverted = roundsWithScores.reduce((s, r) => s + (r.stats["splitConverted"] || 0), 0);
-  const pocketPct = roundsWithScores.reduce((s, r) => s + (r.stats["pocketPercentage"] || 0), 0) / total;
+
+  // Only compute pocket stats from rounds in blocks with trackPockets enabled
+  const pocketBlockIds = blocks
+    ? new Set(blocks.filter(b => b.trackPockets !== false).map(b => b.id))
+    : null;
+  const pocketRounds = pocketBlockIds
+    ? roundsWithScores.filter(r => r.blockId && pocketBlockIds.has(r.blockId))
+    : roundsWithScores;
+  const hasPocketData = pocketRounds.length > 0;
+  const pocketPct = hasPocketData
+    ? pocketRounds.reduce((s, r) => s + (r.stats["pocketPercentage"] || 0), 0) / pocketRounds.length
+    : 0;
 
   return {
     games: total,
@@ -83,6 +95,7 @@ function computeDetailedStats(roundsWithScores: Round[]): DetailedStats | null {
     singlePinConvRate: totalSP > 0 ? (convertedSP / totalSP) * 100 : 0,
     splitConvRate: totalSplits > 0 ? (totalSplitsConverted / totalSplits) * 100 : 0,
     pocketPct,
+    hasPocketData,
   };
 }
 
