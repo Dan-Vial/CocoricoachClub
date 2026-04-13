@@ -262,10 +262,12 @@ export function BowlingCompetitionSummary({
               <p className="text-lg font-bold text-orange-600">{overall.splitConvRate.toFixed(0)}%</p>
               <p className="text-[9px] text-muted-foreground">% Split conv.</p>
             </div>
-            <div className={`p-2 rounded-lg ${getStatColor("pocket", overall.pocketPct).bg}`}>
-              <p className={`text-lg font-bold ${getStatColor("pocket", overall.pocketPct).text.includes("text-red") ? "text-red-600" : "text-white"}`}>{overall.pocketPct.toFixed(0)}%</p>
-              <p className="text-[9px] text-white opacity-80">% Pocket</p>
-            </div>
+            {overall.hasPocketData && (
+              <div className={`p-2 rounded-lg ${getStatColor("pocket", overall.pocketPct).bg}`}>
+                <p className={`text-lg font-bold ${getStatColor("pocket", overall.pocketPct).text.includes("text-red") ? "text-red-600" : "text-white"}`}>{overall.pocketPct.toFixed(0)}%</p>
+                <p className="text-[9px] text-white opacity-80">% Pocket</p>
+              </div>
+            )}
             <div className="p-2 rounded-lg border">
               <p className="text-lg font-bold text-red-500">{overall.low}</p>
               <p className="text-[9px] text-muted-foreground">Low Game</p>
