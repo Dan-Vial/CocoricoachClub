@@ -182,6 +182,8 @@ export function AvailabilityScoreTab({ categoryId }: AvailabilityScoreTabProps) 
 
   const getStatusBadge = (status: string) => {
     switch (status) {
+      case 'no_data':
+        return <Badge className="bg-muted/50 text-muted-foreground border-border"><AlertCircle className="h-3 w-3 mr-1" /> Non renseigné</Badge>;
       case 'available':
         return <Badge className="bg-green-500/20 text-green-400 border-green-500/30"><CheckCircle2 className="h-3 w-3 mr-1" /> Disponible</Badge>;
       case 'limited':
