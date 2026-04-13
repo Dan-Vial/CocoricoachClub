@@ -527,6 +527,7 @@ export function CompetitionRoundsDialog({
             ...(round.blockId ? { blockId: round.blockId } : {}),
             ...(round.ballData ? { ballData: round.ballData } : {}),
             ...(roundBlock?.debriefing ? { blockDebriefing: roundBlock.debriefing } : {}),
+            ...(roundBlock ? { trackPockets: roundBlock.trackPockets } : {}),
           };
           
           if (Object.keys(statDataToSave).length > 0) {
