@@ -79,10 +79,13 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
     },
   });
 
-  // Auto-seed default categories if they don't exist
+  // Auto-seed default categories — only runs once after categories have loaded
   const seededRef = useRef(false);
   useEffect(() => {
     if (seededRef.current || isViewer) return;
+    // Wait until the categories query has actually resolved (not just empty default)
+    // We rely on the query being enabled — if categories is [] after fetch, we seed
+    if (categories === undefined) return;
     seededRef.current = true;
     
     const seedDefaults = async () => {
@@ -91,22 +94,26 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
         { name: "Stages France", color: "#1e3a5f", sort_order: 101 },
       ];
       
+      let added = false;
       for (const defaultCat of defaultCategories) {
-        const exists = categories.some(cat => cat.name === defaultCat.name);
-        if (!exists) {
+        // Check directly in DB to avoid race conditions
+        const { data: existing } = await supabase
+          .from("periodization_categories")
+          .select("id")
+          .eq("category_id", categoryId)
+          .eq("name", defaultCat.name)
+          .limit(1);
+        
+        if (!existing || existing.length === 0) {
           await supabase.from("periodization_categories").insert({
             category_id: categoryId,
             ...defaultCat
           });
+          added = true;
         }
       }
       
-      // Refresh if any were added
-      const needsRefresh = defaultCategories.some(defaultCat => 
-        !categories.some(cat => cat.name === defaultCat.name)
-      );
-      
-      if (needsRefresh) {
+      if (added) {
         queryClient.invalidateQueries({ queryKey: ["periodization_categories", categoryId] });
       }
     };
