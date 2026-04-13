@@ -125,6 +125,7 @@ export function AddPlayerDialog({
   const isAthletics = category?.rugby_type ? isAthletismeCategory(category.rugby_type) : false;
   const isJudo = category?.rugby_type ? isJudoCategory(category.rugby_type) : false;
   const isAviron = sportType.toLowerCase().includes("aviron");
+  const isSki = category?.rugby_type ? isSkiCategory(category.rugby_type) : false;
   const needsDisciplineSelection = isAthletics || isJudo;
   const isTeamSport = !isIndividualSport(sportType);
   const positions = getPositionsForSport(sportType);
