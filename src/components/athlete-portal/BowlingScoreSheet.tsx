@@ -827,7 +827,7 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, c
            <CollapsibleContent>
             <CardContent>
               {/* Toggle all pockets button */}
-              {!isSaved && (
+              {!isSaved && trackPockets && (
                 <div className="mb-4 flex gap-2">
                   <Button
                     variant="outline"
@@ -889,7 +889,7 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, c
                               </Badge>
                               
                               {/* Pocket checkbox - only on first throw contexts */}
-                              {pocketAllowed && (
+                              {pocketAllowed && trackPockets && (
                                 <div className="flex items-center gap-2">
                                   <Checkbox
                                     id={`pocket-${frameIndex}-${throwIndex}`}
