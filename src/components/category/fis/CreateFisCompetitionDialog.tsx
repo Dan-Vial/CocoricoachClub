@@ -70,7 +70,7 @@ export function CreateFisCompetitionDialog({ open, onOpenChange, categoryId }: C
       return isNaN(n) || n <= 0 ? null : n;
     });
 
-    const { error } = await supabase.from("fis_competitions").insert({
+    const insertData = {
       category_id: categoryId,
       name,
       competition_date: date,
@@ -85,7 +85,9 @@ export function CreateFisCompetitionDialog({ open, onOpenChange, categoryId }: C
       top_rider_4_pts: topPts[3],
       top_rider_5_pts: topPts[4],
       race_penalty: computedPenalty,
-    } as Record<string, unknown>);
+    };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase.from("fis_competitions") as any).insert(insertData);
 
     setSaving(false);
     if (error) {
