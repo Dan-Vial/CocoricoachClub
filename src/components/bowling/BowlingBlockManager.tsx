@@ -353,16 +353,21 @@ export function BowlingBlockManager({
                         
                       />
                     </div>
-                    <div className="col-span-2 sm:col-span-4 flex items-center gap-2">
-                      <Checkbox
-                        id={`trackPockets-${block.id}`}
-                        checked={block.trackPockets !== false}
-                        onCheckedChange={(checked) => updateBlock(block.id, { trackPockets: !!checked })}
-                      />
-                      <Label htmlFor={`trackPockets-${block.id}`} className="text-xs font-medium cursor-pointer">
-                        Statistiques de poches
-                      </Label>
-                    </div>
+                  </div>
+                  
+                  {/* Pocket tracking toggle - prominent */}
+                  <div className="flex items-center gap-2 p-2 rounded-lg border border-dashed border-primary/30 bg-primary/5">
+                    <Checkbox
+                      id={`trackPockets-${block.id}`}
+                      checked={block.trackPockets !== false}
+                      onCheckedChange={(checked) => updateBlock(block.id, { trackPockets: !!checked })}
+                    />
+                    <Label htmlFor={`trackPockets-${block.id}`} className="text-sm font-medium cursor-pointer">
+                      🎯 Statistiques de poches
+                    </Label>
+                    <span className="text-[10px] text-muted-foreground ml-auto">
+                      {block.trackPockets !== false ? "Activé" : "Désactivé"}
+                    </span>
                   </div>
 
                   {/* Games within block */}
