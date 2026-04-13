@@ -18,13 +18,14 @@ interface PlayerAvailability {
   playerName: string;
   avatarUrl: string | null;
   position: string | null;
-  awcrScore: number;
-  wellnessScore: number;
+  awcrScore: number | null;
+  wellnessScore: number | null;
   injuryScore: number;
-  fatigueScore: number;
-  overallScore: number;
-  status: 'available' | 'limited' | 'unavailable';
+  fatigueScore: number | null;
+  overallScore: number | null;
+  status: 'available' | 'limited' | 'unavailable' | 'no_data';
   factors: string[];
+  hasAnyData: boolean;
 }
 
 export function AvailabilityScoreTab({ categoryId }: AvailabilityScoreTabProps) {
