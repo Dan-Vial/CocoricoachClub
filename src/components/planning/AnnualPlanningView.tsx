@@ -142,7 +142,7 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("matches")
-        .select("id, match_date, opponent")
+        .select("id, match_date, opponent, is_finalized, competition, event_type")
         .eq("category_id", categoryId)
         .gte("match_date", format(yearStart, "yyyy-MM-dd"))
         .lte("match_date", format(yearEnd, "yyyy-MM-dd"));
