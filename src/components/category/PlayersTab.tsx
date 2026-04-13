@@ -114,19 +114,11 @@ export function PlayersTab({ categoryId }: PlayersTabProps) {
   
   const attributeColumnLabel = isJudo 
     ? "Catégorie" 
-    : isSki
+    : showDiscipline
       ? "Discipline"
-      : isSurf
-        ? "Discipline"
-        : isTriathlon
-          ? "Discipline"
-          : isNatation
-            ? "Discipline"
-            : isAthletics 
-              ? "Discipline" 
-              : isAviron 
-                ? "Rôle" 
-                : "Poste";
+      : isAviron 
+        ? "Rôle" 
+        : "Poste";
 
   // Get positions for the sport (for dropdown display)
   const positions = useMemo(() => getPositionsForSport(sportType), [sportType]);
