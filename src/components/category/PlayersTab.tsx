@@ -30,7 +30,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 import { useViewerPlayers } from "@/hooks/use-viewer-data";
 import { getDisciplineLabel, getSpecialtyLabel } from "@/lib/constants/athleticProfiles";
-import { isAthletismeCategory, isJudoCategory, isIndividualSport, ATHLETISME_SPECIALTIES } from "@/lib/constants/sportTypes";
+import { isAthletismeCategory, isJudoCategory, isIndividualSport, isSkiCategory, isSurfCategory, isTriathlonCategory, isNatationCategory, ATHLETISME_SPECIALTIES, NATATION_SPECIALTIES } from "@/lib/constants/sportTypes";
 import { getPositionsForSport } from "@/lib/constants/sportPositions";
 import { getInvitationStatus } from "@/hooks/useResendInvitation";
 
