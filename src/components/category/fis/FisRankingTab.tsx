@@ -31,6 +31,7 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
   const [simPosition, setSimPosition] = useState("");
   const [simFValue, setSimFValue] = useState("500");
   const [simTopAvg, setSimTopAvg] = useState("800");
+  const [historicalOpen, setHistoricalOpen] = useState(false);
 
   const { data: players } = useQuery({
     queryKey: ["players-fis-ranking", categoryId],
