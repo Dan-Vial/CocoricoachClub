@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { ColoredNavTabsList, NAV_COLORS, NavColorKey } from "@/components/ui/colored-nav-tabs";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import * as TabsPrimitive from "@radix-ui/react-tabs";
 import { ArrowLeft, LayoutDashboard, Shield, Users, Calendar, Zap, Heart, Trophy, MessageSquare, Loader2, Settings, FileCode, MapPin, Video, GraduationCap, CircleDot } from "lucide-react";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
@@ -48,9 +49,10 @@ interface ColoredTabTriggerProps {
   shortLabel?: string;
   disabled?: boolean;
   badge?: number;
+  tooltip?: string;
 }
 
-function ColoredTabTrigger({ value, colorKey, icon, label, shortLabel, disabled, badge }: ColoredTabTriggerProps) {
+function ColoredTabTrigger({ value, colorKey, icon, label, shortLabel, disabled, badge, tooltip }: ColoredTabTriggerProps) {
   const colors = NAV_COLORS[colorKey];
   
   if (disabled) {
@@ -70,7 +72,7 @@ function ColoredTabTrigger({ value, colorKey, icon, label, shortLabel, disabled,
     );
   }
   
-  return (
+  const trigger = (
     <TabsPrimitive.Trigger
       value={value}
       className={cn(
@@ -105,6 +107,19 @@ function ColoredTabTrigger({ value, colorKey, icon, label, shortLabel, disabled,
         <span className="whitespace-nowrap text-center leading-tight sm:hidden">{shortLabel || label}</span>
       </span>
     </TabsPrimitive.Trigger>
+  );
+
+  if (!tooltip) return trigger;
+
+  return (
+    <TooltipProvider delayDuration={400}>
+      <Tooltip>
+        <TooltipTrigger asChild>{trigger}</TooltipTrigger>
+        <TooltipContent side="bottom" className="max-w-xs bg-background/95 backdrop-blur-sm border shadow-lg">
+          <p className="text-[11px] leading-relaxed text-muted-foreground">{tooltip}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }
 
