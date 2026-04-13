@@ -86,33 +86,7 @@ export function AnnualTimelineView({
   const months = eachMonthOfInterval({ start: yearStart, end: yearEnd });
   const totalDays = differenceInDays(yearEnd, yearStart) + 1;
 
-  // Derive macrocycle phases from cycles
-  const macrocyclePhases = useMemo(() => {
-    const phaseMap = new Map<string, { start: string; end: string; type: string }[]>();
-    cycles.forEach(c => {
-      if (!c.cycle_type) return;
-      if (!phaseMap.has(c.cycle_type)) phaseMap.set(c.cycle_type, []);
-      phaseMap.get(c.cycle_type)!.push({ start: c.start_date, end: c.end_date, type: c.cycle_type });
-    });
-
-    // Merge overlapping ranges per type
-    const merged: { type: string; start: string; end: string }[] = [];
-    phaseMap.forEach((ranges, type) => {
-      const sorted = [...ranges].sort((a, b) => a.start.localeCompare(b.start));
-      let current = { ...sorted[0] };
-      for (let i = 1; i < sorted.length; i++) {
-        if (sorted[i].start <= current.end) {
-          current.end = current.end > sorted[i].end ? current.end : sorted[i].end;
-        } else {
-          merged.push({ ...current, type });
-          current = { ...sorted[i] };
-        }
-      }
-      if (current) merged.push({ ...current, type });
-    });
-
-    return merged.sort((a, b) => a.start.localeCompare(b.start));
-  }, [cycles]);
+  // No longer needed: macrocycle phases are shown inline per category row
 
   const getPosition = (startDate: string, endDate: string) => {
     const cs = new Date(startDate);
@@ -163,46 +137,6 @@ export function AnnualTimelineView({
   return (
     <div className="relative overflow-x-auto">
       <div style={{ minWidth: zoomLevel === "year" ? "900px" : "1400px" }}>
-        {/* MACROCYCLE PHASE HEADER */}
-        {macrocyclePhases.length > 0 && (
-          <div className="flex mb-1">
-            <div style={{ width: labelWidth, minWidth: labelWidth }} className="shrink-0 flex items-center px-3">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Macrocycles</span>
-            </div>
-            <div className="flex-1 relative h-8">
-              {macrocyclePhases.map((phase, i) => {
-                const pos = getPosition(phase.start, phase.end);
-                const meta = CYCLE_TYPE_META[phase.type];
-                if (!meta) return null;
-                return (
-                  <TooltipProvider key={i} delayDuration={150}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div
-                          className={cn(
-                            "absolute top-0 h-full rounded-lg flex items-center justify-center gap-1 text-[11px] font-bold uppercase tracking-wide border",
-                            meta.bgClass
-                          )}
-                          style={{ left: pos.left, width: pos.width, borderColor: "currentColor", opacity: 0.9 }}
-                        >
-                          <span>{meta.icon}</span>
-                          {!pos.isNarrow && <span>{meta.shortLabel}</span>}
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p className="font-semibold">{meta.label}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {format(new Date(phase.start), "dd MMM", { locale: fr })} → {format(new Date(phase.end), "dd MMM yyyy", { locale: fr })}
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
         {/* MONTH HEADER */}
         <div className="flex border-b-2 border-border/60">
           <div style={{ width: labelWidth, minWidth: labelWidth }} className="shrink-0" />
@@ -301,7 +235,7 @@ export function AnnualTimelineView({
               </div>
 
               {/* Timeline area */}
-              <div className="flex-1 relative" style={{ minHeight: "52px" }}>
+              <div className="flex-1 relative" style={{ minHeight: "68px" }}>
                 {/* Month grid lines */}
                 <div className="absolute inset-0 flex pointer-events-none">
                   {months.map((month, i) => {
@@ -317,7 +251,7 @@ export function AnnualTimelineView({
                   })}
                 </div>
 
-                {/* Cycle blocks */}
+                {/* Cycle blocks with macrocycle badge */}
                 {sortedCycles.map((cycle) => {
                   const pos = getPosition(cycle.start_date, cycle.end_date);
                   const meta = cycle.cycle_type ? CYCLE_TYPE_META[cycle.cycle_type] : null;
@@ -327,27 +261,45 @@ export function AnnualTimelineView({
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <button
-                            className={cn(
-                              "absolute top-1.5 h-[calc(100%-12px)] rounded-lg",
-                              "flex flex-col items-center justify-center overflow-hidden",
-                              "shadow-sm hover:shadow-lg hover:scale-y-105 transition-all cursor-pointer",
-                              "border border-white/20",
-                              pos.isNarrow ? "px-0.5" : "px-2.5"
-                            )}
+                            className="absolute flex flex-col items-center"
                             style={{
                               left: pos.left,
                               width: pos.width,
-                              backgroundColor: cycle.color,
+                              top: "2px",
+                              bottom: "6px",
                               zIndex: pos.isNarrow ? 5 : 1,
                             }}
                             onClick={() => !isViewer && onEditCycle(cycle)}
                           >
+                            {/* Macrocycle type badge on top */}
+                            {meta && (
+                              <div
+                                className={cn(
+                                  "w-full flex items-center justify-center gap-0.5 rounded-t-md text-[9px] font-bold uppercase tracking-wide shrink-0",
+                                  meta.bgClass
+                                )}
+                                style={{ height: "16px", borderBottom: `2px solid ${cycle.color}` }}
+                              >
+                                <span>{meta.icon}</span>
+                                {!pos.isNarrow && <span>{meta.shortLabel}</span>}
+                              </div>
+                            )}
+                            {/* Cycle block */}
+                            <div
+                              className={cn(
+                                "w-full flex-1 flex flex-col items-center justify-center overflow-hidden",
+                                "shadow-sm hover:shadow-lg transition-all cursor-pointer",
+                                "border border-white/20",
+                                meta ? "rounded-b-lg" : "rounded-lg",
+                                pos.isNarrow ? "px-0.5" : "px-2.5"
+                              )}
+                              style={{ backgroundColor: cycle.color }}
+                            >
                             {pos.isNarrow ? (
                               <span className="text-white text-[9px] font-bold">{pos.duration}j</span>
                             ) : (
                               <>
                                 <div className="flex items-center gap-1 w-full justify-center">
-                                  {meta && <span className="text-[10px]">{meta.icon}</span>}
                                   <span className="truncate text-[11px] font-bold text-white tracking-wide">
                                     {cycle.name}
                                   </span>
@@ -364,6 +316,7 @@ export function AnnualTimelineView({
                                 )}
                               </>
                             )}
+                            </div>
                           </button>
                         </TooltipTrigger>
                         <TooltipContent side="top" className="max-w-xs p-3">
