@@ -300,7 +300,6 @@ export function AnnualTimelineView({
                             ) : (
                               <>
                                 <div className="flex items-center gap-1 w-full justify-center">
-                                  {meta && <span className="text-[10px]">{meta.icon}</span>}
                                   <span className="truncate text-[11px] font-bold text-white tracking-wide">
                                     {cycle.name}
                                   </span>
@@ -317,6 +316,7 @@ export function AnnualTimelineView({
                                 )}
                               </>
                             )}
+                            </div>
                           </button>
                         </TooltipTrigger>
                         <TooltipContent side="top" className="max-w-xs p-3">
