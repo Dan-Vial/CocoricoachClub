@@ -1,10 +1,12 @@
 import { Tabs, TabsContent } from "@/components/ui/tabs";
-import { Trophy, Swords, Flag, Award } from "lucide-react";
+import { Trophy, Swords, Flag, Award, Mountain, BarChart3 } from "lucide-react";
 import { MatchesTab } from "@/components/category/MatchesTab";
 import { TournamentsTab } from "@/components/category/TournamentsTab";
 import { NationalTeamTab } from "@/components/category/national-team/NationalTeamTab";
-import { isIndividualSport } from "@/lib/constants/sportTypes";
+import { isIndividualSport, getMainSportFromType } from "@/lib/constants/sportTypes";
 import { ColoredSubTabsList, ColoredSubTabsTrigger } from "@/components/ui/colored-subtabs";
+import { FisCompetitionsTab } from "@/components/category/fis/FisCompetitionsTab";
+import { FisRankingTab } from "@/components/category/fis/FisRankingTab";
 
 interface CompetitionTabProps {
   categoryId: string;
@@ -15,6 +17,7 @@ interface CompetitionTabProps {
 
 export function CompetitionTab({ categoryId, isRugby7, isNationalTeam, sportType }: CompetitionTabProps) {
   const isIndividual = isIndividualSport(sportType || "");
+  const isSkiSport = sportType ? getMainSportFromType(sportType) === "ski" : false;
   
   const matchLabel = isIndividual ? "Compétitions" : "Matchs";
   const MatchIcon = isIndividual ? Award : Swords;
@@ -31,6 +34,28 @@ export function CompetitionTab({ categoryId, isRugby7, isNationalTeam, sportType
           >
             {matchLabel}
           </ColoredSubTabsTrigger>
+          {isSkiSport && (
+            <>
+              <ColoredSubTabsTrigger 
+                value="fis-competitions" 
+                colorKey="competition"
+                icon={<Mountain className="h-4 w-4" />}
+                tooltip="Compétitions FIS : création, résultats, calcul automatique des points"
+              >
+                <span className="hidden sm:inline">Compétitions FIS</span>
+                <span className="sm:hidden">FIS</span>
+              </ColoredSubTabsTrigger>
+              <ColoredSubTabsTrigger 
+                value="fis-ranking" 
+                colorKey="competition"
+                icon={<BarChart3 className="h-4 w-4" />}
+                tooltip="Classement FIS par athlète : points, objectifs, simulation et projections"
+              >
+                <span className="hidden sm:inline">Classement FIS</span>
+                <span className="sm:hidden">Classmt</span>
+              </ColoredSubTabsTrigger>
+            </>
+          )}
           {isRugby7 && (
             <ColoredSubTabsTrigger 
               value="tournaments" 
@@ -58,6 +83,17 @@ export function CompetitionTab({ categoryId, isRugby7, isNationalTeam, sportType
       <TabsContent value="matches">
         <MatchesTab categoryId={categoryId} sportType={sportType} />
       </TabsContent>
+
+      {isSkiSport && (
+        <>
+          <TabsContent value="fis-competitions">
+            <FisCompetitionsTab categoryId={categoryId} />
+          </TabsContent>
+          <TabsContent value="fis-ranking">
+            <FisRankingTab categoryId={categoryId} />
+          </TabsContent>
+        </>
+      )}
 
       {isRugby7 && (
         <TabsContent value="tournaments">
