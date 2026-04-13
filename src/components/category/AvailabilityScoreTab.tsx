@@ -62,10 +62,7 @@ export function AvailabilityScoreTab({ categoryId }: AvailabilityScoreTabProps) 
         .gte("tracking_date", format(weekAgo, "yyyy-MM-dd"))
         .order("tracking_date", { ascending: false });
 
-      // Filter out auto-completed optimal entries (all values = 1)
-      const wellnessData = wellnessDataRaw?.filter(w =>
-        !(w.sleep_quality === 1 && w.general_fatigue === 1 && w.stress_level === 1 && w.soreness_upper_body === 1 && w.soreness_lower_body === 1)
-      );
+      const wellnessData = wellnessDataRaw;
 
       // Get active injuries
       const { data: injuries } = await supabase
