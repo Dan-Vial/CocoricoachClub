@@ -428,6 +428,54 @@ export function WeeklyPlanningCalendar({ categoryId }: WeeklyPlanningCalendarPro
                   </div>
                 
                 <div className="space-y-1">
+                  {/* Matches from competition tab */}
+                  {matchesByDay[index]?.map((match) => (
+                    <div
+                      key={`match-${match.id}`}
+                      className="rounded p-2 text-xs bg-destructive/10 border border-destructive/30"
+                    >
+                      <div className="flex items-center gap-1 font-medium">
+                        <Trophy className="h-3 w-3 text-destructive shrink-0" />
+                        <span className="truncate">
+                          {match.opponent}
+                        </span>
+                      </div>
+                      {match.competition && (
+                        <p className="text-[10px] text-muted-foreground truncate mt-0.5">
+                          {match.competition}
+                        </p>
+                      )}
+                      {match.match_time && (
+                        <div className="flex items-center gap-1 text-muted-foreground mt-0.5">
+                          <Clock className="h-3 w-3" />
+                          {match.match_time.substring(0, 5)}
+                        </div>
+                      )}
+                      {match.location && (
+                        <div className="flex items-center gap-1 text-muted-foreground">
+                          <MapPin className="h-3 w-3" />
+                          <span className="truncate">{match.location}</span>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-1 mt-1">
+                        {match.is_finalized ? (
+                          <Badge variant="secondary" className="text-[9px] px-1 py-0 h-4 gap-0.5">
+                            <CheckCircle2 className="h-2.5 w-2.5" />
+                            Terminé
+                            {match.score_home != null && match.score_away != null && (
+                              <span className="ml-0.5">{match.score_home}-{match.score_away}</span>
+                            )}
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 border-destructive/40 text-destructive">
+                            En cours
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  
+                  {/* Planning items */}
                   {planningByDay[index]?.map((item) => (
                       <div
                         key={item.id}
@@ -475,7 +523,6 @@ export function WeeklyPlanningCalendar({ categoryId }: WeeklyPlanningCalendarPro
                           onClick={async () => {
                             const itemDate = format(addDays(currentWeekStart, index), "yyyy-MM-dd");
                             setPrecisionItemDate(itemDate);
-                            // Find matching training session for this date
                             const { data: sessions } = await supabase
                               .from("training_sessions")
                               .select("id")
