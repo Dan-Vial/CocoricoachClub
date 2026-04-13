@@ -166,6 +166,10 @@ export function AddPlayerDialog({
       setDiscipline("");
       setSpecialty("");
       setPosition("");
+      setFisRanking("");
+      setFisPointsInput("");
+      setFisObjective("");
+      setFisObjectiveDate("");
       onOpenChange(false);
     },
     onError: () => {
