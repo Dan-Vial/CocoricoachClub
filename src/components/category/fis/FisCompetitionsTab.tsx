@@ -191,7 +191,7 @@ export function FisCompetitionsTab({ categoryId }: FisCompetitionsTabProps) {
         </div>
       )}
 
-      <CreateFisCompetitionDialog open={createOpen} onOpenChange={setCreateOpen} categoryId={categoryId} />
+      <CreateFisCompetitionDialog open={createOpen} onOpenChange={setCreateOpen} categoryId={categoryId} clubSport={clubSport?.sport} />
       {resultComp && (
         <AddFisResultDialog open={!!resultComp} onOpenChange={(o) => !o && setResultComp(null)} competition={resultComp} />
       )}
