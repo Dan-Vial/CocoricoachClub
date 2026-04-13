@@ -8,10 +8,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { calculateRacePenalty } from "@/lib/fis/fisPointsEngine";
+import { calculateRacePenalty, DISCIPLINE_F_VALUES } from "@/lib/fis/fisPointsEngine";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { Mountain, Users, Trophy } from "lucide-react";
+import { Mountain, Users, Trophy, TrendingDown } from "lucide-react";
 import { getDisciplinesForClubSport } from "@/lib/constants/skiDisciplines";
 
 interface CreateFisCompetitionDialogProps {
@@ -38,17 +38,31 @@ export function CreateFisCompetitionDialog({ open, onOpenChange, categoryId, clu
   const [totalParticipants, setTotalParticipants] = useState("");
   const [notes, setNotes] = useState("");
   const [topRiders, setTopRiders] = useState(["", "", "", "", ""]);
+  const [topClassified, setTopClassified] = useState(["", "", "", "", ""]);
+  const [customFValue, setCustomFValue] = useState("");
   const [saving, setSaving] = useState(false);
   const queryClient = useQueryClient();
 
+  const fValue = customFValue !== "" ? Number(customFValue) : (DISCIPLINE_F_VALUES[discipline] ?? 0);
+
   const computedPenalty = (() => {
-    const pts = topRiders.map(Number).filter((n) => !isNaN(n) && n > 0);
-    if (pts.length === 0 || !totalParticipants) return null;
+    const aPoints = topRiders.map(Number).filter((n) => !isNaN(n) && n > 0);
+    const bPoints = topClassified.map(Number).filter((n) => !isNaN(n) && n > 0);
+    if (aPoints.length === 0 && bPoints.length === 0) return null;
     return calculateRacePenalty({
-      topRiderPoints: pts,
-      totalParticipants: Number(totalParticipants) || 0,
-      level,
+      topRiderPoints: aPoints,
+      topClassifiedPoints: bPoints,
+      fValue,
     });
+  })();
+
+  // Show A, B, C breakdown
+  const breakdown = (() => {
+    const aPoints = topRiders.map(Number).filter((n) => !isNaN(n) && n > 0);
+    const bPoints = topClassified.map(Number).filter((n) => !isNaN(n) && n > 0);
+    const A = aPoints.reduce((s, v) => s + v, 0);
+    const B = bPoints.reduce((s, v) => s + v, 0);
+    return { A, B, F: fValue };
   })();
 
   const handleSave = async () => {
@@ -59,6 +73,10 @@ export function CreateFisCompetitionDialog({ open, onOpenChange, categoryId, clu
     setSaving(true);
 
     const topPts = topRiders.map((v) => {
+      const n = Number(v);
+      return isNaN(n) || n <= 0 ? null : n;
+    });
+    const classifiedPts = topClassified.map((v) => {
       const n = Number(v);
       return isNaN(n) || n <= 0 ? null : n;
     });
@@ -77,6 +95,12 @@ export function CreateFisCompetitionDialog({ open, onOpenChange, categoryId, clu
       top_rider_3_pts: topPts[2],
       top_rider_4_pts: topPts[3],
       top_rider_5_pts: topPts[4],
+      top_classified_1_pts: classifiedPts[0],
+      top_classified_2_pts: classifiedPts[1],
+      top_classified_3_pts: classifiedPts[2],
+      top_classified_4_pts: classifiedPts[3],
+      top_classified_5_pts: classifiedPts[4],
+      f_value: fValue,
       race_penalty: computedPenalty,
     };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -95,9 +119,11 @@ export function CreateFisCompetitionDialog({ open, onOpenChange, categoryId, clu
   };
 
   const resetForm = () => {
-    setName(""); setDate(""); setDiscipline("slopestyle"); setLevel("fis");
+    setName(""); setDate(""); setDiscipline(disciplines[0]?.value || "slopestyle"); setLevel("fis");
     setLocation(""); setTotalParticipants(""); setNotes("");
     setTopRiders(["", "", "", "", ""]);
+    setTopClassified(["", "", "", "", ""]);
+    setCustomFValue("");
   };
 
   return (
@@ -155,19 +181,19 @@ export function CreateFisCompetitionDialog({ open, onOpenChange, categoryId, clu
 
           <Separator />
 
-          {/* Top riders */}
+          {/* Top riders present (A) */}
           <div className="space-y-3">
             <div className="flex items-center gap-2">
               <Users className="h-4 w-4 text-primary" />
-              <Label className="text-sm font-semibold">Top riders présents (pour calcul FIS)</Label>
+              <Label className="text-sm font-semibold">A — Top 5 riders présents (pts FIS avant course)</Label>
             </div>
             <p className="text-xs text-muted-foreground">
-              Saisissez les points FIS des 5 meilleurs riders présents pour calculer la "Race Penalty"
+              Points FIS des 5 meilleurs riders inscrits, AVANT la course
             </p>
             <div className="grid grid-cols-5 gap-2">
               {topRiders.map((val, i) => (
                 <div key={i}>
-                  <Label className="text-xs text-muted-foreground">Rider {i + 1}</Label>
+                  <Label className="text-xs text-muted-foreground">#{i + 1}</Label>
                   <Input
                     type="number"
                     value={val}
@@ -182,13 +208,79 @@ export function CreateFisCompetitionDialog({ open, onOpenChange, categoryId, clu
                 </div>
               ))}
             </div>
-            {computedPenalty !== null && (
-              <div className="flex items-center gap-2 text-sm">
-                <Trophy className="h-4 w-4 text-primary" />
-                <span>Race Penalty calculée :</span>
-                <Badge variant="secondary" className="font-mono">{computedPenalty}</Badge>
-              </div>
+            {breakdown.A > 0 && (
+              <p className="text-xs text-muted-foreground">A = {breakdown.A}</p>
             )}
+          </div>
+
+          <Separator />
+
+          {/* Top 5 classified (B) */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <Trophy className="h-4 w-4 text-primary" />
+              <Label className="text-sm font-semibold">B — Top 5 classés (pts FIS des 5 premiers)</Label>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Points FIS (avant course) des 5 premiers au classement final
+            </p>
+            <div className="grid grid-cols-5 gap-2">
+              {topClassified.map((val, i) => (
+                <div key={i}>
+                  <Label className="text-xs text-muted-foreground">#{i + 1}</Label>
+                  <Input
+                    type="number"
+                    value={val}
+                    onChange={(e) => {
+                      const next = [...topClassified];
+                      next[i] = e.target.value;
+                      setTopClassified(next);
+                    }}
+                    placeholder="Pts"
+                    className="text-center"
+                  />
+                </div>
+              ))}
+            </div>
+            {breakdown.B > 0 && (
+              <p className="text-xs text-muted-foreground">B = {breakdown.B}</p>
+            )}
+          </div>
+
+          <Separator />
+
+          {/* F-value & penalty result */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <TrendingDown className="h-4 w-4 text-primary" />
+              <Label className="text-sm font-semibold">F-value & Race Penalty</Label>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs">F-value (coefficient discipline)</Label>
+                <Input
+                  type="number"
+                  value={customFValue}
+                  onChange={(e) => setCustomFValue(e.target.value)}
+                  placeholder={String(DISCIPLINE_F_VALUES[discipline] ?? 0)}
+                  className="text-center"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Par défaut : {DISCIPLINE_F_VALUES[discipline] ?? 0} ({discipline})
+                </p>
+              </div>
+              <div className="flex flex-col justify-center">
+                {computedPenalty !== null && (
+                  <div className="p-3 rounded-lg bg-muted/50 text-center space-y-1">
+                    <p className="text-xs text-muted-foreground">Race Penalty (P)</p>
+                    <Badge variant="secondary" className="font-mono text-lg">{computedPenalty}</Badge>
+                    <p className="text-xs text-muted-foreground">
+                      P = (A + B - C) / 10 + F
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
 
           <Separator />
