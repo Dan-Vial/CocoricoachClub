@@ -575,7 +575,7 @@ export function BowlingCumulativeStats({ categoryId, playerId: fixedPlayerId }: 
                   <CardContent className="space-y-2">
                     <ColoredStatRow label="% Strikes" value={`${cumulativeStats.avgStrikeRate.toFixed(1)}%`} statType="strike" percentage={cumulativeStats.avgStrikeRate} />
                     <ColoredStatRow label="% Spares" value={`${cumulativeStats.avgSpareRate.toFixed(1)}%`} statType="spare" percentage={cumulativeStats.avgSpareRate} />
-                    <ColoredStatRow label="% Poches" value={`${cumulativeStats.avgPocketRate.toFixed(1)}%`} statType="pocket" percentage={cumulativeStats.avgPocketRate} />
+                    {cumulativeStats.hasPocketData && <ColoredStatRow label="% Poches" value={`${cumulativeStats.avgPocketRate.toFixed(1)}%`} statType="pocket" percentage={cumulativeStats.avgPocketRate} />}
                     <ColoredStatRow label="% Quilles seules" value={`${cumulativeStats.singlePinConversionRate.toFixed(1)}%`} statType="singlePin" percentage={cumulativeStats.singlePinConversionRate} />
                     <ColoredStatRow label="% Conversion splits" value={`${cumulativeStats.splitConversionRate.toFixed(1)}%`} />
                     <ColoredStatRow label="% Boules ≥8" value={`${cumulativeStats.firstBallGte8Percentage.toFixed(1)}%`} statType="firstBallGte8" percentage={cumulativeStats.firstBallGte8Percentage} />
