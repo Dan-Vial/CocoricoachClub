@@ -122,7 +122,7 @@ export function YearCalendarGrid({ year, cycles, sessions, matches, onDateRangeS
                 const dateStr = format(day, "yyyy-MM-dd");
                 const activeCycles = getCyclesForDate(dateStr);
                 const hasSession = sessionDates.has(dateStr);
-                const matchOpponent = matchDates.get(dateStr);
+                const matchInfo = matchDates.get(dateStr);
                 const today = isToday(day);
                 const isWeekend = getDay(day) === 0 || getDay(day) === 6;
                 const cycleColor = activeCycles.length > 0 ? activeCycles[0].color : null;
