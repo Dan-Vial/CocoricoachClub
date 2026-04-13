@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -53,6 +54,7 @@ export interface BowlingBlock {
   notes: string;
   debriefing: string;
   isCollapsed: boolean;
+  trackPockets: boolean;
 }
 
 export interface Round {
@@ -130,6 +132,7 @@ export function BowlingBlockManager({
       notes: "",
       debriefing: "",
       isCollapsed: false,
+      trackPockets: true,
     };
     onBlocksChange([...blocks, newBlock]);
   };
