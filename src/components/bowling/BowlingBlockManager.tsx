@@ -353,7 +353,16 @@ export function BowlingBlockManager({
                         
                       />
                     </div>
-                  </div>
+                    <div className="col-span-2 sm:col-span-4 flex items-center gap-2">
+                      <Checkbox
+                        id={`trackPockets-${block.id}`}
+                        checked={block.trackPockets !== false}
+                        onCheckedChange={(checked) => updateBlock(block.id, { trackPockets: !!checked })}
+                      />
+                      <Label htmlFor={`trackPockets-${block.id}`} className="text-xs font-medium cursor-pointer">
+                        Statistiques de poches
+                      </Label>
+                    </div>
 
                   {/* Games within block */}
                   {blockRounds.length === 0 ? (
