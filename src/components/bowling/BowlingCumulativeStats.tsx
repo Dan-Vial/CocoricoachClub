@@ -167,7 +167,9 @@ export function BowlingCumulativeStats({ categoryId, playerId: fixedPlayerId }: 
     const totalOpenFrames = playerGames.reduce((s, g) => s + g.openFrames, 0);
     const totalSplits = playerGames.reduce((s, g) => s + g.splitCount, 0);
     const totalSplitsConverted = playerGames.reduce((s, g) => s + g.splitConverted, 0);
-    const totalPocket = playerGames.reduce((s, g) => s + g.pocketCount, 0);
+    const pocketGames = playerGames.filter(g => g.trackPockets !== false);
+    const totalPocket = pocketGames.reduce((s, g) => s + g.pocketCount, 0);
+    const hasPocketData = pocketGames.length > 0;
     const totalSinglePin = playerGames.reduce((s, g) => s + g.singlePinCount, 0);
     const totalSinglePinConverted = playerGames.reduce((s, g) => s + g.singlePinConverted, 0);
     const highGame = Math.max(...playerGames.map(g => g.score));
@@ -175,7 +177,9 @@ export function BowlingCumulativeStats({ categoryId, playerId: fixedPlayerId }: 
     const avgScore = totalScore / totalGames;
     const avgStrikeRate = playerGames.reduce((s, g) => s + g.strikePercentage, 0) / totalGames;
     const avgSpareRate = playerGames.reduce((s, g) => s + g.sparePercentage, 0) / totalGames;
-    const avgPocketRate = playerGames.reduce((s, g) => s + g.pocketPercentage, 0) / totalGames;
+    const avgPocketRate = hasPocketData
+      ? pocketGames.reduce((s, g) => s + g.pocketPercentage, 0) / pocketGames.length
+      : 0;
     const totalFrames = totalGames * 10;
     const openFramePercentage = totalFrames > 0 ? (totalOpenFrames / totalFrames) * 100 : 0;
 
