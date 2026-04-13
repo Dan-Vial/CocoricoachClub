@@ -2415,6 +2415,174 @@ export type Database = {
           },
         ]
       }
+      fis_competitions: {
+        Row: {
+          category_id: string
+          competition_date: string
+          country: string | null
+          created_at: string
+          discipline: string
+          end_date: string | null
+          id: string
+          level: string
+          location: string | null
+          name: string
+          notes: string | null
+          total_participants: number | null
+          updated_at: string
+        }
+        Insert: {
+          category_id: string
+          competition_date: string
+          country?: string | null
+          created_at?: string
+          discipline?: string
+          end_date?: string | null
+          id?: string
+          level?: string
+          location?: string | null
+          name: string
+          notes?: string | null
+          total_participants?: number | null
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string
+          competition_date?: string
+          country?: string | null
+          created_at?: string
+          discipline?: string
+          end_date?: string | null
+          id?: string
+          level?: string
+          location?: string | null
+          name?: string
+          notes?: string | null
+          total_participants?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fis_competitions_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fis_ranking_settings: {
+        Row: {
+          category_id: string
+          created_at: string
+          id: string
+          max_counting_results: number
+          point_multipliers: Json | null
+          rolling_weeks: number
+          updated_at: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          id?: string
+          max_counting_results?: number
+          point_multipliers?: Json | null
+          rolling_weeks?: number
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          id?: string
+          max_counting_results?: number
+          point_multipliers?: Json | null
+          rolling_weeks?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fis_ranking_settings_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: true
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fis_results: {
+        Row: {
+          category_id: string
+          competition_id: string
+          created_at: string
+          expires_at: string | null
+          fis_points: number
+          id: string
+          is_counting: boolean | null
+          notes: string | null
+          player_id: string
+          ranking: number | null
+          score: number | null
+          updated_at: string
+        }
+        Insert: {
+          category_id: string
+          competition_id: string
+          created_at?: string
+          expires_at?: string | null
+          fis_points?: number
+          id?: string
+          is_counting?: boolean | null
+          notes?: string | null
+          player_id: string
+          ranking?: number | null
+          score?: number | null
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string
+          competition_id?: string
+          created_at?: string
+          expires_at?: string | null
+          fis_points?: number
+          id?: string
+          is_counting?: boolean | null
+          notes?: string | null
+          player_id?: string
+          ranking?: number | null
+          score?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fis_results_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fis_results_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "fis_competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fis_results_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fis_results_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gathering_wellness_assessments: {
         Row: {
           appetite_level: number | null
@@ -6600,6 +6768,10 @@ export type Database = {
           email: string | null
           emergency_notes: string | null
           first_name: string | null
+          fis_objective: string | null
+          fis_objective_date: string | null
+          fis_points: number | null
+          fis_ranking: number | null
           id: string
           medical_notes: string | null
           name: string
@@ -6631,6 +6803,10 @@ export type Database = {
           email?: string | null
           emergency_notes?: string | null
           first_name?: string | null
+          fis_objective?: string | null
+          fis_objective_date?: string | null
+          fis_points?: number | null
+          fis_ranking?: number | null
           id?: string
           medical_notes?: string | null
           name: string
@@ -6662,6 +6838,10 @@ export type Database = {
           email?: string | null
           emergency_notes?: string | null
           first_name?: string | null
+          fis_objective?: string | null
+          fis_objective_date?: string | null
+          fis_points?: number | null
+          fis_ranking?: number | null
           id?: string
           medical_notes?: string | null
           name?: string
