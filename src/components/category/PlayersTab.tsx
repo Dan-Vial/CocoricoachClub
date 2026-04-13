@@ -100,21 +100,33 @@ export function PlayersTab({ categoryId }: PlayersTabProps) {
   const sportType = category?.rugby_type || "XV";
   const isAthletics = isAthletismeCategory(sportType);
   const isJudo = isJudoCategory(sportType);
+  const isSki = isSkiCategory(sportType);
+  const isSurf = isSurfCategory(sportType);
+  const isTriathlon = isTriathlonCategory(sportType);
+  const isNatation = isNatationCategory(sportType);
   const isAviron = sportType.toLowerCase().includes("aviron");
   const isIndividual = isIndividualSport(sportType);
   
   // Determine which attribute column to show
-  const showDiscipline = isAthletics || isJudo;
+  const showDiscipline = isAthletics || isJudo || isSki || isSurf || isTriathlon || isNatation;
   const showRole = isAviron;
   const showPosition = !isIndividual && !showDiscipline && !showRole;
   
   const attributeColumnLabel = isJudo 
     ? "Catégorie" 
-    : isAthletics 
-      ? "Discipline" 
-      : isAviron 
-        ? "Rôle" 
-        : "Poste";
+    : isSki
+      ? "Discipline"
+      : isSurf
+        ? "Discipline"
+        : isTriathlon
+          ? "Discipline"
+          : isNatation
+            ? "Discipline"
+            : isAthletics 
+              ? "Discipline" 
+              : isAviron 
+                ? "Rôle" 
+                : "Poste";
 
   // Get positions for the sport (for dropdown display)
   const positions = useMemo(() => getPositionsForSport(sportType), [sportType]);
