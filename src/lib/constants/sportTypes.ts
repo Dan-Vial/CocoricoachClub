@@ -329,6 +329,23 @@ export const NATATION_SPECIALTIES: Record<string, SpecialtyOption[]> = {
   ],
 };
 
+// Club-level discipline families for Sports de Glisse
+export interface SkiClubDisciplineOption {
+  value: string;
+  label: string;
+}
+
+export const SKI_CLUB_DISCIPLINES: SkiClubDisciplineOption[] = [
+  { value: "ski_alpin", label: "Ski Alpin" },
+  { value: "ski_fond", label: "Ski de Fond" },
+  { value: "ski_biathlon", label: "Biathlon" },
+  { value: "ski_freestyle", label: "Ski Freestyle" },
+  { value: "snowboard_freestyle", label: "Snowboard Freestyle" },
+  { value: "snowboard_alpin", label: "Snowboard Alpin" },
+  { value: "ski_saut", label: "Saut à Ski" },
+  { value: "ski_combine_nordique", label: "Combiné Nordique" },
+];
+
 // Disciplines for Sports de Glisse (Ski/Snow)
 export const SKI_DISCIPLINES: PlayerAttributeOption[] = [
   // Ski Alpin
@@ -454,7 +471,7 @@ export const isNatationCategory = (rugbyType: string): boolean => {
 
 // Helper to check if a category is ski/snow
 export const isSkiCategory = (rugbyType: string): boolean => {
-  return (rugbyType?.startsWith("ski") || rugbyType?.startsWith("snow") || rugbyType === "ski") && !rugbyType?.startsWith("surf");
+  return (rugbyType?.startsWith("ski") || rugbyType?.startsWith("snow") || rugbyType === "ski" || rugbyType === "snowboard_freestyle" || rugbyType === "snowboard_alpin") && !rugbyType?.startsWith("surf");
 };
 
 // Helper to check if a category is surf
@@ -617,7 +634,7 @@ export const getMainSportFromType = (type: string): MainSportCategory => {
   if (type.startsWith("padel")) return "padel";
   if (type.startsWith("natation")) return "natation";
   if (type.startsWith("surf")) return "surf";
-  if (type.startsWith("ski") || type.startsWith("snow")) return "ski";
+  if (type.startsWith("ski") || type.startsWith("snow") || type === "snowboard_freestyle" || type === "snowboard_alpin") return "ski";
   if (type.startsWith("triathlon")) return "triathlon";
   if (type.startsWith("tennis")) return "tennis";
   return "rugby"; // default
@@ -627,6 +644,8 @@ export const isIndividualSport = (type: string): boolean => {
   const individualSports = [
     "judo", "bowling", "aviron", "athletisme", "crossfit",
     "padel", "natation", "ski", "surf", "triathlon", "tennis",
+    "ski_alpin", "ski_fond", "ski_biathlon", "ski_freestyle",
+    "snowboard_freestyle", "snowboard_alpin", "ski_saut", "ski_combine_nordique",
     "judo_club", "judo_academie", "judo_national",
     "bowling_club", "bowling_academie", "bowling_national",
     "aviron_club", "aviron_academie", "aviron_national",

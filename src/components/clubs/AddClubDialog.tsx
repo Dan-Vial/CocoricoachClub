@@ -22,7 +22,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { clubSchema } from "@/lib/validations";
 import { z } from "zod";
-import { MAIN_SPORTS, MainSportCategory } from "@/lib/constants/sportTypes";
+import { MAIN_SPORTS, MainSportCategory, SKI_CLUB_DISCIPLINES } from "@/lib/constants/sportTypes";
 
 interface AddClubDialogProps {
   open: boolean;
@@ -32,11 +32,14 @@ interface AddClubDialogProps {
 export function AddClubDialog({ open, onOpenChange }: AddClubDialogProps) {
   const [clubName, setClubName] = useState("");
   const [sport, setSport] = useState<MainSportCategory>("rugby");
+  const [skiDiscipline, setSkiDiscipline] = useState("");
   const queryClient = useQueryClient();
   const { user } = useAuth();
 
+  const isSkiSport = sport === "ski";
+
   const addClub = useMutation({
-    mutationFn: async (data: { name: string; sport: MainSportCategory }) => {
+    mutationFn: async (data: { name: string; sport: string }) => {
       if (!user) {
         throw new Error("Utilisateur non authentifié");
       }
@@ -53,6 +56,7 @@ export function AddClubDialog({ open, onOpenChange }: AddClubDialogProps) {
       toast.success("Club ajouté avec succès");
       setClubName("");
       setSport("rugby");
+      setSkiDiscipline("");
       onOpenChange(false);
     },
     onError: (error) => {
@@ -67,7 +71,16 @@ export function AddClubDialog({ open, onOpenChange }: AddClubDialogProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (clubName.trim()) {
-      addClub.mutate({ name: clubName.trim(), sport });
+      // For ski sports, store the specific discipline as the sport value
+      const finalSport = isSkiSport && skiDiscipline ? skiDiscipline : sport;
+      addClub.mutate({ name: clubName.trim(), sport: finalSport });
+    }
+  };
+
+  const handleSportChange = (value: MainSportCategory) => {
+    setSport(value);
+    if (value !== "ski") {
+      setSkiDiscipline("");
     }
   };
 
@@ -92,7 +105,7 @@ export function AddClubDialog({ open, onOpenChange }: AddClubDialogProps) {
             </div>
             <div className="space-y-2">
               <Label>Sport</Label>
-              <Select value={sport} onValueChange={(value: MainSportCategory) => setSport(value)}>
+              <Select value={sport} onValueChange={(value: MainSportCategory) => handleSportChange(value)}>
                 <SelectTrigger className="w-full bg-background">
                   <SelectValue placeholder="Sélectionner un sport" />
                 </SelectTrigger>
@@ -105,12 +118,32 @@ export function AddClubDialog({ open, onOpenChange }: AddClubDialogProps) {
                 </SelectContent>
               </Select>
             </div>
+            {isSkiSport && (
+              <div className="space-y-2">
+                <Label>Discipline</Label>
+                <Select value={skiDiscipline} onValueChange={setSkiDiscipline}>
+                  <SelectTrigger className="w-full bg-background">
+                    <SelectValue placeholder="Sélectionner la discipline" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border z-50">
+                    {SKI_CLUB_DISCIPLINES.map((d) => (
+                      <SelectItem key={d.value} value={d.value}>
+                        {d.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Choisissez la discipline principale de votre structure
+                </p>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Annuler
             </Button>
-            <Button type="submit" disabled={!clubName.trim() || addClub.isPending}>
+            <Button type="submit" disabled={!clubName.trim() || (isSkiSport && !skiDiscipline) || addClub.isPending}>
               {addClub.isPending ? "Ajout..." : "Ajouter"}
             </Button>
           </DialogFooter>
