@@ -43,21 +43,29 @@ export function AvailabilityScoreTab({ categoryId }: AvailabilityScoreTabProps) 
 
       if (!players) return [];
 
-      // Get latest AWCR data
-      const { data: awcrData } = await supabase
+      // Get latest AWCR data (exclude auto-completed entries with RPE=0 and duration=0)
+      const { data: awcrDataRaw } = await supabase
         .from("awcr_tracking")
-        .select("player_id, awcr")
+        .select("player_id, awcr, rpe, duration_minutes")
         .eq("category_id", categoryId)
         .gte("session_date", format(weekAgo, "yyyy-MM-dd"))
         .order("session_date", { ascending: false });
 
-      // Get latest wellness data
-      const { data: wellnessData } = await supabase
+      // Filter out auto-completed zero-load entries
+      const awcrData = awcrDataRaw?.filter(a => !(a.rpe === 0 && a.duration_minutes === 0));
+
+      // Get latest wellness data (exclude auto-completed entries with all scores at 1)
+      const { data: wellnessDataRaw } = await supabase
         .from("wellness_tracking")
         .select("player_id, sleep_quality, general_fatigue, stress_level, soreness_upper_body, soreness_lower_body")
         .eq("category_id", categoryId)
         .gte("tracking_date", format(weekAgo, "yyyy-MM-dd"))
         .order("tracking_date", { ascending: false });
+
+      // Filter out auto-completed optimal entries (all values = 1)
+      const wellnessData = wellnessDataRaw?.filter(w =>
+        !(w.sleep_quality === 1 && w.general_fatigue === 1 && w.stress_level === 1 && w.soreness_upper_body === 1 && w.soreness_lower_body === 1)
+      );
 
       // Get active injuries
       const { data: injuries } = await supabase
