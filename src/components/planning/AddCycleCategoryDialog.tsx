@@ -40,9 +40,16 @@ export function AddCycleCategoryDialog({ open, onOpenChange, categoryId }: AddCy
 
   const createCategory = useMutation({
     mutationFn: async () => {
+      // Check if name already exists for this category
+      const duplicate = existingCategories.find(
+        c => c.name.toLowerCase().trim() === name.toLowerCase().trim()
+      );
+      if (duplicate) {
+        throw new Error("duplicate");
+      }
       const { error } = await supabase.from("periodization_categories").insert({
         category_id: categoryId,
-        name,
+        name: name.trim(),
         color,
       });
       if (error) throw error;
@@ -54,7 +61,13 @@ export function AddCycleCategoryDialog({ open, onOpenChange, categoryId }: AddCy
       setName("");
       setColor(PRESET_COLORS[0]);
     },
-    onError: () => toast.error("Erreur lors de la création"),
+    onError: (err: Error) => {
+      if (err.message === "duplicate") {
+        toast.error("Cette ligne existe déjà");
+      } else {
+        toast.error("Erreur lors de la création");
+      }
+    },
   });
 
   const deleteCategory = useMutation({
