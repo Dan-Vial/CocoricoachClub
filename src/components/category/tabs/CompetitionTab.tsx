@@ -19,7 +19,7 @@ export function CompetitionTab({ categoryId, isRugby7, isNationalTeam, sportType
   const isIndividual = isIndividualSport(sportType || "");
   const isSkiSport = sportType ? getMainSportFromType(sportType) === "ski" : false;
   
-  const matchLabel = isIndividual ? "Compétitions" : "Matchs";
+  const matchLabel = "Compétitions";
   const MatchIcon = isIndividual ? Award : Swords;
 
   return (
