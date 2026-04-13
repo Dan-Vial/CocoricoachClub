@@ -121,17 +121,6 @@ export function FisImportDialog({ open, onOpenChange, categoryId }: FisImportDia
 
       // Match
       const matchResults: MatchedAthlete[] = rows.map((fisRow) => {
-        // 1. Match by name (fis_code match done after import)
-        const byCode = players?.find((p) => p.fis_code === fisRow.fisCode);
-        if (byCode) {
-          return {
-            fisRow,
-            playerId: byCode.id,
-            playerName: `${byCode.first_name || ""} ${byCode.name}`.trim(),
-            matchType: "exact" as const,
-            selected: true,
-          };
-        }
 
         // 2. Match by name
         const byName = players?.find((p) => {
