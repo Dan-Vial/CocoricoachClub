@@ -150,15 +150,15 @@ export function BowlingCompetitionSummary({
   const allRoundsWithScores = rounds.filter(r => (r.stats["gameScore"] || 0) > 0);
   const total = allRoundsWithScores.length;
 
-  const overall = useMemo(() => computeDetailedStats(allRoundsWithScores), [allRoundsWithScores]);
+  const overall = useMemo(() => computeDetailedStats(allRoundsWithScores, blocks), [allRoundsWithScores, blocks]);
 
   // Stats per block
   const blockStats: BlockDetailedStats[] = useMemo(() => {
     return blocks.map((block, idx) => {
       const blockRounds = allRoundsWithScores.filter(r => r.blockId === block.id);
-      const stats = computeDetailedStats(blockRounds);
+      const stats = computeDetailedStats(blockRounds, [block]);
       if (!stats) {
-        return { block, blockIndex: idx, games: 0, totalPins: 0, average: 0, high: 0, low: 0, avgStrikeRate: 0, avgSpareRate: 0, singlePinConvRate: 0, splitConvRate: 0, pocketPct: 0 };
+        return { block, blockIndex: idx, games: 0, totalPins: 0, average: 0, high: 0, low: 0, avgStrikeRate: 0, avgSpareRate: 0, singlePinConvRate: 0, splitConvRate: 0, pocketPct: 0, hasPocketData: block.trackPockets !== false };
       }
       return { ...stats, block, blockIndex: idx };
     }).filter(b => b.games > 0);
