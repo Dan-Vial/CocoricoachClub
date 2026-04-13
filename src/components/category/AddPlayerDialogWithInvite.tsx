@@ -21,7 +21,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { playerSchema } from "@/lib/validations";
-import { ATHLETISME_DISCIPLINES, ATHLETISME_SPECIALTIES, JUDO_WEIGHT_CATEGORIES, AVIRON_ROLES, NATATION_DISCIPLINES, NATATION_SPECIALTIES, SKI_DISCIPLINES, SURF_DISCIPLINES, TRIATHLON_DISCIPLINES, PADEL_POSITIONS, isAthletismeCategory, isJudoCategory, isNatationCategory, isSkiCategory, isSurfCategory, isTriathlonCategory, isPadelCategory, isIndividualSport } from "@/lib/constants/sportTypes";
+import { ATHLETISME_DISCIPLINES, ATHLETISME_SPECIALTIES, JUDO_WEIGHT_CATEGORIES, AVIRON_ROLES, NATATION_DISCIPLINES, NATATION_SPECIALTIES, SKI_DISCIPLINES, SURF_DISCIPLINES, TRIATHLON_DISCIPLINES, PADEL_POSITIONS, isAthletismeCategory, isJudoCategory, isNatationCategory, isSkiCategory, isSurfCategory, isTriathlonCategory, isPadelCategory, isIndividualSport, getSkiDisciplinesForCategory } from "@/lib/constants/sportTypes";
 import { getPositionsForSport } from "@/lib/constants/sportPositions";
 import { Loader2, Send, UserPlus, Copy, Check, AlertTriangle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -127,12 +127,15 @@ export function AddPlayerDialogWithInvite({
   const getDisciplineOptions = () => {
     if (isAthletics) return ATHLETISME_DISCIPLINES;
     if (isNatation) return NATATION_DISCIPLINES;
-    if (isSki) return SKI_DISCIPLINES;
+    if (isSki) return getSkiDisciplinesForCategory(categoryData?.rugby_type || "");
     if (isSurf) return SURF_DISCIPLINES;
     if (isTriathlon) return TRIATHLON_DISCIPLINES;
     return [];
   };
-  const hasDisciplines = isAthletics || isNatation || isSki || isSurf || isTriathlon;
+  const hasDisciplines = isAthletics || isNatation || isSurf || isTriathlon;
+  // For ski/snow with only 1 discipline option, don't show discipline picker
+  const skiDisciplines = isSki ? getSkiDisciplinesForCategory(categoryData?.rugby_type || "") : [];
+  const showSkiDiscipline = isSki && skiDisciplines.length > 1;
   const disciplineOptions = getDisciplineOptions();
   
   // Determine specialties
