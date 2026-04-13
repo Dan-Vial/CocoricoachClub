@@ -116,6 +116,39 @@ export function WeeklyPlanningCalendar({ categoryId }: WeeklyPlanningCalendarPro
     },
   });
 
+  // Fetch matches for the current week from the matches table
+  const weekEndStr = format(addDays(currentWeekStart, 6), "yyyy-MM-dd");
+  const { data: weekMatches = [] } = useQuery({
+    queryKey: ["weekly-matches", categoryId, weekStartStr],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("matches")
+        .select("id, match_date, match_time, opponent, location, is_finalized, is_home, score_home, score_away, competition, event_type")
+        .eq("category_id", categoryId)
+        .gte("match_date", weekStartStr)
+        .lte("match_date", weekEndStr);
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  // Group matches by day of week
+  const matchesByDay = useMemo(() => {
+    const result: Record<number, typeof weekMatches> = {};
+    DAYS.forEach((_, i) => { result[i] = []; });
+    weekMatches.forEach((m) => {
+      const matchDate = new Date(m.match_date + "T00:00:00");
+      const dayIndex = DAYS.findIndex((_, i) => {
+        const dayDate = format(addDays(currentWeekStart, i), "yyyy-MM-dd");
+        return dayDate === m.match_date;
+      });
+      if (dayIndex >= 0) {
+        result[dayIndex].push(m);
+      }
+    });
+    return result;
+  }, [weekMatches, currentWeekStart]);
+
   const { data: templates } = useQuery({
     queryKey: ["session-templates", categoryId],
     queryFn: async () => {
