@@ -157,6 +157,9 @@ export function TrainingLoadKPIs({ summary, isLoading, loadModel = "ewma" }: Tra
             {summary.riskLevel === "optimal" ? "Zone optimale" : 
              summary.riskLevel === "warning" ? "Vigilance" : "Zone danger"}
           </Badge>
+          <p className="text-[10px] text-muted-foreground/70 mt-2 leading-relaxed border-t border-border/30 pt-1.5">
+            Ratio automatique (aiguë ÷ chronique). Pour le faire évoluer, saisissez le RPE et la durée de chaque séance dans <span className="font-semibold">Programmation</span>. L'athlète peut aussi renseigner son RPE ressenti.
+          </p>
         </CardContent>
       </Card>
     </div>
