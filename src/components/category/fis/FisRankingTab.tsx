@@ -47,7 +47,7 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
     },
   });
 
-  const topN = settings?.top_results_count ?? 5;
+  const topN = settings?.max_counting_results ?? 5;
 
   const { data: results } = useQuery({
     queryKey: ["fis-results-player", categoryId, selectedPlayer],
