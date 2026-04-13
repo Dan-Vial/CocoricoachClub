@@ -255,6 +255,22 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
             {/* Actions */}
             {!isViewer && (
               <div className="flex gap-1.5">
+                {cycles.length > 0 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 gap-1 text-xs text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/30"
+                    onClick={() => {
+                      if (confirm(`Supprimer tous les cycles de ${selectedYear.getFullYear()} ? Cette action est irréversible.`)) {
+                        deleteAllCycles.mutate();
+                      }
+                    }}
+                    disabled={deleteAllCycles.isPending}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">Supprimer la planification</span>
+                  </Button>
+                )}
                 <Button variant="outline" size="sm" className="h-8 gap-1 text-xs" onClick={() => setAddCategoryOpen(true)}>
                   <Settings2 className="h-3.5 w-3.5" />
                   <span className="hidden sm:inline">Ligne</span>
