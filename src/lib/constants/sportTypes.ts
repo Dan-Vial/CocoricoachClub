@@ -644,6 +644,8 @@ export const isIndividualSport = (type: string): boolean => {
   const individualSports = [
     "judo", "bowling", "aviron", "athletisme", "crossfit",
     "padel", "natation", "ski", "surf", "triathlon", "tennis",
+    "ski_alpin", "ski_fond", "ski_biathlon", "ski_freestyle",
+    "snowboard_freestyle", "snowboard_alpin", "ski_saut", "ski_combine_nordique",
     "judo_club", "judo_academie", "judo_national",
     "bowling_club", "bowling_academie", "bowling_national",
     "aviron_club", "aviron_academie", "aviron_national",
