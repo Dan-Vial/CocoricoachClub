@@ -41,8 +41,8 @@ export function YearCalendarGrid({ year, cycles, sessions, matches, onDateRangeS
   }, [sessions]);
 
   const matchDates = useMemo(() => {
-    const map = new Map<string, string>();
-    matches.forEach(m => map.set(m.match_date, m.opponent));
+    const map = new Map<string, { opponent: string; is_finalized?: boolean | null; competition?: string | null }>();
+    matches.forEach(m => map.set(m.match_date, { opponent: m.opponent, is_finalized: m.is_finalized, competition: m.competition }));
     return map;
   }, [matches]);
 
