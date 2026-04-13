@@ -116,12 +116,12 @@ export function FisImportDialog({ open, onOpenChange, categoryId }: FisImportDia
       // Fetch players in this category
       const { data: players } = await supabase
         .from("players")
-        .select("id, name, first_name, fis_code")
+        .select("id, name, first_name")
         .eq("category_id", categoryId);
 
       // Match
       const matchResults: MatchedAthlete[] = rows.map((fisRow) => {
-        // 1. Match by FIS code
+        // 1. Match by name (fis_code match done after import)
         const byCode = players?.find((p) => p.fis_code === fisRow.fisCode);
         if (byCode) {
           return {
