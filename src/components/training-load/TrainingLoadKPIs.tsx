@@ -115,6 +115,9 @@ export function TrainingLoadKPIs({ summary, isLoading, loadModel = "ewma" }: Tra
         <CardContent>
           <div className="text-2xl font-bold">{summary.ewmaChronic.toFixed(1)}</div>
           <p className="text-xs text-muted-foreground">Capacité de base (28j)</p>
+          <p className="text-[10px] text-muted-foreground/70 mt-2 leading-relaxed border-t border-border/30 pt-1.5">
+            Reflète la charge habituelle sur 28 jours. Se met à jour automatiquement à chaque séance enregistrée dans <span className="font-semibold">Programmation → Séances</span>.
+          </p>
         </CardContent>
       </Card>
 
