@@ -452,6 +452,16 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
           </Card>
         </>
       )}
+
+      {selectedPlayer && player && (
+        <AddHistoricalFisResultsDialog
+          open={historicalOpen}
+          onOpenChange={setHistoricalOpen}
+          categoryId={categoryId}
+          playerId={selectedPlayer}
+          playerName={`${player.first_name || ""} ${player.name}`.trim()}
+        />
+      )}
     </div>
   );
 }
