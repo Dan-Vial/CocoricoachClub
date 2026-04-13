@@ -329,6 +329,23 @@ export const NATATION_SPECIALTIES: Record<string, SpecialtyOption[]> = {
   ],
 };
 
+// Club-level discipline families for Sports de Glisse
+export interface SkiClubDisciplineOption {
+  value: string;
+  label: string;
+}
+
+export const SKI_CLUB_DISCIPLINES: SkiClubDisciplineOption[] = [
+  { value: "ski_alpin", label: "Ski Alpin" },
+  { value: "ski_fond", label: "Ski de Fond" },
+  { value: "ski_biathlon", label: "Biathlon" },
+  { value: "ski_freestyle", label: "Ski Freestyle" },
+  { value: "snowboard_freestyle", label: "Snowboard Freestyle" },
+  { value: "snowboard_alpin", label: "Snowboard Alpin" },
+  { value: "ski_saut", label: "Saut à Ski" },
+  { value: "ski_combine_nordique", label: "Combiné Nordique" },
+];
+
 // Disciplines for Sports de Glisse (Ski/Snow)
 export const SKI_DISCIPLINES: PlayerAttributeOption[] = [
   // Ski Alpin
@@ -617,7 +634,7 @@ export const getMainSportFromType = (type: string): MainSportCategory => {
   if (type.startsWith("padel")) return "padel";
   if (type.startsWith("natation")) return "natation";
   if (type.startsWith("surf")) return "surf";
-  if (type.startsWith("ski") || type.startsWith("snow")) return "ski";
+  if (type.startsWith("ski") || type.startsWith("snow") || type === "snowboard_freestyle" || type === "snowboard_alpin") return "ski";
   if (type.startsWith("triathlon")) return "triathlon";
   if (type.startsWith("tennis")) return "tennis";
   return "rugby"; // default
