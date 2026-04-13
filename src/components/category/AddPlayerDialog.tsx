@@ -222,7 +222,11 @@ export function AddPlayerDialog({
       birth_date: birthDate || undefined,
       discipline: discipline || undefined,
       specialty: specialty || undefined,
-      position: position || undefined
+      position: position || undefined,
+      fis_ranking: fisRanking ? parseInt(fisRanking) : undefined,
+      fis_points: fisPointsInput ? parseFloat(fisPointsInput) : undefined,
+      fis_objective: fisObjective.trim() || undefined,
+      fis_objective_date: fisObjectiveDate || undefined,
     });
   };
 
