@@ -471,7 +471,7 @@ export const isNatationCategory = (rugbyType: string): boolean => {
 
 // Helper to check if a category is ski/snow
 export const isSkiCategory = (rugbyType: string): boolean => {
-  return (rugbyType?.startsWith("ski") || rugbyType?.startsWith("snow") || rugbyType === "ski") && !rugbyType?.startsWith("surf");
+  return (rugbyType?.startsWith("ski") || rugbyType?.startsWith("snow") || rugbyType === "ski" || rugbyType === "snowboard_freestyle" || rugbyType === "snowboard_alpin") && !rugbyType?.startsWith("surf");
 };
 
 // Helper to check if a category is surf
