@@ -103,16 +103,10 @@ export function drawPdfRugbyField(
     }
   });
 
-  // Center circle (10m radius proportional)
-  doc.setDrawColor(255, 255, 255);
-  doc.setLineWidth(0.4);
+  // Center spot (small dot, no circle - rugby, not football)
+  doc.setFillColor(255, 255, 255);
   const centerX = fx + fw * 0.5;
   const centerY = fy + fh * 0.5;
-  const circleR = fh * 0.14;
-  doc.circle(centerX, centerY, circleR, "S");
-
-  // Center spot
-  doc.setFillColor(255, 255, 255);
   doc.circle(centerX, centerY, 0.8, "F");
 
   // 22m drop-out spots
