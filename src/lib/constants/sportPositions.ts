@@ -226,6 +226,17 @@ export function getPositionsForSport(sportType: SportType | string): Position[] 
       return AVIRON_POSITIONS;
     case "bowling":
       return BOWLING_POSITIONS;
+    case "ski":
+    case "snow":
+    case "snowboard":
+    case "surf":
+    case "natation":
+    case "athletisme":
+    case "triathlon":
+    case "padel":
+    case "tennis":
+    case "hyrox":
+      return [];
     default:
       return RUGBY_XV_POSITIONS;
   }

@@ -482,6 +482,29 @@ export const isSkiCategory = (rugbyType: string): boolean => {
   return (rugbyType?.startsWith("ski") || rugbyType?.startsWith("snow") || rugbyType === "ski" || rugbyType === "snowboard_freestyle" || rugbyType === "snowboard_alpin") && !rugbyType?.startsWith("surf");
 };
 
+// Get filtered ski/snow disciplines based on category type
+export const getSkiDisciplinesForCategory = (rugbyType: string): PlayerAttributeOption[] => {
+  if (!rugbyType) return SKI_DISCIPLINES;
+  
+  // Snowboard freestyle → only snowboard disciplines
+  if (rugbyType.includes("snowboard_freestyle") || rugbyType.includes("snowboard_alpin")) {
+    return SKI_DISCIPLINES.filter(d => d.value.startsWith("snow_"));
+  }
+  // Ski alpin → only ski alpin disciplines
+  if (rugbyType.includes("ski_alpin")) {
+    return SKI_DISCIPLINES.filter(d => ["ski_descente", "ski_slalom", "ski_geant", "ski_super_g", "ski_combine"].includes(d.value));
+  }
+  // Ski freestyle → only ski freestyle disciplines
+  if (rugbyType.includes("ski_freestyle")) {
+    return SKI_DISCIPLINES.filter(d => d.value.startsWith("ski_freestyle_"));
+  }
+  // Ski fond → only ski fond disciplines
+  if (rugbyType.includes("ski_fond")) {
+    return SKI_DISCIPLINES.filter(d => d.value.startsWith("ski_fond_"));
+  }
+  return SKI_DISCIPLINES;
+};
+
 // Helper to check if a category is surf
 export const isSurfCategory = (rugbyType: string): boolean => {
   return rugbyType?.startsWith("surf") || rugbyType === "surf";

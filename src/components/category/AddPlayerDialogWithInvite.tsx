@@ -21,7 +21,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { playerSchema } from "@/lib/validations";
-import { ATHLETISME_DISCIPLINES, ATHLETISME_SPECIALTIES, JUDO_WEIGHT_CATEGORIES, AVIRON_ROLES, NATATION_DISCIPLINES, NATATION_SPECIALTIES, SKI_DISCIPLINES, SURF_DISCIPLINES, TRIATHLON_DISCIPLINES, PADEL_POSITIONS, isAthletismeCategory, isJudoCategory, isNatationCategory, isSkiCategory, isSurfCategory, isTriathlonCategory, isPadelCategory, isIndividualSport } from "@/lib/constants/sportTypes";
+import { ATHLETISME_DISCIPLINES, ATHLETISME_SPECIALTIES, JUDO_WEIGHT_CATEGORIES, AVIRON_ROLES, NATATION_DISCIPLINES, NATATION_SPECIALTIES, SKI_DISCIPLINES, SURF_DISCIPLINES, TRIATHLON_DISCIPLINES, PADEL_POSITIONS, isAthletismeCategory, isJudoCategory, isNatationCategory, isSkiCategory, isSurfCategory, isTriathlonCategory, isPadelCategory, isIndividualSport, getSkiDisciplinesForCategory } from "@/lib/constants/sportTypes";
 import { getPositionsForSport } from "@/lib/constants/sportPositions";
 import { Loader2, Send, UserPlus, Copy, Check, AlertTriangle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -127,12 +127,15 @@ export function AddPlayerDialogWithInvite({
   const getDisciplineOptions = () => {
     if (isAthletics) return ATHLETISME_DISCIPLINES;
     if (isNatation) return NATATION_DISCIPLINES;
-    if (isSki) return SKI_DISCIPLINES;
+    if (isSki) return getSkiDisciplinesForCategory(categoryData?.rugby_type || "");
     if (isSurf) return SURF_DISCIPLINES;
     if (isTriathlon) return TRIATHLON_DISCIPLINES;
     return [];
   };
-  const hasDisciplines = isAthletics || isNatation || isSki || isSurf || isTriathlon;
+  const hasDisciplines = isAthletics || isNatation || isSurf || isTriathlon;
+  // For ski/snow with only 1 discipline option, don't show discipline picker
+  const skiDisciplines = isSki ? getSkiDisciplinesForCategory(categoryData?.rugby_type || "") : [];
+  const showSkiDiscipline = isSki && skiDisciplines.length > 1;
   const disciplineOptions = getDisciplineOptions();
   
   // Determine specialties
@@ -541,6 +544,46 @@ export function AddPlayerDialogWithInvite({
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+            )}
+
+            {/* Ski/Snow discipline selector (filtered by category) */}
+            {showSkiDiscipline && (
+              <div className="space-y-2">
+                <Label htmlFor="skiDiscipline">Discipline *</Label>
+                <Select value={discipline} onValueChange={setDiscipline}>
+                  <SelectTrigger className="w-full bg-background">
+                    <SelectValue placeholder="Sélectionner une discipline" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border z-50 max-h-[300px]">
+                    {skiDisciplines.map((disc) => (
+                      <SelectItem key={disc.value} value={disc.value}>
+                        {disc.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* FIS fields for ski/snow */}
+            {isSki && (
+              <div className="space-y-3 border-t pt-3">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Classement FIS</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="fisRanking">Classement FIS</Label>
+                    <Input id="fisRanking" type="number" placeholder="Ex: 45" min="1" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="fisPoints">Points FIS</Label>
+                    <Input id="fisPoints" type="number" placeholder="Ex: 320.50" step="0.01" min="0" />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="fisObjective">Objectif sportif</Label>
+                  <Input id="fisObjective" placeholder="Ex: Qualification Championnats du Monde" />
+                </div>
               </div>
             )}
             
