@@ -91,6 +91,9 @@ export function TrainingLoadKPIs({ summary, isLoading, loadModel = "ewma" }: Tra
               {summary.weeklyChange >= 0 ? "+" : ""}{summary.weeklyChange}% vs sem. préc.
             </span>
           </div>
+          <p className="text-[10px] text-muted-foreground/70 mt-2 leading-relaxed border-t border-border/30 pt-1.5">
+            Calculée à partir du RPE et de la durée des séances. Le coach saisit le RPE prévu dans <span className="font-semibold">Programmation</span>, l'athlète peut ajuster son RPE réel après la séance.
+          </p>
         </CardContent>
       </Card>
 
