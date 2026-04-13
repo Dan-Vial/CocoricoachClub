@@ -183,7 +183,7 @@ export function AnnualTimelineView({
                             "absolute top-0 h-full rounded-lg flex items-center justify-center gap-1 text-[11px] font-bold uppercase tracking-wide border",
                             meta.bgClass
                           )}
-                          style={{ left: pos.left, width: pos.width, borderColor: "currentColor", borderOpacity: 0.2 }}
+                          style={{ left: pos.left, width: pos.width, borderColor: "currentColor", opacity: 0.9 }}
                         >
                           <span>{meta.icon}</span>
                           {!pos.isNarrow && <span>{meta.shortLabel}</span>}
