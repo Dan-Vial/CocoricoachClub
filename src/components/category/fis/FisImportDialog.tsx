@@ -10,6 +10,13 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
 import * as XLSX from "xlsx";
 
+/** One discipline detected in the file (e.g. HP, SS, BA, SL, GS, SP …) */
+interface DisciplineData {
+  code: string;      // short code from header, e.g. "HP", "SL"
+  pts: number | null;
+  rk: number | null;
+}
+
 interface FisAthleteRow {
   fisCode: string;
   lastName: string;
@@ -18,21 +25,20 @@ interface FisAthleteRow {
   birthYear: number | null;
   nation: string;
   gender: string;
-  hpPts: number | null;
-  hpRk: number | null;
-  ssPts: number | null;
-  ssRk: number | null;
-  baPts: number | null;
-  baRk: number | null;
-  rePts: number | null;
-  reRk: number | null;
+  disciplines: DisciplineData[];
+}
+
+interface ParseResult {
+  sport: string;           // detected from title row
+  disciplineCodes: string[]; // e.g. ["HP","SS","BA","RE"]
+  athletes: FisAthleteRow[];
 }
 
 interface MatchedAthlete {
   fisRow: FisAthleteRow;
   playerId: string | null;
   playerName: string | null;
-  matchType: "exact" | "name" | "none";
+  matchType: "name" | "none";
   selected: boolean;
 }
 
@@ -48,44 +54,95 @@ function parseNumber(val: unknown): number | null {
   return isNaN(n) ? null : n;
 }
 
-function parseExcelFile(data: ArrayBuffer): FisAthleteRow[] {
+/**
+ * Dynamically parse any FIS Points List Excel file.
+ * Detects the header row, finds discipline columns (pairs of "XX Pts." / "XX Rk."),
+ * and extracts athlete data accordingly.
+ */
+function parseExcelFile(data: ArrayBuffer): ParseResult {
   const wb = XLSX.read(data, { type: "array" });
   const ws = wb.Sheets[wb.SheetNames[0]];
   const raw: unknown[][] = XLSX.utils.sheet_to_json(ws, { header: 1 });
 
-  // Find header row (contains "FIS code")
-  let headerIdx = 0;
-  for (let i = 0; i < Math.min(10, raw.length); i++) {
-    const row = raw[i];
-    if (row && row.some((c) => String(c).toLowerCase().includes("fis code"))) {
-      headerIdx = i;
+  // Detect sport from title (first non-empty row)
+  let sport = "Unknown";
+  for (let i = 0; i < Math.min(5, raw.length); i++) {
+    const firstCell = String(raw[i]?.[0] || "");
+    if (firstCell.toLowerCase().includes("points list") || firstCell.toLowerCase().includes("classement")) {
+      sport = firstCell;
       break;
     }
   }
 
-  const rows: FisAthleteRow[] = [];
+  // Find header row (contains "FIS code" or "FIS Code")
+  let headerIdx = -1;
+  for (let i = 0; i < Math.min(10, raw.length); i++) {
+    const row = raw[i];
+    if (row && row.some((c) => String(c).toLowerCase().replace(/\s+/g, "").includes("fiscode"))) {
+      headerIdx = i;
+      break;
+    }
+  }
+  if (headerIdx === -1) {
+    throw new Error("En-tête 'FIS code' introuvable dans le fichier");
+  }
+
+  const headers = raw[headerIdx].map((h) => String(h || "").trim());
+
+  // Find fixed columns
+  const findCol = (patterns: string[]) =>
+    headers.findIndex((h) => patterns.some((p) => h.toLowerCase().replace(/\s+/g, "").includes(p)));
+
+  const colFisCode = findCol(["fiscode"]);
+  const colLastName = findCol(["lastname", "nom"]);
+  const colFirstName = findCol(["firstname", "prénom", "prenom"]);
+  const colBirthDate = findCol(["birthdate", "datenaissance"]);
+  const colBirthYear = findCol(["birthyear", "annéenaissance", "anneenaissance"]);
+  const colNation = findCol(["nation", "pays"]);
+  const colGender = findCol(["gender", "sexe", "genre"]);
+
+  // Detect discipline columns: any header ending with "Pts." or "Pts"
+  const disciplineCols: { code: string; ptsIdx: number; rkIdx: number }[] = [];
+  for (let i = 0; i < headers.length; i++) {
+    const h = headers[i];
+    const ptsMatch = h.match(/^(\w+)\s*Pts\.?$/i);
+    if (ptsMatch) {
+      const code = ptsMatch[1].toUpperCase();
+      // Expect the next column to be "XX Rk."
+      const rkIdx = headers.findIndex(
+        (rh, ri) => ri > i && rh.toLowerCase().replace(/\s+/g, "").includes(code.toLowerCase() + "rk"),
+      );
+      disciplineCols.push({ code, ptsIdx: i, rkIdx: rkIdx !== -1 ? rkIdx : -1 });
+    }
+  }
+
+  const disciplineCodes = disciplineCols.map((d) => d.code);
+
+  // Parse athlete rows
+  const athletes: FisAthleteRow[] = [];
   for (let i = headerIdx + 1; i < raw.length; i++) {
     const r = raw[i];
-    if (!r || !r[0]) continue;
-    rows.push({
-      fisCode: String(r[0]).trim(),
-      lastName: String(r[1] || "").trim(),
-      firstName: String(r[2] || "").trim(),
-      birthDate: r[3] ? String(r[3]) : null,
-      birthYear: parseNumber(r[4]),
-      nation: String(r[5] || "").trim(),
-      gender: String(r[6] || "").trim(),
-      hpPts: parseNumber(r[7]),
-      hpRk: parseNumber(r[8]),
-      ssPts: parseNumber(r[9]),
-      ssRk: parseNumber(r[10]),
-      baPts: parseNumber(r[11]),
-      baRk: parseNumber(r[12]),
-      rePts: parseNumber(r[13]),
-      reRk: parseNumber(r[14]),
+    if (!r || !r[colFisCode]) continue;
+
+    const disciplines: DisciplineData[] = disciplineCols.map((d) => ({
+      code: d.code,
+      pts: parseNumber(r[d.ptsIdx]),
+      rk: d.rkIdx !== -1 ? parseNumber(r[d.rkIdx]) : null,
+    }));
+
+    athletes.push({
+      fisCode: String(r[colFisCode]).trim(),
+      lastName: colLastName !== -1 ? String(r[colLastName] || "").trim() : "",
+      firstName: colFirstName !== -1 ? String(r[colFirstName] || "").trim() : "",
+      birthDate: colBirthDate !== -1 && r[colBirthDate] ? String(r[colBirthDate]) : null,
+      birthYear: colBirthYear !== -1 ? parseNumber(r[colBirthYear]) : null,
+      nation: colNation !== -1 ? String(r[colNation] || "").trim() : "",
+      gender: colGender !== -1 ? String(r[colGender] || "").trim() : "",
+      disciplines,
     });
   }
-  return rows;
+
+  return { sport, disciplineCodes, athletes };
 }
 
 function normalize(s: string) {
@@ -96,61 +153,66 @@ function normalize(s: string) {
     .trim();
 }
 
+/** Map discipline code to a DB-friendly discipline name */
+function disciplineCodeToName(code: string): string {
+  const map: Record<string, string> = {
+    HP: "halfpipe", SS: "slopestyle", BA: "big_air", RE: "rail",
+    SL: "slalom", GS: "giant_slalom", SG: "super_g", DH: "downhill",
+    AC: "acrobatic", MO: "moguls", AE: "aerials", SK: "skicross",
+    SX: "snowboardcross", PSL: "parallel_slalom", PGS: "parallel_gs",
+    SP: "sprint", IN: "individual", PU: "pursuit", MS: "mass_start",
+  };
+  return map[code] || code.toLowerCase();
+}
+
 export function FisImportDialog({ open, onOpenChange, categoryId }: FisImportDialogProps) {
   const [step, setStep] = useState<"upload" | "match" | "importing" | "done">("upload");
-  const [fisData, setFisData] = useState<FisAthleteRow[]>([]);
+  const [parseResult, setParseResult] = useState<ParseResult | null>(null);
   const [matched, setMatched] = useState<MatchedAthlete[]>([]);
   const [importing, setImporting] = useState(false);
   const [importCount, setImportCount] = useState(0);
+  const [parseError, setParseError] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
   const handleFileChange = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (!file) return;
+      setParseError(null);
 
-      const data = await file.arrayBuffer();
-      const rows = parseExcelFile(data);
-      setFisData(rows);
+      try {
+        const data = await file.arrayBuffer();
+        const result = parseExcelFile(data);
+        setParseResult(result);
 
-      // Fetch players in this category
-      const { data: players } = await supabase
-        .from("players")
-        .select("id, name, first_name")
-        .eq("category_id", categoryId);
+        const { data: players } = await supabase
+          .from("players")
+          .select("id, name, first_name")
+          .eq("category_id", categoryId);
 
-      // Match
-      const matchResults: MatchedAthlete[] = rows.map((fisRow) => {
-
-        // 2. Match by name
-        const byName = players?.find((p) => {
-          const pLast = normalize(p.name || "");
-          const pFirst = normalize(p.first_name || "");
-          const fLast = normalize(fisRow.lastName);
-          const fFirst = normalize(fisRow.firstName);
-          return pLast === fLast && pFirst === fFirst;
+        const matchResults: MatchedAthlete[] = result.athletes.map((fisRow) => {
+          const byName = players?.find((p) => {
+            const pLast = normalize(p.name || "");
+            const pFirst = normalize(p.first_name || "");
+            return pLast === normalize(fisRow.lastName) && pFirst === normalize(fisRow.firstName);
+          });
+          if (byName) {
+            return {
+              fisRow,
+              playerId: byName.id,
+              playerName: `${byName.first_name || ""} ${byName.name}`.trim(),
+              matchType: "name" as const,
+              selected: true,
+            };
+          }
+          return { fisRow, playerId: null, playerName: null, matchType: "none" as const, selected: false };
         });
-        if (byName) {
-          return {
-            fisRow,
-            playerId: byName.id,
-            playerName: `${byName.first_name || ""} ${byName.name}`.trim(),
-            matchType: "name" as const,
-            selected: true,
-          };
-        }
 
-        return {
-          fisRow,
-          playerId: null,
-          playerName: null,
-          matchType: "none" as const,
-          selected: false,
-        };
-      });
-
-      setMatched(matchResults);
-      setStep("match");
+        setMatched(matchResults);
+        setStep("match");
+      } catch (err: unknown) {
+        setParseError(err instanceof Error ? err.message : "Erreur lors de la lecture du fichier");
+      }
     },
     [categoryId],
   );
@@ -163,81 +225,63 @@ export function FisImportDialog({ open, onOpenChange, categoryId }: FisImportDia
     setImporting(true);
     setStep("importing");
     let count = 0;
-
     const toImport = matched.filter((m) => m.selected && m.playerId);
 
     for (const m of toImport) {
       const fisRow = m.fisRow;
+      const withPts = fisRow.disciplines.filter((d) => d.pts != null);
+      const best = withPts.sort((a, b) => (b.pts || 0) - (a.pts || 0))[0];
 
-      // Determine best discipline points
-      const disciplines = [
-        { key: "HP", pts: fisRow.hpPts, rk: fisRow.hpRk },
-        { key: "SS", pts: fisRow.ssPts, rk: fisRow.ssRk },
-        { key: "BA", pts: fisRow.baPts, rk: fisRow.baRk },
-        { key: "RE", pts: fisRow.rePts, rk: fisRow.reRk },
-      ];
-
-      const bestDiscipline = disciplines
-        .filter((d) => d.pts != null)
-        .sort((a, b) => (b.pts || 0) - (a.pts || 0))[0];
-
-      // Update player with FIS data
+      // Update player
       const updateData: Record<string, unknown> = {
         fis_code: fisRow.fisCode,
-        fis_points: bestDiscipline?.pts || null,
-        fis_ranking: bestDiscipline?.rk || null,
+        fis_points: best?.pts || null,
+        fis_ranking: best?.rk || null,
       };
-
       await supabase.from("players").update(updateData).eq("id", m.playerId!);
 
-      // Store all discipline points in fis_results as a snapshot
-      for (const d of disciplines) {
-        if (d.pts != null) {
-          // We'll store this as metadata - using fis_results table
-          // First check if a "ranking_import" competition exists for today
-          const today = new Date().toISOString().split("T")[0];
-          let compId: string;
+      // Store discipline results
+      const today = new Date().toISOString().split("T")[0];
+      for (const d of withPts) {
+        let compId: string;
+        const { data: existingComp } = await supabase
+          .from("fis_competitions")
+          .select("id")
+          .eq("category_id", categoryId)
+          .eq("competition_date", today)
+          .eq("name", `Import classement FIS - ${d.code}`)
+          .maybeSingle();
 
-          const { data: existingComp } = await supabase
+        if (existingComp) {
+          compId = existingComp.id;
+        } else {
+          const { data: newComp } = await supabase
             .from("fis_competitions")
-            .select("id")
-            .eq("category_id", categoryId)
-            .eq("competition_date", today)
-            .eq("name", `Import classement FIS - ${d.key}`)
-            .maybeSingle();
-
-          if (existingComp) {
-            compId = existingComp.id;
-          } else {
-            const { data: newComp } = await supabase
-              .from("fis_competitions")
-              .insert({
-                category_id: categoryId,
-                name: `Import classement FIS - ${d.key}`,
-                competition_date: today,
-                discipline: d.key === "HP" ? "halfpipe" : d.key === "SS" ? "slopestyle" : d.key === "BA" ? "big_air" : "other",
-                level: "fis",
-                total_participants: null,
-              })
-              .select("id")
-              .single();
-            if (!newComp) continue;
-            compId = newComp.id;
-          }
-
-          // Upsert result
-          const { error } = await supabase.from("fis_results").upsert(
-            {
-              competition_id: compId,
-              player_id: m.playerId!,
+            .insert({
               category_id: categoryId,
-              ranking: d.rk || null,
-              fis_points: d.pts,
-            },
-            { onConflict: "competition_id,player_id" },
-          );
-          if (!error) count++;
+              name: `Import classement FIS - ${d.code}`,
+              competition_date: today,
+              discipline: disciplineCodeToName(d.code),
+              level: "fis",
+              total_participants: null,
+            })
+            .select("id")
+            .single();
+          if (!newComp) continue;
+          compId = newComp.id;
         }
+
+        const { error } = await supabase.from("fis_results").upsert(
+          {
+            competition_id: compId,
+            player_id: m.playerId!,
+            category_id: categoryId,
+            ranking: d.rk || null,
+            fis_points: d.pts!,
+          },
+          { onConflict: "competition_id,player_id" },
+        );
+        if (!error) count++;
       }
     }
 
@@ -250,9 +294,10 @@ export function FisImportDialog({ open, onOpenChange, categoryId }: FisImportDia
 
   const handleClose = () => {
     setStep("upload");
-    setFisData([]);
+    setParseResult(null);
     setMatched([]);
     setImportCount(0);
+    setParseError(null);
     onOpenChange(false);
   };
 
@@ -268,7 +313,7 @@ export function FisImportDialog({ open, onOpenChange, categoryId }: FisImportDia
             Import classement FIS
           </DialogTitle>
           <DialogDescription>
-            Importez un fichier Excel de classement FIS pour mettre à jour les points et classements de vos athlètes.
+            Importez un fichier Excel de classement FIS (Snowboard, Ski, Biathlon…) pour mettre à jour les points et classements.
           </DialogDescription>
         </DialogHeader>
 
@@ -286,31 +331,46 @@ export function FisImportDialog({ open, onOpenChange, categoryId }: FisImportDia
                 </Button>
               </label>
             </div>
+            {parseError && (
+              <div className="flex items-center gap-2 text-destructive text-sm">
+                <AlertTriangle className="h-4 w-4" />
+                {parseError}
+              </div>
+            )}
             <p className="text-xs text-muted-foreground">
-              Format attendu : fichier Excel du classement FIS (World Snowboard Points List)
+              Compatible : World Snowboard/Ski/Biathlon Points List et formats similaires
             </p>
           </div>
         )}
 
         {step === "match" && (
           <div className="space-y-4">
-            <div className="flex items-center gap-3 text-sm">
-              <Badge variant="secondary">{fisData.length} athlètes dans le fichier</Badge>
-              <Badge variant="default" className="bg-emerald-600">
+            {parseResult && (
+              <div className="bg-muted/50 rounded-md p-3 text-xs space-y-1">
+                <p className="font-medium text-sm">{parseResult.sport}</p>
+                <p className="text-muted-foreground">
+                  Disciplines détectées : <span className="font-mono">{parseResult.disciplineCodes.join(", ")}</span>
+                </p>
+              </div>
+            )}
+
+            <div className="flex items-center gap-3 text-sm flex-wrap">
+              <Badge variant="secondary">{parseResult?.athletes.length || 0} athlètes dans le fichier</Badge>
+              <Badge variant="default">
                 <UserCheck className="h-3 w-3 mr-1" />
                 {matchedCount} correspondances
               </Badge>
               <Badge variant="outline">
                 <UserX className="h-3 w-3 mr-1" />
-                {fisData.length - matchedCount} non trouvés
+                {(parseResult?.athletes.length || 0) - matchedCount} non trouvés
               </Badge>
             </div>
 
-            <ScrollArea className="h-[400px] border rounded-md">
+            <ScrollArea className="h-[350px] border rounded-md">
               <div className="divide-y">
                 {matched
                   .filter((m) => m.matchType !== "none")
-                  .map((m, idx) => {
+                  .map((m) => {
                     const realIdx = matched.indexOf(m);
                     return (
                       <div key={realIdx} className="flex items-center gap-3 p-3 hover:bg-muted/50">
@@ -323,19 +383,19 @@ export function FisImportDialog({ open, onOpenChange, categoryId }: FisImportDia
                             FIS: {m.fisRow.fisCode} • {m.fisRow.nation}
                           </p>
                         </div>
-                        <div className="text-right text-xs">
-                          {m.fisRow.hpPts != null && <span className="mr-2">HP: {m.fisRow.hpPts}</span>}
-                          {m.fisRow.ssPts != null && <span className="mr-2">SS: {m.fisRow.ssPts}</span>}
-                          {m.fisRow.baPts != null && <span className="mr-2">BA: {m.fisRow.baPts}</span>}
-                          {m.fisRow.rePts != null && <span>RE: {m.fisRow.rePts}</span>}
+                        <div className="text-right text-xs space-x-2">
+                          {m.fisRow.disciplines
+                            .filter((d) => d.pts != null)
+                            .map((d) => (
+                              <span key={d.code}>
+                                {d.code}: {d.pts}
+                              </span>
+                            ))}
                         </div>
-                        <Badge variant={m.matchType === "exact" ? "default" : "secondary"} className="text-[10px]">
-                          {m.matchType === "exact" ? "Code FIS" : "Nom"}
-                        </Badge>
                       </div>
                     );
                   })}
-                {matched.filter((m) => m.matchType !== "none").length === 0 && (
+                {matchedCount === 0 && (
                   <div className="p-8 text-center text-muted-foreground">
                     <AlertTriangle className="h-8 w-8 mx-auto mb-2" />
                     <p>Aucune correspondance trouvée entre le fichier FIS et vos athlètes.</p>
@@ -370,8 +430,8 @@ export function FisImportDialog({ open, onOpenChange, categoryId }: FisImportDia
 
         {step === "done" && (
           <div className="flex flex-col items-center gap-4 py-8">
-            <div className="h-12 w-12 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-              <Check className="h-6 w-6 text-emerald-600" />
+            <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+              <Check className="h-6 w-6 text-primary" />
             </div>
             <p className="font-medium">Import terminé !</p>
             <p className="text-sm text-muted-foreground">{importCount} résultat(s) FIS importé(s)</p>
