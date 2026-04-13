@@ -6768,6 +6768,7 @@ export type Database = {
           email: string | null
           emergency_notes: string | null
           first_name: string | null
+          fis_code: string | null
           fis_objective: string | null
           fis_objective_date: string | null
           fis_points: number | null
@@ -6803,6 +6804,7 @@ export type Database = {
           email?: string | null
           emergency_notes?: string | null
           first_name?: string | null
+          fis_code?: string | null
           fis_objective?: string | null
           fis_objective_date?: string | null
           fis_points?: number | null
@@ -6838,6 +6840,7 @@ export type Database = {
           email?: string | null
           emergency_notes?: string | null
           first_name?: string | null
+          fis_code?: string | null
           fis_objective?: string | null
           fis_objective_date?: string | null
           fis_points?: number | null
