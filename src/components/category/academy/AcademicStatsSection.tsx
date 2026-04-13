@@ -486,7 +486,7 @@ export function AcademicStatsSection({ categoryId }: AcademicStatsSectionProps) 
                           <YAxis domain={[(dataMin: number) => Math.max(0, Math.floor(dataMin) - 2), 20]} fontSize={12} allowDecimals={false} />
                           <Tooltip />
                           <Legend />
-                          <Bar dataKey="moyenne" name="Moyenne (/20)" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                          <Bar dataKey="moyenne" name="Moyenne (/20)" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} barSize={60} maxBarSize={80} />
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
