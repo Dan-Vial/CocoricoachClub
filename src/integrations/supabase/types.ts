@@ -2423,12 +2423,18 @@ export type Database = {
           created_at: string
           discipline: string
           end_date: string | null
+          f_value: number | null
           id: string
           level: string
           location: string | null
           name: string
           notes: string | null
           race_penalty: number | null
+          top_classified_1_pts: number | null
+          top_classified_2_pts: number | null
+          top_classified_3_pts: number | null
+          top_classified_4_pts: number | null
+          top_classified_5_pts: number | null
           top_rider_1_pts: number | null
           top_rider_2_pts: number | null
           top_rider_3_pts: number | null
@@ -2444,12 +2450,18 @@ export type Database = {
           created_at?: string
           discipline?: string
           end_date?: string | null
+          f_value?: number | null
           id?: string
           level?: string
           location?: string | null
           name: string
           notes?: string | null
           race_penalty?: number | null
+          top_classified_1_pts?: number | null
+          top_classified_2_pts?: number | null
+          top_classified_3_pts?: number | null
+          top_classified_4_pts?: number | null
+          top_classified_5_pts?: number | null
           top_rider_1_pts?: number | null
           top_rider_2_pts?: number | null
           top_rider_3_pts?: number | null
@@ -2465,12 +2477,18 @@ export type Database = {
           created_at?: string
           discipline?: string
           end_date?: string | null
+          f_value?: number | null
           id?: string
           level?: string
           location?: string | null
           name?: string
           notes?: string | null
           race_penalty?: number | null
+          top_classified_1_pts?: number | null
+          top_classified_2_pts?: number | null
+          top_classified_3_pts?: number | null
+          top_classified_4_pts?: number | null
+          top_classified_5_pts?: number | null
           top_rider_1_pts?: number | null
           top_rider_2_pts?: number | null
           top_rider_3_pts?: number | null
