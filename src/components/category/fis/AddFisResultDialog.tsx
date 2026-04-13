@@ -56,19 +56,21 @@ export function AddFisResultDialog({ open, onOpenChange, competition }: AddFisRe
     }
     setSaving(true);
 
-    const basePoints = calculatedPoints !== null ? calculatedPoints + racePenalty : 0;
+    const basePointsVal = calculatedPoints !== null ? calculatedPoints + racePenalty : 0;
 
-    const { error } = await supabase.from("fis_results").upsert(
-      {
-        competition_id: competition.id,
-        player_id: playerId,
-        category_id: competition.category_id,
-        ranking: rankingNum,
-        score: score ? Number(score) : null,
-        fis_points: calculatedPoints ?? 0,
-        base_points: basePoints,
-        calculated_points: calculatedPoints,
-      } as Record<string, unknown>,
+    const upsertData = {
+      competition_id: competition.id,
+      player_id: playerId,
+      category_id: competition.category_id,
+      ranking: rankingNum,
+      score: score ? Number(score) : null,
+      fis_points: calculatedPoints ?? 0,
+      base_points: basePointsVal,
+      calculated_points: calculatedPoints,
+    };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase.from("fis_results") as any).upsert(
+      upsertData,
       { onConflict: "competition_id,player_id" },
     );
 
