@@ -112,7 +112,7 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 flex-wrap">
         <Label className="text-sm font-medium">Athlète</Label>
         <Select value={selectedPlayer} onValueChange={setSelectedPlayer}>
           <SelectTrigger className="w-[280px]">
@@ -127,6 +127,12 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
             ))}
           </SelectContent>
         </Select>
+        {selectedPlayer && player && (
+          <Button variant="outline" size="sm" onClick={() => setHistoricalOpen(true)}>
+            <History className="h-4 w-4 mr-1" />
+            Ajouter historique
+          </Button>
+        )}
       </div>
 
       {!selectedPlayer ? (
