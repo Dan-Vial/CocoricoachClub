@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Calendar, Users, TrendingUp, BarChart3, Heart, Activity, Satellite } from "lucide-react";
 import { HrvEntryDialog } from "@/components/category/hrv/HrvEntryDialog";
 import { TrainingLoadChart } from "./TrainingLoadChart";
