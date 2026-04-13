@@ -14,7 +14,7 @@ import jsPDF from "jspdf";
 import ExcelJS from "exceljs";
 import { getExcelBranding, addBrandedHeader, styleDataHeaderRow, addZebraRows, addFooter, downloadWorkbook } from "@/lib/excelExport";
 import { preparePdfWithSettings, drawPdfHeader as drawPdfHeaderCustom, drawSectionTitle, drawTableHeader as drawTableHeaderLib, drawTableRow as drawTableRowLib, checkPageBreak as checkPageBreakLib, type PdfCustomSettings } from "@/lib/pdfExport";
-import { drawPdfRugbyField, drawPdfZoneStatsGrid } from "@/lib/pdfRugbyField";
+import { drawPdfRugbyField, drawPdfZoneStatsGrid, svgPctToPdfPos } from "@/lib/pdfRugbyField";
 import { getStatsForSport, supportsCompetitionRounds, getBaseSport, type StatField } from "@/lib/constants/sportStats";
 import { TEST_CATEGORIES, getTestLabel } from "@/lib/constants/testCategories";
 
@@ -1061,8 +1061,9 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
         };
 
         kickingAttempts.forEach((attempt: any) => {
-          const cx = fieldBounds.fx + (attempt.zone_x / 100) * fieldBounds.fw;
-          const cy = fieldBounds.fy + (attempt.zone_y / 100) * fieldBounds.fh;
+          const pos = svgPctToPdfPos({ x: attempt.zone_x, y: attempt.zone_y }, fieldBounds);
+          const cx = pos.kx;
+          const cy = pos.ky;
           const r = Math.max(2.5, fieldW * 0.012);
           
           // Circle fill: green for success, red for miss
