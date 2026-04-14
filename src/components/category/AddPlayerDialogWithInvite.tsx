@@ -802,7 +802,7 @@ export function AddPlayerDialogWithInvite({
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {isInviting ? "Envoi de l'invitation..." : "Ajout..."}
+                  {fisImportStatus ? fisImportStatus : isInviting ? "Envoi de l'invitation..." : "Ajout..."}
                 </>
               ) : sendInvitation ? (
                 <>
