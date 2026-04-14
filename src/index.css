@@ -475,17 +475,20 @@ All colors MUST be HSL.
 
 /* Colored tab trigger active state - main navigation & sub-tabs */
 .colored-tab-trigger[data-state="active"] {
-  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.15), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  box-shadow: 0 4px 8px -2px rgb(0 0 0 / 0.2) !important;
 }
-.colored-tab-trigger[data-state="active"] > .colored-tab-bg,
 .colored-tab-trigger[data-state="active"] .colored-tab-bg {
   opacity: 1 !important;
   transform: scale(1) !important;
 }
-.colored-tab-trigger[data-state="active"] > .colored-tab-text,
-.colored-tab-trigger[data-state="active"] .colored-tab-text {
+.colored-tab-trigger[data-state="active"] .colored-tab-text,
+.colored-tab-trigger[data-state="active"] .colored-tab-text * {
   color: white !important;
 }
 .colored-tab-trigger:not([data-state="active"]):hover {
   background-color: color-mix(in srgb, var(--tab-color) 15%, transparent);
+}
+button.colored-tab-trigger[data-state="active"] .colored-tab-bg {
+  opacity: 1 !important;
+  transform: scale(1) !important;
 }
