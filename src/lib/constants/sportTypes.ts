@@ -429,6 +429,33 @@ export const getOtherSportSubtypes = (sport: MainSportCategory): SportSubTypeOpt
   if (sport === "athletisme") return ATHLETISME_CATEGORY_SUBTYPES;
   if (sport === "crossfit") return CROSSFIT_SUBTYPES;
   if (sport === "basketball") return BASKETBALL_SUBTYPES;
+
+  // Sports de Glisse: show all ski/snow sub-disciplines as category types
+  if (sport === "ski") {
+    return [
+      { value: "ski_club" as SportType, label: "Sports de Glisse - Club" },
+      { value: "ski_academie" as SportType, label: "Sports de Glisse - Académie / Pôle Espoir" },
+      { value: "ski_national" as SportType, label: "Sports de Glisse - Équipe Nationale" },
+      { value: "ski_alpin_club" as SportType, label: "Ski Alpin - Club" },
+      { value: "ski_alpin_academie" as SportType, label: "Ski Alpin - Académie" },
+      { value: "ski_alpin_national" as SportType, label: "Ski Alpin - Équipe Nationale" },
+      { value: "snowboard_freestyle_club" as SportType, label: "Snowboard Freestyle - Club" },
+      { value: "snowboard_freestyle_academie" as SportType, label: "Snowboard Freestyle - Académie" },
+      { value: "snowboard_freestyle_national" as SportType, label: "Snowboard Freestyle - Équipe Nationale" },
+      { value: "snowboard_alpin_club" as SportType, label: "Snowboard Alpin - Club" },
+      { value: "snowboard_alpin_academie" as SportType, label: "Snowboard Alpin - Académie" },
+      { value: "snowboard_alpin_national" as SportType, label: "Snowboard Alpin - Équipe Nationale" },
+      { value: "ski_freestyle_club" as SportType, label: "Ski Freestyle - Club" },
+      { value: "ski_freestyle_academie" as SportType, label: "Ski Freestyle - Académie" },
+      { value: "ski_freestyle_national" as SportType, label: "Ski Freestyle - Équipe Nationale" },
+      { value: "ski_fond_club" as SportType, label: "Ski de Fond - Club" },
+      { value: "ski_fond_academie" as SportType, label: "Ski de Fond - Académie" },
+      { value: "ski_fond_national" as SportType, label: "Ski de Fond - Équipe Nationale" },
+      { value: "ski_biathlon_club" as SportType, label: "Biathlon - Club" },
+      { value: "ski_biathlon_academie" as SportType, label: "Biathlon - Académie" },
+      { value: "ski_biathlon_national" as SportType, label: "Biathlon - Équipe Nationale" },
+    ];
+  }
   
   const sportLabels: Record<string, string> = {
     football: "Football",
@@ -439,15 +466,6 @@ export const getOtherSportSubtypes = (sport: MainSportCategory): SportSubTypeOpt
     aviron: "Aviron",
     padel: "Padel",
     natation: "Natation",
-    ski: "Sports de Glisse",
-    ski_alpin: "Ski Alpin",
-    ski_fond: "Ski de Fond",
-    ski_biathlon: "Biathlon",
-    ski_freestyle: "Ski Freestyle",
-    snowboard_freestyle: "Snowboard Freestyle",
-    snowboard_alpin: "Snowboard Alpin",
-    ski_saut: "Saut à Ski",
-    ski_combine_nordique: "Combiné Nordique",
     surf: "Surf",
     triathlon: "Triathlon",
     tennis: "Tennis",
