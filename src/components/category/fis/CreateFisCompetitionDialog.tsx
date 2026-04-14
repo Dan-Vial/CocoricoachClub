@@ -128,7 +128,7 @@ export function CreateFisCompetitionDialog({ open, onOpenChange, categoryId, clu
     setLocation(""); setTotalParticipants(""); setNotes("");
     setTopRiders(["", "", "", "", ""]);
     setTopClassified(["", "", "", "", ""]);
-    setCustomFValue("");
+    setCustomFValue(""); setWsplStars("3"); setWsplPL("600");
   };
 
   return (
