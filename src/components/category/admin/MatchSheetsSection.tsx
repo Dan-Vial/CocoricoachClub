@@ -437,20 +437,24 @@ export function MatchSheetsSection({ categoryId, preSelectedMatchId }: MatchShee
 
       {/* Create/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col bg-[hsl(210,40%,98%)] border-0 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.3)] rounded-2xl p-0 gap-0">
-          {/* Premium Header */}
-          <div className="px-8 pt-8 pb-5 border-b border-border/40 bg-gradient-to-b from-background to-[hsl(210,40%,98%)]">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                <FileSpreadsheet className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <DialogTitle className="text-xl font-bold tracking-tight">
-                  {editingSheet ? "Modifier la feuille de match" : "Nouvelle feuille de match"}
-                </DialogTitle>
-                <p className="text-sm text-muted-foreground mt-0.5">
-                  Composez votre équipe et préparez le match
-                </p>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col border-0 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.35)] rounded-2xl p-0 gap-0 bg-card">
+          {/* Premium Header with colored accent */}
+          <div className="relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary/90 to-accent/80" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,hsl(var(--accent)/0.3),transparent_60%)]" />
+            <div className="relative px-8 pt-7 pb-6">
+              <div className="flex items-center gap-4">
+                <div className="h-12 w-12 rounded-2xl bg-white/15 backdrop-blur-sm flex items-center justify-center border border-white/20 shadow-lg">
+                  <FileSpreadsheet className="h-6 w-6 text-primary-foreground" />
+                </div>
+                <div>
+                  <DialogTitle className="text-xl font-bold tracking-tight text-primary-foreground">
+                    {editingSheet ? "Modifier la feuille de match" : "Nouvelle feuille de match"}
+                  </DialogTitle>
+                  <p className="text-sm text-primary-foreground/70 mt-0.5">
+                    Composez votre équipe et préparez le match
+                  </p>
+                </div>
               </div>
             </div>
           </div>
