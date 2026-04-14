@@ -104,7 +104,9 @@ function ColoredTabTrigger({ value, colorKey, icon, label, shortLabel, disabled,
   return (
     <TooltipProvider delayDuration={400}>
       <Tooltip>
-        <TooltipTrigger asChild>{trigger}</TooltipTrigger>
+        <TooltipTrigger asChild>
+          <span className="inline-flex">{trigger}</span>
+        </TooltipTrigger>
         <TooltipContent side="bottom" className="max-w-xs bg-background/95 backdrop-blur-sm border shadow-lg">
           <p className="text-[11px] leading-relaxed text-muted-foreground">{tooltip}</p>
         </TooltipContent>
