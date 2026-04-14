@@ -431,9 +431,14 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
                   </div>
                 </div>
                 {simPenalty > 0 && (
-                  <p className="text-[10px] text-muted-foreground text-center">
-                    Race Penalty: <span className="font-mono font-semibold">{simPenalty.toFixed(2)}</span>
-                  </p>
+                  <div className="bg-muted/50 rounded-md p-2 text-center space-y-0.5">
+                    <p className="text-[10px] text-muted-foreground">
+                      Race Penalty: <span className="font-mono font-bold text-foreground">{simPenalty.toFixed(2)}</span>
+                    </p>
+                    <p className="text-[9px] text-muted-foreground font-mono">
+                      P = (A + B - C) / 10 + F • F = {simFVal}
+                    </p>
+                  </div>
                 )}
                 {simPoints !== null && Number(simPosition) > 0 && (
                   <div className="bg-primary/5 rounded-md p-2 text-center space-y-1">
