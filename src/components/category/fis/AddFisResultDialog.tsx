@@ -153,19 +153,39 @@ export function AddFisResultDialog({ open, onOpenChange, competition }: AddFisRe
             </div>
           </div>
 
-          {calculatedPoints !== null && (
+          <div>
+            <Label htmlFor="result-fis-points">Points FIS officiels (depuis le site FIS)</Label>
+            <Input
+              id="result-fis-points"
+              type="number"
+              step="0.01"
+              min="0"
+              value={manualFisPoints}
+              onChange={(e) => setManualFisPoints(e.target.value)}
+              placeholder={autoCalculatedPoints != null ? `Auto: ${autoCalculatedPoints.toFixed(2)}` : "Ex: 12.50"}
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              💡 Renseignez les points officiels du site FIS pour plus de précision. Si vide, les points sont calculés automatiquement.
+            </p>
+          </div>
+
+          {finalPoints !== null && finalPoints > 0 && (
             <div className="bg-muted/50 rounded-lg p-4 space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Points de base (position {ranking})</span>
-                <span className="font-mono">{(calculatedPoints + racePenalty).toFixed(0)}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Race Penalty</span>
-                <span className="font-mono text-destructive">-{racePenalty.toFixed(2)}</span>
-              </div>
+              {manualPts == null && autoCalculatedPoints != null && (
+                <>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Points de base (position {ranking})</span>
+                    <span className="font-mono">{(autoCalculatedPoints + racePenalty).toFixed(0)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Race Penalty</span>
+                    <span className="font-mono text-destructive">-{racePenalty.toFixed(2)}</span>
+                  </div>
+                </>
+              )}
               <div className="border-t pt-2 flex justify-between items-center">
                 <span className="font-semibold">Points FIS gagnés</span>
-                <Badge className="text-lg font-mono px-3">{calculatedPoints.toFixed(2)}</Badge>
+                <Badge className="text-lg font-mono px-3">{finalPoints.toFixed(2)}</Badge>
               </div>
             </div>
           )}
