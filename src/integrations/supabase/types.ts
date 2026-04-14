@@ -2415,6 +2415,138 @@ export type Database = {
           },
         ]
       }
+      fis_calendar_events: {
+        Row: {
+          category_id: string
+          competition_level: string | null
+          created_at: string
+          discipline: string | null
+          end_date: string | null
+          event_date: string
+          event_name: string
+          feed_id: string | null
+          fis_race_id: string | null
+          fis_results_url: string | null
+          fis_sector_code: string | null
+          fis_uid: string
+          gender: string | null
+          id: string
+          location: string | null
+          match_id: string | null
+          raw_description: string | null
+          updated_at: string
+        }
+        Insert: {
+          category_id: string
+          competition_level?: string | null
+          created_at?: string
+          discipline?: string | null
+          end_date?: string | null
+          event_date: string
+          event_name: string
+          feed_id?: string | null
+          fis_race_id?: string | null
+          fis_results_url?: string | null
+          fis_sector_code?: string | null
+          fis_uid: string
+          gender?: string | null
+          id?: string
+          location?: string | null
+          match_id?: string | null
+          raw_description?: string | null
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string
+          competition_level?: string | null
+          created_at?: string
+          discipline?: string | null
+          end_date?: string | null
+          event_date?: string
+          event_name?: string
+          feed_id?: string | null
+          fis_race_id?: string | null
+          fis_results_url?: string | null
+          fis_sector_code?: string | null
+          fis_uid?: string
+          gender?: string | null
+          id?: string
+          location?: string | null
+          match_id?: string | null
+          raw_description?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fis_calendar_events_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fis_calendar_events_feed_id_fkey"
+            columns: ["feed_id"]
+            isOneToOne: false
+            referencedRelation: "fis_calendar_feeds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fis_calendar_events_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fis_calendar_feeds: {
+        Row: {
+          category_id: string
+          created_at: string
+          discipline_codes: string[] | null
+          feed_url: string
+          id: string
+          last_synced_at: string | null
+          season_code: string | null
+          sector_code: string | null
+          sync_enabled: boolean
+          updated_at: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          discipline_codes?: string[] | null
+          feed_url: string
+          id?: string
+          last_synced_at?: string | null
+          season_code?: string | null
+          sector_code?: string | null
+          sync_enabled?: boolean
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          discipline_codes?: string[] | null
+          feed_url?: string
+          id?: string
+          last_synced_at?: string | null
+          season_code?: string | null
+          sector_code?: string | null
+          sync_enabled?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fis_calendar_feeds_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fis_competitions: {
         Row: {
           category_id: string
@@ -3955,6 +4087,11 @@ export type Database = {
           effective_play_time: number | null
           end_date: string | null
           event_type: string | null
+          fis_calendar_event_id: string | null
+          fis_event_factor: number | null
+          fis_participants_count: number | null
+          fis_pre_competition_validated: boolean | null
+          fis_top5_points: Json | null
           id: string
           is_finalized: boolean | null
           is_home: boolean | null
@@ -3981,6 +4118,11 @@ export type Database = {
           effective_play_time?: number | null
           end_date?: string | null
           event_type?: string | null
+          fis_calendar_event_id?: string | null
+          fis_event_factor?: number | null
+          fis_participants_count?: number | null
+          fis_pre_competition_validated?: boolean | null
+          fis_top5_points?: Json | null
           id?: string
           is_finalized?: boolean | null
           is_home?: boolean | null
@@ -4007,6 +4149,11 @@ export type Database = {
           effective_play_time?: number | null
           end_date?: string | null
           event_type?: string | null
+          fis_calendar_event_id?: string | null
+          fis_event_factor?: number | null
+          fis_participants_count?: number | null
+          fis_pre_competition_validated?: boolean | null
+          fis_top5_points?: Json | null
           id?: string
           is_finalized?: boolean | null
           is_home?: boolean | null
@@ -4028,6 +4175,13 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "matches_fis_calendar_event_id_fkey"
+            columns: ["fis_calendar_event_id"]
+            isOneToOne: false
+            referencedRelation: "fis_calendar_events"
             referencedColumns: ["id"]
           },
           {
