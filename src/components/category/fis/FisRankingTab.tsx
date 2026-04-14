@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -7,24 +7,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { TrendingUp, TrendingDown, Target, Calculator, Trophy, Clock, AlertTriangle, Medal, Flag, History } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { TrendingUp, TrendingDown, Target, Calculator, Trophy, Clock, AlertTriangle, Medal, History, Plus, Trash2, MapPin, CalendarDays } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { fr } from "date-fns/locale";
-import { calculateTotalPoints, getBestResults, simulatePoints, calculateRacePenalty, DISCIPLINE_F_VALUES } from "@/lib/fis/fisPointsEngine";
+import { calculateTotalPoints, getBestResults, simulatePoints, calculateRacePenalty } from "@/lib/fis/fisPointsEngine";
 import { Progress } from "@/components/ui/progress";
 import { AddHistoricalFisResultsDialog } from "./AddHistoricalFisResultsDialog";
+import { toast } from "sonner";
 
 interface FisRankingTabProps {
   categoryId: string;
 }
-
-/** Well-known qualification thresholds */
-const QUALIFICATION_TARGETS = [
-  { label: "Jeux Olympiques (JO)", icon: "🏅", pointsRequired: 500, description: "Top 24 mondial requis" },
-  { label: "Championnats du Monde", icon: "🌍", pointsRequired: 300, description: "Top 30 mondial requis" },
-  { label: "Coupe du Monde", icon: "🏆", pointsRequired: 150, description: "Quota national + classement FIS" },
-  { label: "Coupe d'Europe", icon: "🇪🇺", pointsRequired: 50, description: "Classement FIS continental" },
-];
 
 export function FisRankingTab({ categoryId }: FisRankingTabProps) {
   const [selectedPlayer, setSelectedPlayer] = useState("");
@@ -32,6 +26,9 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
   const [simFValue, setSimFValue] = useState("500");
   const [simTopAvg, setSimTopAvg] = useState("800");
   const [historicalOpen, setHistoricalOpen] = useState(false);
+  const [objectiveDialogOpen, setObjectiveDialogOpen] = useState(false);
+  const [newObj, setNewObj] = useState({ label: "", points_required: "", deadline: "", location: "" });
+  const queryClient = useQueryClient();
 
   const { data: players } = useQuery({
     queryKey: ["players-fis-ranking", categoryId],
@@ -74,6 +71,61 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
     enabled: !!selectedPlayer,
   });
 
+  // Fetch custom objectives
+  const { data: objectives } = useQuery({
+    queryKey: ["fis-objectives", categoryId, selectedPlayer],
+    queryFn: async () => {
+      if (!selectedPlayer) return [];
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data } = await (supabase.from("fis_objectives") as any)
+        .select("*")
+        .eq("category_id", categoryId)
+        .eq("player_id", selectedPlayer)
+        .eq("is_active", true)
+        .order("deadline", { ascending: true });
+      return (data || []) as {
+        id: string; label: string; points_required: number;
+        deadline: string | null; location: string | null; is_active: boolean;
+      }[];
+    },
+    enabled: !!selectedPlayer,
+  });
+
+  const addObjective = useMutation({
+    mutationFn: async () => {
+      if (!newObj.label || !newObj.points_required) throw new Error("Champs requis");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase.from("fis_objectives") as any).insert({
+        player_id: selectedPlayer,
+        category_id: categoryId,
+        label: newObj.label,
+        points_required: Number(newObj.points_required),
+        deadline: newObj.deadline || null,
+        location: newObj.location || null,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["fis-objectives"] });
+      setObjectiveDialogOpen(false);
+      setNewObj({ label: "", points_required: "", deadline: "", location: "" });
+      toast.success("Objectif ajouté");
+    },
+    onError: () => toast.error("Erreur lors de l'ajout"),
+  });
+
+  const deleteObjective = useMutation({
+    mutationFn: async (objId: string) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase.from("fis_objectives") as any).delete().eq("id", objId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["fis-objectives"] });
+      toast.success("Objectif supprimé");
+    },
+  });
+
   const player = players?.find((p) => p.id === selectedPlayer);
   const now = new Date();
 
@@ -100,14 +152,6 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
     });
   })();
   const simPoints = simPosition ? simulatePoints(Number(simPosition), simPenalty) : null;
-
-  // Objective calculation
-  const objective = player?.fis_objective;
-  const objectiveDate = player?.fis_objective_date;
-  const objectivePoints = objective ? Number(objective.match(/\d+/)?.[0]) : null;
-  const pointsNeeded = objectivePoints ? Math.max(0, objectivePoints - totalPoints) : null;
-
-  // New total if simulation is applied
   const simNewTotal = simPoints !== null ? totalPoints + simPoints : null;
 
   return (
@@ -172,71 +216,22 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
             </CardContent>
           </Card>
 
-          {/* Objective */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <Target className="h-4 w-4 text-primary" />
-                Objectif
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {objective ? (
-                <>
-                  <p className="text-sm font-medium">{objective}</p>
-                  {objectiveDate && (
-                    <p className="text-xs text-muted-foreground">
-                      Échéance : {format(new Date(objectiveDate), "d MMMM yyyy", { locale: fr })}
-                    </p>
-                  )}
-                  {pointsNeeded != null && objectivePoints != null && (
-                    <>
-                      <Progress value={Math.min(100, (totalPoints / objectivePoints) * 100)} className="h-2" />
-                      <p className="text-xs text-muted-foreground">
-                        {totalPoints.toFixed(0)} / {objectivePoints} pts ({Math.min(100, (totalPoints / objectivePoints) * 100).toFixed(0)}%)
-                      </p>
-                    </>
-                  )}
-                  {pointsNeeded != null && pointsNeeded > 0 && (
-                    <div className="bg-muted/50 rounded-md p-3 space-y-1">
-                      <p className="text-sm font-semibold text-primary">
-                        Il manque {pointsNeeded.toFixed(0)} points
-                      </p>
-                      {objectiveDate && (
-                        <p className="text-xs text-muted-foreground">
-                          avant le {format(new Date(objectiveDate), "d MMMM yyyy", { locale: fr })}
-                        </p>
-                      )}
-                    </div>
-                  )}
-                  {pointsNeeded != null && pointsNeeded <= 0 && (
-                    <Badge className="bg-primary/10 text-primary">✅ Objectif atteint !</Badge>
-                  )}
-                </>
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  Aucun objectif défini. Éditez la fiche athlète pour en ajouter un.
-                </p>
-              )}
-            </CardContent>
-          </Card>
-
           {/* Expiring points */}
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm flex items-center gap-2">
                 <Clock className="h-4 w-4 text-destructive" />
-                Points expirants
+                Points expirants (8 sem.)
               </CardTitle>
             </CardHeader>
             <CardContent>
               {expiringSoon.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Aucun point n'expire dans les 8 prochaines semaines</p>
+                <p className="text-sm text-muted-foreground">Aucun point n'expire bientôt</p>
               ) : (
                 <div className="space-y-2">
                   {expiringSoon.map((r) => {
                     const rAny = r as Record<string, unknown>;
-                    const comp = rAny.fis_competitions as { name: string; competition_date: string } | null;
+                    const comp = rAny.fis_competitions as { name: string } | null;
                     const calcPts = rAny.calculated_points as number | null;
                     return (
                       <div key={r.id} className="flex justify-between items-center text-sm">
@@ -257,201 +252,270 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
               )}
             </CardContent>
           </Card>
-        </div>
-      )}
 
-      {selectedPlayer && (
-        <>
-          {/* Qualification tracker */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <Medal className="h-4 w-4 text-primary" />
-                Seuils de qualification estimés
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-xs text-muted-foreground mb-3">
-                Estimation basée sur les seuils FIS habituels (peuvent varier selon la saison et la fédération nationale)
-              </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {QUALIFICATION_TARGETS.map((target) => {
-                  const reached = totalPoints >= target.pointsRequired;
-                  const pct = Math.min(100, (totalPoints / target.pointsRequired) * 100);
-                  const missing = Math.max(0, target.pointsRequired - totalPoints);
-                  return (
-                    <div key={target.label} className={`border rounded-lg p-3 space-y-2 ${reached ? "border-primary/30 bg-primary/5" : ""}`}>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">{target.icon} {target.label}</span>
-                        {reached ? (
-                          <Badge variant="default" className="text-xs">✅ Qualifié</Badge>
-                        ) : (
-                          <Badge variant="outline" className="text-xs font-mono">-{missing.toFixed(0)} pts</Badge>
-                        )}
-                      </div>
-                      <Progress value={pct} className="h-1.5" />
-                      <div className="flex justify-between text-[10px] text-muted-foreground">
-                        <span>{totalPoints.toFixed(0)} / {target.pointsRequired} pts</span>
-                        <span>{target.description}</span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Results history */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm">Historique des résultats (52 semaines)</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {validResults.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Aucun résultat dans la fenêtre de 52 semaines</p>
-              ) : (
-                <div className="border rounded-md divide-y text-sm max-h-[300px] overflow-y-auto">
-                  {validResults
-                    .sort((a, b) => {
-                      const aComp = (a as Record<string, unknown>).fis_competitions as { competition_date: string } | null;
-                      const bComp = (b as Record<string, unknown>).fis_competitions as { competition_date: string } | null;
-                      return (bComp?.competition_date || "").localeCompare(aComp?.competition_date || "");
-                    })
-                    .map((r) => {
-                      const rAny = r as Record<string, unknown>;
-                      const comp = rAny.fis_competitions as { name: string; competition_date: string; discipline: string; level: string; location: string | null } | null;
-                      const calcPts = rAny.calculated_points as number | null;
-                      const isCounting = bestResults.some((br) => (br as { id?: string }).id === r.id);
-                      return (
-                        <div key={r.id} className={`flex items-center justify-between px-3 py-2 ${isCounting ? "bg-primary/5" : ""}`}>
-                          <div className="flex items-center gap-3 min-w-0 flex-1">
-                            <span className="font-mono text-xs w-8 text-center font-bold shrink-0">
-                              {r.ranking ? `${r.ranking}e` : "-"}
-                            </span>
-                            <div className="min-w-0">
-                              <p className="truncate text-xs font-medium">{comp?.name || "—"}</p>
-                              <p className="text-[10px] text-muted-foreground">
-                                {comp?.competition_date ? format(new Date(comp.competition_date), "d MMM yyyy", { locale: fr }) : ""}
-                                {comp?.location ? ` • ${comp.location}` : ""}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2 shrink-0">
-                            {isCounting && (
-                              <Badge variant="outline" className="text-[10px] text-primary border-primary/30">
-                                Compté
-                              </Badge>
-                            )}
-                            <Badge variant="secondary" className="font-mono">
-                              {(calcPts ?? r.fis_points).toFixed(0)} pts
-                            </Badge>
-                          </div>
-                        </div>
-                      );
-                    })}
-                </div>
-              )}
-              {expiredResults.length > 0 && (
-                <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-                  <AlertTriangle className="h-3 w-3" />
-                  {expiredResults.length} résultat(s) expiré(s) (non comptés)
-                </p>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Simulation */}
+          {/* Quick simulation card */}
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm flex items-center gap-2">
                 <Calculator className="h-4 w-4 text-primary" />
-                Simulation compétition
+                Simulation rapide
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <p className="text-xs text-muted-foreground mb-3">
-                Formule réelle : Points = Race Points (table) − Race Penalty • P = (A + B − C) / 10 + F
-              </p>
-              <div className="grid grid-cols-3 gap-3">
+            <CardContent className="space-y-2">
+              <div className="grid grid-cols-3 gap-2">
                 <div>
-                  <Label className="text-xs">Position visée</Label>
-                  <Input type="number" min="1" value={simPosition} onChange={(e) => setSimPosition(e.target.value)} placeholder="Ex: 3" />
+                  <Label className="text-[10px]">Position</Label>
+                  <Input type="number" min="1" value={simPosition} onChange={(e) => setSimPosition(e.target.value)} placeholder="3" className="h-8 text-xs" />
                 </div>
                 <div>
-                  <Label className="text-xs">Moy. pts top 5</Label>
-                  <Input type="number" value={simTopAvg} onChange={(e) => setSimTopAvg(e.target.value)} placeholder="800" />
+                  <Label className="text-[10px]">Moy. top 5</Label>
+                  <Input type="number" value={simTopAvg} onChange={(e) => setSimTopAvg(e.target.value)} placeholder="800" className="h-8 text-xs" />
                 </div>
                 <div>
-                  <Label className="text-xs">F-value discipline</Label>
-                  <Input type="number" value={simFValue} onChange={(e) => setSimFValue(e.target.value)} placeholder="500" />
+                  <Label className="text-[10px]">F-value</Label>
+                  <Input type="number" value={simFValue} onChange={(e) => setSimFValue(e.target.value)} placeholder="500" className="h-8 text-xs" />
                 </div>
               </div>
-
               {simPoints !== null && Number(simPosition) > 0 && (
-                <div className="mt-4 bg-primary/5 rounded-lg p-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm">
-                        En finissant <span className="font-bold">{simPosition}e</span> :
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Race Penalty: {simPenalty.toFixed(2)} (F={simFVal})
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-2xl font-bold text-primary">{simPoints.toFixed(0)}</p>
-                      <p className="text-xs text-muted-foreground">points FIS gagnés</p>
-                    </div>
-                  </div>
-
-                  {/* Impact on qualification targets */}
-                  {simNewTotal !== null && (
-                    <div className="border-t pt-3 space-y-2">
-                      <p className="text-xs font-medium flex items-center gap-1">
-                        <TrendingUp className="h-3 w-3" />
-                        Nouveau total projeté : <span className="font-bold">{simNewTotal.toFixed(0)} pts</span>
-                      </p>
-                      <div className="grid grid-cols-2 gap-2">
-                        {QUALIFICATION_TARGETS.map((target) => {
-                          const wasReached = totalPoints >= target.pointsRequired;
-                          const wouldReach = simNewTotal >= target.pointsRequired;
-                          const newlyReached = !wasReached && wouldReach;
-                          return (
-                            <div key={target.label} className="flex items-center justify-between text-xs">
-                              <span>{target.icon} {target.label.split(" (")[0]}</span>
-                              {newlyReached ? (
-                                <Badge variant="default" className="text-[10px]">🎉 Qualifié !</Badge>
-                              ) : wouldReach ? (
-                                <Badge variant="outline" className="text-[10px] text-primary">✅</Badge>
-                              ) : (
-                                <span className="text-muted-foreground font-mono">
-                                  -{(target.pointsRequired - simNewTotal).toFixed(0)}
-                                </span>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-
-                  {pointsNeeded != null && pointsNeeded > 0 && (
-                    <div className="border-t pt-2">
-                      {simPoints >= pointsNeeded ? (
-                        <p className="text-xs text-primary font-medium">✅ Objectif personnel atteint !</p>
-                      ) : (
-                        <p className="text-xs text-muted-foreground">
-                          Reste {(pointsNeeded - simPoints).toFixed(0)} pts pour l'objectif personnel
-                        </p>
-                      )}
-                    </div>
-                  )}
+                <div className="bg-primary/5 rounded-md p-2 text-center">
+                  <p className="text-xs text-muted-foreground">
+                    {simPosition}e → <span className="font-bold text-primary text-sm">{simPoints.toFixed(0)} pts</span>
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Nouveau total : <span className="font-bold">{simNewTotal?.toFixed(0)} pts</span>
+                  </p>
                 </div>
               )}
             </CardContent>
           </Card>
-        </>
+        </div>
       )}
+
+      {/* Objectives section */}
+      {selectedPlayer && (
+        <Card>
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Target className="h-4 w-4 text-primary" />
+                Objectifs de qualification
+              </CardTitle>
+              <Button size="sm" variant="outline" onClick={() => setObjectiveDialogOpen(true)}>
+                <Plus className="h-3 w-3 mr-1" />
+                Ajouter objectif
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {!objectives?.length ? (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                Aucun objectif défini. Ajoutez un objectif de compétition (ex: Championnats du Monde, JO…)
+              </p>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {objectives.map((obj) => {
+                  const reached = totalPoints >= obj.points_required;
+                  const pct = Math.min(100, (totalPoints / obj.points_required) * 100);
+                  const missing = Math.max(0, obj.points_required - totalPoints);
+                  const daysLeft = obj.deadline ? differenceInDays(new Date(obj.deadline), now) : null;
+                  const isUrgent = daysLeft !== null && daysLeft <= 60 && !reached;
+
+                  return (
+                    <div
+                      key={obj.id}
+                      className={`border rounded-lg p-3 space-y-2 transition-colors ${
+                        reached
+                          ? "border-green-500/40 bg-green-500/5"
+                          : isUrgent
+                          ? "border-red-500/40 bg-red-500/5"
+                          : "border-border"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold truncate">{obj.label}</p>
+                          <div className="flex items-center gap-2 text-[10px] text-muted-foreground mt-0.5">
+                            {obj.location && (
+                              <span className="flex items-center gap-0.5">
+                                <MapPin className="h-2.5 w-2.5" />
+                                {obj.location}
+                              </span>
+                            )}
+                            {obj.deadline && (
+                              <span className="flex items-center gap-0.5">
+                                <CalendarDays className="h-2.5 w-2.5" />
+                                {format(new Date(obj.deadline), "d MMM yyyy", { locale: fr })}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          {reached ? (
+                            <Badge className="bg-green-600 text-white text-[10px]">✅ Qualifié</Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-[10px] font-mono text-red-600 border-red-300">
+                              -{missing.toFixed(0)} pts
+                            </Badge>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6"
+                            onClick={() => deleteObjective.mutate(obj.id)}
+                          >
+                            <Trash2 className="h-3 w-3 text-muted-foreground" />
+                          </Button>
+                        </div>
+                      </div>
+                      <Progress
+                        value={pct}
+                        className={`h-2 ${reached ? "[&>div]:bg-green-600" : "[&>div]:bg-red-500"}`}
+                      />
+                      <div className="flex justify-between text-[10px] text-muted-foreground">
+                        <span>{totalPoints.toFixed(0)} / {obj.points_required} pts</span>
+                        {daysLeft !== null && daysLeft > 0 && (
+                          <span className={isUrgent ? "text-red-500 font-semibold" : ""}>
+                            J-{daysLeft}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Simulation impact */}
+                      {simNewTotal !== null && !reached && (
+                        <div className="border-t pt-1">
+                          {simNewTotal >= obj.points_required ? (
+                            <p className="text-[10px] text-green-600 font-medium">
+                              🎉 Qualifié avec simulation !
+                            </p>
+                          ) : (
+                            <p className="text-[10px] text-muted-foreground">
+                              Après simulation : encore {(obj.points_required - simNewTotal).toFixed(0)} pts manquants
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Results history */}
+      {selectedPlayer && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">Historique des résultats (52 semaines)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {validResults.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Aucun résultat dans la fenêtre de 52 semaines</p>
+            ) : (
+              <div className="border rounded-md divide-y text-sm max-h-[300px] overflow-y-auto">
+                {validResults
+                  .sort((a, b) => {
+                    const aComp = (a as Record<string, unknown>).fis_competitions as { competition_date: string } | null;
+                    const bComp = (b as Record<string, unknown>).fis_competitions as { competition_date: string } | null;
+                    return (bComp?.competition_date || "").localeCompare(aComp?.competition_date || "");
+                  })
+                  .map((r) => {
+                    const rAny = r as Record<string, unknown>;
+                    const comp = rAny.fis_competitions as { name: string; competition_date: string; location: string | null } | null;
+                    const calcPts = rAny.calculated_points as number | null;
+                    const isCounting = bestResults.some((br) => (br as { id?: string }).id === r.id);
+                    return (
+                      <div key={r.id} className={`flex items-center justify-between px-3 py-2 ${isCounting ? "bg-primary/5" : ""}`}>
+                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                          <span className="font-mono text-xs w-8 text-center font-bold shrink-0">
+                            {r.ranking ? `${r.ranking}e` : "-"}
+                          </span>
+                          <div className="min-w-0">
+                            <p className="truncate text-xs font-medium">{comp?.name || "—"}</p>
+                            <p className="text-[10px] text-muted-foreground">
+                              {comp?.competition_date ? format(new Date(comp.competition_date), "d MMM yyyy", { locale: fr }) : ""}
+                              {comp?.location ? ` • ${comp.location}` : ""}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          {isCounting && (
+                            <Badge variant="outline" className="text-[10px] text-primary border-primary/30">Compté</Badge>
+                          )}
+                          <Badge variant="secondary" className="font-mono">
+                            {(calcPts ?? r.fis_points).toFixed(0)} pts
+                          </Badge>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            )}
+            {expiredResults.length > 0 && (
+              <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+                <AlertTriangle className="h-3 w-3" />
+                {expiredResults.length} résultat(s) expiré(s)
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Add objective dialog */}
+      <Dialog open={objectiveDialogOpen} onOpenChange={setObjectiveDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Target className="h-5 w-5 text-primary" />
+              Nouvel objectif de qualification
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Compétition / Objectif *</Label>
+              <Input
+                value={newObj.label}
+                onChange={(e) => setNewObj({ ...newObj, label: e.target.value })}
+                placeholder="Ex: Championnats du Monde 2026"
+              />
+            </div>
+            <div>
+              <Label>Points requis *</Label>
+              <Input
+                type="number"
+                value={newObj.points_required}
+                onChange={(e) => setNewObj({ ...newObj, points_required: e.target.value })}
+                placeholder="Ex: 2000"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Date limite</Label>
+                <Input
+                  type="date"
+                  value={newObj.deadline}
+                  onChange={(e) => setNewObj({ ...newObj, deadline: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label>Lieu</Label>
+                <Input
+                  value={newObj.location}
+                  onChange={(e) => setNewObj({ ...newObj, location: e.target.value })}
+                  placeholder="Ex: Kreischberg, Autriche"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setObjectiveDialogOpen(false)}>Annuler</Button>
+              <Button onClick={() => addObjective.mutate()} disabled={!newObj.label || !newObj.points_required}>
+                Ajouter
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {selectedPlayer && player && (
         <AddHistoricalFisResultsDialog

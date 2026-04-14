@@ -1,7 +1,6 @@
 import { Tabs, TabsContent } from "@/components/ui/tabs";
-import { CalendarDays, Mountain, BarChart3 } from "lucide-react";
+import { CalendarDays, BarChart3 } from "lucide-react";
 import { CalendarTab } from "@/components/category/CalendarTab";
-import { FisCompetitionsTab } from "@/components/category/fis/FisCompetitionsTab";
 import { FisRankingTab } from "@/components/category/fis/FisRankingTab";
 import { getMainSportFromType } from "@/lib/constants/sportTypes";
 import { ColoredSubTabsList, ColoredSubTabsTrigger } from "@/components/ui/colored-subtabs";
@@ -31,15 +30,6 @@ export function PlanificationTab({ categoryId, sportType }: PlanificationTabProp
             Calendrier
           </ColoredSubTabsTrigger>
           <ColoredSubTabsTrigger
-            value="fis-competitions"
-            colorKey="planification"
-            icon={<Mountain className="h-4 w-4" />}
-            tooltip="Compétitions FIS : création, résultats, calcul automatique des points"
-          >
-            <span className="hidden sm:inline">Compétitions FIS</span>
-            <span className="sm:hidden">FIS</span>
-          </ColoredSubTabsTrigger>
-          <ColoredSubTabsTrigger
             value="fis-ranking"
             colorKey="planification"
             icon={<BarChart3 className="h-4 w-4" />}
@@ -53,9 +43,6 @@ export function PlanificationTab({ categoryId, sportType }: PlanificationTabProp
 
       <TabsContent value="calendar">
         <CalendarTab categoryId={categoryId} />
-      </TabsContent>
-      <TabsContent value="fis-competitions">
-        <FisCompetitionsTab categoryId={categoryId} />
       </TabsContent>
       <TabsContent value="fis-ranking">
         <FisRankingTab categoryId={categoryId} />
