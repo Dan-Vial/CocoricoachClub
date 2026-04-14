@@ -617,17 +617,88 @@ export function AddPlayerDialogWithInvite({
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2">
                     <Label htmlFor="fisRanking">Classement FIS</Label>
-                    <Input id="fisRanking" type="number" placeholder="Ex: 45" min="1" />
+                    <Input id="fisRanking" type="number" placeholder="Ex: 45" min="1" value={fisRanking} onChange={(e) => setFisRanking(e.target.value)} />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="fisPoints">Points FIS</Label>
-                    <Input id="fisPoints" type="number" placeholder="Ex: 320.50" step="0.01" min="0" />
+                    <Input id="fisPoints" type="number" placeholder="Ex: 320.50" step="0.01" min="0" value={fisPoints} onChange={(e) => setFisPoints(e.target.value)} />
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="fisObjective">Objectif sportif</Label>
-                  <Input id="fisObjective" placeholder="Ex: Qualification Championnats du Monde" />
+                  <Label htmlFor="fisCode">Code FIS</Label>
+                  <Input id="fisCode" placeholder="Ex: 9510001" value={fisCode} onChange={(e) => setFisCode(e.target.value)} />
                 </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="fisObjective">Objectif sportif</Label>
+                    <Input id="fisObjective" placeholder="Ex: Qualification Championnats du Monde" value={fisObjective} onChange={(e) => setFisObjective(e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="fisObjectiveDate">Date objectif</Label>
+                    <Input id="fisObjectiveDate" type="date" value={fisObjectiveDate} onChange={(e) => setFisObjectiveDate(e.target.value)} />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Yearly objectives for ski/snow */}
+            {isSki && (
+              <div className="space-y-3 border-t pt-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Objectifs annuels</p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-7 text-xs"
+                    onClick={() => setYearlyObjectives(prev => [...prev, { label: "", target: "" }])}
+                  >
+                    <Plus className="h-3 w-3 mr-1" /> Ajouter
+                  </Button>
+                </div>
+                {yearlyObjectives.length === 0 && (
+                  <p className="text-xs text-muted-foreground italic">Aucun objectif défini. Ajoutez des objectifs de qualification (ex: JO, Mondiaux…)</p>
+                )}
+                {yearlyObjectives.map((obj, idx) => (
+                  <div key={idx} className="grid grid-cols-[1fr_100px_32px] gap-2 items-end">
+                    <div className="space-y-1">
+                      <Label className="text-xs">Objectif</Label>
+                      <Input
+                        placeholder="Ex: Qualification JO 2026"
+                        value={obj.label}
+                        onChange={(e) => {
+                          const updated = [...yearlyObjectives];
+                          updated[idx].label = e.target.value;
+                          setYearlyObjectives(updated);
+                        }}
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Points requis</Label>
+                      <Input
+                        type="number"
+                        placeholder="2000"
+                        value={obj.target}
+                        onChange={(e) => {
+                          const updated = [...yearlyObjectives];
+                          updated[idx].target = e.target.value;
+                          setYearlyObjectives(updated);
+                        }}
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-destructive hover:text-destructive"
+                      onClick={() => setYearlyObjectives(prev => prev.filter((_, i) => i !== idx))}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                ))}
               </div>
             )}
             
