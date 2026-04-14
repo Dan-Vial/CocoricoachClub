@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { calculateRacePenalty, DISCIPLINE_F_VALUES } from "@/lib/fis/fisPointsEngine";
+import { WSPL_EVENT_CATEGORIES } from "@/lib/fis/wsplPointsEngine";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Mountain, Users, Trophy, TrendingDown } from "lucide-react";
@@ -40,6 +41,8 @@ export function CreateFisCompetitionDialog({ open, onOpenChange, categoryId, clu
   const [topRiders, setTopRiders] = useState(["", "", "", "", ""]);
   const [topClassified, setTopClassified] = useState(["", "", "", "", ""]);
   const [customFValue, setCustomFValue] = useState("");
+  const [wsplStars, setWsplStars] = useState("3");
+  const [wsplPL, setWsplPL] = useState("600");
   const [saving, setSaving] = useState(false);
   const queryClient = useQueryClient();
 
