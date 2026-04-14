@@ -102,8 +102,8 @@ export function AddHistoricalFisResultsDialog({
   const getCalculatedPoints = (entry: HistoricalEntry) => {
     const rankingNum = Number(entry.ranking);
     if (!rankingNum || rankingNum <= 0) return null;
-    const penalty = entry.racePenalty ? Number(entry.racePenalty) : Number(entry.fValue) || 500;
-    return calculateFisPoints({ ranking: rankingNum, racePenalty: penalty });
+    const scaleVal = determineScale(entry.level);
+    return calculateFisPoints({ ranking: rankingNum, scale: scaleVal });
   };
 
   const handleSave = async () => {
@@ -116,9 +116,9 @@ export function AddHistoricalFisResultsDialog({
 
     try {
       for (const entry of valid) {
-        const penalty = entry.racePenalty ? Number(entry.racePenalty) : Number(entry.fValue) || 500;
+        const scaleVal = determineScale(entry.level);
         const rankingNum = Number(entry.ranking);
-        const calculatedPts = calculateFisPoints({ ranking: rankingNum, racePenalty: penalty });
+        const calculatedPts = calculateFisPoints({ ranking: rankingNum, scale: scaleVal });
 
         // 1. Create competition
         const compInsert = {
