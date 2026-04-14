@@ -181,8 +181,16 @@ export function FisCompetitionsTab({ categoryId }: FisCompetitionsTabProps) {
                                   ? calcPts.toFixed(2)
                                   : r.fis_points > 0
                                     ? r.fis_points.toFixed(2)
-                                    : "0"} pts
+                                    : "0"} FIS
                               </Badge>
+                              {(() => {
+                                const wspl = (rAny as any).wspl_points as number | null;
+                                return wspl != null && wspl > 0 ? (
+                                  <Badge variant="outline" className="font-mono text-[10px]">
+                                    {wspl.toFixed(2)} WSPL
+                                  </Badge>
+                                ) : null;
+                              })()}
                             </div>
                           );
                         })}
