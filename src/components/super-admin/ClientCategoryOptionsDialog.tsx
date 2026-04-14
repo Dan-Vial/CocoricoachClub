@@ -364,6 +364,31 @@ export function ClientCategoryOptionsDialog({
                                   <GraduationCap className="h-3 w-3" /> Académie
                                 </label>
                               </div>
+
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10 ml-2">
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Supprimer la catégorie</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Êtes-vous sûr de vouloir supprimer la catégorie <strong>{category.name}</strong> ? Cette action est irréversible et supprimera toutes les données associées (joueurs, matchs, entraînements…).
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                      onClick={() => deleteCategory.mutate(category.id)}
+                                    >
+                                      Supprimer
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
                             </div>
                           </div>
                         ))}
