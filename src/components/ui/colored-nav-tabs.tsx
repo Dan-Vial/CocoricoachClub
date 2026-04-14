@@ -172,7 +172,7 @@ const ColoredTabTrigger = React.forwardRef<
       ref={ref}
       value={value}
       className={cn(
-        "relative inline-flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm",
+        "group relative inline-flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm",
         "transition-all duration-200 ease-out",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
         colors.text,
