@@ -557,18 +557,29 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
                       </div>
 
                       {/* Simulation impact */}
-                      {simNewTotal !== null && !reached && !obj.discipline && (
-                        <div className="border-t pt-1">
-                          {simNewTotal >= obj.points_required ? (
-                            <p className="text-[10px] text-green-600 font-medium">
-                              🎉 Qualifié avec simulation !
-                            </p>
-                          ) : (
-                            <p className="text-[10px] text-muted-foreground">
-                              Après simulation : encore {(obj.points_required - simNewTotal).toFixed(2)} pts manquants
-                            </p>
-                          )}
-                        </div>
+                      {simPoints !== null && !reached && (
+                        (() => {
+                          // Use discipline-specific total if objective has a matching discipline
+                          const simTotal = obj.discipline && obj.discipline === simDiscipline
+                            ? simNewDisciplineTotal
+                            : !obj.discipline
+                            ? simNewTotal
+                            : null;
+                          if (simTotal === null) return null;
+                          return (
+                            <div className="border-t pt-1">
+                              {simTotal >= obj.points_required ? (
+                                <p className="text-[10px] text-green-600 font-medium">
+                                  🎉 Qualifié avec simulation !
+                                </p>
+                              ) : (
+                                <p className="text-[10px] text-muted-foreground">
+                                  Après simulation : encore {(obj.points_required - simTotal).toFixed(2)} pts manquants
+                                </p>
+                              )}
+                            </div>
+                          );
+                        })()
                       )}
                     </div>
                   );
