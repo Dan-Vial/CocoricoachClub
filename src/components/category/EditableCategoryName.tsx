@@ -73,7 +73,7 @@ export function EditableCategoryName({ categoryId, initialName }: EditableCatego
         onChange={(e) => setName(e.target.value)}
         onBlur={handleBlur}
         onKeyDown={handleKeyDown}
-        className="text-4xl font-bold text-primary-foreground bg-transparent border-primary-foreground/30 focus:border-primary-foreground"
+        className="text-4xl font-bold text-white bg-transparent border-white/30 focus:border-white"
         autoFocus
       />
     );
@@ -81,15 +81,15 @@ export function EditableCategoryName({ categoryId, initialName }: EditableCatego
 
   return (
     <div className="flex items-center gap-3 group">
-      <h1 className="text-4xl font-bold text-primary-foreground">
+      <h1 className="text-4xl font-bold text-white">
         {initialName}
       </h1>
       <button
         onClick={() => setIsEditing(true)}
-        className="opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-primary-foreground/10 rounded-md"
+        className="opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-white/10 rounded-md"
         aria-label="Modifier le nom"
       >
-        <Pencil className="h-5 w-5 text-primary-foreground" />
+        <Pencil className="h-5 w-5 text-white" />
       </button>
     </div>
   );
