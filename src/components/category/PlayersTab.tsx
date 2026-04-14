@@ -1,8 +1,9 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import {
   Table,
   TableBody,
@@ -18,7 +19,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Trash2, Filter, Eye, Copy, Check, Mail, RefreshCw, FileSpreadsheet, Link2 } from "lucide-react";
+import { Plus, Trash2, Filter, Eye, Copy, Check, Mail, RefreshCw, FileSpreadsheet, Link2, Info, ClipboardCopy } from "lucide-react";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
 import { toast } from "sonner";
 import { AddPlayerDialogWithInvite } from "./AddPlayerDialogWithInvite";
 import { BulkAddPlayersDialog } from "./BulkAddPlayersDialog";
@@ -40,6 +43,82 @@ function getAvironRoleLabel(role: string | null): string {
   if (!role) return "";
   const found = AVIRON_ROLES.find(r => r.value === role);
   return found ? found.label : role;
+}
+
+function PlayerInfoHover({ player, isSki }: { player: any; isSki: boolean }) {
+  const [copied, setCopied] = useState(false);
+
+  const infoLines: { label: string; value: string }[] = [];
+  
+  const fullName = player.first_name ? `${player.first_name} ${player.name}` : player.name;
+  infoLines.push({ label: "Nom", value: fullName });
+
+  if (player.birth_date) {
+    infoLines.push({ label: "Date de naissance", value: format(new Date(player.birth_date), "dd/MM/yyyy") });
+  }
+  if (player.email) {
+    infoLines.push({ label: "Email", value: player.email });
+  }
+  if (player.phone) {
+    infoLines.push({ label: "Téléphone", value: player.phone });
+  }
+  if (isSki && player.fis_code) {
+    infoLines.push({ label: "Code FIS", value: player.fis_code });
+  }
+  if (isSki && player.fis_points != null && player.fis_points > 0) {
+    infoLines.push({ label: "Points FIS", value: String(player.fis_points) });
+  }
+  if (isSki && player.fis_ranking != null) {
+    infoLines.push({ label: "Classement FIS", value: String(player.fis_ranking) });
+  }
+  if (player.position) {
+    infoLines.push({ label: "Poste", value: player.position });
+  }
+  if (player.discipline) {
+    infoLines.push({ label: "Discipline", value: getDisciplineLabel(player.discipline) });
+  }
+
+  const copyAll = () => {
+    const text = infoLines.map(l => `${l.label}: ${l.value}`).join("\n");
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    toast.success("Informations copiées !");
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <HoverCard>
+      <HoverCardTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7 shrink-0"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <Info className="h-4 w-4 text-muted-foreground" />
+        </Button>
+      </HoverCardTrigger>
+      <HoverCardContent className="w-72" align="start" onClick={(e) => e.stopPropagation()}>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-semibold">Infos athlète</p>
+            <Button variant="outline" size="sm" className="h-7 gap-1 text-xs" onClick={copyAll}>
+              {copied ? <Check className="h-3 w-3" /> : <ClipboardCopy className="h-3 w-3" />}
+              {copied ? "Copié" : "Copier tout"}
+            </Button>
+          </div>
+          <div className="space-y-1.5">
+            {infoLines.map((line) => (
+              <div key={line.label} className="flex justify-between text-sm">
+                <span className="text-muted-foreground">{line.label}</span>
+                <span className="font-medium text-right max-w-[160px] truncate">{line.value}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </HoverCardContent>
+    </HoverCard>
+  );
 }
 
 interface PlayersTabProps {
@@ -373,6 +452,7 @@ export function PlayersTab({ categoryId }: PlayersTabProps) {
                           </AvatarFallback>
                         </Avatar>
                         <span>{fullName}</span>
+                        <PlayerInfoHover player={player} isSki={isSki} />
                       </div>
                     </TableCell>
                     {hasAttributeColumn && (
