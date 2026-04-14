@@ -273,7 +273,7 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
               <Card className="border-primary/30 bg-primary/5">
                 <CardContent className="p-4 space-y-1">
                   <p className="text-xs text-muted-foreground font-medium">TOTAL</p>
-                  <p className="text-2xl font-bold">{totalPoints.toFixed(0)} pts</p>
+                  <p className="text-2xl font-bold">{totalPoints.toFixed(2)} pts</p>
                   <p className="text-xs text-muted-foreground">{validResults.length} résultats • Top {topN}</p>
                   {player?.fis_ranking && (
                     <p className="text-xs">Classement: <span className="font-semibold">{player.fis_ranking}e</span></p>
@@ -292,8 +292,8 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
                         <p className="text-xs text-muted-foreground font-medium">{disc.label}</p>
                         <Badge variant="outline" className="text-[10px] font-mono">{getDisciplineShort(disc.value)}</Badge>
                       </div>
-                      <p className="text-xl font-bold">{dt.total.toFixed(0)} pts</p>
-                      <p className="text-xs text-muted-foreground">{dt.count} résultats • Meilleur: {dt.best.toFixed(0)}</p>
+                      <p className="text-xl font-bold">{dt.total.toFixed(2)} pts</p>
+                      <p className="text-xs text-muted-foreground">{dt.count} résultats • Meilleur: {dt.best.toFixed(2)}</p>
                     </CardContent>
                   </Card>
                 );
@@ -313,7 +313,7 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
               <CardContent className="space-y-3">
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">Points totaux</span>
-                  <span className="text-2xl font-bold">{totalPoints.toFixed(0)}</span>
+                  <span className="text-2xl font-bold">{totalPoints.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">Classement FIS</span>
@@ -360,7 +360,7 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
                           </div>
                           <Badge variant="destructive" className="font-mono text-xs shrink-0">
                             <TrendingDown className="h-3 w-3 mr-1" />
-                            -{(calcPts ?? r.fis_points).toFixed(0)}
+                            -{(calcPts ?? r.fis_points).toFixed(2)}
                           </Badge>
                         </div>
                       );
@@ -527,7 +527,7 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
                             <Badge className="bg-green-600 text-white text-[10px]">✅ Qualifié</Badge>
                           ) : (
                             <Badge variant="outline" className="text-[10px] font-mono text-red-600 border-red-300">
-                              -{missing.toFixed(0)} pts
+                              -{missing.toFixed(2)} pts
                             </Badge>
                           )}
                           <Button
@@ -546,7 +546,7 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
                       />
                       <div className="flex justify-between text-[10px] text-muted-foreground">
                         <span>
-                          {discPoints.toFixed(0)} / {obj.points_required} pts
+                          {discPoints.toFixed(2)} / {obj.points_required} pts
                           {obj.discipline && ` (${getDisciplineLabel(obj.discipline)})`}
                         </span>
                         {daysLeft !== null && daysLeft > 0 && (
@@ -565,7 +565,7 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
                             </p>
                           ) : (
                             <p className="text-[10px] text-muted-foreground">
-                              Après simulation : encore {(obj.points_required - simNewTotal).toFixed(0)} pts manquants
+                              Après simulation : encore {(obj.points_required - simNewTotal).toFixed(2)} pts manquants
                             </p>
                           )}
                         </div>
@@ -625,7 +625,7 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
                             <Badge variant="outline" className="text-[10px] text-primary border-primary/30">Compté</Badge>
                           )}
                           <Badge variant="secondary" className="font-mono">
-                            {(calcPts ?? r.fis_points).toFixed(0)} pts
+                            {(calcPts ?? r.fis_points).toFixed(2)} pts
                           </Badge>
                         </div>
                       </div>
