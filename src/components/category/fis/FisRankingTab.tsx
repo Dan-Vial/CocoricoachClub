@@ -417,18 +417,14 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
                     <Label className="text-[10px]">Moy. top 5</Label>
                     <Input type="number" value={simTopAvg} onChange={(e) => setSimTopAvg(e.target.value)} placeholder="800" className="h-8 text-xs" />
                   </div>
-                  <div>
-                    <Label className="text-[10px]">F-value</Label>
-                    <Input type="number" value={simFValue} onChange={(e) => setSimFValue(e.target.value)} placeholder="500" className="h-8 text-xs" />
-                  </div>
                 </div>
-                {simPenalty > 0 && (
+                {simScale > 0 && (
                   <div className="bg-muted/50 rounded-md p-2 text-center space-y-0.5">
                     <p className="text-[10px] text-muted-foreground">
-                      Race Penalty: <span className="font-mono font-bold text-foreground">{simPenalty.toFixed(2)}</span>
+                      Échelle appliquée: <span className="font-mono font-bold text-foreground">{simScale}</span>
                     </p>
                     <p className="text-[9px] text-muted-foreground font-mono">
-                      P = (A + B - C) / 10 + F • F = {simFVal}
+                      Points = Pourcentage(position) × Échelle
                     </p>
                   </div>
                 )}
