@@ -327,20 +327,14 @@ export function MatchSheetsSection({ categoryId, preSelectedMatchId }: MatchShee
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <div>
-          <h3 className="text-lg font-semibold flex items-center gap-2">
-            <FileSpreadsheet className="h-5 w-5 text-primary" />
-            Feuilles de Match
-          </h3>
-          <p className="text-sm text-muted-foreground">
-            Créez et gérez les compositions d'équipe pour les matchs
-          </p>
-        </div>
-        <Button onClick={() => openDialog()}>
-          <Plus className="h-4 w-4 mr-2" />
-          Nouvelle feuille
-        </Button>
+      <div>
+        <h3 className="text-lg font-semibold flex items-center gap-2">
+          <FileSpreadsheet className="h-5 w-5 text-primary" />
+          Feuilles de Match
+        </h3>
+        <p className="text-sm text-muted-foreground">
+          Créez et gérez les compositions d'équipe pour les matchs
+        </p>
       </div>
 
       {isLoading ? (
