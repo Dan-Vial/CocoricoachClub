@@ -591,7 +591,7 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
               currentData={match as any}
             />
           </div>
-
+        )}
         {/* Ski conditions */}
         {isSkiCategory(sportType) && (
           <div className="mt-3">
