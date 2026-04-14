@@ -690,28 +690,12 @@ export const getMainSportFromType = (type: string): MainSportCategory => {
 };
 
 export const isIndividualSport = (type: string): boolean => {
-  const individualSports = [
+  const individualPrefixes = [
     "judo", "bowling", "aviron", "athletisme", "crossfit",
     "padel", "natation", "ski", "surf", "triathlon", "tennis",
-    "ski_alpin", "ski_fond", "ski_biathlon", "ski_freestyle",
-    "snowboard_freestyle", "snowboard_alpin", "ski_saut", "ski_combine_nordique",
-    "judo_club", "judo_academie", "judo_national",
-    "bowling_club", "bowling_academie", "bowling_national",
-    "aviron_club", "aviron_academie", "aviron_national",
-    "crossfit_box", "crossfit_hyrox", "crossfit_musculation",
-    "padel_club", "padel_academie", "padel_national",
-    "natation_club", "natation_academie", "natation_national",
-    "ski_club", "ski_academie", "ski_national",
-    "surf_club", "surf_academie", "surf_national",
-    "triathlon_club", "triathlon_academie", "triathlon_national",
-    "tennis_club", "tennis_academie", "tennis_national",
-    "athletisme_sprints", "athletisme_haies", "athletisme_demi_fond",
-    "athletisme_fond", "athletisme_marche", "athletisme_sauts_longueur",
-    "athletisme_sauts_hauteur", "athletisme_lancers", "athletisme_combines",
-    "athletisme_trail", "athletisme_ultra_trail",
-    "athletisme_club", "athletisme_academie", "athletisme_national"
+    "snowboard", "hyrox",
   ];
-  return individualSports.includes(type);
+  return individualPrefixes.some(prefix => type === prefix || type.startsWith(prefix + "_"));
 };
 
 // Helper to check if a category is CrossFit/Hyrox/Musculation
