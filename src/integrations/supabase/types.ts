@@ -2574,6 +2574,8 @@ export type Database = {
           top_rider_5_pts: number | null
           total_participants: number | null
           updated_at: string
+          wspl_pl: number | null
+          wspl_stars: number | null
         }
         Insert: {
           category_id: string
@@ -2601,6 +2603,8 @@ export type Database = {
           top_rider_5_pts?: number | null
           total_participants?: number | null
           updated_at?: string
+          wspl_pl?: number | null
+          wspl_stars?: number | null
         }
         Update: {
           category_id?: string
@@ -2628,6 +2632,8 @@ export type Database = {
           top_rider_5_pts?: number | null
           total_participants?: number | null
           updated_at?: string
+          wspl_pl?: number | null
+          wspl_stars?: number | null
         }
         Relationships: [
           {
@@ -2788,7 +2794,11 @@ export type Database = {
           player_id: string
           ranking: number | null
           score: number | null
+          total_riders: number | null
           updated_at: string
+          wspl_pl: number | null
+          wspl_points: number | null
+          wspl_stars: number | null
         }
         Insert: {
           base_points?: number | null
@@ -2804,7 +2814,11 @@ export type Database = {
           player_id: string
           ranking?: number | null
           score?: number | null
+          total_riders?: number | null
           updated_at?: string
+          wspl_pl?: number | null
+          wspl_points?: number | null
+          wspl_stars?: number | null
         }
         Update: {
           base_points?: number | null
@@ -2820,7 +2834,11 @@ export type Database = {
           player_id?: string
           ranking?: number | null
           score?: number | null
+          total_riders?: number | null
           updated_at?: string
+          wspl_pl?: number | null
+          wspl_points?: number | null
+          wspl_stars?: number | null
         }
         Relationships: [
           {
