@@ -208,7 +208,7 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
     return exp > now && differenceInDays(exp, now) <= 56;
   });
 
-  // Simulation
+  // Auto-update simulation values when level/discipline changes
   const simFVal = Number(simFValue) || 500;
   const simPenalty = (() => {
     const avg = Number(simTopAvg) || 800;
@@ -220,6 +220,11 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
   })();
   const simPoints = simPosition ? simulatePoints(Number(simPosition), simPenalty) : null;
   const simNewTotal = simPoints !== null ? totalPoints + simPoints : null;
+  
+  // Sim new total per discipline
+  const simNewDisciplineTotal = simPoints !== null && simDiscipline
+    ? (disciplineTotals[simDiscipline]?.total ?? 0) + simPoints
+    : null;
 
   // Helper to get points for a discipline (for objectives)
   const getPointsForDiscipline = (disc: string | null) => {
