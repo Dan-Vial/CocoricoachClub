@@ -203,7 +203,12 @@ export function AddPlayerDialogWithInvite({
       birth_date?: string; 
       discipline?: string; 
       specialty?: string; 
-      position?: string 
+      position?: string;
+      fis_ranking?: number;
+      fis_points?: number;
+      fis_code?: string;
+      fis_objective?: string;
+      fis_objective_date?: string;
     }) => {
       const { data: player, error } = await supabase
         .from("players")
@@ -217,7 +222,12 @@ export function AddPlayerDialogWithInvite({
           birth_date: data.birth_date || null,
           discipline: data.discipline || null,
           specialty: data.specialty || null,
-          position: data.position || null
+          position: data.position || null,
+          fis_ranking: data.fis_ranking || null,
+          fis_points: data.fis_points || null,
+          fis_code: data.fis_code || null,
+          fis_objective: data.fis_objective || null,
+          fis_objective_date: data.fis_objective_date || null,
         })
         .select()
         .single();
