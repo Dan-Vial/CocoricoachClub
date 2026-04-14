@@ -166,7 +166,7 @@ export default function PublicCategoryView() {
           <div className="flex items-center justify-between mb-4">
             <Button
               variant="ghost"
-              className="text-primary-foreground hover:bg-primary-foreground/10"
+              className="text-white hover:bg-white/10"
               onClick={handleBack}
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
@@ -177,10 +177,10 @@ export default function PublicCategoryView() {
               Mode Consultation
             </Badge>
           </div>
-          <h1 className="text-2xl font-bold text-primary-foreground">
+          <h1 className="text-2xl font-bold text-white">
             {categoryName || overview?.categoryName || "Catégorie"}
           </h1>
-          <p className="text-primary-foreground/80">
+          <p className="text-white/80">
             {clubName || overview?.clubName || "Club"}
           </p>
         </div>

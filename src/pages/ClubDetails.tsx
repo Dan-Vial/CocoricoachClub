@@ -78,7 +78,7 @@ function ClubDetailsContent() {
           <div className="flex justify-between items-start mb-4">
             <Button
               variant="ghost"
-              className="text-primary-foreground hover:bg-primary-foreground/10"
+              className="text-white hover:bg-white/10"
               onClick={() => navigate("/")}
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
@@ -89,7 +89,7 @@ function ClubDetailsContent() {
               <NotificationBell />
             </div>
           </div>
-          <h1 className="text-4xl font-bold text-primary-foreground">{club?.name}</h1>
+          <h1 className="text-4xl font-bold text-white">{club?.name}</h1>
         </div>
       </div>
 

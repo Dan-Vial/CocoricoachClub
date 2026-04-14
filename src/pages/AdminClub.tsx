@@ -276,7 +276,7 @@ import { SeasonManager } from "@/components/club/SeasonManager";
          <div className="container mx-auto max-w-6xl">
            <Button
              variant="ghost"
-             className="text-primary-foreground hover:bg-primary-foreground/10 mb-4"
+             className="text-white hover:bg-white/10 mb-4"
              onClick={() => navigate("/")}
            >
              <ArrowLeft className="h-4 w-4 mr-2" />
@@ -289,13 +289,13 @@ import { SeasonManager } from "@/components/club/SeasonManager";
                {club?.logo_url ? (
                  <img src={club.logo_url} alt={club.name} className="w-full h-full object-cover" />
                ) : (
-                 <Building2 className="h-10 w-10 text-primary-foreground/70" />
+                 <Building2 className="h-10 w-10 text-white/70" />
                )}
              </div>
  
              <div className="flex-1">
                <div className="flex items-center gap-3 flex-wrap">
-                 <h1 className="text-3xl font-bold text-primary-foreground">{club?.name}</h1>
+                 <h1 className="text-3xl font-bold text-white">{club?.name}</h1>
                  <Badge 
                    variant={status.color === "success" ? "default" : status.color === "warning" ? "secondary" : "destructive"}
                    className={cn(
@@ -306,7 +306,7 @@ import { SeasonManager } from "@/components/club/SeasonManager";
                    {status.label}
                  </Badge>
                </div>
-               <p className="text-primary-foreground/70 mt-1">Admin Club</p>
+               <p className="text-white/70 mt-1">Admin Club</p>
              </div>
  
              {isAdmin && (
