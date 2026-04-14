@@ -33,11 +33,21 @@ function getDisciplineShort(disc: string): string {
   return DISCIPLINE_SHORT[disc] || disc.substring(0, 2).toUpperCase();
 }
 
+// Penalty presets by competition level (approximate averages)
+const LEVEL_PENALTY_PRESETS: Record<string, { topAvg: number; label: string }> = {
+  world_cup: { topAvg: 900, label: "Coupe du Monde" },
+  continental_cup: { topAvg: 600, label: "Coupe d'Europe" },
+  fis: { topAvg: 300, label: "FIS Race" },
+  national: { topAvg: 150, label: "Nationale" },
+};
+
 export function FisRankingTab({ categoryId }: FisRankingTabProps) {
   const [selectedPlayer, setSelectedPlayer] = useState("");
   const [simPosition, setSimPosition] = useState("");
   const [simFValue, setSimFValue] = useState("500");
   const [simTopAvg, setSimTopAvg] = useState("800");
+  const [simLevel, setSimLevel] = useState("world_cup");
+  const [simDiscipline, setSimDiscipline] = useState("big_air");
   const [historicalOpen, setHistoricalOpen] = useState(false);
   const [objectiveDialogOpen, setObjectiveDialogOpen] = useState(false);
   const [newObj, setNewObj] = useState({ label: "", points_required: "", deadline: "", location: "", discipline: "" });
