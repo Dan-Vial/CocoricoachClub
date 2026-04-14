@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { TrendingUp, TrendingDown, Target, Calculator, Trophy, Clock, AlertTriangle, Medal, History, Plus, Trash2, MapPin, CalendarDays } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { fr } from "date-fns/locale";
-import { calculateTotalPoints, getBestResults, simulatePoints, calculateRacePenalty, DISCIPLINE_F_VALUES } from "@/lib/fis/fisPointsEngine";
+import { calculateTotalPoints, getBestResults, simulatePoints, determineScale, DISCIPLINE_F_VALUES } from "@/lib/fis/fisPointsEngine";
 import { Progress } from "@/components/ui/progress";
 import { AddHistoricalFisResultsDialog } from "./AddHistoricalFisResultsDialog";
 import { toast } from "sonner";
@@ -209,16 +209,8 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
   });
 
   // Auto-update simulation values when level/discipline changes
-  const simFVal = Number(simFValue) || 500;
-  const simPenalty = (() => {
-    const avg = Number(simTopAvg) || 800;
-    return calculateRacePenalty({
-      topRiderPoints: [avg, avg, avg, avg, avg],
-      topClassifiedPoints: [avg, avg, avg, avg, avg],
-      fValue: simFVal,
-    });
-  })();
-  const simPoints = simPosition ? simulatePoints(Number(simPosition), simPenalty) : null;
+  const simScale = determineScale(simLevel, Number(simTopAvg) || undefined);
+  const simPoints = simPosition ? simulatePoints(Number(simPosition), simScale) : null;
   const simNewTotal = simPoints !== null ? totalPoints + simPoints : null;
   
   // Sim new total per discipline
