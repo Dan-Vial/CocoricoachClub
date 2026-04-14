@@ -670,6 +670,7 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
                     const rAny = r as Record<string, unknown>;
                     const comp = rAny.fis_competitions as { name: string; competition_date: string; location: string | null; discipline: string } | null;
                     const calcPts = rAny.calculated_points as number | null;
+                    const wsplPts = rAny.wspl_points as number | null;
                     const isCounting = bestResults.some((br) => (br as { id?: string }).id === r.id);
                     return (
                       <div key={r.id} className={`flex items-center justify-between px-3 py-2 ${isCounting ? "bg-primary/5" : ""}`}>
@@ -695,8 +696,13 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
                             <Badge variant="outline" className="text-[10px] text-primary border-primary/30">Compté</Badge>
                           )}
                           <Badge variant="secondary" className="font-mono">
-                            {(calcPts ?? r.fis_points).toFixed(2)} pts
+                            {(calcPts ?? r.fis_points).toFixed(2)} FIS
                           </Badge>
+                          {wsplPts != null && wsplPts > 0 && (
+                            <Badge variant="outline" className="font-mono text-[10px]">
+                              {wsplPts.toFixed(2)} WSPL
+                            </Badge>
+                          )}
                         </div>
                       </div>
                     );
