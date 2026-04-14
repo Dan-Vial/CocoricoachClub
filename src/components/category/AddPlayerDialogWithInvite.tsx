@@ -295,8 +295,29 @@ export function AddPlayerDialogWithInvite({
         birth_date: birthDate || undefined,
         discipline: discipline || undefined,
         specialty: specialty || undefined,
-        position: position || undefined
+        position: position || undefined,
+        fis_ranking: fisRanking ? parseInt(fisRanking) : undefined,
+        fis_points: fisPoints ? parseFloat(fisPoints) : undefined,
+        fis_code: fisCode.trim() || undefined,
+        fis_objective: fisObjective.trim() || undefined,
+        fis_objective_date: fisObjectiveDate || undefined,
       });
+
+      // Create FIS objectives if provided
+      if (isSki && yearlyObjectives.length > 0) {
+        const objectivesToInsert = yearlyObjectives
+          .filter(obj => obj.label.trim() && obj.target.trim())
+          .map(obj => ({
+            player_id: player.id,
+            category_id: categoryId,
+            objective_name: obj.label.trim(),
+            points_required: parseFloat(obj.target),
+            season: new Date().getFullYear().toString(),
+          }));
+        if (objectivesToInsert.length > 0) {
+          await supabase.from("fis_objectives").insert(objectivesToInsert);
+        }
+      }
 
       // 2. Send invitation if requested
       if (sendInvitation && playerEmail.trim() && categoryData) {
