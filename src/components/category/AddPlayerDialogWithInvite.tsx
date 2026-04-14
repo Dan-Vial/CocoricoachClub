@@ -653,6 +653,19 @@ export function AddPlayerDialogWithInvite({
                   <Label htmlFor="fisCode">Code FIS</Label>
                   <Input id="fisCode" placeholder="Ex: 9510001" value={fisCode} onChange={(e) => setFisCode(e.target.value)} />
                 </div>
+                {fisCode.trim() && (
+                  <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-md">
+                    <Checkbox
+                      id="importFisHistory"
+                      checked={importFisHistory}
+                      onCheckedChange={(checked) => setImportFisHistory(!!checked)}
+                    />
+                    <label htmlFor="importFisHistory" className="text-sm cursor-pointer flex items-center gap-2">
+                      <Download className="h-4 w-4 text-primary" />
+                      Importer automatiquement l'historique des compétitions FIS
+                    </label>
+                  </div>
+                )}
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2">
                     <Label htmlFor="fisObjective">Objectif sportif</Label>
