@@ -437,137 +437,162 @@ export function MatchSheetsSection({ categoryId, preSelectedMatchId }: MatchShee
 
       {/* Create/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
-          <DialogHeader>
-            <DialogTitle>
-              {editingSheet ? "Modifier la feuille de match" : "Nouvelle feuille de match"}
-            </DialogTitle>
-          </DialogHeader>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col bg-[hsl(210,40%,98%)] border-0 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.3)] rounded-2xl p-0 gap-0">
+          {/* Premium Header */}
+          <div className="px-8 pt-8 pb-5 border-b border-border/40 bg-gradient-to-b from-background to-[hsl(210,40%,98%)]">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                <FileSpreadsheet className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <DialogTitle className="text-xl font-bold tracking-tight">
+                  {editingSheet ? "Modifier la feuille de match" : "Nouvelle feuille de match"}
+                </DialogTitle>
+                <p className="text-sm text-muted-foreground mt-0.5">
+                  Composez votre équipe et préparez le match
+                </p>
+              </div>
+            </div>
+          </div>
 
-          <div className="flex-1 overflow-y-auto space-y-4 pr-2">
-            {/* Basic info */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2 col-span-2">
-                <Label>Nom de la feuille *</Label>
+          <div className="flex-1 overflow-y-auto px-8 py-6 space-y-6">
+            {/* Section: Informations */}
+            <div className="space-y-4">
+              <h4 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Informations du match</h4>
+              <div className="space-y-2">
+                <Label className="font-medium text-sm">Nom de la feuille *</Label>
                 <Input
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Ex: Match J5 vs Racing"
+                  className="bg-muted/50 border-border/50 h-11 rounded-xl transition-all duration-200 focus:bg-background focus:shadow-[0_0_0_3px_hsl(var(--primary)/0.1)] focus:border-primary/40"
                 />
               </div>
-              <div className="space-y-2">
-                <Label>Date du match</Label>
-                <Input
-                  type="date"
-                  value={sheetDate}
-                  onChange={(e) => setSheetDate(e.target.value)}
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="font-medium text-sm">Date du match</Label>
+                  <Input
+                    type="date"
+                    value={sheetDate}
+                    onChange={(e) => setSheetDate(e.target.value)}
+                    className="bg-muted/50 border-border/50 h-11 rounded-xl transition-all duration-200 focus:bg-background focus:shadow-[0_0_0_3px_hsl(var(--primary)/0.1)] focus:border-primary/40"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="font-medium text-sm">Heure</Label>
+                  <Input
+                    type="time"
+                    value={matchTime}
+                    onChange={(e) => setMatchTime(e.target.value)}
+                    className="bg-muted/50 border-border/50 h-11 rounded-xl transition-all duration-200 focus:bg-background focus:shadow-[0_0_0_3px_hsl(var(--primary)/0.1)] focus:border-primary/40"
+                  />
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label>Heure</Label>
-                <Input
-                  type="time"
-                  value={matchTime}
-                  onChange={(e) => setMatchTime(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Adversaire</Label>
-                <Input
-                  value={opponent}
-                  onChange={(e) => setOpponent(e.target.value)}
-                  placeholder="Nom de l'équipe adverse"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Lieu</Label>
-                <Input
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                  placeholder="Stade / Complexe"
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="font-medium text-sm">Adversaire</Label>
+                  <Input
+                    value={opponent}
+                    onChange={(e) => setOpponent(e.target.value)}
+                    placeholder="Nom de l'équipe adverse"
+                    className="bg-muted/50 border-border/50 h-11 rounded-xl transition-all duration-200 focus:bg-background focus:shadow-[0_0_0_3px_hsl(var(--primary)/0.1)] focus:border-primary/40"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="font-medium text-sm">Lieu</Label>
+                  <Input
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    placeholder="Stade / Complexe"
+                    className="bg-muted/50 border-border/50 h-11 rounded-xl transition-all duration-200 focus:bg-background focus:shadow-[0_0_0_3px_hsl(var(--primary)/0.1)] focus:border-primary/40"
+                  />
+                </div>
               </div>
             </div>
 
-            {/* Match obligatoire */}
-            <div className="space-y-2">
-              <Label className="flex items-center gap-1">
-                Lier à un match existant <span className="text-destructive">*</span>
-              </Label>
-              {matches && matches.length > 0 ? (
-                <Select value={matchId} onValueChange={(value) => {
-                  setMatchId(value);
-                  // Auto-fill from match data
-                  const selectedMatch = matches.find(m => m.id === value);
-                  if (selectedMatch) {
-                    if (!opponent) setOpponent(selectedMatch.opponent || "");
-                    if (!sheetDate || sheetDate === new Date().toISOString().split("T")[0]) {
-                      setSheetDate(selectedMatch.match_date);
+            {/* Section: Lien match */}
+            <div className="space-y-4">
+              <h4 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Match associé</h4>
+              <div className="space-y-2">
+                <Label className="font-medium text-sm flex items-center gap-1">
+                  Lier à un match existant <span className="text-destructive">*</span>
+                </Label>
+                {matches && matches.length > 0 ? (
+                  <Select value={matchId} onValueChange={(value) => {
+                    setMatchId(value);
+                    const selectedMatch = matches.find(m => m.id === value);
+                    if (selectedMatch) {
+                      if (!opponent) setOpponent(selectedMatch.opponent || "");
+                      if (!sheetDate || sheetDate === new Date().toISOString().split("T")[0]) {
+                        setSheetDate(selectedMatch.match_date);
+                      }
+                      if (!matchTime && selectedMatch.match_time) {
+                        setMatchTime(selectedMatch.match_time);
+                      }
+                      if (!location && selectedMatch.location) {
+                        setLocation(selectedMatch.location);
+                      }
+                      if (!name) {
+                        setName(`Feuille - ${selectedMatch.opponent} (${format(new Date(selectedMatch.match_date), "dd/MM")})`);
+                      }
                     }
-                    if (!matchTime && selectedMatch.match_time) {
-                      setMatchTime(selectedMatch.match_time);
-                    }
-                    if (!location && selectedMatch.location) {
-                      setLocation(selectedMatch.location);
-                    }
-                    if (!name) {
-                      setName(`Feuille - ${selectedMatch.opponent} (${format(new Date(selectedMatch.match_date), "dd/MM")})`);
-                    }
-                  }
-                }}>
-                  <SelectTrigger className={!matchId ? "border-destructive" : ""}>
-                    <SelectValue placeholder="Sélectionner un match" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {matches.map((match) => (
-                      <SelectItem key={match.id} value={match.id}>
-                        {format(new Date(match.match_date), "dd/MM")} - {match.opponent}
-                        {match.location && ` (${match.location})`}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ) : (
-                <p className="text-sm text-muted-foreground italic p-3 border rounded-lg bg-muted/50">
-                  Aucun match programmé. Créez d'abord un match dans le calendrier global.
-                </p>
-              )}
+                  }}>
+                    <SelectTrigger className={`h-11 rounded-xl bg-muted/50 border-border/50 transition-all duration-200 focus:bg-background focus:shadow-[0_0_0_3px_hsl(var(--primary)/0.1)] ${!matchId ? "border-destructive/50" : ""}`}>
+                      <SelectValue placeholder="Sélectionner un match" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {matches.map((match) => (
+                        <SelectItem key={match.id} value={match.id}>
+                          {format(new Date(match.match_date), "dd/MM")} - {match.opponent}
+                          {match.location && ` (${match.location})`}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <p className="text-sm text-muted-foreground italic p-4 border border-dashed border-border/60 rounded-xl bg-muted/30">
+                    Aucun match programmé. Créez d'abord un match dans le calendrier global.
+                  </p>
+                )}
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <Label>Notes</Label>
+            {/* Section: Notes */}
+            <div className="space-y-4">
+              <h4 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Notes & consignes</h4>
               <Textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Instructions, consignes..."
                 rows={2}
+                className="bg-muted/50 border-border/50 rounded-xl transition-all duration-200 focus:bg-background focus:shadow-[0_0_0_3px_hsl(var(--primary)/0.1)] focus:border-primary/40 resize-none"
               />
             </div>
 
-            {/* Player selection */}
-            <div className="space-y-2">
+            {/* Section: Joueurs */}
+            <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <Label>Sélection des joueurs</Label>
-                <div className="flex gap-2 text-sm">
-                  <Badge variant="secondary">{selectedCount} sélectionnés</Badge>
-                  <Badge variant="outline">{startersCount} titulaires</Badge>
+                <h4 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Sélection des joueurs</h4>
+                <div className="flex gap-2">
+                  <Badge variant="secondary" className="rounded-lg font-medium">{selectedCount} sélectionnés</Badge>
+                  <Badge variant="outline" className="rounded-lg font-medium">{startersCount} titulaires</Badge>
                 </div>
               </div>
-              <Card>
+              <div className="border border-border/40 rounded-xl overflow-hidden bg-background shadow-sm">
                 <ScrollArea className="h-[300px]">
                   <Table>
                     <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-12"></TableHead>
-                        <TableHead>Joueur</TableHead>
-                        <TableHead className="w-20">N°</TableHead>
-                        <TableHead className="min-w-[140px]">Poste</TableHead>
-                        <TableHead className="w-24 text-center">Titulaire</TableHead>
-                        <TableHead className="w-24 text-center">Capitaine</TableHead>
+                      <TableRow className="bg-muted/40 hover:bg-muted/40 border-b border-border/40">
+                        <TableHead className="w-12 h-10 text-xs font-semibold uppercase tracking-wider"></TableHead>
+                        <TableHead className="h-10 text-xs font-semibold uppercase tracking-wider">Joueur</TableHead>
+                        <TableHead className="w-20 h-10 text-xs font-semibold uppercase tracking-wider">N°</TableHead>
+                        <TableHead className="min-w-[140px] h-10 text-xs font-semibold uppercase tracking-wider">Poste</TableHead>
+                        <TableHead className="w-24 text-center h-10 text-xs font-semibold uppercase tracking-wider">Titulaire</TableHead>
+                        <TableHead className="w-24 text-center h-10 text-xs font-semibold uppercase tracking-wider">Capitaine</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {players?.map((player) => {
+                      {players?.map((player, index) => {
                         const playerData = selectedPlayers[player.id] || {
                           selected: false,
                           isStarter: true,
@@ -579,24 +604,31 @@ export function MatchSheetsSection({ categoryId, preSelectedMatchId }: MatchShee
                         return (
                           <TableRow 
                             key={player.id}
-                            className={playerData.selected ? "bg-primary/5" : ""}
+                            className={`transition-colors duration-150 border-b border-border/20 ${
+                              playerData.selected 
+                                ? "bg-primary/5 hover:bg-primary/10" 
+                                : index % 2 === 0 ? "bg-transparent hover:bg-muted/30" : "bg-muted/15 hover:bg-muted/30"
+                            }`}
                           >
-                            <TableCell>
+                            <TableCell className="py-2.5">
                               <Checkbox
                                 checked={playerData.selected}
                                 onCheckedChange={() => togglePlayer(player.id)}
+                                className="transition-all duration-150"
                               />
                             </TableCell>
-                            <TableCell className="font-medium">
-                              {player.name}
-                              {playerData.isCaptain && (
-                                <Star className="h-3 w-3 inline ml-1 text-yellow-500 fill-yellow-500" />
-                              )}
+                            <TableCell className="font-medium py-2.5">
+                              <span className="flex items-center gap-1.5">
+                                {player.name}
+                                {playerData.isCaptain && (
+                                  <Star className="h-3.5 w-3.5 text-amber-500 fill-amber-500 drop-shadow-sm" />
+                                )}
+                              </span>
                             </TableCell>
-                            <TableCell>
+                            <TableCell className="py-2.5">
                               <Input
                                 type="number"
-                                className="w-16 h-8"
+                                className="w-16 h-8 rounded-lg bg-muted/40 border-border/40 text-center transition-all duration-150 focus:bg-background focus:shadow-[0_0_0_2px_hsl(var(--primary)/0.15)]"
                                 value={playerData.jerseyNumber || ""}
                                 onChange={(e) => setSelectedPlayers({
                                   ...selectedPlayers,
@@ -608,7 +640,7 @@ export function MatchSheetsSection({ categoryId, preSelectedMatchId }: MatchShee
                                 disabled={!playerData.selected}
                               />
                             </TableCell>
-                            <TableCell>
+                            <TableCell className="py-2.5">
                               {sportPositions.length > 0 ? (
                                 <Select
                                   value={playerData.position || ""}
@@ -621,7 +653,7 @@ export function MatchSheetsSection({ categoryId, preSelectedMatchId }: MatchShee
                                   })}
                                   disabled={!playerData.selected}
                                 >
-                                  <SelectTrigger className="h-8 text-xs w-full min-w-[140px]">
+                                  <SelectTrigger className="h-8 text-xs w-full min-w-[140px] rounded-lg bg-muted/40 border-border/40 transition-all duration-150 focus:bg-background">
                                     <SelectValue placeholder={player.position || "Poste"} />
                                   </SelectTrigger>
                                   <SelectContent>
@@ -634,7 +666,7 @@ export function MatchSheetsSection({ categoryId, preSelectedMatchId }: MatchShee
                                 </Select>
                               ) : (
                                 <Input
-                                  className="h-8 text-xs w-full"
+                                  className="h-8 text-xs w-full rounded-lg bg-muted/40 border-border/40 transition-all duration-150 focus:bg-background"
                                   value={playerData.position}
                                   onChange={(e) => setSelectedPlayers({
                                     ...selectedPlayers,
@@ -648,7 +680,7 @@ export function MatchSheetsSection({ categoryId, preSelectedMatchId }: MatchShee
                                 />
                               )}
                             </TableCell>
-                            <TableCell className="text-center">
+                            <TableCell className="text-center py-2.5">
                               <Checkbox
                                 checked={playerData.isStarter}
                                 onCheckedChange={(checked) => setSelectedPlayers({
@@ -659,13 +691,13 @@ export function MatchSheetsSection({ categoryId, preSelectedMatchId }: MatchShee
                                   },
                                 })}
                                 disabled={!playerData.selected}
+                                className="transition-all duration-150"
                               />
                             </TableCell>
-                            <TableCell className="text-center">
+                            <TableCell className="text-center py-2.5">
                               <Checkbox
                                 checked={playerData.isCaptain}
                                 onCheckedChange={(checked) => {
-                                  // Only one captain allowed
                                   const updated = { ...selectedPlayers };
                                   Object.keys(updated).forEach((id) => {
                                     updated[id] = { ...updated[id], isCaptain: false };
@@ -674,6 +706,7 @@ export function MatchSheetsSection({ categoryId, preSelectedMatchId }: MatchShee
                                   setSelectedPlayers(updated);
                                 }}
                                 disabled={!playerData.selected}
+                                className="transition-all duration-150"
                               />
                             </TableCell>
                           </TableRow>
@@ -682,21 +715,27 @@ export function MatchSheetsSection({ categoryId, preSelectedMatchId }: MatchShee
                     </TableBody>
                   </Table>
                 </ScrollArea>
-              </Card>
+              </div>
             </div>
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+          {/* Premium Footer */}
+          <div className="px-8 py-5 border-t border-border/40 bg-gradient-to-t from-muted/30 to-transparent flex justify-end gap-3">
+            <Button 
+              variant="ghost" 
+              onClick={() => setIsDialogOpen(false)}
+              className="rounded-xl px-6 h-11 font-medium hover:bg-muted/60 transition-all duration-200"
+            >
               Annuler
             </Button>
             <Button 
               onClick={() => saveMatchSheet.mutate()}
               disabled={!name || saveMatchSheet.isPending}
+              className="rounded-xl px-8 h-11 font-semibold shadow-md hover:shadow-lg transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
             >
-              {editingSheet ? "Mettre à jour" : "Créer"}
+              {editingSheet ? "Mettre à jour" : "Créer la feuille"}
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
