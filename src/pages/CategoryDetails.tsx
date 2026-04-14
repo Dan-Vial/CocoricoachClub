@@ -292,12 +292,12 @@ function CategoryDetailsContent() {
 
       <div className="container mx-auto max-w-7xl px-4 py-8">
         <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-          <div className="overflow-x-auto -mx-4 px-4 pb-2">
-            <ColoredNavTabsList className="inline-flex w-max min-w-full gap-1 p-3">
+          <div className="px-0 pb-2">
+            <ColoredNavTabsList className="flex flex-wrap justify-center gap-1 p-2">
               <ColoredTabTrigger 
                 value="overview" 
                 colorKey="overview"
-                icon={<LayoutDashboard className="h-6 w-6 sm:h-7 sm:w-7" />}
+                icon={<LayoutDashboard className="h-5 w-5" />}
                label="Centre de décision"
                shortLabel="Décision"
                tooltip="Vue d'ensemble : indicateurs clés, alertes, tâches prioritaires et résumé de l'activité récente"
@@ -306,7 +306,7 @@ function CategoryDetailsContent() {
                 <ColoredTabTrigger
                   value="admin" 
                   colorKey="admin"
-                  icon={<Shield className="h-6 w-6 sm:h-7 sm:w-7" />}
+                  icon={<Shield className="h-5 w-5" />}
                   label="Administratif"
                   shortLabel="Admin"
                   tooltip="Gestion des documents, licences, certificats médicaux et pièces administratives des athlètes"
@@ -316,7 +316,7 @@ function CategoryDetailsContent() {
                 <ColoredTabTrigger
                   value="academy" 
                   colorKey="effectif"
-                  icon={<GraduationCap className="h-6 w-6 sm:h-7 sm:w-7" />}
+                  icon={<GraduationCap className="h-5 w-5" />}
                   label="Académie"
                   shortLabel="Acad"
                   tooltip="Suivi scolaire : notes, moyennes, absences et statistiques académiques de chaque athlète"
@@ -326,7 +326,7 @@ function CategoryDetailsContent() {
                 <ColoredTabTrigger 
                   value="effectif" 
                   colorKey="effectif"
-                  icon={<Users className="h-6 w-6 sm:h-7 sm:w-7" />}
+                  icon={<Users className="h-5 w-5" />}
                   label="Effectif"
                   shortLabel="Équipe"
                   tooltip="Liste des athlètes, fiches individuelles, profils athlétiques et données biométriques"
@@ -336,7 +336,7 @@ function CategoryDetailsContent() {
                 <ColoredTabTrigger 
                   value="planification" 
                   colorKey="planification"
-                  icon={<Calendar className="h-6 w-6 sm:h-7 sm:w-7" />}
+                  icon={<Calendar className="h-5 w-5" />}
                   label="Planification"
                   shortLabel="Planning"
                   tooltip="Calendrier annuel et hebdomadaire : organisation des séances, compétitions et objectifs de saison"
@@ -346,7 +346,7 @@ function CategoryDetailsContent() {
                 <ColoredTabTrigger 
                   value="programmation" 
                   colorKey="programmation"
-                  icon={<FileCode className="h-6 w-6 sm:h-7 sm:w-7" />}
+                  icon={<FileCode className="h-5 w-5" />}
                   label="Programmation"
                   shortLabel="Prog"
                   tooltip="Création et structuration des programmes d'entraînement : blocs, semaines et séances types"
@@ -356,7 +356,7 @@ function CategoryDetailsContent() {
                 <ColoredTabTrigger 
                   value="performance" 
                   colorKey="performance"
-                  icon={<Zap className="h-6 w-6 sm:h-7 sm:w-7" />}
+                  icon={<Zap className="h-5 w-5" />}
                   label="Data"
                   shortLabel="Data"
                   tooltip="Monitoring de la charge (EWMA/AWCR), suivi HRV, préparation physique et évolution des tests"
@@ -366,7 +366,7 @@ function CategoryDetailsContent() {
                 <ColoredTabTrigger 
                   value="sante" 
                   colorKey="sante"
-                  icon={<Heart className="h-6 w-6 sm:h-7 sm:w-7" />}
+                  icon={<Heart className="h-5 w-5" />}
                   label="Santé"
                   tooltip="Bien-être (wellness), blessures, récupération, cycle menstruel et prévention des risques"
                 />
@@ -375,7 +375,7 @@ function CategoryDetailsContent() {
                 <ColoredTabTrigger 
                   value="competition" 
                   colorKey="competition"
-                  icon={<Trophy className="h-6 w-6 sm:h-7 sm:w-7" />}
+                  icon={<Trophy className="h-5 w-5" />}
                   label="Compétition & Stats"
                   shortLabel="Compét"
                   tooltip="Gestion des matchs/compétitions, saisie des résultats, statistiques individuelles et collectives"
@@ -385,7 +385,7 @@ function CategoryDetailsContent() {
                 <ColoredTabTrigger 
                   value="arsenal" 
                   colorKey="performance"
-                  icon={<CircleDot className="h-6 w-6 sm:h-7 sm:w-7" />}
+                  icon={<CircleDot className="h-5 w-5" />}
                   label="Arsenal"
                   tooltip="Inventaire des boules de bowling : marque, modèle, caractéristiques techniques et surface"
                 />
@@ -394,7 +394,7 @@ function CategoryDetailsContent() {
                 <ColoredTabTrigger 
                   value="gps" 
                   colorKey="gps"
-                  icon={<MapPin className="h-6 w-6 sm:h-7 sm:w-7" />}
+                  icon={<MapPin className="h-5 w-5" />}
                   label="GPS"
                   tooltip="Données GPS des séances : distance, vitesse, accélérations et charge mécanique externe"
                 />
@@ -403,7 +403,7 @@ function CategoryDetailsContent() {
                 <ColoredTabTrigger 
                   value="video" 
                   colorKey="video"
-                  icon={<Video className="h-6 w-6 sm:h-7 sm:w-7" />}
+                  icon={<Video className="h-5 w-5" />}
                   label="Analyse Vidéo"
                   shortLabel="Vidéo"
                   tooltip="Import et découpage de vidéos de matchs et entraînements, clips et annotations"
@@ -413,7 +413,7 @@ function CategoryDetailsContent() {
                 <ColoredTabTrigger 
                   value="communication" 
                   colorKey="communication"
-                  icon={<MessageSquare className="h-6 w-6 sm:h-7 sm:w-7" />}
+                  icon={<MessageSquare className="h-5 w-5" />}
                   label="Communication"
                   shortLabel="Com"
                   badge={unreadMessagesCount}
@@ -424,7 +424,7 @@ function CategoryDetailsContent() {
                 <ColoredTabTrigger 
                   value="settings" 
                   colorKey="settings"
-                  icon={<Settings className="h-6 w-6 sm:h-7 sm:w-7" />}
+                  icon={<Settings className="h-5 w-5" />}
                   label="Paramètres"
                   shortLabel="Param"
                   tooltip="Configuration de la catégorie : membres, invitations, préférences et gestion des accès"
