@@ -23,7 +23,8 @@ import { toast } from "sonner";
 import { playerSchema } from "@/lib/validations";
 import { ATHLETISME_DISCIPLINES, ATHLETISME_SPECIALTIES, JUDO_WEIGHT_CATEGORIES, AVIRON_ROLES, NATATION_DISCIPLINES, NATATION_SPECIALTIES, SKI_DISCIPLINES, SURF_DISCIPLINES, TRIATHLON_DISCIPLINES, PADEL_POSITIONS, isAthletismeCategory, isJudoCategory, isNatationCategory, isSkiCategory, isSurfCategory, isTriathlonCategory, isPadelCategory, isIndividualSport, getSkiDisciplinesForCategory } from "@/lib/constants/sportTypes";
 import { getPositionsForSport } from "@/lib/constants/sportPositions";
-import { Loader2, Send, UserPlus, Copy, Check, AlertTriangle, Plus, X } from "lucide-react";
+import { Loader2, Send, UserPlus, Copy, Check, AlertTriangle, Plus, X, Download } from "lucide-react";
+import { scrapeFisResults, importFisResultsForPlayer } from "@/lib/fis/scrapeFisResults";
 import { useAuth } from "@/contexts/AuthContext";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
@@ -61,6 +62,8 @@ export function AddPlayerDialogWithInvite({
   const [fisObjectiveDate, setFisObjectiveDate] = useState("");
   // Yearly objectives
   const [yearlyObjectives, setYearlyObjectives] = useState<{ label: string; target: string }[]>([]);
+  const [importFisHistory, setImportFisHistory] = useState(true);
+  const [fisImportStatus, setFisImportStatus] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
   // Fetch category with club info
@@ -175,6 +178,8 @@ export function AddPlayerDialogWithInvite({
     setFisObjective("");
     setFisObjectiveDate("");
     setYearlyObjectives([]);
+    setImportFisHistory(true);
+    setFisImportStatus(null);
   };
 
   const copyLink = async (link: string) => {
@@ -318,6 +323,28 @@ export function AddPlayerDialogWithInvite({
         }
       }
 
+      // Auto-import FIS competition history
+      if (isSki && fisCode.trim() && importFisHistory) {
+        setFisImportStatus("Récupération de l'historique FIS...");
+        try {
+          const sectorCode = (categoryData?.rugby_type || "").toLowerCase().includes("ski") ? "AL" : "SB";
+          const fisData = await scrapeFisResults(fisCode.trim(), sectorCode);
+          if (fisData && fisData.results.length > 0) {
+            setFisImportStatus(`Import de ${fisData.results.length} résultats...`);
+            const count = await importFisResultsForPlayer(player.id, categoryId, fisData);
+            setFisImportStatus(null);
+            toast.success(`${count} résultat(s) FIS importé(s) automatiquement 🎿`);
+          } else {
+            setFisImportStatus(null);
+            toast.info("Aucun résultat FIS trouvé pour ce code");
+          }
+        } catch (fisErr) {
+          console.error("FIS import error:", fisErr);
+          setFisImportStatus(null);
+          toast.warning("Athlète créé mais l'import FIS a échoué. Vous pourrez réessayer plus tard.");
+        }
+      }
+
       // 2. Send invitation if requested
       if (sendInvitation && playerEmail.trim() && categoryData) {
         setIsInviting(true);
@@ -384,7 +411,7 @@ export function AddPlayerDialogWithInvite({
     }
   };
 
-  const isLoading = addPlayer.isPending || isInviting;
+  const isLoading = addPlayer.isPending || isInviting || !!fisImportStatus;
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -628,6 +655,19 @@ export function AddPlayerDialogWithInvite({
                   <Label htmlFor="fisCode">Code FIS</Label>
                   <Input id="fisCode" placeholder="Ex: 9510001" value={fisCode} onChange={(e) => setFisCode(e.target.value)} />
                 </div>
+                {fisCode.trim() && (
+                  <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-md">
+                    <Checkbox
+                      id="importFisHistory"
+                      checked={importFisHistory}
+                      onCheckedChange={(checked) => setImportFisHistory(!!checked)}
+                    />
+                    <label htmlFor="importFisHistory" className="text-sm cursor-pointer flex items-center gap-2">
+                      <Download className="h-4 w-4 text-primary" />
+                      Importer automatiquement l'historique des compétitions FIS
+                    </label>
+                  </div>
+                )}
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2">
                     <Label htmlFor="fisObjective">Objectif sportif</Label>
@@ -762,7 +802,7 @@ export function AddPlayerDialogWithInvite({
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {isInviting ? "Envoi de l'invitation..." : "Ajout..."}
+                  {fisImportStatus ? fisImportStatus : isInviting ? "Envoi de l'invitation..." : "Ajout..."}
                 </>
               ) : sendInvitation ? (
                 <>
