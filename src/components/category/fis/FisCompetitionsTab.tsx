@@ -177,7 +177,11 @@ export function FisCompetitionsTab({ categoryId }: FisCompetitionsTabProps) {
                                 <span>{player ? `${player.first_name || ""} ${player.name}` : "—"}</span>
                               </div>
                               <Badge variant="secondary" className="font-mono">
-                                {calcPts != null ? calcPts.toFixed(0) : r.fis_points} pts
+                                {calcPts != null && calcPts > 0
+                                  ? calcPts.toFixed(2)
+                                  : r.fis_points > 0
+                                    ? r.fis_points.toFixed(2)
+                                    : "0"} pts
                               </Badge>
                             </div>
                           );

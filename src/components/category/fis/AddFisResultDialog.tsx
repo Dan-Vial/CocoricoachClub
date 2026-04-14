@@ -27,6 +27,7 @@ export function AddFisResultDialog({ open, onOpenChange, competition }: AddFisRe
   const [playerId, setPlayerId] = useState("");
   const [ranking, setRanking] = useState("");
   const [score, setScore] = useState("");
+  const [manualFisPoints, setManualFisPoints] = useState("");
   const [saving, setSaving] = useState(false);
   const queryClient = useQueryClient();
 
@@ -45,9 +46,13 @@ export function AddFisResultDialog({ open, onOpenChange, competition }: AddFisRe
 
   const racePenalty = competition.race_penalty ?? 0;
   const rankingNum = Number(ranking);
-  const calculatedPoints = ranking && !isNaN(rankingNum) && rankingNum > 0
+  const autoCalculatedPoints = ranking && !isNaN(rankingNum) && rankingNum > 0
     ? calculateFisPoints({ ranking: rankingNum, racePenalty })
     : null;
+  
+  // Manual FIS points override takes priority
+  const manualPts = manualFisPoints ? Number(manualFisPoints) : null;
+  const finalPoints = manualPts != null && !isNaN(manualPts) ? manualPts : autoCalculatedPoints;
 
   const handleSave = async () => {
     if (!playerId || !ranking) {
@@ -56,7 +61,7 @@ export function AddFisResultDialog({ open, onOpenChange, competition }: AddFisRe
     }
     setSaving(true);
 
-    const basePointsVal = calculatedPoints !== null ? calculatedPoints + racePenalty : 0;
+    const basePointsVal = autoCalculatedPoints !== null ? autoCalculatedPoints + racePenalty : 0;
 
     const upsertData = {
       competition_id: competition.id,
@@ -64,9 +69,9 @@ export function AddFisResultDialog({ open, onOpenChange, competition }: AddFisRe
       category_id: competition.category_id,
       ranking: rankingNum,
       score: score ? Number(score) : null,
-      fis_points: calculatedPoints ?? 0,
+      fis_points: finalPoints ?? 0,
       base_points: basePointsVal,
-      calculated_points: calculatedPoints,
+      calculated_points: finalPoints,
     };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase.from("fis_results") as any).upsert(
@@ -109,6 +114,7 @@ export function AddFisResultDialog({ open, onOpenChange, competition }: AddFisRe
     setPlayerId("");
     setRanking("");
     setScore("");
+    setManualFisPoints("");
   };
 
   return (
@@ -148,19 +154,39 @@ export function AddFisResultDialog({ open, onOpenChange, competition }: AddFisRe
             </div>
           </div>
 
-          {calculatedPoints !== null && (
+          <div>
+            <Label htmlFor="result-fis-points">Points FIS officiels (depuis le site FIS)</Label>
+            <Input
+              id="result-fis-points"
+              type="number"
+              step="0.01"
+              min="0"
+              value={manualFisPoints}
+              onChange={(e) => setManualFisPoints(e.target.value)}
+              placeholder={autoCalculatedPoints != null ? `Auto: ${autoCalculatedPoints.toFixed(2)}` : "Ex: 12.50"}
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              💡 Renseignez les points officiels du site FIS pour plus de précision. Si vide, les points sont calculés automatiquement.
+            </p>
+          </div>
+
+          {finalPoints !== null && finalPoints > 0 && (
             <div className="bg-muted/50 rounded-lg p-4 space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Points de base (position {ranking})</span>
-                <span className="font-mono">{(calculatedPoints + racePenalty).toFixed(0)}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Race Penalty</span>
-                <span className="font-mono text-destructive">-{racePenalty.toFixed(2)}</span>
-              </div>
+              {manualPts == null && autoCalculatedPoints != null && (
+                <>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Points de base (position {ranking})</span>
+                    <span className="font-mono">{(autoCalculatedPoints + racePenalty).toFixed(0)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Race Penalty</span>
+                    <span className="font-mono text-destructive">-{racePenalty.toFixed(2)}</span>
+                  </div>
+                </>
+              )}
               <div className="border-t pt-2 flex justify-between items-center">
                 <span className="font-semibold">Points FIS gagnés</span>
-                <Badge className="text-lg font-mono px-3">{calculatedPoints.toFixed(2)}</Badge>
+                <Badge className="text-lg font-mono px-3">{finalPoints.toFixed(2)}</Badge>
               </div>
             </div>
           )}

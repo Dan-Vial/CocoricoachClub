@@ -121,7 +121,8 @@ export async function importFisResultsForPlayer(
       compId = newComp.id;
     }
 
-    // Upsert result
+    // Upsert result — use the scraped FIS points as both fis_points and calculated_points
+    // The FIS website already computes the final ranking points (base - race_penalty)
     const { error } = await supabase.from("fis_results").upsert(
       {
         competition_id: compId,
@@ -129,6 +130,8 @@ export async function importFisResultsForPlayer(
         category_id: categoryId,
         ranking: result.position,
         fis_points: result.fisPoints!,
+        calculated_points: result.fisPoints!,
+        score: result.cupPoints,
       },
       { onConflict: "competition_id,player_id" }
     );
@@ -136,18 +139,22 @@ export async function importFisResultsForPlayer(
     if (!error) importedCount++;
   }
 
-  // Update player's best FIS points
+  // Update player's best FIS points (highest = best for FIS ranking)
   if (resultsWithPoints.length > 0) {
-    const bestResult = resultsWithPoints.reduce((best, r) =>
-      (r.fisPoints || 0) > (best.fisPoints || 0) ? r : best
-    );
-    await supabase
-      .from("players")
-      .update({
-        fis_points: bestResult.fisPoints,
-        fis_ranking: bestResult.position,
-      })
-      .eq("id", playerId);
+    const sortedByPoints = [...resultsWithPoints]
+      .filter(r => r.fisPoints != null && r.fisPoints > 0)
+      .sort((a, b) => (b.fisPoints || 0) - (a.fisPoints || 0));
+    
+    if (sortedByPoints.length > 0) {
+      const bestResult = sortedByPoints[0];
+      await supabase
+        .from("players")
+        .update({
+          fis_points: bestResult.fisPoints,
+          fis_ranking: bestResult.position,
+        })
+        .eq("id", playerId);
+    }
   }
 
   return importedCount;
