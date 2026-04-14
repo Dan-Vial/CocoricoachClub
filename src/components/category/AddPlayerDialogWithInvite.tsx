@@ -55,8 +55,6 @@ export function AddPlayerDialogWithInvite({
   const [generatedLink, setGeneratedLink] = useState<string | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
   // FIS fields
-  const [fisRanking, setFisRanking] = useState("");
-  const [fisPoints, setFisPoints] = useState("");
   const [fisCode, setFisCode] = useState("");
   const [fisObjective, setFisObjective] = useState("");
   const [fisObjectiveDate, setFisObjectiveDate] = useState("");
