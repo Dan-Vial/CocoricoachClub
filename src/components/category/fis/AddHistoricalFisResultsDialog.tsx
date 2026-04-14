@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { calculateRacePenalty, calculateFisPoints, DISCIPLINE_F_VALUES } from "@/lib/fis/fisPointsEngine";
+import { calculateFisPoints, determineScale, DISCIPLINE_F_VALUES } from "@/lib/fis/fisPointsEngine";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Trash2, History, Calculator } from "lucide-react";
 import { getDisciplinesForClubSport } from "@/lib/constants/skiDisciplines";
@@ -102,8 +102,8 @@ export function AddHistoricalFisResultsDialog({
   const getCalculatedPoints = (entry: HistoricalEntry) => {
     const rankingNum = Number(entry.ranking);
     if (!rankingNum || rankingNum <= 0) return null;
-    const penalty = entry.racePenalty ? Number(entry.racePenalty) : Number(entry.fValue) || 500;
-    return calculateFisPoints({ ranking: rankingNum, racePenalty: penalty });
+    const scaleVal = determineScale(entry.level);
+    return calculateFisPoints({ ranking: rankingNum, scale: scaleVal });
   };
 
   const handleSave = async () => {
@@ -116,9 +116,9 @@ export function AddHistoricalFisResultsDialog({
 
     try {
       for (const entry of valid) {
-        const penalty = entry.racePenalty ? Number(entry.racePenalty) : Number(entry.fValue) || 500;
+        const scaleVal = determineScale(entry.level);
         const rankingNum = Number(entry.ranking);
-        const calculatedPts = calculateFisPoints({ ranking: rankingNum, racePenalty: penalty });
+        const calculatedPts = calculateFisPoints({ ranking: rankingNum, scale: scaleVal });
 
         // 1. Create competition
         const compInsert = {
@@ -128,7 +128,7 @@ export function AddHistoricalFisResultsDialog({
           discipline: entry.discipline,
           level: entry.level,
           location: entry.location || null,
-          race_penalty: penalty,
+          race_penalty: scaleVal,
           f_value: Number(entry.fValue) || 500,
         };
         const { data: comp, error: compError } = await (supabase.from("fis_competitions") as any)
@@ -144,7 +144,7 @@ export function AddHistoricalFisResultsDialog({
           category_id: categoryId,
           ranking: rankingNum,
           fis_points: calculatedPts,
-          base_points: calculatedPts + penalty,
+          base_points: calculatedPts,
           calculated_points: calculatedPts,
         };
         const { error: resultError } = await (supabase.from("fis_results") as any).insert(resultInsert);

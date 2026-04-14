@@ -44,10 +44,10 @@ export function AddFisResultDialog({ open, onOpenChange, competition }: AddFisRe
     enabled: open,
   });
 
-  const racePenalty = competition.race_penalty ?? 0;
+  const scale = competition.race_penalty ?? 1000; // race_penalty now stores the scale
   const rankingNum = Number(ranking);
   const autoCalculatedPoints = ranking && !isNaN(rankingNum) && rankingNum > 0
-    ? calculateFisPoints({ ranking: rankingNum, racePenalty })
+    ? calculateFisPoints({ ranking: rankingNum, scale })
     : null;
   
   // Manual FIS points override takes priority
@@ -61,7 +61,7 @@ export function AddFisResultDialog({ open, onOpenChange, competition }: AddFisRe
     }
     setSaving(true);
 
-    const basePointsVal = autoCalculatedPoints !== null ? autoCalculatedPoints + racePenalty : 0;
+    const basePointsVal = autoCalculatedPoints ?? 0;
 
     const upsertData = {
       competition_id: competition.id,
@@ -173,16 +173,10 @@ export function AddFisResultDialog({ open, onOpenChange, competition }: AddFisRe
           {finalPoints !== null && finalPoints > 0 && (
             <div className="bg-muted/50 rounded-lg p-4 space-y-2">
               {manualPts == null && autoCalculatedPoints != null && (
-                <>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Points de base (position {ranking})</span>
-                    <span className="font-mono">{(autoCalculatedPoints + racePenalty).toFixed(0)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Race Penalty</span>
-                    <span className="font-mono text-destructive">-{racePenalty.toFixed(2)}</span>
-                  </div>
-                </>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Échelle {scale} × {ranking}e position</span>
+                  <span className="font-mono">{autoCalculatedPoints.toFixed(2)}</span>
+                </div>
               )}
               <div className="border-t pt-2 flex justify-between items-center">
                 <span className="font-semibold">Points FIS gagnés</span>

@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { TrendingUp, TrendingDown, Target, Calculator, Trophy, Clock, AlertTriangle, Medal, History, Plus, Trash2, MapPin, CalendarDays } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { fr } from "date-fns/locale";
-import { calculateTotalPoints, getBestResults, simulatePoints, calculateRacePenalty, DISCIPLINE_F_VALUES } from "@/lib/fis/fisPointsEngine";
+import { calculateTotalPoints, getBestResults, simulatePoints, determineScale, DISCIPLINE_F_VALUES } from "@/lib/fis/fisPointsEngine";
 import { Progress } from "@/components/ui/progress";
 import { AddHistoricalFisResultsDialog } from "./AddHistoricalFisResultsDialog";
 import { toast } from "sonner";
@@ -209,16 +209,8 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
   });
 
   // Auto-update simulation values when level/discipline changes
-  const simFVal = Number(simFValue) || 500;
-  const simPenalty = (() => {
-    const avg = Number(simTopAvg) || 800;
-    return calculateRacePenalty({
-      topRiderPoints: [avg, avg, avg, avg, avg],
-      topClassifiedPoints: [avg, avg, avg, avg, avg],
-      fValue: simFVal,
-    });
-  })();
-  const simPoints = simPosition ? simulatePoints(Number(simPosition), simPenalty) : null;
+  const simScale = determineScale(simLevel, Number(simTopAvg) || undefined);
+  const simPoints = simPosition ? simulatePoints(Number(simPosition), simScale) : null;
   const simNewTotal = simPoints !== null ? totalPoints + simPoints : null;
   
   // Sim new total per discipline
@@ -425,18 +417,14 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
                     <Label className="text-[10px]">Moy. top 5</Label>
                     <Input type="number" value={simTopAvg} onChange={(e) => setSimTopAvg(e.target.value)} placeholder="800" className="h-8 text-xs" />
                   </div>
-                  <div>
-                    <Label className="text-[10px]">F-value</Label>
-                    <Input type="number" value={simFValue} onChange={(e) => setSimFValue(e.target.value)} placeholder="500" className="h-8 text-xs" />
-                  </div>
                 </div>
-                {simPenalty > 0 && (
+                {simScale > 0 && (
                   <div className="bg-muted/50 rounded-md p-2 text-center space-y-0.5">
                     <p className="text-[10px] text-muted-foreground">
-                      Race Penalty: <span className="font-mono font-bold text-foreground">{simPenalty.toFixed(2)}</span>
+                      Échelle appliquée: <span className="font-mono font-bold text-foreground">{simScale}</span>
                     </p>
                     <p className="text-[9px] text-muted-foreground font-mono">
-                      P = (A + B - C) / 10 + F • F = {simFVal}
+                      Points = Pourcentage(position) × Échelle
                     </p>
                   </div>
                 )}
