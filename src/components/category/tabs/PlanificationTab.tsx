@@ -35,7 +35,7 @@ export function PlanificationTab({ categoryId, sportType }: PlanificationTabProp
             icon={<BarChart3 className="h-4 w-4" />}
             tooltip="Classement FIS + WSPL par athlète : points, objectifs, simulation et projections"
           >
-            <span className="hidden sm:inline">Classement FIS</span>
+            <span className="hidden sm:inline">Classement FIS + WSPL</span>
             <span className="sm:hidden">Classmt</span>
           </ColoredSubTabsTrigger>
         </ColoredSubTabsList>
