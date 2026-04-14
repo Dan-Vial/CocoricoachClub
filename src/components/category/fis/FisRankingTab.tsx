@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { TrendingUp, TrendingDown, Target, Calculator, Trophy, Clock, AlertTriangle, Medal, History, Plus, Trash2, MapPin, CalendarDays } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { fr } from "date-fns/locale";
-import { calculateTotalPoints, getBestResults, simulatePoints, calculateRacePenalty } from "@/lib/fis/fisPointsEngine";
+import { calculateTotalPoints, getBestResults, simulatePoints, calculateRacePenalty, DISCIPLINE_F_VALUES } from "@/lib/fis/fisPointsEngine";
 import { Progress } from "@/components/ui/progress";
 import { AddHistoricalFisResultsDialog } from "./AddHistoricalFisResultsDialog";
 import { toast } from "sonner";
@@ -33,11 +33,21 @@ function getDisciplineShort(disc: string): string {
   return DISCIPLINE_SHORT[disc] || disc.substring(0, 2).toUpperCase();
 }
 
+// Penalty presets by competition level (approximate averages)
+const LEVEL_PENALTY_PRESETS: Record<string, { topAvg: number; label: string }> = {
+  world_cup: { topAvg: 900, label: "Coupe du Monde" },
+  continental_cup: { topAvg: 600, label: "Coupe d'Europe" },
+  fis: { topAvg: 300, label: "FIS Race" },
+  national: { topAvg: 150, label: "Nationale" },
+};
+
 export function FisRankingTab({ categoryId }: FisRankingTabProps) {
   const [selectedPlayer, setSelectedPlayer] = useState("");
   const [simPosition, setSimPosition] = useState("");
   const [simFValue, setSimFValue] = useState("500");
   const [simTopAvg, setSimTopAvg] = useState("800");
+  const [simLevel, setSimLevel] = useState("world_cup");
+  const [simDiscipline, setSimDiscipline] = useState("big_air");
   const [historicalOpen, setHistoricalOpen] = useState(false);
   const [objectiveDialogOpen, setObjectiveDialogOpen] = useState(false);
   const [newObj, setNewObj] = useState({ label: "", points_required: "", deadline: "", location: "", discipline: "" });
@@ -198,7 +208,7 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
     return exp > now && differenceInDays(exp, now) <= 56;
   });
 
-  // Simulation
+  // Auto-update simulation values when level/discipline changes
   const simFVal = Number(simFValue) || 500;
   const simPenalty = (() => {
     const avg = Number(simTopAvg) || 800;
@@ -210,6 +220,11 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
   })();
   const simPoints = simPosition ? simulatePoints(Number(simPosition), simPenalty) : null;
   const simNewTotal = simPoints !== null ? totalPoints + simPoints : null;
+  
+  // Sim new total per discipline
+  const simNewDisciplineTotal = simPoints !== null && simDiscipline
+    ? (disciplineTotals[simDiscipline]?.total ?? 0) + simPoints
+    : null;
 
   // Helper to get points for a discipline (for objectives)
   const getPointsForDiscipline = (disc: string | null) => {
@@ -258,7 +273,7 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
               <Card className="border-primary/30 bg-primary/5">
                 <CardContent className="p-4 space-y-1">
                   <p className="text-xs text-muted-foreground font-medium">TOTAL</p>
-                  <p className="text-2xl font-bold">{totalPoints.toFixed(0)} pts</p>
+                  <p className="text-2xl font-bold">{totalPoints.toFixed(2)} pts</p>
                   <p className="text-xs text-muted-foreground">{validResults.length} résultats • Top {topN}</p>
                   {player?.fis_ranking && (
                     <p className="text-xs">Classement: <span className="font-semibold">{player.fis_ranking}e</span></p>
@@ -277,8 +292,8 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
                         <p className="text-xs text-muted-foreground font-medium">{disc.label}</p>
                         <Badge variant="outline" className="text-[10px] font-mono">{getDisciplineShort(disc.value)}</Badge>
                       </div>
-                      <p className="text-xl font-bold">{dt.total.toFixed(0)} pts</p>
-                      <p className="text-xs text-muted-foreground">{dt.count} résultats • Meilleur: {dt.best.toFixed(0)}</p>
+                      <p className="text-xl font-bold">{dt.total.toFixed(2)} pts</p>
+                      <p className="text-xs text-muted-foreground">{dt.count} résultats • Meilleur: {dt.best.toFixed(2)}</p>
                     </CardContent>
                   </Card>
                 );
@@ -298,7 +313,7 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
               <CardContent className="space-y-3">
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">Points totaux</span>
-                  <span className="text-2xl font-bold">{totalPoints.toFixed(0)}</span>
+                  <span className="text-2xl font-bold">{totalPoints.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">Classement FIS</span>
@@ -345,7 +360,7 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
                           </div>
                           <Badge variant="destructive" className="font-mono text-xs shrink-0">
                             <TrendingDown className="h-3 w-3 mr-1" />
-                            -{(calcPts ?? r.fis_points).toFixed(0)}
+                            -{(calcPts ?? r.fis_points).toFixed(2)}
                           </Badge>
                         </div>
                       );
@@ -360,10 +375,47 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center gap-2">
                   <Calculator className="h-4 w-4 text-primary" />
-                  Simulation rapide
+                  Simulation de compétition
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-2">
+              <CardContent className="space-y-3">
+                {/* Level & discipline selectors */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label className="text-[10px]">Niveau</Label>
+                    <Select value={simLevel} onValueChange={(val) => {
+                      setSimLevel(val);
+                      const preset = LEVEL_PENALTY_PRESETS[val];
+                      if (preset) setSimTopAvg(String(preset.topAvg));
+                    }}>
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(LEVEL_PENALTY_PRESETS).map(([k, v]) => (
+                          <SelectItem key={k} value={k}>{v.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-[10px]">Discipline</Label>
+                    <Select value={simDiscipline} onValueChange={(val) => {
+                      setSimDiscipline(val);
+                      const fVal = DISCIPLINE_F_VALUES[val] ?? 500;
+                      setSimFValue(String(fVal));
+                    }}>
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {disciplines.map((d) => (
+                          <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
                 <div className="grid grid-cols-3 gap-2">
                   <div>
                     <Label className="text-[10px]">Position</Label>
@@ -378,14 +430,24 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
                     <Input type="number" value={simFValue} onChange={(e) => setSimFValue(e.target.value)} placeholder="500" className="h-8 text-xs" />
                   </div>
                 </div>
+                {simPenalty > 0 && (
+                  <p className="text-[10px] text-muted-foreground text-center">
+                    Race Penalty: <span className="font-mono font-semibold">{simPenalty.toFixed(2)}</span>
+                  </p>
+                )}
                 {simPoints !== null && Number(simPosition) > 0 && (
-                  <div className="bg-primary/5 rounded-md p-2 text-center">
+                  <div className="bg-primary/5 rounded-md p-2 text-center space-y-1">
                     <p className="text-xs text-muted-foreground">
-                      {simPosition}e → <span className="font-bold text-primary text-sm">{simPoints.toFixed(0)} pts</span>
+                      {simPosition}e en {getDisciplineShort(simDiscipline)} → <span className="font-bold text-primary text-sm">{simPoints.toFixed(2)} pts</span>
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      Nouveau total : <span className="font-bold">{simNewTotal?.toFixed(0)} pts</span>
+                      Nouveau total global : <span className="font-bold">{simNewTotal?.toFixed(2)} pts</span>
                     </p>
+                    {simNewDisciplineTotal !== null && (
+                      <p className="text-xs text-muted-foreground">
+                        Total {getDisciplineShort(simDiscipline)} : <span className="font-bold">{simNewDisciplineTotal.toFixed(2)} pts</span>
+                      </p>
+                    )}
                   </div>
                 )}
               </CardContent>
@@ -465,7 +527,7 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
                             <Badge className="bg-green-600 text-white text-[10px]">✅ Qualifié</Badge>
                           ) : (
                             <Badge variant="outline" className="text-[10px] font-mono text-red-600 border-red-300">
-                              -{missing.toFixed(0)} pts
+                              -{missing.toFixed(2)} pts
                             </Badge>
                           )}
                           <Button
@@ -484,7 +546,7 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
                       />
                       <div className="flex justify-between text-[10px] text-muted-foreground">
                         <span>
-                          {discPoints.toFixed(0)} / {obj.points_required} pts
+                          {discPoints.toFixed(2)} / {obj.points_required} pts
                           {obj.discipline && ` (${getDisciplineLabel(obj.discipline)})`}
                         </span>
                         {daysLeft !== null && daysLeft > 0 && (
@@ -495,18 +557,29 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
                       </div>
 
                       {/* Simulation impact */}
-                      {simNewTotal !== null && !reached && !obj.discipline && (
-                        <div className="border-t pt-1">
-                          {simNewTotal >= obj.points_required ? (
-                            <p className="text-[10px] text-green-600 font-medium">
-                              🎉 Qualifié avec simulation !
-                            </p>
-                          ) : (
-                            <p className="text-[10px] text-muted-foreground">
-                              Après simulation : encore {(obj.points_required - simNewTotal).toFixed(0)} pts manquants
-                            </p>
-                          )}
-                        </div>
+                      {simPoints !== null && !reached && (
+                        (() => {
+                          // Use discipline-specific total if objective has a matching discipline
+                          const simTotal = obj.discipline && obj.discipline === simDiscipline
+                            ? simNewDisciplineTotal
+                            : !obj.discipline
+                            ? simNewTotal
+                            : null;
+                          if (simTotal === null) return null;
+                          return (
+                            <div className="border-t pt-1">
+                              {simTotal >= obj.points_required ? (
+                                <p className="text-[10px] text-green-600 font-medium">
+                                  🎉 Qualifié avec simulation !
+                                </p>
+                              ) : (
+                                <p className="text-[10px] text-muted-foreground">
+                                  Après simulation : encore {(obj.points_required - simTotal).toFixed(2)} pts manquants
+                                </p>
+                              )}
+                            </div>
+                          );
+                        })()
                       )}
                     </div>
                   );
@@ -563,7 +636,7 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
                             <Badge variant="outline" className="text-[10px] text-primary border-primary/30">Compté</Badge>
                           )}
                           <Badge variant="secondary" className="font-mono">
-                            {(calcPts ?? r.fis_points).toFixed(0)} pts
+                            {(calcPts ?? r.fis_points).toFixed(2)} pts
                           </Badge>
                         </div>
                       </div>

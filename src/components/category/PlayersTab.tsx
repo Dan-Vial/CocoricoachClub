@@ -4,6 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Table,
   TableBody,
@@ -47,6 +49,14 @@ function getAvironRoleLabel(role: string | null): string {
 
 function PlayerInfoHover({ player, isSki }: { player: any; isSki: boolean }) {
   const [copied, setCopied] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editData, setEditData] = useState({
+    birth_date: player.birth_date || "",
+    email: player.email || "",
+    phone: player.phone || "",
+    fis_code: player.fis_code || "",
+  });
+  const queryClient = useQueryClient();
 
   const infoLines: { label: string; value: string }[] = [];
   
@@ -86,6 +96,28 @@ function PlayerInfoHover({ player, isSki }: { player: any; isSki: boolean }) {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleSaveEdit = async () => {
+    const updates: Record<string, unknown> = {};
+    if (editData.birth_date) updates.birth_date = editData.birth_date;
+    if (editData.email !== player.email) updates.email = editData.email || null;
+    if (editData.phone !== player.phone) updates.phone = editData.phone || null;
+    if (isSki && editData.fis_code !== player.fis_code) updates.fis_code = editData.fis_code || null;
+
+    if (Object.keys(updates).length === 0) {
+      setEditing(false);
+      return;
+    }
+
+    const { error } = await supabase.from("players").update(updates).eq("id", player.id);
+    if (error) {
+      toast.error("Erreur lors de la mise à jour");
+      return;
+    }
+    toast.success("Informations mises à jour");
+    queryClient.invalidateQueries({ queryKey: ["players"] });
+    setEditing(false);
+  };
+
   return (
     <HoverCard>
       <HoverCardTrigger asChild>
@@ -98,23 +130,61 @@ function PlayerInfoHover({ player, isSki }: { player: any; isSki: boolean }) {
           <Info className="h-4 w-4 text-muted-foreground" />
         </Button>
       </HoverCardTrigger>
-      <HoverCardContent className="w-72" align="start" onClick={(e) => e.stopPropagation()}>
+      <HoverCardContent className="w-80" align="start" onClick={(e) => e.stopPropagation()}>
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <p className="text-sm font-semibold">Infos athlète</p>
-            <Button variant="outline" size="sm" className="h-7 gap-1 text-xs" onClick={copyAll}>
-              {copied ? <Check className="h-3 w-3" /> : <ClipboardCopy className="h-3 w-3" />}
-              {copied ? "Copié" : "Copier tout"}
-            </Button>
+            <div className="flex gap-1">
+              <Button variant="outline" size="sm" className="h-7 gap-1 text-xs" onClick={() => {
+                setEditData({
+                  birth_date: player.birth_date || "",
+                  email: player.email || "",
+                  phone: player.phone || "",
+                  fis_code: player.fis_code || "",
+                });
+                setEditing(!editing);
+              }}>
+                {editing ? "Annuler" : "Modifier"}
+              </Button>
+              <Button variant="outline" size="sm" className="h-7 gap-1 text-xs" onClick={copyAll}>
+                {copied ? <Check className="h-3 w-3" /> : <ClipboardCopy className="h-3 w-3" />}
+                {copied ? "Copié" : "Copier"}
+              </Button>
+            </div>
           </div>
-          <div className="space-y-1.5">
-            {infoLines.map((line) => (
-              <div key={line.label} className="flex justify-between text-sm">
-                <span className="text-muted-foreground">{line.label}</span>
-                <span className="font-medium text-right max-w-[160px] truncate">{line.value}</span>
+          
+          {editing ? (
+            <div className="space-y-2">
+              <div>
+                <Label className="text-xs">Date de naissance</Label>
+                <Input type="date" value={editData.birth_date} onChange={(e) => setEditData({...editData, birth_date: e.target.value})} className="h-8 text-xs" />
               </div>
-            ))}
-          </div>
+              <div>
+                <Label className="text-xs">Email</Label>
+                <Input value={editData.email} onChange={(e) => setEditData({...editData, email: e.target.value})} className="h-8 text-xs" placeholder="email@exemple.com" />
+              </div>
+              <div>
+                <Label className="text-xs">Téléphone</Label>
+                <Input value={editData.phone} onChange={(e) => setEditData({...editData, phone: e.target.value})} className="h-8 text-xs" placeholder="+33..." />
+              </div>
+              {isSki && (
+                <div>
+                  <Label className="text-xs">Code FIS</Label>
+                  <Input value={editData.fis_code} onChange={(e) => setEditData({...editData, fis_code: e.target.value})} className="h-8 text-xs" placeholder="FIS Code" />
+                </div>
+              )}
+              <Button size="sm" className="w-full h-8 text-xs" onClick={handleSaveEdit}>Enregistrer</Button>
+            </div>
+          ) : (
+            <div className="space-y-1.5">
+              {infoLines.map((line) => (
+                <div key={line.label} className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">{line.label}</span>
+                  <span className="font-medium text-right max-w-[160px] truncate">{line.value}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </HoverCardContent>
     </HoverCard>
