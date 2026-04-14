@@ -438,6 +438,16 @@ function PlayerDetailsContent() {
           />
         </div>
 
+        {/* Personal Info Section */}
+        <div className="mb-3">
+          <PlayerPersonalInfoSection 
+            playerId={playerId!}
+            categoryId={player.category_id}
+            isViewer={isViewer}
+            sportType={sportType}
+          />
+        </div>
+
         {/* Player Profile and Biometrics Section - Compact */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-3">
           <PlayerProfile 
