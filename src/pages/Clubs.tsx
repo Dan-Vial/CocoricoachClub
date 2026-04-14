@@ -215,10 +215,10 @@ export default function Clubs() {
         <div className="container mx-auto max-w-6xl">
           <div className="flex justify-between items-start mb-4">
             <div>
-              <h1 className="text-4xl md:text-5xl font-bold text-primary-foreground mb-4">
+              <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
                 CocoriCoach Club
               </h1>
-              <p className="text-lg text-primary-foreground/90">
+              <p className="text-lg text-white/90">
                 Gestion des clubs et suivi des performances
               </p>
             </div>
@@ -226,13 +226,13 @@ export default function Clubs() {
               <NotificationBell />
               {isSuperAdmin && (
                 <>
-                  <Button variant="ghost" size="icon" onClick={() => navigate("/athlete-space")} className="text-primary-foreground hover:bg-primary-foreground/10" title="Espace Athlète">
+                  <Button variant="ghost" size="icon" onClick={() => navigate("/athlete-space")} className="text-white hover:bg-white/10" title="Espace Athlète">
                     <User className="h-5 w-5" />
                   </Button>
                   <SuperAdminShieldButton variant="hero" />
                 </>
               )}
-              <Button variant="ghost" size="icon" onClick={signOut} className="text-primary-foreground hover:bg-primary-foreground/10">
+              <Button variant="ghost" size="icon" onClick={signOut} className="text-white hover:bg-white/10">
                 <LogOut className="h-5 w-5" />
               </Button>
             </div>
