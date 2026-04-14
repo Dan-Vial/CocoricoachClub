@@ -1,8 +1,9 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import {
   Table,
   TableBody,
@@ -18,7 +19,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Trash2, Filter, Eye, Copy, Check, Mail, RefreshCw, FileSpreadsheet, Link2 } from "lucide-react";
+import { Plus, Trash2, Filter, Eye, Copy, Check, Mail, RefreshCw, FileSpreadsheet, Link2, Info, ClipboardCopy } from "lucide-react";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
 import { toast } from "sonner";
 import { AddPlayerDialogWithInvite } from "./AddPlayerDialogWithInvite";
 import { BulkAddPlayersDialog } from "./BulkAddPlayersDialog";
@@ -373,6 +376,7 @@ export function PlayersTab({ categoryId }: PlayersTabProps) {
                           </AvatarFallback>
                         </Avatar>
                         <span>{fullName}</span>
+                        <PlayerInfoHover player={player} isSki={isSki} />
                       </div>
                     </TableCell>
                     {hasAttributeColumn && (
