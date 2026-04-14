@@ -2507,6 +2507,67 @@ export type Database = {
           },
         ]
       }
+      fis_objectives: {
+        Row: {
+          category_id: string
+          created_at: string
+          deadline: string | null
+          id: string
+          is_active: boolean
+          label: string
+          location: string | null
+          player_id: string
+          points_required: number
+          updated_at: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          deadline?: string | null
+          id?: string
+          is_active?: boolean
+          label: string
+          location?: string | null
+          player_id: string
+          points_required: number
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          deadline?: string | null
+          id?: string
+          is_active?: boolean
+          label?: string
+          location?: string | null
+          player_id?: string
+          points_required?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fis_objectives_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fis_objectives_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fis_objectives_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fis_points_reference: {
         Row: {
           base_points: number
