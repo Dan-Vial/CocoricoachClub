@@ -29,32 +29,24 @@ export function CompetitionTab({ categoryId, isRugby7, isNationalTeam, sportType
           <ColoredSubTabsTrigger 
             value="matches" 
             colorKey="competition"
-            icon={<MatchIcon className="h-4 w-4" />}
-            tooltip="Liste des matchs et compétitions : création, résultats, statistiques et gestion des rencontres"
+            icon={isSkiSport ? <Mountain className="h-4 w-4" /> : <MatchIcon className="h-4 w-4" />}
+            tooltip={isSkiSport 
+              ? "Compétitions FIS : création, résultats, calcul automatique des points"
+              : "Liste des matchs et compétitions : création, résultats, statistiques et gestion des rencontres"
+            }
           >
             {matchLabel}
           </ColoredSubTabsTrigger>
           {isSkiSport && (
-            <>
-              <ColoredSubTabsTrigger 
-                value="fis-competitions" 
-                colorKey="competition"
-                icon={<Mountain className="h-4 w-4" />}
-                tooltip="Compétitions FIS : création, résultats, calcul automatique des points"
-              >
-                <span className="hidden sm:inline">Compétitions FIS</span>
-                <span className="sm:hidden">FIS</span>
-              </ColoredSubTabsTrigger>
-              <ColoredSubTabsTrigger 
-                value="fis-ranking" 
-                colorKey="competition"
-                icon={<BarChart3 className="h-4 w-4" />}
-                tooltip="Classement FIS par athlète : points, objectifs, simulation et projections"
-              >
-                <span className="hidden sm:inline">Classement FIS</span>
-                <span className="sm:hidden">Classmt</span>
-              </ColoredSubTabsTrigger>
-            </>
+            <ColoredSubTabsTrigger 
+              value="fis-ranking" 
+              colorKey="competition"
+              icon={<BarChart3 className="h-4 w-4" />}
+              tooltip="Classement FIS par athlète : points, objectifs, simulation et projections"
+            >
+              <span className="hidden sm:inline">Classement FIS</span>
+              <span className="sm:hidden">Classmt</span>
+            </ColoredSubTabsTrigger>
           )}
           {isRugby7 && (
             <ColoredSubTabsTrigger 
@@ -81,18 +73,17 @@ export function CompetitionTab({ categoryId, isRugby7, isNationalTeam, sportType
       </div>
 
       <TabsContent value="matches">
-        <MatchesTab categoryId={categoryId} sportType={sportType} />
+        {isSkiSport ? (
+          <FisCompetitionsTab categoryId={categoryId} />
+        ) : (
+          <MatchesTab categoryId={categoryId} sportType={sportType} />
+        )}
       </TabsContent>
 
       {isSkiSport && (
-        <>
-          <TabsContent value="fis-competitions">
-            <FisCompetitionsTab categoryId={categoryId} />
-          </TabsContent>
-          <TabsContent value="fis-ranking">
-            <FisRankingTab categoryId={categoryId} />
-          </TabsContent>
-        </>
+        <TabsContent value="fis-ranking">
+          <FisRankingTab categoryId={categoryId} />
+        </TabsContent>
       )}
 
       {isRugby7 && (
