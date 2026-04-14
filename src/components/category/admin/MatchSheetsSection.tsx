@@ -602,9 +602,9 @@ export function MatchSheetsSection({ categoryId, preSelectedMatchId }: MatchShee
                         <TableHead className="w-12 h-10 text-xs font-semibold uppercase tracking-wider text-primary/60"></TableHead>
                         <TableHead className="h-10 text-xs font-semibold uppercase tracking-wider text-primary/60">Joueur</TableHead>
                         <TableHead className="w-20 h-10 text-xs font-semibold uppercase tracking-wider text-primary/60">N°</TableHead>
-                        <TableHead className="min-w-[140px] h-10 text-xs font-semibold uppercase tracking-wider">Poste</TableHead>
-                        <TableHead className="w-24 text-center h-10 text-xs font-semibold uppercase tracking-wider">Titulaire</TableHead>
-                        <TableHead className="w-24 text-center h-10 text-xs font-semibold uppercase tracking-wider">Capitaine</TableHead>
+                        <TableHead className="min-w-[140px] h-10 text-xs font-semibold uppercase tracking-wider text-primary/60">Poste</TableHead>
+                        <TableHead className="w-24 text-center h-10 text-xs font-semibold uppercase tracking-wider text-primary/60">Titulaire</TableHead>
+                        <TableHead className="w-24 text-center h-10 text-xs font-semibold uppercase tracking-wider text-primary/60">Capitaine</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
