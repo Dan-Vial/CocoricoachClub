@@ -74,7 +74,7 @@ export function FisCompetitionsTab({ categoryId }: FisCompetitionsTabProps) {
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold flex items-center gap-2">
           <Mountain className="h-5 w-5 text-primary" />
-          Compétitions FIS
+          Compétitions FIS + WSPL
         </h3>
         <Button onClick={() => setCreateOpen(true)} size="sm">
           <Plus className="h-4 w-4 mr-1" />
@@ -88,7 +88,7 @@ export function FisCompetitionsTab({ categoryId }: FisCompetitionsTabProps) {
         <Card>
           <CardContent className="py-8 text-center text-muted-foreground">
             <Mountain className="h-10 w-10 mx-auto mb-3 opacity-50" />
-            <p>Aucune compétition FIS enregistrée</p>
+            <p>Aucune compétition FIS + WSPL enregistrée</p>
             <p className="text-xs mt-1">Créez votre première compétition pour commencer le suivi des points</p>
           </CardContent>
         </Card>
@@ -181,8 +181,16 @@ export function FisCompetitionsTab({ categoryId }: FisCompetitionsTabProps) {
                                   ? calcPts.toFixed(2)
                                   : r.fis_points > 0
                                     ? r.fis_points.toFixed(2)
-                                    : "0"} pts
+                                    : "0"} FIS
                               </Badge>
+                              {(() => {
+                                const wspl = (rAny as any).wspl_points as number | null;
+                                return wspl != null && wspl > 0 ? (
+                                  <Badge variant="outline" className="font-mono text-[10px]">
+                                    {wspl.toFixed(2)} WSPL
+                                  </Badge>
+                                ) : null;
+                              })()}
                             </div>
                           );
                         })}

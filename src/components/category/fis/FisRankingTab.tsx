@@ -12,6 +12,7 @@ import { TrendingUp, TrendingDown, Target, Calculator, Trophy, Clock, AlertTrian
 import { format, differenceInDays } from "date-fns";
 import { fr } from "date-fns/locale";
 import { calculateTotalPoints, getBestResults, simulatePoints, determineScale, DISCIPLINE_F_VALUES } from "@/lib/fis/fisPointsEngine";
+import { calculateWsplPoints, calculateWsplRanking, WSPL_EVENT_CATEGORIES } from "@/lib/fis/wsplPointsEngine";
 import { Progress } from "@/components/ui/progress";
 import { AddHistoricalFisResultsDialog } from "./AddHistoricalFisResultsDialog";
 import { ImportFisUrlDialog } from "./ImportFisUrlDialog";
@@ -49,6 +50,9 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
   const [simTopAvg, setSimTopAvg] = useState("800");
   const [simLevel, setSimLevel] = useState("world_cup");
   const [simDiscipline, setSimDiscipline] = useState("big_air");
+  const [simTotalRiders, setSimTotalRiders] = useState("50");
+  const [simWsplStars, setSimWsplStars] = useState("5");
+  const [simWsplPL, setSimWsplPL] = useState("1000");
   const [historicalOpen, setHistoricalOpen] = useState(false);
   const [importUrlOpen, setImportUrlOpen] = useState(false);
   const [objectiveDialogOpen, setObjectiveDialogOpen] = useState(false);
@@ -215,6 +219,23 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
   const simPoints = simPosition ? simulatePoints(Number(simPosition), simScale) : null;
   const simNewTotal = simPoints !== null ? totalPoints + simPoints : null;
   
+  // WSPL simulation
+  const simWsplPoints = simPosition && simTotalRiders && simWsplPL
+    ? calculateWsplPoints({
+        rank: Number(simPosition),
+        totalRiders: Number(simTotalRiders),
+        pointLevel: Number(simWsplPL),
+      })
+    : null;
+
+  // WSPL total from results
+  const wsplTotal = useMemo(() => {
+    const wsplResults = validResults
+      .map((r) => ({ wspl_points: (r as any).wspl_points as number || 0, expires_at: r.expires_at }))
+      .filter((r) => r.wspl_points > 0);
+    return calculateWsplRanking(wsplResults);
+  }, [validResults]);
+  
   // Sim new total per discipline
   const simNewDisciplineTotal = simPoints !== null && simDiscipline
     ? (disciplineTotals[simDiscipline]?.total ?? 0) + simPoints
@@ -261,7 +282,7 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
         <Card>
           <CardContent className="py-8 text-center text-muted-foreground">
             <Trophy className="h-10 w-10 mx-auto mb-3 opacity-50" />
-            <p>Sélectionnez un athlète pour voir son classement FIS</p>
+            <p>Sélectionnez un athlète pour voir son classement FIS + WSPL</p>
           </CardContent>
         </Card>
       ) : (
@@ -272,12 +293,20 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
               {/* Global card */}
               <Card className="border-primary/30 bg-primary/5">
                 <CardContent className="p-4 space-y-1">
-                  <p className="text-xs text-muted-foreground font-medium">TOTAL</p>
+                  <p className="text-xs text-muted-foreground font-medium">TOTAL FIS</p>
                   <p className="text-2xl font-bold">{totalPoints.toFixed(2)} pts</p>
                   <p className="text-xs text-muted-foreground">{validResults.length} résultats • Top {topN}</p>
                   {player?.fis_ranking && (
                     <p className="text-xs">Classement: <span className="font-semibold">{player.fis_ranking}e</span></p>
                   )}
+                </CardContent>
+              </Card>
+              {/* WSPL global card */}
+              <Card className="border-accent/30 bg-accent/5">
+                <CardContent className="p-4 space-y-1">
+                  <p className="text-xs text-muted-foreground font-medium">TOTAL WSPL</p>
+                  <p className="text-2xl font-bold">{wsplTotal.toFixed(2)} pts</p>
+                  <p className="text-xs text-muted-foreground">Moy. top 3 résultats</p>
                 </CardContent>
               </Card>
 
@@ -422,27 +451,56 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
                     <Input type="number" min="1" value={simPosition} onChange={(e) => setSimPosition(e.target.value)} placeholder="3" className="h-8 text-xs" />
                   </div>
                   <div>
-                    <Label className="text-[10px]">Moy. top 5</Label>
+                    <Label className="text-[10px]">Moy. top 5 (FIS)</Label>
                     <Input type="number" value={simTopAvg} onChange={(e) => setSimTopAvg(e.target.value)} placeholder="800" className="h-8 text-xs" />
+                  </div>
+                  <div>
+                    <Label className="text-[10px]">Nb riders (F)</Label>
+                    <Input type="number" min="1" value={simTotalRiders} onChange={(e) => setSimTotalRiders(e.target.value)} placeholder="50" className="h-8 text-xs" />
+                  </div>
+                </div>
+                {/* WSPL inputs */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label className="text-[10px]">Catégorie WSPL</Label>
+                    <Select value={simWsplStars} onValueChange={(val) => {
+                      setSimWsplStars(val);
+                      const cat = WSPL_EVENT_CATEGORIES.find(c => c.stars === Number(val));
+                      if (cat) setSimWsplPL(String(cat.maxPL));
+                    }}>
+                      <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {WSPL_EVENT_CATEGORIES.map((c) => (
+                          <SelectItem key={c.stars} value={String(c.stars)}>{c.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-[10px]">PL (WSPL)</Label>
+                    <Input type="number" min="50" max="1000" value={simWsplPL} onChange={(e) => setSimWsplPL(e.target.value)} placeholder="1000" className="h-8 text-xs" />
                   </div>
                 </div>
                 {simScale > 0 && (
                   <div className="bg-muted/50 rounded-md p-2 text-center space-y-0.5">
                     <p className="text-[10px] text-muted-foreground">
-                      Échelle appliquée: <span className="font-mono font-bold text-foreground">{simScale}</span>
-                    </p>
-                    <p className="text-[9px] text-muted-foreground font-mono">
-                      Points = Pourcentage(position) × Échelle
+                      Échelle FIS: <span className="font-mono font-bold text-foreground">{simScale}</span>
                     </p>
                   </div>
                 )}
                 {simPoints !== null && Number(simPosition) > 0 && (
                   <div className="bg-primary/5 rounded-md p-2 text-center space-y-1">
                     <p className="text-xs text-muted-foreground">
-                      {simPosition}e en {getDisciplineShort(simDiscipline)} → <span className="font-bold text-primary text-sm">{simPoints.toFixed(2)} pts</span>
+                      {simPosition}e en {getDisciplineShort(simDiscipline)} → <span className="font-bold text-primary text-sm">{simPoints.toFixed(2)} pts FIS</span>
                     </p>
+                    {simWsplPoints !== null && simWsplPoints > 0 && (
+                      <p className="text-xs text-muted-foreground">
+                        WSPL → <span className="font-bold text-accent-foreground text-sm">{simWsplPoints.toFixed(2)} pts</span>
+                        <span className="text-[10px] ml-1">(PL={simWsplPL}, F={simTotalRiders})</span>
+                      </p>
+                    )}
                     <p className="text-xs text-muted-foreground">
-                      Nouveau total global : <span className="font-bold">{simNewTotal?.toFixed(2)} pts</span>
+                      Nouveau total FIS : <span className="font-bold">{simNewTotal?.toFixed(2)} pts</span>
                     </p>
                     {simNewDisciplineTotal !== null && (
                       <p className="text-xs text-muted-foreground">
@@ -612,6 +670,7 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
                     const rAny = r as Record<string, unknown>;
                     const comp = rAny.fis_competitions as { name: string; competition_date: string; location: string | null; discipline: string } | null;
                     const calcPts = rAny.calculated_points as number | null;
+                    const wsplPts = rAny.wspl_points as number | null;
                     const isCounting = bestResults.some((br) => (br as { id?: string }).id === r.id);
                     return (
                       <div key={r.id} className={`flex items-center justify-between px-3 py-2 ${isCounting ? "bg-primary/5" : ""}`}>
@@ -637,8 +696,13 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
                             <Badge variant="outline" className="text-[10px] text-primary border-primary/30">Compté</Badge>
                           )}
                           <Badge variant="secondary" className="font-mono">
-                            {(calcPts ?? r.fis_points).toFixed(2)} pts
+                            {(calcPts ?? r.fis_points).toFixed(2)} FIS
                           </Badge>
+                          {wsplPts != null && wsplPts > 0 && (
+                            <Badge variant="outline" className="font-mono text-[10px]">
+                              {wsplPts.toFixed(2)} WSPL
+                            </Badge>
+                          )}
                         </div>
                       </div>
                     );

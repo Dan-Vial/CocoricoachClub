@@ -8,7 +8,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { calculateFisPoints } from "@/lib/fis/fisPointsEngine";
+import { calculateWsplPoints, WSPL_EVENT_CATEGORIES } from "@/lib/fis/wsplPointsEngine";
 import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 import { UserPlus } from "lucide-react";
 
 interface AddFisResultDialogProps {
@@ -28,6 +30,9 @@ export function AddFisResultDialog({ open, onOpenChange, competition }: AddFisRe
   const [ranking, setRanking] = useState("");
   const [score, setScore] = useState("");
   const [manualFisPoints, setManualFisPoints] = useState("");
+  const [totalRiders, setTotalRiders] = useState(competition.total_participants ? String(competition.total_participants) : "");
+  const [wsplStars, setWsplStars] = useState("5");
+  const [wsplPL, setWsplPL] = useState("1000");
   const [saving, setSaving] = useState(false);
   const queryClient = useQueryClient();
 
@@ -44,15 +49,23 @@ export function AddFisResultDialog({ open, onOpenChange, competition }: AddFisRe
     enabled: open,
   });
 
-  const scale = competition.race_penalty ?? 1000; // race_penalty now stores the scale
+  const scale = competition.race_penalty ?? 1000;
   const rankingNum = Number(ranking);
   const autoCalculatedPoints = ranking && !isNaN(rankingNum) && rankingNum > 0
     ? calculateFisPoints({ ranking: rankingNum, scale })
     : null;
   
-  // Manual FIS points override takes priority
   const manualPts = manualFisPoints ? Number(manualFisPoints) : null;
   const finalPoints = manualPts != null && !isNaN(manualPts) ? manualPts : autoCalculatedPoints;
+
+  // WSPL calculation
+  const wsplPoints = ranking && totalRiders && wsplPL
+    ? calculateWsplPoints({
+        rank: rankingNum,
+        totalRiders: Number(totalRiders),
+        pointLevel: Number(wsplPL),
+      })
+    : null;
 
   const handleSave = async () => {
     if (!playerId || !ranking) {
@@ -72,8 +85,11 @@ export function AddFisResultDialog({ open, onOpenChange, competition }: AddFisRe
       fis_points: finalPoints ?? 0,
       base_points: basePointsVal,
       calculated_points: finalPoints,
+      wspl_points: wsplPoints ?? null,
+      wspl_pl: wsplPL ? Number(wsplPL) : null,
+      wspl_stars: wsplStars ? Number(wsplStars) : null,
+      total_riders: totalRiders ? Number(totalRiders) : null,
     };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase.from("fis_results") as any).upsert(
       upsertData,
       { onConflict: "competition_id,player_id" },
@@ -119,7 +135,7 @@ export function AddFisResultDialog({ open, onOpenChange, competition }: AddFisRe
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <UserPlus className="h-5 w-5 text-primary" />
@@ -143,19 +159,23 @@ export function AddFisResultDialog({ open, onOpenChange, competition }: AddFisRe
             </Select>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             <div>
-              <Label htmlFor="result-ranking">Classement final *</Label>
+              <Label htmlFor="result-ranking">Classement *</Label>
               <Input id="result-ranking" type="number" min="1" value={ranking} onChange={(e) => setRanking(e.target.value)} />
             </div>
             <div>
-              <Label htmlFor="result-score">Score (optionnel)</Label>
+              <Label htmlFor="result-score">Score</Label>
               <Input id="result-score" type="number" step="0.01" value={score} onChange={(e) => setScore(e.target.value)} />
+            </div>
+            <div>
+              <Label htmlFor="total-riders">Nb riders (F)</Label>
+              <Input id="total-riders" type="number" min="1" value={totalRiders} onChange={(e) => setTotalRiders(e.target.value)} placeholder="50" />
             </div>
           </div>
 
           <div>
-            <Label htmlFor="result-fis-points">Points FIS officiels (depuis le site FIS)</Label>
+            <Label htmlFor="result-fis-points">Points FIS officiels (site FIS)</Label>
             <Input
               id="result-fis-points"
               type="number"
@@ -166,24 +186,57 @@ export function AddFisResultDialog({ open, onOpenChange, competition }: AddFisRe
               placeholder={autoCalculatedPoints != null ? `Auto: ${autoCalculatedPoints.toFixed(2)}` : "Ex: 12.50"}
             />
             <p className="text-xs text-muted-foreground mt-1">
-              💡 Renseignez les points officiels du site FIS pour plus de précision. Si vide, les points sont calculés automatiquement.
+              💡 Si vide, calculé automatiquement via l'échelle FIS.
             </p>
           </div>
 
-          {finalPoints !== null && finalPoints > 0 && (
-            <div className="bg-muted/50 rounded-lg p-4 space-y-2">
-              {manualPts == null && autoCalculatedPoints != null && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Échelle {scale} × {ranking}e position</span>
-                  <span className="font-mono">{autoCalculatedPoints.toFixed(2)}</span>
-                </div>
-              )}
-              <div className="border-t pt-2 flex justify-between items-center">
-                <span className="font-semibold">Points FIS gagnés</span>
-                <Badge className="text-lg font-mono px-3">{finalPoints.toFixed(2)}</Badge>
+          <Separator />
+
+          {/* WSPL Section */}
+          <div className="space-y-3">
+            <p className="text-sm font-semibold">Points WSPL</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs">Catégorie événement</Label>
+                <Select value={wsplStars} onValueChange={(val) => {
+                  setWsplStars(val);
+                  const cat = WSPL_EVENT_CATEGORIES.find(c => c.stars === Number(val));
+                  if (cat) setWsplPL(String(cat.maxPL));
+                }}>
+                  <SelectTrigger className="text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {WSPL_EVENT_CATEGORIES.map((c) => (
+                      <SelectItem key={c.stars} value={String(c.stars)}>
+                        {c.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs">PL (niveau de points)</Label>
+                <Input type="number" min="50" max="1000" value={wsplPL} onChange={(e) => setWsplPL(e.target.value)} className="text-xs" />
               </div>
             </div>
-          )}
+          </div>
+
+          {/* Results preview */}
+          {(finalPoints !== null && finalPoints > 0) || (wsplPoints !== null && wsplPoints > 0) ? (
+            <div className="bg-muted/50 rounded-lg p-4 space-y-2">
+              {finalPoints !== null && finalPoints > 0 && (
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-semibold">Points FIS</span>
+                  <Badge className="text-lg font-mono px-3">{finalPoints.toFixed(2)}</Badge>
+                </div>
+              )}
+              {wsplPoints !== null && wsplPoints > 0 && (
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-semibold">Points WSPL</span>
+                  <Badge variant="outline" className="text-lg font-mono px-3">{wsplPoints.toFixed(2)}</Badge>
+                </div>
+              )}
+            </div>
+          ) : null}
 
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => onOpenChange(false)}>Annuler</Button>

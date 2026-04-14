@@ -37,7 +37,7 @@ export function EffectifTab({ categoryId }: EffectifTabProps) {
         <div className="flex justify-end">
           <Button variant="outline" size="sm" onClick={() => setFisImportOpen(true)}>
             <FileSpreadsheet className="h-4 w-4 mr-2" />
-            Import classement FIS
+            Import classement FIS + WSPL
           </Button>
           <FisImportDialog
             open={fisImportOpen}

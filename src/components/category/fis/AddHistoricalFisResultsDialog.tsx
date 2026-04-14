@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { calculateFisPoints, determineScale, DISCIPLINE_F_VALUES } from "@/lib/fis/fisPointsEngine";
+import { calculateWsplPoints, WSPL_EVENT_CATEGORIES } from "@/lib/fis/wsplPointsEngine";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Trash2, History, Calculator } from "lucide-react";
 import { getDisciplinesForClubSport } from "@/lib/constants/skiDisciplines";
@@ -22,6 +23,9 @@ interface HistoricalEntry {
   ranking: string;
   racePenalty: string;
   fValue: string;
+  totalRiders: string;
+  wsplStars: string;
+  wsplPL: string;
 }
 
 const LEVELS = [
@@ -42,6 +46,9 @@ function createEntry(discipline: string): HistoricalEntry {
     ranking: "",
     racePenalty: "",
     fValue: String(DISCIPLINE_F_VALUES[discipline] ?? 500),
+    totalRiders: "50",
+    wsplStars: "3",
+    wsplPL: "600",
   };
 }
 
@@ -106,6 +113,14 @@ export function AddHistoricalFisResultsDialog({
     return calculateFisPoints({ ranking: rankingNum, scale: scaleVal });
   };
 
+  const getWsplPoints = (entry: HistoricalEntry) => {
+    const rankingNum = Number(entry.ranking);
+    const riders = Number(entry.totalRiders);
+    const pl = Number(entry.wsplPL);
+    if (!rankingNum || rankingNum <= 0 || !riders || riders <= 0 || !pl) return null;
+    return calculateWsplPoints({ rank: rankingNum, totalRiders: riders, pointLevel: pl });
+  };
+
   const handleSave = async () => {
     const valid = entries.filter((e) => e.compName && e.compDate && e.ranking);
     if (valid.length === 0) {
@@ -119,6 +134,7 @@ export function AddHistoricalFisResultsDialog({
         const scaleVal = determineScale(entry.level);
         const rankingNum = Number(entry.ranking);
         const calculatedPts = calculateFisPoints({ ranking: rankingNum, scale: scaleVal });
+        const wsplPts = getWsplPoints(entry);
 
         // 1. Create competition
         const compInsert = {
@@ -130,6 +146,8 @@ export function AddHistoricalFisResultsDialog({
           location: entry.location || null,
           race_penalty: scaleVal,
           f_value: Number(entry.fValue) || 500,
+          wspl_pl: Number(entry.wsplPL) || null,
+          wspl_stars: Number(entry.wsplStars) || null,
         };
         const { data: comp, error: compError } = await (supabase.from("fis_competitions") as any)
           .insert(compInsert)
@@ -146,6 +164,10 @@ export function AddHistoricalFisResultsDialog({
           fis_points: calculatedPts,
           base_points: calculatedPts,
           calculated_points: calculatedPts,
+          wspl_points: wsplPts ?? null,
+          wspl_pl: Number(entry.wsplPL) || null,
+          wspl_stars: Number(entry.wsplStars) || null,
+          total_riders: Number(entry.totalRiders) || null,
         };
         const { error: resultError } = await (supabase.from("fis_results") as any).insert(resultInsert);
         if (resultError) throw resultError;
@@ -269,9 +291,9 @@ export function AddHistoricalFisResultsDialog({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-4 gap-2">
                   <div>
-                    <Label className="text-xs">Classement final *</Label>
+                    <Label className="text-xs">Classement *</Label>
                     <Input
                       type="number"
                       min="1"
@@ -282,27 +304,65 @@ export function AddHistoricalFisResultsDialog({
                     />
                   </div>
                   <div>
-                    <Label className="text-xs">Race Penalty</Label>
+                    <Label className="text-xs">Nb riders (F)</Label>
                     <Input
                       type="number"
-                      step="0.01"
-                      value={entry.racePenalty}
-                      onChange={(e) => updateEntry(entry.id, "racePenalty", e.target.value)}
-                      placeholder={`Auto: ${entry.fValue}`}
+                      min="1"
+                      value={entry.totalRiders}
+                      onChange={(e) => updateEntry(entry.id, "totalRiders", e.target.value)}
+                      placeholder="50"
                       className="text-sm"
                     />
-                    <p className="text-[10px] text-muted-foreground">Vide = F-value seule</p>
                   </div>
-                  <div className="flex flex-col items-center justify-end">
-                    {pts !== null && (
+                  <div>
+                    <Label className="text-xs">Cat. WSPL</Label>
+                    <Select value={entry.wsplStars} onValueChange={(v) => {
+                      updateEntry(entry.id, "wsplStars", v);
+                      const cat = WSPL_EVENT_CATEGORIES.find(c => c.stars === Number(v));
+                      if (cat) updateEntry(entry.id, "wsplPL", String(cat.maxPL));
+                    }}>
+                      <SelectTrigger className="text-xs"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {WSPL_EVENT_CATEGORIES.map((c) => (
+                          <SelectItem key={c.stars} value={String(c.stars)}>{c.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-xs">PL</Label>
+                    <Input
+                      type="number"
+                      min="50"
+                      max="1000"
+                      value={entry.wsplPL}
+                      onChange={(e) => updateEntry(entry.id, "wsplPL", e.target.value)}
+                      placeholder="600"
+                      className="text-sm"
+                    />
+                  </div>
+                </div>
+                {/* Points preview */}
+                <div className="flex items-center justify-end gap-3">
+                  {pts !== null && (
+                    <div className="text-center">
+                      <p className="text-[10px] text-muted-foreground">FIS</p>
+                      <Badge variant="secondary" className="font-mono text-xs">
+                        {pts.toFixed(2)}
+                      </Badge>
+                    </div>
+                  )}
+                  {(() => {
+                    const wp = getWsplPoints(entry);
+                    return wp !== null ? (
                       <div className="text-center">
-                        <p className="text-[10px] text-muted-foreground">Points FIS</p>
-                        <Badge variant="secondary" className="font-mono text-sm">
-                          {pts.toFixed(0)} pts
+                        <p className="text-[10px] text-muted-foreground">WSPL</p>
+                        <Badge variant="outline" className="font-mono text-xs">
+                          {wp.toFixed(2)}
                         </Badge>
                       </div>
-                    )}
-                  </div>
+                    ) : null;
+                  })()}
                 </div>
               </div>
             );

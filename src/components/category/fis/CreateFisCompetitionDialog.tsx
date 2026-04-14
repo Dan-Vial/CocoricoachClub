@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { calculateRacePenalty, DISCIPLINE_F_VALUES } from "@/lib/fis/fisPointsEngine";
+import { WSPL_EVENT_CATEGORIES } from "@/lib/fis/wsplPointsEngine";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Mountain, Users, Trophy, TrendingDown } from "lucide-react";
@@ -40,6 +41,8 @@ export function CreateFisCompetitionDialog({ open, onOpenChange, categoryId, clu
   const [topRiders, setTopRiders] = useState(["", "", "", "", ""]);
   const [topClassified, setTopClassified] = useState(["", "", "", "", ""]);
   const [customFValue, setCustomFValue] = useState("");
+  const [wsplStars, setWsplStars] = useState("3");
+  const [wsplPL, setWsplPL] = useState("600");
   const [saving, setSaving] = useState(false);
   const queryClient = useQueryClient();
 
@@ -102,6 +105,8 @@ export function CreateFisCompetitionDialog({ open, onOpenChange, categoryId, clu
       top_classified_5_pts: classifiedPts[4],
       f_value: fValue,
       race_penalty: computedPenalty,
+      wspl_pl: Number(wsplPL) || null,
+      wspl_stars: Number(wsplStars) || null,
     };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase.from("fis_competitions") as any).insert(insertData);
@@ -123,7 +128,7 @@ export function CreateFisCompetitionDialog({ open, onOpenChange, categoryId, clu
     setLocation(""); setTotalParticipants(""); setNotes("");
     setTopRiders(["", "", "", "", ""]);
     setTopClassified(["", "", "", "", ""]);
-    setCustomFValue("");
+    setCustomFValue(""); setWsplStars("3"); setWsplPL("600");
   };
 
   return (
@@ -132,7 +137,7 @@ export function CreateFisCompetitionDialog({ open, onOpenChange, categoryId, clu
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Mountain className="h-5 w-5 text-primary" />
-            Nouvelle compétition FIS
+            Nouvelle compétition FIS + WSPL
           </DialogTitle>
         </DialogHeader>
 
@@ -279,6 +284,36 @@ export function CreateFisCompetitionDialog({ open, onOpenChange, categoryId, clu
                     </p>
                   </div>
                 )}
+              </div>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* WSPL Section */}
+          <div className="space-y-3">
+            <Label className="text-sm font-semibold">Paramètres WSPL</Label>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs">Catégorie événement</Label>
+                <Select value={wsplStars} onValueChange={(val) => {
+                  setWsplStars(val);
+                  const cat = WSPL_EVENT_CATEGORIES.find(c => c.stars === Number(val));
+                  if (cat) setWsplPL(String(cat.maxPL));
+                }}>
+                  <SelectTrigger className="text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {WSPL_EVENT_CATEGORIES.map((c) => (
+                      <SelectItem key={c.stars} value={String(c.stars)}>
+                        {c.label} ({c.minPL}-{c.maxPL})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs">PL (niveau de points)</Label>
+                <Input type="number" min="50" max="1000" value={wsplPL} onChange={(e) => setWsplPL(e.target.value)} className="text-xs" />
               </div>
             </div>
           </div>
