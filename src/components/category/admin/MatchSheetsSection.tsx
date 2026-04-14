@@ -447,14 +447,11 @@ export function MatchSheetsSection({ categoryId, preSelectedMatchId }: MatchShee
                 <DialogTitle className="text-xl font-bold tracking-tight text-primary-foreground">
                   {editingSheet ? "Modifier la feuille de match" : "Nouvelle feuille de match"}
                 </DialogTitle>
-                  <DialogTitle className="text-xl font-bold tracking-tight text-primary-foreground">
-                    {editingSheet ? "Modifier la feuille de match" : "Nouvelle feuille de match"}
-                  </DialogTitle>
-                  <p className="text-sm text-primary-foreground/70 mt-0.5">
-                    Composez votre équipe et préparez le match
-                  </p>
-                </div>
+                <p className="text-sm text-primary-foreground/70 mt-0.5">
+                  Composez votre équipe et préparez le match
+                </p>
               </div>
+            </div>
             </div>
           </div>
 
