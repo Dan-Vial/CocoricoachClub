@@ -62,6 +62,8 @@ export function AddPlayerDialogWithInvite({
   const [fisObjectiveDate, setFisObjectiveDate] = useState("");
   // Yearly objectives
   const [yearlyObjectives, setYearlyObjectives] = useState<{ label: string; target: string }[]>([]);
+  const [importFisHistory, setImportFisHistory] = useState(true);
+  const [fisImportStatus, setFisImportStatus] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
   // Fetch category with club info
