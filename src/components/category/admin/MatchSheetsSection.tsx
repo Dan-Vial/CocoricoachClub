@@ -736,21 +736,26 @@ export function MatchSheetsSection({ categoryId, preSelectedMatchId }: MatchShee
           </div>
 
           {/* Premium Footer */}
-          <div className="px-8 py-5 border-t border-border/40 bg-gradient-to-t from-muted/30 to-transparent flex justify-end gap-3">
-            <Button 
-              variant="ghost" 
-              onClick={() => setIsDialogOpen(false)}
-              className="rounded-xl px-6 h-11 font-medium hover:bg-muted/60 transition-all duration-200"
-            >
-              Annuler
-            </Button>
-            <Button 
-              onClick={() => saveMatchSheet.mutate()}
-              disabled={!name || saveMatchSheet.isPending}
-              className="rounded-xl px-8 h-11 font-semibold shadow-md hover:shadow-lg transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
-            >
-              {editingSheet ? "Mettre à jour" : "Créer la feuille"}
-            </Button>
+          <div className="px-8 py-5 border-t border-border/30 bg-card flex items-center justify-between gap-3">
+            <p className="text-xs text-muted-foreground">
+              {selectedCount > 0 && `${selectedCount} joueur${selectedCount > 1 ? 's' : ''} sélectionné${selectedCount > 1 ? 's' : ''}`}
+            </p>
+            <div className="flex gap-3">
+              <Button 
+                variant="ghost" 
+                onClick={() => setIsDialogOpen(false)}
+                className="rounded-xl px-6 h-11 font-medium hover:bg-muted/60 transition-all duration-200"
+              >
+                Annuler
+              </Button>
+              <Button 
+                onClick={() => saveMatchSheet.mutate()}
+                disabled={!name || saveMatchSheet.isPending}
+                className="rounded-xl px-8 h-11 font-semibold shadow-md hover:shadow-lg transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] bg-gradient-to-r from-primary to-primary/85"
+              >
+                {editingSheet ? "Mettre à jour" : "Créer la feuille"}
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
