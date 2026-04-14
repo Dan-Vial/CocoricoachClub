@@ -98,7 +98,7 @@ function ColoredTabTrigger({ value, colorKey, icon, label, shortLabel, disabled,
         </span>
       )}
       {/* Content - Icon on top, label below */}
-      <span className="colored-tab-text relative z-10 flex flex-col items-center gap-1 text-[var(--tab-color)] group-data-[state=active]:text-white">
+      <span className="colored-tab-text relative z-10 flex flex-col items-center gap-1" style={{ color: 'var(--tab-color)' }}>
         <span className="shrink-0 h-6 w-6 sm:h-7 sm:w-7">{icon}</span>
         <span className="whitespace-nowrap text-center leading-tight hidden sm:block">{label}</span>
         <span className="whitespace-nowrap text-center leading-tight sm:hidden">{shortLabel || label}</span>
