@@ -290,6 +290,36 @@ export function CreateFisCompetitionDialog({ open, onOpenChange, categoryId, clu
 
           <Separator />
 
+          {/* WSPL Section */}
+          <div className="space-y-3">
+            <Label className="text-sm font-semibold">Paramètres WSPL</Label>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs">Catégorie événement</Label>
+                <Select value={wsplStars} onValueChange={(val) => {
+                  setWsplStars(val);
+                  const cat = WSPL_EVENT_CATEGORIES.find(c => c.stars === Number(val));
+                  if (cat) setWsplPL(String(cat.maxPL));
+                }}>
+                  <SelectTrigger className="text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {WSPL_EVENT_CATEGORIES.map((c) => (
+                      <SelectItem key={c.stars} value={String(c.stars)}>
+                        {c.label} ({c.minPL}-{c.maxPL})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs">PL (niveau de points)</Label>
+                <Input type="number" min="50" max="1000" value={wsplPL} onChange={(e) => setWsplPL(e.target.value)} className="text-xs" />
+              </div>
+            </div>
+          </div>
+
+          <Separator />
+
           <div>
             <Label htmlFor="comp-notes">Notes</Label>
             <Textarea id="comp-notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} />
