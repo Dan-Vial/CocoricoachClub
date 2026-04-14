@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { TrendingUp, TrendingDown, Target, Calculator, Trophy, Clock, AlertTriangle, Medal, History, Plus, Trash2, MapPin, CalendarDays } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { fr } from "date-fns/locale";
-import { calculateTotalPoints, getBestResults, simulatePoints, calculateRacePenalty } from "@/lib/fis/fisPointsEngine";
+import { calculateTotalPoints, getBestResults, simulatePoints, calculateRacePenalty, DISCIPLINE_F_VALUES } from "@/lib/fis/fisPointsEngine";
 import { Progress } from "@/components/ui/progress";
 import { AddHistoricalFisResultsDialog } from "./AddHistoricalFisResultsDialog";
 import { toast } from "sonner";
