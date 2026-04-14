@@ -547,7 +547,7 @@ export function MatchSheetsSection({ categoryId }: MatchSheetsSectionProps) {
                         <TableHead className="w-12"></TableHead>
                         <TableHead>Joueur</TableHead>
                         <TableHead className="w-20">N°</TableHead>
-                        <TableHead className="w-24">Poste</TableHead>
+                        <TableHead className="w-32">Poste</TableHead>
                         <TableHead className="w-24 text-center">Titulaire</TableHead>
                         <TableHead className="w-24 text-center">Capitaine</TableHead>
                       </TableRow>
@@ -596,7 +596,7 @@ export function MatchSheetsSection({ categoryId }: MatchSheetsSectionProps) {
                             </TableCell>
                             <TableCell>
                               <Input
-                                className="w-20 h-8"
+                                className="w-28 h-8 text-xs"
                                 value={playerData.position}
                                 onChange={(e) => setSelectedPlayers({
                                   ...selectedPlayers,
