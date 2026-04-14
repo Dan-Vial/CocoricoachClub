@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { getPositionsForSport } from "@/lib/constants/sportPositions";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -53,6 +54,24 @@ export function MatchSheetsSection({ categoryId, preSelectedMatchId }: MatchShee
   }>>({});
   
   const queryClient = useQueryClient();
+
+  // Fetch category sport type
+  const { data: categoryData } = useQuery({
+    queryKey: ["category-sport-matchsheet", categoryId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("categories")
+        .select("rugby_type")
+        .eq("id", categoryId)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const sportType = categoryData?.rugby_type || "XV";
+  const sportPositions = getPositionsForSport(sportType);
 
   // Fetch match sheets
   const { data: matchSheets, isLoading } = useQuery({
@@ -596,19 +615,44 @@ export function MatchSheetsSection({ categoryId, preSelectedMatchId }: MatchShee
                               />
                             </TableCell>
                             <TableCell>
-                              <Input
-                                className="h-8 text-xs w-full"
-                                value={playerData.position}
-                                onChange={(e) => setSelectedPlayers({
-                                  ...selectedPlayers,
-                                  [player.id]: {
-                                    ...playerData,
-                                    position: e.target.value,
-                                  },
-                                })}
-                                placeholder={player.position || ""}
-                                disabled={!playerData.selected}
-                              />
+                              {sportPositions.length > 0 ? (
+                                <Select
+                                  value={playerData.position || ""}
+                                  onValueChange={(value) => setSelectedPlayers({
+                                    ...selectedPlayers,
+                                    [player.id]: {
+                                      ...playerData,
+                                      position: value,
+                                    },
+                                  })}
+                                  disabled={!playerData.selected}
+                                >
+                                  <SelectTrigger className="h-8 text-xs w-full min-w-[140px]">
+                                    <SelectValue placeholder={player.position || "Poste"} />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {sportPositions.map((pos) => (
+                                      <SelectItem key={pos.id} value={pos.name}>
+                                        {pos.name}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              ) : (
+                                <Input
+                                  className="h-8 text-xs w-full"
+                                  value={playerData.position}
+                                  onChange={(e) => setSelectedPlayers({
+                                    ...selectedPlayers,
+                                    [player.id]: {
+                                      ...playerData,
+                                      position: e.target.value,
+                                    },
+                                  })}
+                                  placeholder={player.position || ""}
+                                  disabled={!playerData.selected}
+                                />
+                              )}
                             </TableCell>
                             <TableCell className="text-center">
                               <Checkbox
