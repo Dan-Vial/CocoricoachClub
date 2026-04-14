@@ -129,7 +129,7 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
         points_required: Number(newObj.points_required),
         deadline: newObj.deadline || null,
         location: newObj.location || null,
-        discipline: newObj.discipline || null,
+        discipline: newObj.discipline && newObj.discipline !== "all" ? newObj.discipline : null,
       });
       if (error) throw error;
     },
