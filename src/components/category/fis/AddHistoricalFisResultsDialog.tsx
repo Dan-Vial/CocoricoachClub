@@ -113,6 +113,14 @@ export function AddHistoricalFisResultsDialog({
     return calculateFisPoints({ ranking: rankingNum, scale: scaleVal });
   };
 
+  const getWsplPoints = (entry: HistoricalEntry) => {
+    const rankingNum = Number(entry.ranking);
+    const riders = Number(entry.totalRiders);
+    const pl = Number(entry.wsplPL);
+    if (!rankingNum || rankingNum <= 0 || !riders || riders <= 0 || !pl) return null;
+    return calculateWsplPoints({ rank: rankingNum, totalRiders: riders, pointLevel: pl });
+  };
+
   const handleSave = async () => {
     const valid = entries.filter((e) => e.compName && e.compDate && e.ranking);
     if (valid.length === 0) {
@@ -126,6 +134,7 @@ export function AddHistoricalFisResultsDialog({
         const scaleVal = determineScale(entry.level);
         const rankingNum = Number(entry.ranking);
         const calculatedPts = calculateFisPoints({ ranking: rankingNum, scale: scaleVal });
+        const wsplPts = getWsplPoints(entry);
 
         // 1. Create competition
         const compInsert = {
@@ -137,6 +146,8 @@ export function AddHistoricalFisResultsDialog({
           location: entry.location || null,
           race_penalty: scaleVal,
           f_value: Number(entry.fValue) || 500,
+          wspl_pl: Number(entry.wsplPL) || null,
+          wspl_stars: Number(entry.wsplStars) || null,
         };
         const { data: comp, error: compError } = await (supabase.from("fis_competitions") as any)
           .insert(compInsert)
@@ -153,6 +164,10 @@ export function AddHistoricalFisResultsDialog({
           fis_points: calculatedPts,
           base_points: calculatedPts,
           calculated_points: calculatedPts,
+          wspl_points: wsplPts ?? null,
+          wspl_pl: Number(entry.wsplPL) || null,
+          wspl_stars: Number(entry.wsplStars) || null,
+          total_riders: Number(entry.totalRiders) || null,
         };
         const { error: resultError } = await (supabase.from("fis_results") as any).insert(resultInsert);
         if (resultError) throw resultError;
