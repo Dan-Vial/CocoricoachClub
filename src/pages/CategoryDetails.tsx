@@ -292,8 +292,8 @@ function CategoryDetailsContent() {
 
       <div className="container mx-auto max-w-7xl px-4 py-8">
         <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-          <div className="overflow-x-auto -mx-4 px-4 pb-2">
-            <ColoredNavTabsList className="inline-flex w-max min-w-full gap-1 p-3">
+          <div className="px-0 pb-2">
+            <ColoredNavTabsList className="flex flex-wrap justify-center gap-1 p-2">
               <ColoredTabTrigger 
                 value="overview" 
                 colorKey="overview"
