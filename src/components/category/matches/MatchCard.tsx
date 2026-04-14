@@ -181,9 +181,17 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
   const isIndividual = isIndividualSport(sportType);
   const isPadel = sportType.toLowerCase().includes("padel");
   const isTennis = sportType.toLowerCase().includes("tennis");
+  const isSkiSport = getMainSportFromType(sportType) === "ski";
   const hasTournamentBracket = isPadel || isTennis;
   const isDoublesMatch = isPadel || (isTennis && (match.match_format === "double" || match.match_format === "double_mixte"));
   const hasSubMatches = subMatches && subMatches.length > 0;
+  const canHaveSubMatches = (!isIndividual || hasTournamentBracket) && !isSubMatch && !match.parent_match_id;
+  
+  // Check if match is within 3 days (for pre-competition form)
+  const matchDate = new Date(match.match_date);
+  const now = new Date();
+  const daysDiff = Math.ceil((matchDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+  const showPreCompetition = isSkiSport && daysDiff <= 3 && !match.is_finalized;
   const canHaveSubMatches = (!isIndividual || hasTournamentBracket) && !isSubMatch && !match.parent_match_id;
   
   // Check if this is a sport that uses rounds (Judo, Bowling, Aviron, Athletics)
