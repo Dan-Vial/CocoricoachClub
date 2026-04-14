@@ -219,6 +219,23 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
   const simPoints = simPosition ? simulatePoints(Number(simPosition), simScale) : null;
   const simNewTotal = simPoints !== null ? totalPoints + simPoints : null;
   
+  // WSPL simulation
+  const simWsplPoints = simPosition && simTotalRiders && simWsplPL
+    ? calculateWsplPoints({
+        rank: Number(simPosition),
+        totalRiders: Number(simTotalRiders),
+        pointLevel: Number(simWsplPL),
+      })
+    : null;
+
+  // WSPL total from results
+  const wsplTotal = useMemo(() => {
+    const wsplResults = validResults
+      .map((r) => ({ wspl_points: (r as any).wspl_points as number || 0, expires_at: r.expires_at }))
+      .filter((r) => r.wspl_points > 0);
+    return calculateWsplRanking(wsplResults);
+  }, [validResults]);
+  
   // Sim new total per discipline
   const simNewDisciplineTotal = simPoints !== null && simDiscipline
     ? (disciplineTotals[simDiscipline]?.total ?? 0) + simPoints
