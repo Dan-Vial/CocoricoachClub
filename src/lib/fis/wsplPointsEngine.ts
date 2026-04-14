@@ -88,6 +88,49 @@ export function calculateWsplRanking(
 }
 
 /**
+ * Calculate R-Value from top athletes' WSPL rankings.
+ * Men: average of 8 best, Women: average of 5 best.
+ */
+export function calculateRValue(
+  topRankings: number[],
+  gender: "men" | "women" = "men",
+): number | null {
+  const count = gender === "women" ? 5 : 8;
+  const valid = topRankings.filter((r) => r > 0).sort((a, b) => a - b);
+  if (valid.length === 0) return null;
+  const top = valid.slice(0, count);
+  return Math.round((top.reduce((s, v) => s + v, 0) / top.length) * 100) / 100;
+}
+
+/**
+ * Calculate P-Value from top athletes' WSPL points.
+ * Men: average of 8 best, Women: average of 5 best.
+ */
+export function calculatePValue(
+  topPoints: number[],
+  gender: "men" | "women" = "men",
+): number | null {
+  const count = gender === "women" ? 5 : 8;
+  const valid = topPoints.filter((p) => p > 0).sort((a, b) => b - a);
+  if (valid.length === 0) return null;
+  const top = valid.slice(0, count);
+  return Math.round((top.reduce((s, v) => s + v, 0) / top.length) * 100) / 100;
+}
+
+/**
+ * Determine if we should use R-Value or P-Value.
+ * If R-Value < 25.01 (men) or < 19.01 (women) → use R-Value.
+ * Otherwise → use P-Value.
+ */
+export function shouldUseRValue(
+  rValue: number,
+  gender: "men" | "women" = "men",
+): boolean {
+  const threshold = gender === "women" ? 19.01 : 25.01;
+  return rValue < threshold;
+}
+
+/**
  * Determine PL from event category stars and R-Value/P-Value.
  * Returns a value between the min and max for that category.
  */
@@ -95,10 +138,8 @@ export function determinePL(stars: number, rValueOrPValue?: number): number {
   const cat = WSPL_EVENT_CATEGORIES.find((c) => c.stars === stars);
   if (!cat) return 100;
 
-  // If no quality indicator, use max for the category
   if (rValueOrPValue == null) return cat.maxPL;
 
   // Linear interpolation within category range
-  // Higher quality (lower R-Value or higher P-Value) → higher PL
   return Math.min(cat.maxPL, Math.max(cat.minPL, Math.round(rValueOrPValue)));
 }
