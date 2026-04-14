@@ -437,28 +437,35 @@ export function MatchSheetsSection({ categoryId, preSelectedMatchId }: MatchShee
 
       {/* Create/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col bg-[hsl(210,40%,98%)] border-0 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.3)] rounded-2xl p-0 gap-0">
-          {/* Premium Header */}
-          <div className="px-8 pt-8 pb-5 border-b border-border/40 bg-gradient-to-b from-background to-[hsl(210,40%,98%)]">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                <FileSpreadsheet className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <DialogTitle className="text-xl font-bold tracking-tight">
-                  {editingSheet ? "Modifier la feuille de match" : "Nouvelle feuille de match"}
-                </DialogTitle>
-                <p className="text-sm text-muted-foreground mt-0.5">
-                  Composez votre équipe et préparez le match
-                </p>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col border-0 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.35)] rounded-2xl p-0 gap-0 bg-card">
+          {/* Premium Header with colored accent */}
+          <div className="relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary/90 to-accent/80" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,hsl(var(--accent)/0.3),transparent_60%)]" />
+            <div className="relative px-8 pt-7 pb-6">
+              <div className="flex items-center gap-4">
+                <div className="h-12 w-12 rounded-2xl bg-white/15 backdrop-blur-sm flex items-center justify-center border border-white/20 shadow-lg">
+                  <FileSpreadsheet className="h-6 w-6 text-primary-foreground" />
+                </div>
+                <div>
+                  <DialogTitle className="text-xl font-bold tracking-tight text-primary-foreground">
+                    {editingSheet ? "Modifier la feuille de match" : "Nouvelle feuille de match"}
+                  </DialogTitle>
+                  <p className="text-sm text-primary-foreground/70 mt-0.5">
+                    Composez votre équipe et préparez le match
+                  </p>
+                </div>
               </div>
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto px-8 py-6 space-y-6">
+          <div className="flex-1 overflow-y-auto px-8 py-6 space-y-6 bg-secondary/30">
             {/* Section: Informations */}
-            <div className="space-y-4">
-              <h4 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Informations du match</h4>
+            <div className="space-y-4 bg-card rounded-xl p-5 border border-border/30 shadow-sm">
+              <div className="flex items-center gap-2">
+                <div className="h-1.5 w-1.5 rounded-full bg-primary" />
+                <h4 className="text-xs font-semibold uppercase tracking-widest text-primary/70">Informations du match</h4>
+              </div>
               <div className="space-y-2">
                 <Label className="font-medium text-sm">Nom de la feuille *</Label>
                 <Input
@@ -511,8 +518,11 @@ export function MatchSheetsSection({ categoryId, preSelectedMatchId }: MatchShee
             </div>
 
             {/* Section: Lien match */}
-            <div className="space-y-4">
-              <h4 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Match associé</h4>
+            <div className="space-y-4 bg-card rounded-xl p-5 border border-border/30 shadow-sm">
+              <div className="flex items-center gap-2">
+                <div className="h-1.5 w-1.5 rounded-full bg-accent" />
+                <h4 className="text-xs font-semibold uppercase tracking-widest text-accent">Match associé</h4>
+              </div>
               <div className="space-y-2">
                 <Label className="font-medium text-sm flex items-center gap-1">
                   Lier à un match existant <span className="text-destructive">*</span>
@@ -537,7 +547,7 @@ export function MatchSheetsSection({ categoryId, preSelectedMatchId }: MatchShee
                       }
                     }
                   }}>
-                    <SelectTrigger className={`h-11 rounded-xl bg-muted/50 border-border/50 transition-all duration-200 focus:bg-background focus:shadow-[0_0_0_3px_hsl(var(--primary)/0.1)] ${!matchId ? "border-destructive/50" : ""}`}>
+                    <SelectTrigger className={`h-11 rounded-xl bg-muted/50 border-border/50 transition-all duration-200 focus:bg-background focus:shadow-[0_0_0_3px_hsl(var(--accent)/0.15)] focus:border-accent/40 ${!matchId ? "border-destructive/50" : ""}`}>
                       <SelectValue placeholder="Sélectionner un match" />
                     </SelectTrigger>
                     <SelectContent>
@@ -558,8 +568,11 @@ export function MatchSheetsSection({ categoryId, preSelectedMatchId }: MatchShee
             </div>
 
             {/* Section: Notes */}
-            <div className="space-y-4">
-              <h4 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Notes & consignes</h4>
+            <div className="space-y-4 bg-card rounded-xl p-5 border border-border/30 shadow-sm">
+              <div className="flex items-center gap-2">
+                <div className="h-1.5 w-1.5 rounded-full bg-muted-foreground" />
+                <h4 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Notes & consignes</h4>
+              </div>
               <Textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
@@ -570,25 +583,28 @@ export function MatchSheetsSection({ categoryId, preSelectedMatchId }: MatchShee
             </div>
 
             {/* Section: Joueurs */}
-            <div className="space-y-4">
+            <div className="space-y-4 bg-card rounded-xl p-5 border border-border/30 shadow-sm">
               <div className="flex items-center justify-between">
-                <h4 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Sélection des joueurs</h4>
+                <div className="flex items-center gap-2">
+                  <div className="h-1.5 w-1.5 rounded-full bg-primary" />
+                  <h4 className="text-xs font-semibold uppercase tracking-widest text-primary/70">Sélection des joueurs</h4>
+                </div>
                 <div className="flex gap-2">
-                  <Badge variant="secondary" className="rounded-lg font-medium">{selectedCount} sélectionnés</Badge>
-                  <Badge variant="outline" className="rounded-lg font-medium">{startersCount} titulaires</Badge>
+                  <Badge className="rounded-lg font-medium bg-primary/10 text-primary border-primary/20 hover:bg-primary/15">{selectedCount} sélectionnés</Badge>
+                  <Badge className="rounded-lg font-medium bg-accent/10 text-accent border-accent/20 hover:bg-accent/15">{startersCount} titulaires</Badge>
                 </div>
               </div>
-              <div className="border border-border/40 rounded-xl overflow-hidden bg-background shadow-sm">
+              <div className="border border-border/30 rounded-xl overflow-hidden bg-background shadow-sm">
                 <ScrollArea className="h-[300px]">
                   <Table>
                     <TableHeader>
-                      <TableRow className="bg-muted/40 hover:bg-muted/40 border-b border-border/40">
-                        <TableHead className="w-12 h-10 text-xs font-semibold uppercase tracking-wider"></TableHead>
-                        <TableHead className="h-10 text-xs font-semibold uppercase tracking-wider">Joueur</TableHead>
-                        <TableHead className="w-20 h-10 text-xs font-semibold uppercase tracking-wider">N°</TableHead>
-                        <TableHead className="min-w-[140px] h-10 text-xs font-semibold uppercase tracking-wider">Poste</TableHead>
-                        <TableHead className="w-24 text-center h-10 text-xs font-semibold uppercase tracking-wider">Titulaire</TableHead>
-                        <TableHead className="w-24 text-center h-10 text-xs font-semibold uppercase tracking-wider">Capitaine</TableHead>
+                      <TableRow className="bg-primary/5 hover:bg-primary/5 border-b border-border/30">
+                        <TableHead className="w-12 h-10 text-xs font-semibold uppercase tracking-wider text-primary/60"></TableHead>
+                        <TableHead className="h-10 text-xs font-semibold uppercase tracking-wider text-primary/60">Joueur</TableHead>
+                        <TableHead className="w-20 h-10 text-xs font-semibold uppercase tracking-wider text-primary/60">N°</TableHead>
+                        <TableHead className="min-w-[140px] h-10 text-xs font-semibold uppercase tracking-wider text-primary/60">Poste</TableHead>
+                        <TableHead className="w-24 text-center h-10 text-xs font-semibold uppercase tracking-wider text-primary/60">Titulaire</TableHead>
+                        <TableHead className="w-24 text-center h-10 text-xs font-semibold uppercase tracking-wider text-primary/60">Capitaine</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -720,21 +736,26 @@ export function MatchSheetsSection({ categoryId, preSelectedMatchId }: MatchShee
           </div>
 
           {/* Premium Footer */}
-          <div className="px-8 py-5 border-t border-border/40 bg-gradient-to-t from-muted/30 to-transparent flex justify-end gap-3">
-            <Button 
-              variant="ghost" 
-              onClick={() => setIsDialogOpen(false)}
-              className="rounded-xl px-6 h-11 font-medium hover:bg-muted/60 transition-all duration-200"
-            >
-              Annuler
-            </Button>
-            <Button 
-              onClick={() => saveMatchSheet.mutate()}
-              disabled={!name || saveMatchSheet.isPending}
-              className="rounded-xl px-8 h-11 font-semibold shadow-md hover:shadow-lg transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
-            >
-              {editingSheet ? "Mettre à jour" : "Créer la feuille"}
-            </Button>
+          <div className="px-8 py-5 border-t border-border/30 bg-card flex items-center justify-between gap-3">
+            <p className="text-xs text-muted-foreground">
+              {selectedCount > 0 && `${selectedCount} joueur${selectedCount > 1 ? 's' : ''} sélectionné${selectedCount > 1 ? 's' : ''}`}
+            </p>
+            <div className="flex gap-3">
+              <Button 
+                variant="ghost" 
+                onClick={() => setIsDialogOpen(false)}
+                className="rounded-xl px-6 h-11 font-medium hover:bg-muted/60 transition-all duration-200"
+              >
+                Annuler
+              </Button>
+              <Button 
+                onClick={() => saveMatchSheet.mutate()}
+                disabled={!name || saveMatchSheet.isPending}
+                className="rounded-xl px-8 h-11 font-semibold shadow-md hover:shadow-lg transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] bg-gradient-to-r from-primary to-primary/85"
+              >
+                {editingSheet ? "Mettre à jour" : "Créer la feuille"}
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
