@@ -23,6 +23,9 @@ interface HistoricalEntry {
   ranking: string;
   racePenalty: string;
   fValue: string;
+  totalRiders: string;
+  wsplStars: string;
+  wsplPL: string;
 }
 
 const LEVELS = [
@@ -43,6 +46,9 @@ function createEntry(discipline: string): HistoricalEntry {
     ranking: "",
     racePenalty: "",
     fValue: String(DISCIPLINE_F_VALUES[discipline] ?? 500),
+    totalRiders: "50",
+    wsplStars: "3",
+    wsplPL: "600",
   };
 }
 
