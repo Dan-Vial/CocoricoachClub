@@ -473,17 +473,18 @@ All colors MUST be HSL.
   border-bottom-color: transparent !important;
 }
 
-/* Colored tab trigger active state - main navigation */
+/* Colored tab trigger active state */
 .colored-tab-trigger[data-state="active"] {
-  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  background-color: var(--tab-color) !important;
+  color: white !important;
+  box-shadow: 0 4px 8px -2px rgb(0 0 0 / 0.2);
 }
-.colored-tab-trigger[data-state="active"] > .colored-tab-bg {
-  opacity: 1;
-  transform: scale(1);
+.colored-tab-trigger[data-state="active"] .colored-tab-text {
+  color: white !important;
 }
-.colored-tab-trigger[data-state="active"] > .colored-tab-text {
+.colored-tab-trigger[data-state="active"] svg {
   color: white !important;
 }
 .colored-tab-trigger:not([data-state="active"]):hover {
-  background-color: color-mix(in srgb, var(--tab-color) 10%, transparent);
+  background-color: color-mix(in srgb, var(--tab-color) 15%, transparent);
 }
