@@ -518,8 +518,11 @@ export function MatchSheetsSection({ categoryId, preSelectedMatchId }: MatchShee
             </div>
 
             {/* Section: Lien match */}
-            <div className="space-y-4">
-              <h4 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Match associé</h4>
+            <div className="space-y-4 bg-card rounded-xl p-5 border border-border/30 shadow-sm">
+              <div className="flex items-center gap-2">
+                <div className="h-1.5 w-1.5 rounded-full bg-accent" />
+                <h4 className="text-xs font-semibold uppercase tracking-widest text-accent">Match associé</h4>
+              </div>
               <div className="space-y-2">
                 <Label className="font-medium text-sm flex items-center gap-1">
                   Lier à un match existant <span className="text-destructive">*</span>
@@ -544,7 +547,7 @@ export function MatchSheetsSection({ categoryId, preSelectedMatchId }: MatchShee
                       }
                     }
                   }}>
-                    <SelectTrigger className={`h-11 rounded-xl bg-muted/50 border-border/50 transition-all duration-200 focus:bg-background focus:shadow-[0_0_0_3px_hsl(var(--primary)/0.1)] ${!matchId ? "border-destructive/50" : ""}`}>
+                    <SelectTrigger className={`h-11 rounded-xl bg-muted/50 border-border/50 transition-all duration-200 focus:bg-background focus:shadow-[0_0_0_3px_hsl(var(--accent)/0.15)] focus:border-accent/40 ${!matchId ? "border-destructive/50" : ""}`}>
                       <SelectValue placeholder="Sélectionner un match" />
                     </SelectTrigger>
                     <SelectContent>
@@ -565,8 +568,11 @@ export function MatchSheetsSection({ categoryId, preSelectedMatchId }: MatchShee
             </div>
 
             {/* Section: Notes */}
-            <div className="space-y-4">
-              <h4 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Notes & consignes</h4>
+            <div className="space-y-4 bg-card rounded-xl p-5 border border-border/30 shadow-sm">
+              <div className="flex items-center gap-2">
+                <div className="h-1.5 w-1.5 rounded-full bg-muted-foreground" />
+                <h4 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Notes & consignes</h4>
+              </div>
               <Textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
@@ -577,22 +583,25 @@ export function MatchSheetsSection({ categoryId, preSelectedMatchId }: MatchShee
             </div>
 
             {/* Section: Joueurs */}
-            <div className="space-y-4">
+            <div className="space-y-4 bg-card rounded-xl p-5 border border-border/30 shadow-sm">
               <div className="flex items-center justify-between">
-                <h4 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Sélection des joueurs</h4>
+                <div className="flex items-center gap-2">
+                  <div className="h-1.5 w-1.5 rounded-full bg-primary" />
+                  <h4 className="text-xs font-semibold uppercase tracking-widest text-primary/70">Sélection des joueurs</h4>
+                </div>
                 <div className="flex gap-2">
-                  <Badge variant="secondary" className="rounded-lg font-medium">{selectedCount} sélectionnés</Badge>
-                  <Badge variant="outline" className="rounded-lg font-medium">{startersCount} titulaires</Badge>
+                  <Badge className="rounded-lg font-medium bg-primary/10 text-primary border-primary/20 hover:bg-primary/15">{selectedCount} sélectionnés</Badge>
+                  <Badge className="rounded-lg font-medium bg-accent/10 text-accent border-accent/20 hover:bg-accent/15">{startersCount} titulaires</Badge>
                 </div>
               </div>
-              <div className="border border-border/40 rounded-xl overflow-hidden bg-background shadow-sm">
+              <div className="border border-border/30 rounded-xl overflow-hidden bg-background shadow-sm">
                 <ScrollArea className="h-[300px]">
                   <Table>
                     <TableHeader>
-                      <TableRow className="bg-muted/40 hover:bg-muted/40 border-b border-border/40">
-                        <TableHead className="w-12 h-10 text-xs font-semibold uppercase tracking-wider"></TableHead>
-                        <TableHead className="h-10 text-xs font-semibold uppercase tracking-wider">Joueur</TableHead>
-                        <TableHead className="w-20 h-10 text-xs font-semibold uppercase tracking-wider">N°</TableHead>
+                      <TableRow className="bg-primary/5 hover:bg-primary/5 border-b border-border/30">
+                        <TableHead className="w-12 h-10 text-xs font-semibold uppercase tracking-wider text-primary/60"></TableHead>
+                        <TableHead className="h-10 text-xs font-semibold uppercase tracking-wider text-primary/60">Joueur</TableHead>
+                        <TableHead className="w-20 h-10 text-xs font-semibold uppercase tracking-wider text-primary/60">N°</TableHead>
                         <TableHead className="min-w-[140px] h-10 text-xs font-semibold uppercase tracking-wider">Poste</TableHead>
                         <TableHead className="w-24 text-center h-10 text-xs font-semibold uppercase tracking-wider">Titulaire</TableHead>
                         <TableHead className="w-24 text-center h-10 text-xs font-semibold uppercase tracking-wider">Capitaine</TableHead>
