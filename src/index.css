@@ -472,3 +472,18 @@ All colors MUST be HSL.
   color: white !important;
   border-bottom-color: transparent !important;
 }
+
+/* Colored tab trigger active state - main navigation */
+.colored-tab-trigger[data-state="active"] {
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+}
+.colored-tab-trigger[data-state="active"] > .colored-tab-bg {
+  opacity: 1;
+  transform: scale(1);
+}
+.colored-tab-trigger[data-state="active"] > .colored-tab-text {
+  color: white !important;
+}
+.colored-tab-trigger:not([data-state="active"]):hover {
+  background-color: color-mix(in srgb, var(--tab-color) 10%, transparent);
+}
