@@ -482,13 +482,9 @@ All colors MUST be HSL.
   transform: scale(1) !important;
 }
 .colored-tab-trigger[data-state="active"] .colored-tab-text,
-.colored-tab-trigger[data-state="active"] .colored-tab-text * {
+.colored-tab-trigger[data-state="active"] .colored-tab-text *:not(.bg-destructive *) {
   color: white !important;
 }
 .colored-tab-trigger:not([data-state="active"]):hover {
   background-color: color-mix(in srgb, var(--tab-color) 15%, transparent);
-}
-button.colored-tab-trigger[data-state="active"] .colored-tab-bg {
-  opacity: 1 !important;
-  transform: scale(1) !important;
 }
