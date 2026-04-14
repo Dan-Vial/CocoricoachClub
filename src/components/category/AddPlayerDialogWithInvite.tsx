@@ -170,8 +170,6 @@ export function AddPlayerDialogWithInvite({
     setValidationError("");
     setGeneratedLink(null);
     setLinkCopied(false);
-    setFisRanking("");
-    setFisPoints("");
     setFisCode("");
     setFisObjective("");
     setFisObjectiveDate("");
@@ -207,8 +205,6 @@ export function AddPlayerDialogWithInvite({
       discipline?: string; 
       specialty?: string; 
       position?: string;
-      fis_ranking?: number;
-      fis_points?: number;
       fis_code?: string;
       fis_objective?: string;
       fis_objective_date?: string;
@@ -226,8 +222,6 @@ export function AddPlayerDialogWithInvite({
           discipline: data.discipline || null,
           specialty: data.specialty || null,
           position: data.position || null,
-          fis_ranking: data.fis_ranking || null,
-          fis_points: data.fis_points || null,
           fis_code: data.fis_code || null,
           fis_objective: data.fis_objective || null,
           fis_objective_date: data.fis_objective_date || null,
@@ -299,8 +293,6 @@ export function AddPlayerDialogWithInvite({
         discipline: discipline || undefined,
         specialty: specialty || undefined,
         position: position || undefined,
-        fis_ranking: fisRanking ? parseInt(fisRanking) : undefined,
-        fis_points: fisPoints ? parseFloat(fisPoints) : undefined,
         fis_code: fisCode.trim() || undefined,
         fis_objective: fisObjective.trim() || undefined,
         fis_objective_date: fisObjectiveDate || undefined,
@@ -638,20 +630,11 @@ export function AddPlayerDialogWithInvite({
             {/* FIS fields for ski/snow */}
             {isSki && (
               <div className="space-y-3 border-t pt-3">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Classement FIS</p>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-2">
-                    <Label htmlFor="fisRanking">Classement FIS</Label>
-                    <Input id="fisRanking" type="number" placeholder="Ex: 45" min="1" value={fisRanking} onChange={(e) => setFisRanking(e.target.value)} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="fisPoints">Points FIS</Label>
-                    <Input id="fisPoints" type="number" placeholder="Ex: 320.50" step="0.01" min="0" value={fisPoints} onChange={(e) => setFisPoints(e.target.value)} />
-                  </div>
-                </div>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Code FIS</p>
                 <div className="space-y-2">
                   <Label htmlFor="fisCode">Code FIS</Label>
                   <Input id="fisCode" placeholder="Ex: 9510001" value={fisCode} onChange={(e) => setFisCode(e.target.value)} />
+                  <p className="text-xs text-muted-foreground">💡 Le classement et les points FIS seront importés automatiquement via le code FIS.</p>
                 </div>
                 {fisCode.trim() && (
                   <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-md">
