@@ -419,7 +419,7 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
       {/* ─── FIS CALENDAR SYNC (ski sports only) ─── */}
       {isSkiSport && !isViewer && (
         <div className="bg-card rounded-xl border shadow-sm overflow-hidden">
-          <div className="px-4 py-3 border-b bg-gradient-to-r from-blue-500/5 to-transparent">
+          <div className="px-4 py-3 border-b bg-gradient-to-r from-primary/5 to-transparent">
             <h3 className="text-sm font-bold tracking-tight text-muted-foreground flex items-center gap-2">
               🎿 Import Calendrier FIS
             </h3>
