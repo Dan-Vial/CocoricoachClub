@@ -582,6 +582,16 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
           </div>
         )}
 
+        {/* FIS Pre-competition form (ski sports, 3 days before) */}
+        {showPreCompetition && (
+          <div className="mt-3">
+            <FisPreCompetitionForm
+              matchId={match.id}
+              categoryId={categoryId}
+              currentData={match as any}
+            />
+          </div>
+
         {/* Ski conditions */}
         {isSkiCategory(sportType) && (
           <div className="mt-3">
