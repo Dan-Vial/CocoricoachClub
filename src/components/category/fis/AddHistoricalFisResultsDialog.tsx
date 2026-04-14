@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { calculateRacePenalty, calculateFisPoints, DISCIPLINE_F_VALUES } from "@/lib/fis/fisPointsEngine";
+import { calculateFisPoints, determineScale, DISCIPLINE_F_VALUES } from "@/lib/fis/fisPointsEngine";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Trash2, History, Calculator } from "lucide-react";
 import { getDisciplinesForClubSport } from "@/lib/constants/skiDisciplines";
