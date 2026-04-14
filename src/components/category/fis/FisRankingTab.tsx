@@ -201,11 +201,11 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
     return disciplines.filter(d => resultsByDiscipline[d.value]?.length > 0);
   }, [disciplines, resultsByDiscipline]);
 
-  // Expiring soon (next 8 weeks)
+  // Expiring soon (next 12 weeks warning)
   const expiringSoon = validResults.filter((r) => {
     if (!r.expires_at) return false;
     const exp = new Date(r.expires_at);
-    return exp > now && differenceInDays(exp, now) <= 56;
+    return exp > now && differenceInDays(exp, now) <= 84;
   });
 
   // Auto-update simulation values when level/discipline changes
@@ -327,7 +327,7 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center gap-2">
                   <Clock className="h-4 w-4 text-destructive" />
-                  Points expirants (8 sem.)
+                  Expirations prochaines (52 sem. glissantes)
                 </CardTitle>
               </CardHeader>
               <CardContent>
