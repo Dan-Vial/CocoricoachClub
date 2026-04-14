@@ -321,6 +321,28 @@ export function AddPlayerDialogWithInvite({
         }
       }
 
+      // Auto-import FIS competition history
+      if (isSki && fisCode.trim() && importFisHistory) {
+        setFisImportStatus("Récupération de l'historique FIS...");
+        try {
+          const sectorCode = (categoryData?.rugby_type || "").toLowerCase().includes("ski") ? "AL" : "SB";
+          const fisData = await scrapeFisResults(fisCode.trim(), sectorCode);
+          if (fisData && fisData.results.length > 0) {
+            setFisImportStatus(`Import de ${fisData.results.length} résultats...`);
+            const count = await importFisResultsForPlayer(player.id, categoryId, fisData);
+            setFisImportStatus(null);
+            toast.success(`${count} résultat(s) FIS importé(s) automatiquement 🎿`);
+          } else {
+            setFisImportStatus(null);
+            toast.info("Aucun résultat FIS trouvé pour ce code");
+          }
+        } catch (fisErr) {
+          console.error("FIS import error:", fisErr);
+          setFisImportStatus(null);
+          toast.warning("Athlète créé mais l'import FIS a échoué. Vous pourrez réessayer plus tard.");
+        }
+      }
+
       // 2. Send invitation if requested
       if (sendInvitation && playerEmail.trim() && categoryData) {
         setIsInviting(true);
