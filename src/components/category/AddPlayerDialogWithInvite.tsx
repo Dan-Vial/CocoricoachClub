@@ -178,6 +178,8 @@ export function AddPlayerDialogWithInvite({
     setFisObjective("");
     setFisObjectiveDate("");
     setYearlyObjectives([]);
+    setImportFisHistory(true);
+    setFisImportStatus(null);
   };
 
   const copyLink = async (link: string) => {
