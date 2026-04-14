@@ -44,10 +44,10 @@ export function AddFisResultDialog({ open, onOpenChange, competition }: AddFisRe
     enabled: open,
   });
 
-  const racePenalty = competition.race_penalty ?? 0;
+  const scale = competition.race_penalty ?? 1000; // race_penalty now stores the scale
   const rankingNum = Number(ranking);
   const autoCalculatedPoints = ranking && !isNaN(rankingNum) && rankingNum > 0
-    ? calculateFisPoints({ ranking: rankingNum, racePenalty })
+    ? calculateFisPoints({ ranking: rankingNum, scale })
     : null;
   
   // Manual FIS points override takes priority
