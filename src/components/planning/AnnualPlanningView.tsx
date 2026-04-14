@@ -11,9 +11,11 @@ import { AnnualLoadHeatmap } from "./AnnualLoadHeatmap";
 import { AddCycleCategoryDialog } from "./AddCycleCategoryDialog";
 import { AddCycleDialog } from "./AddCycleDialog";
 import { EditCycleDialog } from "./EditCycleDialog";
+import { FisCalendarSync } from "./FisCalendarSync";
 import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { getMainSportFromType } from "@/lib/constants/sportTypes";
 
 interface AnnualPlanningViewProps {
   categoryId: string;
