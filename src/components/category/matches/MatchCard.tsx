@@ -192,7 +192,6 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
   const now = new Date();
   const daysDiff = Math.ceil((matchDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
   const showPreCompetition = isSkiSport && daysDiff <= 3 && !match.is_finalized;
-  const canHaveSubMatches = (!isIndividual || hasTournamentBracket) && !isSubMatch && !match.parent_match_id;
   
   // Check if this is a sport that uses rounds (Judo, Bowling, Aviron, Athletics)
   const hasRoundBasedStats = sportType.toLowerCase().includes("judo") || 
