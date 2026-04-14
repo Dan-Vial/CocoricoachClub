@@ -439,12 +439,12 @@ export function MatchSheetsSection({ categoryId, preSelectedMatchId }: MatchShee
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col border-0 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.35)] rounded-2xl p-0 gap-0 bg-card">
           {/* Premium Header with colored accent */}
-          <div className="relative overflow-hidden">
+          <div className="relative overflow-hidden z-10">
             <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary/90 to-accent/80" />
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,hsl(var(--accent)/0.3),transparent_60%)]" />
-            <div className="relative px-8 pt-5 pb-5">
-              <div className="flex items-center gap-4">
-                <div className="h-12 w-12 rounded-2xl bg-white/15 backdrop-blur-sm flex items-center justify-center border border-white/20 shadow-lg">
+            <div className="relative z-10 px-8 pt-4 pb-6">
+              <div className="flex items-start gap-4">
+                <div className="relative z-20 mt-0.5 h-12 w-12 shrink-0 rounded-2xl bg-white/15 backdrop-blur-sm flex items-center justify-center border border-white/20 shadow-lg">
                   <FileSpreadsheet className="h-6 w-6 text-primary-foreground" />
                 </div>
                 <div>
