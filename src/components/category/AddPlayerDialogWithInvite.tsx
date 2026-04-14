@@ -310,9 +310,8 @@ export function AddPlayerDialogWithInvite({
           .map(obj => ({
             player_id: player.id,
             category_id: categoryId,
-            objective_name: obj.label.trim(),
+            label: obj.label.trim(),
             points_required: parseFloat(obj.target),
-            season: new Date().getFullYear().toString(),
           }));
         if (objectivesToInsert.length > 0) {
           await supabase.from("fis_objectives").insert(objectivesToInsert);
