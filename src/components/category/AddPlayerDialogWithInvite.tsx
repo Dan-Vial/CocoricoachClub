@@ -53,6 +53,14 @@ export function AddPlayerDialogWithInvite({
   const [isInviting, setIsInviting] = useState(false);
   const [generatedLink, setGeneratedLink] = useState<string | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
+  // FIS fields
+  const [fisRanking, setFisRanking] = useState("");
+  const [fisPoints, setFisPoints] = useState("");
+  const [fisCode, setFisCode] = useState("");
+  const [fisObjective, setFisObjective] = useState("");
+  const [fisObjectiveDate, setFisObjectiveDate] = useState("");
+  // Yearly objectives
+  const [yearlyObjectives, setYearlyObjectives] = useState<{ label: string; target: string }[]>([]);
   const queryClient = useQueryClient();
 
   // Fetch category with club info
