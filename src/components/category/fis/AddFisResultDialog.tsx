@@ -114,6 +114,7 @@ export function AddFisResultDialog({ open, onOpenChange, competition }: AddFisRe
     setPlayerId("");
     setRanking("");
     setScore("");
+    setManualFisPoints("");
   };
 
   return (
