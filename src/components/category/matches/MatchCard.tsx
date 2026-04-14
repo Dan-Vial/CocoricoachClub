@@ -27,6 +27,7 @@ import {
   ChevronUp,
   Lock,
   Bell,
+  FileSpreadsheet,
 } from "lucide-react";
 import { MatchLineupDialog } from "./MatchLineupDialog";
 import { isSurfCategory, isSkiCategory, getMainSportFromType } from "@/lib/constants/sportTypes";
