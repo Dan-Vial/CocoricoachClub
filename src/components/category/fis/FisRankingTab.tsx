@@ -282,7 +282,7 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
         <Card>
           <CardContent className="py-8 text-center text-muted-foreground">
             <Trophy className="h-10 w-10 mx-auto mb-3 opacity-50" />
-            <p>Sélectionnez un athlète pour voir son classement FIS</p>
+            <p>Sélectionnez un athlète pour voir son classement FIS + WSPL</p>
           </CardContent>
         </Card>
       ) : (
@@ -293,12 +293,20 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
               {/* Global card */}
               <Card className="border-primary/30 bg-primary/5">
                 <CardContent className="p-4 space-y-1">
-                  <p className="text-xs text-muted-foreground font-medium">TOTAL</p>
+                  <p className="text-xs text-muted-foreground font-medium">TOTAL FIS</p>
                   <p className="text-2xl font-bold">{totalPoints.toFixed(2)} pts</p>
                   <p className="text-xs text-muted-foreground">{validResults.length} résultats • Top {topN}</p>
                   {player?.fis_ranking && (
                     <p className="text-xs">Classement: <span className="font-semibold">{player.fis_ranking}e</span></p>
                   )}
+                </CardContent>
+              </Card>
+              {/* WSPL global card */}
+              <Card className="border-accent/30 bg-accent/5">
+                <CardContent className="p-4 space-y-1">
+                  <p className="text-xs text-muted-foreground font-medium">TOTAL WSPL</p>
+                  <p className="text-2xl font-bold">{wsplTotal.toFixed(2)} pts</p>
+                  <p className="text-xs text-muted-foreground">Moy. top 3 résultats</p>
                 </CardContent>
               </Card>
 
