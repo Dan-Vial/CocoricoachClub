@@ -128,7 +128,7 @@ export function AddHistoricalFisResultsDialog({
           discipline: entry.discipline,
           level: entry.level,
           location: entry.location || null,
-          race_penalty: penalty,
+          race_penalty: scaleVal,
           f_value: Number(entry.fValue) || 500,
         };
         const { data: comp, error: compError } = await (supabase.from("fis_competitions") as any)
@@ -144,7 +144,7 @@ export function AddHistoricalFisResultsDialog({
           category_id: categoryId,
           ranking: rankingNum,
           fis_points: calculatedPts,
-          base_points: calculatedPts + penalty,
+          base_points: calculatedPts,
           calculated_points: calculatedPts,
         };
         const { error: resultError } = await (supabase.from("fis_results") as any).insert(resultInsert);
