@@ -187,10 +187,24 @@ export function FisImportDialog({ open, onOpenChange, categoryId }: FisImportDia
 
         const { data: players } = await supabase
           .from("players")
-          .select("id, name, first_name")
+          .select("id, name, first_name, fis_code")
           .eq("category_id", categoryId);
 
         const matchResults: MatchedAthlete[] = result.athletes.map((fisRow) => {
+          // Priority 1: match by FIS code
+          const byFisCode = fisRow.fisCode
+            ? players?.find((p) => p.fis_code && p.fis_code.trim() === fisRow.fisCode.trim())
+            : null;
+          if (byFisCode) {
+            return {
+              fisRow,
+              playerId: byFisCode.id,
+              playerName: `${byFisCode.first_name || ""} ${byFisCode.name}`.trim(),
+              matchType: "name" as const,
+              selected: true,
+            };
+          }
+          // Priority 2: match by name
           const byName = players?.find((p) => {
             const pLast = normalize(p.name || "");
             const pFirst = normalize(p.first_name || "");
