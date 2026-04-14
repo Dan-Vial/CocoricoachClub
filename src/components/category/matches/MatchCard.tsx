@@ -493,6 +493,12 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
                   <Users className="h-4 w-4 mr-2" />
                   {isDoublesMatch ? `Paire (${lineupCount}/2)` : isIndividual ? `Participants (${lineupCount})` : `Composition (${lineupCount})`}
                 </DropdownMenuItem>
+                {isTeamSport && (
+                  <DropdownMenuItem onClick={() => setIsMatchSheetOpen(true)}>
+                    <FileSpreadsheet className="h-4 w-4 mr-2" />
+                    Feuille de match
+                  </DropdownMenuItem>
+                )}
                 {/* Statistiques button - for round-based sports, only enabled when finalized */}
                 {hasRoundBasedStats ? (
                   <DropdownMenuItem 
@@ -718,6 +724,18 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
           location: match.location || undefined,
         }}
       />
+
+      {/* Match Sheet Dialog */}
+      {isTeamSport && isMatchSheetOpen && (
+        <Dialog open={isMatchSheetOpen} onOpenChange={setIsMatchSheetOpen}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Feuille de match — {match.opponent}</DialogTitle>
+            </DialogHeader>
+            <MatchSheetsSection categoryId={categoryId} preSelectedMatchId={match.id} />
+          </DialogContent>
+        </Dialog>
+      )}
     </>
   );
 }
