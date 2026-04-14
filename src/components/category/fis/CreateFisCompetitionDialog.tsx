@@ -132,7 +132,7 @@ export function CreateFisCompetitionDialog({ open, onOpenChange, categoryId, clu
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Mountain className="h-5 w-5 text-primary" />
-            Nouvelle compétition FIS
+            Nouvelle compétition FIS + WSPL
           </DialogTitle>
         </DialogHeader>
 
