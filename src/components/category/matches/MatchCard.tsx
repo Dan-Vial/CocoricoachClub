@@ -94,6 +94,7 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
   const [isSubMatchesExpanded, setIsSubMatchesExpanded] = useState(false);
   const [isEditingScore, setIsEditingScore] = useState(false);
   const [isNotifyOpen, setIsNotifyOpen] = useState(false);
+  const [isMatchSheetOpen, setIsMatchSheetOpen] = useState(false);
   const [scoreHome, setScoreHome] = useState(match.score_home?.toString() || "");
   const [scoreAway, setScoreAway] = useState(match.score_away?.toString() || "");
   const queryClient = useQueryClient();
@@ -188,6 +189,7 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
   const isDoublesMatch = isPadel || (isTennis && (match.match_format === "double" || match.match_format === "double_mixte"));
   const hasSubMatches = subMatches && subMatches.length > 0;
   const canHaveSubMatches = (!isIndividual || hasTournamentBracket) && !isSubMatch && !match.parent_match_id;
+  const isTeamSport = !isIndividual;
   
   // Check if match is within 3 days (for pre-competition form)
   const fisMatchDate = new Date(match.match_date);
