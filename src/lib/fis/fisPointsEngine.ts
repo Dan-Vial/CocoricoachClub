@@ -1,20 +1,91 @@
 /**
- * FIS Points Calculation Engine — Snowboard Freestyle / Freeski
+ * FIS Points Calculation Engine — Snowboard & Freeski Park & Pipe
  * 
- * OFFICIAL FORMULA (2025/2026):
- *   FIS Points = Percentage(position) × Scale
+ * OFFICIAL FORMULA (2025/2026) — Section 5 of FIS Rules:
+ *   P = EF × ((1-d)(e^(-(R-1)/t) - (R-1)×e^(-(N-1)/t)/(N-1)) + d×(1 - (R-1)/(N-0.96)))
  * 
- * Scale is determined by:
- *   - Level 1 (WC, OWG, Worlds) → always Scale 1000
- *   - Level 2+ → depends on average FIS points of top 5 starters
+ * Where:
+ *   P  = Points awarded (rounded to 1 decimal, min 0.1)
+ *   EF = Event Factor (points awarded to 1st place = Scale)
+ *   R  = Rank of the competitor (1-based)
+ *   N  = Number of competitors ranked
+ *   d  = 0.25 (weight of linear component)
+ *   t  = 4 (parameter of exponential part)
+ *   e  = Euler's number ≈ 2.718281828459
  * 
- * Source: FIS Rules "RULES OF THE FIS POINTS SNOWBOARD FREESTYLE FREESKI SKI CROSS"
+ * Source: "RULES OF THE FIS POINTS SNOWBOARD FREESTYLE FREESKI SKI CROSS" Edition 2025/2026
+ *         Section 5.2 — FIS Snowboard and Freeski Park & Pipe Points
  */
 
+const D = 0.25;  // weight of linear component
+const T = 4;     // parameter of exponential part
+
 /**
- * Official FIS percentage table by position.
- * Points = percentage / 100 × scale
+ * Entry Points → Scale mapping for level 2+ competitions (Park & Pipe).
+ * Section 5.2.1 — Scale table for men (using men's entry points).
  */
+export const SCALE_ENTRY_POINTS: { entryPoints: number; scale: number }[] = [
+  { entryPoints: 741, scale: 1000 },
+  { entryPoints: 593, scale: 800 },
+  { entryPoints: 444, scale: 600 },
+  { entryPoints: 370, scale: 500 },
+  { entryPoints: 333, scale: 450 },
+  { entryPoints: 296, scale: 400 },
+  { entryPoints: 267, scale: 360 },
+  { entryPoints: 237, scale: 320 },
+  { entryPoints: 215, scale: 290 },
+  { entryPoints: 193, scale: 260 },
+  { entryPoints: 178, scale: 240 },
+  { entryPoints: 163, scale: 220 },
+  { entryPoints: 148, scale: 200 },
+  { entryPoints: 133, scale: 180 },
+  { entryPoints: 119, scale: 160 },
+  { entryPoints: 111, scale: 150 },
+  { entryPoints: 104, scale: 140 },
+  { entryPoints: 96, scale: 130 },
+  { entryPoints: 89, scale: 120 },
+  { entryPoints: 81, scale: 110 },
+  { entryPoints: 74, scale: 100 },
+  { entryPoints: 67, scale: 90 },
+  { entryPoints: 59, scale: 80 },
+  { entryPoints: 52, scale: 70 },
+  { entryPoints: 44, scale: 60 },
+  { entryPoints: 37, scale: 50 },
+  { entryPoints: 30, scale: 40 },
+  { entryPoints: 22, scale: 30 },
+  { entryPoints: 15, scale: 20 },
+  { entryPoints: 0, scale: 10 },
+];
+
+/**
+ * Max scale by competition level for Park & Pipe
+ * Section 5.2.2
+ */
+export const LEVEL_MAX_SCALES: Record<string, number> = {
+  world_cup: 1000,        // Level 1: WC, OWG, Worlds → 1000 to 500
+  continental_cup: 360,   // Level 2: Continental Cups → 360 to 120
+  premium_cc: 500,        // Premium Continental Cup → 500 to 120
+  fis_open: 1000,         // FIS Open → 1000 to 50
+  super_continental_cup: 500,
+  junior_worlds: 500,     // Junior World Championships → 500 to 240
+  yog: 360,               // Youth Olympic Games → 360 to 120
+  eyof: 290,              // European Youth Olympic Festival → 290 to 50
+  fis: 220,               // FIS International → 220 to 50
+  national: 320,          // FIS National Championships → 320 to 50
+  national_junior: 220,   // FIS National Junior → 220 to 50
+};
+
+/** Legacy exports for backward compat */
+export const DEFAULT_FIS_BASE_POINTS: Record<number, number> = {};
+export const DISCIPLINE_F_VALUES: Record<string, number> = {
+  slopestyle: 500, big_air: 500, halfpipe: 500, rail_event: 500,
+  parallel_gs: 400, parallel_slalom: 400, snowboardcross: 400,
+  bosses: 400, saut_acrobatique: 400, skicross: 400,
+  slopestyle_ski: 500, halfpipe_ski: 500, big_air_ski: 500,
+  descente: 330, slalom: 330, geant: 330, super_g: 330, combine_alpin: 330,
+};
+
+// Keep the percentage table for non-P&P disciplines (SBX, Alpine, Ski Cross)
 export const FIS_PERCENTAGE_TABLE: Record<number, number> = {
   1: 100, 2: 80, 3: 60, 4: 50, 5: 45,
   6: 40, 7: 36, 8: 32, 9: 29, 10: 26,
@@ -26,145 +97,102 @@ export const FIS_PERCENTAGE_TABLE: Record<number, number> = {
   36: 4.00, 37: 3.76, 38: 3.54, 39: 3.34, 40: 3.16,
   41: 3.00, 42: 2.80, 43: 2.60, 44: 2.41, 45: 2.23,
   46: 2.06, 47: 1.97, 48: 1.88, 49: 1.79, 50: 1.70,
-  51: 1.52, 52: 1.49, 53: 1.46, 54: 1.43, 55: 1.40,
-  56: 1.37, 57: 1.34, 58: 1.31, 59: 1.28, 60: 1.25,
-  61: 1.22, 62: 1.19, 63: 1.16, 64: 1.13, 65: 1.10,
-  66: 1.07, 67: 1.04, 68: 1.01, 69: 0.98, 70: 0.95,
-  71: 0.92, 72: 0.89, 73: 0.86, 74: 0.83, 75: 0.80,
-  76: 0.77, 77: 0.74, 78: 0.71, 79: 0.68, 80: 0.65,
-  81: 0.62, 82: 0.59, 83: 0.56, 84: 0.53, 85: 0.50,
-  86: 0.47, 87: 0.44, 88: 0.41, 89: 0.38, 90: 0.35,
-  91: 0.32, 92: 0.29, 93: 0.26, 94: 0.23, 95: 0.20,
-  96: 0.17, 97: 0.14, 98: 0.11, 99: 0.08, 100: 0.05,
 };
 
 /**
- * Entry Points → Scale mapping for level 2+ competitions.
- * Average FIS pts of top 5 starters must be ≥ entry points to use that scale.
+ * Calculate FIS Park & Pipe points using the OFFICIAL exponential+linear formula.
+ * 
+ * P = EF × ((1-d)(e^(-(R-1)/t) - (R-1)×e^(-(N-1)/t)/(N-1)) + d×(1 - (R-1)/(N-0.96)))
+ * 
+ * Points are rounded to 1 decimal and minimum 0.1
  */
-export const SCALE_ENTRY_POINTS: { entryPoints: number; scale: number }[] = [
-  { entryPoints: 626, scale: 650 },
-  { entryPoints: 476, scale: 500 },
-  { entryPoints: 426, scale: 450 },
-  { entryPoints: 381, scale: 400 },
-  { entryPoints: 341, scale: 360 },
-  { entryPoints: 306, scale: 320 },
-  { entryPoints: 276, scale: 290 },
-  { entryPoints: 251, scale: 260 },
-  { entryPoints: 231, scale: 240 },
-  { entryPoints: 211, scale: 220 },
-  { entryPoints: 191, scale: 200 },
-  { entryPoints: 171, scale: 180 },
-  { entryPoints: 156, scale: 160 },
-  { entryPoints: 146, scale: 150 },
-  { entryPoints: 136, scale: 140 },
-  { entryPoints: 126, scale: 130 },
-  { entryPoints: 116, scale: 120 },
-  { entryPoints: 106, scale: 110 },
-  { entryPoints: 96, scale: 100 },
-  { entryPoints: 86, scale: 90 },
-  { entryPoints: 66, scale: 70 },
-  { entryPoints: 0, scale: 50 },
-];
+export function calculateFisPoints(input: {
+  ranking: number;
+  scale: number;
+  totalRiders?: number;
+  // Legacy compat
+  racePenalty?: number;
+  basePointsTable?: Record<number, number>;
+}): number {
+  const { ranking: R, scale: EF, totalRiders } = input;
+  
+  // N defaults to ranking if not provided (conservative: assumes rider is last)
+  const N = totalRiders && totalRiders > 0 ? totalRiders : Math.max(R, 2);
+  
+  if (R <= 0 || EF <= 0 || N <= 0) return 0;
+  if (R > N) return 0;
 
-/**
- * Max scale by competition level for Freestyle / Freeski
- */
-export const LEVEL_MAX_SCALES: Record<string, number> = {
-  world_cup: 1000,
-  continental_cup: 500,
-  super_continental_cup: 650,
-  junior_worlds: 500,
-  yog: 260,
-  fis: 290,
-  national: 290,
-  national_junior: 220,
-};
+  // 1st place always gets EF points
+  if (R === 1) return EF;
 
-/** Legacy exports for backward compat (now unused internally) */
-export const DEFAULT_FIS_BASE_POINTS: Record<number, number> = {};
-export const DISCIPLINE_F_VALUES: Record<string, number> = {
-  slopestyle: 500, big_air: 500, halfpipe: 500, rail_event: 500,
-  parallel_gs: 400, parallel_slalom: 400, snowboardcross: 400,
-  bosses: 400, saut_acrobatique: 400, skicross: 400,
-  slopestyle_ski: 500, halfpipe_ski: 500, big_air_ski: 500,
-  descente: 330, slalom: 330, geant: 330, super_g: 330, combine_alpin: 330,
-};
+  // Special case: only 1 rider ranked
+  if (N === 1) return EF;
 
-/**
- * Get the percentage for a given position.
- * Returns 0 for positions beyond the table.
- */
-export function getPercentageForPosition(position: number): number {
-  if (position <= 0) return 0;
-  if (position > 100) return 0; // No points beyond 100th
-  return FIS_PERCENTAGE_TABLE[position] ?? 0;
+  const expR = Math.exp(-(R - 1) / T);
+  const expN = Math.exp(-(N - 1) / T);
+
+  // Exponential component
+  const exponentialPart = (1 - D) * (expR - ((R - 1) * expN) / (N - 1));
+
+  // Linear component
+  const linearPart = D * (1 - (R - 1) / (N - 0.96));
+
+  const P = EF * (exponentialPart + linearPart);
+
+  // Per FIS rules: rounded to first decimal, minimum 0.1
+  const rounded = Math.round(P * 10) / 10;
+  return Math.max(0.1, rounded);
 }
 
 /**
- * Determine the scale for a competition based on level and average FIS points of top 5 starters.
+ * Determine the scale (EF) for a competition based on level and quality of field.
  * 
- * Level 1 (WC, OWG, Worlds) → always Scale 1000
- * Level 2+ → lookup scale from average top 5, capped by level max
+ * For Level 1 (WC): uses Entry Ranks of top 5 women / 8 men on FIS Points List
+ * For Level 2-4: uses average FIS points of top 5 women / 8 men starters
  */
 export function determineScale(level: string, avgTop5FisPoints?: number): number {
-  // Level 1 always gets Scale 1000
+  // Level 1 WC with entry ranks — simplified: default to max
   if (level === "world_cup") return 1000;
 
-  const maxScale = LEVEL_MAX_SCALES[level] ?? 290;
+  const maxScale = LEVEL_MAX_SCALES[level] ?? 220;
 
-  // If no avg provided, use the max allowed for the level
   if (avgTop5FisPoints == null || avgTop5FisPoints <= 0) return maxScale;
 
-  // Find the best matching scale from the entry points table
   for (const entry of SCALE_ENTRY_POINTS) {
     if (avgTop5FisPoints >= entry.entryPoints) {
       return Math.min(entry.scale, maxScale);
     }
   }
 
-  return Math.min(50, maxScale);
+  return Math.min(10, maxScale);
+}
+
+export function getPercentageForPosition(position: number): number {
+  if (position <= 0 || position > 50) return 0;
+  return FIS_PERCENTAGE_TABLE[position] ?? 0;
 }
 
 /**
- * Calculate FIS points for a given position and scale.
- * 
- * FIS Points = percentage(position) / 100 × scale
+ * Calculate the average FIS points of top starters (for scale determination).
+ * For men: divide by 8. For women: divide by 5.
  */
-export function calculateFisPoints(input: {
-  ranking: number;
-  scale: number;
-  // Legacy compat - ignored in new system
-  racePenalty?: number;
-  basePointsTable?: Record<number, number>;
-}): number {
-  const { ranking, scale } = input;
-  const pct = getPercentageForPosition(ranking);
-  if (pct === 0) return 0;
-  const points = (pct / 100) * scale;
-  return Math.round(points * 100) / 100; // Round to 2 decimals
-}
-
-/**
- * Calculate the average FIS points of the top 5 starters (for scale determination).
- * Per FIS rules: if fewer than 5 have FIS points, divide by 5 anyway.
- */
-export function calculateAvgTop5(fisPointsList: number[]): number {
+export function calculateAvgTop5(fisPointsList: number[], gender: 'men' | 'women' = 'men'): number {
+  const divisor = gender === 'women' ? 5 : 8;
   const valid = fisPointsList.filter(p => p != null && p > 0);
   if (valid.length === 0) return 0;
   const sum = valid.reduce((s, v) => s + v, 0);
-  return Math.ceil(sum / 5); // FIS rounds up
+  return Math.ceil(sum / divisor); // FIS rounds up
 }
 
 /**
- * Simulate: "If athlete finishes at position X in a competition of level Y, how many points?"
+ * Simulate: "If athlete finishes at position X in a competition of level Y with N riders, how many points?"
  */
 export function simulatePoints(
   position: number,
-  scaleOrPenalty: number,
-  _basePointsTable?: Record<number, number>,
+  scaleOrEF: number,
+  totalRiders?: number,
 ): number {
-  return calculateFisPoints({ ranking: position, scale: scaleOrPenalty });
+  return calculateFisPoints({ ranking: position, scale: scaleOrEF, totalRiders: totalRiders ?? Math.max(position, 30) });
 }
 
 // ─── Legacy compat exports ───
@@ -181,19 +209,11 @@ export interface PointsCalculationInput {
   basePointsTable?: Record<number, number>;
 }
 
-/**
- * @deprecated Use determineScale + calculateAvgTop5 instead
- */
 export function calculateRacePenalty(input: RacePenaltyInput): number {
-  // In the new system, this returns the SCALE (not a penalty)
-  // For backward compat in simulation, treat as scale calculation
   const avg = calculateAvgTop5(input.topRiderPoints);
   return determineScale("continental_cup", avg);
 }
 
-/**
- * @deprecated Use calculateRacePenalty is no longer used
- */
 export function calculateRacePenaltyLegacy(input: {
   topRiderPoints: number[];
   totalParticipants: number;
@@ -204,9 +224,6 @@ export function calculateRacePenaltyLegacy(input: {
 
 // ─── Results management ───
 
-/**
- * Get the best N results from a list (for rolling window / season best)
- */
 export function getBestResults(
   results: { fis_points: number; calculated_points?: number | null; expires_at?: string | null }[],
   topN: number = 2,
@@ -227,7 +244,7 @@ export function getBestResults(
 }
 
 /**
- * Calculate total FIS points (average of best 2 per FIS Freestyle rules)
+ * Calculate total FIS points (average of best 2 per FIS Freestyle P&P rules)
  */
 export function calculateTotalPoints(
   results: { fis_points: number; calculated_points?: number | null; expires_at?: string | null }[],
@@ -236,6 +253,5 @@ export function calculateTotalPoints(
   const best = getBestResults(results, topN);
   if (best.length === 0) return 0;
   const sum = best.reduce((s, r) => s + (r.calculated_points ?? r.fis_points), 0);
-  // FIS Freestyle: average of best 2 results
   return Math.round((sum / Math.max(best.length, 1)) * 100) / 100;
 }
