@@ -8,12 +8,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { TrendingUp, TrendingDown, Target, Calculator, Trophy, Clock, AlertTriangle, Medal, History, Plus, Trash2, MapPin, CalendarDays } from "lucide-react";
+import { TrendingUp, TrendingDown, Target, Calculator, Trophy, Clock, AlertTriangle, Medal, History, Plus, Trash2, MapPin, CalendarDays, Globe } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { fr } from "date-fns/locale";
 import { calculateTotalPoints, getBestResults, simulatePoints, determineScale, DISCIPLINE_F_VALUES } from "@/lib/fis/fisPointsEngine";
 import { Progress } from "@/components/ui/progress";
 import { AddHistoricalFisResultsDialog } from "./AddHistoricalFisResultsDialog";
+import { ImportFisUrlDialog } from "./ImportFisUrlDialog";
 import { toast } from "sonner";
 import { getDisciplineLabel, getDisciplinesForClubSport } from "@/lib/constants/skiDisciplines";
 
@@ -49,6 +50,7 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
   const [simLevel, setSimLevel] = useState("world_cup");
   const [simDiscipline, setSimDiscipline] = useState("big_air");
   const [historicalOpen, setHistoricalOpen] = useState(false);
+  const [importUrlOpen, setImportUrlOpen] = useState(false);
   const [objectiveDialogOpen, setObjectiveDialogOpen] = useState(false);
   const [newObj, setNewObj] = useState({ label: "", points_required: "", deadline: "", location: "", discipline: "" });
   const queryClient = useQueryClient();
@@ -242,10 +244,16 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
           </SelectContent>
         </Select>
         {selectedPlayer && player && (
-          <Button variant="outline" size="sm" onClick={() => setHistoricalOpen(true)}>
-            <History className="h-4 w-4 mr-1" />
-            Ajouter historique
-          </Button>
+          <div className="flex gap-1">
+            <Button variant="outline" size="sm" onClick={() => setImportUrlOpen(true)}>
+              <Globe className="h-4 w-4 mr-1" />
+              Import FIS URL
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setHistoricalOpen(true)}>
+              <History className="h-4 w-4 mr-1" />
+              Saisie manuelle
+            </Button>
+          </div>
         )}
       </div>
 
@@ -719,13 +727,22 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
       </Dialog>
 
       {selectedPlayer && player && (
-        <AddHistoricalFisResultsDialog
-          open={historicalOpen}
-          onOpenChange={setHistoricalOpen}
-          categoryId={categoryId}
-          playerId={selectedPlayer}
-          playerName={`${player.first_name || ""} ${player.name}`.trim()}
-        />
+        <>
+          <AddHistoricalFisResultsDialog
+            open={historicalOpen}
+            onOpenChange={setHistoricalOpen}
+            categoryId={categoryId}
+            playerId={selectedPlayer}
+            playerName={`${player.first_name || ""} ${player.name}`.trim()}
+          />
+          <ImportFisUrlDialog
+            open={importUrlOpen}
+            onOpenChange={setImportUrlOpen}
+            categoryId={categoryId}
+            playerId={selectedPlayer}
+            playerName={`${player.first_name || ""} ${player.name}`.trim()}
+          />
+        </>
       )}
     </div>
   );
