@@ -23,7 +23,7 @@ import { toast } from "sonner";
 import { playerSchema } from "@/lib/validations";
 import { ATHLETISME_DISCIPLINES, ATHLETISME_SPECIALTIES, JUDO_WEIGHT_CATEGORIES, AVIRON_ROLES, NATATION_DISCIPLINES, NATATION_SPECIALTIES, SKI_DISCIPLINES, SURF_DISCIPLINES, TRIATHLON_DISCIPLINES, PADEL_POSITIONS, isAthletismeCategory, isJudoCategory, isNatationCategory, isSkiCategory, isSurfCategory, isTriathlonCategory, isPadelCategory, isIndividualSport, getSkiDisciplinesForCategory } from "@/lib/constants/sportTypes";
 import { getPositionsForSport } from "@/lib/constants/sportPositions";
-import { Loader2, Send, UserPlus, Copy, Check, AlertTriangle } from "lucide-react";
+import { Loader2, Send, UserPlus, Copy, Check, AlertTriangle, Plus, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
@@ -53,6 +53,14 @@ export function AddPlayerDialogWithInvite({
   const [isInviting, setIsInviting] = useState(false);
   const [generatedLink, setGeneratedLink] = useState<string | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
+  // FIS fields
+  const [fisRanking, setFisRanking] = useState("");
+  const [fisPoints, setFisPoints] = useState("");
+  const [fisCode, setFisCode] = useState("");
+  const [fisObjective, setFisObjective] = useState("");
+  const [fisObjectiveDate, setFisObjectiveDate] = useState("");
+  // Yearly objectives
+  const [yearlyObjectives, setYearlyObjectives] = useState<{ label: string; target: string }[]>([]);
   const queryClient = useQueryClient();
 
   // Fetch category with club info
@@ -161,6 +169,12 @@ export function AddPlayerDialogWithInvite({
     setValidationError("");
     setGeneratedLink(null);
     setLinkCopied(false);
+    setFisRanking("");
+    setFisPoints("");
+    setFisCode("");
+    setFisObjective("");
+    setFisObjectiveDate("");
+    setYearlyObjectives([]);
   };
 
   const copyLink = async (link: string) => {
@@ -189,7 +203,12 @@ export function AddPlayerDialogWithInvite({
       birth_date?: string; 
       discipline?: string; 
       specialty?: string; 
-      position?: string 
+      position?: string;
+      fis_ranking?: number;
+      fis_points?: number;
+      fis_code?: string;
+      fis_objective?: string;
+      fis_objective_date?: string;
     }) => {
       const { data: player, error } = await supabase
         .from("players")
@@ -203,7 +222,12 @@ export function AddPlayerDialogWithInvite({
           birth_date: data.birth_date || null,
           discipline: data.discipline || null,
           specialty: data.specialty || null,
-          position: data.position || null
+          position: data.position || null,
+          fis_ranking: data.fis_ranking || null,
+          fis_points: data.fis_points || null,
+          fis_code: data.fis_code || null,
+          fis_objective: data.fis_objective || null,
+          fis_objective_date: data.fis_objective_date || null,
         })
         .select()
         .single();
@@ -271,8 +295,28 @@ export function AddPlayerDialogWithInvite({
         birth_date: birthDate || undefined,
         discipline: discipline || undefined,
         specialty: specialty || undefined,
-        position: position || undefined
+        position: position || undefined,
+        fis_ranking: fisRanking ? parseInt(fisRanking) : undefined,
+        fis_points: fisPoints ? parseFloat(fisPoints) : undefined,
+        fis_code: fisCode.trim() || undefined,
+        fis_objective: fisObjective.trim() || undefined,
+        fis_objective_date: fisObjectiveDate || undefined,
       });
+
+      // Create FIS objectives if provided
+      if (isSki && yearlyObjectives.length > 0) {
+        const objectivesToInsert = yearlyObjectives
+          .filter(obj => obj.label.trim() && obj.target.trim())
+          .map(obj => ({
+            player_id: player.id,
+            category_id: categoryId,
+            label: obj.label.trim(),
+            points_required: parseFloat(obj.target),
+          }));
+        if (objectivesToInsert.length > 0) {
+          await supabase.from("fis_objectives").insert(objectivesToInsert);
+        }
+      }
 
       // 2. Send invitation if requested
       if (sendInvitation && playerEmail.trim() && categoryData) {
@@ -573,17 +617,88 @@ export function AddPlayerDialogWithInvite({
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2">
                     <Label htmlFor="fisRanking">Classement FIS</Label>
-                    <Input id="fisRanking" type="number" placeholder="Ex: 45" min="1" />
+                    <Input id="fisRanking" type="number" placeholder="Ex: 45" min="1" value={fisRanking} onChange={(e) => setFisRanking(e.target.value)} />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="fisPoints">Points FIS</Label>
-                    <Input id="fisPoints" type="number" placeholder="Ex: 320.50" step="0.01" min="0" />
+                    <Input id="fisPoints" type="number" placeholder="Ex: 320.50" step="0.01" min="0" value={fisPoints} onChange={(e) => setFisPoints(e.target.value)} />
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="fisObjective">Objectif sportif</Label>
-                  <Input id="fisObjective" placeholder="Ex: Qualification Championnats du Monde" />
+                  <Label htmlFor="fisCode">Code FIS</Label>
+                  <Input id="fisCode" placeholder="Ex: 9510001" value={fisCode} onChange={(e) => setFisCode(e.target.value)} />
                 </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="fisObjective">Objectif sportif</Label>
+                    <Input id="fisObjective" placeholder="Ex: Qualification Championnats du Monde" value={fisObjective} onChange={(e) => setFisObjective(e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="fisObjectiveDate">Date objectif</Label>
+                    <Input id="fisObjectiveDate" type="date" value={fisObjectiveDate} onChange={(e) => setFisObjectiveDate(e.target.value)} />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Yearly objectives for ski/snow */}
+            {isSki && (
+              <div className="space-y-3 border-t pt-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Objectifs annuels</p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-7 text-xs"
+                    onClick={() => setYearlyObjectives(prev => [...prev, { label: "", target: "" }])}
+                  >
+                    <Plus className="h-3 w-3 mr-1" /> Ajouter
+                  </Button>
+                </div>
+                {yearlyObjectives.length === 0 && (
+                  <p className="text-xs text-muted-foreground italic">Aucun objectif défini. Ajoutez des objectifs de qualification (ex: JO, Mondiaux…)</p>
+                )}
+                {yearlyObjectives.map((obj, idx) => (
+                  <div key={idx} className="grid grid-cols-[1fr_100px_32px] gap-2 items-end">
+                    <div className="space-y-1">
+                      <Label className="text-xs">Objectif</Label>
+                      <Input
+                        placeholder="Ex: Qualification JO 2026"
+                        value={obj.label}
+                        onChange={(e) => {
+                          const updated = [...yearlyObjectives];
+                          updated[idx].label = e.target.value;
+                          setYearlyObjectives(updated);
+                        }}
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Points requis</Label>
+                      <Input
+                        type="number"
+                        placeholder="2000"
+                        value={obj.target}
+                        onChange={(e) => {
+                          const updated = [...yearlyObjectives];
+                          updated[idx].target = e.target.value;
+                          setYearlyObjectives(updated);
+                        }}
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-destructive hover:text-destructive"
+                      onClick={() => setYearlyObjectives(prev => prev.filter((_, i) => i !== idx))}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                ))}
               </div>
             )}
             
