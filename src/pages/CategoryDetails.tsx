@@ -76,29 +76,22 @@ function ColoredTabTrigger({ value, colorKey, icon, label, shortLabel, disabled,
     <TabsPrimitive.Trigger
       value={value}
       className={cn(
-        "colored-tab-trigger group relative flex flex-col items-center justify-center gap-1 px-3 py-3 rounded-xl font-medium text-xs",
+        "colored-tab-trigger relative inline-flex flex-col items-center justify-center gap-1 px-3 py-3 rounded-xl font-medium text-xs",
         "transition-all duration-200 ease-out",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
         "min-w-[70px] sm:min-w-[85px]",
-        "data-[state=active]:shadow-lg data-[state=active]:scale-105"
+        "hover:shadow-md data-[state=active]:shadow-lg"
       )}
       style={{
         ["--tab-color" as string]: colors.base,
       }}
     >
-      {/* Active background */}
-      <span 
-        className="colored-tab-bg pointer-events-none absolute inset-0 rounded-xl transition-all duration-200 opacity-0 scale-95 group-data-[state=active]:opacity-100 group-data-[state=active]:scale-100"
-        style={{ backgroundColor: colors.base }}
-      />
-      {/* Unread badge */}
       {badge != null && badge > 0 && (
         <span className="absolute -top-1 -right-1 z-20 h-5 min-w-[20px] flex items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold px-1">
           {badge > 9 ? "9+" : badge}
         </span>
       )}
-      {/* Content - Icon on top, label below */}
-      <span className="colored-tab-text relative z-10 flex flex-col items-center gap-1" style={{ color: 'var(--tab-color)' }}>
+      <span className="colored-tab-text relative z-10 flex flex-col items-center gap-1 transition-colors duration-200" style={{ color: "var(--tab-color)" }}>
         <span className="shrink-0 h-6 w-6 sm:h-7 sm:w-7">{icon}</span>
         <span className="whitespace-nowrap text-center leading-tight hidden sm:block">{label}</span>
         <span className="whitespace-nowrap text-center leading-tight sm:hidden">{shortLabel || label}</span>
