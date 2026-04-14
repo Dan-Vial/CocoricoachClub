@@ -27,6 +27,7 @@ export function AddFisResultDialog({ open, onOpenChange, competition }: AddFisRe
   const [playerId, setPlayerId] = useState("");
   const [ranking, setRanking] = useState("");
   const [score, setScore] = useState("");
+  const [manualFisPoints, setManualFisPoints] = useState("");
   const [saving, setSaving] = useState(false);
   const queryClient = useQueryClient();
 
