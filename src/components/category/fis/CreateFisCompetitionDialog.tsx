@@ -105,6 +105,8 @@ export function CreateFisCompetitionDialog({ open, onOpenChange, categoryId, clu
       top_classified_5_pts: classifiedPts[4],
       f_value: fValue,
       race_penalty: computedPenalty,
+      wspl_pl: Number(wsplPL) || null,
+      wspl_stars: Number(wsplStars) || null,
     };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase.from("fis_competitions") as any).insert(insertData);
