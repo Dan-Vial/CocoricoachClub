@@ -28,7 +28,8 @@ import {
   Bell,
 } from "lucide-react";
 import { MatchLineupDialog } from "./MatchLineupDialog";
-import { isSurfCategory, isSkiCategory } from "@/lib/constants/sportTypes";
+import { isSurfCategory, isSkiCategory, getMainSportFromType } from "@/lib/constants/sportTypes";
+import { FisPreCompetitionForm } from "@/components/planning/FisPreCompetitionForm";
 import { SurfConditionsForm } from "@/components/surf/SurfConditionsForm";
 import { SkiConditionsForm } from "@/components/ski/SkiConditionsForm";
 import { SessionEquipmentSection } from "@/components/shared/SessionEquipmentSection";
