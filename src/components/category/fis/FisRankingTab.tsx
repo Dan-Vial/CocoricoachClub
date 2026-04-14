@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { TrendingUp, TrendingDown, Target, Calculator, Trophy, Clock, AlertTriangle, Medal, History, Plus, Trash2, MapPin, CalendarDays } from "lucide-react";
+import { TrendingUp, TrendingDown, Target, Calculator, Trophy, Clock, AlertTriangle, Medal, History, Plus, Trash2, MapPin, CalendarDays, Globe } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { fr } from "date-fns/locale";
 import { calculateTotalPoints, getBestResults, simulatePoints, determineScale, DISCIPLINE_F_VALUES } from "@/lib/fis/fisPointsEngine";
