@@ -147,7 +147,7 @@ export function ImportFisUrlDialog({ open, onOpenChange, categoryId, playerId, p
         if (!ranking || ranking <= 0) continue;
 
         const scale = determineScale(level);
-        const calculatedPts = calculateFisPoints({ ranking, scale });
+        const calculatedPts = calculateFisPoints({ ranking, scale, totalRiders: ranking + 10 });
 
         // Create competition
         const compInsert = {

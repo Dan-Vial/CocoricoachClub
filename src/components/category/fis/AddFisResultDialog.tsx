@@ -51,8 +51,9 @@ export function AddFisResultDialog({ open, onOpenChange, competition }: AddFisRe
 
   const scale = competition.race_penalty ?? 1000;
   const rankingNum = Number(ranking);
+  const totalRidersNum = Number(totalRiders) || undefined;
   const autoCalculatedPoints = ranking && !isNaN(rankingNum) && rankingNum > 0
-    ? calculateFisPoints({ ranking: rankingNum, scale })
+    ? calculateFisPoints({ ranking: rankingNum, scale, totalRiders: totalRidersNum })
     : null;
   
   const manualPts = manualFisPoints ? Number(manualFisPoints) : null;

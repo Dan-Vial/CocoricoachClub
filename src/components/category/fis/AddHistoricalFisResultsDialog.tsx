@@ -110,7 +110,8 @@ export function AddHistoricalFisResultsDialog({
     const rankingNum = Number(entry.ranking);
     if (!rankingNum || rankingNum <= 0) return null;
     const scaleVal = determineScale(entry.level);
-    return calculateFisPoints({ ranking: rankingNum, scale: scaleVal });
+    const riders = Number(entry.totalRiders) || undefined;
+    return calculateFisPoints({ ranking: rankingNum, scale: scaleVal, totalRiders: riders });
   };
 
   const getWsplPoints = (entry: HistoricalEntry) => {
@@ -133,7 +134,8 @@ export function AddHistoricalFisResultsDialog({
       for (const entry of valid) {
         const scaleVal = determineScale(entry.level);
         const rankingNum = Number(entry.ranking);
-        const calculatedPts = calculateFisPoints({ ranking: rankingNum, scale: scaleVal });
+        const riders = Number(entry.totalRiders) || undefined;
+        const calculatedPts = calculateFisPoints({ ranking: rankingNum, scale: scaleVal, totalRiders: riders });
         const wsplPts = getWsplPoints(entry);
 
         // 1. Create competition
