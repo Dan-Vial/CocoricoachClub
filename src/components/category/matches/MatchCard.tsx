@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { MatchSheetsSection } from "@/components/category/admin/MatchSheetsSection";
 import { fr } from "date-fns/locale";
 import {
   Trash2,
@@ -26,6 +27,7 @@ import {
   ChevronUp,
   Lock,
   Bell,
+  FileSpreadsheet,
 } from "lucide-react";
 import { MatchLineupDialog } from "./MatchLineupDialog";
 import { isSurfCategory, isSkiCategory, getMainSportFromType } from "@/lib/constants/sportTypes";
@@ -39,6 +41,12 @@ import { AggregatedRoundStatsDialog } from "./AggregatedRoundStatsDialog";
 import { EditMatchDialog } from "./EditMatchDialog";
 import { AddSubMatchDialog } from "./AddSubMatchDialog";
 import { NotifyAthletesDialog } from "@/components/notifications/NotifyAthletesDialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { isIndividualSport } from "@/lib/constants/sportTypes";
 import { getCompetitionStageLabel as getCompetitionStageLabelUtil } from "@/lib/constants/competitions";
 import {
@@ -92,6 +100,7 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
   const [isSubMatchesExpanded, setIsSubMatchesExpanded] = useState(false);
   const [isEditingScore, setIsEditingScore] = useState(false);
   const [isNotifyOpen, setIsNotifyOpen] = useState(false);
+  const [isMatchSheetOpen, setIsMatchSheetOpen] = useState(false);
   const [scoreHome, setScoreHome] = useState(match.score_home?.toString() || "");
   const [scoreAway, setScoreAway] = useState(match.score_away?.toString() || "");
   const queryClient = useQueryClient();
@@ -186,6 +195,7 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
   const isDoublesMatch = isPadel || (isTennis && (match.match_format === "double" || match.match_format === "double_mixte"));
   const hasSubMatches = subMatches && subMatches.length > 0;
   const canHaveSubMatches = (!isIndividual || hasTournamentBracket) && !isSubMatch && !match.parent_match_id;
+  const isTeamSport = !isIndividual;
   
   // Check if match is within 3 days (for pre-competition form)
   const fisMatchDate = new Date(match.match_date);
@@ -489,6 +499,12 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
                   <Users className="h-4 w-4 mr-2" />
                   {isDoublesMatch ? `Paire (${lineupCount}/2)` : isIndividual ? `Participants (${lineupCount})` : `Composition (${lineupCount})`}
                 </DropdownMenuItem>
+                {isTeamSport && (
+                  <DropdownMenuItem onClick={() => setIsMatchSheetOpen(true)}>
+                    <FileSpreadsheet className="h-4 w-4 mr-2" />
+                    Feuille de match
+                  </DropdownMenuItem>
+                )}
                 {/* Statistiques button - for round-based sports, only enabled when finalized */}
                 {hasRoundBasedStats ? (
                   <DropdownMenuItem 
@@ -714,6 +730,18 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
           location: match.location || undefined,
         }}
       />
+
+      {/* Match Sheet Dialog */}
+      {isTeamSport && isMatchSheetOpen && (
+        <Dialog open={isMatchSheetOpen} onOpenChange={setIsMatchSheetOpen}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Feuille de match — {match.opponent}</DialogTitle>
+            </DialogHeader>
+            <MatchSheetsSection categoryId={categoryId} preSelectedMatchId={match.id} />
+          </DialogContent>
+        </Dialog>
+      )}
     </>
   );
 }

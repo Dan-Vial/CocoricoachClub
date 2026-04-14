@@ -31,9 +31,10 @@ import { fr } from "date-fns/locale";
 
 interface MatchSheetsSectionProps {
   categoryId: string;
+  preSelectedMatchId?: string;
 }
 
-export function MatchSheetsSection({ categoryId }: MatchSheetsSectionProps) {
+export function MatchSheetsSection({ categoryId, preSelectedMatchId }: MatchSheetsSectionProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingSheet, setEditingSheet] = useState<any>(null);
   const [name, setName] = useState("");
@@ -42,7 +43,7 @@ export function MatchSheetsSection({ categoryId }: MatchSheetsSectionProps) {
   const [location, setLocation] = useState("");
   const [matchTime, setMatchTime] = useState("");
   const [notes, setNotes] = useState("");
-  const [matchId, setMatchId] = useState<string>("");
+  const [matchId, setMatchId] = useState<string>(preSelectedMatchId || "");
   const [selectedPlayers, setSelectedPlayers] = useState<Record<string, {
     selected: boolean;
     isStarter: boolean;
