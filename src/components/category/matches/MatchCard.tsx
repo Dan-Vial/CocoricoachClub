@@ -28,7 +28,8 @@ import {
   Bell,
 } from "lucide-react";
 import { MatchLineupDialog } from "./MatchLineupDialog";
-import { isSurfCategory, isSkiCategory } from "@/lib/constants/sportTypes";
+import { isSurfCategory, isSkiCategory, getMainSportFromType } from "@/lib/constants/sportTypes";
+import { FisPreCompetitionForm } from "@/components/planning/FisPreCompetitionForm";
 import { SurfConditionsForm } from "@/components/surf/SurfConditionsForm";
 import { SkiConditionsForm } from "@/components/ski/SkiConditionsForm";
 import { SessionEquipmentSection } from "@/components/shared/SessionEquipmentSection";
@@ -180,10 +181,17 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
   const isIndividual = isIndividualSport(sportType);
   const isPadel = sportType.toLowerCase().includes("padel");
   const isTennis = sportType.toLowerCase().includes("tennis");
+  const isSkiSport = getMainSportFromType(sportType) === "ski";
   const hasTournamentBracket = isPadel || isTennis;
   const isDoublesMatch = isPadel || (isTennis && (match.match_format === "double" || match.match_format === "double_mixte"));
   const hasSubMatches = subMatches && subMatches.length > 0;
   const canHaveSubMatches = (!isIndividual || hasTournamentBracket) && !isSubMatch && !match.parent_match_id;
+  
+  // Check if match is within 3 days (for pre-competition form)
+  const fisMatchDate = new Date(match.match_date);
+  const now = new Date();
+  const daysDiff = Math.ceil((fisMatchDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+  const showPreCompetition = isSkiSport && daysDiff <= 3 && !match.is_finalized;
   
   // Check if this is a sport that uses rounds (Judo, Bowling, Aviron, Athletics)
   const hasRoundBasedStats = sportType.toLowerCase().includes("judo") || 
@@ -574,6 +582,16 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
           </div>
         )}
 
+        {/* FIS Pre-competition form (ski sports, 3 days before) */}
+        {showPreCompetition && (
+          <div className="mt-3">
+            <FisPreCompetitionForm
+              matchId={match.id}
+              categoryId={categoryId}
+              currentData={match as any}
+            />
+          </div>
+        )}
         {/* Ski conditions */}
         {isSkiCategory(sportType) && (
           <div className="mt-3">

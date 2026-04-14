@@ -11,9 +11,11 @@ import { AnnualLoadHeatmap } from "./AnnualLoadHeatmap";
 import { AddCycleCategoryDialog } from "./AddCycleCategoryDialog";
 import { AddCycleDialog } from "./AddCycleDialog";
 import { EditCycleDialog } from "./EditCycleDialog";
+import { FisCalendarSync } from "./FisCalendarSync";
 import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { getMainSportFromType } from "@/lib/constants/sportTypes";
 
 interface AnnualPlanningViewProps {
   categoryId: string;
@@ -59,6 +61,21 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
   const [prefilledStartDate, setPrefilledStartDate] = useState<Date | undefined>();
   const [prefilledEndDate, setPrefilledEndDate] = useState<Date | undefined>();
   const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null);
+
+  // Query sport type
+  const { data: categoryData } = useQuery({
+    queryKey: ["category-sport-type-annual", categoryId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("categories")
+        .select("rugby_type")
+        .eq("id", categoryId)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+  });
+  const isSkiSport = categoryData?.rugby_type ? getMainSportFromType(categoryData.rugby_type) === "ski" : false;
 
   const yearStart = startOfYear(selectedYear);
   const yearEnd = endOfYear(selectedYear);
@@ -398,6 +415,20 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
           />
         </div>
       </div>
+
+      {/* ─── FIS CALENDAR SYNC (ski sports only) ─── */}
+      {isSkiSport && !isViewer && (
+        <div className="bg-card rounded-xl border shadow-sm overflow-hidden">
+          <div className="px-4 py-3 border-b bg-gradient-to-r from-primary/5 to-transparent">
+            <h3 className="text-sm font-bold tracking-tight text-muted-foreground flex items-center gap-2">
+              🎿 Import Calendrier FIS
+            </h3>
+          </div>
+          <div className="p-4">
+            <FisCalendarSync categoryId={categoryId} />
+          </div>
+        </div>
+      )}
 
       {/* ─── DIALOGS ─── */}
       <AddCycleCategoryDialog
