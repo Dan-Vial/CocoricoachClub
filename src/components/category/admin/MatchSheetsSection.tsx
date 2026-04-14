@@ -31,6 +31,7 @@ import { fr } from "date-fns/locale";
 
 interface MatchSheetsSectionProps {
   categoryId: string;
+  preSelectedMatchId?: string;
 }
 
 export function MatchSheetsSection({ categoryId }: MatchSheetsSectionProps) {

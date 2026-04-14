@@ -41,6 +41,12 @@ import { AggregatedRoundStatsDialog } from "./AggregatedRoundStatsDialog";
 import { EditMatchDialog } from "./EditMatchDialog";
 import { AddSubMatchDialog } from "./AddSubMatchDialog";
 import { NotifyAthletesDialog } from "@/components/notifications/NotifyAthletesDialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { isIndividualSport } from "@/lib/constants/sportTypes";
 import { getCompetitionStageLabel as getCompetitionStageLabelUtil } from "@/lib/constants/competitions";
 import {
