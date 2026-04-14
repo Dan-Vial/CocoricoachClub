@@ -19,6 +19,17 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { toast } from "@/components/ui/sonner";
 import { 
   ChevronDown, 
@@ -31,6 +42,7 @@ import {
   Loader2,
   Plus,
   X,
+  Trash2,
 } from "lucide-react";
 import { MAIN_SPORTS, MainSportCategory, getOtherSportSubtypes } from "@/lib/constants/sportTypes";
 
@@ -153,6 +165,23 @@ export function ClientCategoryOptionsDialog({
     },
     onError: (err: any) => {
       toast.error(err.message || "Erreur lors de la création");
+    },
+  });
+
+  const deleteCategory = useMutation({
+    mutationFn: async (categoryId: string) => {
+      const { error } = await supabase
+        .from("categories")
+        .delete()
+        .eq("id", categoryId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["client-clubs-categories", clientId] });
+      toast.success("Catégorie supprimée");
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Erreur lors de la suppression");
     },
   });
 
@@ -335,6 +364,31 @@ export function ClientCategoryOptionsDialog({
                                   <GraduationCap className="h-3 w-3" /> Académie
                                 </label>
                               </div>
+
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10 ml-2">
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Supprimer la catégorie</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Êtes-vous sûr de vouloir supprimer la catégorie <strong>{category.name}</strong> ? Cette action est irréversible et supprimera toutes les données associées (joueurs, matchs, entraînements…).
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                      onClick={() => deleteCategory.mutate(category.id)}
+                                    >
+                                      Supprimer
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
                             </div>
                           </div>
                         ))}
