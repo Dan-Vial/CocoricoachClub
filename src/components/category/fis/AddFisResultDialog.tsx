@@ -46,9 +46,13 @@ export function AddFisResultDialog({ open, onOpenChange, competition }: AddFisRe
 
   const racePenalty = competition.race_penalty ?? 0;
   const rankingNum = Number(ranking);
-  const calculatedPoints = ranking && !isNaN(rankingNum) && rankingNum > 0
+  const autoCalculatedPoints = ranking && !isNaN(rankingNum) && rankingNum > 0
     ? calculateFisPoints({ ranking: rankingNum, racePenalty })
     : null;
+  
+  // Manual FIS points override takes priority
+  const manualPts = manualFisPoints ? Number(manualFisPoints) : null;
+  const finalPoints = manualPts != null && !isNaN(manualPts) ? manualPts : autoCalculatedPoints;
 
   const handleSave = async () => {
     if (!playerId || !ranking) {
@@ -57,7 +61,7 @@ export function AddFisResultDialog({ open, onOpenChange, competition }: AddFisRe
     }
     setSaving(true);
 
-    const basePointsVal = calculatedPoints !== null ? calculatedPoints + racePenalty : 0;
+    const basePointsVal = autoCalculatedPoints !== null ? autoCalculatedPoints + racePenalty : 0;
 
     const upsertData = {
       competition_id: competition.id,
@@ -65,9 +69,9 @@ export function AddFisResultDialog({ open, onOpenChange, competition }: AddFisRe
       category_id: competition.category_id,
       ranking: rankingNum,
       score: score ? Number(score) : null,
-      fis_points: calculatedPoints ?? 0,
+      fis_points: finalPoints ?? 0,
       base_points: basePointsVal,
-      calculated_points: calculatedPoints,
+      calculated_points: finalPoints,
     };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase.from("fis_results") as any).upsert(
