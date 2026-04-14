@@ -169,6 +169,12 @@ export function AddPlayerDialogWithInvite({
     setValidationError("");
     setGeneratedLink(null);
     setLinkCopied(false);
+    setFisRanking("");
+    setFisPoints("");
+    setFisCode("");
+    setFisObjective("");
+    setFisObjectiveDate("");
+    setYearlyObjectives([]);
   };
 
   const copyLink = async (link: string) => {
