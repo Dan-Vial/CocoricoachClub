@@ -409,7 +409,7 @@ export function AddPlayerDialogWithInvite({
     }
   };
 
-  const isLoading = addPlayer.isPending || isInviting;
+  const isLoading = addPlayer.isPending || isInviting || !!fisImportStatus;
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
