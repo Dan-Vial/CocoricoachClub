@@ -442,7 +442,7 @@ export function MatchSheetsSection({ categoryId, preSelectedMatchId }: MatchShee
           <div className="relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary/90 to-accent/80" />
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,hsl(var(--accent)/0.3),transparent_60%)]" />
-            <div className="relative px-8 pt-7 pb-6">
+            <div className="relative px-8 pt-5 pb-5">
               <div className="flex items-center gap-4">
                 <div className="h-12 w-12 rounded-2xl bg-white/15 backdrop-blur-sm flex items-center justify-center border border-white/20 shadow-lg">
                   <FileSpreadsheet className="h-6 w-6 text-primary-foreground" />
