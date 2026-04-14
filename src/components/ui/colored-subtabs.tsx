@@ -48,7 +48,7 @@ const ColoredSubTabsTrigger = React.forwardRef<
     <TabsPrimitive.Trigger
       ref={ref}
       className={cn(
-        "colored-tab-trigger relative inline-flex items-center gap-1.5 px-2 sm:px-3 py-2 rounded-md font-medium text-xs sm:text-sm",
+        "colored-tab-trigger group relative inline-flex items-center gap-1.5 px-2 sm:px-3 py-2 rounded-md font-medium text-xs sm:text-sm",
         "transition-all duration-200 ease-out",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
         "data-[state=active]:shadow-md",
@@ -60,10 +60,10 @@ const ColoredSubTabsTrigger = React.forwardRef<
       {...props}
     >
       <span 
-        className="colored-tab-bg pointer-events-none absolute inset-0 rounded-md transition-all duration-200 opacity-0 scale-95"
+        className="colored-tab-bg pointer-events-none absolute inset-0 rounded-md transition-all duration-200 opacity-0 scale-95 group-data-[state=active]:opacity-100 group-data-[state=active]:scale-100"
         style={{ backgroundColor: colors.base }}
       />
-      <span className="colored-tab-text relative z-10 flex items-center gap-1.5 transition-colors duration-200" style={{ color: colors.base }}>
+      <span className="colored-tab-text relative z-10 flex items-center gap-1.5 transition-colors duration-200 group-data-[state=active]:text-white" style={{ color: colors.base }}>
         {icon && <span className="shrink-0 h-4 w-4">{icon}</span>}
         {children}
       </span>
