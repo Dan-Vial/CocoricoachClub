@@ -216,7 +216,7 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
 
   // Auto-update simulation values when level/discipline changes
   const simScale = determineScale(simLevel, Number(simTopAvg) || undefined);
-  const simPoints = simPosition ? simulatePoints(Number(simPosition), simScale) : null;
+  const simPoints = simPosition ? simulatePoints(Number(simPosition), simScale, Number(simTotalRiders) || undefined) : null;
   const simNewTotal = simPoints !== null ? totalPoints + simPoints : null;
   
   // WSPL simulation
