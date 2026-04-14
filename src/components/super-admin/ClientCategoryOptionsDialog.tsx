@@ -168,6 +168,23 @@ export function ClientCategoryOptionsDialog({
     },
   });
 
+  const deleteCategory = useMutation({
+    mutationFn: async (categoryId: string) => {
+      const { error } = await supabase
+        .from("categories")
+        .delete()
+        .eq("id", categoryId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["client-clubs-categories", clientId] });
+      toast.success("Catégorie supprimée");
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Erreur lors de la suppression");
+    },
+  });
+
   const createClub = useMutation({
     mutationFn: async () => {
       if (!newClubName.trim()) throw new Error("Nom requis");
