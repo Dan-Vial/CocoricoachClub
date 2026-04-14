@@ -227,7 +227,7 @@ function CategoryDetailsContent() {
             <Button
               variant="ghost"
               size="sm"
-              className="text-primary-foreground hover:bg-primary-foreground/10"
+              className="text-white hover:bg-white/10"
               onClick={handleBack}
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
@@ -247,7 +247,7 @@ function CategoryDetailsContent() {
             <div className="min-w-0 flex-1">
               {categoryId && (
                 isViewer ? (
-                  <h1 className="text-2xl sm:text-3xl font-bold text-primary-foreground truncate">
+                  <h1 className="text-2xl sm:text-3xl font-bold text-white truncate">
                     {displayCategoryName}
                   </h1>
                 ) : (
@@ -260,14 +260,14 @@ function CategoryDetailsContent() {
                 )
               )}
               <div className="flex items-center gap-2 sm:gap-4 mt-2 flex-wrap">
-                <p className="text-primary-foreground/90 text-sm sm:text-base truncate">
+                <p className="text-white/90 text-sm sm:text-base truncate">
                   {displayClubName}
                 </p>
                 {categoryId && category?.rugby_type && (
                   <>
-                    <span className="text-primary-foreground/60">•</span>
+                    <span className="text-white/60">•</span>
                     {isViewer ? (
-                      <span className="text-primary-foreground/90 text-xs sm:text-sm">
+                      <span className="text-white/90 text-xs sm:text-sm">
                         {getSportLabel(category.rugby_type)}
                       </span>
                     ) : (
