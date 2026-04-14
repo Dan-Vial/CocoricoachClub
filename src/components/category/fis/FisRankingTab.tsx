@@ -375,10 +375,47 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center gap-2">
                   <Calculator className="h-4 w-4 text-primary" />
-                  Simulation rapide
+                  Simulation de compétition
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-2">
+              <CardContent className="space-y-3">
+                {/* Level & discipline selectors */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label className="text-[10px]">Niveau</Label>
+                    <Select value={simLevel} onValueChange={(val) => {
+                      setSimLevel(val);
+                      const preset = LEVEL_PENALTY_PRESETS[val];
+                      if (preset) setSimTopAvg(String(preset.topAvg));
+                    }}>
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(LEVEL_PENALTY_PRESETS).map(([k, v]) => (
+                          <SelectItem key={k} value={k}>{v.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-[10px]">Discipline</Label>
+                    <Select value={simDiscipline} onValueChange={(val) => {
+                      setSimDiscipline(val);
+                      const fVal = DISCIPLINE_F_VALUES[val] ?? 500;
+                      setSimFValue(String(fVal));
+                    }}>
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {disciplines.map((d) => (
+                          <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
                 <div className="grid grid-cols-3 gap-2">
                   <div>
                     <Label className="text-[10px]">Position</Label>
@@ -393,14 +430,24 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
                     <Input type="number" value={simFValue} onChange={(e) => setSimFValue(e.target.value)} placeholder="500" className="h-8 text-xs" />
                   </div>
                 </div>
+                {simPenalty > 0 && (
+                  <p className="text-[10px] text-muted-foreground text-center">
+                    Race Penalty: <span className="font-mono font-semibold">{simPenalty.toFixed(2)}</span>
+                  </p>
+                )}
                 {simPoints !== null && Number(simPosition) > 0 && (
-                  <div className="bg-primary/5 rounded-md p-2 text-center">
+                  <div className="bg-primary/5 rounded-md p-2 text-center space-y-1">
                     <p className="text-xs text-muted-foreground">
-                      {simPosition}e → <span className="font-bold text-primary text-sm">{simPoints.toFixed(0)} pts</span>
+                      {simPosition}e en {getDisciplineShort(simDiscipline)} → <span className="font-bold text-primary text-sm">{simPoints.toFixed(2)} pts</span>
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      Nouveau total : <span className="font-bold">{simNewTotal?.toFixed(0)} pts</span>
+                      Nouveau total global : <span className="font-bold">{simNewTotal?.toFixed(2)} pts</span>
                     </p>
+                    {simNewDisciplineTotal !== null && (
+                      <p className="text-xs text-muted-foreground">
+                        Total {getDisciplineShort(simDiscipline)} : <span className="font-bold">{simNewDisciplineTotal.toFixed(2)} pts</span>
+                      </p>
+                    )}
                   </div>
                 )}
               </CardContent>
