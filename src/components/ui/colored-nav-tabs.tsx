@@ -172,24 +172,22 @@ const ColoredTabTrigger = React.forwardRef<
       ref={ref}
       value={value}
       className={cn(
-        "relative inline-flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm",
+        "colored-tab-trigger relative inline-flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm",
         "transition-all duration-200 ease-out",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-        "data-[state=active]:text-white data-[state=active]:shadow-md",
         className
       )}
       style={{
         ["--tab-color" as string]: colors.base,
-        color: undefined,
       }}
       {...props}
     >
       <span 
-        className="pointer-events-none absolute inset-0 rounded-lg transition-all duration-200"
+        className="colored-tab-bg pointer-events-none absolute inset-0 rounded-lg transition-all duration-200 opacity-0 scale-95"
         style={{ backgroundColor: colors.base }}
         aria-hidden="true"
       />
-      <span className="relative z-10 flex items-center gap-2" style={{ color: 'inherit' }}>
+      <span className="colored-tab-text relative z-10 flex items-center gap-2" style={{ color: colors.base }}>
         {icon && <span className="shrink-0">{icon}</span>}
         <span className="whitespace-nowrap">
           {label ? (
