@@ -459,10 +459,13 @@ export function MatchSheetsSection({ categoryId, preSelectedMatchId }: MatchShee
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto px-8 py-6 space-y-6">
+          <div className="flex-1 overflow-y-auto px-8 py-6 space-y-6 bg-secondary/30">
             {/* Section: Informations */}
-            <div className="space-y-4">
-              <h4 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Informations du match</h4>
+            <div className="space-y-4 bg-card rounded-xl p-5 border border-border/30 shadow-sm">
+              <div className="flex items-center gap-2">
+                <div className="h-1.5 w-1.5 rounded-full bg-primary" />
+                <h4 className="text-xs font-semibold uppercase tracking-widest text-primary/70">Informations du match</h4>
+              </div>
               <div className="space-y-2">
                 <Label className="font-medium text-sm">Nom de la feuille *</Label>
                 <Input
