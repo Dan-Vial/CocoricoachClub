@@ -443,18 +443,13 @@ export function MatchSheetsSection({ categoryId, preSelectedMatchId }: MatchShee
             <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary/90 to-accent/80" />
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,hsl(var(--accent)/0.3),transparent_60%)]" />
             <div className="relative z-10 px-8 pt-4 pb-6">
-              <div className="flex items-start gap-4">
-                <div className="relative z-20 mt-0.5 h-12 w-12 shrink-0 rounded-2xl bg-white/15 backdrop-blur-sm flex items-center justify-center border border-white/20 shadow-lg">
-                  <FileSpreadsheet className="h-6 w-6 text-primary-foreground" />
-                </div>
-                <div>
-                  <DialogTitle className="text-xl font-bold tracking-tight text-primary-foreground">
-                    {editingSheet ? "Modifier la feuille de match" : "Nouvelle feuille de match"}
-                  </DialogTitle>
-                  <p className="text-sm text-primary-foreground/70 mt-0.5">
-                    Composez votre équipe et préparez le match
-                  </p>
-                </div>
+              <div>
+                <DialogTitle className="text-xl font-bold tracking-tight text-primary-foreground">
+                  {editingSheet ? "Modifier la feuille de match" : "Nouvelle feuille de match"}
+                </DialogTitle>
+                <p className="text-sm text-primary-foreground/70 mt-0.5">
+                  Composez votre équipe et préparez le match
+                </p>
               </div>
             </div>
           </div>
