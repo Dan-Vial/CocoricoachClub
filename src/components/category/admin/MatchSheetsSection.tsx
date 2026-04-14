@@ -452,7 +452,6 @@ export function MatchSheetsSection({ categoryId, preSelectedMatchId }: MatchShee
                 </p>
               </div>
             </div>
-            </div>
           </div>
 
           <div className="flex-1 overflow-y-auto px-8 py-6 space-y-6 bg-secondary/30">
