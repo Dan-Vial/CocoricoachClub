@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { MatchSheetsSection } from "@/components/category/admin/MatchSheetsSection";
 import { fr } from "date-fns/locale";
 import {
   Trash2,

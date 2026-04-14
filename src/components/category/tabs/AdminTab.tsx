@@ -1,42 +1,19 @@
 import { Tabs, TabsContent } from "@/components/ui/tabs";
-import { ClipboardCheck, Users, FileSpreadsheet, FileText, UserSearch, FolderOpen, BarChart3 } from "lucide-react";
+import { ClipboardCheck, Users, UserSearch, FolderOpen, BarChart3 } from "lucide-react";
 import { AttendanceTab } from "@/components/category/attendance/AttendanceTab";
 import { CategoryCollaborationTab } from "@/components/category/CategoryCollaborationTab";
-
-import { MatchSheetsSection } from "@/components/category/admin/MatchSheetsSection";
 
 import { RecruitmentSection } from "@/components/category/admin/RecruitmentSection";
 import { DocumentsSection } from "@/components/category/admin/DocumentsSection";
 
 import { ReportsTab } from "@/components/category/ReportsTab";
 import { ColoredSubTabsList, ColoredSubTabsTrigger } from "@/components/ui/colored-subtabs";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 
 interface AdminTabProps {
   categoryId: string;
 }
 
-const TEAM_SPORTS_WITH_MATCH_SHEETS = ["rugby", "football", "basketball", "handball", "volleyball"];
-
 export function AdminTab({ categoryId }: AdminTabProps) {
-  const { data: category } = useQuery({
-    queryKey: ["category-sport-admin", categoryId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("categories")
-        .select("clubs(sport)")
-        .eq("id", categoryId)
-        .single();
-      if (error) throw error;
-      return data;
-    },
-    staleTime: 5 * 60 * 1000,
-  });
-
-  const sport = ((category?.clubs as any)?.sport || "rugby").toLowerCase();
-  const hasMatchSheets = TEAM_SPORTS_WITH_MATCH_SHEETS.some(s => sport.includes(s));
-
   return (
     <Tabs defaultValue="attendance" className="space-y-4">
       <div className="flex justify-center overflow-x-auto -mx-4 px-4 pb-2">
@@ -50,17 +27,6 @@ export function AdminTab({ categoryId }: AdminTabProps) {
             <span className="hidden sm:inline">Présences</span>
             <span className="sm:hidden">Prés</span>
           </ColoredSubTabsTrigger>
-          {hasMatchSheets && (
-            <ColoredSubTabsTrigger 
-              value="matchsheets" 
-              colorKey="admin"
-              icon={<FileSpreadsheet className="h-4 w-4" />}
-              tooltip="Génération et gestion des feuilles de match officielles"
-            >
-              <span className="hidden sm:inline">Feuilles de Match</span>
-              <span className="sm:hidden">Feuilles</span>
-            </ColoredSubTabsTrigger>
-          )}
           <ColoredSubTabsTrigger 
             value="recruitment" 
             colorKey="admin"
@@ -103,13 +69,6 @@ export function AdminTab({ categoryId }: AdminTabProps) {
       <TabsContent value="attendance">
         <AttendanceTab categoryId={categoryId} />
       </TabsContent>
-
-      {hasMatchSheets && (
-        <TabsContent value="matchsheets">
-          <MatchSheetsSection categoryId={categoryId} />
-        </TabsContent>
-      )}
-
 
       <TabsContent value="recruitment">
         <RecruitmentSection categoryId={categoryId} />

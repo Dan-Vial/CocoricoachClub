@@ -396,9 +396,9 @@ export function AddMatchCalendarDialog({
             </div>
           )}
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className={`grid ${isIndividual ? 'grid-cols-3' : 'grid-cols-2'} gap-4`}>
             <div className="space-y-2">
-              <Label htmlFor="matchDate">Date début *</Label>
+              <Label htmlFor="matchDate">{isIndividual ? "Date début *" : "Date *"}</Label>
               <Input
                 id="matchDate"
                 type="date"
@@ -407,16 +407,18 @@ export function AddMatchCalendarDialog({
                 required
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="endDate">Date fin</Label>
-              <Input
-                id="endDate"
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                min={matchDate}
-              />
-            </div>
+            {isIndividual && (
+              <div className="space-y-2">
+                <Label htmlFor="endDate">Date fin</Label>
+                <Input
+                  id="endDate"
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  min={matchDate}
+                />
+              </div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="matchTime">Heure</Label>
               <Input
