@@ -172,12 +172,9 @@ const ColoredTabTrigger = React.forwardRef<
       ref={ref}
       value={value}
       className={cn(
-        "group relative inline-flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm",
+        "group/tab relative inline-flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm",
         "transition-all duration-200 ease-out",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-        colors.text,
-        colors.hover,
-        "data-[state=active]:text-white data-[state=active]:shadow-md",
         className
       )}
       style={{
@@ -185,26 +182,10 @@ const ColoredTabTrigger = React.forwardRef<
       }}
       {...props}
     >
-      <span 
-        className="pointer-events-none absolute inset-0 rounded-lg transition-all duration-200 opacity-0 scale-95 group-data-[state=active]:opacity-100 group-data-[state=active]:scale-100"
-        style={{ backgroundColor: colors.base }}
-      />
-      <span className="relative z-10 flex items-center gap-2">
-        {icon && <span className="shrink-0">{icon}</span>}
-        <span className="whitespace-nowrap">
-          {label ? (
-            <>
-              <span className="hidden sm:inline">{label}</span>
-              <span className="sm:hidden">{shortLabel || label}</span>
-            </>
-          ) : children}
-        </span>
-        {badge != null && badge > 0 && (
-          <span className="absolute -top-2 -right-3 h-4 min-w-[16px] flex items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold px-1">
-            {badge > 9 ? "9+" : badge}
-          </span>
-        )}
-      </span>
+      {({ "data-state": state, ...rest }: any) => null}
+      <TabTriggerInner colorKey={colorKey} icon={icon} label={label} shortLabel={shortLabel} badge={badge}>
+        {children}
+      </TabTriggerInner>
     </TabsPrimitive.Trigger>
   );
 
