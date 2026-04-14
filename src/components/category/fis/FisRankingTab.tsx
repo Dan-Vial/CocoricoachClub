@@ -727,13 +727,22 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
       </Dialog>
 
       {selectedPlayer && player && (
-        <AddHistoricalFisResultsDialog
-          open={historicalOpen}
-          onOpenChange={setHistoricalOpen}
-          categoryId={categoryId}
-          playerId={selectedPlayer}
-          playerName={`${player.first_name || ""} ${player.name}`.trim()}
-        />
+        <>
+          <AddHistoricalFisResultsDialog
+            open={historicalOpen}
+            onOpenChange={setHistoricalOpen}
+            categoryId={categoryId}
+            playerId={selectedPlayer}
+            playerName={`${player.first_name || ""} ${player.name}`.trim()}
+          />
+          <ImportFisUrlDialog
+            open={importUrlOpen}
+            onOpenChange={setImportUrlOpen}
+            categoryId={categoryId}
+            playerId={selectedPlayer}
+            playerName={`${player.first_name || ""} ${player.name}`.trim()}
+          />
+        </>
       )}
     </div>
   );
