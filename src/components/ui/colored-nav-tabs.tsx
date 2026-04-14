@@ -186,11 +186,7 @@ const ColoredTabTrigger = React.forwardRef<
       {...props}
     >
       <span 
-        className={cn(
-          "absolute inset-0 rounded-lg transition-all duration-200",
-          "opacity-0 scale-95",
-          "group-data-[state=active]:opacity-100 group-data-[state=active]:scale-100"
-        )}
+        className="pointer-events-none absolute inset-0 rounded-lg transition-all duration-200 opacity-0 scale-95 group-data-[state=active]:opacity-100 group-data-[state=active]:scale-100"
         style={{ backgroundColor: colors.base }}
       />
       <span className="relative z-10 flex items-center gap-2">
