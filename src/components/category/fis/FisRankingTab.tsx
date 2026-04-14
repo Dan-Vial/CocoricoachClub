@@ -12,6 +12,7 @@ import { TrendingUp, TrendingDown, Target, Calculator, Trophy, Clock, AlertTrian
 import { format, differenceInDays } from "date-fns";
 import { fr } from "date-fns/locale";
 import { calculateTotalPoints, getBestResults, simulatePoints, determineScale, DISCIPLINE_F_VALUES } from "@/lib/fis/fisPointsEngine";
+import { calculateWsplPoints, calculateWsplRanking, WSPL_EVENT_CATEGORIES } from "@/lib/fis/wsplPointsEngine";
 import { Progress } from "@/components/ui/progress";
 import { AddHistoricalFisResultsDialog } from "./AddHistoricalFisResultsDialog";
 import { ImportFisUrlDialog } from "./ImportFisUrlDialog";
@@ -49,6 +50,9 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
   const [simTopAvg, setSimTopAvg] = useState("800");
   const [simLevel, setSimLevel] = useState("world_cup");
   const [simDiscipline, setSimDiscipline] = useState("big_air");
+  const [simTotalRiders, setSimTotalRiders] = useState("50");
+  const [simWsplStars, setSimWsplStars] = useState("5");
+  const [simWsplPL, setSimWsplPL] = useState("1000");
   const [historicalOpen, setHistoricalOpen] = useState(false);
   const [importUrlOpen, setImportUrlOpen] = useState(false);
   const [objectiveDialogOpen, setObjectiveDialogOpen] = useState(false);
