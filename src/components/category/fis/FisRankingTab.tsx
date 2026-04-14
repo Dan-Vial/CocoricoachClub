@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,9 +15,22 @@ import { calculateTotalPoints, getBestResults, simulatePoints, calculateRacePena
 import { Progress } from "@/components/ui/progress";
 import { AddHistoricalFisResultsDialog } from "./AddHistoricalFisResultsDialog";
 import { toast } from "sonner";
+import { getDisciplineLabel, getDisciplinesForClubSport } from "@/lib/constants/skiDisciplines";
 
 interface FisRankingTabProps {
   categoryId: string;
+}
+
+// Short labels for snowboard freestyle disciplines
+const DISCIPLINE_SHORT: Record<string, string> = {
+  big_air: "BA",
+  slopestyle: "SS",
+  halfpipe: "HP",
+  rail_event: "RE",
+};
+
+function getDisciplineShort(disc: string): string {
+  return DISCIPLINE_SHORT[disc] || disc.substring(0, 2).toUpperCase();
 }
 
 export function FisRankingTab({ categoryId }: FisRankingTabProps) {
@@ -27,8 +40,23 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
   const [simTopAvg, setSimTopAvg] = useState("800");
   const [historicalOpen, setHistoricalOpen] = useState(false);
   const [objectiveDialogOpen, setObjectiveDialogOpen] = useState(false);
-  const [newObj, setNewObj] = useState({ label: "", points_required: "", deadline: "", location: "" });
+  const [newObj, setNewObj] = useState({ label: "", points_required: "", deadline: "", location: "", discipline: "" });
   const queryClient = useQueryClient();
+
+  const { data: categoryInfo } = useQuery({
+    queryKey: ["category-sport-fis", categoryId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("categories")
+        .select("rugby_type, clubs(sport)")
+        .eq("id", categoryId)
+        .single();
+      return data;
+    },
+  });
+
+  const clubSport = (categoryInfo as any)?.clubs?.sport as string | undefined;
+  const disciplines = useMemo(() => getDisciplinesForClubSport(clubSport), [clubSport]);
 
   const { data: players } = useQuery({
     queryKey: ["players-fis-ranking", categoryId],
@@ -76,7 +104,6 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
     queryKey: ["fis-objectives", categoryId, selectedPlayer],
     queryFn: async () => {
       if (!selectedPlayer) return [];
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data } = await (supabase.from("fis_objectives") as any)
         .select("*")
         .eq("category_id", categoryId)
@@ -86,6 +113,7 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
       return (data || []) as {
         id: string; label: string; points_required: number;
         deadline: string | null; location: string | null; is_active: boolean;
+        discipline: string | null;
       }[];
     },
     enabled: !!selectedPlayer,
@@ -94,7 +122,6 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
   const addObjective = useMutation({
     mutationFn: async () => {
       if (!newObj.label || !newObj.points_required) throw new Error("Champs requis");
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase.from("fis_objectives") as any).insert({
         player_id: selectedPlayer,
         category_id: categoryId,
@@ -102,13 +129,14 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
         points_required: Number(newObj.points_required),
         deadline: newObj.deadline || null,
         location: newObj.location || null,
+        discipline: newObj.discipline && newObj.discipline !== "all" ? newObj.discipline : null,
       });
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["fis-objectives"] });
       setObjectiveDialogOpen(false);
-      setNewObj({ label: "", points_required: "", deadline: "", location: "" });
+      setNewObj({ label: "", points_required: "", deadline: "", location: "", discipline: "" });
       toast.success("Objectif ajouté");
     },
     onError: () => toast.error("Erreur lors de l'ajout"),
@@ -116,7 +144,6 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
 
   const deleteObjective = useMutation({
     mutationFn: async (objId: string) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase.from("fis_objectives") as any).delete().eq("id", objId);
       if (error) throw error;
     },
@@ -131,8 +158,38 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
 
   const validResults = (results || []).filter((r) => !r.expires_at || new Date(r.expires_at) > now);
   const expiredResults = (results || []).filter((r) => r.expires_at && new Date(r.expires_at) <= now);
-  const bestResults = getBestResults(validResults as { fis_points: number; calculated_points?: number | null; expires_at?: string | null }[], topN);
-  const totalPoints = calculateTotalPoints(validResults as { fis_points: number; calculated_points?: number | null; expires_at?: string | null }[], topN);
+  const bestResults = getBestResults(validResults as any[], topN);
+  const totalPoints = calculateTotalPoints(validResults as any[], topN);
+
+  // Group results by discipline
+  const resultsByDiscipline = useMemo(() => {
+    const map: Record<string, typeof validResults> = {};
+    validResults.forEach((r) => {
+      const rAny = r as Record<string, unknown>;
+      const comp = rAny.fis_competitions as { discipline: string } | null;
+      const disc = comp?.discipline || "other";
+      if (!map[disc]) map[disc] = [];
+      map[disc].push(r);
+    });
+    return map;
+  }, [validResults]);
+
+  // Calculate per-discipline totals
+  const disciplineTotals = useMemo(() => {
+    const totals: Record<string, { total: number; count: number; best: number }> = {};
+    for (const [disc, discResults] of Object.entries(resultsByDiscipline)) {
+      const pts = calculateTotalPoints(discResults as any[], topN);
+      const bestRes = getBestResults(discResults as any[], topN);
+      const bestPt = bestRes.length > 0 ? Math.max(...bestRes.map((r: any) => r.calculated_points ?? r.fis_points ?? 0)) : 0;
+      totals[disc] = { total: pts, count: discResults.length, best: bestPt };
+    }
+    return totals;
+  }, [resultsByDiscipline, topN]);
+
+  // Which disciplines have results
+  const activeDisciplines = useMemo(() => {
+    return disciplines.filter(d => resultsByDiscipline[d.value]?.length > 0);
+  }, [disciplines, resultsByDiscipline]);
 
   // Expiring soon (next 8 weeks)
   const expiringSoon = validResults.filter((r) => {
@@ -153,6 +210,12 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
   })();
   const simPoints = simPosition ? simulatePoints(Number(simPosition), simPenalty) : null;
   const simNewTotal = simPoints !== null ? totalPoints + simPoints : null;
+
+  // Helper to get points for a discipline (for objectives)
+  const getPointsForDiscipline = (disc: string | null) => {
+    if (!disc) return totalPoints;
+    return disciplineTotals[disc]?.total ?? 0;
+  };
 
   return (
     <div className="space-y-4">
@@ -187,108 +250,148 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {/* Current situation */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <Trophy className="h-4 w-4 text-primary" />
-                Situation actuelle
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">Points totaux</span>
-                <span className="text-2xl font-bold">{totalPoints.toFixed(0)}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">Classement FIS</span>
-                <span className="text-lg font-semibold">{player?.fis_ranking || "N/A"}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">Résultats comptés</span>
-                <span className="font-mono">{bestResults.length}/{topN}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">Total résultats</span>
-                <span className="font-mono">{validResults.length}</span>
-              </div>
-            </CardContent>
-          </Card>
+        <>
+          {/* Per-discipline summary cards */}
+          {activeDisciplines.length > 0 && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              {/* Global card */}
+              <Card className="border-primary/30 bg-primary/5">
+                <CardContent className="p-4 space-y-1">
+                  <p className="text-xs text-muted-foreground font-medium">TOTAL</p>
+                  <p className="text-2xl font-bold">{totalPoints.toFixed(0)} pts</p>
+                  <p className="text-xs text-muted-foreground">{validResults.length} résultats • Top {topN}</p>
+                  {player?.fis_ranking && (
+                    <p className="text-xs">Classement: <span className="font-semibold">{player.fis_ranking}e</span></p>
+                  )}
+                </CardContent>
+              </Card>
 
-          {/* Expiring points */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <Clock className="h-4 w-4 text-destructive" />
-                Points expirants (8 sem.)
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {expiringSoon.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Aucun point n'expire bientôt</p>
-              ) : (
-                <div className="space-y-2">
-                  {expiringSoon.map((r) => {
-                    const rAny = r as Record<string, unknown>;
-                    const comp = rAny.fis_competitions as { name: string } | null;
-                    const calcPts = rAny.calculated_points as number | null;
-                    return (
-                      <div key={r.id} className="flex justify-between items-center text-sm">
-                        <div className="min-w-0">
-                          <p className="truncate text-xs">{comp?.name || "—"}</p>
-                          <p className="text-[10px] text-muted-foreground">
-                            Expire le {r.expires_at ? format(new Date(r.expires_at), "d MMM yyyy", { locale: fr }) : "—"}
-                          </p>
-                        </div>
-                        <Badge variant="destructive" className="font-mono text-xs shrink-0">
-                          <TrendingDown className="h-3 w-3 mr-1" />
-                          -{(calcPts ?? r.fis_points).toFixed(0)}
-                        </Badge>
+              {/* Per discipline */}
+              {activeDisciplines.map((disc) => {
+                const dt = disciplineTotals[disc.value];
+                if (!dt) return null;
+                return (
+                  <Card key={disc.value}>
+                    <CardContent className="p-4 space-y-1">
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs text-muted-foreground font-medium">{disc.label}</p>
+                        <Badge variant="outline" className="text-[10px] font-mono">{getDisciplineShort(disc.value)}</Badge>
                       </div>
-                    );
-                  })}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                      <p className="text-xl font-bold">{dt.total.toFixed(0)} pts</p>
+                      <p className="text-xs text-muted-foreground">{dt.count} résultats • Meilleur: {dt.best.toFixed(0)}</p>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
 
-          {/* Quick simulation card */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <Calculator className="h-4 w-4 text-primary" />
-                Simulation rapide
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <div className="grid grid-cols-3 gap-2">
-                <div>
-                  <Label className="text-[10px]">Position</Label>
-                  <Input type="number" min="1" value={simPosition} onChange={(e) => setSimPosition(e.target.value)} placeholder="3" className="h-8 text-xs" />
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            {/* Current situation */}
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Trophy className="h-4 w-4 text-primary" />
+                  Situation actuelle
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">Points totaux</span>
+                  <span className="text-2xl font-bold">{totalPoints.toFixed(0)}</span>
                 </div>
-                <div>
-                  <Label className="text-[10px]">Moy. top 5</Label>
-                  <Input type="number" value={simTopAvg} onChange={(e) => setSimTopAvg(e.target.value)} placeholder="800" className="h-8 text-xs" />
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">Classement FIS</span>
+                  <span className="text-lg font-semibold">{player?.fis_ranking || "N/A"}</span>
                 </div>
-                <div>
-                  <Label className="text-[10px]">F-value</Label>
-                  <Input type="number" value={simFValue} onChange={(e) => setSimFValue(e.target.value)} placeholder="500" className="h-8 text-xs" />
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">Résultats comptés</span>
+                  <span className="font-mono">{bestResults.length}/{topN}</span>
                 </div>
-              </div>
-              {simPoints !== null && Number(simPosition) > 0 && (
-                <div className="bg-primary/5 rounded-md p-2 text-center">
-                  <p className="text-xs text-muted-foreground">
-                    {simPosition}e → <span className="font-bold text-primary text-sm">{simPoints.toFixed(0)} pts</span>
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Nouveau total : <span className="font-bold">{simNewTotal?.toFixed(0)} pts</span>
-                  </p>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">Total résultats</span>
+                  <span className="font-mono">{validResults.length}</span>
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+              </CardContent>
+            </Card>
+
+            {/* Expiring points */}
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-destructive" />
+                  Points expirants (8 sem.)
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {expiringSoon.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Aucun point n'expire bientôt</p>
+                ) : (
+                  <div className="space-y-2">
+                    {expiringSoon.map((r) => {
+                      const rAny = r as Record<string, unknown>;
+                      const comp = rAny.fis_competitions as { name: string; discipline: string } | null;
+                      const calcPts = rAny.calculated_points as number | null;
+                      return (
+                        <div key={r.id} className="flex justify-between items-center text-sm">
+                          <div className="min-w-0">
+                            <p className="truncate text-xs">{comp?.name || "—"}</p>
+                            <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                              {comp?.discipline && (
+                                <Badge variant="outline" className="text-[8px] py-0 px-1">{getDisciplineShort(comp.discipline)}</Badge>
+                              )}
+                              <span>Expire le {r.expires_at ? format(new Date(r.expires_at), "d MMM yyyy", { locale: fr }) : "—"}</span>
+                            </div>
+                          </div>
+                          <Badge variant="destructive" className="font-mono text-xs shrink-0">
+                            <TrendingDown className="h-3 w-3 mr-1" />
+                            -{(calcPts ?? r.fis_points).toFixed(0)}
+                          </Badge>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Quick simulation */}
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Calculator className="h-4 w-4 text-primary" />
+                  Simulation rapide
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <div className="grid grid-cols-3 gap-2">
+                  <div>
+                    <Label className="text-[10px]">Position</Label>
+                    <Input type="number" min="1" value={simPosition} onChange={(e) => setSimPosition(e.target.value)} placeholder="3" className="h-8 text-xs" />
+                  </div>
+                  <div>
+                    <Label className="text-[10px]">Moy. top 5</Label>
+                    <Input type="number" value={simTopAvg} onChange={(e) => setSimTopAvg(e.target.value)} placeholder="800" className="h-8 text-xs" />
+                  </div>
+                  <div>
+                    <Label className="text-[10px]">F-value</Label>
+                    <Input type="number" value={simFValue} onChange={(e) => setSimFValue(e.target.value)} placeholder="500" className="h-8 text-xs" />
+                  </div>
+                </div>
+                {simPoints !== null && Number(simPosition) > 0 && (
+                  <div className="bg-primary/5 rounded-md p-2 text-center">
+                    <p className="text-xs text-muted-foreground">
+                      {simPosition}e → <span className="font-bold text-primary text-sm">{simPoints.toFixed(0)} pts</span>
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Nouveau total : <span className="font-bold">{simNewTotal?.toFixed(0)} pts</span>
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </>
       )}
 
       {/* Objectives section */}
@@ -314,9 +417,10 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {objectives.map((obj) => {
-                  const reached = totalPoints >= obj.points_required;
-                  const pct = Math.min(100, (totalPoints / obj.points_required) * 100);
-                  const missing = Math.max(0, obj.points_required - totalPoints);
+                  const discPoints = getPointsForDiscipline(obj.discipline);
+                  const reached = discPoints >= obj.points_required;
+                  const pct = Math.min(100, (discPoints / obj.points_required) * 100);
+                  const missing = Math.max(0, obj.points_required - discPoints);
                   const daysLeft = obj.deadline ? differenceInDays(new Date(obj.deadline), now) : null;
                   const isUrgent = daysLeft !== null && daysLeft <= 60 && !reached;
 
@@ -333,7 +437,14 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
-                          <p className="text-sm font-semibold truncate">{obj.label}</p>
+                          <div className="flex items-center gap-1.5">
+                            <p className="text-sm font-semibold truncate">{obj.label}</p>
+                            {obj.discipline && (
+                              <Badge variant="outline" className="text-[10px] shrink-0">
+                                {getDisciplineShort(obj.discipline)}
+                              </Badge>
+                            )}
+                          </div>
                           <div className="flex items-center gap-2 text-[10px] text-muted-foreground mt-0.5">
                             {obj.location && (
                               <span className="flex items-center gap-0.5">
@@ -372,7 +483,10 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
                         className={`h-2 ${reached ? "[&>div]:bg-green-600" : "[&>div]:bg-red-500"}`}
                       />
                       <div className="flex justify-between text-[10px] text-muted-foreground">
-                        <span>{totalPoints.toFixed(0)} / {obj.points_required} pts</span>
+                        <span>
+                          {discPoints.toFixed(0)} / {obj.points_required} pts
+                          {obj.discipline && ` (${getDisciplineLabel(obj.discipline)})`}
+                        </span>
                         {daysLeft !== null && daysLeft > 0 && (
                           <span className={isUrgent ? "text-red-500 font-semibold" : ""}>
                             J-{daysLeft}
@@ -381,7 +495,7 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
                       </div>
 
                       {/* Simulation impact */}
-                      {simNewTotal !== null && !reached && (
+                      {simNewTotal !== null && !reached && !obj.discipline && (
                         <div className="border-t pt-1">
                           {simNewTotal >= obj.points_required ? (
                             <p className="text-[10px] text-green-600 font-medium">
@@ -403,7 +517,7 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
         </Card>
       )}
 
-      {/* Results history */}
+      {/* Results history grouped by discipline */}
       {selectedPlayer && (
         <Card>
           <CardHeader className="pb-2">
@@ -422,7 +536,7 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
                   })
                   .map((r) => {
                     const rAny = r as Record<string, unknown>;
-                    const comp = rAny.fis_competitions as { name: string; competition_date: string; location: string | null } | null;
+                    const comp = rAny.fis_competitions as { name: string; competition_date: string; location: string | null; discipline: string } | null;
                     const calcPts = rAny.calculated_points as number | null;
                     const isCounting = bestResults.some((br) => (br as { id?: string }).id === r.id);
                     return (
@@ -431,6 +545,11 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
                           <span className="font-mono text-xs w-8 text-center font-bold shrink-0">
                             {r.ranking ? `${r.ranking}e` : "-"}
                           </span>
+                          {comp?.discipline && (
+                            <Badge variant="outline" className="text-[10px] py-0 px-1.5 shrink-0">
+                              {getDisciplineShort(comp.discipline)}
+                            </Badge>
+                          )}
                           <div className="min-w-0">
                             <p className="truncate text-xs font-medium">{comp?.name || "—"}</p>
                             <p className="text-[10px] text-muted-foreground">
@@ -480,14 +599,30 @@ export function FisRankingTab({ categoryId }: FisRankingTabProps) {
                 placeholder="Ex: Championnats du Monde 2026"
               />
             </div>
-            <div>
-              <Label>Points requis *</Label>
-              <Input
-                type="number"
-                value={newObj.points_required}
-                onChange={(e) => setNewObj({ ...newObj, points_required: e.target.value })}
-                placeholder="Ex: 2000"
-              />
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Points requis *</Label>
+                <Input
+                  type="number"
+                  value={newObj.points_required}
+                  onChange={(e) => setNewObj({ ...newObj, points_required: e.target.value })}
+                  placeholder="Ex: 2000"
+                />
+              </div>
+              <div>
+                <Label>Discipline</Label>
+                <Select value={newObj.discipline} onValueChange={(val) => setNewObj({ ...newObj, discipline: val })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Toutes" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Toutes disciplines</SelectItem>
+                    {disciplines.map((d) => (
+                      <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>

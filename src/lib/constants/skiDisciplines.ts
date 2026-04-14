@@ -12,6 +12,7 @@ const SNOWBOARD_FREESTYLE_DISCIPLINES: CompetitionDiscipline[] = [
   { value: "slopestyle", label: "Slopestyle" },
   { value: "big_air", label: "Big Air" },
   { value: "halfpipe", label: "Halfpipe" },
+  { value: "rail_event", label: "Rail Event" },
 ];
 
 const SNOWBOARD_ALPIN_DISCIPLINES: CompetitionDiscipline[] = [

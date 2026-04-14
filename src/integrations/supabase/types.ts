@@ -2644,6 +2644,7 @@ export type Database = {
           category_id: string
           created_at: string
           deadline: string | null
+          discipline: string | null
           id: string
           is_active: boolean
           label: string
@@ -2656,6 +2657,7 @@ export type Database = {
           category_id: string
           created_at?: string
           deadline?: string | null
+          discipline?: string | null
           id?: string
           is_active?: boolean
           label: string
@@ -2668,6 +2670,7 @@ export type Database = {
           category_id?: string
           created_at?: string
           deadline?: string | null
+          discipline?: string | null
           id?: string
           is_active?: boolean
           label?: string
