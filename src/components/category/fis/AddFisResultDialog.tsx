@@ -8,10 +8,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { calculateFisPoints } from "@/lib/fis/fisPointsEngine";
-import { calculateWsplPoints, WSPL_EVENT_CATEGORIES } from "@/lib/fis/wsplPointsEngine";
+import { calculateWsplPoints, WSPL_EVENT_CATEGORIES, calculatePValue, determinePL } from "@/lib/fis/wsplPointsEngine";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { UserPlus } from "lucide-react";
+import { UserPlus, Star, Calculator } from "lucide-react";
 
 interface AddFisResultDialogProps {
   open: boolean;
@@ -33,6 +33,8 @@ export function AddFisResultDialog({ open, onOpenChange, competition }: AddFisRe
   const [totalRiders, setTotalRiders] = useState(competition.total_participants ? String(competition.total_participants) : "");
   const [wsplStars, setWsplStars] = useState("5");
   const [wsplPL, setWsplPL] = useState("1000");
+  const [wsplTopAthletes, setWsplTopAthletes] = useState(["", "", "", "", "", "", "", ""]);
+  const [wsplGender, setWsplGender] = useState<"men" | "women">("men");
   const [saving, setSaving] = useState(false);
   const queryClient = useQueryClient();
 
@@ -59,14 +61,23 @@ export function AddFisResultDialog({ open, onOpenChange, competition }: AddFisRe
   const manualPts = manualFisPoints ? Number(manualFisPoints) : null;
   const finalPoints = manualPts != null && !isNaN(manualPts) ? manualPts : autoCalculatedPoints;
 
+  const effectivePL = Number(wsplPL) || 0;
+
+  // P-Value from top athletes
+  const wsplAthleteValues = wsplTopAthletes.map(Number).filter((n) => !isNaN(n) && n > 0);
+  const computedPValue = calculatePValue(wsplAthleteValues, wsplGender);
+  const autoComputedPL = computedPValue != null ? determinePL(Number(wsplStars), computedPValue) : null;
+
   // WSPL calculation
-  const wsplPoints = ranking && totalRiders && wsplPL
+  const wsplPoints = ranking && totalRiders && effectivePL > 0
     ? calculateWsplPoints({
         rank: rankingNum,
         totalRiders: Number(totalRiders),
-        pointLevel: Number(wsplPL),
+        pointLevel: effectivePL,
       })
     : null;
+
+  const requiredAthleteCount = wsplGender === "women" ? 5 : 8;
 
   const handleSave = async () => {
     if (!playerId || !ranking) {
@@ -87,7 +98,7 @@ export function AddFisResultDialog({ open, onOpenChange, competition }: AddFisRe
       base_points: basePointsVal,
       calculated_points: finalPoints,
       wspl_points: wsplPoints ?? null,
-      wspl_pl: wsplPL ? Number(wsplPL) : null,
+      wspl_pl: effectivePL || null,
       wspl_stars: wsplStars ? Number(wsplStars) : null,
       total_riders: totalRiders ? Number(totalRiders) : null,
     };
@@ -193,12 +204,25 @@ export function AddFisResultDialog({ open, onOpenChange, competition }: AddFisRe
 
           <Separator />
 
-          {/* WSPL Section */}
+          {/* WSPL Section - Top athletes */}
           <div className="space-y-3">
-            <p className="text-sm font-semibold">Points WSPL</p>
+            <div className="flex items-center gap-2">
+              <Star className="h-4 w-4 text-primary" />
+              <p className="text-sm font-semibold">WSPL — Qualité du plateau</p>
+            </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label className="text-xs">Catégorie événement</Label>
+                <Label className="text-xs">Genre</Label>
+                <Select value={wsplGender} onValueChange={(v) => setWsplGender(v as "men" | "women")}>
+                  <SelectTrigger className="text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="men">Hommes (top 8)</SelectItem>
+                    <SelectItem value="women">Femmes (top 5)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs">Catégorie</Label>
                 <Select value={wsplStars} onValueChange={(val) => {
                   setWsplStars(val);
                   const cat = WSPL_EVENT_CATEGORIES.find(c => c.stars === Number(val));
@@ -214,25 +238,67 @@ export function AddFisResultDialog({ open, onOpenChange, competition }: AddFisRe
                   </SelectContent>
                 </Select>
               </div>
-              <div>
-                <Label className="text-xs">PL (niveau de points)</Label>
-                <Input type="number" min="50" max="1000" value={wsplPL} onChange={(e) => setWsplPL(e.target.value)} className="text-xs" />
+            </div>
+
+            <p className="text-xs text-muted-foreground">
+              Points WSPL des {requiredAthleteCount} meilleurs athlètes présents
+            </p>
+            <div className="grid grid-cols-4 gap-2">
+              {wsplTopAthletes.slice(0, requiredAthleteCount).map((val, i) => (
+                <div key={i}>
+                  <Label className="text-xs text-muted-foreground">#{i + 1}</Label>
+                  <Input
+                    type="number"
+                    value={val}
+                    onChange={(e) => {
+                      const next = [...wsplTopAthletes];
+                      next[i] = e.target.value;
+                      setWsplTopAthletes(next);
+                    }}
+                    placeholder="Pts"
+                    className="text-center text-xs"
+                  />
+                </div>
+              ))}
+            </div>
+
+            {computedPValue != null && (
+              <div className="p-2 rounded-lg bg-muted/50 flex justify-between items-center">
+                <span className="text-xs text-muted-foreground">P-Value: <span className="font-mono font-semibold">{computedPValue}</span></span>
+                {autoComputedPL != null && (
+                  <button
+                    type="button"
+                    className="text-xs text-primary underline"
+                    onClick={() => setWsplPL(String(autoComputedPL))}
+                  >
+                    Appliquer PL: {autoComputedPL}
+                  </button>
+                )}
               </div>
+            )}
+
+            <div>
+              <Label className="text-xs">PL (niveau de points)</Label>
+              <Input type="number" min="50" max="1000" value={wsplPL} onChange={(e) => setWsplPL(e.target.value)} className="text-xs" />
             </div>
           </div>
 
           {/* Results preview */}
           {(finalPoints !== null && finalPoints > 0) || (wsplPoints !== null && wsplPoints > 0) ? (
             <div className="bg-muted/50 rounded-lg p-4 space-y-2">
+              <div className="flex items-center gap-2 mb-2">
+                <Calculator className="h-4 w-4 text-primary" />
+                <span className="text-sm font-semibold">Résultats calculés</span>
+              </div>
               {finalPoints !== null && finalPoints > 0 && (
                 <div className="flex justify-between items-center">
-                  <span className="text-sm font-semibold">Points FIS</span>
+                  <span className="text-sm">Points FIS</span>
                   <Badge className="text-lg font-mono px-3">{finalPoints.toFixed(2)}</Badge>
                 </div>
               )}
               {wsplPoints !== null && wsplPoints > 0 && (
                 <div className="flex justify-between items-center">
-                  <span className="text-sm font-semibold">Points WSPL</span>
+                  <span className="text-sm">Points WSPL</span>
                   <Badge variant="outline" className="text-lg font-mono px-3">{wsplPoints.toFixed(2)}</Badge>
                 </div>
               )}
