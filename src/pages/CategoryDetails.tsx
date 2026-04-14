@@ -76,22 +76,19 @@ function ColoredTabTrigger({ value, colorKey, icon, label, shortLabel, disabled,
     <TabsPrimitive.Trigger
       value={value}
       className={cn(
-        "group relative flex flex-col items-center justify-center gap-1 px-3 py-3 rounded-xl font-medium text-xs",
+        "colored-tab-trigger relative flex flex-col items-center justify-center gap-1 px-3 py-3 rounded-xl font-medium text-xs",
         "transition-all duration-200 ease-out",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
         "min-w-[70px] sm:min-w-[85px]",
-        colors.text,
-        colors.hover,
-        "data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:scale-105"
+        "data-[state=active]:shadow-lg data-[state=active]:scale-105"
       )}
+      style={{
+        ["--tab-color" as string]: colors.base,
+      }}
     >
       {/* Active background */}
       <span 
-        className={cn(
-          "absolute inset-0 rounded-xl transition-all duration-200",
-          "opacity-0 scale-95",
-          "group-data-[state=active]:opacity-100 group-data-[state=active]:scale-100"
-        )}
+        className="colored-tab-bg pointer-events-none absolute inset-0 rounded-xl transition-all duration-200 opacity-0 scale-95"
         style={{ backgroundColor: colors.base }}
       />
       {/* Unread badge */}
@@ -101,7 +98,7 @@ function ColoredTabTrigger({ value, colorKey, icon, label, shortLabel, disabled,
         </span>
       )}
       {/* Content - Icon on top, label below */}
-      <span className="relative z-10 flex flex-col items-center gap-1">
+      <span className="colored-tab-text relative z-10 flex flex-col items-center gap-1" style={{ color: colors.base }}>
         <span className="shrink-0 h-6 w-6 sm:h-7 sm:w-7">{icon}</span>
         <span className="whitespace-nowrap text-center leading-tight hidden sm:block">{label}</span>
         <span className="whitespace-nowrap text-center leading-tight sm:hidden">{shortLabel || label}</span>
