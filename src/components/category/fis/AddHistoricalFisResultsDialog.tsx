@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { calculateFisPoints, determineScale, DISCIPLINE_F_VALUES } from "@/lib/fis/fisPointsEngine";
+import { calculateWsplPoints, WSPL_EVENT_CATEGORIES } from "@/lib/fis/wsplPointsEngine";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Trash2, History, Calculator } from "lucide-react";
 import { getDisciplinesForClubSport } from "@/lib/constants/skiDisciplines";
