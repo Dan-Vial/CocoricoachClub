@@ -291,9 +291,9 @@ export function AddHistoricalFisResultsDialog({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-4 gap-2">
                   <div>
-                    <Label className="text-xs">Classement final *</Label>
+                    <Label className="text-xs">Classement *</Label>
                     <Input
                       type="number"
                       min="1"
@@ -304,27 +304,65 @@ export function AddHistoricalFisResultsDialog({
                     />
                   </div>
                   <div>
-                    <Label className="text-xs">Race Penalty</Label>
+                    <Label className="text-xs">Nb riders (F)</Label>
                     <Input
                       type="number"
-                      step="0.01"
-                      value={entry.racePenalty}
-                      onChange={(e) => updateEntry(entry.id, "racePenalty", e.target.value)}
-                      placeholder={`Auto: ${entry.fValue}`}
+                      min="1"
+                      value={entry.totalRiders}
+                      onChange={(e) => updateEntry(entry.id, "totalRiders", e.target.value)}
+                      placeholder="50"
                       className="text-sm"
                     />
-                    <p className="text-[10px] text-muted-foreground">Vide = F-value seule</p>
                   </div>
-                  <div className="flex flex-col items-center justify-end">
-                    {pts !== null && (
+                  <div>
+                    <Label className="text-xs">Cat. WSPL</Label>
+                    <Select value={entry.wsplStars} onValueChange={(v) => {
+                      updateEntry(entry.id, "wsplStars", v);
+                      const cat = WSPL_EVENT_CATEGORIES.find(c => c.stars === Number(v));
+                      if (cat) updateEntry(entry.id, "wsplPL", String(cat.maxPL));
+                    }}>
+                      <SelectTrigger className="text-xs"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {WSPL_EVENT_CATEGORIES.map((c) => (
+                          <SelectItem key={c.stars} value={String(c.stars)}>{c.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-xs">PL</Label>
+                    <Input
+                      type="number"
+                      min="50"
+                      max="1000"
+                      value={entry.wsplPL}
+                      onChange={(e) => updateEntry(entry.id, "wsplPL", e.target.value)}
+                      placeholder="600"
+                      className="text-sm"
+                    />
+                  </div>
+                </div>
+                {/* Points preview */}
+                <div className="flex items-center justify-end gap-3">
+                  {pts !== null && (
+                    <div className="text-center">
+                      <p className="text-[10px] text-muted-foreground">FIS</p>
+                      <Badge variant="secondary" className="font-mono text-xs">
+                        {pts.toFixed(2)}
+                      </Badge>
+                    </div>
+                  )}
+                  {(() => {
+                    const wp = getWsplPoints(entry);
+                    return wp !== null ? (
                       <div className="text-center">
-                        <p className="text-[10px] text-muted-foreground">Points FIS</p>
-                        <Badge variant="secondary" className="font-mono text-sm">
-                          {pts.toFixed(0)} pts
+                        <p className="text-[10px] text-muted-foreground">WSPL</p>
+                        <Badge variant="outline" className="font-mono text-xs">
+                          {wp.toFixed(2)}
                         </Badge>
                       </div>
-                    )}
-                  </div>
+                    ) : null;
+                  })()}
                 </div>
               </div>
             );
