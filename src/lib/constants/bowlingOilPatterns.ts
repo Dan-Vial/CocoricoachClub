@@ -202,7 +202,7 @@ export function getOilCategory(ratio: string | null | undefined): OilCategoryInf
   return {
     type: "recreation",
     label: "Récréation",
-    color: "bg-green-500/15 text-green-700 border-green-600 dark:bg-green-500/20 dark:text-green-400 dark:border-green-500",
+    color: "bg-green-100 text-green-800 border-green-400 dark:bg-green-500/25 dark:text-green-200 dark:border-green-400",
     description: "Conditions « maison »",
     detail: "Ratio > 5:1 — Conditions récréatives, la boule est orientée vers la poche",
   };
