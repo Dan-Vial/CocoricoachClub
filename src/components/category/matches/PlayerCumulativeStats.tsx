@@ -1333,7 +1333,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
               )}
             </DropdownMenuContent>
           </DropdownMenu>
-        </div>
+        </div>}
       </div>
 
       {/* Charts */}
