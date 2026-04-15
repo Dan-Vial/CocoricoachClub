@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { ColoredSubTabsList, ColoredSubTabsTrigger } from "@/components/ui/colored-subtabs";
-import { BarChart3, Trophy, Target, TrendingUp, Calendar, FileDown, FileSpreadsheet, Users, User } from "lucide-react";
+import { BarChart3, Trophy, Target, TrendingUp, Calendar, FileDown, FileSpreadsheet, Users, User, Droplets } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import ExcelJS from "exceljs";
