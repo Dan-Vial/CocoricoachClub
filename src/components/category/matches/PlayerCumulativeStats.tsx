@@ -1337,12 +1337,12 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
       </div>
 
       {/* Charts */}
-      {stats.length > 0 && (
+      {!isSinglePlayerMode && stats.length > 0 && (
         <CumulativeStatsCharts stats={stats} matchesData={matchesDataForCharts} sportStats={sportStats} selectedMatchIds={activeMatchIds} sportType={sportType} />
       )}
 
-      {/* SPLIT SCREEN: Team (left) + Individual (right) */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* SPLIT SCREEN: Team (left) + Individual (right) — or just individual in single player mode */}
+      <div className={isSinglePlayerMode ? "" : "grid grid-cols-1 lg:grid-cols-2 gap-6"}>
         {/* LEFT: Team Stats */}
         <div>
           <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
