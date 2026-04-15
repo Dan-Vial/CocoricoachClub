@@ -87,7 +87,7 @@ interface MatchOilInfo {
 }
 
 export function BowlingOilPatternStats({ games, categoryId }: BowlingOilPatternStatsProps) {
-  const [selectedMatchIds, setSelectedMatchIds] = useState<Set<string>>(new Set());
+  const [selectedMatchIds, setSelectedMatchIds] = useState<Set<string> | null>(null); // null = not yet initialized
   const [filterByOilType, setFilterByOilType] = useState<OilCategoryType | null>(null);
 
   // Get unique match IDs
@@ -137,8 +137,8 @@ export function BowlingOilPatternStats({ games, categoryId }: BowlingOilPatternS
     if (filterByOilType && matchOilData) {
       return new Set(matchOilData.filter(m => m.oilCategory === filterByOilType).map(m => m.matchId));
     }
-    if (selectedMatchIds.size > 0) return selectedMatchIds;
-    // Default: all matches
+    if (selectedMatchIds !== null) return selectedMatchIds;
+    // Default (no interaction yet): all matches
     return new Set(uniqueMatchIds);
   }, [filterByOilType, selectedMatchIds, matchOilData, uniqueMatchIds]);
 
@@ -212,24 +212,25 @@ export function BowlingOilPatternStats({ games, categoryId }: BowlingOilPatternS
   const toggleMatch = (matchId: string) => {
     setFilterByOilType(null);
     setSelectedMatchIds(prev => {
-      const next = new Set(prev);
-      if (next.has(matchId)) next.delete(matchId);
-      else next.add(matchId);
-      return next;
+      // First interaction: start from all selected, then toggle
+      const base = prev !== null ? new Set(prev) : new Set(uniqueMatchIds);
+      if (base.has(matchId)) base.delete(matchId);
+      else base.add(matchId);
+      return base;
     });
   };
 
   const selectOilType = (type: OilCategoryType) => {
-    setSelectedMatchIds(new Set());
+    setSelectedMatchIds(null);
     setFilterByOilType(prev => prev === type ? null : type);
   };
 
   const clearFilters = () => {
     setFilterByOilType(null);
-    setSelectedMatchIds(new Set());
+    setSelectedMatchIds(null);
   };
 
-  const hasActiveFilter = filterByOilType !== null || selectedMatchIds.size > 0;
+  const hasActiveFilter = filterByOilType !== null || selectedMatchIds !== null;
 
   return (
     <div className="space-y-4">
@@ -276,7 +277,7 @@ export function BowlingOilPatternStats({ games, categoryId }: BowlingOilPatternS
                 const cat = m.oilCategory ? OIL_CATEGORY_BADGES[m.oilCategory] : null;
                 const isChecked = filterByOilType
                   ? m.oilCategory === filterByOilType
-                  : selectedMatchIds.size === 0 || selectedMatchIds.has(m.matchId);
+                  : selectedMatchIds === null || selectedMatchIds.has(m.matchId);
                 return (
                   <label
                     key={m.matchId}
@@ -313,7 +314,7 @@ export function BowlingOilPatternStats({ games, categoryId }: BowlingOilPatternS
           <span className="text-muted-foreground">
             {filterByOilType
               ? `Huilage ${OIL_CATEGORY_BADGES[filterByOilType].label}`
-              : `${selectedMatchIds.size} compétition(s) sélectionnée(s)`}
+              : `${selectedMatchIds?.size || 0} compétition(s) sélectionnée(s)`}
             {" "}— <span className="font-medium text-foreground">{filteredGames.length} parties</span>
           </span>
         </div>
