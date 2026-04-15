@@ -705,6 +705,9 @@ export function BowlingCumulativeStats({ categoryId, playerId: fixedPlayerId }: 
           <BowlingFrameAnalysis games={playerGames} />
         </TabsContent>
 
+        <TabsContent value="oil-stats">
+          <BowlingOilPatternStats games={playerGames} categoryId={categoryId} />
+        </TabsContent>
         <TabsContent value="history">
           <BowlingGameHistory games={playerGames} categoryId={categoryId} />
         </TabsContent>
