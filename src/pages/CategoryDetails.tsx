@@ -469,7 +469,7 @@ function CategoryDetailsContent() {
 
           {canSeeMenu("performance") && (
             <TabsContent value="performance" className="space-y-4">
-              <PerformanceTab categoryId={categoryId!} />
+              <PerformanceTab categoryId={categoryId!} sportType={category?.rugby_type} />
             </TabsContent>
           )}
 

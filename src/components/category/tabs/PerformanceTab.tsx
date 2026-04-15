@@ -1,14 +1,20 @@
 import { Tabs, TabsContent } from "@/components/ui/tabs";
-import { Dumbbell, Zap, Lock, BarChart3 } from "lucide-react";
+import { Dumbbell, Zap, Lock, BarChart3, Target } from "lucide-react";
 import { PhysicalPreparationTab } from "@/components/category/PhysicalPreparationTab";
 import { TrainingLoadTab } from "@/components/training-load/TrainingLoadTab";
 import { EvolutionTestsMuscuTab } from "@/components/tonnage/EvolutionTestsMuscuTab";
+import { BowlingTrainingStats } from "@/components/bowling/BowlingTrainingStats";
+import { TennisTrainingStats } from "@/components/tennis/TennisTrainingStats";
+import { PrecisionTrainingStats } from "@/components/training/PrecisionTrainingStats";
+import { PrecisionFieldTracker } from "@/components/rugby/PrecisionFieldTracker";
 import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ColoredSubTabsList, ColoredSubTabsTrigger } from "@/components/ui/colored-subtabs";
+import { isRugbyType } from "@/lib/constants/sportTypes";
 
 interface PerformanceTabProps {
   categoryId: string;
+  sportType?: string;
 }
 
 function PerformanceDisabledMessage() {
@@ -30,8 +36,11 @@ function PerformanceDisabledMessage() {
   );
 }
 
-export function PerformanceTab({ categoryId }: PerformanceTabProps) {
+export function PerformanceTab({ categoryId, sportType }: PerformanceTabProps) {
   const { isViewer } = useViewerModeContext();
+  const isBowling = (sportType || "").toLowerCase().includes("bowling");
+  const isTennis = (sportType || "").toLowerCase().includes("tennis");
+  const isRugby = isRugbyType(sportType || "");
 
   if (isViewer) {
     return <PerformanceDisabledMessage />;
@@ -68,6 +77,15 @@ export function PerformanceTab({ categoryId }: PerformanceTabProps) {
             <span className="hidden sm:inline">Évolution Tests / Muscu</span>
             <span className="sm:hidden">Tests</span>
           </ColoredSubTabsTrigger>
+          <ColoredSubTabsTrigger 
+            value="training-stats" 
+            colorKey="performance"
+            icon={<Target className="h-4 w-4" />}
+            tooltip="Statistiques détaillées des entraînements : précision, drills et exercices spécifiques au sport"
+          >
+            <span className="hidden sm:inline">Stats entraînement</span>
+            <span className="sm:hidden">Stats entr.</span>
+          </ColoredSubTabsTrigger>
         </ColoredSubTabsList>
       </div>
 
@@ -81,6 +99,21 @@ export function PerformanceTab({ categoryId }: PerformanceTabProps) {
 
       <TabsContent value="evolution-tests">
         <EvolutionTestsMuscuTab categoryId={categoryId} />
+      </TabsContent>
+
+      <TabsContent value="training-stats">
+        {isBowling ? (
+          <BowlingTrainingStats categoryId={categoryId} />
+        ) : isTennis ? (
+          <TennisTrainingStats categoryId={categoryId} />
+        ) : isRugby ? (
+          <div className="space-y-6">
+            <PrecisionFieldTracker categoryId={categoryId} />
+            <PrecisionTrainingStats categoryId={categoryId} />
+          </div>
+        ) : (
+          <PrecisionTrainingStats categoryId={categoryId} />
+        )}
       </TabsContent>
     </Tabs>
   );
