@@ -25,6 +25,7 @@ import {
   getPatternPreset,
   PROFILE_TYPES,
   FRICTION_LEVELS,
+  getOilCategory,
 } from "@/lib/constants/bowlingOilPatterns";
 import {
   Tooltip,
