@@ -540,24 +540,7 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
                    `Épreuves (${roundsCount || 0})`}
                 </Button>
               )
-            ) : (
-              <Button variant="outline" size="sm" className="gap-1.5 text-xs w-full justify-start" onClick={() => setIsStatsOpen(true)}>
-                <BarChart3 className="h-3.5 w-3.5" />
-                Statistiques
-              </Button>
-            )}
-            {hasRoundBasedStats && (
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className={`gap-1.5 text-xs w-full justify-start ${!isFinalized ? "opacity-50 cursor-not-allowed" : ""}`}
-                disabled={!isFinalized}
-                onClick={() => isFinalized && setIsAggregatedStatsOpen(true)}
-              >
-                {isFinalized ? <BarChart3 className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
-                Stats {!isFinalized && "(finaliser)"}
-              </Button>
-            )}
+            ) : null}
             {canHaveSubMatches && (
               <Button variant="outline" size="sm" className="gap-1.5 text-xs w-full justify-start" onClick={() => setIsAddSubMatchOpen(true)}>
                 <Plus className="h-3.5 w-3.5" />
