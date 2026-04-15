@@ -19,6 +19,7 @@ import { PlayerProfile } from "@/components/player/PlayerProfile";
 import { PlayerInjuriesTab } from "@/components/player/PlayerInjuriesTab";
 import { PlayerBiometrics } from "@/components/player/PlayerBiometrics";
 import { PlayerMatchesTab } from "@/components/player/PlayerMatchesTab";
+import { PlayerCumulativeStats } from "@/components/category/matches/PlayerCumulativeStats";
 import { PlayerWellnessTab } from "@/components/player/PlayerWellnessTab";
 import { PlayerNutritionTab } from "@/components/player/PlayerNutritionTab";
 import { PlayerAcademyTab } from "@/components/player/PlayerAcademyTab";
