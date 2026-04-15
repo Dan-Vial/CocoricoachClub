@@ -486,8 +486,35 @@ export function BowlingOilPatternSection({
                       <Input type="number" value={pattern.total_volume_ml ?? ""} onChange={(e) => updatePattern(idx, { total_volume_ml: e.target.value ? Number(e.target.value) : null })} placeholder="Ex: 25" disabled={readOnly} />
                     </div>
                     <div className="space-y-2">
-                      <Label>Ratio d'huile</Label>
-                      <Input value={pattern.oil_ratio || ""} onChange={(e) => updatePattern(idx, { oil_ratio: e.target.value || null })} placeholder="Ex: 3:1" disabled={readOnly} />
+                      <Label>Ratio latéral d'huile</Label>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          value={pattern.oil_ratio?.replace(/:1$/, '') || ""}
+                          onChange={(e) => {
+                            const val = e.target.value.replace(/[^0-9.]/g, '');
+                            updatePattern(idx, { oil_ratio: val ? `${val}:1` : null });
+                          }}
+                          placeholder="Ex: 3"
+                          disabled={readOnly}
+                          className="w-20"
+                        />
+                        <span className="text-sm text-muted-foreground font-medium">: 1</span>
+                      </div>
+                      {(() => {
+                        const cat = getOilCategory(pattern.oil_ratio);
+                        if (!cat) return null;
+                        return (
+                          <div className={`mt-1.5 p-2 rounded-md border text-xs ${cat.color}`}>
+                            <div className="flex items-center gap-1.5">
+                              <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${cat.color}`}>
+                                {cat.label}
+                              </Badge>
+                              <span className="font-medium">{cat.description}</span>
+                            </div>
+                            <p className="mt-1 opacity-80">{cat.detail}</p>
+                          </div>
+                        );
+                      })()}
                     </div>
                     <div className="space-y-2">
                       <Label>Type de profil</Label>
