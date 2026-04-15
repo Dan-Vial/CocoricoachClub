@@ -30,6 +30,7 @@ import { drawPdfRugbyField, drawPdfZoneStatsGrid, svgPctToPdfPos } from "@/lib/p
 interface PlayerCumulativeStatsProps {
   categoryId: string;
   sportType?: string;
+  playerId?: string;
 }
 
 interface MatchInfo {
