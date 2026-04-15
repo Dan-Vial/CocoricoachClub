@@ -277,7 +277,7 @@ export function BowlingOilPatternStats({ games, categoryId }: BowlingOilPatternS
                 const cat = m.oilCategory ? OIL_CATEGORY_BADGES[m.oilCategory] : null;
                 const isChecked = filterByOilType
                   ? m.oilCategory === filterByOilType
-                  : selectedMatchIds.size === 0 || selectedMatchIds.has(m.matchId);
+                  : selectedMatchIds === null || selectedMatchIds.has(m.matchId);
                 return (
                   <label
                     key={m.matchId}
