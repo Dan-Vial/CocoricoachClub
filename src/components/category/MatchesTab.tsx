@@ -12,7 +12,7 @@ import { isFuture, isPast } from "date-fns";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { ColoredSubTabsList, ColoredSubTabsTrigger } from "@/components/ui/colored-subtabs";
 import { useViewerModeContext } from "@/contexts/ViewerModeContext";
-import { isIndividualSport, isRugbyType } from "@/lib/constants/sportTypes";
+import { isIndividualSport } from "@/lib/constants/sportTypes";
 import { useViewerMatches } from "@/hooks/use-viewer-data";
 import { StatPreferencesDialog } from "./settings/StatPreferencesDialog";
 import { useQueryClient } from "@tanstack/react-query";
