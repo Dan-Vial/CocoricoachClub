@@ -1192,7 +1192,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
     return <p className="text-muted-foreground">Chargement des statistiques...</p>;
   }
 
-  if (!stats || stats.length === 0) {
+  if ((!stats || stats.length === 0) || (isSinglePlayerMode && (!filteredStats || filteredStats.length === 0))) {
     return (
       <Card className="bg-gradient-card">
         <CardContent className="py-8">
