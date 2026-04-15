@@ -56,11 +56,12 @@ interface CumulativeStats {
   position?: string;
 }
 
-export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCumulativeStatsProps) {
+export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: fixedPlayerId }: PlayerCumulativeStatsProps) {
   const [selectedMatchIds, setSelectedMatchIds] = useState<string[]>([]);
   const [filterOpen, setFilterOpen] = useState(false);
-  const [selectedPlayerId, setSelectedPlayerId] = useState<string>("");
+  const [selectedPlayerId, setSelectedPlayerId] = useState<string>(fixedPlayerId || "");
   const [exportPlayerId, setExportPlayerId] = useState<string>("");
+  const isSinglePlayerMode = !!fixedPlayerId;
   const isRugby = isRugbyType(sportType);
 
   const { stats: sportStats, isLoading: loadingPrefs } = useStatPreferences({ categoryId, sportType });
