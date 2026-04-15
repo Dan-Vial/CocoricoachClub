@@ -87,7 +87,7 @@ interface MatchOilInfo {
 }
 
 export function BowlingOilPatternStats({ games, categoryId }: BowlingOilPatternStatsProps) {
-  const [selectedMatchIds, setSelectedMatchIds] = useState<Set<string>>(new Set());
+  const [selectedMatchIds, setSelectedMatchIds] = useState<Set<string> | null>(null); // null = not yet initialized
   const [filterByOilType, setFilterByOilType] = useState<OilCategoryType | null>(null);
 
   // Get unique match IDs
