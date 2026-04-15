@@ -515,6 +515,18 @@ function PlayerDetailsContent() {
             )}
           </TabsContent>
 
+          <TabsContent value="stats">
+            {isBowling ? (
+              <BowlingCumulativeStats categoryId={player.category_id} playerId={playerId!} />
+            ) : (
+              <PlayerCumulativeStats 
+                categoryId={player.category_id} 
+                sportType={(player.categories as { rugby_type?: string })?.rugby_type}
+                playerId={playerId!}
+              />
+            )}
+          </TabsContent>
+
           <TabsContent value="calendar">
             <PlayerCalendarTab playerId={playerId!} categoryId={player.category_id} />
           </TabsContent>
