@@ -212,24 +212,25 @@ export function BowlingOilPatternStats({ games, categoryId }: BowlingOilPatternS
   const toggleMatch = (matchId: string) => {
     setFilterByOilType(null);
     setSelectedMatchIds(prev => {
-      const next = new Set(prev);
-      if (next.has(matchId)) next.delete(matchId);
-      else next.add(matchId);
-      return next;
+      // First interaction: start from all selected, then toggle
+      const base = prev !== null ? new Set(prev) : new Set(uniqueMatchIds);
+      if (base.has(matchId)) base.delete(matchId);
+      else base.add(matchId);
+      return base;
     });
   };
 
   const selectOilType = (type: OilCategoryType) => {
-    setSelectedMatchIds(new Set());
+    setSelectedMatchIds(null);
     setFilterByOilType(prev => prev === type ? null : type);
   };
 
   const clearFilters = () => {
     setFilterByOilType(null);
-    setSelectedMatchIds(new Set());
+    setSelectedMatchIds(null);
   };
 
-  const hasActiveFilter = filterByOilType !== null || selectedMatchIds.size > 0;
+  const hasActiveFilter = filterByOilType !== null || selectedMatchIds !== null;
 
   return (
     <div className="space-y-4">
