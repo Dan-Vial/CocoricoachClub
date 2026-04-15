@@ -507,9 +507,6 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
               </div>
             )}
 
-            {match.notes && (
-              <p className="text-sm text-muted-foreground mt-2 italic">{match.notes}</p>
-            )}
           </div>
 
           <div className="flex flex-col gap-2">
