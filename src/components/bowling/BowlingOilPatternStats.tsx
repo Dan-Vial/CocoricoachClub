@@ -417,7 +417,7 @@ export function BowlingOilPatternStats({ games, categoryId }: BowlingOilPatternS
                       { label: "Verte 3", bg: "bg-green-900", text: "text-white", pocket: "65-70%", strike: "35-40%", spare: "70-80%", single: "80-85%", fb8: "75-85%" },
                       { label: "Bleue 1", bg: "bg-blue-700", text: "text-white", pocket: "70-75%", strike: "40-45%", spare: "80-85%", single: "85-90%", fb8: "85-88%" },
                       { label: "Bleue 2", bg: "bg-blue-800", text: "text-white", pocket: "75-80%", strike: "45-50%", spare: "85-90%", single: "90-95%", fb8: "85-88%" },
-                      { label: "Noire 1", bg: "bg-gray-900", text: "text-white", pocket: "80-85%", strike: "50-55%", spare: "90-95%", single: "95-99%", fb8: "88-92%" },
+                      { label: "Noire 1", bg: "bg-black", text: "text-white", pocket: "80-85%", strike: "50-55%", spare: "90-95%", single: "95-99%", fb8: "88-92%" },
                       { label: "Noire 2", bg: "bg-black", text: "text-red-600", pocket: "≥85%", strike: "≥55%", spare: "≥95%", single: "100%", fb8: "≥92%" },
                     ].map((row) => (
                       <tr key={row.label}>
