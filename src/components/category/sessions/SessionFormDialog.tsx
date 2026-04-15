@@ -2888,7 +2888,7 @@ export function SessionFormDialog({
                         </p>
                       </div>
                     )}
-                    {type === "precision" && isRugbyType(sportType || "") && (() => {
+                    {(type === "precision" || sessionBlocks.some(b => b.training_type === "precision")) && isRugbyType(sportType || "") && (() => {
                       const resolvedCat = EXERCISE_CATEGORIES.find(c => c.exercises.some(e => e.value === precisionExerciseId));
                       const activeCatKey = resolvedCat?.key || "buteur";
                       const activeCat = resolvedCat || EXERCISE_CATEGORIES.find(c => c.key === "buteur")!;
