@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Calendar, BarChart3, Settings2, Target, Camera } from "lucide-react";
+import { Plus, Calendar, BarChart3, Settings2, Camera } from "lucide-react";
 import { AddMatchCalendarDialog } from "./matches/AddMatchCalendarDialog";
 import { MatchCard } from "./matches/MatchCard";
 import { PlayerCumulativeStats } from "./matches/PlayerCumulativeStats";
@@ -31,9 +31,6 @@ export function MatchesTab({ categoryId, sportType }: MatchesTabProps) {
   // Check if this is an individual sport (judo, bowling)
   const isIndividual = isIndividualSport(sportType || "");
   const isBowling = (sportType || "").toLowerCase().includes("bowling");
-  const isTennis = (sportType || "").toLowerCase().includes("tennis");
-  const hasTrainingStats = true; // Available for all sports
-  const isRugby = isRugbyType(sportType || "");
   
   // Labels adaptés selon le sport
   const itemLabel = isIndividual ? "compétition" : "match";
@@ -63,11 +60,6 @@ export function MatchesTab({ categoryId, sportType }: MatchesTabProps) {
             <ColoredSubTabsTrigger value="stats" colorKey="competition" icon={<BarChart3 className="h-4 w-4" />}>
               Stats compétition
             </ColoredSubTabsTrigger>
-            {hasTrainingStats && (
-              <ColoredSubTabsTrigger value="training_stats" colorKey="competition" icon={<Target className="h-4 w-4" />}>
-                Stats entraînement
-              </ColoredSubTabsTrigger>
-            )}
             <ColoredSubTabsTrigger value="photos" colorKey="competition" icon={<Camera className="h-4 w-4" />}>
               Photos
             </ColoredSubTabsTrigger>
@@ -158,20 +150,6 @@ export function MatchesTab({ categoryId, sportType }: MatchesTabProps) {
           )}
         </TabsContent>
 
-        <TabsContent value="training_stats">
-          {isBowling ? (
-            <BowlingTrainingStats categoryId={categoryId} />
-          ) : isTennis ? (
-            <TennisTrainingStats categoryId={categoryId} />
-          ) : isRugby ? (
-            <div className="space-y-6">
-              <PrecisionFieldTracker categoryId={categoryId} />
-              <PrecisionTrainingStats categoryId={categoryId} />
-            </div>
-          ) : (
-            <PrecisionTrainingStats categoryId={categoryId} />
-          )}
-        </TabsContent>
 
 
         <TabsContent value="photos">
