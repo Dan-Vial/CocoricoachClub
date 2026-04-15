@@ -347,8 +347,9 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
     return progressions;
   }, [matchesDataForCharts, stats, sportStats]);
 
+  const filteredStats = isSinglePlayerMode ? stats?.filter(p => p.playerId === fixedPlayerId) : stats;
   const selectedCount = selectedMatchIds.length === 0 ? allMatches.length : selectedMatchIds.length;
-  const selectedPlayer = stats?.find(p => p.playerId === selectedPlayerId);
+  const selectedPlayer = filteredStats?.find(p => p.playerId === (selectedPlayerId || fixedPlayerId)) || filteredStats?.[0];
 
   // Export Excel
   const handleExportExcel = useCallback(async (mode: "all" | "team" | "individual" | "single" = "all", singlePlayerId?: string) => {
