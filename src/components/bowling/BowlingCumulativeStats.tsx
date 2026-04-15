@@ -515,6 +515,10 @@ export function BowlingCumulativeStats({ categoryId, playerId: fixedPlayerId }: 
             <ColoredSubTabsTrigger value="overview" colorKey="competition" icon={<BarChart3 className="h-4 w-4" />}>
               Vue d'ensemble
             </ColoredSubTabsTrigger>
+            <ColoredSubTabsTrigger value="oil-stats" colorKey="competition" icon={<Droplets className="h-4 w-4" />}>
+              <span className="hidden sm:inline">Stats par huilage</span>
+              <span className="sm:hidden">Huilage</span>
+            </ColoredSubTabsTrigger>
             <ColoredSubTabsTrigger value="frames" colorKey="competition" icon={<Target className="h-4 w-4" />}>
               Analyse par frame
             </ColoredSubTabsTrigger>
