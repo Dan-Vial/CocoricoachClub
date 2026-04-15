@@ -178,40 +178,6 @@ export function ConversationList({ categoryId, selectedId, onSelect, isAthlete =
     enabled: !!user,
   });
 
-  // Fetch participants for all visible conversations
-  const conversationIds = conversations?.map(c => c.id) || [];
-  const { data: allParticipants } = useQuery({
-    queryKey: ["conversation-all-participants", conversationIds],
-    queryFn: async () => {
-      if (conversationIds.length === 0) return {};
-      const { data, error } = await supabase
-        .from("conversation_participants")
-        .select("conversation_id, user_id")
-        .in("conversation_id", conversationIds);
-      if (error) throw error;
-
-      // Collect unique user IDs
-      const userIds = [...new Set((data || []).map(p => p.user_id))];
-      if (userIds.length === 0) return {};
-
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("id, full_name")
-        .in("id", userIds);
-
-      const profileMap: Record<string, string> = {};
-      profiles?.forEach(p => { profileMap[p.id] = p.full_name || "Inconnu"; });
-
-      // Group by conversation
-      const result: Record<string, string[]> = {};
-      (data || []).forEach(p => {
-        if (!result[p.conversation_id]) result[p.conversation_id] = [];
-        result[p.conversation_id].push(profileMap[p.user_id] || "Inconnu");
-      });
-      return result;
-    },
-    enabled: conversationIds.length > 0,
-  });
 
   // Auto-create default conversations if missing AND auto-join to default groups
   const { data: defaultGroupsCreated } = useQuery({
