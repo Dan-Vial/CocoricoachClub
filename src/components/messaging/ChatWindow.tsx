@@ -72,6 +72,18 @@ export function ChatWindow({ conversationId, categoryId }: ChatWindowProps) {
     },
   });
 
+  // Fetch participant profile names for header display
+  const { data: participantNames } = useQuery({
+    queryKey: ["conversation-participant-names", conversationId],
+    queryFn: async () => {
+      if (!participants || participants.length === 0) return [];
+      const userIds = participants.map(p => p.user_id);
+      const { data } = await supabase.from("profiles").select("id, full_name").in("id", userIds);
+      return data?.map(p => p.full_name || "Inconnu") || [];
+    },
+    enabled: !!participants && participants.length > 0,
+  });
+
   const { data: senderProfiles } = useQuery({
     queryKey: ["sender-profiles", conversationId],
     queryFn: async () => {
