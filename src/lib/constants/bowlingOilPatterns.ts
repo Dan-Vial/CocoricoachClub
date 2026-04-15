@@ -191,7 +191,7 @@ export function getOilCategory(ratio: string | null | undefined): OilCategoryInf
     return {
       type: "challenge",
       label: "Challenge",
-      color: "bg-blue-900/15 text-blue-900 border-blue-900 dark:bg-blue-800/25 dark:text-blue-300 dark:border-blue-600",
+      color: "bg-blue-100 text-blue-900 border-blue-400 dark:bg-blue-500/25 dark:text-blue-200 dark:border-blue-400",
       description: "Conditions compétitives intermédiaires",
       detail: value <= 3.5
         ? "Conditions compétitives (ratio 2.5 à 3.5:1)"
