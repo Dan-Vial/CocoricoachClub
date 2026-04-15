@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ArrowLeft, ArrowRightLeft, Edit2, Check, X, User, Activity, FlaskConical, Swords, CalendarDays, Heart, Utensils, GraduationCap, Bandage, CircleDot, Mountain, FileText } from "lucide-react";
+import { ArrowLeft, ArrowRightLeft, Edit2, Check, X, User, Activity, FlaskConical, Swords, CalendarDays, Heart, Utensils, GraduationCap, Bandage, CircleDot, Mountain, FileText, BarChart3 } from "lucide-react";
 import { ColoredNavTabsList } from "@/components/ui/colored-nav-tabs";
 import * as TabsPrimitive from "@radix-ui/react-tabs";
 import { cn } from "@/lib/utils";
@@ -19,6 +19,7 @@ import { PlayerProfile } from "@/components/player/PlayerProfile";
 import { PlayerInjuriesTab } from "@/components/player/PlayerInjuriesTab";
 import { PlayerBiometrics } from "@/components/player/PlayerBiometrics";
 import { PlayerMatchesTab } from "@/components/player/PlayerMatchesTab";
+import { PlayerCumulativeStats } from "@/components/category/matches/PlayerCumulativeStats";
 import { PlayerWellnessTab } from "@/components/player/PlayerWellnessTab";
 import { PlayerNutritionTab } from "@/components/player/PlayerNutritionTab";
 import { PlayerAcademyTab } from "@/components/player/PlayerAcademyTab";
@@ -471,6 +472,7 @@ function PlayerDetailsContent() {
               <PlayerDetailTab value="charge" label="Charge" icon={Activity} color="hsl(350 80% 55%)" />
               <PlayerDetailTab value="tests" label="Tests" icon={FlaskConical} color="hsl(280 70% 55%)" />
               <PlayerDetailTab value="matches" label={isTeamSport ? "Matchs" : "Compétitions"} icon={Swords} color="hsl(220 80% 55%)" />
+              <PlayerDetailTab value="stats" label="Stats" icon={BarChart3} color="hsl(145 70% 45%)" />
               <PlayerDetailTab value="calendar" label="Calendrier" icon={CalendarDays} color="hsl(35 90% 55%)" />
               <PlayerDetailTab value="wellness" label="Wellness" icon={Heart} color="hsl(160 65% 45%)" />
               <PlayerDetailTab value="nutrition" label="Nutrition" icon={Utensils} color="hsl(45 95% 50%)" />
@@ -509,6 +511,18 @@ function PlayerDetailsContent() {
                 categoryId={player.category_id} 
                 playerName={fullName}
                 sportType={(player.categories as { rugby_type?: string })?.rugby_type}
+              />
+            )}
+          </TabsContent>
+
+          <TabsContent value="stats">
+            {isBowling ? (
+              <BowlingCumulativeStats categoryId={player.category_id} playerId={playerId!} />
+            ) : (
+              <PlayerCumulativeStats 
+                categoryId={player.category_id} 
+                sportType={(player.categories as { rugby_type?: string })?.rugby_type}
+                playerId={playerId!}
               />
             )}
           </TabsContent>

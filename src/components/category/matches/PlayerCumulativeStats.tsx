@@ -30,6 +30,7 @@ import { drawPdfRugbyField, drawPdfZoneStatsGrid, svgPctToPdfPos } from "@/lib/p
 interface PlayerCumulativeStatsProps {
   categoryId: string;
   sportType?: string;
+  playerId?: string;
 }
 
 interface MatchInfo {
@@ -55,11 +56,12 @@ interface CumulativeStats {
   position?: string;
 }
 
-export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCumulativeStatsProps) {
+export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: fixedPlayerId }: PlayerCumulativeStatsProps) {
   const [selectedMatchIds, setSelectedMatchIds] = useState<string[]>([]);
   const [filterOpen, setFilterOpen] = useState(false);
-  const [selectedPlayerId, setSelectedPlayerId] = useState<string>("");
+  const [selectedPlayerId, setSelectedPlayerId] = useState<string>(fixedPlayerId || "");
   const [exportPlayerId, setExportPlayerId] = useState<string>("");
+  const isSinglePlayerMode = !!fixedPlayerId;
   const isRugby = isRugbyType(sportType);
 
   const { stats: sportStats, isLoading: loadingPrefs } = useStatPreferences({ categoryId, sportType });
@@ -345,8 +347,9 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
     return progressions;
   }, [matchesDataForCharts, stats, sportStats]);
 
+  const filteredStats = isSinglePlayerMode ? stats?.filter(p => p.playerId === fixedPlayerId) : stats;
   const selectedCount = selectedMatchIds.length === 0 ? allMatches.length : selectedMatchIds.length;
-  const selectedPlayer = stats?.find(p => p.playerId === selectedPlayerId);
+  const selectedPlayer = filteredStats?.find(p => p.playerId === (selectedPlayerId || fixedPlayerId)) || filteredStats?.[0];
 
   // Export Excel
   const handleExportExcel = useCallback(async (mode: "all" | "team" | "individual" | "single" = "all", singlePlayerId?: string) => {
@@ -1189,7 +1192,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
     return <p className="text-muted-foreground">Chargement des statistiques...</p>;
   }
 
-  if (!stats || stats.length === 0) {
+  if ((!stats || stats.length === 0) || (isSinglePlayerMode && (!filteredStats || filteredStats.length === 0))) {
     return (
       <Card className="bg-gradient-card">
         <CardContent className="py-8">
@@ -1260,7 +1263,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
           )}
         </div>
 
-        <div className="flex gap-2 items-center">
+        {!isSinglePlayerMode && <div className="flex gap-2 items-center">
           {/* Player selector for single export */}
           <Select value={exportPlayerId} onValueChange={setExportPlayerId}>
             <SelectTrigger className="w-[180px] h-8 text-xs">
@@ -1330,17 +1333,18 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
               )}
             </DropdownMenuContent>
           </DropdownMenu>
-        </div>
+        </div>}
       </div>
 
       {/* Charts */}
-      {stats.length > 0 && (
+      {!isSinglePlayerMode && stats.length > 0 && (
         <CumulativeStatsCharts stats={stats} matchesData={matchesDataForCharts} sportStats={sportStats} selectedMatchIds={activeMatchIds} sportType={sportType} />
       )}
 
-      {/* SPLIT SCREEN: Team (left) + Individual (right) */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* SPLIT SCREEN: Team (left) + Individual (right) — or just individual in single player mode */}
+      <div className={isSinglePlayerMode ? "" : "grid grid-cols-1 lg:grid-cols-2 gap-6"}>
         {/* LEFT: Team Stats */}
+        {!isSinglePlayerMode && (
         <div>
           <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
             <Users className="h-5 w-5 text-primary" />
@@ -1353,6 +1357,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
             sportType={sportType}
           />
         </div>
+        )}
 
         {/* RIGHT: Individual Stats */}
         <div>
@@ -1362,6 +1367,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
               Statistiques individuelles
             </h3>
             <div className="flex items-center gap-2">
+              {!isSinglePlayerMode && (
               <Select value={selectedPlayerId || (stats[0]?.playerId || "")} onValueChange={setSelectedPlayerId}>
                 <SelectTrigger className="w-[180px] h-8 text-xs">
                   <SelectValue placeholder="Choisir un joueur" />
@@ -1372,14 +1378,15 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
                   ))}
                 </SelectContent>
               </Select>
+              )}
               <Button variant="outline" size="sm" className="gap-1 h-8" onClick={() => {
-                const pid = selectedPlayerId || stats[0]?.playerId;
+                const pid = fixedPlayerId || selectedPlayerId || stats[0]?.playerId;
                 if (pid) handleExportExcel("single", pid);
               }}>
                 <FileSpreadsheet className="h-3.5 w-3.5" />
               </Button>
               <Button variant="outline" size="sm" className="gap-1 h-8" onClick={() => {
-                const pid = selectedPlayerId || stats[0]?.playerId;
+                const pid = fixedPlayerId || selectedPlayerId || stats[0]?.playerId;
                 if (pid) handleExportPlayerPdf(pid);
               }}>
                 <Download className="h-3.5 w-3.5" />
@@ -1388,7 +1395,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
           </div>
 
           {(() => {
-            const player = selectedPlayer || stats[0];
+            const player = selectedPlayer || filteredStats?.[0] || stats[0];
             if (!player) return null;
             return (
               <div className="space-y-4">
@@ -1488,6 +1495,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
         </div>
       </div>
 
+      {!isSinglePlayerMode && <>
       {/* Full detailed table below */}
       <Card className="bg-gradient-card">
         <CardHeader>
@@ -1623,6 +1631,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
           </CardContent>
         </Card>
       )}
+      </>}
     </div>
   );
 }
