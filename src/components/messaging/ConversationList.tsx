@@ -731,12 +731,14 @@ export function ConversationList({ categoryId, selectedId, onSelect, isAthlete =
                         <p className="font-medium truncate">
                           {conv.name || "Conversation sans nom"}
                         </p>
-                        <p className="text-xs text-muted-foreground">
-                          {conv.conversation_type === "channel" 
-                            ? "Canal" 
-                            : conv.conversation_type === "direct"
-                            ? "Message privé"
-                            : "Groupe"}
+                        <p className="text-xs text-muted-foreground truncate">
+                          {allParticipants?.[conv.id] 
+                            ? allParticipants[conv.id].join(", ")
+                            : conv.conversation_type === "channel" 
+                              ? "Canal" 
+                              : conv.conversation_type === "direct"
+                              ? "Message privé"
+                              : "Groupe"}
                         </p>
                       </div>
                       {(unreadByConversation[conv.id] || 0) > 0 && (
