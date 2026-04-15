@@ -137,8 +137,8 @@ export function BowlingOilPatternStats({ games, categoryId }: BowlingOilPatternS
     if (filterByOilType && matchOilData) {
       return new Set(matchOilData.filter(m => m.oilCategory === filterByOilType).map(m => m.matchId));
     }
-    if (selectedMatchIds.size > 0) return selectedMatchIds;
-    // Default: all matches
+    if (selectedMatchIds !== null) return selectedMatchIds;
+    // Default (no interaction yet): all matches
     return new Set(uniqueMatchIds);
   }, [filterByOilType, selectedMatchIds, matchOilData, uniqueMatchIds]);
 
