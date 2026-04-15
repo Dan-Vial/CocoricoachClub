@@ -2869,8 +2869,8 @@ export function SessionFormDialog({
                     )}
 
 
-                    {/* Precision exercise selector - shown for "precision" type */}
-                    {type === "precision" && !isRugbyType(sportType || "") && (
+                    {/* Precision exercise selector - shown for "precision" type or when a block has precision */}
+                    {(type === "precision" || sessionBlocks.some(b => b.training_type === "precision")) && !isRugbyType(sportType || "") && (
                       <div className="rounded-lg border border-accent/30 p-3 space-y-2">
                         <PrecisionExerciseSelector
                           categoryId={categoryId}
