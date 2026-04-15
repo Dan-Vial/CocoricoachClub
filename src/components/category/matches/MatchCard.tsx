@@ -400,6 +400,18 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
                   {match.location}
                 </p>
               )}
+              {/* Age category */}
+              {match.age_category && (
+                <p className="text-xs text-muted-foreground/80">
+                  Catégorie : {match.age_category}
+                </p>
+              )}
+              {/* Distance for individual sports */}
+              {isIndividual && match.distance_meters && match.distance_meters > 0 && (
+                <p className="text-xs text-muted-foreground/80">
+                  Distance : {match.distance_meters >= 1000 ? `${(match.distance_meters / 1000).toFixed(1)} km` : `${match.distance_meters} m`}
+                </p>
+              )}
               {/* Pair display for Padel / Tennis doubles */}
               {isDoublesMatch && lineupPlayers && lineupPlayers.length > 0 && (
                 <p className="flex items-center gap-1">
@@ -418,6 +430,26 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
                   {match.match_format === "simple" ? "Simple" : match.match_format === "double" ? "Double" : "Double Mixte"}
                 </Badge>
               )}
+              {/* Inline stats badges */}
+              <div className="flex items-center gap-1.5 flex-wrap mt-1">
+                {lineupCount !== undefined && lineupCount > 0 && (
+                  <Badge variant="outline" className="text-[10px] gap-1 py-0">
+                    <Users className="h-2.5 w-2.5" />
+                    {lineupCount} {isIndividual ? "participant(s)" : "joueur(s)"}
+                  </Badge>
+                )}
+                {hasRoundBasedStats && roundsCount !== undefined && roundsCount > 0 && (
+                  <Badge variant="outline" className="text-[10px] gap-1 py-0">
+                    <BarChart3 className="h-2.5 w-2.5" />
+                    {roundsCount} partie(s)
+                  </Badge>
+                )}
+                {match.notes && (
+                  <Badge variant="outline" className="text-[10px] gap-1 py-0 text-muted-foreground">
+                    📝 Note
+                  </Badge>
+                )}
+              </div>
             </div>
             {!isIndividual && (
               <div className="mt-3">
