@@ -314,7 +314,7 @@ export function BowlingOilPatternStats({ games, categoryId }: BowlingOilPatternS
           <span className="text-muted-foreground">
             {filterByOilType
               ? `Huilage ${OIL_CATEGORY_BADGES[filterByOilType].label}`
-              : `${selectedMatchIds.size} compétition(s) sélectionnée(s)`}
+              : `${selectedMatchIds?.size || 0} compétition(s) sélectionnée(s)`}
             {" "}— <span className="font-medium text-foreground">{filteredGames.length} parties</span>
           </span>
         </div>
