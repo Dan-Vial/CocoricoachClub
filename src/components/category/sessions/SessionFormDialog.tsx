@@ -2738,7 +2738,7 @@ export function SessionFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={cn("max-h-[95vh] flex flex-col p-4 sm:p-6", isAthleteMode ? "max-w-3xl" : "max-w-6xl w-[95vw]")}>
+      <DialogContent className={cn("max-h-[95vh] flex flex-col p-4 sm:p-6", isAthleteMode ? "max-w-4xl w-[95vw]" : "max-w-6xl w-[95vw]")}>
         <DialogHeader>
           <DialogTitle>{isAthleteMode ? "Ajouter ma séance" : (editSession ? "Modifier la séance" : "Nouvelle séance")}</DialogTitle>
           <DialogDescription>
