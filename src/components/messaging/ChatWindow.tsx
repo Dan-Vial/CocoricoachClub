@@ -72,6 +72,18 @@ export function ChatWindow({ conversationId, categoryId }: ChatWindowProps) {
     },
   });
 
+  // Fetch participant profile names for header display
+  const { data: participantNames } = useQuery({
+    queryKey: ["conversation-participant-names", conversationId],
+    queryFn: async () => {
+      if (!participants || participants.length === 0) return [];
+      const userIds = participants.map(p => p.user_id);
+      const { data } = await supabase.from("profiles").select("id, full_name").in("id", userIds);
+      return data?.map(p => p.full_name || "Inconnu") || [];
+    },
+    enabled: !!participants && participants.length > 0,
+  });
+
   const { data: senderProfiles } = useQuery({
     queryKey: ["sender-profiles", conversationId],
     queryFn: async () => {
@@ -190,10 +202,17 @@ export function ChatWindow({ conversationId, categoryId }: ChatWindowProps) {
     <Card className="h-[600px] flex flex-col">
       <CardHeader className="pb-3 border-b">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-base flex items-center gap-2">
-            <MessageCircle className="h-5 w-5" />
-            Chat d'équipe
-          </CardTitle>
+          <div className="flex-1 min-w-0">
+            <CardTitle className="text-base flex items-center gap-2">
+              <MessageCircle className="h-5 w-5" />
+              Chat d'équipe
+            </CardTitle>
+            {participantNames && participantNames.length > 0 && (
+              <p className="text-xs text-muted-foreground truncate mt-0.5">
+                {participantNames.join(", ")}
+              </p>
+            )}
+          </div>
           <div className="flex items-center gap-2">
             <Badge variant="outline">
               <Users className="h-3 w-3 mr-1" />
