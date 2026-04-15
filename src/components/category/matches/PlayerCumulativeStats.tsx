@@ -1495,6 +1495,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
         </div>
       </div>
 
+      {!isSinglePlayerMode && <>
       {/* Full detailed table below */}
       <Card className="bg-gradient-card">
         <CardHeader>
