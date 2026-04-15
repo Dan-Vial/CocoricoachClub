@@ -6,10 +6,6 @@ import { AddMatchCalendarDialog } from "./matches/AddMatchCalendarDialog";
 import { MatchCard } from "./matches/MatchCard";
 import { PlayerCumulativeStats } from "./matches/PlayerCumulativeStats";
 import { BowlingCumulativeStats } from "@/components/bowling/BowlingCumulativeStats";
-import { BowlingTrainingStats } from "@/components/bowling/BowlingTrainingStats";
-import { TennisTrainingStats } from "@/components/tennis/TennisTrainingStats";
-import { PrecisionTrainingStats } from "@/components/training/PrecisionTrainingStats";
-import { PrecisionFieldTracker } from "@/components/rugby/PrecisionFieldTracker";
 
 import { CategoryPhotosTab } from "./photos/CategoryPhotosTab";
 import { isFuture, isPast } from "date-fns";
