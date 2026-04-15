@@ -12,16 +12,14 @@ import { PrecisionTrainingStats } from "@/components/training/PrecisionTrainingS
 import { PrecisionFieldTracker } from "@/components/rugby/PrecisionFieldTracker";
 
 import { CategoryPhotosTab } from "./photos/CategoryPhotosTab";
-import { isFuture, isPast, format } from "date-fns";
+import { isFuture, isPast } from "date-fns";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { ColoredSubTabsList, ColoredSubTabsTrigger } from "@/components/ui/colored-subtabs";
 import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 import { isIndividualSport, isRugbyType } from "@/lib/constants/sportTypes";
 import { useViewerMatches } from "@/hooks/use-viewer-data";
 import { StatPreferencesDialog } from "./settings/StatPreferencesDialog";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface MatchesTabProps {
   categoryId: string;
