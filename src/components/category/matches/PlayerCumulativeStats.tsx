@@ -1263,7 +1263,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
           )}
         </div>
 
-        <div className="flex gap-2 items-center">
+        {!isSinglePlayerMode && <div className="flex gap-2 items-center">
           {/* Player selector for single export */}
           <Select value={exportPlayerId} onValueChange={setExportPlayerId}>
             <SelectTrigger className="w-[180px] h-8 text-xs">
