@@ -55,7 +55,7 @@ export function MatchesTab({ categoryId, sportType }: MatchesTabProps) {
         <div className="flex justify-center overflow-x-auto -mx-4 px-4 pb-2">
           <ColoredSubTabsList colorKey="competition" className="inline-flex w-max">
             <ColoredSubTabsTrigger value="matches" colorKey="competition" icon={<Calendar className="h-4 w-4" />}>
-              {itemLabelPluralCapital}
+              Gestion
             </ColoredSubTabsTrigger>
             <ColoredSubTabsTrigger value="stats" colorKey="competition" icon={<BarChart3 className="h-4 w-4" />}>
               Stats compétition
