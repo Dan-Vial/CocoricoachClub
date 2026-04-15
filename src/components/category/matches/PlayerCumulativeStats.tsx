@@ -1344,6 +1344,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
       {/* SPLIT SCREEN: Team (left) + Individual (right) — or just individual in single player mode */}
       <div className={isSinglePlayerMode ? "" : "grid grid-cols-1 lg:grid-cols-2 gap-6"}>
         {/* LEFT: Team Stats */}
+        {!isSinglePlayerMode && (
         <div>
           <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
             <Users className="h-5 w-5 text-primary" />
@@ -1356,6 +1357,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
             sportType={sportType}
           />
         </div>
+        )}
 
         {/* RIGHT: Individual Stats */}
         <div>
@@ -1365,6 +1367,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
               Statistiques individuelles
             </h3>
             <div className="flex items-center gap-2">
+              {!isSinglePlayerMode && (
               <Select value={selectedPlayerId || (stats[0]?.playerId || "")} onValueChange={setSelectedPlayerId}>
                 <SelectTrigger className="w-[180px] h-8 text-xs">
                   <SelectValue placeholder="Choisir un joueur" />
@@ -1375,14 +1378,15 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
                   ))}
                 </SelectContent>
               </Select>
+              )}
               <Button variant="outline" size="sm" className="gap-1 h-8" onClick={() => {
-                const pid = selectedPlayerId || stats[0]?.playerId;
+                const pid = fixedPlayerId || selectedPlayerId || stats[0]?.playerId;
                 if (pid) handleExportExcel("single", pid);
               }}>
                 <FileSpreadsheet className="h-3.5 w-3.5" />
               </Button>
               <Button variant="outline" size="sm" className="gap-1 h-8" onClick={() => {
-                const pid = selectedPlayerId || stats[0]?.playerId;
+                const pid = fixedPlayerId || selectedPlayerId || stats[0]?.playerId;
                 if (pid) handleExportPlayerPdf(pid);
               }}>
                 <Download className="h-3.5 w-3.5" />
@@ -1391,7 +1395,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
           </div>
 
           {(() => {
-            const player = selectedPlayer || stats[0];
+            const player = selectedPlayer || filteredStats?.[0] || stats[0];
             if (!player) return null;
             return (
               <div className="space-y-4">
