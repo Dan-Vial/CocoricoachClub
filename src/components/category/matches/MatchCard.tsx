@@ -509,81 +509,70 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
 
           </div>
 
-          <div className="flex flex-col gap-2">
-            {/* Actions dropdown */}
-            {/* modal={false} avoids scroll-jumps/offset issues in some layouts */}
+          <div className="flex flex-col gap-1.5 items-end">
+            {/* Direct action buttons */}
+            <Button variant="outline" size="sm" className="gap-1.5 text-xs w-full justify-start" onClick={() => setIsEditOpen(true)}>
+              <Edit2 className="h-3.5 w-3.5" />
+              Modifier
+            </Button>
+            <Button variant="outline" size="sm" className="gap-1.5 text-xs w-full justify-start" onClick={() => setIsLineupOpen(true)}>
+              <Users className="h-3.5 w-3.5" />
+              {isDoublesMatch ? `Paire (${lineupCount || 0}/2)` : isIndividual ? `Participants (${lineupCount || 0})` : `Composition (${lineupCount || 0})`}
+            </Button>
+            {isTeamSport && (
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs w-full justify-start" onClick={() => setIsMatchSheetOpen(true)}>
+                <FileSpreadsheet className="h-3.5 w-3.5" />
+                Feuille de match
+              </Button>
+            )}
+            {hasRoundBasedStats ? (
+              isTrainingMatch ? (
+                <Button variant="outline" size="sm" className="gap-1.5 text-xs w-full justify-start opacity-50 cursor-not-allowed" disabled>
+                  <Lock className="h-3.5 w-3.5" />
+                  {sportType.toLowerCase().includes("bowling") ? `Parties (${roundsCount || 0})` : `Épreuves (${roundsCount || 0})`}
+                </Button>
+              ) : (
+                <Button variant="outline" size="sm" className="gap-1.5 text-xs w-full justify-start" onClick={() => setIsRoundsOpen(true)}>
+                  <Swords className="h-3.5 w-3.5" />
+                  {sportType.toLowerCase().includes("judo") ? `Combats (${roundsCount || 0})` : 
+                   sportType.toLowerCase().includes("bowling") ? `Parties (${roundsCount || 0})` : 
+                   sportType.toLowerCase().includes("aviron") ? `Courses (${roundsCount || 0})` : 
+                   `Épreuves (${roundsCount || 0})`}
+                </Button>
+              )
+            ) : (
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs w-full justify-start" onClick={() => setIsStatsOpen(true)}>
+                <BarChart3 className="h-3.5 w-3.5" />
+                Statistiques
+              </Button>
+            )}
+            {hasRoundBasedStats && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className={`gap-1.5 text-xs w-full justify-start ${!isFinalized ? "opacity-50 cursor-not-allowed" : ""}`}
+                disabled={!isFinalized}
+                onClick={() => isFinalized && setIsAggregatedStatsOpen(true)}
+              >
+                {isFinalized ? <BarChart3 className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
+                Stats {!isFinalized && "(finaliser)"}
+              </Button>
+            )}
+            {canHaveSubMatches && (
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs w-full justify-start" onClick={() => setIsAddSubMatchOpen(true)}>
+                <Plus className="h-3.5 w-3.5" />
+                Ajouter un match
+              </Button>
+            )}
+            {/* Secondary actions menu */}
             <DropdownMenu modal={false}>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-2">
-                  <Settings className="h-4 w-4" />
-                  Actions
+                <Button variant="ghost" size="sm" className="gap-1.5 text-xs w-full justify-start text-muted-foreground">
+                  <Settings className="h-3.5 w-3.5" />
+                  Plus
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem onClick={() => setIsEditOpen(true)}>
-                  <Edit2 className="h-4 w-4 mr-2" />
-                  Modifier
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setIsLineupOpen(true)}>
-                  <Users className="h-4 w-4 mr-2" />
-                  {isDoublesMatch ? `Paire (${lineupCount}/2)` : isIndividual ? `Participants (${lineupCount})` : `Composition (${lineupCount})`}
-                </DropdownMenuItem>
-                {isTeamSport && (
-                  <DropdownMenuItem onClick={() => setIsMatchSheetOpen(true)}>
-                    <FileSpreadsheet className="h-4 w-4 mr-2" />
-                    Feuille de match
-                  </DropdownMenuItem>
-                )}
-                {/* Statistiques button - for round-based sports, only enabled when finalized */}
-                {hasRoundBasedStats ? (
-                  <DropdownMenuItem 
-                    onClick={() => isFinalized && setIsAggregatedStatsOpen(true)}
-                    disabled={!isFinalized}
-                    className={!isFinalized ? "opacity-50 cursor-not-allowed" : ""}
-                  >
-                    {isFinalized ? (
-                      <BarChart3 className="h-4 w-4 mr-2" />
-                    ) : (
-                      <Lock className="h-4 w-4 mr-2 text-muted-foreground" />
-                    )}
-                    Statistiques {!isFinalized && "(finaliser d'abord)"}
-                  </DropdownMenuItem>
-                ) : (
-                  <DropdownMenuItem onClick={() => setIsStatsOpen(true)}>
-                    <BarChart3 className="h-4 w-4 mr-2" />
-                    Statistiques
-                  </DropdownMenuItem>
-                )}
-                {hasRoundBasedStats && (
-                  isTrainingMatch ? (
-                    <DropdownMenuItem disabled className="opacity-50 cursor-not-allowed">
-                      <Lock className="h-4 w-4 mr-2 text-muted-foreground" />
-                      {sportType.toLowerCase().includes("bowling") ? `Parties (${roundsCount || 0})` : `Épreuves (${roundsCount || 0})`} — via Planification
-                    </DropdownMenuItem>
-                  ) : (
-                    <DropdownMenuItem
-                      onClick={() => {
-                        setIsRoundsOpen(true);
-                      }}
-                    >
-                      <Swords className="h-4 w-4 mr-2" />
-                      {sportType.toLowerCase().includes("judo") ? `Combats (${roundsCount || 0})` : 
-                       sportType.toLowerCase().includes("bowling") ? `Parties (${roundsCount || 0})` : 
-                       sportType.toLowerCase().includes("aviron") ? `Courses (${roundsCount || 0})` : 
-                       sportType.toLowerCase().includes("athletisme") ? `Épreuves (${roundsCount || 0})` : `Épreuves (${roundsCount || 0})`}
-                    </DropdownMenuItem>
-                  )
-                )}
-                {canHaveSubMatches && (
-                  <>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => setIsAddSubMatchOpen(true)}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Ajouter un match
-                    </DropdownMenuItem>
-                  </>
-                )}
-                <DropdownMenuSeparator />
                 {isFinalized ? (
                   <DropdownMenuItem onClick={() => finalizeMatch.mutate(false)}>
                     <X className="h-4 w-4 mr-2" />
