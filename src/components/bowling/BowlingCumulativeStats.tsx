@@ -18,6 +18,7 @@ import { getStatColor } from "@/lib/bowling/statColors";
 import { exportBowlingPdf, exportBowlingTeamPdf } from "@/lib/bowling/bowlingPdfExport";
 import { resolveBallCatalogImages } from "@/lib/bowling/bowlingBallImageResolver";
 import type { FrameData } from "@/components/athlete-portal/BowlingScoreSheet";
+import { BowlingOilPatternStats } from "./BowlingOilPatternStats";
 
 interface BowlingCumulativeStatsProps {
   categoryId: string;
