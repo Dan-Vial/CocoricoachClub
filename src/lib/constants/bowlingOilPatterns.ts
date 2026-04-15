@@ -173,7 +173,7 @@ export function getOilCategory(ratio: string | null | undefined): OilCategoryInf
 
   if (value < 1) return null;
 
-  if (value < 3) {
+  if (value <= 3) {
     return {
       type: "sport",
       label: "Sportif",
@@ -183,19 +183,19 @@ export function getOilCategory(ratio: string | null | undefined): OilCategoryInf
         ? "Conditions très difficiles (huilage à plat)"
         : value < 2.5
         ? "Conditions très compétitives dites « Sportives »"
-        : "Conditions plus compétitives",
+        : "Conditions compétitives (ratio ≤ 3:1)",
     };
   }
 
-  if (value <= 5) {
+  if (value <= 4.99) {
     return {
       type: "challenge",
       label: "Challenge",
       color: "bg-blue-100 text-blue-900 border-blue-400 dark:bg-blue-500/25 dark:text-blue-200 dark:border-blue-400",
       description: "Conditions compétitives intermédiaires",
       detail: value <= 3.5
-        ? "Conditions compétitives (ratio 2.5 à 3.5:1)"
-        : "Scorabilité très importante (ratio 3.5 à 5:1)",
+        ? "Conditions compétitives (ratio 3.01 à 3.5:1)"
+        : "Scorabilité importante (ratio 3.5 à 4.99:1)",
     };
   }
 
