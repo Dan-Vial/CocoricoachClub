@@ -1631,6 +1631,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
           </CardContent>
         </Card>
       )}
+      </>}
     </div>
   );
 }
