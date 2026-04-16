@@ -11,6 +11,9 @@ export function SuperAdminDashboard() {
     queryKey: ["super-admin-dashboard-stats"],
     refetchOnMount: "always",
     queryFn: async () => {
+      // Auto-expire trial clients on each dashboard load
+      await supabase.rpc("expire_trial_clients");
+
       const { data: clients } = await supabase
         .from("clients")
         .select("id, status, trial_ends_at");
