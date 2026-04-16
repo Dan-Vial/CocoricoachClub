@@ -154,8 +154,11 @@ export function SuperAdminDashboard() {
           <CardContent>
             <div className="text-2xl font-bold">{stats?.totalClients || 0}</div>
             <div className="flex gap-2 mt-1 flex-wrap">
-              <Badge variant="outline" className="text-xs">{stats?.activeClients} actifs</Badge>
+              <Badge variant="outline" className="text-xs">{(stats?.activePayingClients || 0) + (stats?.activeFreeClients || 0)} actifs</Badge>
               <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700">{stats?.trialClients} essai</Badge>
+              {(stats?.expiredTrialClients || 0) > 0 && (
+                <Badge variant="outline" className="text-xs bg-orange-50 text-orange-700">{stats?.expiredTrialClients} essai expiré</Badge>
+              )}
               {(stats?.suspendedClients || 0) > 0 && (
                 <Badge variant="outline" className="text-xs bg-red-50 text-red-700">{stats?.suspendedClients} suspendu</Badge>
               )}
@@ -217,14 +220,14 @@ export function SuperAdminDashboard() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-center">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 text-center">
             <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
-              <div className="text-2xl font-bold text-green-600">{stats?.paidUsersCount || 0}</div>
+              <div className="text-2xl font-bold text-green-600">{stats?.activePayingClients || 0}</div>
               <p className="text-sm text-muted-foreground">Clients actifs payants</p>
               <DollarSign className="h-4 w-4 mx-auto mt-1 text-green-500" />
             </div>
             <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
-              <div className="text-2xl font-bold text-purple-600">{stats?.freeUsersCount || 0}</div>
+              <div className="text-2xl font-bold text-purple-600">{stats?.activeFreeClients || 0}</div>
               <p className="text-sm text-muted-foreground">Clients actifs gratuits</p>
               <Gift className="h-4 w-4 mx-auto mt-1 text-purple-500" />
             </div>
@@ -233,6 +236,13 @@ export function SuperAdminDashboard() {
               <p className="text-sm text-muted-foreground">Période d'essai</p>
               <Clock className="h-4 w-4 mx-auto mt-1 text-amber-500" />
             </div>
+            {(stats?.expiredTrialClients || 0) > 0 && (
+              <div className="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800">
+                <div className="text-2xl font-bold text-orange-600">{stats?.expiredTrialClients || 0}</div>
+                <p className="text-sm text-muted-foreground">Essai expiré</p>
+                <AlertTriangle className="h-4 w-4 mx-auto mt-1 text-orange-500" />
+              </div>
+            )}
             <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
               <div className="text-2xl font-bold text-red-600">{stats?.suspendedClients || 0}</div>
               <p className="text-sm text-muted-foreground">Suspendus</p>
