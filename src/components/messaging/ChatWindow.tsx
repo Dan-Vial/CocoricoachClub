@@ -78,8 +78,35 @@ export function ChatWindow({ conversationId, categoryId }: ChatWindowProps) {
     queryFn: async () => {
       if (!participants || participants.length === 0) return [];
       const userIds = participants.map(p => p.user_id);
-      const { data } = await supabase.from("profiles").select("id, full_name").in("id", userIds);
-      return data?.map(p => p.full_name || "Inconnu") || [];
+      const { data: profiles } = await supabase.from("profiles").select("id, full_name").in("id", userIds);
+      
+      // Build a map of known names from profiles
+      const nameMap: Record<string, string> = {};
+      profiles?.forEach(p => {
+        if (p.full_name) nameMap[p.id] = p.full_name;
+      });
+
+      // For users without a profile name, try to find them via category_members + their email
+      const unknownIds = userIds.filter(id => !nameMap[id]);
+      if (unknownIds.length > 0) {
+        // Try to get names from player profiles linked via athlete accounts
+        const { data: playerLinks } = await supabase
+          .from("players")
+          .select("user_id, first_name, last_name")
+          .in("user_id", unknownIds)
+          .not("user_id", "is", null);
+        
+        playerLinks?.forEach(p => {
+          if (p.user_id && (p.first_name || p.last_name)) {
+            nameMap[p.user_id] = [p.first_name, p.last_name].filter(Boolean).join(" ");
+          }
+        });
+      }
+
+      // Only return resolved names, skip unknowns
+      return userIds
+        .map(id => nameMap[id])
+        .filter(Boolean) as string[];
     },
     enabled: !!participants && participants.length > 0,
   });
