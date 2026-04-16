@@ -77,19 +77,38 @@ export function SuperAdminDashboard() {
         .in("status", ["pending", "failed"])
         .order("payment_date", { ascending: false });
 
+      // Active subscriptions to determine paying clients
+      const { data: activeSubscriptions } = await supabase
+        .from("client_subscriptions")
+        .select("client_id")
+        .eq("status", "active");
+
+      const payingClientIds = new Set(activeSubscriptions?.map(s => s.client_id) || []);
+
       // Calculate stats
+      const now = new Date();
       const totalClients = clients?.length || 0;
-      const activeClients = clients?.filter(c => c.status === "active").length || 0;
-      const trialClients = clients?.filter(c => c.status === "trial").length || 0;
+      
+      // Separate trial clients: expired vs active trial
+      const trialClients = clients?.filter(c => c.status === "trial") || [];
+      const activeTrialClients = trialClients.filter(c => 
+        !c.trial_ends_at || new Date(c.trial_ends_at) > now
+      );
+      const expiredTrialClients = trialClients.filter(c => 
+        c.trial_ends_at && new Date(c.trial_ends_at) <= now
+      );
+      
+      // Active paying = status "active" AND has an active subscription
+      const activePayingClients = clients?.filter(c => 
+        c.status === "active" && payingClientIds.has(c.id)
+      ).length || 0;
+      
+      // Active but no subscription (e.g. free or manually set)
+      const activeFreeClients = clients?.filter(c => 
+        c.status === "active" && !payingClientIds.has(c.id)
+      ).length || 0;
+      
       const suspendedClients = clients?.filter(c => c.status === "suspended").length || 0;
-
-      // Free vs paid: clubs without client_id are "free"
-      const freeClubIds = new Set(clubs?.filter(c => !c.client_id).map(c => c.id) || []);
-      const paidClubIds = new Set(clubs?.filter(c => c.client_id).map(c => c.id) || []);
-
-      // Active free = approved users with is_free_user true
-      const freeUsersCount = approvedUsers?.filter(a => a.is_free_user).length || 0;
-      const paidUsersCount = (approvedUsers?.length || 0) - freeUsersCount;
 
       const totalClubs = clubs?.length || 0;
       const activeClubs = clubs?.filter(c => c.is_active).length || 0;
@@ -101,15 +120,13 @@ export function SuperAdminDashboard() {
 
       return {
         totalClients,
-        activeClients,
-        trialClients,
+        activePayingClients,
+        activeFreeClients,
+        trialClients: activeTrialClients.length,
+        expiredTrialClients: expiredTrialClients.length,
         suspendedClients,
-        freeUsersCount,
-        paidUsersCount,
         totalClubs,
         activeClubs,
-        freeClubs: freeClubIds.size,
-        paidClubs: paidClubIds.size,
         totalCategories: categories?.length || 0,
         totalAthletes: players?.length || 0,
         totalUsers,
