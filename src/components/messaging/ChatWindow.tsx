@@ -18,6 +18,7 @@ import { MessageReactions } from "./MessageReactions";
 import { PollMessage } from "./PollMessage";
 import { CreatePollDialog } from "./CreatePollDialog";
 import { PollSummaryPanel } from "./PollSummaryPanel";
+import { getOrderedDistinctResolvedNames, resolveUserDisplayNames } from "./userDisplayNames";
 
 interface Message {
   id: string;
@@ -74,54 +75,23 @@ export function ChatWindow({ conversationId, categoryId }: ChatWindowProps) {
 
   // Fetch participant profile names for header display
   const { data: participantNames } = useQuery({
-    queryKey: ["conversation-participant-names", conversationId],
+    queryKey: ["conversation-participant-names", conversationId, user?.id],
     queryFn: async () => {
       if (!participants || participants.length === 0) return [];
       const userIds = participants.map(p => p.user_id);
-      const { data: profiles } = await supabase.from("profiles").select("id, full_name").in("id", userIds);
-      
-      // Build a map of known names from profiles
-      const nameMap: Record<string, string> = {};
-      profiles?.forEach(p => {
-        if (p.full_name) nameMap[p.id] = p.full_name;
-      });
-
-      // For users without a profile name, try to find them via category_members + their email
-      const unknownIds = userIds.filter(id => !nameMap[id]);
-      if (unknownIds.length > 0) {
-        // Try to get names from player profiles linked via athlete accounts
-        const { data: playerLinks } = await supabase
-          .from("players")
-          .select("user_id, first_name, name")
-          .in("user_id", unknownIds)
-          .not("user_id", "is", null);
-        
-        playerLinks?.forEach(p => {
-          if (p.user_id) {
-            const displayName = [p.first_name, p.name].filter(Boolean).join(" ");
-            if (displayName) nameMap[p.user_id] = displayName;
-          }
-        });
-      }
-
-      // Only return resolved names, skip unknowns
-      return userIds
-        .map(id => nameMap[id])
-        .filter(Boolean) as string[];
+      const nameMap = await resolveUserDisplayNames({ userIds, currentUser: user });
+      return getOrderedDistinctResolvedNames(userIds, nameMap);
     },
     enabled: !!participants && participants.length > 0,
   });
 
   const { data: senderProfiles } = useQuery({
-    queryKey: ["sender-profiles", conversationId],
+    queryKey: ["sender-profiles", conversationId, user?.id],
     queryFn: async () => {
       if (!messages) return {};
       const uniqueIds = [...new Set(messages.map(m => m.sender_id))];
       if (uniqueIds.length === 0) return {};
-      const { data } = await supabase.from("profiles").select("id, full_name").in("id", uniqueIds);
-      const map: Record<string, string> = {};
-      data?.forEach(p => { map[p.id] = p.full_name || p.id.substring(0, 6); });
-      return map;
+      return resolveUserDisplayNames({ userIds: uniqueIds, currentUser: user });
     },
     enabled: !!messages && messages.length > 0,
   });
