@@ -11,6 +11,9 @@ export function SuperAdminDashboard() {
     queryKey: ["super-admin-dashboard-stats"],
     refetchOnMount: "always",
     queryFn: async () => {
+      // Auto-expire trial clients on each dashboard load
+      await supabase.rpc("expire_trial_clients");
+
       const { data: clients } = await supabase
         .from("clients")
         .select("id, status, trial_ends_at");
@@ -77,19 +80,38 @@ export function SuperAdminDashboard() {
         .in("status", ["pending", "failed"])
         .order("payment_date", { ascending: false });
 
+      // Active subscriptions to determine paying clients
+      const { data: activeSubscriptions } = await supabase
+        .from("client_subscriptions")
+        .select("client_id")
+        .eq("status", "active");
+
+      const payingClientIds = new Set(activeSubscriptions?.map(s => s.client_id) || []);
+
       // Calculate stats
+      const now = new Date();
       const totalClients = clients?.length || 0;
-      const activeClients = clients?.filter(c => c.status === "active").length || 0;
-      const trialClients = clients?.filter(c => c.status === "trial").length || 0;
+      
+      // Separate trial clients: expired vs active trial
+      const trialClients = clients?.filter(c => c.status === "trial") || [];
+      const activeTrialClients = trialClients.filter(c => 
+        !c.trial_ends_at || new Date(c.trial_ends_at) > now
+      );
+      const expiredTrialClients = trialClients.filter(c => 
+        c.trial_ends_at && new Date(c.trial_ends_at) <= now
+      );
+      
+      // Active paying = status "active" AND has an active subscription
+      const activePayingClients = clients?.filter(c => 
+        c.status === "active" && payingClientIds.has(c.id)
+      ).length || 0;
+      
+      // Active but no subscription (e.g. free or manually set)
+      const activeFreeClients = clients?.filter(c => 
+        c.status === "active" && !payingClientIds.has(c.id)
+      ).length || 0;
+      
       const suspendedClients = clients?.filter(c => c.status === "suspended").length || 0;
-
-      // Free vs paid: clubs without client_id are "free"
-      const freeClubIds = new Set(clubs?.filter(c => !c.client_id).map(c => c.id) || []);
-      const paidClubIds = new Set(clubs?.filter(c => c.client_id).map(c => c.id) || []);
-
-      // Active free = approved users with is_free_user true
-      const freeUsersCount = approvedUsers?.filter(a => a.is_free_user).length || 0;
-      const paidUsersCount = (approvedUsers?.length || 0) - freeUsersCount;
 
       const totalClubs = clubs?.length || 0;
       const activeClubs = clubs?.filter(c => c.is_active).length || 0;
@@ -101,15 +123,13 @@ export function SuperAdminDashboard() {
 
       return {
         totalClients,
-        activeClients,
-        trialClients,
+        activePayingClients,
+        activeFreeClients,
+        trialClients: activeTrialClients.length,
+        expiredTrialClients: expiredTrialClients.length,
         suspendedClients,
-        freeUsersCount,
-        paidUsersCount,
         totalClubs,
         activeClubs,
-        freeClubs: freeClubIds.size,
-        paidClubs: paidClubIds.size,
         totalCategories: categories?.length || 0,
         totalAthletes: players?.length || 0,
         totalUsers,
@@ -137,8 +157,11 @@ export function SuperAdminDashboard() {
           <CardContent>
             <div className="text-2xl font-bold">{stats?.totalClients || 0}</div>
             <div className="flex gap-2 mt-1 flex-wrap">
-              <Badge variant="outline" className="text-xs">{stats?.activeClients} actifs</Badge>
+              <Badge variant="outline" className="text-xs">{(stats?.activePayingClients || 0) + (stats?.activeFreeClients || 0)} actifs</Badge>
               <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700">{stats?.trialClients} essai</Badge>
+              {(stats?.expiredTrialClients || 0) > 0 && (
+                <Badge variant="outline" className="text-xs bg-orange-50 text-orange-700">{stats?.expiredTrialClients} essai expiré</Badge>
+              )}
               {(stats?.suspendedClients || 0) > 0 && (
                 <Badge variant="outline" className="text-xs bg-red-50 text-red-700">{stats?.suspendedClients} suspendu</Badge>
               )}
@@ -200,14 +223,14 @@ export function SuperAdminDashboard() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-center">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 text-center">
             <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
-              <div className="text-2xl font-bold text-green-600">{stats?.paidUsersCount || 0}</div>
+              <div className="text-2xl font-bold text-green-600">{stats?.activePayingClients || 0}</div>
               <p className="text-sm text-muted-foreground">Clients actifs payants</p>
               <DollarSign className="h-4 w-4 mx-auto mt-1 text-green-500" />
             </div>
             <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
-              <div className="text-2xl font-bold text-purple-600">{stats?.freeUsersCount || 0}</div>
+              <div className="text-2xl font-bold text-purple-600">{stats?.activeFreeClients || 0}</div>
               <p className="text-sm text-muted-foreground">Clients actifs gratuits</p>
               <Gift className="h-4 w-4 mx-auto mt-1 text-purple-500" />
             </div>
@@ -216,6 +239,13 @@ export function SuperAdminDashboard() {
               <p className="text-sm text-muted-foreground">Période d'essai</p>
               <Clock className="h-4 w-4 mx-auto mt-1 text-amber-500" />
             </div>
+            {(stats?.expiredTrialClients || 0) > 0 && (
+              <div className="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800">
+                <div className="text-2xl font-bold text-orange-600">{stats?.expiredTrialClients || 0}</div>
+                <p className="text-sm text-muted-foreground">Essai expiré</p>
+                <AlertTriangle className="h-4 w-4 mx-auto mt-1 text-orange-500" />
+              </div>
+            )}
             <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
               <div className="text-2xl font-bold text-red-600">{stats?.suspendedClients || 0}</div>
               <p className="text-sm text-muted-foreground">Suspendus</p>
