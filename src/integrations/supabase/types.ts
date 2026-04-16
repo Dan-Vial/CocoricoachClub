@@ -11328,6 +11328,7 @@ export type Database = {
         }
         Returns: string
       }
+      expire_trial_clients: { Args: never; Returns: undefined }
       get_player_categories: {
         Args: { _player_id: string }
         Returns: {
