@@ -92,13 +92,14 @@ export function ChatWindow({ conversationId, categoryId }: ChatWindowProps) {
         // Try to get names from player profiles linked via athlete accounts
         const { data: playerLinks } = await supabase
           .from("players")
-          .select("user_id, first_name, last_name")
+          .select("user_id, first_name, name")
           .in("user_id", unknownIds)
           .not("user_id", "is", null);
         
         playerLinks?.forEach(p => {
-          if (p.user_id && (p.first_name || p.last_name)) {
-            nameMap[p.user_id] = [p.first_name, p.last_name].filter(Boolean).join(" ");
+          if (p.user_id) {
+            const displayName = [p.first_name, p.name].filter(Boolean).join(" ");
+            if (displayName) nameMap[p.user_id] = displayName;
           }
         });
       }
