@@ -383,6 +383,7 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
     setZone1(""); setZone2(""); setZone3(""); setZone4(""); setZone5("");
     setPrecisionExerciseId(null);
     setPrecisionExerciseLabel("");
+    setWeightLogs({});
 
     const session = todaySessions.find((s) => s.id === sessionId);
     if (session) {
@@ -488,6 +489,24 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
         if (hrvError) {
           console.error("HRV insert error:", hrvError);
           toast.error("RPE enregistré mais erreur HRV");
+        }
+      }
+
+      // Persist actual weights into athlete_exercise_logs (feeds the Tonnage dashboard)
+      const weightRecords = buildWeightLogRecords(weightLogs, {
+        playerId,
+        categoryId,
+        trainingSessionId: selectedSession,
+      });
+      if (weightRecords.length > 0) {
+        const { error: weightError } = await supabase
+          .from("athlete_exercise_logs")
+          .upsert(weightRecords, {
+            onConflict: "training_session_id,player_id,exercise_name",
+          });
+        if (weightError) {
+          console.error("Weight log insert error:", weightError);
+          toast.error("RPE enregistré mais erreur lors de la sauvegarde des charges");
         }
       }
     },
