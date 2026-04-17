@@ -164,7 +164,7 @@ function scoreInjuryHistory(injuries: Injury[]): { score: number; factors: strin
   // Recent healed injuries (recurrence risk)
   const recentHealed = injuries.filter(i => {
     if (i.status !== "healed") return false;
-    const daysAgo = (now - new Date(i.injury_date).getTime()) / (1000 * 60 * 60 * 86400 * 0 + 1000 * 60 * 60 * 24);
+    const daysAgo = (now - new Date(i.injury_date).getTime()) / (1000 * 60 * 60 * 24);
     return daysAgo <= 90;
   });
   if (recentHealed.length > 0) {
