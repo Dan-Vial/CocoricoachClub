@@ -24,6 +24,11 @@ import { AthletePrecisionFieldInput } from "./AthletePrecisionFieldInput";
 import { isRugbyType } from "@/lib/constants/sportTypes";
 import { RUGBY_PRECISION_EXERCISES, EXERCISE_CATEGORIES } from "@/lib/constants/rugbyPrecisionExercises";
 import { resolveSessionExerciseRows } from "@/lib/utils/sessionExercises";
+import {
+  AthleteWeightLogInput,
+  buildWeightLogRecords,
+  type WeightLogState,
+} from "./AthleteWeightLogInput";
 
 interface Props {
   playerId: string;
@@ -258,6 +263,7 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
   const [zone3, setZone3] = useState("");
   const [zone4, setZone4] = useState("");
   const [zone5, setZone5] = useState("");
+  const [weightLogs, setWeightLogs] = useState<WeightLogState>({});
 
   // Fetch exercises for all visible sessions
   const allSessionIds = useMemo(() => allSessions.map(s => s.id), [allSessions]);
@@ -377,6 +383,7 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
     setZone1(""); setZone2(""); setZone3(""); setZone4(""); setZone5("");
     setPrecisionExerciseId(null);
     setPrecisionExerciseLabel("");
+    setWeightLogs({});
 
     const session = todaySessions.find((s) => s.id === sessionId);
     if (session) {
@@ -484,6 +491,24 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
           toast.error("RPE enregistré mais erreur HRV");
         }
       }
+
+      // Persist actual weights into athlete_exercise_logs (feeds the Tonnage dashboard)
+      const weightRecords = buildWeightLogRecords(weightLogs, {
+        playerId,
+        categoryId,
+        trainingSessionId: selectedSession,
+      });
+      if (weightRecords.length > 0) {
+        const { error: weightError } = await supabase
+          .from("athlete_exercise_logs")
+          .upsert(weightRecords, {
+            onConflict: "training_session_id,player_id,exercise_name",
+          });
+        if (weightError) {
+          console.error("Weight log insert error:", weightError);
+          toast.error("RPE enregistré mais erreur lors de la sauvegarde des charges");
+        }
+      }
     },
     onSuccess: () => {
       toast.success(isPrecisionSession ? "RPE et statistiques enregistrés !" : "RPE enregistré !");
@@ -510,6 +535,9 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
       setZone1(""); setZone2(""); setZone3(""); setZone4(""); setZone5("");
       setPrecisionExerciseId(null);
       setPrecisionExerciseLabel("");
+      setWeightLogs({});
+      queryClient.invalidateQueries({ queryKey: ["athlete-weight-log-existing"] });
+      queryClient.invalidateQueries({ queryKey: ["tonnage-logs"] });
     },
     onError: (error: any) => toast.error(error?.message || "Erreur lors de l'enregistrement"),
   });
@@ -788,6 +816,16 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
                       </div>
                     )}
 
+
+                    {/* Actual weights logged by the athlete (feeds Tonnage) */}
+                    {selectedSession && (
+                      <AthleteWeightLogInput
+                        sessionId={selectedSession}
+                        playerId={playerId}
+                        value={weightLogs}
+                        onChange={setWeightLogs}
+                      />
+                    )}
 
                     {/* Optional HRV section */}
                     <div className="space-y-3">
