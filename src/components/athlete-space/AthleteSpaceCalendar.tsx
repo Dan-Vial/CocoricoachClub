@@ -238,19 +238,20 @@ export function AthleteSpaceCalendar({ playerId, categoryId, sportType }: Props)
   }, [sessionBlocks]);
 
   const { data: rawSessionExercises = [] } = useQuery({
-    queryKey: ["athlete-calendar-exercises-v2", daySessionIds],
+    queryKey: ["athlete-calendar-exercises-v3", daySessionIds, playerId],
     queryFn: async () => {
       if (daySessionIds.length === 0) return [];
       const { data, error } = await supabase
         .from("gym_session_exercises")
         .select("*")
         .in("training_session_id", daySessionIds)
+        .or(`player_id.eq.${playerId},player_id.is.null`)
         .order("order_index");
       if (error) throw error;
 
       return data || [];
     },
-    enabled: daySessionIds.length > 0,
+    enabled: daySessionIds.length > 0 && !!playerId,
   });
 
   const sessionExercises = useMemo(

@@ -43,7 +43,7 @@ export default defineConfig(({ mode }) => {
     plugins: [
       react(),
       mode === "development" && componentTagger(),
-      VitePWA({
+      mode !== "development" && VitePWA({
         registerType: 'autoUpdate',
         includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg', 'pwa-192x192.png', 'pwa-512x512.png'],
         manifest: {
@@ -88,7 +88,7 @@ export default defineConfig(({ mode }) => {
                 cacheName: 'supabase-api-cache',
                 expiration: {
                   maxEntries: 500,
-                  maxAgeSeconds: 60 * 60 * 24 * 2 // 48 hours
+                  maxAgeSeconds: 60 * 60 * 24 * 2
                 },
                 cacheableResponse: {
                   statuses: [0, 200]
@@ -103,7 +103,7 @@ export default defineConfig(({ mode }) => {
                 cacheName: 'supabase-storage-cache',
                 expiration: {
                   maxEntries: 500,
-                  maxAgeSeconds: 60 * 60 * 24 * 14 // 14 days
+                  maxAgeSeconds: 60 * 60 * 24 * 14
                 },
                 cacheableResponse: {
                   statuses: [0, 200]
@@ -117,7 +117,7 @@ export default defineConfig(({ mode }) => {
                 cacheName: 'google-fonts-cache',
                 expiration: {
                   maxEntries: 30,
-                  maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
+                  maxAgeSeconds: 60 * 60 * 24 * 365
                 }
               }
             },
@@ -128,7 +128,7 @@ export default defineConfig(({ mode }) => {
                 cacheName: 'gstatic-fonts-cache',
                 expiration: {
                   maxEntries: 30,
-                  maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
+                  maxAgeSeconds: 60 * 60 * 24 * 365
                 }
               }
             },
@@ -139,7 +139,7 @@ export default defineConfig(({ mode }) => {
                 cacheName: 'images-cache',
                 expiration: {
                   maxEntries: 300,
-                  maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
+                  maxAgeSeconds: 60 * 60 * 24 * 30
                 }
               }
             }
