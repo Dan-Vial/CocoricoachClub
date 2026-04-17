@@ -168,33 +168,52 @@ export function GroupedExerciseList({
                 {ex.exercise_name}
               </span>
             </ExerciseMediaViewer>
-            {media?.description && (
-              <TooltipProvider delayDuration={150}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      type="button"
-                      className={cn(
-                        "inline-flex items-center justify-center rounded-full border transition-colors shrink-0",
-                        "h-4 w-4 border-muted-foreground/40 text-muted-foreground hover:text-primary hover:border-primary",
-                        fieldMode && "border-slate-400/60 text-slate-300 hover:text-white hover:border-white"
-                      )}
-                      aria-label={`Consignes pour ${ex.exercise_name}`}
-                      onClick={(e) => e.preventDefault()}
-                    >
-                      <Info className="h-3 w-3" />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    side="top"
-                    align="start"
-                    className="max-w-sm whitespace-pre-line text-xs leading-relaxed"
+            <TooltipProvider delayDuration={150}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    className={cn(
+                      "inline-flex items-center justify-center rounded-full border transition-colors shrink-0",
+                      "h-4 w-4 border-muted-foreground/40 text-muted-foreground hover:text-primary hover:border-primary",
+                      fieldMode && "border-slate-400/60 text-slate-300 hover:text-white hover:border-white"
+                    )}
+                    aria-label={`Consignes pour ${ex.exercise_name}`}
+                    onClick={(e) => e.preventDefault()}
                   >
-                    {media.description}
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            )}
+                    <Info className="h-3 w-3" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="top"
+                  align="start"
+                  className="max-w-sm whitespace-pre-line text-xs leading-relaxed space-y-1"
+                >
+                  <p className="font-semibold">{ex.exercise_name}</p>
+                  <p className="text-muted-foreground">
+                    {ex.sets} séries
+                    {ex.reps ? ` × ${ex.reps} reps` : ""}
+                    {ex.weight_kg ? ` @ ${ex.weight_kg} kg` : ""}
+                    {ex.rest_seconds ? ` — ${ex.rest_seconds}s repos` : ""}
+                  </p>
+                  {ex.tempo && <p className="text-muted-foreground">Tempo : {ex.tempo}</p>}
+                  {ex.contraction_regime && (
+                    <p className="text-muted-foreground">
+                      Régime : {contractionLabels[ex.contraction_regime] || ex.contraction_regime}
+                    </p>
+                  )}
+                  {(ex.set_type && ex.set_type !== "normal") && (
+                    <p className="text-muted-foreground">
+                      Méthode : {setTypeLabels[ex.set_type] || ex.set_type}
+                    </p>
+                  )}
+                  {ex.notes && <p className="italic">{ex.notes}</p>}
+                  {media?.description && (
+                    <p className="pt-1 border-t border-border/40">{media.description}</p>
+                  )}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
           {!compact && (
             <div className="flex gap-1 flex-wrap justify-end">
