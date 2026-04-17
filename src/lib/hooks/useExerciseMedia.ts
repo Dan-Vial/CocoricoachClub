@@ -30,13 +30,15 @@ export function useExerciseMedia() {
 
   const mediaMap = new Map<string, ExerciseMedia>();
   exercises?.forEach((ex) => {
-    if (ex.image_url || ex.youtube_url || ex.description) {
-      mediaMap.set(ex.name.toLowerCase(), {
-        image_url: ex.image_url,
-        youtube_url: ex.youtube_url,
-        description: ex.description,
-      });
-    }
+    if (!ex.image_url && !ex.youtube_url && !ex.description) return;
+    const key = ex.name.toLowerCase().trim();
+    const existing = mediaMap.get(key);
+    // Merge entries so a row with description doesn't get overwritten by an empty one
+    mediaMap.set(key, {
+      image_url: ex.image_url || existing?.image_url || null,
+      youtube_url: ex.youtube_url || existing?.youtube_url || null,
+      description: ex.description || existing?.description || null,
+    });
   });
 
   const getMedia = (exerciseName: string): ExerciseMedia | null => {
