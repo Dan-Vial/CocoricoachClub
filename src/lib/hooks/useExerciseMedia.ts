@@ -42,7 +42,7 @@ export function useExerciseMedia() {
   });
 
   const getMedia = (exerciseName: string): ExerciseMedia | null => {
-    return mediaMap.get(exerciseName.toLowerCase()) || null;
+    return mediaMap.get(exerciseName.toLowerCase().trim()) || null;
   };
 
   return { getMedia };
