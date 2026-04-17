@@ -2077,6 +2077,216 @@ function StatoDynamiqueBlock({
   );
 }
 
+// ============= DROP SET BLOCK =============
+function DropSetBlock({
+  method,
+  groupId,
+  exercises,
+  blockConfig,
+  styleConfig,
+  onUpdateExercise,
+  onUpdateMultipleFields,
+  onRemoveExercise,
+  onSelectFromLibrary,
+  filteredLibrary,
+  searchQuery,
+  setSearchQuery,
+  showLibraryFor,
+  setShowLibraryFor,
+}: TrainingMethodBlockProps & { styleConfig: any }) {
+  const exercise = exercises[0]?.exercise;
+  const exerciseIndex = exercises[0]?.index;
+
+  if (!exercise) return null;
+
+  const dropSets: DropSet[] = exercise.drop_sets && exercise.drop_sets.length > 0
+    ? exercise.drop_sets
+    : [{ reps: "10", percentage: 80 }];
+
+  const addDrop = () => {
+    const newSets = [...dropSets];
+    const last = newSets[newSets.length - 1];
+    newSets.push({
+      reps: "Échec",
+      percentage: Math.max((last?.percentage || 80) - 20, 20),
+    });
+    onUpdateMultipleFields(exerciseIndex, {
+      drop_sets: newSets,
+      sets: newSets.length,
+    });
+  };
+
+  const removeDrop = (idx: number) => {
+    if (dropSets.length <= 2) return;
+    const newSets = dropSets.filter((_, i) => i !== idx);
+    onUpdateMultipleFields(exerciseIndex, {
+      drop_sets: newSets,
+      sets: newSets.length,
+    });
+  };
+
+  const updateDrop = (idx: number, field: "reps" | "percentage", value: any) => {
+    const newSets = [...dropSets];
+    newSets[idx] = { ...newSets[idx], [field]: value };
+    onUpdateExercise(exerciseIndex, "drop_sets", newSets);
+  };
+
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-muted-foreground">
+        Série de départ puis drops successifs (-20% de charge à chaque drop), tous menés <strong>jusqu'à l'échec musculaire</strong>. Aucun temps de repos entre les drops.
+      </p>
+
+      {/* Exercise slot */}
+      <div>
+        <Label className="text-xs text-muted-foreground mb-2 block">Exercice</Label>
+        <div className="border rounded-xl p-4">
+          <div className="flex items-center gap-2">
+            <Dumbbell className="h-4 w-4 text-muted-foreground shrink-0" />
+            <ExerciseInput
+              exercise={exercise}
+              exerciseIndex={exerciseIndex}
+              placeholder="Nom de l'exercice..."
+              onUpdateExercise={onUpdateExercise}
+              onSelectFromLibrary={onSelectFromLibrary}
+              filteredLibrary={filteredLibrary}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              showLibraryFor={showLibraryFor}
+              setShowLibraryFor={setShowLibraryFor}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Drops configuration */}
+      {exercise.exercise_name && (
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-sm font-medium text-red-600">
+              Configuration du Drop Set
+            </span>
+            <Button type="button" variant="outline" size="sm" onClick={addDrop} className="h-7">
+              <Plus className="h-3 w-3 mr-1" />
+              Drop
+            </Button>
+          </div>
+
+          <div className="space-y-2">
+            {dropSets.map((set, idx) => (
+              <div
+                key={idx}
+                className={cn(
+                  "rounded-lg p-3 border-2",
+                  styleConfig.borderColor,
+                  styleConfig.bgColor
+                )}
+              >
+                <div className="flex items-center gap-3 flex-wrap">
+                  <Badge className={cn("text-white", styleConfig.color)}>
+                    {idx === 0 ? "Série de départ" : `Drop ${idx}`}
+                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm">Reps</span>
+                    <Input
+                      className="h-8 w-24 text-sm"
+                      placeholder="Échec"
+                      value={set.reps}
+                      onChange={(e) => updateDrop(idx, "reps", e.target.value)}
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm">%1RM</span>
+                    <Input
+                      type="number"
+                      min="20"
+                      max="100"
+                      className="h-8 w-20 text-sm"
+                      value={set.percentage}
+                      onChange={(e) => updateDrop(idx, "percentage", parseInt(e.target.value) || 60)}
+                    />
+                  </div>
+                  {dropSets.length > 2 && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-destructive ml-auto"
+                      onClick={() => removeDrop(idx)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Tempo, Contraction Regime, RPE & Notes — same block as other methods */}
+      {exercise.exercise_name && (
+        <div className="space-y-2 pt-3 border-t">
+          <div className="flex items-center gap-4 flex-wrap">
+            <div className="flex items-center gap-2">
+              <Label className="text-sm">Tempo</Label>
+              <Input
+                className="h-8 w-24 text-sm"
+                placeholder="3-1-X-0"
+                value={exercise.tempo || ""}
+                onChange={(e) => onUpdateExercise(exerciseIndex, "tempo", e.target.value)}
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Label className="text-sm whitespace-nowrap">Régime</Label>
+              <Select
+                value={exercise.contraction_regime || ""}
+                onValueChange={(v) => onUpdateExercise(exerciseIndex, "contraction_regime", v || undefined)}
+              >
+                <SelectTrigger className="h-8 text-xs w-40">
+                  <SelectValue placeholder="Contraction..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="concentrique">Concentrique</SelectItem>
+                  <SelectItem value="excentrique">Excentrique</SelectItem>
+                  <SelectItem value="isometrique">Isométrique</SelectItem>
+                  <SelectItem value="pliometrique">Pliométrique</SelectItem>
+                  <SelectItem value="stato_dynamique">Stato-dynamique</SelectItem>
+                  <SelectItem value="concentrique_excentrique">Conc. + Exc.</SelectItem>
+                  <SelectItem value="excentrique_surcharge">Exc. surchargé</SelectItem>
+                  <SelectItem value="balistique">Balistique</SelectItem>
+                  <SelectItem value="isokinetique">Isocinétique</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-2">
+              <Label className="text-sm">RPE cible</Label>
+              <Input
+                type="number"
+                min="1"
+                max="10"
+                className="h-8 w-16 text-sm"
+                value={exercise.target_rpe || ""}
+                onChange={(e) => onUpdateExercise(exerciseIndex, "target_rpe", parseInt(e.target.value) || null)}
+              />
+            </div>
+          </div>
+          <div>
+            <Label className="text-xs text-muted-foreground">Notes / Consignes</Label>
+            <Textarea
+              className="min-h-[36px] text-xs resize-y"
+              placeholder="Consignes, explications..."
+              value={exercise.notes || ""}
+              onChange={(e) => onUpdateExercise(exerciseIndex, "notes", e.target.value)}
+              rows={1}
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Main export component
 export function TrainingMethodBlock(props: TrainingMethodBlockProps) {
   const { method, groupId, exercises, blockConfig, onUnlinkGroup, onValidate, onCancel } = props;
