@@ -281,7 +281,7 @@ export function AthleteWeightLogInput({ sessionId, playerId, value, onChange }: 
                 <Dumbbell className="h-3.5 w-3.5 text-primary shrink-0" />
                 <span className="text-xs font-medium truncate">{ex.exercise_name}</span>
                 {isSpecial && (
-                  <Badge variant="outline" className="text-[10px] gap-1 border-amber-500/50 text-amber-600 dark:text-amber-400">
+                  <Badge variant="outline" className="text-[10px] gap-1 border-warning/50 text-warning">
                     <Zap className="h-2.5 w-2.5" />
                     {METHOD_LABELS[method] || method}
                   </Badge>
