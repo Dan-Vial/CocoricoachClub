@@ -1,11 +1,17 @@
 import { useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
-import { Dumbbell } from "lucide-react";
+import { Dumbbell, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getCategoryLabel } from "@/lib/constants/exerciseCategories";
 import { getTrainingStyleConfig } from "@/lib/constants/trainingStyles";
 import { ExerciseMediaViewer } from "@/components/library/ExerciseMediaViewer";
 import { useExerciseMedia } from "@/lib/hooks/useExerciseMedia";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface Exercise {
   id?: string;
