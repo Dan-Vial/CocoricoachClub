@@ -817,6 +817,16 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
                     )}
 
 
+                    {/* Actual weights logged by the athlete (feeds Tonnage) */}
+                    {selectedSession && (
+                      <AthleteWeightLogInput
+                        sessionId={selectedSession}
+                        playerId={playerId}
+                        value={weightLogs}
+                        onChange={setWeightLogs}
+                      />
+                    )}
+
                     {/* Optional HRV section */}
                     <div className="space-y-3">
                       <div className="flex items-center gap-2">
