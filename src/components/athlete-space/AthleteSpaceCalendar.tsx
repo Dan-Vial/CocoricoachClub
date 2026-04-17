@@ -428,7 +428,7 @@ export function AthleteSpaceCalendar({ playerId, categoryId, sportType }: Props)
                             </button>
                             {isExpanded && exercises.length > 0 && (
                               <div className="px-3 pb-3 border-t border-border/50 pt-2">
-                                <GroupedExerciseList exercises={exercises} compact maxHeight="300px" />
+                                <GroupedExerciseList exercises={exercises} maxHeight="500px" />
                               </div>
                             )}
                           </div>
