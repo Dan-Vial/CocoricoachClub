@@ -23,6 +23,7 @@ import { PrecisionExerciseSelector } from "@/components/precision/PrecisionExerc
 import { AthletePrecisionFieldInput } from "./AthletePrecisionFieldInput";
 import { isRugbyType } from "@/lib/constants/sportTypes";
 import { RUGBY_PRECISION_EXERCISES, EXERCISE_CATEGORIES } from "@/lib/constants/rugbyPrecisionExercises";
+import { resolveSessionExerciseRows } from "@/lib/utils/sessionExercises";
 
 interface Props {
   playerId: string;
@@ -261,7 +262,7 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
   // Fetch exercises for all visible sessions
   const allSessionIds = useMemo(() => allSessions.map(s => s.id), [allSessions]);
   const { data: allSessionExercises = [] } = useQuery({
-    queryKey: ["athlete-rpe-exercises", allSessionIds],
+    queryKey: ["athlete-rpe-exercises", allSessionIds, playerId],
     queryFn: async () => {
       if (allSessionIds.length === 0) return [];
       const { data, error } = await supabase
@@ -270,7 +271,8 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
         .in("training_session_id", allSessionIds)
         .order("order_index");
       if (error) throw error;
-      return data || [];
+
+      return resolveSessionExerciseRows(data || [], playerId);
     },
     enabled: allSessionIds.length > 0,
   });
