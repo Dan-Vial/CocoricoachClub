@@ -262,19 +262,20 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
   // Fetch exercises for all visible sessions
   const allSessionIds = useMemo(() => allSessions.map(s => s.id), [allSessions]);
   const { data: rawSessionExercises = [] } = useQuery({
-    queryKey: ["athlete-rpe-exercises-v2", allSessionIds],
+    queryKey: ["athlete-rpe-exercises-v3", allSessionIds, playerId],
     queryFn: async () => {
       if (allSessionIds.length === 0) return [];
       const { data, error } = await supabase
         .from("gym_session_exercises")
         .select("*")
         .in("training_session_id", allSessionIds)
+        .or(`player_id.eq.${playerId},player_id.is.null`)
         .order("order_index");
       if (error) throw error;
 
       return data || [];
     },
-    enabled: allSessionIds.length > 0,
+    enabled: allSessionIds.length > 0 && !!playerId,
   });
 
   const allSessionExercises = useMemo(

@@ -30,14 +30,18 @@ export function resolveSessionExerciseRows<T extends SessionExerciseRow>(
 
   rowsBySession.forEach((sessionRows) => {
     const mine = sessionRows.filter((row) => row.player_id === playerId);
-
     if (mine.length > 0) {
       resolved.push(...mine);
       return;
     }
 
+    const templateRows = sessionRows.filter((row) => !row.player_id);
+    if (templateRows.length === 0) {
+      return;
+    }
+
     const seen = new Set<string>();
-    sessionRows.forEach((row) => {
+    templateRows.forEach((row) => {
       const key = [
         row.order_index ?? "",
         normalizeExerciseName(row.exercise_name),
