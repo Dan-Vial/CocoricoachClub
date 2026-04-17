@@ -535,6 +535,9 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
       setZone1(""); setZone2(""); setZone3(""); setZone4(""); setZone5("");
       setPrecisionExerciseId(null);
       setPrecisionExerciseLabel("");
+      setWeightLogs({});
+      queryClient.invalidateQueries({ queryKey: ["athlete-weight-log-existing"] });
+      queryClient.invalidateQueries({ queryKey: ["tonnage-logs"] });
     },
     onError: (error: any) => toast.error(error?.message || "Erreur lors de l'enregistrement"),
   });
