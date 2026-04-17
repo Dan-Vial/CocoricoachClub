@@ -3384,14 +3384,17 @@ export type Database = {
       gym_session_exercises: {
         Row: {
           category_id: string
+          cluster_sets: Json | null
           contraction_regime: string | null
           created_at: string
+          drop_sets: Json | null
           duration_seconds: number | null
           exercise_category: string | null
           exercise_name: string
           group_id: string | null
           id: string
           library_exercise_id: string | null
+          method: string | null
           notes: string | null
           order_index: number | null
           player_id: string
@@ -3407,14 +3410,17 @@ export type Database = {
         }
         Insert: {
           category_id: string
+          cluster_sets?: Json | null
           contraction_regime?: string | null
           created_at?: string
+          drop_sets?: Json | null
           duration_seconds?: number | null
           exercise_category?: string | null
           exercise_name: string
           group_id?: string | null
           id?: string
           library_exercise_id?: string | null
+          method?: string | null
           notes?: string | null
           order_index?: number | null
           player_id: string
@@ -3430,14 +3436,17 @@ export type Database = {
         }
         Update: {
           category_id?: string
+          cluster_sets?: Json | null
           contraction_regime?: string | null
           created_at?: string
+          drop_sets?: Json | null
           duration_seconds?: number | null
           exercise_category?: string | null
           exercise_name?: string
           group_id?: string | null
           id?: string
           library_exercise_id?: string | null
+          method?: string | null
           notes?: string | null
           order_index?: number | null
           player_id?: string
