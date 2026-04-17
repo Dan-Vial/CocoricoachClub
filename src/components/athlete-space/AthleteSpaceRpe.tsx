@@ -573,7 +573,7 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
         </button>
         {isExpanded && (
           <div className="mt-2 border-t border-border/50 pt-2">
-            <GroupedExerciseList exercises={exercises} compact maxHeight="250px" />
+            <GroupedExerciseList exercises={exercises} maxHeight="500px" />
           </div>
         )}
       </>
