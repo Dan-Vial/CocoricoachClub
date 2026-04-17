@@ -383,9 +383,11 @@ export function ProgramSessionCard({
     let dropSets: DropSet[] = [];
     
     if (method === "drop_set") {
-      dropSets = Array.from({ length: sets }, (_, i) => ({
-        reps: String(baseReps),
-        percentage: Math.max(basePercentage - (i * 12), 40),
+      // Drop Set: 1 série de départ + 3 drops à -20% chacun, jusqu'à l'échec
+      const dropCount = Math.max(sets, 4);
+      dropSets = Array.from({ length: dropCount }, (_, i) => ({
+        reps: i === 0 ? String(baseReps) : "Échec",
+        percentage: Math.max(basePercentage - (i * 20), 20),
       }));
     } else if (method === "pyramid_up") {
       dropSets = Array.from({ length: sets }, (_, i) => ({
