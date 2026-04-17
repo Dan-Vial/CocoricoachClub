@@ -936,7 +936,10 @@ export function SessionFormDialog({
               order_index: idx,
               library_exercise_id: ex.library_exercise_id,
               set_type: ex.set_type,
+              method: ex.set_type,
               group_id: ex.group_id,
+              drop_sets: ex.drop_sets ? (ex.drop_sets as any) : null,
+              cluster_sets: ex.cluster_sets ? (ex.cluster_sets as any) : null,
             }))
           );
 
