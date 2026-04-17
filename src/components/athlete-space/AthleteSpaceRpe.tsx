@@ -24,6 +24,11 @@ import { AthletePrecisionFieldInput } from "./AthletePrecisionFieldInput";
 import { isRugbyType } from "@/lib/constants/sportTypes";
 import { RUGBY_PRECISION_EXERCISES, EXERCISE_CATEGORIES } from "@/lib/constants/rugbyPrecisionExercises";
 import { resolveSessionExerciseRows } from "@/lib/utils/sessionExercises";
+import {
+  AthleteWeightLogInput,
+  buildWeightLogRecords,
+  type WeightLogState,
+} from "./AthleteWeightLogInput";
 
 interface Props {
   playerId: string;
@@ -258,6 +263,7 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
   const [zone3, setZone3] = useState("");
   const [zone4, setZone4] = useState("");
   const [zone5, setZone5] = useState("");
+  const [weightLogs, setWeightLogs] = useState<WeightLogState>({});
 
   // Fetch exercises for all visible sessions
   const allSessionIds = useMemo(() => allSessions.map(s => s.id), [allSessions]);
