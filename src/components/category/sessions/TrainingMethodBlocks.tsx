@@ -2099,6 +2099,8 @@ export function TrainingMethodBlock(props: TrainingMethodBlockProps) {
       case "pyramid_down":
       case "pyramid_full":
         return <PyramidBlock {...props} styleConfig={styleConfig} />;
+      case "drop_set":
+        return <DropSetBlock {...props} styleConfig={styleConfig} />;
       case "tabata":
         return <TabataBlock {...props} styleConfig={styleConfig} />;
       case "death_by":
