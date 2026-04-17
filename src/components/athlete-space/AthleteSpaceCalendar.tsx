@@ -237,7 +237,7 @@ export function AthleteSpaceCalendar({ playerId, categoryId, sportType }: Props)
   }, [sessionBlocks]);
 
   const { data: sessionExercises = [] } = useQuery({
-    queryKey: ["athlete-calendar-exercises", daySessionIds],
+    queryKey: ["athlete-calendar-exercises", daySessionIds, playerId],
     queryFn: async () => {
       if (daySessionIds.length === 0) return [];
       const { data, error } = await supabase
@@ -246,7 +246,19 @@ export function AthleteSpaceCalendar({ playerId, categoryId, sportType }: Props)
         .in("training_session_id", daySessionIds)
         .order("order_index");
       if (error) throw error;
-      return data || [];
+      // gym_session_exercises stores one row per (athlete × exercise).
+      // Keep only this athlete's rows, fallback to template rows (player_id null) if athlete has none.
+      const all = data || [];
+      const mine = all.filter((ex) => ex.player_id === playerId);
+      if (mine.length > 0) return mine;
+      // Fallback: deduplicate by (training_session_id, order_index, exercise_name, group_id)
+      const seen = new Set<string>();
+      return all.filter((ex) => {
+        const key = `${ex.training_session_id}|${ex.order_index}|${ex.exercise_name}|${ex.group_id ?? ""}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
     },
     enabled: daySessionIds.length > 0,
   });
