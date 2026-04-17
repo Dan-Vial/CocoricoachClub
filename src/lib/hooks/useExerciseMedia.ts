@@ -25,7 +25,7 @@ export function useExerciseMedia() {
   const { user } = useAuth();
 
   const { data: exercises } = useQuery({
-    queryKey: ["exercise-library-media", user?.id],
+    queryKey: ["exercise-library-media-v2", user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("exercise_library")
