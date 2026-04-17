@@ -190,26 +190,20 @@ export function GroupedExerciseList({
                   className="max-w-sm whitespace-pre-line text-xs leading-relaxed space-y-1"
                 >
                   <p className="font-semibold">{ex.exercise_name}</p>
-                  <p className="text-muted-foreground">
-                    {ex.sets} séries
-                    {ex.reps ? ` × ${ex.reps} reps` : ""}
-                    {ex.weight_kg ? ` @ ${ex.weight_kg} kg` : ""}
-                    {ex.rest_seconds ? ` — ${ex.rest_seconds}s repos` : ""}
+                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                    Consignes d'exécution
                   </p>
-                  {ex.tempo && <p className="text-muted-foreground">Tempo : {ex.tempo}</p>}
-                  {ex.contraction_regime && (
-                    <p className="text-muted-foreground">
-                      Régime : {contractionLabels[ex.contraction_regime] || ex.contraction_regime}
+                  {media?.description ? (
+                    <p>{media.description}</p>
+                  ) : (
+                    <p className="italic text-muted-foreground">
+                      Aucune consigne renseignée pour cet exercice.
                     </p>
                   )}
-                  {(ex.set_type && ex.set_type !== "normal") && (
-                    <p className="text-muted-foreground">
-                      Méthode : {setTypeLabels[ex.set_type] || ex.set_type}
+                  {ex.notes && (
+                    <p className="pt-1 border-t border-border/40 italic">
+                      Note coach : {ex.notes}
                     </p>
-                  )}
-                  {ex.notes && <p className="italic">{ex.notes}</p>}
-                  {media?.description && (
-                    <p className="pt-1 border-t border-border/40">{media.description}</p>
                   )}
                 </TooltipContent>
               </Tooltip>
