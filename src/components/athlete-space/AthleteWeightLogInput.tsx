@@ -223,8 +223,8 @@ export function AthleteWeightLogInput({ sessionId, playerId, value, onChange }: 
                 <span className="text-xs text-muted-foreground">kg</span>
                 <Input
                   type="number"
-                  placeholder="S"
-                  className="h-8 w-12 text-xs ml-2"
+                  placeholder="Séries"
+                  className="h-8 w-16 text-xs ml-2"
                   value={entry.sets}
                   onChange={(e) =>
                     updateEntry(ex.exercise_name, { ...entry, sets: e.target.value })
@@ -233,8 +233,8 @@ export function AthleteWeightLogInput({ sessionId, playerId, value, onChange }: 
                 <span className="text-xs text-muted-foreground">×</span>
                 <Input
                   type="number"
-                  placeholder="R"
-                  className="h-8 w-12 text-xs"
+                  placeholder="Reps"
+                  className="h-8 w-16 text-xs"
                   value={entry.reps}
                   onChange={(e) =>
                     updateEntry(ex.exercise_name, { ...entry, reps: e.target.value })
@@ -265,7 +265,7 @@ export function AthleteWeightLogInput({ sessionId, playerId, value, onChange }: 
                     <Input
                       type="number"
                       placeholder="reps"
-                      className="h-7 w-14 text-xs"
+                      className="h-7 w-20 text-xs"
                       value={serie.reps}
                       onChange={(e) => {
                         const next = [...entry.series];
