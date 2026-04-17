@@ -237,8 +237,8 @@ export function AthleteSpaceCalendar({ playerId, categoryId, sportType }: Props)
     }, {} as Record<string, typeof sessionBlocks>);
   }, [sessionBlocks]);
 
-  const { data: sessionExercises = [] } = useQuery({
-    queryKey: ["athlete-calendar-exercises", daySessionIds, playerId],
+  const { data: rawSessionExercises = [] } = useQuery({
+    queryKey: ["athlete-calendar-exercises-v2", daySessionIds],
     queryFn: async () => {
       if (daySessionIds.length === 0) return [];
       const { data, error } = await supabase
@@ -248,10 +248,15 @@ export function AthleteSpaceCalendar({ playerId, categoryId, sportType }: Props)
         .order("order_index");
       if (error) throw error;
 
-      return resolveSessionExerciseRows(data || [], playerId);
+      return data || [];
     },
     enabled: daySessionIds.length > 0,
   });
+
+  const sessionExercises = useMemo(
+    () => resolveSessionExerciseRows(rawSessionExercises, playerId),
+    [rawSessionExercises, playerId],
+  );
 
   const exercisesBySession = useMemo(() => {
     return sessionExercises.reduce((acc, ex) => {
