@@ -69,16 +69,16 @@ export function InjuryRiskPrediction({ categoryId }: InjuryRiskPredictionProps) 
       since.setDate(since.getDate() - 7);
       const { data, error } = await supabase
         .from("wellness_tracking")
-        .select("player_id, sleep_quality, fatigue_level, stress_level, muscle_soreness, has_specific_pain, recorded_at")
+        .select("player_id, sleep_quality, general_fatigue, stress_level, soreness_upper_body, soreness_lower_body, has_specific_pain, tracking_date")
         .eq("category_id", categoryId)
-        .gte("recorded_at", since.toISOString())
-        .order("recorded_at", { ascending: false });
+        .gte("tracking_date", since.toISOString().split("T")[0])
+        .order("tracking_date", { ascending: false });
       if (error) throw error;
       return data || [];
     },
   });
 
-  // HRV — last 7 days
+  // HRV — last 14 days
   const { data: hrvData } = useQuery({
     queryKey: ["hrv-risk", categoryId],
     queryFn: async () => {
@@ -86,10 +86,10 @@ export function InjuryRiskPrediction({ categoryId }: InjuryRiskPredictionProps) 
       since.setDate(since.getDate() - 14);
       const { data, error } = await supabase
         .from("hrv_records")
-        .select("player_id, rmssd, recorded_at")
+        .select("player_id, hrv_ms, record_date")
         .eq("category_id", categoryId)
-        .gte("recorded_at", since.toISOString())
-        .order("recorded_at", { ascending: false });
+        .gte("record_date", since.toISOString().split("T")[0])
+        .order("record_date", { ascending: false });
       if (error) throw error;
       return data || [];
     },
@@ -103,7 +103,7 @@ export function InjuryRiskPrediction({ categoryId }: InjuryRiskPredictionProps) 
       since.setDate(since.getDate() - 14);
       const { data, error } = await supabase
         .from("gps_sessions")
-        .select("player_id, total_distance_m, hsr_distance_m, sprint_distance_m, session_date")
+        .select("player_id, total_distance_m, high_speed_distance_m, sprint_distance_m, session_date")
         .eq("category_id", categoryId)
         .gte("session_date", since.toISOString().split("T")[0])
         .order("session_date", { ascending: false });
@@ -176,8 +176,11 @@ export function InjuryRiskPrediction({ categoryId }: InjuryRiskPredictionProps) 
       // ===== Wellness (fatigue + pain) =====
       const wellness = (wellnessData || []).filter(w => w.player_id === playerId).slice(0, 3);
       if (wellness.length > 0) {
-        const avgFatigue = wellness.reduce((s, w) => s + (w.fatigue_level || 0), 0) / wellness.length;
-        const avgSoreness = wellness.reduce((s, w) => s + (w.muscle_soreness || 0), 0) / wellness.length;
+        const avgFatigue = wellness.reduce((s, w) => s + (w.general_fatigue || 0), 0) / wellness.length;
+        const avgSoreness = wellness.reduce(
+          (s, w) => s + (((w.soreness_upper_body || 0) + (w.soreness_lower_body || 0)) / 2),
+          0,
+        ) / wellness.length;
         const hasPain = wellness.some(w => w.has_specific_pain);
         if (hasPain) {
           riskScore += 20;
@@ -198,8 +201,8 @@ export function InjuryRiskPrediction({ categoryId }: InjuryRiskPredictionProps) 
       if (hrv.length >= 5) {
         const recent3 = hrv.slice(0, 3);
         const baseline = hrv.slice(3);
-        const avgRecent = recent3.reduce((s, h) => s + Number(h.rmssd || 0), 0) / recent3.length;
-        const avgBase = baseline.reduce((s, h) => s + Number(h.rmssd || 0), 0) / baseline.length;
+        const avgRecent = recent3.reduce((s, h) => s + Number(h.hrv_ms || 0), 0) / recent3.length;
+        const avgBase = baseline.reduce((s, h) => s + Number(h.hrv_ms || 0), 0) / baseline.length;
         if (avgBase > 0 && avgRecent < avgBase * 0.9) {
           const drop = ((avgBase - avgRecent) / avgBase) * 100;
           riskScore += 15;
@@ -212,8 +215,8 @@ export function InjuryRiskPrediction({ categoryId }: InjuryRiskPredictionProps) 
       if (gps.length >= 4) {
         const recent = gps.slice(0, 2);
         const baseline = gps.slice(2);
-        const avgRecentHsr = recent.reduce((s, g) => s + Number(g.hsr_distance_m || 0), 0) / recent.length;
-        const avgBaseHsr = baseline.reduce((s, g) => s + Number(g.hsr_distance_m || 0), 0) / baseline.length;
+        const avgRecentHsr = recent.reduce((s, g) => s + Number(g.high_speed_distance_m || 0), 0) / recent.length;
+        const avgBaseHsr = baseline.reduce((s, g) => s + Number(g.high_speed_distance_m || 0), 0) / baseline.length;
         if (avgBaseHsr > 0 && avgRecentHsr > avgBaseHsr * 1.3) {
           riskScore += 12;
           factors.push(`Pic HSR détecté (+${(((avgRecentHsr / avgBaseHsr) - 1) * 100).toFixed(0)}%)`);
