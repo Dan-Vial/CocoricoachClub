@@ -196,11 +196,12 @@ export function AthleteWeightLogInput({ sessionId, playerId, value, onChange }: 
           ),
         };
       } else {
+        // Pre-fill with prescribed values; fall back to 3×10 so the athlete only has the weight to enter.
         next[ex.exercise_name] = {
           mode: "quick",
           weight: ex.weight_kg ? String(ex.weight_kg) : "",
-          sets: ex.sets ? String(ex.sets) : "",
-          reps: ex.reps ? String(ex.reps) : "",
+          sets: ex.sets ? String(ex.sets) : "3",
+          reps: ex.reps ? String(ex.reps) : "10",
         };
       }
       mutated = true;
