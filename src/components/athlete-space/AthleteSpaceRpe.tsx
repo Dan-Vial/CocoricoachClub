@@ -27,6 +27,7 @@ import { resolveSessionExerciseRows } from "@/lib/utils/sessionExercises";
 import {
   AthleteWeightLogInput,
   buildWeightLogRecords,
+  countIncompleteWeightLogs,
   type WeightLogState,
 } from "./AthleteWeightLogInput";
 
@@ -537,7 +538,8 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
       setPrecisionExerciseLabel("");
       setWeightLogs({});
       queryClient.invalidateQueries({ queryKey: ["athlete-weight-log-existing"] });
-      queryClient.invalidateQueries({ queryKey: ["tonnage-logs"] });
+      queryClient.invalidateQueries({ queryKey: ["athlete-exercise-logs"] });
+      queryClient.invalidateQueries({ queryKey: ["athlete-exercise-logs-dashboard"] });
     },
     onError: (error: any) => toast.error(error?.message || "Erreur lors de l'enregistrement"),
   });
@@ -948,7 +950,16 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
                     </div>
 
                     <Button
-                      onClick={() => submitRpe.mutate()}
+                      onClick={() => {
+                        const incomplete = countIncompleteWeightLogs(weightLogs);
+                        if (incomplete > 0) {
+                          const ok = window.confirm(
+                            `${incomplete} exercice${incomplete > 1 ? "s" : ""} de musculation sans charge renseignée.\n\nValider quand même ? (Le tonnage de ces exercices ne sera pas comptabilisé.)`
+                          );
+                          if (!ok) return;
+                        }
+                        submitRpe.mutate();
+                      }}
                       disabled={!duration || !isSpareStatsValid || submitRpe.isPending}
                       className="w-full"
                     >
