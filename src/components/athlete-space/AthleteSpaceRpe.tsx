@@ -950,7 +950,16 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
                     </div>
 
                     <Button
-                      onClick={() => submitRpe.mutate()}
+                      onClick={() => {
+                        const incomplete = countIncompleteWeightLogs(weightLogs);
+                        if (incomplete > 0) {
+                          const ok = window.confirm(
+                            `${incomplete} exercice${incomplete > 1 ? "s" : ""} de musculation sans charge renseignée.\n\nValider quand même ? (Le tonnage de ces exercices ne sera pas comptabilisé.)`
+                          );
+                          if (!ok) return;
+                        }
+                        submitRpe.mutate();
+                      }}
                       disabled={!duration || !isSpareStatsValid || submitRpe.isPending}
                       className="w-full"
                     >
