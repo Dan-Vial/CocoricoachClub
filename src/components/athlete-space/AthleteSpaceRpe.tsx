@@ -27,6 +27,7 @@ import { resolveSessionExerciseRows } from "@/lib/utils/sessionExercises";
 import {
   AthleteWeightLogInput,
   buildWeightLogRecords,
+  countIncompleteWeightLogs,
   type WeightLogState,
 } from "./AthleteWeightLogInput";
 
