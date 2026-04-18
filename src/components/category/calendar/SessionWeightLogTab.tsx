@@ -152,7 +152,7 @@ export function SessionWeightLogTab({
                             type="number"
                             step="0.5"
                             placeholder="kg"
-                            className="h-6 w-14 text-xs"
+                            className="h-8 w-16 text-sm px-2"
                             value={logValues?.weight || ""}
                             onChange={(e) =>
                               onWeightLogChange(player.id, exercise.name, "weight", e.target.value)
@@ -161,7 +161,7 @@ export function SessionWeightLogTab({
                           <Input
                             type="number"
                             placeholder="S"
-                            className="h-6 w-10 text-xs"
+                            className="h-8 w-14 text-sm px-2"
                             value={logValues?.sets || exercise.sets?.toString() || ""}
                             onChange={(e) =>
                               onWeightLogChange(player.id, exercise.name, "sets", e.target.value)
@@ -171,7 +171,7 @@ export function SessionWeightLogTab({
                           <Input
                             type="number"
                             placeholder="R"
-                            className="h-6 w-10 text-xs"
+                            className="h-8 w-14 text-sm px-2"
                             value={logValues?.reps || exercise.reps?.toString() || ""}
                             onChange={(e) =>
                               onWeightLogChange(player.id, exercise.name, "reps", e.target.value)
