@@ -607,3 +607,23 @@ export function buildWeightLogRecords(
 
   return out;
 }
+
+/**
+ * Count how many gym exercises in the state still have no usable weight/reps entered.
+ * Used to warn the athlete before validating their RPE.
+ */
+export function countIncompleteWeightLogs(state: WeightLogState): number {
+  let incomplete = 0;
+  Object.values(state).forEach((entry) => {
+    if (entry.mode === "quick") {
+      const w = parseFloat(entry.weight);
+      const s = parseInt(entry.sets);
+      const r = parseInt(entry.reps);
+      if (!w || !s || !r) incomplete += 1;
+      return;
+    }
+    const hasAny = entry.series.some((sr) => parseFloat(sr.weight) > 0 && parseInt(sr.reps) > 0);
+    if (!hasAny) incomplete += 1;
+  });
+  return incomplete;
+}
