@@ -554,8 +554,9 @@ export function buildWeightLogRecords(
   actual_weight_kg: number;
   actual_sets: number;
   actual_reps: number;
-  tonnage: number;
 }> {
+  // NOTE: `tonnage` is a GENERATED column in DB (weight × sets × reps).
+  // We must NOT include it in the insert payload — Postgres will reject the row otherwise.
   const out: ReturnType<typeof buildWeightLogRecords> = [];
 
   Object.entries(state).forEach(([exerciseName, entry]) => {
@@ -572,12 +573,11 @@ export function buildWeightLogRecords(
         actual_weight_kg: weight,
         actual_sets: sets,
         actual_reps: reps,
-        tonnage: weight * sets * reps,
       });
       return;
     }
 
-    // detailed OR special: aggregate exactly per sub-set
+    // detailed OR special (drop set / cluster / rest-pause / pyramid): aggregate exactly per sub-set
     const series = entry.mode === "detailed" ? entry.series : entry.series;
     let totalTonnage = 0;
     let totalReps = 0;
@@ -591,17 +591,18 @@ export function buildWeightLogRecords(
       validSeries += 1;
     });
     if (validSeries === 0 || totalReps === 0) return;
-    const avgWeight = Math.round((totalTonnage / totalReps) * 10) / 10;
-    const avgReps = Math.round(totalReps / validSeries);
+    // Reconstruct an "equivalent weight" so that weight × sets × reps = totalTonnage in DB.
+    // We use sets=1, reps=totalReps and weight=totalTonnage/totalReps to keep the generated
+    // tonnage exact even for drop sets / clusters where the real volume ≠ avg×sets×reps.
+    const equivalentWeight = Math.round((totalTonnage / totalReps) * 100) / 100;
     out.push({
       player_id: ctx.playerId,
       category_id: ctx.categoryId,
       training_session_id: ctx.trainingSessionId,
       exercise_name: exerciseName,
-      actual_weight_kg: avgWeight,
-      actual_sets: validSeries,
-      actual_reps: avgReps,
-      tonnage: totalTonnage,
+      actual_weight_kg: equivalentWeight,
+      actual_sets: 1,
+      actual_reps: totalReps,
     });
   });
 
