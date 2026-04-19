@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/components/ui/sonner";
-import { Bell, Plus, Send, Mail, Smartphone, Trash2, Building2, Users, Globe } from "lucide-react";
+import { Bell, Plus, Send, Mail, Smartphone, Trash2, Building2, Users, Globe, Briefcase } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 
@@ -22,6 +22,7 @@ export function SuperAdminNotifications() {
   const queryClient = useQueryClient();
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [selectedClubIds, setSelectedClubIds] = useState<string[]>([]);
+  const [selectedClientIds, setSelectedClientIds] = useState<string[]>([]);
   const [form, setForm] = useState({
     title: "",
     message: "",
@@ -58,6 +59,19 @@ export function SuperAdminNotifications() {
     },
   });
 
+  // Fetch clients for targeting (a client may own multiple clubs/categories)
+  const { data: clients = [] } = useQuery({
+    queryKey: ["super-admin-clients-for-notif"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("clients")
+        .select("id, name, email")
+        .order("name");
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const resetForm = () => {
     setForm({
       title: "",
@@ -68,18 +82,26 @@ export function SuperAdminNotifications() {
       is_push: true,
     });
     setSelectedClubIds([]);
+    setSelectedClientIds([]);
   };
 
   // Send notification via edge function
   const sendNotification = useMutation({
     mutationFn: async () => {
-      // Save to database
+      const targetIds =
+        form.target_type === "club"
+          ? selectedClubIds
+          : form.target_type === "client"
+            ? selectedClientIds
+            : null;
+
+      // Save record (audit trail)
       const { error: dbError } = await supabase.from("global_notifications").insert({
         title: form.title,
         message: form.message,
         notification_type: form.notification_type,
         target_type: form.target_type,
-        target_ids: form.target_type === "club" ? selectedClubIds : null,
+        target_ids: targetIds,
         is_email: form.is_email,
         is_push: form.is_push,
         created_by: user?.id,
@@ -87,14 +109,15 @@ export function SuperAdminNotifications() {
       });
       if (dbError) throw dbError;
 
-      // Send push via edge function
+      // Send via dedicated edge function
       if (form.is_push || form.is_email) {
-        const { error: fnError } = await supabase.functions.invoke("push-notifications", {
+        const { data, error: fnError } = await supabase.functions.invoke("send-global-notification", {
           body: {
             title: form.title,
             message: form.message,
+            notification_type: form.notification_type,
             target_type: form.target_type,
-            target_ids: form.target_type === "club" ? selectedClubIds : [],
+            target_ids: targetIds ?? [],
             channels: {
               push: form.is_push,
               email: form.is_email,
@@ -102,15 +125,21 @@ export function SuperAdminNotifications() {
           },
         });
         if (fnError) {
-          console.error("Push error:", fnError);
-          // Don't throw - notification was saved, just push failed
-          toast.warning("Notification enregistrée mais l'envoi push a échoué");
+          console.error("Send error:", fnError);
+          toast.warning("Notification enregistrée mais l'envoi a échoué");
           return;
+        }
+        const summary = data as { push_sent?: number; email_sent?: number; total_users?: number };
+        if (summary?.total_users === 0) {
+          toast.warning("Aucun utilisateur cible trouvé");
+        } else {
+          toast.success(
+            `Envoyé : ${summary?.push_sent ?? 0} push, ${summary?.email_sent ?? 0} emails (${summary?.total_users ?? 0} utilisateurs)`
+          );
         }
       }
     },
     onSuccess: () => {
-      toast.success("Notification envoyée avec succès");
       queryClient.invalidateQueries({ queryKey: ["global-notifications"] });
       setIsAddOpen(false);
       resetForm();
