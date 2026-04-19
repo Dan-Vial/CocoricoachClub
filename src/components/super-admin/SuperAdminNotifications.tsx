@@ -176,6 +176,20 @@ export function SuperAdminNotifications() {
     }
   };
 
+  const toggleClient = (clientId: string) => {
+    setSelectedClientIds((prev) =>
+      prev.includes(clientId) ? prev.filter((id) => id !== clientId) : [...prev, clientId]
+    );
+  };
+
+  const selectAllClients = () => {
+    if (selectedClientIds.length === clients.length) {
+      setSelectedClientIds([]);
+    } else {
+      setSelectedClientIds(clients.map((c: any) => c.id));
+    }
+  };
+
   const getTypeBadge = (type: string) => {
     switch (type) {
       case "info":
