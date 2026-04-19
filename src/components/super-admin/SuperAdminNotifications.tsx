@@ -211,15 +211,27 @@ export function SuperAdminNotifications() {
         return "Tous les utilisateurs";
       case "staff":
         return "Staff uniquement";
-      case "club":
+      case "client": {
+        const count = notif.target_ids?.length || 0;
+        return `${count} client(s)`;
+      }
+      case "club": {
         const count = notif.target_ids?.length || 0;
         return `${count} club(s)`;
+      }
       default:
         return notif.target_type;
     }
   };
 
-  const canSend = form.title && form.message && (form.target_type !== "club" || selectedClubIds.length > 0);
+  const canSend =
+    form.title &&
+    form.message &&
+    (form.target_type === "club"
+      ? selectedClubIds.length > 0
+      : form.target_type === "client"
+        ? selectedClientIds.length > 0
+        : true);
 
   return (
     <Card>
@@ -291,6 +303,7 @@ export function SuperAdminNotifications() {
                       onValueChange={(v) => {
                         setForm({ ...form, target_type: v });
                         if (v !== "club") setSelectedClubIds([]);
+                        if (v !== "client") setSelectedClientIds([]);
                       }}
                     >
                       <SelectTrigger>
@@ -307,6 +320,11 @@ export function SuperAdminNotifications() {
                             <Users className="h-4 w-4" /> Staff uniquement
                           </span>
                         </SelectItem>
+                        <SelectItem value="client">
+                          <span className="flex items-center gap-2">
+                            <Briefcase className="h-4 w-4" /> Par client(s)
+                          </span>
+                        </SelectItem>
                         <SelectItem value="club">
                           <span className="flex items-center gap-2">
                             <Building2 className="h-4 w-4" /> Par club(s)
@@ -316,6 +334,46 @@ export function SuperAdminNotifications() {
                     </Select>
                   </div>
                 </div>
+
+                {/* Client selection */}
+                {form.target_type === "client" && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label>Sélectionner les clients</Label>
+                      <Button variant="ghost" size="sm" onClick={selectAllClients}>
+                        {selectedClientIds.length === clients.length ? "Tout décocher" : "Tout cocher"}
+                      </Button>
+                    </div>
+                    <div className="border rounded-lg max-h-48 overflow-y-auto p-2 space-y-1">
+                      {clients.map((client: any) => (
+                        <label
+                          key={client.id}
+                          className="flex items-center gap-2 p-2 rounded hover:bg-muted/50 cursor-pointer"
+                        >
+                          <Checkbox
+                            checked={selectedClientIds.includes(client.id)}
+                            onCheckedChange={() => toggleClient(client.id)}
+                          />
+                          <Briefcase className="h-4 w-4 text-muted-foreground" />
+                          <div className="flex flex-col">
+                            <span className="text-sm font-medium">{client.name}</span>
+                            {client.email && (
+                              <span className="text-xs text-muted-foreground">{client.email}</span>
+                            )}
+                          </div>
+                        </label>
+                      ))}
+                      {clients.length === 0 && (
+                        <p className="text-sm text-muted-foreground text-center py-2">Aucun client</p>
+                      )}
+                    </div>
+                    {selectedClientIds.length > 0 && (
+                      <p className="text-xs text-muted-foreground">
+                        {selectedClientIds.length} client(s) sélectionné(s) — toutes leurs catégories seront notifiées
+                      </p>
+                    )}
+                  </div>
+                )}
 
                 {/* Club selection */}
                 {form.target_type === "club" && (
