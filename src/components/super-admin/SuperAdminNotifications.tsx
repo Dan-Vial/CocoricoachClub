@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/components/ui/sonner";
-import { Bell, Plus, Send, Mail, Smartphone, Trash2, Building2, Users, Globe } from "lucide-react";
+import { Bell, Plus, Send, Mail, Smartphone, Trash2, Building2, Users, Globe, Briefcase } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 
@@ -22,6 +22,7 @@ export function SuperAdminNotifications() {
   const queryClient = useQueryClient();
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [selectedClubIds, setSelectedClubIds] = useState<string[]>([]);
+  const [selectedClientIds, setSelectedClientIds] = useState<string[]>([]);
   const [form, setForm] = useState({
     title: "",
     message: "",
@@ -58,6 +59,19 @@ export function SuperAdminNotifications() {
     },
   });
 
+  // Fetch clients for targeting (a client may own multiple clubs/categories)
+  const { data: clients = [] } = useQuery({
+    queryKey: ["super-admin-clients-for-notif"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("clients")
+        .select("id, name, email")
+        .order("name");
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const resetForm = () => {
     setForm({
       title: "",
@@ -68,18 +82,26 @@ export function SuperAdminNotifications() {
       is_push: true,
     });
     setSelectedClubIds([]);
+    setSelectedClientIds([]);
   };
 
   // Send notification via edge function
   const sendNotification = useMutation({
     mutationFn: async () => {
-      // Save to database
+      const targetIds =
+        form.target_type === "club"
+          ? selectedClubIds
+          : form.target_type === "client"
+            ? selectedClientIds
+            : null;
+
+      // Save record (audit trail)
       const { error: dbError } = await supabase.from("global_notifications").insert({
         title: form.title,
         message: form.message,
         notification_type: form.notification_type,
         target_type: form.target_type,
-        target_ids: form.target_type === "club" ? selectedClubIds : null,
+        target_ids: targetIds,
         is_email: form.is_email,
         is_push: form.is_push,
         created_by: user?.id,
@@ -87,14 +109,15 @@ export function SuperAdminNotifications() {
       });
       if (dbError) throw dbError;
 
-      // Send push via edge function
+      // Send via dedicated edge function
       if (form.is_push || form.is_email) {
-        const { error: fnError } = await supabase.functions.invoke("push-notifications", {
+        const { data, error: fnError } = await supabase.functions.invoke("send-global-notification", {
           body: {
             title: form.title,
             message: form.message,
+            notification_type: form.notification_type,
             target_type: form.target_type,
-            target_ids: form.target_type === "club" ? selectedClubIds : [],
+            target_ids: targetIds ?? [],
             channels: {
               push: form.is_push,
               email: form.is_email,
@@ -102,15 +125,21 @@ export function SuperAdminNotifications() {
           },
         });
         if (fnError) {
-          console.error("Push error:", fnError);
-          // Don't throw - notification was saved, just push failed
-          toast.warning("Notification enregistrée mais l'envoi push a échoué");
+          console.error("Send error:", fnError);
+          toast.warning("Notification enregistrée mais l'envoi a échoué");
           return;
+        }
+        const summary = data as { push_sent?: number; email_sent?: number; total_users?: number };
+        if (summary?.total_users === 0) {
+          toast.warning("Aucun utilisateur cible trouvé");
+        } else {
+          toast.success(
+            `Envoyé : ${summary?.push_sent ?? 0} push, ${summary?.email_sent ?? 0} emails (${summary?.total_users ?? 0} utilisateurs)`
+          );
         }
       }
     },
     onSuccess: () => {
-      toast.success("Notification envoyée avec succès");
       queryClient.invalidateQueries({ queryKey: ["global-notifications"] });
       setIsAddOpen(false);
       resetForm();
@@ -147,6 +176,20 @@ export function SuperAdminNotifications() {
     }
   };
 
+  const toggleClient = (clientId: string) => {
+    setSelectedClientIds((prev) =>
+      prev.includes(clientId) ? prev.filter((id) => id !== clientId) : [...prev, clientId]
+    );
+  };
+
+  const selectAllClients = () => {
+    if (selectedClientIds.length === clients.length) {
+      setSelectedClientIds([]);
+    } else {
+      setSelectedClientIds(clients.map((c: any) => c.id));
+    }
+  };
+
   const getTypeBadge = (type: string) => {
     switch (type) {
       case "info":
@@ -168,15 +211,27 @@ export function SuperAdminNotifications() {
         return "Tous les utilisateurs";
       case "staff":
         return "Staff uniquement";
-      case "club":
+      case "client": {
+        const count = notif.target_ids?.length || 0;
+        return `${count} client(s)`;
+      }
+      case "club": {
         const count = notif.target_ids?.length || 0;
         return `${count} club(s)`;
+      }
       default:
         return notif.target_type;
     }
   };
 
-  const canSend = form.title && form.message && (form.target_type !== "club" || selectedClubIds.length > 0);
+  const canSend =
+    form.title &&
+    form.message &&
+    (form.target_type === "club"
+      ? selectedClubIds.length > 0
+      : form.target_type === "client"
+        ? selectedClientIds.length > 0
+        : true);
 
   return (
     <Card>
@@ -248,6 +303,7 @@ export function SuperAdminNotifications() {
                       onValueChange={(v) => {
                         setForm({ ...form, target_type: v });
                         if (v !== "club") setSelectedClubIds([]);
+                        if (v !== "client") setSelectedClientIds([]);
                       }}
                     >
                       <SelectTrigger>
@@ -264,6 +320,11 @@ export function SuperAdminNotifications() {
                             <Users className="h-4 w-4" /> Staff uniquement
                           </span>
                         </SelectItem>
+                        <SelectItem value="client">
+                          <span className="flex items-center gap-2">
+                            <Briefcase className="h-4 w-4" /> Par client(s)
+                          </span>
+                        </SelectItem>
                         <SelectItem value="club">
                           <span className="flex items-center gap-2">
                             <Building2 className="h-4 w-4" /> Par club(s)
@@ -273,6 +334,46 @@ export function SuperAdminNotifications() {
                     </Select>
                   </div>
                 </div>
+
+                {/* Client selection */}
+                {form.target_type === "client" && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label>Sélectionner les clients</Label>
+                      <Button variant="ghost" size="sm" onClick={selectAllClients}>
+                        {selectedClientIds.length === clients.length ? "Tout décocher" : "Tout cocher"}
+                      </Button>
+                    </div>
+                    <div className="border rounded-lg max-h-48 overflow-y-auto p-2 space-y-1">
+                      {clients.map((client: any) => (
+                        <label
+                          key={client.id}
+                          className="flex items-center gap-2 p-2 rounded hover:bg-muted/50 cursor-pointer"
+                        >
+                          <Checkbox
+                            checked={selectedClientIds.includes(client.id)}
+                            onCheckedChange={() => toggleClient(client.id)}
+                          />
+                          <Briefcase className="h-4 w-4 text-muted-foreground" />
+                          <div className="flex flex-col">
+                            <span className="text-sm font-medium">{client.name}</span>
+                            {client.email && (
+                              <span className="text-xs text-muted-foreground">{client.email}</span>
+                            )}
+                          </div>
+                        </label>
+                      ))}
+                      {clients.length === 0 && (
+                        <p className="text-sm text-muted-foreground text-center py-2">Aucun client</p>
+                      )}
+                    </div>
+                    {selectedClientIds.length > 0 && (
+                      <p className="text-xs text-muted-foreground">
+                        {selectedClientIds.length} client(s) sélectionné(s) — toutes leurs catégories seront notifiées
+                      </p>
+                    )}
+                  </div>
+                )}
 
                 {/* Club selection */}
                 {form.target_type === "club" && (
