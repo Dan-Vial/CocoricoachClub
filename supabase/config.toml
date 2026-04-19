@@ -38,3 +38,6 @@ verify_jwt = false
 
 [functions.ewma-rest-day-decay]
 verify_jwt = false
+
+[functions.send-global-notification]
+verify_jwt = true
