@@ -157,88 +157,88 @@
      }
    };
  
-   const VideoForm = () => (
-     <div className="space-y-4">
-       <div className="space-y-2">
-         <Label>Titre *</Label>
-         <Input
-           value={form.title}
-           onChange={(e) => setForm({ ...form, title: e.target.value })}
-           placeholder="Titre de la vidéo"
-         />
-       </div>
-       <div className="space-y-2">
-         <Label>URL de la vidéo *</Label>
-         <Input
-           value={form.video_url}
-           onChange={(e) => setForm({ ...form, video_url: e.target.value })}
-           placeholder="https://youtube.com/watch?v=..."
-         />
-       </div>
-       <div className="space-y-2">
-         <Label>Description</Label>
-         <Textarea
-           value={form.description}
-           onChange={(e) => setForm({ ...form, description: e.target.value })}
-           placeholder="Description de la vidéo..."
-         />
-       </div>
-       <div className="grid grid-cols-2 gap-4">
-         <div className="space-y-2">
-           <Label>Catégorie</Label>
-           <Select
-             value={form.category}
-             onValueChange={(v) => setForm({ ...form, category: v })}
-           >
-             <SelectTrigger>
-               <SelectValue />
-             </SelectTrigger>
-             <SelectContent>
-               <SelectItem value="general">Général</SelectItem>
-               <SelectItem value="getting_started">Démarrage</SelectItem>
-               <SelectItem value="features">Fonctionnalités</SelectItem>
-               <SelectItem value="tips">Astuces</SelectItem>
-               <SelectItem value="updates">Mises à jour</SelectItem>
-             </SelectContent>
-           </Select>
-         </div>
-         <div className="space-y-2">
-           <Label>Visibilité</Label>
-           <Select
-             value={form.visibility}
-             onValueChange={(v) => setForm({ ...form, visibility: v })}
-           >
-             <SelectTrigger>
-               <SelectValue />
-             </SelectTrigger>
-             <SelectContent>
-               <SelectItem value="all">Tous les utilisateurs</SelectItem>
-               <SelectItem value="staff">Staff uniquement</SelectItem>
-               <SelectItem value="admin">Admins uniquement</SelectItem>
-               <SelectItem value="super_admin">Super Admin uniquement</SelectItem>
-             </SelectContent>
-           </Select>
-         </div>
-       </div>
-       <div className="space-y-2">
-         <Label>URL Miniature (optionnel)</Label>
-         <Input
-           value={form.thumbnail_url}
-           onChange={(e) => setForm({ ...form, thumbnail_url: e.target.value })}
-           placeholder="https://..."
-         />
-       </div>
-       <div className="flex items-center gap-2">
-         <Switch
-           checked={form.is_active}
-           onCheckedChange={(checked) => setForm({ ...form, is_active: checked })}
-         />
-         <Label>Vidéo active</Label>
-       </div>
-     </div>
-   );
- 
-   return (
+  const videoFormContent = (
+    <div className="space-y-4">
+      <div className="space-y-2">
+        <Label>Titre *</Label>
+        <Input
+          value={form.title}
+          onChange={(e) => setForm({ ...form, title: e.target.value })}
+          placeholder="Titre de la vidéo"
+        />
+      </div>
+      <div className="space-y-2">
+        <Label>URL de la vidéo *</Label>
+        <Input
+          value={form.video_url}
+          onChange={(e) => setForm({ ...form, video_url: e.target.value })}
+          placeholder="https://youtube.com/watch?v=..."
+        />
+      </div>
+      <div className="space-y-2">
+        <Label>Description</Label>
+        <Textarea
+          value={form.description}
+          onChange={(e) => setForm({ ...form, description: e.target.value })}
+          placeholder="Description de la vidéo..."
+        />
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label>Catégorie</Label>
+          <Select
+            value={form.category}
+            onValueChange={(v) => setForm({ ...form, category: v })}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="general">Général</SelectItem>
+              <SelectItem value="getting_started">Démarrage</SelectItem>
+              <SelectItem value="features">Fonctionnalités</SelectItem>
+              <SelectItem value="tips">Astuces</SelectItem>
+              <SelectItem value="updates">Mises à jour</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label>Visibilité</Label>
+          <Select
+            value={form.visibility}
+            onValueChange={(v) => setForm({ ...form, visibility: v })}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tous les utilisateurs</SelectItem>
+              <SelectItem value="staff">Staff uniquement</SelectItem>
+              <SelectItem value="admin">Admins uniquement</SelectItem>
+              <SelectItem value="super_admin">Super Admin uniquement</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+      <div className="space-y-2">
+        <Label>URL Miniature (optionnel)</Label>
+        <Input
+          value={form.thumbnail_url}
+          onChange={(e) => setForm({ ...form, thumbnail_url: e.target.value })}
+          placeholder="https://..."
+        />
+      </div>
+      <div className="flex items-center gap-2">
+        <Switch
+          checked={form.is_active}
+          onCheckedChange={(checked) => setForm({ ...form, is_active: checked })}
+        />
+        <Label>Vidéo active</Label>
+      </div>
+    </div>
+  );
+
+  return (
      <Card>
        <CardHeader>
          <div className="flex items-center justify-between">
