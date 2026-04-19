@@ -262,7 +262,7 @@
                <DialogHeader>
                  <DialogTitle>Nouvelle vidéo</DialogTitle>
                </DialogHeader>
-               <VideoForm />
+               {videoFormContent}
                <DialogFooter>
                  <Button variant="outline" onClick={() => setIsAddOpen(false)}>
                    Annuler
@@ -347,7 +347,7 @@
              <DialogHeader>
                <DialogTitle>Modifier la vidéo</DialogTitle>
              </DialogHeader>
-             <VideoForm />
+             {videoFormContent}
              <DialogFooter>
                <Button variant="outline" onClick={() => setEditingVideo(null)}>
                  Annuler
