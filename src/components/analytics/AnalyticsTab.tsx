@@ -3,11 +3,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PerformanceEvolution } from "./PerformanceEvolution";
-import { MultiAthleteComparison } from "./MultiAthleteComparison";
 import { InjuryRiskPrediction } from "./InjuryRiskPrediction";
-import { PerformanceHeatmap } from "./PerformanceHeatmap";
+
 import { AIPredictiveDashboard } from "./AIPredictiveDashboard";
-import { IntensityComparisonDashboard } from "./IntensityComparisonDashboard";
 
 interface AnalyticsTabProps {
   categoryId: string;
@@ -38,11 +36,9 @@ export function AnalyticsTab({ categoryId }: AnalyticsTabProps) {
       <CardContent>
         <Tabs defaultValue="evolution" className="space-y-4">
           <TabsList className="flex flex-wrap h-auto gap-1">
-            <TabsTrigger value="evolution" className="text-xs sm:text-sm">Évolution</TabsTrigger>
-            <TabsTrigger value="comparison" className="text-xs sm:text-sm">Comparaison</TabsTrigger>
-            <TabsTrigger value="intensity" className="text-xs sm:text-sm">Intensité</TabsTrigger>
-            <TabsTrigger value="heatmap" className="text-xs sm:text-sm">Heatmap</TabsTrigger>
-            <TabsTrigger value="risk" className="text-xs sm:text-sm">Risques</TabsTrigger>
+            <TabsTrigger value="evolution" className="text-xs sm:text-sm">Évolution & Comparaison</TabsTrigger>
+            
+            <TabsTrigger value="risk" className="text-xs sm:text-sm">Risques & Alertes</TabsTrigger>
             <TabsTrigger value="ai-predict" className="text-xs sm:text-sm">IA Prédictif</TabsTrigger>
           </TabsList>
 
@@ -50,17 +46,6 @@ export function AnalyticsTab({ categoryId }: AnalyticsTabProps) {
             <PerformanceEvolution categoryId={categoryId} sportType={sportType} />
           </TabsContent>
 
-          <TabsContent value="comparison">
-            <MultiAthleteComparison categoryId={categoryId} sportType={sportType} />
-          </TabsContent>
-
-          <TabsContent value="intensity">
-            <IntensityComparisonDashboard categoryId={categoryId} />
-          </TabsContent>
-
-          <TabsContent value="heatmap">
-            <PerformanceHeatmap categoryId={categoryId} />
-          </TabsContent>
 
           <TabsContent value="risk">
             <InjuryRiskPrediction categoryId={categoryId} />

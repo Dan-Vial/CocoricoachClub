@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -85,6 +86,31 @@ const queryClient = new QueryClient({
   },
 });
 
+function PreviewCacheGuard() {
+  useEffect(() => {
+    const hostname = window.location.hostname;
+    const isPreviewHost = import.meta.env.DEV || hostname.includes("id-preview--") || hostname.includes("localhost");
+
+    if (!isPreviewHost || !("serviceWorker" in navigator)) {
+      return;
+    }
+
+    navigator.serviceWorker.getRegistrations().then((registrations) => {
+      registrations.forEach((registration) => {
+        registration.unregister();
+      });
+    });
+
+    if ("caches" in window) {
+      caches.keys().then((keys) => {
+        keys.forEach((key) => caches.delete(key));
+      });
+    }
+  }, []);
+
+  return null;
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -96,6 +122,7 @@ const App = () => (
             <PublicAccessProvider>
               <OfflineSyncProvider>
                 <ViewerModeBanner />
+                <PreviewCacheGuard />
                 <OfflineIndicator />
                 <FieldModeToggle />
                 <PWAUpdatePrompt />

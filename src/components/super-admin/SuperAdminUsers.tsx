@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/components/ui/sonner";
-import { Users, CheckCircle2, XCircle, Clock, Crown, Gift, UserX, Trash2, Phone } from "lucide-react";
+import { Users, Crown, Trash2, Phone, Building2 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import {
@@ -27,11 +27,8 @@ interface AdminUser {
   full_name: string | null;
   phone: string | null;
   created_at: string | null;
-  clubs_owned: number;
+  clubs: { id: string; name: string; sport: string }[];
   is_super_admin: boolean;
-  is_approved?: boolean;
-  is_free_user?: boolean;
-  is_staff?: boolean;
 }
 
 export function SuperAdminUsers() {
@@ -41,101 +38,52 @@ export function SuperAdminUsers() {
   const { data: users = [], isLoading } = useQuery({
     queryKey: ["super-admin-users"],
     queryFn: async () => {
-      const { data: usersData, error } = await supabase
-        .from("admin_all_users")
-        .select("*")
-        .order("created_at", { ascending: false });
+      // Get all clubs with their owners
+      const { data: clubs, error: clubsError } = await supabase
+        .from("clubs")
+        .select("id, name, sport, user_id")
+        .order("name");
+      if (clubsError) throw clubsError;
 
-      if (error) throw error;
+      // Get unique owner IDs
+      const ownerIds = [...new Set((clubs || []).map(c => c.user_id))];
+      if (ownerIds.length === 0) return [];
 
-      const { data: approvedData } = await supabase
-        .from("approved_users")
-        .select("user_id, is_free_user");
+      // Get profiles for owners
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, full_name, email, phone")
+        .in("id", ownerIds);
 
-      // Fetch staff members (club_members + category_members) - they are auto-approved via invitation
-      const { data: clubMembers } = await supabase
-        .from("club_members")
+      // Get super admin status
+      const { data: superAdmins } = await supabase
+        .from("super_admin_users")
         .select("user_id");
-      const { data: categoryMembers } = await supabase
-        .from("category_members")
-        .select("user_id");
+      const superAdminIds = new Set((superAdmins || []).map(sa => sa.user_id));
 
-      const approvedMap = new Map(approvedData?.map((a) => [a.user_id, a.is_free_user]) || []);
-      const staffUserIds = new Set([
-        ...(clubMembers?.map(m => m.user_id) || []),
-        ...(categoryMembers?.map(m => m.user_id) || []),
-      ]);
+      // Group clubs by owner
+      const ownerClubs = new Map<string, any[]>();
+      (clubs || []).forEach(club => {
+        if (!ownerClubs.has(club.user_id)) ownerClubs.set(club.user_id, []);
+        ownerClubs.get(club.user_id)!.push({ id: club.id, name: club.name, sport: club.sport });
+      });
 
-      return (usersData as AdminUser[]).map((u) => ({
-        ...u,
-        is_approved: approvedMap.has(u.id) || u.is_super_admin || staffUserIds.has(u.id),
-        is_free_user: approvedMap.get(u.id) === true,
-        is_staff: staffUserIds.has(u.id) && !approvedMap.has(u.id) && !u.is_super_admin,
-      }));
+      return ownerIds.map(userId => {
+        const profile = (profiles || []).find(p => p.id === userId);
+        return {
+          id: userId,
+          email: profile?.email || null,
+          full_name: profile?.full_name || null,
+          phone: profile?.phone || null,
+          created_at: null,
+          clubs: ownerClubs.get(userId) || [],
+          is_super_admin: superAdminIds.has(userId),
+        } as AdminUser;
+      });
     },
   });
 
-  const approveUser = useMutation({
-    mutationFn: async (userId: string) => {
-      const { error } = await supabase
-        .from("approved_users")
-        .insert({ user_id: userId, approved_by: user?.id });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast.success("Utilisateur approuvé");
-      queryClient.invalidateQueries({ queryKey: ["super-admin-users"] });
-    },
-  });
-
-  const revokeApproval = useMutation({
-    mutationFn: async (userId: string) => {
-      const { error } = await supabase
-        .from("approved_users")
-        .delete()
-        .eq("user_id", userId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast.success("Accès révoqué");
-      queryClient.invalidateQueries({ queryKey: ["super-admin-users"] });
-    },
-  });
-
-  const toggleFreeUser = useMutation({
-    mutationFn: async ({ userId, isFreeUser }: { userId: string; isFreeUser: boolean }) => {
-      const { data: existing } = await supabase
-        .from("approved_users")
-        .select("id")
-        .eq("user_id", userId)
-        .maybeSingle();
-
-      if (existing) {
-        const { error } = await supabase
-          .from("approved_users")
-          .update({ is_free_user: isFreeUser })
-          .eq("user_id", userId);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from("approved_users")
-          .insert({
-            user_id: userId,
-            approved_by: user?.id,
-            is_free_user: isFreeUser,
-          });
-        if (error) throw error;
-      }
-    },
-    onSuccess: (_, variables) => {
-      toast.success(
-        variables.isFreeUser ? "Utilisateur marqué gratuit" : "Statut gratuit retiré"
-      );
-      queryClient.invalidateQueries({ queryKey: ["super-admin-users"] });
-    },
-  });
-
-  // Delete user via edge function (actually removes the user from auth)
+  // Delete user via edge function
   const deleteUser = useMutation({
     mutationFn: async (userId: string) => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -157,20 +105,15 @@ export function SuperAdminUsers() {
     },
   });
 
-  const pendingCount = users.filter((u) => !u.is_approved && !u.is_super_admin).length;
-
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Users className="h-5 w-5" />
-          Gestion des utilisateurs
-          {pendingCount > 0 && (
-            <Badge variant="destructive">{pendingCount} en attente</Badge>
-          )}
+          Administrateurs des clubs
         </CardTitle>
         <CardDescription>
-          Gérez les accès et les rôles des utilisateurs
+          Propriétaires de clubs (les admins gèrent eux-mêmes leur staff dans leur Admin Club)
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -178,14 +121,13 @@ export function SuperAdminUsers() {
           <p className="text-muted-foreground">Chargement...</p>
         ) : (
           <Table>
-             <TableHeader>
+            <TableHeader>
               <TableRow>
-                <TableHead>Utilisateur</TableHead>
+                <TableHead>Nom</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Téléphone</TableHead>
-                <TableHead>Inscrit le</TableHead>
                 <TableHead>Clubs</TableHead>
-                <TableHead>Statut</TableHead>
+                <TableHead>Rôle</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -207,108 +149,52 @@ export function SuperAdminUsers() {
                     )}
                   </TableCell>
                   <TableCell>
-                    {u.created_at
-                      ? format(new Date(u.created_at), "dd MMM yyyy", { locale: fr })
-                      : "-"}
-                  </TableCell>
-                  <TableCell>{u.clubs_owned}</TableCell>
-                  <TableCell>
                     <div className="flex flex-wrap gap-1">
-                      {u.is_super_admin && (
-                        <Badge className="bg-primary">
-                          <Crown className="h-3 w-3 mr-1" />
-                          Super Admin
+                      {u.clubs.map((club) => (
+                        <Badge key={club.id} variant="outline" className="text-xs">
+                          <Building2 className="h-3 w-3 mr-1" />
+                          {club.name}
                         </Badge>
-                      )}
-                      {u.is_free_user && (
-                        <Badge className="bg-purple-600">
-                          <Gift className="h-3 w-3 mr-1" />
-                          Gratuit
-                        </Badge>
-                      )}
-                      {u.is_staff && (
-                        <Badge className="bg-blue-600">
-                          <Users className="h-3 w-3 mr-1" />
-                          Staff
-                        </Badge>
-                      )}
-                      {!u.is_super_admin && !u.is_free_user && !u.is_staff && u.is_approved && (
-                        <Badge className="bg-green-600">
-                          <CheckCircle2 className="h-3 w-3 mr-1" />
-                          Approuvé
-                        </Badge>
-                      )}
-                      {!u.is_approved && !u.is_super_admin && (
-                        <Badge variant="secondary" className="bg-amber-100 text-amber-800">
-                          <Clock className="h-3 w-3 mr-1" />
-                          En attente
-                        </Badge>
-                      )}
+                      ))}
                     </div>
+                  </TableCell>
+                  <TableCell>
+                    {u.is_super_admin ? (
+                      <Badge className="bg-primary">
+                        <Crown className="h-3 w-3 mr-1" />
+                        Super Admin
+                      </Badge>
+                    ) : (
+                      <Badge className="bg-green-600">Admin Club</Badge>
+                    )}
                   </TableCell>
                   <TableCell className="text-right">
-                    <div className="flex justify-end gap-1">
-                      {!u.is_approved && !u.is_super_admin && (
-                        <Button
-                          size="sm"
-                          className="bg-green-600 hover:bg-green-700"
-                          onClick={() => approveUser.mutate(u.id)}
-                        >
-                          <CheckCircle2 className="h-4 w-4 mr-1" />
-                          Approuver
-                        </Button>
-                      )}
-                      {u.is_approved && !u.is_super_admin && (
-                        <>
-                          <Button
-                            variant={u.is_free_user ? "destructive" : "outline"}
-                            size="sm"
-                            onClick={() =>
-                              toggleFreeUser.mutate({
-                                userId: u.id,
-                                isFreeUser: !u.is_free_user,
-                              })
-                            }
-                          >
-                            <Gift className="h-4 w-4 mr-1" />
-                            {u.is_free_user ? "Retirer gratuit" : "Gratuit"}
+                    {!u.is_super_admin && u.id !== user?.id && (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => revokeApproval.mutate(u.id)}
-                          >
-                            <UserX className="h-4 w-4 text-destructive" />
-                          </Button>
-                        </>
-                      )}
-                      {!u.is_super_admin && u.id !== user?.id && (
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Supprimer définitivement cet utilisateur ?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Cette action supprimera <strong>{u.full_name || u.email}</strong> de la plateforme (compte, profil, accès). Cette action est irréversible.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Annuler</AlertDialogCancel>
-                              <AlertDialogAction
-                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                onClick={() => deleteUser.mutate(u.id)}
-                              >
-                                Supprimer définitivement
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      )}
-                    </div>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Supprimer définitivement cet utilisateur ?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Cette action supprimera <strong>{u.full_name || u.email}</strong> de la plateforme. Cette action est irréversible.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Annuler</AlertDialogCancel>
+                            <AlertDialogAction
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              onClick={() => deleteUser.mutate(u.id)}
+                            >
+                              Supprimer définitivement
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}

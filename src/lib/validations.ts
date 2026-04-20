@@ -50,3 +50,18 @@ export const measurementSchema = z.object({
 });
 
 export type MeasurementFormData = z.infer<typeof measurementSchema>;
+
+// Date range validation: ensures end_date >= start_date
+export const dateRangeRefinement = (startField: string, endField: string, message?: string) => {
+  return (data: Record<string, any>, ctx: z.RefinementCtx) => {
+    const start = data[startField];
+    const end = data[endField];
+    if (start && end && end < start) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: message || "La date de fin doit être postérieure ou égale à la date de début",
+        path: [endField],
+      });
+    }
+  };
+};

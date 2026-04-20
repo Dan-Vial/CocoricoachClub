@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,24 +7,44 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { BarChart3, Trophy, Target, Shield, Activity, Dumbbell, Filter, CheckSquare, Calendar } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { BarChart3, Trophy, Target, Shield, Activity, Dumbbell, Filter, CheckSquare, Calendar, Download, FileSpreadsheet, TrendingUp, TrendingDown, Minus, Users, User, Crosshair } from "lucide-react";
+import { isRugbyType } from "@/lib/constants/sportTypes";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from "@/components/ui/dropdown-menu";
 import { getStatCategories, type StatField } from "@/lib/constants/sportStats";
 import { useStatPreferences } from "@/hooks/use-stat-preferences";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { toast } from "sonner";
+import ExcelJS from "exceljs";
+import jsPDF from "jspdf";
 import { CumulativeStatsCharts } from "./CumulativeStatsCharts";
+import { TeamCumulativeStats } from "./TeamCumulativeStats";
+import { CumulativeKickingMap } from "./CumulativeKickingMap";
+import { getExcelBranding, addBrandedHeader, styleDataHeaderRow, addZebraRows, addFooter, downloadWorkbook } from "@/lib/excelExport";
+import { preparePdfWithSettings } from "@/lib/pdfExport";
+import { drawPdfRugbyField, drawPdfZoneStatsGrid, svgPctToPdfPos } from "@/lib/pdfRugbyField";
 
 interface PlayerCumulativeStatsProps {
   categoryId: string;
   sportType?: string;
+  playerId?: string;
 }
 
 interface MatchInfo {
   id: string;
   match_date: string;
   opponent: string;
+  is_home?: boolean;
+  location?: string;
+  match_time?: string;
+  competition?: string;
+  competition_stage?: string;
+  event_type?: string;
+  score_home?: number | null;
+  score_away?: number | null;
 }
 
 interface CumulativeStats {
@@ -32,42 +52,36 @@ interface CumulativeStats {
   playerName: string;
   matchesPlayed: number;
   sportData: Record<string, number>;
+  avatarUrl?: string;
+  position?: string;
 }
 
-export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCumulativeStatsProps) {
+export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: fixedPlayerId }: PlayerCumulativeStatsProps) {
   const [selectedMatchIds, setSelectedMatchIds] = useState<string[]>([]);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [selectedPlayerId, setSelectedPlayerId] = useState<string>(fixedPlayerId || "");
+  const [exportPlayerId, setExportPlayerId] = useState<string>("");
+  const isSinglePlayerMode = !!fixedPlayerId;
+  const isRugby = isRugbyType(sportType);
 
-  // Use stat preferences hook to respect user's configured stats
-  const { stats: sportStats, isLoading: loadingPrefs } = useStatPreferences({
-    categoryId,
-    sportType,
-  });
+  const { stats: sportStats, isLoading: loadingPrefs } = useStatPreferences({ categoryId, sportType });
   const statCategories = getStatCategories(sportType);
 
-  // Fetch all matches that have stats data for this category
   const { data: allMatches = [] } = useQuery({
     queryKey: ["matches-list-cumulative", categoryId],
     queryFn: async () => {
-      // Get match IDs that have player stats
       const { data: statsMatchIds, error: statsError } = await supabase
         .from("player_match_stats")
         .select("match_id")
-        .in("match_id", 
-          (await supabase
-            .from("matches")
-            .select("id")
-            .eq("category_id", categoryId)
-          ).data?.map(m => m.id) || []
+        .in("match_id",
+          (await supabase.from("matches").select("id").eq("category_id", categoryId)).data?.map(m => m.id) || []
         );
       if (statsError) throw statsError;
-      
       const uniqueMatchIds = [...new Set((statsMatchIds || []).map(s => s.match_id))];
       if (uniqueMatchIds.length === 0) return [] as MatchInfo[];
-
       const { data, error } = await supabase
         .from("matches")
-        .select("id, match_date, opponent")
+        .select("id, match_date, opponent, is_home, location, match_time, competition, competition_stage, event_type, score_home, score_away")
         .in("id", uniqueMatchIds)
         .order("match_date", { ascending: false });
       if (error) throw error;
@@ -75,7 +89,6 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
     },
   });
 
-  // Determine which match IDs to use (all or selected)
   const activeMatchIds = useMemo(() => {
     if (selectedMatchIds.length === 0) return allMatches.map(m => m.id);
     return selectedMatchIds;
@@ -85,67 +98,38 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
     queryKey: ["cumulative_player_stats", categoryId, sportType, activeMatchIds],
     queryFn: async () => {
       if (activeMatchIds.length === 0) return [];
-
-      // Get all player stats for selected matches
       const { data: playerStats, error: statsError } = await supabase
         .from("player_match_stats")
-        .select(`
-          *,
-          players(id, name, first_name)
-        `)
+        .select(`*, players(id, name, first_name, avatar_url, position)`)
         .in("match_id", activeMatchIds);
-
       if (statsError) throw statsError;
       if (!playerStats) return [];
 
-      // Aggregate stats by player
       const aggregated: Record<string, CumulativeStats> = {};
-
       playerStats.forEach((stat) => {
-        const player = stat.players as { id: string; name: string; first_name?: string } | null;
+        const player = stat.players as { id: string; name: string; first_name?: string; avatar_url?: string; position?: string } | null;
         const playerId = stat.player_id;
-        const playerName = player
-          ? [player.first_name, player.name].filter(Boolean).join(" ")
-          : "Athlète inconnu";
-
+        const playerName = player ? [player.first_name, player.name].filter(Boolean).join(" ") : "Athlète inconnu";
         if (!aggregated[playerId]) {
-          aggregated[playerId] = {
-            playerId,
-            playerName,
-            matchesPlayed: 0,
-            sportData: {},
-          };
+          aggregated[playerId] = { playerId, playerName, matchesPlayed: 0, sportData: {}, avatarUrl: player?.avatar_url || undefined, position: player?.position || undefined };
         }
-
         const p = aggregated[playerId];
         p.matchesPlayed += 1;
-
-        // Aggregate sport-specific stats from sport_data JSONB
         const sportData = (stat as { sport_data?: Record<string, number> }).sport_data || {};
-        
         sportStats.forEach(statField => {
           if (statField.computedFrom) return;
-          
-          const value = sportData[statField.key] || 
-                       stat[statField.key as keyof typeof stat] || 
-                       0;
-          
-          if (!p.sportData[statField.key]) {
-            p.sportData[statField.key] = 0;
-          }
+          const value = sportData[statField.key] || stat[statField.key as keyof typeof stat] || 0;
+          if (!p.sportData[statField.key]) p.sportData[statField.key] = 0;
           p.sportData[statField.key] += Number(value) || 0;
         });
       });
 
-      // Compute percentage stats from aggregated totals
       Object.values(aggregated).forEach(p => {
         sportStats.forEach(statField => {
           if (statField.computedFrom) {
             const { successKey, totalKey, failureKey } = statField.computedFrom;
             const success = p.sportData[successKey] || 0;
-            const total = totalKey 
-              ? (p.sportData[totalKey] || 0)
-              : success + (p.sportData[failureKey!] || 0);
+            const total = totalKey ? (p.sportData[totalKey] || 0) : success + (p.sportData[failureKey!] || 0);
             p.sportData[statField.key] = total > 0 ? Math.round((success / total) * 100) : 0;
           }
         });
@@ -156,25 +140,152 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
     enabled: activeMatchIds.length > 0,
   });
 
-  // Fetch per-match breakdown for charts
+  // Fetch per-match kicking data from player_match_stats for rugby
+  const { data: kickingData = [] } = useQuery({
+    queryKey: ["kicking-from-match-stats", categoryId, activeMatchIds],
+    queryFn: async () => {
+      if (activeMatchIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from("player_match_stats")
+        .select("player_id, match_id, conversions, penalties_scored, drop_goals, sport_data")
+        .in("match_id", activeMatchIds);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: isRugby && activeMatchIds.length > 0,
+  });
+
+  // Fetch individual kicking attempts from the dedicated table
+  const { data: kickingAttempts = [] } = useQuery({
+    queryKey: ["kicking-attempts-cumulative", categoryId, activeMatchIds],
+    queryFn: async () => {
+      if (activeMatchIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from("kicking_attempts")
+        .select("player_id, match_id, kick_type, zone_x, zone_y, success")
+        .eq("category_id", categoryId)
+        .in("match_id", activeMatchIds);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: isRugby && activeMatchIds.length > 0,
+  });
+
+  // Aggregate kicking stats per player from player_match_stats + kicking_attempts table
+  const kickingByPlayerFinal = useMemo(() => {
+    const map: Record<string, {
+      total: number; success: number;
+      penalty: { total: number; success: number };
+      conversion: { total: number; success: number };
+      drop: { total: number; success: number };
+      byMatch: Record<string, { total: number; success: number }>;
+      allKicks: { x: number; y: number; kickType: string; success: boolean }[];
+    }> = {};
+
+    const ensurePlayer = (playerId: string) => {
+      if (!map[playerId]) {
+        map[playerId] = {
+          total: 0, success: 0,
+          penalty: { total: 0, success: 0 },
+          conversion: { total: 0, success: 0 },
+          drop: { total: 0, success: 0 },
+          byMatch: {},
+          allKicks: [],
+        };
+      }
+      return map[playerId];
+    };
+
+    // First pass: aggregate from player_match_stats (numeric totals)
+    kickingData.forEach((row: any) => {
+      const sportData = row.sport_data || {};
+      const convSuccess = Number(row.conversions) || 0;
+      const convAttempts = Number(sportData.conversionAttempts) || convSuccess;
+      const penSuccess = Number(row.penalties_scored) || 0;
+      const penAttempts = Number(sportData.penaltyAttempts) || penSuccess;
+      const dropSuccess = Number(row.drop_goals) || 0;
+      const dropAttempts = Number(sportData.dropAttempts) || dropSuccess;
+
+      const totalAttempts = convAttempts + penAttempts + dropAttempts;
+      const totalSuccess = convSuccess + penSuccess + dropSuccess;
+
+      if (totalAttempts === 0) return;
+
+      const p = ensurePlayer(row.player_id);
+      p.total += totalAttempts;
+      p.success += totalSuccess;
+      p.penalty.total += penAttempts;
+      p.penalty.success += penSuccess;
+      p.conversion.total += convAttempts;
+      p.conversion.success += convSuccess;
+      p.drop.total += dropAttempts;
+      p.drop.success += dropSuccess;
+      if (!p.byMatch[row.match_id]) p.byMatch[row.match_id] = { total: 0, success: 0 };
+      p.byMatch[row.match_id].total += totalAttempts;
+      p.byMatch[row.match_id].success += totalSuccess;
+
+      // Collect individual kick positions from sport_data (legacy)
+      if (Array.isArray(sportData.kickAttempts)) {
+        p.allKicks.push(...sportData.kickAttempts);
+      }
+    });
+
+    // Second pass: add kick positions from kicking_attempts table
+    kickingAttempts.forEach((attempt: any) => {
+      const p = ensurePlayer(attempt.player_id);
+      p.allKicks.push({
+        x: attempt.zone_x,
+        y: attempt.zone_y,
+        kickType: attempt.kick_type,
+        success: attempt.success,
+      });
+
+      // If player had no match stats rows, also count totals from kicking_attempts
+      // Check if this match was already counted from player_match_stats
+      const alreadyCounted = kickingData.some(
+        (row: any) => row.player_id === attempt.player_id && row.match_id === attempt.match_id
+      );
+      if (!alreadyCounted) {
+        p.total += 1;
+        if (attempt.success) p.success += 1;
+        const typeKey = attempt.kick_type as "penalty" | "conversion" | "drop";
+        if (p[typeKey]) {
+          p[typeKey].total += 1;
+          if (attempt.success) p[typeKey].success += 1;
+        }
+        if (!p.byMatch[attempt.match_id]) p.byMatch[attempt.match_id] = { total: 0, success: 0 };
+        p.byMatch[attempt.match_id].total += 1;
+        if (attempt.success) p.byMatch[attempt.match_id].success += 1;
+      }
+    });
+
+    // Deduplicate allKicks (remove duplicates if same position from both sources)
+    Object.values(map).forEach(p => {
+      const seen = new Set<string>();
+      p.allKicks = p.allKicks.filter(k => {
+        const key = `${k.x}-${k.y}-${k.kickType}-${k.success}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+    });
+
+    return map;
+  }, [kickingData, kickingAttempts]);
+
   const { data: matchesDataForCharts = [] } = useQuery({
     queryKey: ["per_match_player_stats", categoryId, sportType, activeMatchIds],
     queryFn: async () => {
       if (activeMatchIds.length === 0) return [];
-
       const { data: playerStats, error } = await supabase
         .from("player_match_stats")
         .select(`*, players(id, name, first_name)`)
         .in("match_id", activeMatchIds);
-
       if (error) throw error;
       if (!playerStats) return [];
 
-      // Group by match
       const matchMap: Record<string, {
-        matchId: string;
-        matchLabel: string;
-        matchDate: string;
+        matchId: string; matchLabel: string; matchDate: string;
         players: Record<string, { playerName: string; sportData: Record<string, number> }>;
       }> = {};
 
@@ -193,19 +304,15 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
         const playerId = stat.player_id;
         const playerName = player ? [player.first_name, player.name].filter(Boolean).join(" ") : "Inconnu";
         const sportData = (stat as { sport_data?: Record<string, number> }).sport_data || {};
-        
-        // Also check top-level keys
         const merged: Record<string, number> = {};
         sportStats.forEach(sf => {
           if (!sf.computedFrom) {
             merged[sf.key] = Number(sportData[sf.key] || stat[sf.key as keyof typeof stat] || 0) || 0;
           }
         });
-        
         matchMap[matchId].players[playerId] = { playerName, sportData: merged };
       });
 
-      // Sort by date ascending for evolution chart
       return Object.values(matchMap).sort((a, b) => a.matchDate.localeCompare(b.matchDate));
     },
     enabled: activeMatchIds.length > 1,
@@ -213,29 +320,879 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
 
   const toggleMatch = (matchId: string) => {
     setSelectedMatchIds(prev => {
-      // If currently "all selected" (empty array), switch to "all except this one"
-      if (prev.length === 0) {
-        return allMatches.filter(m => m.id !== matchId).map(m => m.id);
-      }
+      if (prev.length === 0) return allMatches.filter(m => m.id !== matchId).map(m => m.id);
       if (prev.includes(matchId)) {
-        const newSelection = prev.filter(id => id !== matchId);
-        // If nothing left selected, go back to "all"
-        return newSelection.length === 0 ? [] : newSelection;
+        const newSel = prev.filter(id => id !== matchId);
+        return newSel.length === 0 ? [] : newSel;
       }
       return [...prev, matchId];
     });
   };
 
-  const selectAllMatches = () => setSelectedMatchIds([]);
-  const clearSelection = () => setSelectedMatchIds(allMatches.map(m => m.id));
+  const playerProgressions = useMemo(() => {
+    if (!matchesDataForCharts || matchesDataForCharts.length < 2 || !stats) return {};
+    const progressions: Record<string, Record<string, number>> = {};
+    stats.forEach(player => {
+      const playerMatchData = matchesDataForCharts
+        .filter(m => m.players[player.playerId])
+        .map(m => m.players[player.playerId].sportData);
+      if (playerMatchData.length < 2) return;
+      const first = playerMatchData[0];
+      const last = playerMatchData[playerMatchData.length - 1];
+      progressions[player.playerId] = {};
+      sportStats.forEach(stat => {
+        progressions[player.playerId][stat.key] = (last[stat.key] || 0) - (first[stat.key] || 0);
+      });
+    });
+    return progressions;
+  }, [matchesDataForCharts, stats, sportStats]);
 
+  const filteredStats = isSinglePlayerMode ? stats?.filter(p => p.playerId === fixedPlayerId) : stats;
   const selectedCount = selectedMatchIds.length === 0 ? allMatches.length : selectedMatchIds.length;
+  const selectedPlayer = filteredStats?.find(p => p.playerId === (selectedPlayerId || fixedPlayerId)) || filteredStats?.[0];
+
+  // Export Excel
+  const handleExportExcel = useCallback(async (mode: "all" | "team" | "individual" | "single" = "all", singlePlayerId?: string) => {
+    if (!stats || stats.length === 0) return;
+    const exportStats = singlePlayerId ? stats.filter(p => p.playerId === singlePlayerId) : stats;
+    try {
+      const branding = await getExcelBranding(categoryId);
+      const wb = new ExcelJS.Workbook();
+
+      if (mode === "all" || mode === "team") {
+        // Sheet: Team totals
+        const wsTeam = wb.addWorksheet("Équipe");
+        const teamStats: Record<string, number> = {};
+        sportStats.forEach(stat => {
+          if (stat.computedFrom) return;
+          teamStats[stat.key] = stats.reduce((sum, p) => sum + (p.sportData[stat.key] || 0), 0);
+        });
+        sportStats.forEach(stat => {
+          if (stat.computedFrom) {
+            const { successKey, totalKey, failureKey } = stat.computedFrom;
+            const success = teamStats[successKey] || 0;
+            const total = totalKey ? (teamStats[totalKey] || 0) : success + (teamStats[failureKey!] || 0);
+            teamStats[stat.key] = total > 0 ? Math.round((success / total) * 100) : 0;
+          }
+        });
+
+        wsTeam.columns = [
+          { header: "Catégorie", key: "cat", width: 15 },
+          { header: "Statistique", key: "stat", width: 25 },
+          { header: "Total équipe", key: "total", width: 15 },
+          { header: "Moy/match", key: "avg", width: 15 },
+        ];
+        const teamStartRow = addBrandedHeader(wsTeam, "Stats équipe cumulées", branding, [
+          ["Matchs", `${selectedCount}/${allMatches.length}`],
+        ]);
+        styleDataHeaderRow(wsTeam, teamStartRow, 4, branding.headerColor);
+        const teamHdr = wsTeam.getRow(teamStartRow);
+        teamHdr.getCell(1).value = "Catégorie";
+        teamHdr.getCell(2).value = "Statistique";
+        teamHdr.getCell(3).value = "Total";
+        teamHdr.getCell(4).value = "Moy/match";
+
+        let tRow = teamStartRow + 1;
+        // Add score section first
+        const matchesWithScores = allMatches.filter(m => activeMatchIds.includes(m.id) && m.score_home != null && m.score_away != null);
+        if (matchesWithScores.length > 0) {
+          let totalScored = 0, totalConceded = 0, wins = 0, draws = 0, losses = 0;
+          matchesWithScores.forEach(m => {
+            const scored = m.is_home ? (m.score_home || 0) : (m.score_away || 0);
+            const conceded = m.is_home ? (m.score_away || 0) : (m.score_home || 0);
+            totalScored += scored;
+            totalConceded += conceded;
+            if (scored > conceded) wins++;
+            else if (scored < conceded) losses++;
+            else draws++;
+          });
+          const scoreRows = [
+            { cat: "Bilan", stat: "Points marqués", total: totalScored, avg: Math.round((totalScored / matchesWithScores.length) * 10) / 10 },
+            { cat: "Bilan", stat: "Points encaissés", total: totalConceded, avg: Math.round((totalConceded / matchesWithScores.length) * 10) / 10 },
+            { cat: "Bilan", stat: "Différentiel", total: totalScored - totalConceded, avg: "" },
+            { cat: "Bilan", stat: "Bilan V/N/D", total: `${wins}V ${draws}N ${losses}D`, avg: "" },
+          ];
+          scoreRows.forEach(sr => {
+            const row = wsTeam.getRow(tRow);
+            row.getCell(1).value = sr.cat;
+            row.getCell(2).value = sr.stat;
+            row.getCell(3).value = sr.total;
+            row.getCell(4).value = sr.avg;
+            if (typeof sr.total === "number" && sr.stat === "Différentiel") {
+              row.getCell(3).font = { color: { argb: sr.total >= 0 ? "FF16A34A" : "FFDC2626" } };
+            }
+            tRow++;
+          });
+          // Separator row
+          tRow++;
+        }
+
+        statCategories.forEach(cat => {
+          const catStats = sportStats.filter(s => s.category === cat.key);
+          catStats.forEach(s => {
+            const row = wsTeam.getRow(tRow);
+            row.getCell(1).value = cat.label;
+            row.getCell(2).value = s.label;
+            const val = teamStats[s.key] || 0;
+            row.getCell(3).value = s.computedFrom ? `${val}%` : val;
+            row.getCell(4).value = s.computedFrom ? "" : Math.round((val / Math.max(selectedCount, 1)) * 10) / 10;
+            tRow++;
+          });
+        });
+        addZebraRows(wsTeam, teamStartRow + 1, tRow - 1, 4);
+        addFooter(wsTeam, tRow, 4, branding.footerText);
+      }
+
+      if (mode === "all" || mode === "individual" || mode === "single") {
+        // Individual sheets per category
+        statCategories.forEach(cat => {
+          const categoryStats = sportStats.filter(s => s.category === cat.key);
+          if (categoryStats.length === 0) return;
+          const ws = wb.addWorksheet(cat.label);
+          const colCount = 2 + categoryStats.length * 2;
+          ws.columns = [
+            { header: "Athlète", key: "name", width: 22 },
+            { header: "Matchs", key: "matches", width: 10 },
+            ...categoryStats.flatMap(s => [
+              { header: s.shortLabel, key: s.key, width: 12 },
+              { header: "+/-", key: `${s.key}_prog`, width: 10 },
+            ]),
+          ];
+          const startRow = addBrandedHeader(ws, `Stats individuelles - ${cat.label}`, branding, [
+            ["Matchs sélectionnés", `${selectedCount}/${allMatches.length}`],
+          ]);
+          styleDataHeaderRow(ws, startRow, colCount, branding.headerColor);
+          const headerRow = ws.getRow(startRow);
+          headerRow.getCell(1).value = "Athlète";
+          headerRow.getCell(2).value = "Matchs";
+          categoryStats.forEach((s, i) => {
+            headerRow.getCell(3 + i * 2).value = s.shortLabel;
+            headerRow.getCell(4 + i * 2).value = "+/-";
+          });
+          const sorted = [...exportStats].sort((a, b) => {
+            const firstStat = categoryStats[0]?.key;
+            return firstStat ? (b.sportData[firstStat] || 0) - (a.sportData[firstStat] || 0) : 0;
+          });
+          sorted.forEach((p, idx) => {
+            const row = ws.getRow(startRow + 1 + idx);
+            row.getCell(1).value = p.playerName;
+            row.getCell(2).value = p.matchesPlayed;
+            categoryStats.forEach((s, i) => {
+              const val = p.sportData[s.key] || 0;
+              row.getCell(3 + i * 2).value = s.computedFrom ? `${val}%` : val;
+              const prog = playerProgressions[p.playerId]?.[s.key] || 0;
+              const progCell = row.getCell(4 + i * 2);
+              progCell.value = prog > 0 ? `+${prog}` : String(prog);
+              progCell.font = { color: { argb: prog > 0 ? "FF16A34A" : prog < 0 ? "FFDC2626" : "FF64748B" } };
+            });
+          });
+          addZebraRows(ws, startRow + 1, startRow + sorted.length, colCount);
+          addFooter(ws, startRow + sorted.length + 1, colCount, branding.footerText);
+        });
+      }
+
+      const playerLabel = singlePlayerId ? exportStats[0]?.playerName?.replace(/\s+/g, '-') : "";
+      const suffix = mode === "team" ? "-equipe" : mode === "single" ? `-${playerLabel}` : mode === "individual" ? "-individuelles" : "";
+      await downloadWorkbook(wb, `stats-competition${suffix}-${format(new Date(), "yyyy-MM-dd")}.xlsx`);
+      toast.success("Export Excel téléchargé !");
+    } catch (e) {
+      toast.error("Erreur lors de l'export Excel");
+    }
+  }, [stats, sportStats, statCategories, categoryId, selectedCount, allMatches, playerProgressions]);
+
+  // Export PDF
+  const handleExportPdf = useCallback(async (mode: "all" | "team" | "individual" | "single" = "all", singlePlayerId?: string) => {
+    if (!stats || stats.length === 0) return;
+    const exportStats = singlePlayerId ? stats.filter(p => p.playerId === singlePlayerId) : stats;
+    try {
+      const { settings, clubName, categoryName, seasonName } = await preparePdfWithSettings(categoryId);
+      const doc = new jsPDF({ orientation: "landscape" });
+      const pageW = doc.internal.pageSize.getWidth();
+      const pageH = doc.internal.pageSize.getHeight();
+      const hc = (settings?.header_color || "#224378").replace("#", "");
+      const hcR = parseInt(hc.substring(0, 2), 16);
+      const hcG = parseInt(hc.substring(2, 4), 16);
+      const hcB = parseInt(hc.substring(4, 6), 16);
+
+      const drawHeader = (title: string) => {
+        doc.setFillColor(hcR, hcG, hcB);
+        doc.rect(0, 0, pageW, 28, "F");
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(16);
+        doc.text(title, 14, 12);
+        doc.setFontSize(10);
+        doc.text(`${clubName || ""} • ${categoryName || ""} • ${seasonName || ""}`, 14, 20);
+        doc.text(`${selectedCount} matchs • ${format(new Date(), "dd/MM/yyyy")}`, pageW - 14, 20, { align: "right" });
+      };
+      drawHeader("Stats compétition cumulées");
+      let y = 36;
+
+      // Match context info
+      const selectedMatches = allMatches.filter(m => activeMatchIds.includes(m.id));
+      doc.setTextColor(30, 41, 59);
+      doc.setFontSize(8);
+      selectedMatches.slice(0, 6).forEach((m) => {
+        const lieu = m.is_home ? "DOM" : "EXT";
+        const loc = m.location ? ` — ${m.location}` : "";
+        const comp = m.competition || "";
+        const stage = m.competition_stage ? ` (${m.competition_stage})` : "";
+        const time = m.match_time ? ` ${m.match_time}` : "";
+        const score = (m.score_home != null && m.score_away != null) ? ` ${m.score_home}-${m.score_away}` : "";
+        doc.text(
+          `${format(new Date(m.match_date), "dd/MM/yy")} • vs ${m.opponent} [${lieu}]${score}${loc}${time} ${comp}${stage}`,
+          14, y
+        );
+        y += 4;
+      });
+      if (selectedMatches.length > 6) {
+        doc.text(`... et ${selectedMatches.length - 6} autre(s)`, 14, y);
+        y += 4;
+      }
+      y += 4;
+
+      // ===== TEAM MODE: Global team stats only (no individual players) =====
+      if (mode === "team") {
+        // Compute team totals
+        const teamStats: Record<string, number> = {};
+        sportStats.forEach(stat => {
+          if (stat.computedFrom) return;
+          teamStats[stat.key] = stats.reduce((sum, p) => sum + (p.sportData[stat.key] || 0), 0);
+        });
+        sportStats.forEach(stat => {
+          if (stat.computedFrom) {
+            const { successKey, totalKey, failureKey } = stat.computedFrom;
+            const success = teamStats[successKey] || 0;
+            const total = totalKey ? (teamStats[totalKey] || 0) : success + (teamStats[failureKey!] || 0);
+            teamStats[stat.key] = total > 0 ? Math.round((success / total) * 100) : 0;
+          }
+        });
+
+        // Compute team progression (first match vs last match)
+        const teamProgression: Record<string, number> = {};
+        if (matchesDataForCharts.length >= 2) {
+          const firstMatch = matchesDataForCharts[0];
+          const lastMatch = matchesDataForCharts[matchesDataForCharts.length - 1];
+          sportStats.forEach(stat => {
+            if (stat.computedFrom) return;
+            const firstVal = Object.values(firstMatch.players).reduce((s, p) => s + (p.sportData[stat.key] || 0), 0);
+            const lastVal = Object.values(lastMatch.players).reduce((s, p) => s + (p.sportData[stat.key] || 0), 0);
+            teamProgression[stat.key] = lastVal - firstVal;
+          });
+        }
+
+        // ---- Points scored / conceded section ----
+        const matchesWithScores = selectedMatches.filter(m => m.score_home != null && m.score_away != null);
+        if (matchesWithScores.length > 0) {
+          let totalScored = 0;
+          let totalConceded = 0;
+          let wins = 0, draws = 0, losses = 0;
+          matchesWithScores.forEach(m => {
+            const scored = m.is_home ? (m.score_home || 0) : (m.score_away || 0);
+            const conceded = m.is_home ? (m.score_away || 0) : (m.score_home || 0);
+            totalScored += scored;
+            totalConceded += conceded;
+            if (scored > conceded) wins++;
+            else if (scored < conceded) losses++;
+            else draws++;
+          });
+          const avgScored = Math.round((totalScored / matchesWithScores.length) * 10) / 10;
+          const avgConceded = Math.round((totalConceded / matchesWithScores.length) * 10) / 10;
+          const diff = totalScored - totalConceded;
+
+          // Section title
+          doc.setFontSize(12);
+          doc.setFont("helvetica", "bold");
+          doc.setTextColor(30, 41, 59);
+          doc.text("Bilan & Score", 14, y);
+          y += 7;
+
+          // Cards row
+          const cardW = (pageW - 28 - 15) / 4;
+          const cards = [
+            { label: "Points marqués", value: String(totalScored), sub: `Moy: ${avgScored}/match`, color: [34, 197, 94] as [number, number, number] },
+            { label: "Points encaissés", value: String(totalConceded), sub: `Moy: ${avgConceded}/match`, color: [239, 68, 68] as [number, number, number] },
+            { label: "Différentiel", value: (diff >= 0 ? "+" : "") + diff, sub: "", color: diff >= 0 ? [34, 197, 94] as [number, number, number] : [239, 68, 68] as [number, number, number] },
+            { label: "Bilan", value: `${wins}V ${draws}N ${losses}D`, sub: `${matchesWithScores.length} matchs`, color: [hcR, hcG, hcB] as [number, number, number] },
+          ];
+          cards.forEach((card, i) => {
+            const cx = 14 + i * (cardW + 5);
+            doc.setFillColor(248, 250, 252);
+            doc.roundedRect(cx, y, cardW, 22, 2, 2, "F");
+            doc.setDrawColor(226, 232, 240);
+            doc.roundedRect(cx, y, cardW, 22, 2, 2, "S");
+            doc.setFontSize(16);
+            doc.setFont("helvetica", "bold");
+            doc.setTextColor(...card.color);
+            doc.text(card.value, cx + cardW / 2, y + 10, { align: "center" });
+            doc.setFontSize(7);
+            doc.setFont("helvetica", "normal");
+            doc.setTextColor(100, 116, 139);
+            doc.text(card.label, cx + cardW / 2, y + 16, { align: "center" });
+            if (card.sub) {
+              doc.setFontSize(6);
+              doc.text(card.sub, cx + cardW / 2, y + 20, { align: "center" });
+            }
+          });
+          y += 28;
+        }
+
+        // ---- Stats by category (team totals + avg + progression) ----
+        statCategories.forEach(cat => {
+          const categoryStats = sportStats.filter(s => s.category === cat.key);
+          if (categoryStats.length === 0) return;
+
+          if (y > pageH - 45) { doc.addPage(); y = 15; }
+
+          doc.setTextColor(30, 41, 59);
+          doc.setFontSize(12);
+          doc.setFont("helvetica", "bold");
+          doc.text(cat.label, 14, y);
+          y += 6;
+
+          // Header row
+          const colW = [70, 30, 30, 30];
+          const totalRowW = colW.reduce((a, b) => a + b, 0);
+          const startX = (pageW - totalRowW) / 2;
+          doc.setFillColor(241, 245, 249);
+          doc.roundedRect(startX, y, totalRowW, 8, 1.5, 1.5, "F");
+          doc.setFontSize(8);
+          doc.setFont("helvetica", "bold");
+          doc.setTextColor(71, 85, 105);
+          doc.text("Statistique", startX + 3, y + 5.5);
+          doc.text("Total", startX + colW[0] + colW[1] / 2, y + 5.5, { align: "center" });
+          doc.text("Moy/match", startX + colW[0] + colW[1] + colW[2] / 2, y + 5.5, { align: "center" });
+          doc.text("Progression", startX + colW[0] + colW[1] + colW[2] + colW[3] / 2, y + 5.5, { align: "center" });
+          y += 10;
+
+          doc.setFont("helvetica", "normal");
+          categoryStats.forEach((s, idx) => {
+            if (y > pageH - 12) { doc.addPage(); y = 15; }
+            const val = teamStats[s.key] || 0;
+            const avg = s.computedFrom ? "" : String(Math.round((val / Math.max(selectedCount, 1)) * 10) / 10);
+            const prog = teamProgression[s.key] || 0;
+
+            // Zebra
+            if (idx % 2 === 0) {
+              doc.setFillColor(248, 250, 252);
+              doc.rect(startX, y - 1, totalRowW, 7, "F");
+            }
+
+            doc.setTextColor(30, 41, 59);
+            doc.setFontSize(8);
+            doc.text(s.label, startX + 3, y + 4);
+            doc.text(s.computedFrom ? `${val}%` : String(val), startX + colW[0] + colW[1] / 2, y + 4, { align: "center" });
+            doc.text(avg, startX + colW[0] + colW[1] + colW[2] / 2, y + 4, { align: "center" });
+
+            // Progression with color
+            if (matchesDataForCharts.length >= 2 && !s.computedFrom) {
+              if (prog > 0) doc.setTextColor(22, 163, 74);
+              else if (prog < 0) doc.setTextColor(220, 38, 38);
+              else doc.setTextColor(100, 116, 139);
+              doc.text(prog > 0 ? `+${prog}` : String(prog), startX + colW[0] + colW[1] + colW[2] + colW[3] / 2, y + 4, { align: "center" });
+            } else {
+              doc.setTextColor(100, 116, 139);
+              doc.text("—", startX + colW[0] + colW[1] + colW[2] + colW[3] / 2, y + 4, { align: "center" });
+            }
+            y += 7;
+          });
+          y += 5;
+        });
+
+        // ---- Evolution per match (table showing per-match team totals for key stats) ----
+        if (matchesDataForCharts.length >= 2) {
+          if (y > pageH - 50) { doc.addPage(); y = 15; }
+
+          doc.setFontSize(12);
+          doc.setFont("helvetica", "bold");
+          doc.setTextColor(30, 41, 59);
+          doc.text("Évolution par match", 14, y);
+          y += 7;
+
+          // Pick key stats (first 6 non-computed)
+          const keyStats = sportStats.filter(s => !s.computedFrom).slice(0, 6);
+          const evColW = [35, ...keyStats.map(() => Math.min(30, (pageW - 35 - 28) / keyStats.length))];
+
+          // Header
+          doc.setFillColor(241, 245, 249);
+          doc.roundedRect(14, y, pageW - 28, 8, 1.5, 1.5, "F");
+          doc.setFontSize(7);
+          doc.setFont("helvetica", "bold");
+          doc.setTextColor(71, 85, 105);
+          doc.text("Match", 16, y + 5.5);
+          let hx = 14 + evColW[0];
+          keyStats.forEach((s, i) => {
+            doc.text(s.shortLabel.substring(0, 8), hx + evColW[i + 1] / 2, y + 5.5, { align: "center" });
+            hx += evColW[i + 1];
+          });
+          y += 10;
+
+          doc.setFont("helvetica", "normal");
+          matchesDataForCharts.forEach((match, mIdx) => {
+            if (y > pageH - 12) { doc.addPage(); y = 15; }
+            if (mIdx % 2 === 0) {
+              doc.setFillColor(248, 250, 252);
+              doc.rect(14, y - 1, pageW - 28, 7, "F");
+            }
+
+            doc.setTextColor(30, 41, 59);
+            doc.setFontSize(7);
+            doc.text(match.matchLabel.substring(0, 14), 16, y + 4);
+
+            let rx = 14 + evColW[0];
+            keyStats.forEach((s, i) => {
+              const teamVal = Object.values(match.players).reduce((sum, p) => sum + (p.sportData[s.key] || 0), 0);
+              doc.text(String(teamVal), rx + evColW[i + 1] / 2, y + 4, { align: "center" });
+              rx += evColW[i + 1];
+            });
+            y += 7;
+          });
+          y += 5;
+        }
+
+        // Kicking map for team (rugby only)
+        if (isRugby && Object.keys(kickingByPlayerFinal).length > 0) {
+          if (y > pageH - 60) { doc.addPage(); y = 15; }
+          doc.setFontSize(12);
+          doc.setFont("helvetica", "bold");
+          doc.setTextColor(30, 41, 59);
+          doc.text("Cartographie des tirs au but — Équipe", 14, y);
+          y += 5;
+          doc.setFontSize(7);
+          doc.setTextColor(100, 116, 139);
+          doc.text("● Transformation   ■ Pénalité   ◆ Drop   |   Vert = réussi   Rouge = raté", 14, y);
+          y += 5;
+
+          const allKicks = Object.values(kickingByPlayerFinal).flatMap(k => k.allKicks);
+          const mapW = pageW - 28;
+          const mapH = 55;
+          const fb = drawPdfRugbyField(doc, 14, y, mapW, mapH);
+          allKicks.forEach(kick => {
+            const pos = svgPctToPdfPos(kick, fb);
+            const kx = pos.kx; const ky = pos.ky;
+            const r = 2.5;
+            const fillColor: [number, number, number] = kick.success ? [34, 197, 94] : [239, 68, 68];
+            doc.setFillColor(...fillColor);
+            if (kick.kickType === "conversion") {
+              doc.circle(kx, ky, r, "F");
+            } else if (kick.kickType === "penalty") {
+              doc.rect(kx - r, ky - r, r * 2, r * 2, "F");
+            } else {
+              const pts = [
+                { x: kx, y: ky - r * 1.2 },
+                { x: kx + r * 1.2, y: ky },
+                { x: kx, y: ky + r * 1.2 },
+                { x: kx - r * 1.2, y: ky },
+              ];
+              (doc as any).triangle(pts[0].x, pts[0].y, pts[1].x, pts[1].y, pts[2].x, pts[2].y, "F");
+              (doc as any).triangle(pts[0].x, pts[0].y, pts[2].x, pts[2].y, pts[3].x, pts[3].y, "F");
+            }
+          });
+          y += mapH + 5;
+
+          // Zone stats grid
+          const kicks = allKicks.map(k => ({ x: k.x, y: k.y, success: k.success }));
+          y = drawPdfZoneStatsGrid(doc, kicks, pageW, y, pageH);
+        }
+
+      } else {
+        // ===== ALL / INDIVIDUAL / SINGLE: show individual player tables =====
+        statCategories.forEach((cat) => {
+          const categoryStats = sportStats.filter(s => s.category === cat.key);
+          if (categoryStats.length === 0) return;
+
+          const chunks: StatField[][] = [];
+          for (let i = 0; i < categoryStats.length; i += 6) {
+            chunks.push(categoryStats.slice(i, i + 6));
+          }
+
+          chunks.forEach((chunk, chunkIdx) => {
+            if (y > pageH - 50) { doc.addPage(); y = 15; }
+
+            doc.setTextColor(30, 41, 59);
+            doc.setFontSize(12);
+            doc.setFont("helvetica", "bold");
+            doc.text(`${cat.label}${chunks.length > 1 ? ` (${chunkIdx + 1}/${chunks.length})` : ""}`, 14, y);
+            y += 6;
+
+            const colWidths = [55, 18, ...chunk.flatMap(() => [20, 16])];
+            const headers = ["Athlète", "M", ...chunk.flatMap(s => [s.shortLabel, "+/-"])];
+            doc.setFillColor(241, 245, 249);
+            doc.rect(14, y, pageW - 28, 7, "F");
+            doc.setFontSize(7);
+            doc.setFont("helvetica", "bold");
+            let x = 14;
+            headers.forEach((h, i) => {
+              doc.text(h.substring(0, 10), x + 1, y + 5);
+              x += colWidths[i] || 18;
+            });
+            y += 9;
+            doc.setFont("helvetica", "normal");
+
+            const sorted = [...exportStats].sort((a, b) => {
+              const firstStat = chunk[0]?.key;
+              return firstStat ? (b.sportData[firstStat] || 0) - (a.sportData[firstStat] || 0) : 0;
+            });
+
+            sorted.forEach((p) => {
+              if (y > pageH - 15) { doc.addPage(); y = 15; }
+              x = 14;
+              doc.setTextColor(30, 41, 59);
+              doc.setFontSize(7);
+              doc.text(p.playerName.substring(0, 18), x + 1, y + 4);
+              x += colWidths[0];
+              doc.text(String(p.matchesPlayed), x + 1, y + 4);
+              x += colWidths[1];
+              chunk.forEach((s, i) => {
+                const val = p.sportData[s.key] || 0;
+                doc.setTextColor(30, 41, 59);
+                doc.text(s.computedFrom ? `${val}%` : String(val), x + 1, y + 4);
+                x += colWidths[2 + i * 2];
+                const prog = playerProgressions[p.playerId]?.[s.key] || 0;
+                if (prog > 0) doc.setTextColor(22, 163, 74);
+                else if (prog < 0) doc.setTextColor(220, 38, 38);
+                else doc.setTextColor(100, 116, 139);
+                doc.text(prog > 0 ? `+${prog}` : String(prog), x + 1, y + 4);
+                x += colWidths[3 + i * 2] || 16;
+              });
+              y += 7;
+            });
+            y += 6;
+          });
+        });
+
+        // Kicking map page (rugby only) - unified map with different symbols
+        if (isRugby && Object.keys(kickingByPlayerFinal).length > 0) {
+          doc.addPage();
+          drawHeader("Cartographie des tirs au but");
+          let ky = 36;
+
+          const drawKickOnMap = (
+            doc: jsPDF,
+            kick: { x: number; y: number; kickType: string; success: boolean },
+            fb: { fx: number; fy: number; fw: number; fh: number }
+          ) => {
+            const { kx, ky: kyy } = svgPctToPdfPos(kick, fb);
+            const r = 3;
+            const fillColor: [number, number, number] = kick.success ? [34, 197, 94] : [239, 68, 68];
+            doc.setFillColor(...fillColor);
+            if (kick.kickType === "conversion") {
+              doc.circle(kx, kyy, r, "F");
+              doc.setDrawColor(59, 130, 246);
+              doc.circle(kx, kyy, r, "S");
+            } else if (kick.kickType === "penalty") {
+              doc.rect(kx - r, kyy - r, r * 2, r * 2, "F");
+              doc.setDrawColor(245, 158, 11);
+              doc.rect(kx - r, kyy - r, r * 2, r * 2, "S");
+            } else {
+              const pts = [
+                { x: kx, y: kyy - r * 1.2 },
+                { x: kx + r * 1.2, y: kyy },
+                { x: kx, y: kyy + r * 1.2 },
+                { x: kx - r * 1.2, y: kyy },
+              ];
+              doc.setFillColor(...fillColor);
+              (doc as any).triangle(pts[0].x, pts[0].y, pts[1].x, pts[1].y, pts[2].x, pts[2].y, "F");
+              (doc as any).triangle(pts[0].x, pts[0].y, pts[2].x, pts[2].y, pts[3].x, pts[3].y, "F");
+              doc.setDrawColor(139, 92, 246);
+            }
+          };
+
+          doc.setFontSize(7);
+          doc.setTextColor(100, 116, 139);
+          doc.text("● Transformation   ■ Pénalité   ◆ Drop   |   Vert = réussi   Rouge = raté", 14, ky);
+          ky += 6;
+
+          const kickerIds = Object.keys(kickingByPlayerFinal).filter(pid => kickingByPlayerFinal[pid].allKicks.length > 0 && (!singlePlayerId || pid === singlePlayerId));
+          kickerIds.forEach(pid => {
+            const kicker = kickingByPlayerFinal[pid];
+            const playerInfo = stats?.find(s => s.playerId === pid);
+            const name = playerInfo?.playerName || "Buteur";
+
+            if (ky > pageH - 70) { doc.addPage(); ky = 15; }
+
+            doc.setTextColor(30, 41, 59);
+            doc.setFontSize(10);
+            doc.setFont("helvetica", "bold");
+            doc.text(name, 14, ky);
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(7);
+            const rate = kicker.total > 0 ? Math.round((kicker.success / kicker.total) * 100) : 0;
+            doc.text(`${kicker.success}/${kicker.total} (${rate}%)  —  T: ${kicker.conversion.success}/${kicker.conversion.total}  P: ${kicker.penalty.success}/${kicker.penalty.total}  D: ${kicker.drop.success}/${kicker.drop.total}`, 14, ky + 5);
+            ky += 10;
+
+            const mapW = pageW - 28;
+            const mapH = 45;
+            const fb = drawPdfRugbyField(doc, 14, ky, mapW, mapH, { showLabels: false });
+            kicker.allKicks.forEach(kick => drawKickOnMap(doc, kick, fb));
+            ky += mapH + 8;
+          });
+        }
+      }
+
+      const playerLabel = singlePlayerId ? exportStats[0]?.playerName?.replace(/\s+/g, '-') : "";
+      const suffix = mode === "team" ? "-equipe" : mode === "single" ? `-${playerLabel}` : mode === "individual" ? "-individuelles" : "";
+      doc.save(`stats-competition${suffix}-${format(new Date(), "yyyy-MM-dd")}.pdf`);
+      toast.success("Export PDF téléchargé !");
+    } catch (e) {
+      toast.error("Erreur lors de l'export PDF");
+    }
+  }, [stats, sportStats, statCategories, categoryId, selectedCount, allMatches, activeMatchIds, playerProgressions, matchesDataForCharts, isRugby, kickingByPlayerFinal]);
+
+  // Enhanced individual player PDF export with photo, club, category, matches, kicking map
+  const handleExportPlayerPdf = useCallback(async (playerId: string) => {
+    if (!stats) return;
+    const player = stats.find(p => p.playerId === playerId);
+    if (!player) return;
+    try {
+      const { settings, clubName, categoryName, seasonName } = await preparePdfWithSettings(categoryId);
+      const doc = new jsPDF({ orientation: "portrait" });
+      const pageW = doc.internal.pageSize.getWidth();
+      const pageH = doc.internal.pageSize.getHeight();
+      const hc = (settings?.header_color || "#224378").replace("#", "");
+      const hcR = parseInt(hc.substring(0, 2), 16);
+      const hcG = parseInt(hc.substring(2, 4), 16);
+      const hcB = parseInt(hc.substring(4, 6), 16);
+
+      // Header bar
+      doc.setFillColor(hcR, hcG, hcB);
+      doc.rect(0, 0, pageW, 32, "F");
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(16);
+      doc.setFont("helvetica", "bold");
+      doc.text("Rapport individuel — Compétition", 14, 14);
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.text(`${clubName || ""} • ${categoryName || ""} • ${seasonName || ""}`, 14, 24);
+      doc.text(format(new Date(), "dd/MM/yyyy"), pageW - 14, 24, { align: "right" });
+
+      let y = 40;
+
+      // Player info section with avatar
+      if (player.avatarUrl) {
+        try {
+          const response = await fetch(player.avatarUrl + (player.avatarUrl.includes("?") ? "&" : "?") + "t=" + Date.now(), { mode: "cors" });
+          if (response.ok) {
+            const blob = await response.blob();
+            const dataUrl = await new Promise<string>((resolve) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve(reader.result as string);
+              reader.readAsDataURL(blob);
+            });
+            const imgFormat = dataUrl.includes("image/png") ? "PNG" : "JPEG";
+            doc.addImage(dataUrl, imgFormat, 14, y, 22, 22);
+          }
+        } catch { /* skip photo */ }
+      }
+
+      const infoX = player.avatarUrl ? 42 : 14;
+      doc.setTextColor(30, 41, 59);
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      doc.text(player.playerName, infoX, y + 8);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.setTextColor(100, 116, 139);
+      doc.text(`Poste : ${player.position || "—"}  •  ${player.matchesPlayed} matchs joués`, infoX, y + 15);
+      doc.text(`Club : ${clubName || "—"}  •  Catégorie : ${categoryName || "—"}`, infoX, y + 21);
+      y += 30;
+
+      // Selected matches list
+      const selectedMatches = allMatches.filter(m => activeMatchIds.includes(m.id));
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(30, 41, 59);
+      doc.text("Matchs inclus", 14, y);
+      y += 5;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7);
+      doc.setTextColor(100, 116, 139);
+      selectedMatches.forEach((m) => {
+        if (y > pageH - 30) { doc.addPage(); y = 15; }
+        const lieu = m.is_home ? "DOM" : "EXT";
+        const comp = m.competition ? ` — ${m.competition}` : "";
+        doc.text(`${format(new Date(m.match_date), "dd/MM/yyyy")} • vs ${m.opponent} [${lieu}]${comp}`, 18, y);
+        y += 4;
+      });
+      y += 6;
+
+      // Stats by category
+      statCategories.forEach(cat => {
+        const categoryStats = sportStats.filter(s => s.category === cat.key);
+        if (categoryStats.length === 0) return;
+
+        if (y > pageH - 40) { doc.addPage(); y = 15; }
+
+        doc.setTextColor(30, 41, 59);
+        doc.setFontSize(11);
+        doc.setFont("helvetica", "bold");
+        doc.text(cat.label, 14, y);
+        y += 5;
+
+        const tableW = pageW - 28;
+        const colW = tableW / categoryStats.length;
+
+        // Header row
+        doc.setFillColor(241, 245, 249);
+        doc.rect(14, y, tableW, 7, "F");
+        doc.setDrawColor(200, 210, 220);
+        doc.setLineWidth(0.3);
+        doc.rect(14, y, tableW, 7, "S");
+        doc.setFontSize(7);
+        doc.setFont("helvetica", "bold");
+        let x = 14;
+        categoryStats.forEach((s, i) => {
+          if (i > 0) doc.line(x, y, x, y + 7);
+          doc.text(s.shortLabel.substring(0, 12), x + 1, y + 5);
+          x += colW;
+        });
+        y += 7;
+
+        // Values row
+        doc.setFillColor(255, 255, 255);
+        doc.rect(14, y, tableW, 7, "F");
+        doc.rect(14, y, tableW, 7, "S");
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(30, 41, 59);
+        x = 14;
+        categoryStats.forEach((s, i) => {
+          if (i > 0) doc.line(x, y, x, y + 7);
+          const val = player.sportData[s.key] || 0;
+          doc.text(s.computedFrom ? `${val}%` : String(val), x + 1, y + 5);
+          x += colW;
+        });
+        y += 10;
+      });
+
+      // Kicking section for rugby
+      if (isRugby && kickingByPlayerFinal[playerId]) {
+        const k = kickingByPlayerFinal[playerId];
+        if (k.total > 0) {
+          if (y > pageH - 100) { doc.addPage(); y = 15; }
+
+          doc.setFontSize(11);
+          doc.setFont("helvetica", "bold");
+          doc.setTextColor(30, 41, 59);
+          doc.text("Statistiques Buteur", 14, y);
+          y += 6;
+
+          // Stats summary
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(8);
+          const rate = Math.round((k.success / k.total) * 100);
+          const penRate = k.penalty.total > 0 ? Math.round((k.penalty.success / k.penalty.total) * 100) : 0;
+          const convRate = k.conversion.total > 0 ? Math.round((k.conversion.success / k.conversion.total) * 100) : 0;
+          const dropRate = k.drop.total > 0 ? Math.round((k.drop.success / k.drop.total) * 100) : 0;
+          doc.text(`Global: ${k.success}/${k.total} (${rate}%)  •  Transformations: ${k.conversion.success}/${k.conversion.total} (${convRate}%)  •  Pénalités: ${k.penalty.success}/${k.penalty.total} (${penRate}%)  •  Drops: ${k.drop.success}/${k.drop.total} (${dropRate}%)`, 14, y);
+          y += 8;
+
+          // Legend
+          doc.setFontSize(7);
+          doc.setTextColor(100, 116, 139);
+          // Transformation legend (blue circle)
+          doc.setFillColor(59, 130, 246);
+          doc.circle(18, y - 1, 2, "F");
+          doc.text("Transformation", 22, y);
+          // Penalty legend (orange square)
+          doc.setFillColor(249, 115, 22);
+          doc.rect(56, y - 3, 4, 4, "F");
+          doc.text("Pénalité", 62, y);
+          // Drop legend (purple diamond)
+          doc.setFillColor(139, 92, 246);
+          const dx = 90, dy = y - 1;
+          (doc as any).triangle(dx, dy - 2.5, dx + 2.5, dy, dx, dy + 2.5, "F");
+          (doc as any).triangle(dx, dy - 2.5, dx - 2.5, dy, dx, dy + 2.5, "F");
+          doc.text("Drop", 94, y);
+          // Success colors
+          doc.setFillColor(34, 197, 94);
+          doc.circle(118, y - 1, 2, "F");
+          doc.text("Réussi", 122, y);
+          doc.setFillColor(239, 68, 68);
+          doc.circle(144, y - 1, 2, "F");
+          doc.text("Raté", 148, y);
+          y += 6;
+
+          // Draw field
+          const mapW = pageW - 28;
+          const mapH = 70;
+          const fieldBounds = drawPdfRugbyField(doc, 14, y, mapW, mapH);
+
+          // Draw kicks using inner field bounds
+          k.allKicks.forEach(kick => {
+            const { kx, ky: ky2 } = svgPctToPdfPos(kick, fieldBounds);
+            const r = 3;
+            const fillColor: [number, number, number] = kick.success ? [34, 197, 94] : [239, 68, 68];
+            doc.setFillColor(...fillColor);
+
+            if (kick.kickType === "conversion") {
+              doc.circle(kx, ky2, r, "F");
+              doc.setDrawColor(59, 130, 246);
+              doc.circle(kx, ky2, r, "S");
+            } else if (kick.kickType === "penalty") {
+              doc.rect(kx - r, ky2 - r, r * 2, r * 2, "F");
+              doc.setDrawColor(249, 115, 22);
+              doc.rect(kx - r, ky2 - r, r * 2, r * 2, "S");
+            } else {
+              const pts = [
+                { x: kx, y: ky2 - r * 1.2 },
+                { x: kx + r * 1.2, y: ky2 },
+                { x: kx, y: ky2 + r * 1.2 },
+                { x: kx - r * 1.2, y: ky2 },
+              ];
+              doc.setFillColor(...fillColor);
+              (doc as any).triangle(pts[0].x, pts[0].y, pts[1].x, pts[1].y, pts[2].x, pts[2].y, "F");
+              (doc as any).triangle(pts[0].x, pts[0].y, pts[2].x, pts[2].y, pts[3].x, pts[3].y, "F");
+              doc.setDrawColor(139, 92, 246);
+            }
+          });
+
+          y += mapH + 6;
+
+          // Zone stats grid below cartography
+          const zoneKicks = k.allKicks.map((kick: any) => ({
+            x: kick.x as number,
+            y: kick.y as number,
+            success: !!kick.success,
+          }));
+          y = drawPdfZoneStatsGrid(doc, zoneKicks, pageW, y, pageH);
+        }
+      }
+
+      // Footer
+      if (settings?.footer_text) {
+        doc.setFontSize(7);
+        doc.setTextColor(148, 163, 184);
+        doc.text(settings.footer_text, pageW / 2, pageH - 8, { align: "center" });
+      }
+
+      doc.save(`rapport-${player.playerName.replace(/\s+/g, '-')}-${format(new Date(), "yyyy-MM-dd")}.pdf`);
+      toast.success("Rapport PDF téléchargé !");
+    } catch (e) {
+      console.error(e);
+      toast.error("Erreur lors de l'export PDF");
+    }
+  }, [stats, sportStats, statCategories, categoryId, allMatches, activeMatchIds, isRugby, kickingByPlayerFinal]);
+
+  const getCategoryIcon = (catKey: string) => {
+    switch (catKey) {
+      case "scoring": return <Trophy className="h-4 w-4 text-primary" />;
+      case "attack": return <Target className="h-4 w-4 text-primary" />;
+      case "defense": return <Shield className="h-4 w-4 text-primary" />;
+      case "general": return <Activity className="h-4 w-4 text-primary" />;
+      default: return <Dumbbell className="h-4 w-4 text-primary" />;
+    }
+  };
+
+  const ProgressionIndicator = ({ value }: { value: number }) => {
+    if (value > 0) return <span className="text-emerald-600 dark:text-emerald-400 text-xs font-medium flex items-center gap-0.5"><TrendingUp className="h-3 w-3" />+{value}</span>;
+    if (value < 0) return <span className="text-destructive text-xs font-medium flex items-center gap-0.5"><TrendingDown className="h-3 w-3" />{value}</span>;
+    return <span className="text-muted-foreground text-xs"><Minus className="h-3 w-3 inline" /></span>;
+  };
 
   if (isLoading || loadingPrefs) {
     return <p className="text-muted-foreground">Chargement des statistiques...</p>;
   }
 
-  if (!stats || stats.length === 0) {
+  if ((!stats || stats.length === 0) || (isSinglePlayerMode && (!filteredStats || filteredStats.length === 0))) {
     return (
       <Card className="bg-gradient-card">
         <CardContent className="py-8">
@@ -249,205 +1206,302 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
     );
   }
 
-  // Get top performers
-  const scoringStats = sportStats.filter(s => s.category === "scoring");
-  const attackStats = sportStats.filter(s => s.category === "attack");
-  const defenseStats = sportStats.filter(s => s.category === "defense");
-
-  const topScoringStatKey = scoringStats[0]?.key;
-  const topAttackStatKey = attackStats[0]?.key;
-  const topDefenseStatKey = defenseStats[0]?.key;
-
-  const topScorers = topScoringStatKey 
-    ? [...stats].sort((a, b) => (b.sportData[topScoringStatKey] || 0) - (a.sportData[topScoringStatKey] || 0)).slice(0, 3)
-    : [];
-  const topAttackers = topAttackStatKey
-    ? [...stats].sort((a, b) => (b.sportData[topAttackStatKey] || 0) - (a.sportData[topAttackStatKey] || 0)).slice(0, 3)
-    : [];
-  const topDefenders = topDefenseStatKey
-    ? [...stats].sort((a, b) => (b.sportData[topDefenseStatKey] || 0) - (a.sportData[topDefenseStatKey] || 0)).slice(0, 3)
-    : [];
-
-  const getCategoryIcon = (catKey: string) => {
-    switch (catKey) {
-      case "scoring": return <Trophy className="h-4 w-4 text-primary" />;
-      case "attack": return <Target className="h-4 w-4 text-primary" />;
-      case "defense": return <Shield className="h-4 w-4 text-primary" />;
-      case "general": return <Activity className="h-4 w-4 text-primary" />;
-      default: return <Dumbbell className="h-4 w-4 text-primary" />;
-    }
-  };
-
   return (
     <div className="space-y-6">
-      {/* Match filter */}
-      <div className="flex items-center gap-3 flex-wrap">
-        <Popover open={filterOpen} onOpenChange={setFilterOpen}>
-          <PopoverTrigger asChild>
-            <Button variant="outline" size="sm" className="gap-2">
-              <Filter className="h-4 w-4" />
-              Filtrer les matchs
-              <Badge variant="secondary" className="ml-1 h-5 min-w-[20px] px-1.5">
-                {selectedCount}/{allMatches.length}
-              </Badge>
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-[360px] p-0" align="start">
-            <div className="p-3 border-b">
-              <p className="text-sm font-medium">Sélectionner les matchs</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Choisissez les matchs à inclure dans le cumul
-              </p>
-              <div className="flex gap-2 mt-2">
-                <Button variant="outline" size="sm" className="text-xs h-7" onClick={selectAllMatches}>
-                  <CheckSquare className="h-3 w-3 mr-1" />
-                  Tous
-                </Button>
-                <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setSelectedMatchIds([])}>
-                  Réinitialiser
-                </Button>
+      {/* Match filter + Export */}
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-3 flex-wrap">
+          <Popover open={filterOpen} onOpenChange={setFilterOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-2">
+                <Filter className="h-4 w-4" />
+                Filtrer les matchs
+                <Badge variant="secondary" className="ml-1 h-5 min-w-[20px] px-1.5">
+                  {selectedCount}/{allMatches.length}
+                </Badge>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[360px] p-0" align="start">
+              <div className="p-3 border-b">
+                <p className="text-sm font-medium">Sélectionner les matchs</p>
+                <div className="flex gap-2 mt-2">
+                  <Button variant="outline" size="sm" className="text-xs h-7" onClick={() => setSelectedMatchIds([])}>
+                    <CheckSquare className="h-3 w-3 mr-1" />Tous
+                  </Button>
+                </div>
               </div>
-            </div>
-            <ScrollArea className="max-h-[300px]">
-              <div className="p-2 space-y-1">
-                {allMatches.map(match => {
-                  const isSelected = selectedMatchIds.length === 0 || selectedMatchIds.includes(match.id);
-                  return (
-                    <button
-                      key={match.id}
-                      onClick={() => toggleMatch(match.id)}
-                      className={`w-full flex items-center gap-3 p-2 rounded-md text-left transition-colors hover:bg-muted ${
-                        isSelected ? 'bg-primary/5' : 'opacity-50'
-                      }`}
-                    >
-                      <Checkbox
-                        checked={isSelected}
-                        className="pointer-events-none"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">
-                          vs {match.opponent || "Adversaire inconnu"}
-                        </p>
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <Calendar className="h-3 w-3" />
-                          {format(new Date(match.match_date), "dd MMM yyyy", { locale: fr })}
+              <ScrollArea className="max-h-[300px]">
+                <div className="p-2 space-y-1">
+                  {allMatches.map(match => {
+                    const isSelected = selectedMatchIds.length === 0 || selectedMatchIds.includes(match.id);
+                    return (
+                      <button key={match.id} onClick={() => toggleMatch(match.id)}
+                        className={`w-full flex items-center gap-3 p-2 rounded-md text-left transition-colors hover:bg-muted ${isSelected ? 'bg-primary/5' : 'opacity-50'}`}>
+                        <Checkbox checked={isSelected} className="pointer-events-none" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">vs {match.opponent || "Adversaire inconnu"}</p>
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <Calendar className="h-3 w-3" />
+                            {format(new Date(match.match_date), "dd MMM yyyy", { locale: fr })}
+                          </div>
                         </div>
-                      </div>
-                    </button>
-                  );
-                })}
-                {allMatches.length === 0 && (
-                  <p className="text-sm text-muted-foreground text-center py-4">Aucun match</p>
-                )}
-              </div>
-            </ScrollArea>
-          </PopoverContent>
-        </Popover>
+                      </button>
+                    );
+                  })}
+                </div>
+              </ScrollArea>
+            </PopoverContent>
+          </Popover>
 
-        {selectedMatchIds.length > 0 && (
-          <Badge variant="outline" className="gap-1">
-            <Trophy className="h-3 w-3" />
-            {selectedMatchIds.length} match{selectedMatchIds.length > 1 ? 's' : ''} sélectionné{selectedMatchIds.length > 1 ? 's' : ''}
-          </Badge>
-        )}
-        {selectedMatchIds.length === 0 && allMatches.length > 0 && (
-          <Badge variant="secondary" className="gap-1">
-            Tous les matchs ({allMatches.length})
-          </Badge>
-        )}
+          {selectedMatchIds.length === 0 && allMatches.length > 0 && (
+            <Badge variant="secondary" className="gap-1">Tous les matchs ({allMatches.length})</Badge>
+          )}
+          {selectedMatchIds.length > 0 && (
+            <Badge variant="outline" className="gap-1">
+              <Trophy className="h-3 w-3" />{selectedMatchIds.length} match{selectedMatchIds.length > 1 ? 's' : ''}
+            </Badge>
+          )}
+        </div>
+
+        {!isSinglePlayerMode && <div className="flex gap-2 items-center">
+          {/* Player selector for single export */}
+          <Select value={exportPlayerId} onValueChange={setExportPlayerId}>
+            <SelectTrigger className="w-[180px] h-8 text-xs">
+              <SelectValue placeholder="Exporter un athlète" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__all__">Tous les athlètes</SelectItem>
+              {stats.map(p => (
+                <SelectItem key={p.playerId} value={p.playerId}>{p.playerName}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-1">
+                <FileSpreadsheet className="h-4 w-4" /><span className="hidden sm:inline">Excel</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel className="text-xs">Exporter en Excel</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {exportPlayerId && exportPlayerId !== "__all__" ? (
+                <DropdownMenuItem onClick={() => handleExportExcel("single", exportPlayerId)}>
+                  <User className="h-3.5 w-3.5 mr-2" />{stats.find(p => p.playerId === exportPlayerId)?.playerName || "Athlète"}
+                </DropdownMenuItem>
+              ) : (
+                <>
+                  <DropdownMenuItem onClick={() => handleExportExcel("all")}>
+                    <Users className="h-3.5 w-3.5 mr-2" />Tout (équipe + individuel)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleExportExcel("team")}>
+                    <Users className="h-3.5 w-3.5 mr-2" />Statistiques équipe
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleExportExcel("individual")}>
+                    <User className="h-3.5 w-3.5 mr-2" />Statistiques individuelles
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-1">
+                <Download className="h-4 w-4" /><span className="hidden sm:inline">PDF</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel className="text-xs">Exporter en PDF</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {exportPlayerId && exportPlayerId !== "__all__" ? (
+                <DropdownMenuItem onClick={() => handleExportPdf("single", exportPlayerId)}>
+                  <User className="h-3.5 w-3.5 mr-2" />{stats.find(p => p.playerId === exportPlayerId)?.playerName || "Athlète"} + cartographie
+                </DropdownMenuItem>
+              ) : (
+                <>
+                  <DropdownMenuItem onClick={() => handleExportPdf("all")}>
+                    <Users className="h-3.5 w-3.5 mr-2" />Tout (équipe + individuel)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleExportPdf("team")}>
+                    <Users className="h-3.5 w-3.5 mr-2" />Statistiques équipe
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleExportPdf("individual")}>
+                    <User className="h-3.5 w-3.5 mr-2" />Statistiques individuelles
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>}
       </div>
 
-      {/* Charts section */}
-      {stats && stats.length > 0 && (
-        <CumulativeStatsCharts
-          stats={stats}
-          matchesData={matchesDataForCharts}
-          sportStats={sportStats}
-          selectedMatchIds={activeMatchIds}
-        />
+      {/* Charts */}
+      {!isSinglePlayerMode && stats.length > 0 && (
+        <CumulativeStatsCharts stats={stats} matchesData={matchesDataForCharts} sportStats={sportStats} selectedMatchIds={activeMatchIds} sportType={sportType} />
       )}
 
-      {/* Top performers cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {topScoringStatKey && scoringStats[0] && (
-          <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <Trophy className="h-4 w-4 text-primary" />
-                Top {scoringStats[0].label}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {topScorers.map((p, i) => (
-                <div key={p.playerId} className="flex justify-between items-center">
-                  <span className="text-sm">
-                    <Badge variant="outline" className="mr-2 w-5 h-5 p-0 justify-center">
-                      {i + 1}
-                    </Badge>
-                    {p.playerName}
-                  </span>
-                  <span className="font-bold text-primary">{p.sportData[topScoringStatKey] || 0}</span>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
+      {/* SPLIT SCREEN: Team (left) + Individual (right) — or just individual in single player mode */}
+      <div className={isSinglePlayerMode ? "" : "grid grid-cols-1 lg:grid-cols-2 gap-6"}>
+        {/* LEFT: Team Stats */}
+        {!isSinglePlayerMode && (
+        <div>
+          <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+            <Users className="h-5 w-5 text-primary" />
+            Statistiques équipe
+          </h3>
+          <TeamCumulativeStats
+            stats={stats}
+            matchesData={matchesDataForCharts}
+            sportStats={sportStats}
+            sportType={sportType}
+          />
+        </div>
         )}
 
-        {topAttackStatKey && attackStats[0] && (
-          <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <Target className="h-4 w-4 text-primary" />
-                Top {attackStats[0].label}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {topAttackers.map((p, i) => (
-                <div key={p.playerId} className="flex justify-between items-center">
-                  <span className="text-sm">
-                    <Badge variant="outline" className="mr-2 w-5 h-5 p-0 justify-center">
-                      {i + 1}
-                    </Badge>
-                    {p.playerName}
-                  </span>
-                  <span className="font-bold text-primary">{p.sportData[topAttackStatKey] || 0}</span>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        )}
+        {/* RIGHT: Individual Stats */}
+        <div>
+          <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+            <h3 className="text-lg font-semibold flex items-center gap-2">
+              <User className="h-5 w-5 text-primary" />
+              Statistiques individuelles
+            </h3>
+            <div className="flex items-center gap-2">
+              {!isSinglePlayerMode && (
+              <Select value={selectedPlayerId || (stats[0]?.playerId || "")} onValueChange={setSelectedPlayerId}>
+                <SelectTrigger className="w-[180px] h-8 text-xs">
+                  <SelectValue placeholder="Choisir un joueur" />
+                </SelectTrigger>
+                <SelectContent>
+                  {stats.map(p => (
+                    <SelectItem key={p.playerId} value={p.playerId}>{p.playerName}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              )}
+              <Button variant="outline" size="sm" className="gap-1 h-8" onClick={() => {
+                const pid = fixedPlayerId || selectedPlayerId || stats[0]?.playerId;
+                if (pid) handleExportExcel("single", pid);
+              }}>
+                <FileSpreadsheet className="h-3.5 w-3.5" />
+              </Button>
+              <Button variant="outline" size="sm" className="gap-1 h-8" onClick={() => {
+                const pid = fixedPlayerId || selectedPlayerId || stats[0]?.playerId;
+                if (pid) handleExportPlayerPdf(pid);
+              }}>
+                <Download className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          </div>
 
-        {topDefenseStatKey && defenseStats[0] && (
-          <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <Shield className="h-4 w-4 text-primary" />
-                Top {defenseStats[0].label}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {topDefenders.map((p, i) => (
-                <div key={p.playerId} className="flex justify-between items-center">
-                  <span className="text-sm">
-                    <Badge variant="outline" className="mr-2 w-5 h-5 p-0 justify-center">
-                      {i + 1}
-                    </Badge>
-                    {p.playerName}
-                  </span>
-                  <span className="font-bold text-primary">{p.sportData[topDefenseStatKey] || 0}</span>
+          {(() => {
+            const player = selectedPlayer || filteredStats?.[0] || stats[0];
+            if (!player) return null;
+            return (
+              <div className="space-y-4">
+                <div className="flex items-center gap-4 p-3 bg-muted/50 rounded-lg">
+                  <div>
+                    <p className="font-semibold text-lg">{player.playerName}</p>
+                    <p className="text-sm text-muted-foreground">{player.matchesPlayed} matchs joués</p>
+                  </div>
                 </div>
-              ))}
-            </CardContent>
-          </Card>
-        )}
+
+                <Tabs defaultValue={statCategories[0]?.key || "general"} className="w-full">
+                  <TabsList className={`grid w-full grid-cols-${Math.min(statCategories.length, 4)}`}>
+                    {statCategories.map(cat => (
+                      <TabsTrigger key={cat.key} value={cat.key} className="gap-1 text-xs">
+                        {getCategoryIcon(cat.key)}
+                        <span className="hidden sm:inline">{cat.label}</span>
+                      </TabsTrigger>
+                    ))}
+                  </TabsList>
+
+                  {statCategories.map(cat => {
+                    const categoryStats = sportStats.filter(s => s.category === cat.key);
+                    return (
+                      <TabsContent key={cat.key} value={cat.key}>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                          {categoryStats.map(stat => {
+                            const val = player.sportData[stat.key] || 0;
+                            const prog = playerProgressions[player.playerId]?.[stat.key] || 0;
+                            return (
+                              <div key={stat.key} className="p-3 bg-muted/50 rounded-lg text-center space-y-1">
+                                <p className="text-2xl font-bold">{stat.computedFrom ? `${val}%` : val}</p>
+                                <p className="text-xs text-muted-foreground">{stat.shortLabel}</p>
+                                {matchesDataForCharts.length >= 2 && (
+                                  <ProgressionIndicator value={prog} />
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </TabsContent>
+                    );
+                  })}
+                </Tabs>
+                {/* Kicking stats for rugby */}
+                {isRugby && kickingByPlayerFinal[player.playerId] && (() => {
+                  const k = kickingByPlayerFinal[player.playerId];
+                  const rate = k.total > 0 ? Math.round((k.success / k.total) * 100) : 0;
+                  const penRate = k.penalty.total > 0 ? Math.round((k.penalty.success / k.penalty.total) * 100) : 0;
+                  const convRate = k.conversion.total > 0 ? Math.round((k.conversion.success / k.conversion.total) * 100) : 0;
+                  const dropRate = k.drop.total > 0 ? Math.round((k.drop.success / k.drop.total) * 100) : 0;
+                  return (
+                    <Card className="mt-4 border-primary/20">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm flex items-center gap-2">
+                          <Crosshair className="h-4 w-4 text-primary" />
+                          Statistiques Buteur
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                          <div className="p-3 bg-primary/10 rounded-lg text-center">
+                            <p className="text-2xl font-bold text-primary">{rate}%</p>
+                            <p className="text-xs text-muted-foreground">Global</p>
+                            <p className="text-xs text-muted-foreground">{k.success}/{k.total}</p>
+                          </div>
+                          <div className="p-3 bg-muted/50 rounded-lg text-center">
+                            <p className="text-2xl font-bold">{penRate}%</p>
+                            <p className="text-xs text-muted-foreground">Pénalités</p>
+                            <p className="text-xs text-muted-foreground">{k.penalty.success}/{k.penalty.total}</p>
+                          </div>
+                          <div className="p-3 bg-muted/50 rounded-lg text-center">
+                            <p className="text-2xl font-bold">{convRate}%</p>
+                            <p className="text-xs text-muted-foreground">Transformations</p>
+                            <p className="text-xs text-muted-foreground">{k.conversion.success}/{k.conversion.total}</p>
+                          </div>
+                          <div className="p-3 bg-muted/50 rounded-lg text-center">
+                            <p className="text-2xl font-bold">{dropRate}%</p>
+                            <p className="text-xs text-muted-foreground">Drops</p>
+                            <p className="text-xs text-muted-foreground">{k.drop.success}/{k.drop.total}</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })()}
+                {/* Kicking field map */}
+                {isRugby && kickingByPlayerFinal[player.playerId] && (
+                  <CumulativeKickingMap
+                    kicks={kickingByPlayerFinal[player.playerId].allKicks}
+                    playerName={player.playerName}
+                    hasKickingStats={kickingByPlayerFinal[player.playerId].total > 0}
+                  />
+                )}
+              </div>
+            );
+          })()}
+        </div>
       </div>
 
-      {/* Detailed stats table */}
+      {!isSinglePlayerMode && <>
+      {/* Full detailed table below */}
       <Card className="bg-gradient-card">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <BarChart3 className="h-5 w-5" />
-            Statistiques détaillées par athlète
+            Tableau détaillé — tous les joueurs
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -463,7 +1517,6 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
 
             {statCategories.map(cat => {
               const categoryStats = sportStats.filter(s => s.category === cat.key);
-              
               return (
                 <TabsContent key={cat.key} value={cat.key}>
                   <div className="overflow-x-auto">
@@ -472,10 +1525,8 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
                         <TableRow>
                           <TableHead>Athlète</TableHead>
                           <TableHead className="text-center">Matchs</TableHead>
-                          {categoryStats.slice(0, 6).map(stat => (
-                            <TableHead key={stat.key} className="text-center">
-                              {stat.shortLabel}
-                            </TableHead>
+                          {categoryStats.map(stat => (
+                            <TableHead key={stat.key} className="text-center">{stat.shortLabel}</TableHead>
                           ))}
                         </TableRow>
                       </TableHeader>
@@ -490,14 +1541,20 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
                             <TableRow key={p.playerId}>
                               <TableCell className="font-medium">{p.playerName}</TableCell>
                               <TableCell className="text-center">{p.matchesPlayed}</TableCell>
-                              {categoryStats.slice(0, 6).map(stat => (
-                                <TableCell key={stat.key} className="text-center">
-                                  {stat.computedFrom 
-                                    ? `${p.sportData[stat.key] || 0}%`
-                                    : (p.sportData[stat.key] || 0)
-                                  }
-                                </TableCell>
-                              ))}
+                              {categoryStats.map(stat => {
+                                const val = p.sportData[stat.key] || 0;
+                                const prog = playerProgressions[p.playerId]?.[stat.key] || 0;
+                                return (
+                                  <TableCell key={stat.key} className="text-center">
+                                    <div className="flex flex-col items-center gap-0.5">
+                                      <span>{stat.computedFrom ? `${val}%` : val}</span>
+                                      {matchesDataForCharts.length >= 2 && (
+                                        <ProgressionIndicator value={prog} />
+                                      )}
+                                    </div>
+                                  </TableCell>
+                                );
+                              })}
                             </TableRow>
                           ))}
                       </TableBody>
@@ -509,6 +1566,72 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV" }: PlayerCu
           </Tabs>
         </CardContent>
       </Card>
+
+      {/* Kicking ranking table for rugby */}
+      {isRugby && Object.keys(kickingByPlayerFinal).length > 0 && (
+        <Card className="bg-gradient-card">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Crosshair className="h-5 w-5 text-primary" />
+              Classement Buteurs
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Athlète</TableHead>
+                    <TableHead className="text-center">Global</TableHead>
+                    <TableHead className="text-center">Pénalités</TableHead>
+                    <TableHead className="text-center">Transformations</TableHead>
+                    <TableHead className="text-center">Drops</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {Object.entries(kickingByPlayerFinal)
+                    .map(([playerId, k]) => {
+                      const playerInfo = stats?.find(s => s.playerId === playerId);
+                      return { playerId, name: playerInfo?.playerName || "Inconnu", k };
+                    })
+                    .sort((a, b) => (b.k.total > 0 ? b.k.success / b.k.total : 0) - (a.k.total > 0 ? a.k.success / a.k.total : 0))
+                    .map(({ playerId, name, k }) => {
+                      const rate = k.total > 0 ? Math.round((k.success / k.total) * 100) : 0;
+                      const penRate = k.penalty.total > 0 ? Math.round((k.penalty.success / k.penalty.total) * 100) : 0;
+                      const convRate = k.conversion.total > 0 ? Math.round((k.conversion.success / k.conversion.total) * 100) : 0;
+                      const dropRate = k.drop.total > 0 ? Math.round((k.drop.success / k.drop.total) * 100) : 0;
+                      return (
+                        <TableRow key={playerId}>
+                          <TableCell className="font-medium">{name}</TableCell>
+                          <TableCell className="text-center">
+                            <span className="font-semibold">{rate}%</span>
+                            <span className="text-xs text-muted-foreground ml-1">({k.success}/{k.total})</span>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {k.penalty.total > 0 ? (
+                              <><span className="font-semibold">{penRate}%</span><span className="text-xs text-muted-foreground ml-1">({k.penalty.success}/{k.penalty.total})</span></>
+                            ) : <span className="text-muted-foreground">—</span>}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {k.conversion.total > 0 ? (
+                              <><span className="font-semibold">{convRate}%</span><span className="text-xs text-muted-foreground ml-1">({k.conversion.success}/{k.conversion.total})</span></>
+                            ) : <span className="text-muted-foreground">—</span>}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {k.drop.total > 0 ? (
+                              <><span className="font-semibold">{dropRate}%</span><span className="text-xs text-muted-foreground ml-1">({k.drop.success}/{k.drop.total})</span></>
+                            ) : <span className="text-muted-foreground">—</span>}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      </>}
     </div>
   );
 }

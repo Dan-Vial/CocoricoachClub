@@ -17,7 +17,7 @@ import { toast } from "sonner";
 
 interface EvaluationsSectionProps {
   categoryId: string;
-  players: { id: string; name: string }[] | undefined;
+  players: { id: string; name: string; first_name?: string | null }[] | undefined;
 }
 
 const EVALUATION_PERIODS = [
@@ -266,7 +266,7 @@ export function EvaluationsSection({ categoryId, players }: EvaluationsSectionPr
                   <SelectTrigger><SelectValue placeholder="Sélectionner un joueur" /></SelectTrigger>
                   <SelectContent>
                     {players?.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                      <SelectItem key={p.id} value={p.id}>{p.first_name ? `${p.first_name} ${p.name}` : p.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>

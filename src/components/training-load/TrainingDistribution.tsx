@@ -1,12 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useState, useMemo } from "react";
-import { format, subDays, subWeeks } from "date-fns";
-import { fr } from "date-fns/locale";
-import { BarChart3, Dumbbell, Zap, Shield } from "lucide-react";
+import { format, subDays } from "date-fns";
+import { BarChart3, Dumbbell, Zap, Shield, CalendarRange } from "lucide-react";
 import {
   getSessionTypeLabel,
   getObjectiveLabel,
@@ -22,22 +22,19 @@ interface TrainingDistributionProps {
   categoryId: string;
 }
 
-type PeriodOption = "7" | "14" | "28" | "56" | "90";
-
 export function TrainingDistribution({ categoryId }: TrainingDistributionProps) {
-  const [period, setPeriod] = useState<PeriodOption>("28");
-
-  const startDate = useMemo(() => format(subDays(new Date(), Number(period)), "yyyy-MM-dd"), [period]);
+  const [startDate, setStartDate] = useState(() => format(subDays(new Date(), 28), "yyyy-MM-dd"));
+  const [endDate, setEndDate] = useState(() => format(new Date(), "yyyy-MM-dd"));
 
   const { data, isLoading } = useQuery({
-    queryKey: ["training-distribution", categoryId, startDate],
+    queryKey: ["training-distribution", categoryId, startDate, endDate],
     queryFn: async () => {
-      // Fetch sessions for the period
       const { data: sessions, error } = await supabase
         .from("training_sessions")
         .select("id, session_date, training_type, intensity")
         .eq("category_id", categoryId)
         .gte("session_date", startDate)
+        .lte("session_date", endDate)
         .order("session_date");
       if (error) throw error;
       if (!sessions?.length) return { sessions: [], blocks: [] };
@@ -114,14 +111,6 @@ export function TrainingDistribution({ categoryId }: TrainingDistributionProps) 
     };
   }, [data]);
 
-  const periodLabels: Record<PeriodOption, string> = {
-    "7": "7 jours",
-    "14": "14 jours",
-    "28": "28 jours",
-    "56": "8 semaines",
-    "90": "Saison",
-  };
-
   if (isLoading) {
     return (
       <Card>
@@ -137,19 +126,39 @@ export function TrainingDistribution({ categoryId }: TrainingDistributionProps) 
 
   if (!stats) {
     return (
-      <Card>
-        <CardContent className="p-6 text-center text-muted-foreground">
-          <BarChart3 className="h-8 w-8 mx-auto mb-2 opacity-50" />
-          <p>Aucune donnée de séance sur cette période</p>
-        </CardContent>
-      </Card>
+      <div className="space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+          <div>
+            <h3 className="text-lg font-semibold flex items-center gap-2">
+              <BarChart3 className="h-5 w-5 text-primary" />
+              Répartition des entraînements
+            </h3>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Du</Label>
+              <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="h-8 w-[140px] text-sm" max={endDate} />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Au</Label>
+              <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="h-8 w-[140px] text-sm" min={startDate} />
+            </div>
+          </div>
+        </div>
+        <Card>
+          <CardContent className="p-6 text-center text-muted-foreground">
+            <BarChart3 className="h-8 w-8 mx-auto mb-2 opacity-50" />
+            <p>Aucune donnée de séance sur cette période</p>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <h3 className="text-lg font-semibold flex items-center gap-2">
             <BarChart3 className="h-5 w-5 text-primary" />
@@ -159,16 +168,18 @@ export function TrainingDistribution({ categoryId }: TrainingDistributionProps) 
             {stats.totalSessions} séances · {stats.totalBlocks} blocs analysés
           </p>
         </div>
-        <Select value={period} onValueChange={(v) => setPeriod(v as PeriodOption)}>
-          <SelectTrigger className="w-[130px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {Object.entries(periodLabels).map(([val, label]) => (
-              <SelectItem key={val} value={val}>{label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-3">
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground flex items-center gap-1">
+              <CalendarRange className="h-3 w-3" /> Du
+            </Label>
+            <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="h-8 w-[140px] text-sm" max={endDate} />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">Au</Label>
+            <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="h-8 w-[140px] text-sm" min={startDate} />
+          </div>
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">

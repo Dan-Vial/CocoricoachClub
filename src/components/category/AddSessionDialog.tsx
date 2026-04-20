@@ -114,7 +114,7 @@ export function AddSessionDialog({
   const sportType = category?.rugby_type;
   const trainingTypes = getTrainingTypesForSport(sportType);
   
-  const showExerciseSection = trainingTypeHasExercises(type);
+  const showExerciseSection = isAthleteMode || trainingTypeHasExercises(type);
   const hasValidBlocks = sessionBlocks.some((block) => !!block.training_type);
 
   // When a training type with exercises is selected, ensure UI is ready
@@ -184,9 +184,10 @@ export function AddSessionDialog({
     mutationFn: async () => {
       // Create the session - use first block type if blocks exist, otherwise use selected type
       const mainType = sessionBlocks.length > 0 ? sessionBlocks[0].training_type : type;
-      const mainIntensity = sessionBlocks.length > 0
+      const rawIntensity = sessionBlocks.length > 0
         ? sessionBlocks.reduce((max, b) => Math.max(max, b.intensity || 0), 0)
         : (intensity ? parseInt(intensity) : null);
+      const mainIntensity = rawIntensity && rawIntensity >= 1 && rawIntensity <= 10 ? rawIntensity : null;
 
       if (isAthleteMode) {
         if (!athletePlayerId) {
@@ -214,6 +215,21 @@ export function AddSessionDialog({
             target_intensity: block.target_intensity || null,
             volume: block.volume || null,
             contact_charge: block.contact_charge || null,
+            bowling_exercise_type: block.bowling_exercise_type || null,
+          }));
+
+        const validExercisesForAthlete = exercises
+          .filter(e => e.exercise_name.trim())
+          .map((ex, idx) => ({
+            exercise_name: ex.exercise_name,
+            exercise_category: ex.exercise_category,
+            sets: ex.sets,
+            reps: ex.reps,
+            weight_kg: ex.weight_kg,
+            rest_seconds: ex.rest_seconds,
+            notes: ex.notes || null,
+            order_index: idx,
+            library_exercise_id: ex.library_exercise_id,
           }));
 
         const { data: payload, error } = await supabase.functions.invoke("athlete-create-session", {
@@ -230,6 +246,7 @@ export function AddSessionDialog({
             intensity: mainIntensity,
             notes: notes || null,
             session_blocks: athleteBlocks,
+            exercises: validExercisesForAthlete,
           },
         });
 
@@ -391,7 +408,7 @@ export function AddSessionDialog({
 
       let toastMessage = "Séance ajoutée";
       if (blockCount > 0) toastMessage += ` avec ${blockCount} bloc(s)`;
-      if (!isAthleteMode && exerciseCount > 0) toastMessage += ` et ${exerciseCount} exercice(s)`;
+      if (exerciseCount > 0) toastMessage += ` et ${exerciseCount} exercice(s)`;
       if (!isAthleteMode && gpsCount > 0) toastMessage += ` et ${gpsCount} données GPS`;
       toast.success(toastMessage);
 
@@ -536,7 +553,7 @@ export function AddSessionDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col overflow-hidden">
+      <DialogContent className="max-w-3xl w-[95vw] max-h-[90vh] flex flex-col overflow-hidden p-4 sm:p-6">
         <DialogHeader className="flex-shrink-0">
           <DialogTitle>{isAthleteMode ? "Ajouter ma séance" : "Ajouter une séance d'entraînement"}</DialogTitle>
           {isAthleteMode && (
@@ -548,6 +565,39 @@ export function AddSessionDialog({
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
           <div className="flex-1 overflow-y-auto pr-2">
             <div className="space-y-4 py-4">
+
+              {/* Athlete quick type selector */}
+              {isAthleteMode && (
+                <div className="space-y-2">
+                  <Label>Type de séance *</Label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { value: "musculation", label: "Musculation", icon: "💪" },
+                      { value: "cardio", label: "Cardio / Course", icon: "🏃" },
+                      { value: "precision", label: "Précision", icon: "🎯" },
+                      { value: "test", label: "Test", icon: "📋" },
+                      { value: "physique", label: "Physique", icon: "⚡" },
+                      { value: "recuperation", label: "Récupération", icon: "🧘" },
+                    ].map((opt) => (
+                      <Button
+                        key={opt.value}
+                        type="button"
+                        variant={type === opt.value ? "default" : "outline"}
+                        size="sm"
+                        className={cn(
+                          "flex items-center gap-1.5 text-xs h-9",
+                          type === opt.value && "ring-2 ring-primary ring-offset-1"
+                        )}
+                        onClick={() => handleTypeChange(opt.value)}
+                      >
+                        <span>{opt.icon}</span>
+                        {opt.label}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Date and time */}
               <div className="space-y-2">
                 <Label htmlFor="date">Date *</Label>
@@ -581,17 +631,19 @@ export function AddSessionDialog({
                 </div>
               </div>
 
-              {/* Session Blocks Manager - for multi-theme sessions */}
-              <SessionBlocksManager
-                blocks={sessionBlocks}
-                onBlocksChange={setSessionBlocks}
-                sportType={sportType}
-                categoryId={categoryId}
-                sessionStartTime={startTime}
-                sessionEndTime={endTime}
-              />
+              {/* Session Blocks Manager - for multi-theme sessions (staff only) */}
+              {!isAthleteMode && (
+                <SessionBlocksManager
+                  blocks={sessionBlocks}
+                  onBlocksChange={setSessionBlocks}
+                  sportType={sportType}
+                  categoryId={categoryId}
+                  sessionStartTime={startTime}
+                  sessionEndTime={endTime}
+                />
+              )}
 
-              {/* Intensity - only shown if no blocks (blocks have their own RPE) */}
+              {/* Intensity */}
               {sessionBlocks.length === 0 && (
                 <div className="space-y-2">
                   <Label htmlFor="intensity">Intensité (1-10)</Label>

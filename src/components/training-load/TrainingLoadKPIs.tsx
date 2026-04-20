@@ -91,6 +91,9 @@ export function TrainingLoadKPIs({ summary, isLoading, loadModel = "ewma" }: Tra
               {summary.weeklyChange >= 0 ? "+" : ""}{summary.weeklyChange}% vs sem. préc.
             </span>
           </div>
+          <p className="text-[10px] text-muted-foreground/70 mt-2 leading-relaxed border-t border-border/30 pt-1.5">
+            Calculée à partir du RPE et de la durée des séances. Le coach saisit le RPE prévu dans <span className="font-semibold">Programmation</span>, l'athlète peut ajuster son RPE réel après la séance.
+          </p>
         </CardContent>
       </Card>
 
@@ -112,6 +115,9 @@ export function TrainingLoadKPIs({ summary, isLoading, loadModel = "ewma" }: Tra
         <CardContent>
           <div className="text-2xl font-bold">{summary.ewmaChronic.toFixed(1)}</div>
           <p className="text-xs text-muted-foreground">Capacité de base (28j)</p>
+          <p className="text-[10px] text-muted-foreground/70 mt-2 leading-relaxed border-t border-border/30 pt-1.5">
+            Reflète la charge habituelle sur 28 jours. Se met à jour automatiquement à chaque séance enregistrée dans <span className="font-semibold">Programmation → Séances</span>.
+          </p>
         </CardContent>
       </Card>
 
@@ -151,6 +157,9 @@ export function TrainingLoadKPIs({ summary, isLoading, loadModel = "ewma" }: Tra
             {summary.riskLevel === "optimal" ? "Zone optimale" : 
              summary.riskLevel === "warning" ? "Vigilance" : "Zone danger"}
           </Badge>
+          <p className="text-[10px] text-muted-foreground/70 mt-2 leading-relaxed border-t border-border/30 pt-1.5">
+            Ratio automatique (aiguë ÷ chronique). Pour le faire évoluer, saisissez le RPE et la durée de chaque séance dans <span className="font-semibold">Programmation</span>. L'athlète peut aussi renseigner son RPE ressenti.
+          </p>
         </CardContent>
       </Card>
     </div>

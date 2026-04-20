@@ -2,46 +2,58 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { RefreshCw, X } from "lucide-react";
-import { useRegisterSW } from "virtual:pwa-register/react";
+
+const isPreviewHost = () => {
+  if (typeof window === "undefined") return false;
+  const hostname = window.location.hostname;
+  return import.meta.env.DEV || hostname.includes("id-preview--") || hostname.includes("localhost");
+};
 
 const PWAUpdatePrompt = () => {
   const [showPrompt, setShowPrompt] = useState(false);
 
-  const {
-    needRefresh: [needRefresh, setNeedRefresh],
-    updateServiceWorker,
-  } = useRegisterSW({
-    onRegisteredSW(swUrl, r) {
-      console.log("SW registered:", swUrl);
-      // Check for updates every 30 minutes
-      if (r) {
-        setInterval(() => {
-          r.update();
-        }, 30 * 60 * 1000);
-      }
-    },
-    onRegisterError(error) {
-      console.error("SW registration error:", error);
-    },
-  });
-
   useEffect(() => {
-    if (needRefresh) {
-      setShowPrompt(true);
+    if (isPreviewHost() || !("serviceWorker" in navigator)) {
+      navigator.serviceWorker?.getRegistrations().then((registrations) => {
+        registrations.forEach((registration) => registration.unregister());
+      });
+      return;
     }
-  }, [needRefresh]);
+
+    let intervalId: number | undefined;
+
+    const onControllerChange = () => {
+      setShowPrompt(true);
+    };
+
+    navigator.serviceWorker.ready
+      .then((registration) => {
+        intervalId = window.setInterval(() => {
+          registration.update();
+        }, 30 * 60 * 1000);
+      })
+      .catch(() => {
+        setShowPrompt(false);
+      });
+
+    navigator.serviceWorker.addEventListener("controllerchange", onControllerChange);
+
+    return () => {
+      navigator.serviceWorker.removeEventListener("controllerchange", onControllerChange);
+      if (intervalId) window.clearInterval(intervalId);
+    };
+  }, []);
 
   const handleUpdate = () => {
-    updateServiceWorker(true);
     setShowPrompt(false);
+    window.location.reload();
   };
 
   const handleDismiss = () => {
     setShowPrompt(false);
-    setNeedRefresh(false);
   };
 
-  if (!showPrompt) {
+  if (!showPrompt || isPreviewHost()) {
     return null;
   }
 

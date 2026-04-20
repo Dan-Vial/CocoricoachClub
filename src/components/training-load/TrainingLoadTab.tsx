@@ -6,13 +6,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Calendar, Users, TrendingUp, BarChart3, Heart, Activity, Satellite } from "lucide-react";
 import { HrvEntryDialog } from "@/components/category/hrv/HrvEntryDialog";
 import { TrainingLoadChart } from "./TrainingLoadChart";
 import { TrainingLoadKPIs } from "./TrainingLoadKPIs";
 import { TrainingLoadAlerts } from "./TrainingLoadAlerts";
 import { TeamLoadComparison } from "./TeamLoadComparison";
-import { RpePlanVsActual } from "./RpePlanVsActual";
+import { IntensityComparisonDashboard } from "@/components/analytics/IntensityComparisonDashboard";
 import { TrainingLoadCalendar } from "./TrainingLoadCalendar";
 import { TrainingDistribution } from "./TrainingDistribution";
 import { HrvAnalysisPanel } from "./HrvAnalysisPanel";
@@ -117,7 +118,7 @@ export function TrainingLoadTab({ categoryId }: TrainingLoadTabProps) {
   });
 
   const handlePlayerClick = (playerId: string) => {
-    navigate(`/players/${playerId}`);
+    setSelectedPlayerId(playerId);
   };
 
   const periodOptions = [
@@ -141,58 +142,101 @@ export function TrainingLoadTab({ categoryId }: TrainingLoadTabProps) {
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
-          {/* Internal / External toggle */}
+          <TooltipProvider delayDuration={300}>
           <div className="flex items-center border rounded-lg overflow-hidden">
-            <button
-              className={`px-3 py-1.5 text-sm font-medium transition-colors flex items-center gap-1 ${
-                loadSection === "internal" 
-                  ? "bg-primary text-primary-foreground" 
-                  : "bg-muted/50 text-muted-foreground hover:bg-muted"
-              }`}
-              onClick={() => setLoadSection("internal")}
-            >
-              <Activity className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Charge interne</span>
-              <span className="sm:hidden">Interne</span>
-            </button>
-            <button
-              className={`px-3 py-1.5 text-sm font-medium transition-colors flex items-center gap-1 ${
-                loadSection === "external" 
-                  ? "bg-destructive text-destructive-foreground" 
-                  : "bg-muted/50 text-muted-foreground hover:bg-muted"
-              }`}
-              onClick={() => setLoadSection("external")}
-            >
-              <Heart className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">HRV / Récupération</span>
-              <span className="sm:hidden">HRV</span>
-            </button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  className={`px-3 py-1.5 text-sm font-medium transition-colors flex items-center gap-1 ${
+                    loadSection === "internal" 
+                      ? "bg-primary text-primary-foreground" 
+                      : "bg-muted/50 text-muted-foreground hover:bg-muted"
+                  }`}
+                  onClick={() => setLoadSection("internal")}
+                >
+                  <Activity className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Charge interne</span>
+                  <span className="sm:hidden">Interne</span>
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="max-w-xs bg-background/95 backdrop-blur-sm border shadow-lg">
+                <p className="font-semibold text-xs mb-1">Charge interne (sRPE)</p>
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  Mesure subjective de la charge d'entraînement basée sur le RPE (perception de l'effort) multiplié par la durée de la séance. Permet de quantifier le stress physiologique ressenti par l'athlète.
+                </p>
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  className={`px-3 py-1.5 text-sm font-medium transition-colors flex items-center gap-1 ${
+                    loadSection === "external" 
+                      ? "bg-destructive text-destructive-foreground" 
+                      : "bg-muted/50 text-muted-foreground hover:bg-muted"
+                  }`}
+                  onClick={() => setLoadSection("external")}
+                >
+                  <Heart className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">HRV / Récupération</span>
+                  <span className="sm:hidden">HRV</span>
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="max-w-xs bg-background/95 backdrop-blur-sm border shadow-lg">
+                <p className="font-semibold text-xs mb-1">HRV / Récupération</p>
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  Variabilité de la fréquence cardiaque (HRV) et indicateurs de récupération. Le RMSSD mesure l'activité du système nerveux parasympathique — un indicateur clé de la capacité de récupération et de la fatigue accumulée.
+                </p>
+              </TooltipContent>
+            </Tooltip>
           </div>
+          </TooltipProvider>
 
           {/* Model toggle EWMA / AWCR - only for internal */}
           {loadSection === "internal" && (
+            <TooltipProvider delayDuration={300}>
             <div className="flex items-center border rounded-lg overflow-hidden">
-              <button
-                className={`px-3 py-1.5 text-sm font-medium transition-colors ${
-                  loadModel === "ewma" 
-                    ? "bg-primary text-primary-foreground" 
-                    : "bg-muted/50 text-muted-foreground hover:bg-muted"
-                }`}
-                onClick={() => handleModelChange("ewma")}
-              >
-                EWMA
-              </button>
-              <button
-                className={`px-3 py-1.5 text-sm font-medium transition-colors ${
-                  loadModel === "awcr" 
-                    ? "bg-primary text-primary-foreground" 
-                    : "bg-muted/50 text-muted-foreground hover:bg-muted"
-                }`}
-                onClick={() => handleModelChange("awcr")}
-              >
-                AWCR
-              </button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                      loadModel === "ewma" 
+                        ? "bg-primary text-primary-foreground" 
+                        : "bg-muted/50 text-muted-foreground hover:bg-muted"
+                    }`}
+                    onClick={() => handleModelChange("ewma")}
+                  >
+                    EWMA
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="max-w-xs bg-background/95 backdrop-blur-sm border shadow-lg">
+                  <p className="font-semibold text-xs mb-1">EWMA (Exponentially Weighted Moving Average)</p>
+                  <p className="text-[11px] text-muted-foreground leading-relaxed">
+                    Moyenne mobile pondérée exponentiellement. Accorde plus de poids aux séances récentes. Le ratio aiguë/chronique (7j vs 28j) indique le risque de blessure : zone optimale entre 0.85 et 1.30.
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                      loadModel === "awcr" 
+                        ? "bg-primary text-primary-foreground" 
+                        : "bg-muted/50 text-muted-foreground hover:bg-muted"
+                    }`}
+                    onClick={() => handleModelChange("awcr")}
+                  >
+                    AWCR
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="max-w-xs bg-background/95 backdrop-blur-sm border shadow-lg">
+                  <p className="font-semibold text-xs mb-1">AWCR (Acute:Chronic Workload Ratio)</p>
+                  <p className="text-[11px] text-muted-foreground leading-relaxed">
+                    Ratio de charge aiguë/chronique classique (modèle Gabbett). Compare la charge des 7 derniers jours à la moyenne des 28 derniers jours par somme simple. Zone sûre : 0.8–1.3, zone de danger : &gt;1.5.
+                  </p>
+                </TooltipContent>
+              </Tooltip>
             </div>
+            </TooltipProvider>
           )}
 
           {/* Period filter */}
@@ -298,7 +342,6 @@ export function TrainingLoadTab({ categoryId }: TrainingLoadTabProps) {
                 <BarChart3 className="h-3 w-3" />
                 Répartition
               </TabsTrigger>
-              <TabsTrigger value="alerts">Alertes</TabsTrigger>
             </TabsList>
 
             <TabsContent value="chart">
@@ -318,10 +361,7 @@ export function TrainingLoadTab({ categoryId }: TrainingLoadTabProps) {
             </TabsContent>
 
             <TabsContent value="rpe">
-              <RpePlanVsActual
-                categoryId={categoryId}
-                onPlayerClick={handlePlayerClick}
-              />
+              <IntensityComparisonDashboard categoryId={categoryId} />
             </TabsContent>
 
             <TabsContent value="team">
@@ -338,13 +378,6 @@ export function TrainingLoadTab({ categoryId }: TrainingLoadTabProps) {
               <TrainingDistribution categoryId={categoryId} />
             </TabsContent>
 
-            <TabsContent value="alerts">
-              <TrainingLoadAlerts
-                playersAtRisk={playersAtRisk}
-                onPlayerClick={handlePlayerClick}
-                isLoading={teamLoading}
-              />
-            </TabsContent>
           </Tabs>
 
           {/* Recommendations section */}

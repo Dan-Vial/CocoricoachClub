@@ -1,6 +1,7 @@
 import * as React from "react";
 import * as TabsPrimitive from "@radix-ui/react-tabs";
 import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 // Define navigation color mappings
 export const NAV_COLORS = {
@@ -99,7 +100,6 @@ const ColoredNavTabsList = React.forwardRef<
     className={cn(
       "inline-flex items-center gap-2 p-2 rounded-xl shadow-sm border border-border/50",
       "bg-white",
-      // Field mode: dark background
       "field-mode:bg-[hsl(215_25%_14%)] field-mode:border-[hsl(215_25%_25%)]",
       className
     )}
@@ -128,19 +128,14 @@ const ColoredNavTabsTrigger = React.forwardRef<
         "group relative inline-flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm",
         "transition-all duration-200 ease-out",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
-        // Default state: colored text
         colors.text,
         colors.hover,
-        // Active state: colored background, white text
         "data-[state=active]:text-white data-[state=active]:shadow-md",
         className
       )}
-      style={{
-        // Use inline style for dynamic active background color
-      }}
+      style={{}}
       {...props}
     >
-      {/* Background overlay for active state */}
       <span 
         className="absolute inset-0 rounded-lg opacity-0 transition-opacity duration-200 data-[state=active]:opacity-100 -z-10"
         style={{ backgroundColor: colors.base }}
@@ -163,27 +158,23 @@ interface ColoredTabTriggerProps extends Omit<ColoredNavTabsTriggerProps, "data-
   badge?: number;
   label?: string;
   shortLabel?: string;
+  tooltip?: string;
 }
 
 const ColoredTabTrigger = React.forwardRef<
   HTMLButtonElement,
   ColoredTabTriggerProps
->(({ colorKey, icon, children, className, value, badge, label, shortLabel, ...props }, ref) => {
+>(({ colorKey, icon, children, className, value, badge, label, shortLabel, tooltip, ...props }, ref) => {
   const colors = NAV_COLORS[colorKey];
   
-  return (
+  const trigger = (
     <TabsPrimitive.Trigger
       ref={ref}
       value={value}
       className={cn(
-        "relative inline-flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm",
+        "colored-tab-trigger relative inline-flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm",
         "transition-all duration-200 ease-out",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-        // Default state: colored text on white
-        colors.text,
-        colors.hover,
-        // Active state handled by data attribute
-        "data-[state=active]:text-white data-[state=active]:shadow-md",
         className
       )}
       style={{
@@ -191,17 +182,7 @@ const ColoredTabTrigger = React.forwardRef<
       }}
       {...props}
     >
-      {/* Active background */}
-      <span 
-        className={cn(
-          "absolute inset-0 rounded-lg transition-all duration-200",
-          "opacity-0 scale-95",
-          "group-data-[state=active]:opacity-100 group-data-[state=active]:scale-100"
-        )}
-        style={{ backgroundColor: colors.base }}
-      />
-      {/* Content */}
-      <span className="relative z-10 flex items-center gap-2">
+      <span className="colored-tab-text relative z-10 flex items-center gap-2" style={{ color: 'var(--tab-color)' }}>
         {icon && <span className="shrink-0">{icon}</span>}
         <span className="whitespace-nowrap">
           {label ? (
@@ -218,6 +199,21 @@ const ColoredTabTrigger = React.forwardRef<
         )}
       </span>
     </TabsPrimitive.Trigger>
+  );
+
+  if (!tooltip) return trigger;
+
+  return (
+    <TooltipProvider delayDuration={400}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="inline-flex">{trigger}</span>
+        </TooltipTrigger>
+        <TooltipContent side="bottom" className="max-w-xs bg-background/95 backdrop-blur-sm border shadow-lg">
+          <p className="text-[11px] leading-relaxed text-muted-foreground">{tooltip}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 });
 ColoredTabTrigger.displayName = "ColoredTabTrigger";

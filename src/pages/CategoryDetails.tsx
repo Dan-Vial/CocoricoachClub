@@ -4,8 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { ColoredNavTabsList, NAV_COLORS, NavColorKey } from "@/components/ui/colored-nav-tabs";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import * as TabsPrimitive from "@radix-ui/react-tabs";
-import { ArrowLeft, LayoutDashboard, Shield, Users, Calendar, Zap, Heart, Trophy, MessageSquare, Loader2, Settings, FileCode, MapPin, Video, GraduationCap } from "lucide-react";
+import { ArrowLeft, LayoutDashboard, Shield, Users, Calendar, Zap, Heart, Trophy, MessageSquare, Loader2, Settings, FileCode, MapPin, Video, GraduationCap, CircleDot } from "lucide-react";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 import { OverviewTab } from "@/components/category/OverviewTab";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
@@ -36,6 +37,7 @@ import { ProgrammationTab } from "@/components/category/tabs/ProgrammationTab";
 import { GpsDataTab } from "@/components/category/gps/GpsDataTab";
 import { VideoAnalysisTab } from "@/components/category/video/VideoAnalysisTab";
 import { AdminTab } from "@/components/category/tabs/AdminTab";
+import { BowlingArsenalCatalogTab } from "@/components/bowling/BowlingArsenalCatalogTab";
 
 
 // Colored Tab Trigger Component - Large icons with labels below
@@ -47,9 +49,10 @@ interface ColoredTabTriggerProps {
   shortLabel?: string;
   disabled?: boolean;
   badge?: number;
+  tooltip?: string;
 }
 
-function ColoredTabTrigger({ value, colorKey, icon, label, shortLabel, disabled, badge }: ColoredTabTriggerProps) {
+function ColoredTabTrigger({ value, colorKey, icon, label, shortLabel, disabled, badge, tooltip }: ColoredTabTriggerProps) {
   const colors = NAV_COLORS[colorKey];
   
   if (disabled) {
@@ -69,41 +72,46 @@ function ColoredTabTrigger({ value, colorKey, icon, label, shortLabel, disabled,
     );
   }
   
-  return (
+  const trigger = (
     <TabsPrimitive.Trigger
       value={value}
       className={cn(
-        "group relative flex flex-col items-center justify-center gap-1 px-3 py-3 rounded-xl font-medium text-xs",
+        "colored-tab-trigger relative inline-flex flex-col items-center justify-center gap-1 px-3 py-3 rounded-xl font-medium text-xs",
         "transition-all duration-200 ease-out",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
         "min-w-[70px] sm:min-w-[85px]",
-        colors.text,
-        colors.hover,
-        "data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:scale-105"
+        "hover:shadow-md data-[state=active]:shadow-lg"
       )}
+      style={{
+        ["--tab-color" as string]: colors.base,
+      }}
     >
-      {/* Active background */}
-      <span 
-        className={cn(
-          "absolute inset-0 rounded-xl transition-all duration-200",
-          "opacity-0 scale-95",
-          "group-data-[state=active]:opacity-100 group-data-[state=active]:scale-100"
-        )}
-        style={{ backgroundColor: colors.base }}
-      />
-      {/* Unread badge */}
       {badge != null && badge > 0 && (
         <span className="absolute -top-1 -right-1 z-20 h-5 min-w-[20px] flex items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold px-1">
           {badge > 9 ? "9+" : badge}
         </span>
       )}
-      {/* Content - Icon on top, label below */}
-      <span className="relative z-10 flex flex-col items-center gap-1">
+      <span className="colored-tab-text relative z-10 flex flex-col items-center gap-1 transition-colors duration-200" style={{ color: "var(--tab-color)" }}>
         <span className="shrink-0 h-6 w-6 sm:h-7 sm:w-7">{icon}</span>
         <span className="whitespace-nowrap text-center leading-tight hidden sm:block">{label}</span>
         <span className="whitespace-nowrap text-center leading-tight sm:hidden">{shortLabel || label}</span>
       </span>
     </TabsPrimitive.Trigger>
+  );
+
+  if (!tooltip) return trigger;
+
+  return (
+    <TooltipProvider delayDuration={400}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="inline-flex">{trigger}</span>
+        </TooltipTrigger>
+        <TooltipContent side="bottom" className="max-w-xs bg-background/95 backdrop-blur-sm border shadow-lg">
+          <p className="text-[11px] leading-relaxed text-muted-foreground">{tooltip}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }
 
@@ -173,6 +181,7 @@ function CategoryDetailsContent() {
   // Check if GPS/Video/Academy should be visible (category-level flags)
   const showGpsTab = isGpsSportType(category?.rugby_type) && (category?.gps_enabled === true);
   const showVideoTab = hasVideoAnalysis(category?.rugby_type) && (category?.video_enabled === true);
+  const isBowling = category?.rugby_type?.toLowerCase().includes("bowling");
 
   // Menu permissions based on role_menu_permissions matrix
   const { canSeeMenu } = useMenuPermissions(category?.clubs?.id, categoryId);
@@ -218,7 +227,7 @@ function CategoryDetailsContent() {
             <Button
               variant="ghost"
               size="sm"
-              className="text-primary-foreground hover:bg-primary-foreground/10"
+              className="text-white hover:bg-white/10"
               onClick={handleBack}
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
@@ -238,7 +247,7 @@ function CategoryDetailsContent() {
             <div className="min-w-0 flex-1">
               {categoryId && (
                 isViewer ? (
-                  <h1 className="text-2xl sm:text-3xl font-bold text-primary-foreground truncate">
+                  <h1 className="text-2xl sm:text-3xl font-bold text-white truncate">
                     {displayCategoryName}
                   </h1>
                 ) : (
@@ -251,14 +260,14 @@ function CategoryDetailsContent() {
                 )
               )}
               <div className="flex items-center gap-2 sm:gap-4 mt-2 flex-wrap">
-                <p className="text-primary-foreground/90 text-sm sm:text-base truncate">
+                <p className="text-white/90 text-sm sm:text-base truncate">
                   {displayClubName}
                 </p>
                 {categoryId && category?.rugby_type && (
                   <>
-                    <span className="text-primary-foreground/60">•</span>
+                    <span className="text-white/60">•</span>
                     {isViewer ? (
-                      <span className="text-primary-foreground/90 text-xs sm:text-sm">
+                      <span className="text-white/90 text-xs sm:text-sm">
                         {getSportLabel(category.rugby_type)}
                       </span>
                     ) : (
@@ -283,120 +292,142 @@ function CategoryDetailsContent() {
 
       <div className="container mx-auto max-w-7xl px-4 py-8">
         <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-          <div className="overflow-x-auto -mx-4 px-4 pb-2">
-            <ColoredNavTabsList className="inline-flex w-max min-w-full gap-1 p-3">
+          <div className="px-0 pb-2">
+            <ColoredNavTabsList className="flex flex-wrap justify-center gap-1 p-2">
               <ColoredTabTrigger 
                 value="overview" 
                 colorKey="overview"
-                icon={<LayoutDashboard className="h-6 w-6 sm:h-7 sm:w-7" />}
+                icon={<LayoutDashboard className="h-5 w-5" />}
                label="Centre de décision"
                shortLabel="Décision"
+               tooltip="Vue d'ensemble : indicateurs clés, alertes, tâches prioritaires et résumé de l'activité récente"
               />
               {canSeeMenu("administratif") && (
                 <ColoredTabTrigger
                   value="admin" 
                   colorKey="admin"
-                  icon={<Shield className="h-6 w-6 sm:h-7 sm:w-7" />}
+                  icon={<Shield className="h-5 w-5" />}
                   label="Administratif"
                   shortLabel="Admin"
+                  tooltip="Gestion des documents, licences, certificats médicaux et pièces administratives des athlètes"
                 />
               )}
               {canSeeMenu("academique") && isAcademy && (
                 <ColoredTabTrigger
                   value="academy" 
                   colorKey="effectif"
-                  icon={<GraduationCap className="h-6 w-6 sm:h-7 sm:w-7" />}
+                  icon={<GraduationCap className="h-5 w-5" />}
                   label="Académie"
                   shortLabel="Acad"
+                  tooltip="Suivi scolaire : notes, moyennes, absences et statistiques académiques de chaque athlète"
                 />
               )}
               {canSeeMenu("effectif") && (
                 <ColoredTabTrigger 
                   value="effectif" 
                   colorKey="effectif"
-                  icon={<Users className="h-6 w-6 sm:h-7 sm:w-7" />}
+                  icon={<Users className="h-5 w-5" />}
                   label="Effectif"
                   shortLabel="Équipe"
+                  tooltip="Liste des athlètes, fiches individuelles, profils athlétiques et données biométriques"
                 />
               )}
               {canSeeMenu("planification") && (
                 <ColoredTabTrigger 
                   value="planification" 
                   colorKey="planification"
-                  icon={<Calendar className="h-6 w-6 sm:h-7 sm:w-7" />}
+                  icon={<Calendar className="h-5 w-5" />}
                   label="Planification"
                   shortLabel="Planning"
+                  tooltip="Calendrier annuel et hebdomadaire : organisation des séances, compétitions et objectifs de saison"
                 />
               )}
               {canSeeMenu("programmation") && (
                 <ColoredTabTrigger 
                   value="programmation" 
                   colorKey="programmation"
-                  icon={<FileCode className="h-6 w-6 sm:h-7 sm:w-7" />}
+                  icon={<FileCode className="h-5 w-5" />}
                   label="Programmation"
                   shortLabel="Prog"
+                  tooltip="Création et structuration des programmes d'entraînement : blocs, semaines et séances types"
                 />
               )}
               {canSeeMenu("performance") && (
                 <ColoredTabTrigger 
                   value="performance" 
                   colorKey="performance"
-                  icon={<Zap className="h-6 w-6 sm:h-7 sm:w-7" />}
-                  label="Entrainement"
-                  shortLabel="Entraîn"
+                  icon={<Zap className="h-5 w-5" />}
+                  label="Data"
+                  shortLabel="Data"
+                  tooltip="Monitoring de la charge (EWMA/AWCR), suivi HRV, préparation physique et évolution des tests"
                 />
               )}
               {canSeeMenu("sante") && (
                 <ColoredTabTrigger 
                   value="sante" 
                   colorKey="sante"
-                  icon={<Heart className="h-6 w-6 sm:h-7 sm:w-7" />}
+                  icon={<Heart className="h-5 w-5" />}
                   label="Santé"
+                  tooltip="Bien-être (wellness), blessures, récupération, cycle menstruel et prévention des risques"
                 />
               )}
               {canSeeMenu("competition") && (
                 <ColoredTabTrigger 
                   value="competition" 
                   colorKey="competition"
-                  icon={<Trophy className="h-6 w-6 sm:h-7 sm:w-7" />}
-                  label="Compétition"
+                  icon={<Trophy className="h-5 w-5" />}
+                  label="Compétition & Stats"
                   shortLabel="Compét"
+                  tooltip="Gestion des matchs/compétitions, saisie des résultats, statistiques individuelles et collectives"
+                />
+              )}
+              {isBowling && (
+                <ColoredTabTrigger 
+                  value="arsenal" 
+                  colorKey="performance"
+                  icon={<CircleDot className="h-5 w-5" />}
+                  label="Arsenal"
+                  tooltip="Inventaire des boules de bowling : marque, modèle, caractéristiques techniques et surface"
                 />
               )}
               {showGpsTab && (
                 <ColoredTabTrigger 
                   value="gps" 
                   colorKey="gps"
-                  icon={<MapPin className="h-6 w-6 sm:h-7 sm:w-7" />}
+                  icon={<MapPin className="h-5 w-5" />}
                   label="GPS"
+                  tooltip="Données GPS des séances : distance, vitesse, accélérations et charge mécanique externe"
                 />
               )}
               {showVideoTab && (
                 <ColoredTabTrigger 
                   value="video" 
                   colorKey="video"
-                  icon={<Video className="h-6 w-6 sm:h-7 sm:w-7" />}
+                  icon={<Video className="h-5 w-5" />}
                   label="Analyse Vidéo"
                   shortLabel="Vidéo"
+                  tooltip="Import et découpage de vidéos de matchs et entraînements, clips et annotations"
                 />
               )}
               {canSeeMenu("messagerie") && (
                 <ColoredTabTrigger 
                   value="communication" 
                   colorKey="communication"
-                  icon={<MessageSquare className="h-6 w-6 sm:h-7 sm:w-7" />}
+                  icon={<MessageSquare className="h-5 w-5" />}
                   label="Communication"
                   shortLabel="Com"
                   badge={unreadMessagesCount}
+                  tooltip="Messagerie interne : échanges avec le staff et les athlètes, discussions de groupe"
                 />
               )}
               {canSeeMenu("parametres") && (
                 <ColoredTabTrigger 
                   value="settings" 
                   colorKey="settings"
-                  icon={<Settings className="h-6 w-6 sm:h-7 sm:w-7" />}
+                  icon={<Settings className="h-5 w-5" />}
                   label="Paramètres"
                   shortLabel="Param"
+                  tooltip="Configuration de la catégorie : membres, invitations, préférences et gestion des accès"
                 />
               )}
             </ColoredNavTabsList>
@@ -426,7 +457,7 @@ function CategoryDetailsContent() {
 
           {canSeeMenu("planification") && (
             <TabsContent value="planification" className="space-y-4">
-              <PlanificationTab categoryId={categoryId!} />
+              <PlanificationTab categoryId={categoryId!} sportType={category?.rugby_type} />
             </TabsContent>
           )}
 
@@ -438,7 +469,7 @@ function CategoryDetailsContent() {
 
           {canSeeMenu("performance") && (
             <TabsContent value="performance" className="space-y-4">
-              <PerformanceTab categoryId={categoryId!} />
+              <PerformanceTab categoryId={categoryId!} sportType={category?.rugby_type} />
             </TabsContent>
           )}
 
@@ -456,6 +487,12 @@ function CategoryDetailsContent() {
                 isNationalTeam={isNationalTeam}
                 sportType={category?.rugby_type}
               />
+            </TabsContent>
+          )}
+
+          {isBowling && (
+            <TabsContent value="arsenal" className="space-y-4">
+              <BowlingArsenalCatalogTab categoryId={categoryId!} />
             </TabsContent>
           )}
 

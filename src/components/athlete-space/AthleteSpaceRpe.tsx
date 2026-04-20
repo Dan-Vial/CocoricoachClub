@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { AthleteSpaceRpeHistory } from "./AthleteSpaceRpeHistory";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,9 +16,20 @@ import { format, parseISO, addDays } from "date-fns";
 import { fr } from "date-fns/locale";
 import { getTrainingTypeLabel } from "@/lib/constants/trainingTypes";
 import { getTestLabel } from "@/lib/constants/testCategories";
-import { getDisplayNotes } from "@/lib/utils/sessionNotes";
+import { getDisplayNotes, parsePrecisionExerciseFromNotes } from "@/lib/utils/sessionNotes";
 import { SPARE_EXERCISE_TYPES } from "@/lib/constants/bowlingBallBrands";
 import { GroupedExerciseList } from "@/components/category/GroupedExerciseList";
+import { PrecisionExerciseSelector } from "@/components/precision/PrecisionExerciseSelector";
+import { AthletePrecisionFieldInput } from "./AthletePrecisionFieldInput";
+import { isRugbyType } from "@/lib/constants/sportTypes";
+import { RUGBY_PRECISION_EXERCISES, EXERCISE_CATEGORIES } from "@/lib/constants/rugbyPrecisionExercises";
+import { resolveSessionExerciseRows } from "@/lib/utils/sessionExercises";
+import {
+  AthleteWeightLogInput,
+  buildWeightLogRecords,
+  countIncompleteWeightLogs,
+  type WeightLogState,
+} from "./AthleteWeightLogInput";
 
 interface Props {
   playerId: string;
@@ -52,6 +64,21 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
   const queryClient = useQueryClient();
   const today = new Date().toISOString().split("T")[0];
   const endDate = addDays(new Date(), 14).toISOString().split("T")[0];
+
+  // Fetch category sport type for precision exercises
+  const { data: categoryData } = useQuery({
+    queryKey: ["category-sport-for-precision", categoryId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("categories")
+        .select("rugby_type")
+        .eq("id", categoryId)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+  });
+  const sportType = categoryData?.rugby_type;
 
   const enrichSessionsWithBowlingExercise = async (sessions: SessionRow[]): Promise<SessionRow[]> => {
     if (sessions.length === 0) return [];
@@ -98,7 +125,7 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
       if (assignedSessionIds.length === 0) {
         const { data: sessions, error } = await supabase
           .from("training_sessions")
-          .select("id, session_date, training_type, session_start_time, session_end_time, notes")
+          .select("id, session_date, training_type, session_start_time, session_end_time, notes, created_by_player_id")
           .eq("category_id", categoryId)
           .gte("session_date", today)
           .lte("session_date", endDate)
@@ -106,7 +133,12 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
           .order("session_start_time");
         if (error) throw error;
 
-        const sessionIds = sessions?.map((s) => s.id) || [];
+        // Filter out sessions created by other athletes (séance athlète)
+        const filteredSessions = (sessions || []).filter(
+          (s) => !s.created_by_player_id || s.created_by_player_id === playerId
+        );
+
+        const sessionIds = filteredSessions.map((s) => s.id);
         if (sessionIds.length === 0) return [];
 
         const { data: anyAttendance } = await supabase
@@ -116,13 +148,13 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
           .limit(1000);
 
         const sessionsWithAttendance = new Set(anyAttendance?.map((a) => a.training_session_id));
-        const visible = (sessions || []).filter((s) => !sessionsWithAttendance.has(s.id));
+        const visible = filteredSessions.filter((s) => !sessionsWithAttendance.has(s.id));
         return enrichSessionsWithBowlingExercise(visible as SessionRow[]);
       }
 
       const { data, error } = await supabase
         .from("training_sessions")
-        .select("id, session_date, training_type, session_start_time, session_end_time, notes")
+        .select("id, session_date, training_type, session_start_time, session_end_time, notes, created_by_player_id")
         .in("id", assignedSessionIds)
         .order("session_date")
         .order("session_start_time");
@@ -130,7 +162,7 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
 
       const { data: allCatSessions } = await supabase
         .from("training_sessions")
-        .select("id, session_date, training_type, session_start_time, session_end_time, notes")
+        .select("id, session_date, training_type, session_start_time, session_end_time, notes, created_by_player_id")
         .eq("category_id", categoryId)
         .gte("session_date", today)
         .lte("session_date", endDate);
@@ -148,6 +180,7 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
         const sessionsWithAttendance = new Set(allAttendance?.map((a) => a.training_session_id));
         const noAttendanceSessions = (allCatSessions || []).filter(
           (s) => !sessionsWithAttendance.has(s.id) && !existingIds.has(s.id)
+            && (!s.created_by_player_id || s.created_by_player_id === playerId)
         );
         const merged = [...(data || []), ...noAttendanceSessions].sort(
           (a, b) =>
@@ -231,23 +264,31 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
   const [zone3, setZone3] = useState("");
   const [zone4, setZone4] = useState("");
   const [zone5, setZone5] = useState("");
+  const [weightLogs, setWeightLogs] = useState<WeightLogState>({});
 
   // Fetch exercises for all visible sessions
   const allSessionIds = useMemo(() => allSessions.map(s => s.id), [allSessions]);
-  const { data: allSessionExercises = [] } = useQuery({
-    queryKey: ["athlete-rpe-exercises", allSessionIds],
+  const { data: rawSessionExercises = [] } = useQuery({
+    queryKey: ["athlete-rpe-exercises-v3", allSessionIds, playerId],
     queryFn: async () => {
       if (allSessionIds.length === 0) return [];
       const { data, error } = await supabase
         .from("gym_session_exercises")
         .select("*")
         .in("training_session_id", allSessionIds)
+        .or(`player_id.eq.${playerId},player_id.is.null`)
         .order("order_index");
       if (error) throw error;
+
       return data || [];
     },
-    enabled: allSessionIds.length > 0,
+    enabled: allSessionIds.length > 0 && !!playerId,
   });
+
+  const allSessionExercises = useMemo(
+    () => resolveSessionExerciseRows(rawSessionExercises, playerId),
+    [rawSessionExercises, playerId],
+  );
 
   const exercisesBySession = useMemo(() => {
     return allSessionExercises.reduce((acc, ex) => {
@@ -261,7 +302,18 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
     () => todaySessions.find((s) => s.id === selectedSession),
     [todaySessions, selectedSession]
   );
-  const isPrecisionSession = selectedSessionData?.training_type === "bowling_spare";
+  const selectedPrecisionExercise = useMemo(
+    () => parsePrecisionExerciseFromNotes(selectedSessionData?.notes),
+    [selectedSessionData?.notes]
+  );
+  const isBowlingPrecision = selectedSessionData?.training_type === "bowling_spare";
+  const isGenericPrecision = selectedSessionData?.training_type === "precision";
+  const isRugbyPrecision = isGenericPrecision && sportType && isRugbyType(sportType);
+  const isPrecisionSession = isBowlingPrecision || isGenericPrecision;
+
+  // State for generic precision exercises
+  const [precisionExerciseId, setPrecisionExerciseId] = useState<string | null>(null);
+  const [precisionExerciseLabel, setPrecisionExerciseLabel] = useState("");
 
   const getSpareExerciseLabel = (value: string | null | undefined): string | null => {
     if (!value) return null;
@@ -280,6 +332,7 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
   const successesValue = Number(spareSuccesses);
   const isSpareStatsValid =
     !isPrecisionSession ||
+    isRugbyPrecision ||
     (Number.isInteger(attemptsValue) &&
       Number.isInteger(successesValue) &&
       attemptsValue > 0 &&
@@ -288,6 +341,21 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
 
   const getSessionTrainingLabel = (session: SessionRow) => {
     const baseLabel = getTrainingTypeLabel(session.training_type);
+    
+    // Show precision exercise theme for rugby precision sessions
+    if (session.training_type === "precision") {
+      const precisionEx = parsePrecisionExerciseFromNotes(session.notes);
+      if (precisionEx) {
+        const exerciseConfig = RUGBY_PRECISION_EXERCISES.find(e => e.value === precisionEx.id);
+        const categoryConfig = exerciseConfig 
+          ? EXERCISE_CATEGORIES.find(c => c.exercises.some(e => e.value === exerciseConfig.value))
+          : null;
+        const symbol = exerciseConfig?.shape === "square" ? "■" : exerciseConfig?.shape === "diamond" ? "◆" : "●";
+        return `${baseLabel} — ${categoryConfig ? categoryConfig.label + " " : ""}${symbol} ${precisionEx.label}`;
+      }
+      return baseLabel;
+    }
+    
     if (session.training_type !== "bowling_spare") return baseLabel;
 
     const selectedExerciseLabel =
@@ -314,6 +382,9 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
     setMaxHr("");
     setShowZones(false);
     setZone1(""); setZone2(""); setZone3(""); setZone4(""); setZone5("");
+    setPrecisionExerciseId(null);
+    setPrecisionExerciseLabel("");
+    setWeightLogs({});
 
     const session = todaySessions.find((s) => s.id === sessionId);
     if (session) {
@@ -342,7 +413,7 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
         throw new Error("Durée invalide");
       }
 
-      if (isPrecisionSession && !isSpareStatsValid) {
+      if (isPrecisionSession && !isRugbyPrecision && !isSpareStatsValid) {
         throw new Error("Renseigne des statistiques valides (réussites ≤ tentatives)");
       }
 
@@ -361,7 +432,7 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
 
       if (awcrError || !awcrRow) throw awcrError || new Error("Erreur AWCR");
 
-      if (isPrecisionSession) {
+      if (isBowlingPrecision) {
         const successRate = Math.round((successesValue / attemptsValue) * 10000) / 100;
         const { error: spareError } = await supabase.from("bowling_spare_training").insert({
           player_id: playerId,
@@ -377,6 +448,23 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
         if (spareError) {
           await supabase.from("awcr_tracking").delete().eq("id", awcrRow.id);
           throw spareError;
+        }
+      } else if (isGenericPrecision && !isRugbyPrecision && attemptsValue > 0) {
+        // Insert into precision_training table (non-rugby sports)
+        const { error: precisionError } = await supabase.from("precision_training").insert({
+          player_id: playerId,
+          category_id: categoryId,
+          session_date: today,
+          training_session_id: selectedSession,
+          exercise_type_id: precisionExerciseId || null,
+          exercise_label: precisionExerciseLabel || "Précision",
+          attempts: attemptsValue,
+          successes: successesValue,
+        });
+
+        if (precisionError) {
+          await supabase.from("awcr_tracking").delete().eq("id", awcrRow.id);
+          throw precisionError;
         }
       }
       // Insert HRV data if provided
@@ -404,12 +492,32 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
           toast.error("RPE enregistré mais erreur HRV");
         }
       }
+
+      // Persist actual weights into athlete_exercise_logs (feeds the Tonnage dashboard)
+      const weightRecords = buildWeightLogRecords(weightLogs, {
+        playerId,
+        categoryId,
+        trainingSessionId: selectedSession,
+      });
+      if (weightRecords.length > 0) {
+        const { error: weightError } = await supabase
+          .from("athlete_exercise_logs")
+          .upsert(weightRecords, {
+            onConflict: "training_session_id,player_id,exercise_name",
+          });
+        if (weightError) {
+          console.error("Weight log insert error:", weightError);
+          toast.error("RPE enregistré mais erreur lors de la sauvegarde des charges");
+        }
+      }
     },
     onSuccess: () => {
       toast.success(isPrecisionSession ? "RPE et statistiques enregistrés !" : "RPE enregistré !");
       queryClient.invalidateQueries({ queryKey: ["athlete-space-rpes"] });
       queryClient.invalidateQueries({ queryKey: ["athlete-space-awcr"] });
       queryClient.invalidateQueries({ queryKey: ["athlete-space-sessions"] });
+      queryClient.invalidateQueries({ queryKey: ["precision-training-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["precision-field-entries"] });
       if (showHrv) {
         queryClient.invalidateQueries({ queryKey: ["hrv_records"] });
       }
@@ -426,6 +534,12 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
       setMaxHr("");
       setShowZones(false);
       setZone1(""); setZone2(""); setZone3(""); setZone4(""); setZone5("");
+      setPrecisionExerciseId(null);
+      setPrecisionExerciseLabel("");
+      setWeightLogs({});
+      queryClient.invalidateQueries({ queryKey: ["athlete-weight-log-existing"] });
+      queryClient.invalidateQueries({ queryKey: ["athlete-exercise-logs"] });
+      queryClient.invalidateQueries({ queryKey: ["athlete-exercise-logs-dashboard"] });
     },
     onError: (error: any) => toast.error(error?.message || "Erreur lors de l'enregistrement"),
   });
@@ -497,7 +611,7 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
         </button>
         {isExpanded && (
           <div className="mt-2 border-t border-border/50 pt-2">
-            <GroupedExerciseList exercises={exercises} compact maxHeight="250px" />
+            <GroupedExerciseList exercises={exercises} maxHeight="500px" />
           </div>
         )}
       </>
@@ -588,7 +702,8 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
                       )}
                     </div>
 
-                    {isPrecisionSession && (
+                    {/* Bowling precision */}
+                    {isBowlingPrecision && (
                       <div className="space-y-3 rounded-lg border border-border p-3">
                         <div>
                           <Label className="text-sm">Exercice précision</Label>
@@ -640,6 +755,78 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
                           </p>
                         )}
                       </div>
+                    )}
+
+                    {/* Rugby precision with interactive field map */}
+                    {isRugbyPrecision && selectedSession && (
+                      <AthletePrecisionFieldInput
+                        playerId={playerId}
+                        categoryId={categoryId}
+                        sessionId={selectedSession}
+                        initialExerciseType={selectedPrecisionExercise?.id ?? selectedPrecisionExercise?.label}
+                      />
+                    )}
+
+                    {/* Generic precision (non-rugby sports) */}
+                    {isGenericPrecision && !isRugbyPrecision && (
+                      <div className="space-y-3 rounded-lg border border-accent/30 p-3">
+                        <PrecisionExerciseSelector
+                          categoryId={categoryId}
+                          sportType={sportType}
+                          selectedExerciseId={precisionExerciseId}
+                          onExerciseChange={(id, label) => {
+                            setPrecisionExerciseId(id);
+                            setPrecisionExerciseLabel(label);
+                          }}
+                          allowCreate
+                          compact
+                        />
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <Label className="text-sm">Tentatives</Label>
+                            <Input
+                              type="number"
+                              min={1}
+                              step={1}
+                              value={spareAttempts}
+                              onChange={(e) => setSpareAttempts(e.target.value)}
+                              placeholder="Ex: 20"
+                              className="mt-1"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-sm">Réussites</Label>
+                            <Input
+                              type="number"
+                              min={0}
+                              step={1}
+                              value={spareSuccesses}
+                              onChange={(e) => setSpareSuccesses(e.target.value)}
+                              placeholder="Ex: 14"
+                              className="mt-1"
+                            />
+                          </div>
+                        </div>
+
+                        {attemptsValue > 0 && successesValue >= 0 && successesValue <= attemptsValue && (
+                          <p className="text-xs text-muted-foreground flex items-center gap-1">
+                            <Target className="h-3 w-3" />
+                            Taux de réussite : {Math.round((successesValue / attemptsValue) * 10000) / 100}%
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+
+                    {/* Actual weights logged by the athlete (feeds Tonnage) */}
+                    {selectedSession && (
+                      <AthleteWeightLogInput
+                        sessionId={selectedSession}
+                        playerId={playerId}
+                        value={weightLogs}
+                        onChange={setWeightLogs}
+                      />
                     )}
 
                     {/* Optional HRV section */}
@@ -763,7 +950,16 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
                     </div>
 
                     <Button
-                      onClick={() => submitRpe.mutate()}
+                      onClick={() => {
+                        const incomplete = countIncompleteWeightLogs(weightLogs);
+                        if (incomplete > 0) {
+                          const ok = window.confirm(
+                            `${incomplete} exercice${incomplete > 1 ? "s" : ""} de musculation sans charge renseignée.\n\nValider quand même ? (Le tonnage de ces exercices ne sera pas comptabilisé.)`
+                          );
+                          if (!ok) return;
+                        }
+                        submitRpe.mutate();
+                      }}
                       disabled={!duration || !isSpareStatsValid || submitRpe.isPending}
                       className="w-full"
                     >
@@ -862,6 +1058,9 @@ export function AthleteSpaceRpe({ playerId, categoryId }: Props) {
           </CardContent>
         </Card>
       )}
+
+      {/* RPE History Charts */}
+      <AthleteSpaceRpeHistory playerId={playerId} categoryId={categoryId} />
     </div>
   );
 }

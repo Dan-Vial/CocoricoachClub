@@ -226,6 +226,17 @@ export function getPositionsForSport(sportType: SportType | string): Position[] 
       return AVIRON_POSITIONS;
     case "bowling":
       return BOWLING_POSITIONS;
+    case "ski":
+    case "snow":
+    case "snowboard":
+    case "surf":
+    case "natation":
+    case "athletisme":
+    case "triathlon":
+    case "padel":
+    case "tennis":
+    case "hyrox":
+      return [];
     default:
       return RUGBY_XV_POSITIONS;
   }
@@ -348,6 +359,95 @@ export function getSportFieldConfig(sportType: SportType | string) {
         bgColor: "from-amber-500 to-amber-700",
         aspectRatio: "1/1",
         label: "Bowling",
+        noField: true,
+        starters: 0,
+        substitutes: 0,
+        totalSquad: 0,
+      };
+    case "padel":
+      return {
+        type: "padel",
+        bgColor: "from-blue-500 to-blue-700",
+        aspectRatio: "2/3",
+        label: "Padel",
+        noField: true,
+        starters: 0,
+        substitutes: 0,
+        totalSquad: 0,
+      };
+    case "natation":
+      return {
+        type: "natation",
+        bgColor: "from-cyan-500 to-cyan-700",
+        aspectRatio: "1/1",
+        label: "Natation",
+        noField: true,
+        starters: 0,
+        substitutes: 0,
+        totalSquad: 0,
+      };
+    case "ski":
+    case "snow":
+      return {
+        type: "ski",
+        bgColor: "from-sky-400 to-sky-600",
+        aspectRatio: "1/1",
+        label: "Sports de Glisse",
+        noField: true,
+        starters: 0,
+        substitutes: 0,
+        totalSquad: 0,
+      };
+    case "surf":
+      return {
+        type: "surf",
+        bgColor: "from-teal-400 to-teal-600",
+        aspectRatio: "1/1",
+        label: "Surf",
+        noField: true,
+        starters: 0,
+        substitutes: 0,
+        totalSquad: 0,
+      };
+    case "athletisme":
+      return {
+        type: "athletisme",
+        bgColor: "from-red-500 to-red-700",
+        aspectRatio: "1/1",
+        label: "Athlétisme",
+        noField: true,
+        starters: 0,
+        substitutes: 0,
+        totalSquad: 0,
+      };
+    case "triathlon":
+      return {
+        type: "triathlon",
+        bgColor: "from-emerald-500 to-emerald-700",
+        aspectRatio: "1/1",
+        label: "Triathlon",
+        noField: true,
+        starters: 0,
+        substitutes: 0,
+        totalSquad: 0,
+      };
+    case "tennis":
+      return {
+        type: "tennis",
+        bgColor: "from-green-500 to-green-600",
+        aspectRatio: "2/3",
+        label: "Tennis",
+        noField: true,
+        starters: 0,
+        substitutes: 0,
+        totalSquad: 0,
+      };
+    case "crossfit":
+      return {
+        type: "crossfit",
+        bgColor: "from-gray-600 to-gray-800",
+        aspectRatio: "1/1",
+        label: "CrossFit",
         noField: true,
         starters: 0,
         substitutes: 0,

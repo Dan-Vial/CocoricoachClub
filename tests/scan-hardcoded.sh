@@ -38,7 +38,7 @@ scan_pattern "JWT" '\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{1
 scan_pattern "Bearer" '\bBearer\s+[A-Za-z0-9\-._~+/]+=*\b'
 scan_pattern "Basic Auth" '\bBasic\s+[A-Za-z0-9+/]{8,}={0,2}\b'
 
-scan_pattern "API endpoint" '\b/api(?:/[A-Za-z0-9._-]+)+(?:\?[A-Za-z0-9=&._-]+)?\b'
+scan_pattern "API endpoint" '\b/api(?:/[A-Za-z0-9._-]+)+(?:\?[A-Za-z0-9=&._-]+)?\b' | rg -v -e "${PREFIX}\s*import "
 scan_pattern "process.env" '\bprocess\.env\.[A-Z0-9_]{2,}\b'
 scan_pattern "URI" '\b[a-zA-Z][a-zA-Z0-9+.-]*://[^\s"'\''<>]+\b' | rg -v -e "${PREFIX}\s*import "
 

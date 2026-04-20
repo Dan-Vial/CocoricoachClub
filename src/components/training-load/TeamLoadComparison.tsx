@@ -2,9 +2,6 @@ import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   BarChart, 
   Bar, 
@@ -19,12 +16,15 @@ import {
 import { Users, TrendingUp, Filter, UserCheck, Shield, Zap } from "lucide-react";
 import { LoadSummary, getRiskColor } from "@/lib/trainingLoadCalculations";
 import { getRugbyPositionGroup, getPositionGroupLabel, isRugbySport, RugbyPositionGroup } from "@/lib/constants/sportPositions";
+import { isIndividualSport } from "@/lib/constants/sportTypes";
+import { getDisciplineLabel } from "@/lib/constants/athleticProfiles";
 import { cn } from "@/lib/utils";
 
 interface PlayerWithSummary {
   id: string;
   name: string;
   position?: string;
+  discipline?: string | null;
   summary: LoadSummary | null;
 }
 
@@ -40,6 +40,35 @@ interface TeamLoadComparisonProps {
   sportType?: string;
 }
 
+// Color palette for disciplines
+const DISCIPLINE_COLORS = [
+  "hsl(210, 80%, 55%)",   // Blue
+  "hsl(340, 75%, 55%)",   // Pink
+  "hsl(160, 65%, 42%)",   // Teal
+  "hsl(32, 89%, 55%)",    // Orange
+  "hsl(270, 65%, 55%)",   // Purple
+  "hsl(45, 90%, 48%)",    // Amber
+  "hsl(190, 80%, 42%)",   // Cyan
+  "hsl(0, 75%, 55%)",     // Red
+  "hsl(120, 50%, 42%)",   // Green
+  "hsl(300, 50%, 55%)",   // Magenta
+];
+
+function truncateName(name: string, maxLen: number = 14): string {
+  if (name.length <= maxLen) return name;
+  // Try "Prénom N." format
+  const parts = name.split(" ");
+  if (parts.length >= 2) {
+    const firstName = parts[0];
+    const lastInitial = parts[parts.length - 1].charAt(0) + ".";
+    const short = `${firstName} ${lastInitial}`;
+    if (short.length <= maxLen) return short;
+    // If still too long, truncate first name
+    return `${firstName.substring(0, maxLen - lastInitial.length - 1)}. ${lastInitial}`;
+  }
+  return name.substring(0, maxLen - 1) + "…";
+}
+
 export function TeamLoadComparison({
   players,
   teamAverage,
@@ -49,9 +78,10 @@ export function TeamLoadComparison({
 }: TeamLoadComparisonProps) {
   const [sortBy, setSortBy] = useState<"name" | "ratio" | "risk">("risk");
   const [filterPosition, setFilterPosition] = useState<string>("all");
-  const [filterGroup, setFilterGroup] = useState<RugbyPositionGroup | "all">("all");
+  const [filterGroup, setFilterGroup] = useState<string>("all");
 
   const isRugby = isRugbySport(sportType);
+  const isIndividual = isIndividualSport(sportType || "");
 
   // Get unique positions
   const positions = useMemo(() => 
@@ -59,7 +89,23 @@ export function TeamLoadComparison({
     [players]
   );
 
-  // Enrich players with position group for rugby
+  // Get unique disciplines for individual sports
+  const disciplines = useMemo(() => {
+    if (!isIndividual) return [];
+    const discs = [...new Set(players.filter(p => p.discipline).map(p => p.discipline!))];
+    return discs.sort();
+  }, [players, isIndividual]);
+
+  // Map discipline to color
+  const disciplineColorMap = useMemo(() => {
+    const map = new Map<string, string>();
+    disciplines.forEach((d, i) => {
+      map.set(d, DISCIPLINE_COLORS[i % DISCIPLINE_COLORS.length]);
+    });
+    return map;
+  }, [disciplines]);
+
+  // Enrich players
   const enrichedPlayers = useMemo(() => 
     players.map(p => ({
       ...p,
@@ -73,14 +119,19 @@ export function TeamLoadComparison({
     enrichedPlayers
       .filter(p => p.summary !== null)
       .filter(p => filterPosition === "all" || p.position === filterPosition)
-      .filter(p => !isRugby || filterGroup === "all" || p.positionGroup === filterGroup)
+      .filter(p => {
+        if (filterGroup === "all") return true;
+        if (isRugby) return p.positionGroup === filterGroup;
+        if (isIndividual) return p.discipline === filterGroup;
+        return true;
+      })
       .sort((a, b) => {
         if (sortBy === "name") return a.name.localeCompare(b.name);
         if (sortBy === "ratio") return (b.summary?.ewmaRatio || 0) - (a.summary?.ewmaRatio || 0);
         const riskOrder = { danger: 0, warning: 1, optimal: 2 };
         return (riskOrder[a.summary?.riskLevel || "optimal"] || 2) - (riskOrder[b.summary?.riskLevel || "optimal"] || 2);
       }),
-    [enrichedPlayers, filterPosition, filterGroup, sortBy, isRugby]
+    [enrichedPlayers, filterPosition, filterGroup, sortBy, isRugby, isIndividual]
   );
 
   // Calculate group averages for rugby
@@ -104,14 +155,32 @@ export function TeamLoadComparison({
     };
   }, [enrichedPlayers, isRugby]);
 
+  // Calculate discipline averages for individual sports
+  const disciplineAverages = useMemo(() => {
+    if (!isIndividual || disciplines.length === 0) return null;
+    
+    return disciplines.map(disc => {
+      const discPlayers = enrichedPlayers.filter(p => p.discipline === disc && p.summary);
+      if (discPlayers.length === 0) return null;
+      return {
+        discipline: disc,
+        label: getDisciplineLabel(disc),
+        color: disciplineColorMap.get(disc) || "hsl(var(--muted-foreground))",
+        count: discPlayers.length,
+        avgRatio: discPlayers.reduce((sum, p) => sum + (p.summary?.ewmaRatio || 0), 0) / discPlayers.length,
+      };
+    }).filter(Boolean);
+  }, [enrichedPlayers, disciplines, disciplineColorMap, isIndividual]);
+
   // Prepare chart data
   const chartData = filteredPlayers.map(p => ({
-    name: p.name.split(" ").pop() || p.name,
+    name: truncateName(p.name),
     fullName: p.name,
     ratio: p.summary?.ewmaRatio || 0,
     riskLevel: p.summary?.riskLevel || "optimal",
     id: p.id,
     position: p.position,
+    discipline: p.discipline,
     group: p.positionGroup,
   }));
 
@@ -140,7 +209,7 @@ export function TeamLoadComparison({
           <div className="flex items-center gap-2 flex-wrap">
             {/* Rugby Group Filter */}
             {isRugby && (
-              <Select value={filterGroup} onValueChange={(v) => setFilterGroup(v as RugbyPositionGroup | "all")}>
+              <Select value={filterGroup} onValueChange={setFilterGroup}>
                 <SelectTrigger className="w-[120px] h-9">
                   <Shield className="h-3 w-3 mr-1" />
                   <SelectValue />
@@ -163,8 +232,32 @@ export function TeamLoadComparison({
               </Select>
             )}
 
+            {/* Discipline Filter for individual sports */}
+            {isIndividual && disciplines.length > 0 && (
+              <Select value={filterGroup} onValueChange={setFilterGroup}>
+                <SelectTrigger className="w-[150px] h-9">
+                  <Zap className="h-3 w-3 mr-1" />
+                  <SelectValue placeholder="Discipline" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Toutes</SelectItem>
+                  {disciplines.map(disc => (
+                    <SelectItem key={disc} value={disc}>
+                      <span className="flex items-center gap-1.5">
+                        <div 
+                          className="h-2 w-2 rounded-full" 
+                          style={{ backgroundColor: disciplineColorMap.get(disc) }}
+                        />
+                        {getDisciplineLabel(disc)}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+
             {/* Position Filter */}
-            {positions.length > 0 && (
+            {positions.length > 0 && !isIndividual && (
               <Select value={filterPosition} onValueChange={setFilterPosition}>
                 <SelectTrigger className="w-[140px] h-9">
                   <Filter className="h-3 w-3 mr-1" />
@@ -226,8 +319,38 @@ export function TeamLoadComparison({
           </div>
         )}
 
-        {/* Standard team average (non-rugby) */}
-        {!isRugby && teamAverage && (
+        {/* Discipline Group Stats for individual sports */}
+        {isIndividual && disciplineAverages && disciplineAverages.length > 0 && (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 mt-4">
+            {teamAverage && (
+              <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
+                <p className="text-xs text-muted-foreground font-medium">Groupe</p>
+                <p className="text-xl font-bold text-primary">{teamAverage.ewmaRatio.toFixed(2)}</p>
+                <p className="text-xs text-muted-foreground">Ratio moyen</p>
+              </div>
+            )}
+            {disciplineAverages.map(avg => avg && (
+              <div 
+                key={avg.discipline} 
+                className="p-3 rounded-lg border"
+                style={{ 
+                  backgroundColor: `${avg.color}10`,
+                  borderColor: `${avg.color}40`,
+                }}
+              >
+                <div className="flex items-center gap-1.5">
+                  <div className="h-2 w-2 rounded-full" style={{ backgroundColor: avg.color }} />
+                  <p className="text-xs text-muted-foreground font-medium">{avg.label} ({avg.count})</p>
+                </div>
+                <p className="text-xl font-bold" style={{ color: avg.color }}>{avg.avgRatio.toFixed(2)}</p>
+                <p className="text-xs text-muted-foreground">Ratio moyen</p>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Standard team average (non-rugby, non-individual with disciplines) */}
+        {!isRugby && (!isIndividual || !disciplineAverages || disciplineAverages.length === 0) && teamAverage && (
           <div className="flex items-center gap-4 mt-3 text-sm">
             <div className="flex items-center gap-1">
               <span className="text-muted-foreground">Moyenne équipe:</span>
@@ -264,16 +387,23 @@ export function TeamLoadComparison({
               <YAxis 
                 type="category" 
                 dataKey="name" 
-                width={90}
+                width={130}
                 className="text-xs"
                 tick={({ x, y, payload }) => {
                   const player = chartData.find(p => p.name === payload.value);
-                  const groupColor = player?.group === "avants" ? "hsl(var(--warning))" : 
-                                     player?.group === "trois_quarts" ? "hsl(var(--accent))" : undefined;
+                  let dotColor: string | undefined;
+                  
+                  if (isRugby) {
+                    dotColor = player?.group === "avants" ? "hsl(var(--warning))" : 
+                               player?.group === "trois_quarts" ? "hsl(var(--accent))" : undefined;
+                  } else if (isIndividual && player?.discipline) {
+                    dotColor = disciplineColorMap.get(player.discipline);
+                  }
+                  
                   return (
                     <g>
-                      {isRugby && groupColor && (
-                        <circle cx={x - 70} cy={y} r={4} fill={groupColor} />
+                      {dotColor && (
+                        <circle cx={x - 120} cy={y} r={4} fill={dotColor} />
                       )}
                       <text x={x - 5} y={y} dy={4} textAnchor="end" fontSize={11} fill="currentColor">
                         {payload.value}
@@ -295,6 +425,11 @@ export function TeamLoadComparison({
                       {isRugby && data.group && (
                         <Badge variant="outline" className="text-xs mt-1">
                           {getPositionGroupLabel(data.group)}
+                        </Badge>
+                      )}
+                      {isIndividual && data.discipline && (
+                        <Badge variant="outline" className="text-xs mt-1">
+                          {getDisciplineLabel(data.discipline)}
                         </Badge>
                       )}
                       <p className="text-sm mt-1">

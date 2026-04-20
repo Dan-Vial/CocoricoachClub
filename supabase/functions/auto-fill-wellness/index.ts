@@ -7,15 +7,14 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// Optimal wellness values (scale 1=best, 5=worst)
 const OPTIMAL_WELLNESS = {
-  sleep_quality: 1,        // Très bien dormi
-  sleep_duration: 1,       // Durée optimale
-  general_fatigue: 1,      // Pas de fatigue
-  stress_level: 1,         // Pas de stress
-  soreness_upper_body: 1,  // Pas de douleur
-  soreness_lower_body: 1,  // Pas de douleur
-  has_specific_pain: false, // Pas de douleur spécifique
+  sleep_quality: 1,
+  sleep_duration: 1,
+  general_fatigue: 1,
+  stress_level: 1,
+  soreness_upper_body: 1,
+  soreness_lower_body: 1,
+  has_specific_pain: false,
   pain_zone: null,
   pain_location: null,
   notes: null,
@@ -31,27 +30,72 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const today = new Date().toISOString().split("T")[0];
+    // Get all clubs with their timezone
+    const { data: allClubs, error: clubsError } = await supabase
+      .from("clubs")
+      .select("id, name, timezone");
 
-    console.log(`[auto-fill-wellness] Processing for ${today}`);
+    if (clubsError) throw clubsError;
+    if (!allClubs || allClubs.length === 0) {
+      return new Response(
+        JSON.stringify({ message: "No clubs found", filled: 0 }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
-    // Get all active categories (those that have players)
+    // Filter clubs where it's currently 23h in their timezone (end of day)
+    const eligibleClubIds: string[] = [];
+    for (const club of allClubs) {
+      try {
+        const tz = club.timezone || "Europe/Paris";
+        const nowInTz = new Date().toLocaleString("en-US", { timeZone: tz });
+        const localHour = new Date(nowInTz).getHours();
+        if (localHour === 23) {
+          eligibleClubIds.push(club.id);
+          console.log(`[auto-fill-wellness] Club "${club.name}" (${tz}) → 23h local ✓`);
+        }
+      } catch (e) {
+        console.error(`[auto-fill-wellness] Invalid timezone for club "${club.name}": ${club.timezone}`, e);
+      }
+    }
+
+    if (eligibleClubIds.length === 0) {
+      return new Response(
+        JSON.stringify({ skipped: true, reason: "No clubs at 23h local", filled: 0 }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Get categories for eligible clubs
     const { data: categories, error: catError } = await supabase
       .from("categories")
-      .select("id");
+      .select("id, club_id")
+      .in("club_id", eligibleClubIds);
 
     if (catError) throw catError;
     if (!categories || categories.length === 0) {
       return new Response(
-        JSON.stringify({ message: "No categories", filled: 0 }),
+        JSON.stringify({ message: "No categories for eligible clubs", filled: 0 }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    }
+
+    // Build a map of club_id -> today's date in that club's timezone
+    const clubDateMap: Record<string, string> = {};
+    for (const club of allClubs) {
+      if (eligibleClubIds.includes(club.id)) {
+        const tz = club.timezone || "Europe/Paris";
+        const localNow = new Date().toLocaleString("en-CA", { timeZone: tz });
+        clubDateMap[club.id] = localNow.split(",")[0].trim();
+      }
     }
 
     let totalFilled = 0;
 
     for (const category of categories) {
-      // Get all players in this category
+      const today = clubDateMap[category.club_id];
+      if (!today) continue;
+
       const { data: players } = await supabase
         .from("players")
         .select("id")
@@ -61,7 +105,6 @@ serve(async (req) => {
 
       const playerIds = players.map((p) => p.id);
 
-      // Check who already submitted wellness today
       const { data: existingWellness } = await supabase
         .from("wellness_tracking")
         .select("player_id")
@@ -75,10 +118,9 @@ serve(async (req) => {
       if (missingIds.length === 0) continue;
 
       console.log(
-        `[auto-fill-wellness] Category ${category.id}: auto-filling ${missingIds.length} players`
+        `[auto-fill-wellness] Category ${category.id} (date=${today}): auto-filling ${missingIds.length} players`
       );
 
-      // Insert optimal wellness for missing players
       const inserts = missingIds.map((playerId) => ({
         player_id: playerId,
         category_id: category.id,
@@ -100,7 +142,7 @@ serve(async (req) => {
     console.log(`[auto-fill-wellness] Done. Total auto-filled: ${totalFilled}`);
 
     return new Response(
-      JSON.stringify({ success: true, filled: totalFilled }),
+      JSON.stringify({ success: true, filled: totalFilled, eligibleClubs: eligibleClubIds.length }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error: any) {

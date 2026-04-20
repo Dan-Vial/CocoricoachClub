@@ -17,7 +17,7 @@ import { toast } from "sonner";
 
 interface SelectionsSectionProps {
   categoryId: string;
-  players: { id: string; name: string }[] | undefined;
+  players: { id: string; name: string; first_name?: string | null }[] | undefined;
 }
 
 const SELECTION_TYPES = [
@@ -178,7 +178,7 @@ export function SelectionsSection({ categoryId, players }: SelectionsSectionProp
                 <SelectTrigger><SelectValue placeholder="Sélectionner un joueur" /></SelectTrigger>
                 <SelectContent>
                   {players?.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                    <SelectItem key={p.id} value={p.id}>{p.first_name ? `${p.first_name} ${p.name}` : p.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -201,7 +201,7 @@ export function SelectionsSection({ categoryId, players }: SelectionsSectionProp
               </div>
               <div>
                 <Label>Date fin (optionnel)</Label>
-                <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+                <Input type="date" value={endDate} min={selectionDate || undefined} onChange={(e) => setEndDate(e.target.value)} />
               </div>
             </div>
             <div>

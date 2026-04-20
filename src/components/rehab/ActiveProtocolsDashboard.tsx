@@ -1,10 +1,29 @@
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { 
   Activity, 
   AlertTriangle, 
@@ -12,19 +31,85 @@ import {
   CheckCircle2, 
   Clock, 
   Dumbbell,
+  Plus,
   TrendingUp,
   User
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { differenceInDays, parseISO, format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { toast } from "sonner";
 
 interface ActiveProtocolsDashboardProps {
   categoryId: string;
 }
 
+// State for quick protocol assignment
+interface AssignState {
+  injuryId: string;
+  playerId: string;
+  protocolId: string;
+}
+
+const EVENT_TYPES = [
+  { value: "exercise", label: "Exercice / Séance réhab" },
+  { value: "checkpoint", label: "Bilan / Checkpoint" },
+  { value: "medical", label: "Rendez-vous médical" },
+  { value: "test", label: "Test de validation" },
+  { value: "return_training", label: "Retour entraînement" },
+  { value: "return_competition", label: "Retour compétition" },
+];
+
 export function ActiveProtocolsDashboard({ categoryId }: ActiveProtocolsDashboardProps) {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [isAddEventOpen, setIsAddEventOpen] = useState(false);
+  const [eventPlayerId, setEventPlayerId] = useState("");
+  const [eventProtocolId, setEventProtocolId] = useState("");
+  const [eventType, setEventType] = useState("exercise");
+  const [eventTitle, setEventTitle] = useState("");
+  const [eventDate, setEventDate] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [eventDescription, setEventDescription] = useState("");
+  const [assignState, setAssignState] = useState<AssignState | null>(null);
+
+  // Fetch injury protocols for quick assignment dropdown
+  const { data: availableProtocols } = useQuery({
+    queryKey: ["injury-protocols-for-assign", categoryId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("injury_protocols")
+        .select("id, name, injury_category")
+        .order("injury_category, name");
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  // Assign protocol mutation
+  const assignProtocol = useMutation({
+    mutationFn: async ({ injuryId, playerId, protocolId }: AssignState) => {
+      const { error } = await supabase
+        .from("player_rehab_protocols")
+        .insert({
+          player_id: playerId,
+          injury_id: injuryId,
+          category_id: categoryId,
+          protocol_id: protocolId,
+          status: "in_progress",
+          current_phase: 1,
+        });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["active-rehab-protocols", categoryId] });
+      queryClient.invalidateQueries({ queryKey: ["recovering-injuries-no-protocol", categoryId] });
+      toast.success("Protocole assigné avec succès");
+      setAssignState(null);
+    },
+    onError: (err: any) => {
+      toast.error("Erreur: " + err.message);
+    },
+  });
 
   // Fetch all active player rehab protocols for this category
   const { data: activeProtocols, isLoading: protocolsLoading } = useQuery({
@@ -44,7 +129,12 @@ export function ActiveProtocolsDashboard({ categoryId }: ActiveProtocolsDashboar
             name,
             injury_category,
             typical_duration_days_min,
-            typical_duration_days_max
+            typical_duration_days_max,
+            protocol_phases (
+              id,
+              phase_number,
+              name
+            )
           ),
           injuries (
             injury_type,
@@ -82,7 +172,6 @@ export function ActiveProtocolsDashboard({ categoryId }: ActiveProtocolsDashboar
 
       if (error) throw error;
 
-      // Filter out injuries that already have an active protocol
       const protocolInjuryIds = new Set(activeProtocols?.map(p => p.injury_id) || []);
       return (injuries || []).filter(inj => !protocolInjuryIds.has(inj.id));
     },
@@ -132,6 +221,65 @@ export function ActiveProtocolsDashboard({ categoryId }: ActiveProtocolsDashboar
     },
   });
 
+  // Create event mutation
+  const createEvent = useMutation({
+    mutationFn: async () => {
+      const protocol = activeProtocols?.find(p => p.id === eventProtocolId);
+      if (!protocol) throw new Error("Protocole non trouvé");
+
+      const injuryProtocol = protocol.injury_protocols as any;
+      const phases = injuryProtocol?.protocol_phases || [];
+      const currentPhase = phases.find((ph: any) => ph.phase_number === protocol.current_phase) || phases[0];
+
+      const { error } = await supabase
+        .from("rehab_calendar_events")
+        .insert({
+          category_id: categoryId,
+          player_id: protocol.player_id,
+          player_rehab_protocol_id: eventProtocolId,
+          event_type: eventType,
+          title: eventTitle,
+          description: eventDescription || null,
+          event_date: eventDate,
+          phase_number: currentPhase?.phase_number || protocol.current_phase || 1,
+          phase_name: currentPhase?.name || `Phase ${protocol.current_phase || 1}`,
+          phase_id: currentPhase?.id || null,
+        });
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["upcoming-rehab-events", categoryId] });
+      queryClient.invalidateQueries({ queryKey: ["all-rehab-events-category", categoryId] });
+      toast.success("Événement de réhabilitation ajouté");
+      resetEventForm();
+      setIsAddEventOpen(false);
+    },
+    onError: (err: any) => {
+      toast.error("Erreur: " + err.message);
+    },
+  });
+
+  const resetEventForm = () => {
+    setEventPlayerId("");
+    setEventProtocolId("");
+    setEventType("exercise");
+    setEventTitle("");
+    setEventDate(format(new Date(), "yyyy-MM-dd"));
+    setEventDescription("");
+  };
+
+  const handleProtocolSelect = (protocolId: string) => {
+    setEventProtocolId(protocolId);
+    const protocol = activeProtocols?.find(p => p.id === protocolId);
+    if (protocol) {
+      setEventPlayerId(protocol.player_id);
+      const eventTypeLabel = EVENT_TYPES.find(t => t.value === eventType)?.label || "";
+      const player = protocol.players as any;
+      setEventTitle(`${eventTypeLabel} - ${player?.name || ""}`);
+    }
+  };
+
   const isLoading = protocolsLoading || injuriesLoading;
 
   const getProtocolProgress = (protocolId: string) => {
@@ -177,6 +325,24 @@ export function ActiveProtocolsDashboard({ categoryId }: ActiveProtocolsDashboar
 
   return (
     <div className="space-y-6">
+      {/* Header with add button */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-semibold flex items-center gap-2">
+            <Dumbbell className="h-5 w-5 text-primary" />
+            Réhabilitation
+          </h2>
+          <p className="text-sm text-muted-foreground">Suivi des joueurs blessés et événements de réhab</p>
+        </div>
+        <Button 
+          onClick={() => setIsAddEventOpen(true)}
+          disabled={!activeProtocols || activeProtocols.length === 0}
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Ajouter un événement
+        </Button>
+      </div>
+
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
@@ -257,7 +423,6 @@ export function ActiveProtocolsDashboard({ categoryId }: ActiveProtocolsDashboar
           <CardContent>
             {totalPlayers > 0 ? (
               <div className="space-y-4">
-                {/* Players with formal protocols */}
                 {activeProtocols?.map((protocol) => {
                   const player = protocol.players as any;
                   const injuryProtocol = protocol.injury_protocols as any;
@@ -268,7 +433,7 @@ export function ActiveProtocolsDashboard({ categoryId }: ActiveProtocolsDashboar
                     <div
                       key={protocol.id}
                       className="p-4 border rounded-lg hover:bg-accent/5 transition-colors cursor-pointer"
-                      onClick={() => navigate(`/player/${player?.id}`)}
+                      onClick={() => navigate(`/players/${player?.id}`)}
                     >
                       <div className="flex items-start gap-3">
                         <Avatar className="h-10 w-10">
@@ -304,7 +469,6 @@ export function ActiveProtocolsDashboard({ categoryId }: ActiveProtocolsDashboar
                   );
                 })}
 
-                {/* Players recovering WITHOUT a formal protocol */}
                 {recoveringInjuries?.map((injury) => {
                   const player = injury.players as any;
 
@@ -312,7 +476,7 @@ export function ActiveProtocolsDashboard({ categoryId }: ActiveProtocolsDashboar
                     <div
                       key={injury.id}
                       className="p-4 border border-dashed border-amber-300 rounded-lg hover:bg-accent/5 transition-colors cursor-pointer"
-                      onClick={() => navigate(`/player/${player?.id}`)}
+                      onClick={() => navigate(`/players/${player?.id}`)}
                     >
                       <div className="flex items-start gap-3">
                         <Avatar className="h-10 w-10">
@@ -340,9 +504,46 @@ export function ActiveProtocolsDashboard({ categoryId }: ActiveProtocolsDashboar
                               Retour estimé: {format(parseISO(injury.estimated_return_date), "d MMM yyyy", { locale: fr })}
                             </p>
                           )}
-                          <p className="text-xs text-amber-600 mt-2 italic">
-                            Aucun protocole assigné — Assignez un protocole depuis la fiche joueur
+                          <p className="text-xs text-amber-600 mt-2 font-medium">
+                            Assigner un protocole :
                           </p>
+                          <div className="mt-1" onClick={(e) => e.stopPropagation()}>
+                            <Select
+                              value={assignState?.injuryId === injury.id ? assignState.protocolId : ""}
+                              onValueChange={(protocolId) => {
+                                setAssignState({ injuryId: injury.id, playerId: player?.id, protocolId });
+                                assignProtocol.mutate({ injuryId: injury.id, playerId: player?.id, protocolId });
+                              }}
+                            >
+                              <SelectTrigger className="h-8 text-xs">
+                                <SelectValue placeholder="Choisir un protocole..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {availableProtocols && availableProtocols.length > 0 ? (
+                                  (() => {
+                                    const grouped = availableProtocols.reduce((acc, p) => {
+                                      const cat = p.injury_category || "Autre";
+                                      if (!acc[cat]) acc[cat] = [];
+                                      acc[cat].push(p);
+                                      return acc;
+                                    }, {} as Record<string, typeof availableProtocols>);
+                                    return Object.entries(grouped).map(([category, protocols]) => (
+                                      <div key={category}>
+                                        <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">{category}</div>
+                                        {protocols.map((protocol) => (
+                                          <SelectItem key={protocol.id} value={protocol.id}>
+                                            {protocol.name}
+                                          </SelectItem>
+                                        ))}
+                                      </div>
+                                    ));
+                                  })()
+                                ) : (
+                                  <SelectItem value="__none__" disabled>Aucun protocole disponible</SelectItem>
+                                )}
+                              </SelectContent>
+                            </Select>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -378,7 +579,7 @@ export function ActiveProtocolsDashboard({ categoryId }: ActiveProtocolsDashboar
                     <div
                       key={event.id}
                       className="flex items-center gap-3 p-3 border rounded-lg hover:bg-accent/5 transition-colors cursor-pointer"
-                      onClick={() => navigate(`/player/${player?.id}`)}
+                      onClick={() => navigate(`/players/${player?.id}`)}
                     >
                       <div className={`p-2 rounded-lg ${
                         event.event_type === 'checkpoint' 
@@ -420,6 +621,100 @@ export function ActiveProtocolsDashboard({ categoryId }: ActiveProtocolsDashboar
           </CardContent>
         </Card>
       </div>
+
+      {/* Add Rehab Event Dialog */}
+      <Dialog open={isAddEventOpen} onOpenChange={(open) => { if (!open) resetEventForm(); setIsAddEventOpen(open); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Ajouter un événement de réhabilitation</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Joueur / Protocole actif *</Label>
+              <Select value={eventProtocolId} onValueChange={handleProtocolSelect}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner un joueur blessé..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {activeProtocols?.map((protocol) => {
+                    const player = protocol.players as any;
+                    const injury = protocol.injuries as any;
+                    return (
+                      <SelectItem key={protocol.id} value={protocol.id}>
+                        {player?.name} — {injury?.injury_type} (Phase {protocol.current_phase})
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Type d'événement *</Label>
+              <Select value={eventType} onValueChange={(val) => {
+                setEventType(val);
+                // Auto-update title
+                if (eventProtocolId) {
+                  const protocol = activeProtocols?.find(p => p.id === eventProtocolId);
+                  const player = protocol?.players as any;
+                  const label = EVENT_TYPES.find(t => t.value === val)?.label || "";
+                  setEventTitle(`${label} - ${player?.name || ""}`);
+                }
+              }}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {EVENT_TYPES.map(type => (
+                    <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Titre *</Label>
+              <Input
+                value={eventTitle}
+                onChange={(e) => setEventTitle(e.target.value)}
+                placeholder="Titre de l'événement"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Date *</Label>
+              <Input
+                type="date"
+                value={eventDate}
+                onChange={(e) => setEventDate(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Description / Notes</Label>
+              <Textarea
+                value={eventDescription}
+                onChange={(e) => setEventDescription(e.target.value)}
+                placeholder="Détails de l'événement..."
+                rows={3}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAddEventOpen(false)}>
+              Annuler
+            </Button>
+            <Button
+              onClick={() => createEvent.mutate()}
+              disabled={!eventProtocolId || !eventTitle || !eventDate || createEvent.isPending}
+            >
+              Ajouter
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

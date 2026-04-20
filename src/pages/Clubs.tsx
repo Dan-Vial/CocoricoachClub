@@ -5,12 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Plus, LogOut, Shield, User, Search } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { AddClubDialog } from "@/components/clubs/AddClubDialog";
 import { ClubCard } from "@/components/clubs/ClubCard";
 import { useAuth } from "@/contexts/AuthContext";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
+import { SuperAdminShieldButton } from "@/components/notifications/SuperAdminShieldButton";
 import { InjuryReturnAlerts } from "@/components/injuries/InjuryReturnAlerts";
 
 export default function Clubs() {
@@ -48,7 +49,8 @@ export default function Clubs() {
       const { data: ownedClubs, error: ownedError } = await supabase
         .from("clubs")
         .select("*")
-        .eq("user_id", user.id);
+        .eq("user_id", user.id)
+        .is("client_id", null);
       if (ownedError) throw ownedError;
 
       // Fetch clubs the user is a MEMBER of (but doesn't own)
@@ -195,7 +197,7 @@ export default function Clubs() {
     );
   }
 
-  if (!user) return null;
+  if (!user) return <Navigate to="/auth" replace />;
 
   const hasOnlyAthleteRole = athleteCategories && athleteCategories.length > 0 && athleteCategories.every(cm => cm.role === "athlete");
   const hasNoClubs = myClubs.length === 0;
@@ -213,10 +215,10 @@ export default function Clubs() {
         <div className="container mx-auto max-w-6xl">
           <div className="flex justify-between items-start mb-4">
             <div>
-              <h1 className="text-4xl md:text-5xl font-bold text-primary-foreground mb-4">
+              <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
                 CocoriCoach Club
               </h1>
-              <p className="text-lg text-primary-foreground/90">
+              <p className="text-lg text-white/90">
                 Gestion des clubs et suivi des performances
               </p>
             </div>
@@ -224,15 +226,13 @@ export default function Clubs() {
               <NotificationBell />
               {isSuperAdmin && (
                 <>
-                  <Button variant="ghost" size="icon" onClick={() => navigate("/athlete-space")} className="text-primary-foreground hover:bg-primary-foreground/10" title="Espace Athlète">
+                  <Button variant="ghost" size="icon" onClick={() => navigate("/athlete-space")} className="text-white hover:bg-white/10" title="Espace Athlète">
                     <User className="h-5 w-5" />
                   </Button>
-                  <Button variant="ghost" size="icon" onClick={() => navigate("/super-admin")} className="text-primary-foreground hover:bg-primary-foreground/10" title="Super Admin">
-                    <Shield className="h-5 w-5" />
-                  </Button>
+                  <SuperAdminShieldButton variant="hero" />
                 </>
               )}
-              <Button variant="ghost" size="icon" onClick={signOut} className="text-primary-foreground hover:bg-primary-foreground/10">
+              <Button variant="ghost" size="icon" onClick={signOut} className="text-white hover:bg-white/10">
                 <LogOut className="h-5 w-5" />
               </Button>
             </div>

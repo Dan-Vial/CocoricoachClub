@@ -27,7 +27,8 @@ export default function Dashboard() {
       const { data, error } = await supabase
         .from("clubs")
         .select("*")
-        .eq("user_id", user?.id);
+        .eq("user_id", user?.id)
+        .is("client_id", null);
       if (error) throw error;
       return data;
     },

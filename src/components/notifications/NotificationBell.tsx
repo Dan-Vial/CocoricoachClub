@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Bell, Check, Trash2, UserPlus, ArrowRight } from "lucide-react";
+import { Bell, Check, Trash2, CheckCircle, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -13,7 +13,6 @@ import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 import { toast } from "sonner";
-import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface Notification {
@@ -23,33 +22,15 @@ interface Notification {
   is_read: boolean;
   created_at: string;
   notification_type: string;
+  notification_subtype: string | null;
   injury_id: string | null;
-}
-
-interface PendingUser {
-  id: string;
-  full_name: string | null;
-  email: string | null;
-  phone: string | null;
-  created_at: string | null;
+  metadata: any;
 }
 
 export function NotificationBell({ variant = "hero" }: { variant?: "hero" | "default" }) {
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
-  const navigate = useNavigate();
   const { user } = useAuth();
-
-  const { data: isSuperAdmin } = useQuery({
-    queryKey: ["is-super-admin", user?.id],
-    queryFn: async () => {
-      if (!user?.id) return false;
-      const { data, error } = await supabase.rpc("is_super_admin", { _user_id: user.id });
-      if (error) return false;
-      return data === true;
-    },
-    enabled: !!user?.id,
-  });
 
   const { data: notifications } = useQuery({
     queryKey: ["notifications"],
@@ -66,53 +47,7 @@ export function NotificationBell({ variant = "hero" }: { variant?: "hero" | "def
     refetchInterval: 30000,
   });
 
-  // Fetch pending users (not approved, not staff, not super admin) - only for super admins
-  const { data: pendingUsers } = useQuery({
-    queryKey: ["pending-registrations"],
-    queryFn: async () => {
-      // Get all profiles
-      const { data: allProfiles, error: profilesError } = await supabase
-        .from("profiles")
-        .select("id, full_name, email, phone, created_at")
-        .order("created_at", { ascending: false });
-      if (profilesError) throw profilesError;
-
-      // Get approved users
-      const { data: approved } = await supabase
-        .from("approved_users")
-        .select("user_id");
-
-      // Get super admins
-      const { data: superAdmins } = await supabase
-        .from("super_admin_users")
-        .select("user_id");
-
-      // Get staff (club members + category members)
-      const { data: clubMembers } = await supabase
-        .from("club_members")
-        .select("user_id");
-      const { data: categoryMembers } = await supabase
-        .from("category_members")
-        .select("user_id");
-
-      const approvedIds = new Set(approved?.map(a => a.user_id) || []);
-      const superAdminIds = new Set(superAdmins?.map(s => s.user_id) || []);
-      const staffIds = new Set([
-        ...(clubMembers?.map(m => m.user_id) || []),
-        ...(categoryMembers?.map(m => m.user_id) || []),
-      ]);
-
-      return (allProfiles || []).filter(p => 
-        !approvedIds.has(p.id) && !superAdminIds.has(p.id) && !staffIds.has(p.id)
-      ) as PendingUser[];
-    },
-    enabled: !!isSuperAdmin,
-    refetchInterval: 30000,
-  });
-
   const unreadCount = notifications?.filter(n => !n.is_read).length || 0;
-  const pendingCount = pendingUsers?.length || 0;
-  const totalBadge = unreadCount + pendingCount;
 
   const markAsRead = useMutation({
     mutationFn: async (notificationId: string) => {
@@ -120,7 +55,6 @@ export function NotificationBell({ variant = "hero" }: { variant?: "hero" | "def
         .from("notifications")
         .update({ is_read: true })
         .eq("id", notificationId);
-      
       if (error) throw error;
     },
     onSuccess: () => {
@@ -134,7 +68,6 @@ export function NotificationBell({ variant = "hero" }: { variant?: "hero" | "def
         .from("notifications")
         .update({ is_read: true })
         .eq("is_read", false);
-      
       if (error) throw error;
     },
     onSuccess: () => {
@@ -149,7 +82,6 @@ export function NotificationBell({ variant = "hero" }: { variant?: "hero" | "def
         .from("notifications")
         .delete()
         .eq("id", notificationId);
-      
       if (error) throw error;
     },
     onSuccess: () => {
@@ -160,30 +92,39 @@ export function NotificationBell({ variant = "hero" }: { variant?: "hero" | "def
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
-      case "new_injury":
-        return "🚑";
-      case "status_change":
-        return "📋";
+      case "new_injury": return "🚑";
+      case "status_change": return "📋";
       case "injury_return":
-      case "return_ready":
-        return "✅";
-      case "birthday":
-        return "🎂";
-      case "medical_reminder":
-        return "💊";
-      case "protocol_reminder":
-        return "📝";
-      case "test_reminder":
-        return "🏃";
-      default:
-        return "ℹ️";
+      case "return_ready": return "✅";
+      case "birthday": return "🎂";
+      case "medical_reminder": return "💊";
+      case "protocol_reminder": return "📝";
+      case "test_reminder": return "🏃";
+      case "category_link_request": return "🔗";
+      default: return "ℹ️";
     }
   };
 
-  const handleGoToPendingUsers = () => {
-    setOpen(false);
-    navigate("/super-admin?tab=users");
-  };
+  const respondToLink = useMutation({
+    mutationFn: async ({ playerCategoryId, response, notificationId }: { playerCategoryId: string; response: string; notificationId: string }) => {
+      const { data, error } = await supabase.rpc("respond_to_category_link", {
+        _player_category_id: playerCategoryId,
+        _response: response,
+      });
+      if (error) throw error;
+      const result = data as any;
+      if (!result?.success) throw new Error(result?.error || "Erreur");
+      await supabase.from("notifications").update({ is_read: true }).eq("id", notificationId);
+      return response;
+    },
+    onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      toast.success(response === "accepted" ? "Structure acceptée !" : "Demande refusée");
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Erreur");
+    },
+  });
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -198,12 +139,12 @@ export function NotificationBell({ variant = "hero" }: { variant?: "hero" | "def
           }`}
         >
           <Bell className="h-5 w-5" />
-          {totalBadge > 0 && (
+          {unreadCount > 0 && (
             <Badge
               variant="destructive"
               className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
             >
-              {totalBadge > 9 ? "9+" : totalBadge}
+              {unreadCount > 9 ? "9+" : unreadCount}
             </Badge>
           )}
         </Button>
@@ -224,44 +165,7 @@ export function NotificationBell({ variant = "hero" }: { variant?: "hero" | "def
           )}
         </div>
         <ScrollArea className="h-[400px]">
-          {/* Pending registrations section for super admins */}
-          {isSuperAdmin && pendingCount > 0 && (
-            <div className="border-b">
-              <button
-                onClick={handleGoToPendingUsers}
-                className="w-full p-4 hover:bg-accent/50 transition-colors text-left"
-              >
-                <div className="flex items-start gap-3">
-                  <div className="h-10 w-10 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center flex-shrink-0">
-                    <UserPlus className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <h4 className="font-semibold text-sm">
-                        {pendingCount} inscription{pendingCount > 1 ? "s" : ""} en attente
-                      </h4>
-                      <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                    </div>
-                    <div className="mt-1 space-y-1">
-                      {pendingUsers?.slice(0, 3).map(u => (
-                        <p key={u.id} className="text-xs text-muted-foreground truncate">
-                          {u.full_name || "Sans nom"} — {u.email || "Pas d'email"}
-                          {u.phone && ` — ${u.phone}`}
-                        </p>
-                      ))}
-                      {pendingCount > 3 && (
-                        <p className="text-xs font-medium text-primary">
-                          +{pendingCount - 3} autre{pendingCount - 3 > 1 ? "s" : ""}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </button>
-            </div>
-          )}
-
-          {(!notifications || notifications.length === 0) && pendingCount === 0 ? (
+          {(!notifications || notifications.length === 0) ? (
             <div className="p-8 text-center text-muted-foreground">
               <Bell className="h-12 w-12 mx-auto mb-2 opacity-50" />
               <p>Aucune notification</p>
@@ -271,9 +175,14 @@ export function NotificationBell({ variant = "hero" }: { variant?: "hero" | "def
               {notifications?.map((notification) => (
                 <div
                   key={notification.id}
-                  className={`p-4 hover:bg-accent/50 transition-colors ${
+                  className={`p-4 hover:bg-accent/50 transition-colors cursor-pointer ${
                     !notification.is_read ? "bg-accent/20" : ""
                   }`}
+                  onClick={() => {
+                    if (!notification.is_read) {
+                      markAsRead.mutate(notification.id);
+                    }
+                  }}
                 >
                   <div className="flex items-start gap-3">
                     <span className="text-2xl flex-shrink-0">
@@ -308,6 +217,38 @@ export function NotificationBell({ variant = "hero" }: { variant?: "hero" | "def
                       <p className="text-sm text-muted-foreground mt-1">
                         {notification.message}
                       </p>
+                      {notification.notification_type === "category_link_request" && notification.notification_subtype === "pending" && notification.metadata?.player_category_id && (
+                        <div className="flex gap-2 mt-2">
+                          <Button
+                            size="sm"
+                            variant="default"
+                            className="gap-1 h-7 text-xs"
+                            onClick={() => respondToLink.mutate({
+                              playerCategoryId: notification.metadata.player_category_id,
+                              response: "accepted",
+                              notificationId: notification.id,
+                            })}
+                            disabled={respondToLink.isPending}
+                          >
+                            <CheckCircle className="h-3 w-3" />
+                            Accepter
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="gap-1 h-7 text-xs"
+                            onClick={() => respondToLink.mutate({
+                              playerCategoryId: notification.metadata.player_category_id,
+                              response: "declined",
+                              notificationId: notification.id,
+                            })}
+                            disabled={respondToLink.isPending}
+                          >
+                            <XCircle className="h-3 w-3" />
+                            Refuser
+                          </Button>
+                        </div>
+                      )}
                       <p className="text-xs text-muted-foreground mt-2">
                         {formatDistanceToNow(new Date(notification.created_at), {
                           addSuffix: true,

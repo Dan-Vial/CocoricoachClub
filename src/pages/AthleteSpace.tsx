@@ -8,20 +8,24 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, User, LogOut, Activity, Heart, BarChart3, Target, Video, BookOpen, Shield, ArrowLeft, Search, ChevronRight, MessageSquare, Settings, CalendarDays } from "lucide-react";
+import { Loader2, User, LogOut, Activity, Heart, BarChart3, Target, Video, Shield, ArrowLeft, Search, ChevronRight, MessageSquare, Settings, CalendarDays, CircleDot, Waves, FileText } from "lucide-react";
+import { PlayerBowlingArsenal } from "@/components/bowling/PlayerBowlingArsenal";
+import { PlayerSurfEquipment } from "@/components/surf/PlayerSurfEquipment";
+import { PlayerSkiEquipment } from "@/components/ski/PlayerSkiEquipment";
+import { PlayerPadelEquipment } from "@/components/padel/PlayerPadelEquipment";
 import { NAV_COLORS } from "@/components/ui/colored-nav-tabs";
 import { AthletePWAInstallPopup } from "@/components/athlete/AthletePWAInstallPopup";
 import { AthleteSpaceDashboard } from "@/components/athlete-space/AthleteSpaceDashboard";
 import { AthleteSpaceRpe } from "@/components/athlete-space/AthleteSpaceRpe";
 import { AthleteSpaceWellness } from "@/components/athlete-space/AthleteSpaceWellness";
-import { AthleteSpaceProgression } from "@/components/athlete-space/AthleteSpaceProgression";
 import { AthleteSpaceObjectives } from "@/components/athlete-space/AthleteSpaceObjectives";
 import { AthleteSpaceHealth } from "@/components/athlete-space/AthleteSpaceHealth";
-import { AthleteSpaceEducation } from "@/components/athlete-space/AthleteSpaceEducation";
+import { AthleteSpacePerformance } from "@/components/athlete-space/AthleteSpacePerformance";
 import { MessagingTab } from "@/components/messaging/MessagingTab";
 import { AthleteSpaceSettings } from "@/components/athlete-space/AthleteSpaceSettings";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 import { AthleteSpaceCalendar } from "@/components/athlete-space/AthleteSpaceCalendar";
+import { AthleteSpaceDocuments } from "@/components/athlete-space/AthleteSpaceDocuments";
 
 interface AthleteInfo {
   player_id: string;
@@ -63,9 +67,9 @@ export default function AthleteSpace() {
     enabled: !!user?.id,
   });
 
-  // Fetch all players for super admin selector
+  // Fetch players for selector (super admin sees all, staff sees their categories)
   const { data: allPlayers = [] } = useQuery({
-    queryKey: ["all-players-for-selector"],
+    queryKey: ["all-players-for-selector", user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("players")
@@ -74,7 +78,7 @@ export default function AthleteSpace() {
       if (error) throw error;
       return data || [];
     },
-    enabled: showPlayerSelector && !!isSuperAdmin,
+    enabled: showPlayerSelector && !!user?.id,
   });
 
   const queryCategoryId = searchParams.get("categoryId");
@@ -90,42 +94,45 @@ export default function AthleteSpace() {
 
   const fetchAthleteData = async () => {
     try {
-      // If super admin viewing a specific player
+      // If staff/admin viewing a specific player via ?playerId=
       if (queryPlayerId) {
-        const { data: isSA } = await supabase.rpc("is_super_admin", { _user_id: user!.id });
-        if (isSA) {
-          setIsSuperAdminView(true);
-          const { data: player, error } = await supabase
-            .from("players")
-            .select(`
-              id, name, first_name, category_id, position, avatar_url,
-              categories!inner(name, rugby_type, cover_image_url, clubs!inner(name))
-            `)
-            .eq("id", queryPlayerId)
-            .single();
+        const { data: player, error } = await supabase
+          .from("players")
+          .select(`
+            id, name, first_name, category_id, position, avatar_url,
+            categories!inner(name, rugby_type, cover_image_url, clubs!inner(name))
+          `)
+          .eq("id", queryPlayerId)
+          .single();
 
-          if (error || !player) {
-            navigate("/");
+        if (!error && player) {
+          // Check if user is super admin or has access to this category
+          const { data: isSA } = await supabase.rpc("is_super_admin", { _user_id: user!.id });
+          const { data: hasAccess } = await supabase.rpc("can_access_category", { 
+            _user_id: user!.id, 
+            _category_id: player.category_id 
+          });
+
+          if (isSA || hasAccess) {
+            setIsSuperAdminView(true);
+            setAthleteInfo({
+              player_id: player.id,
+              player_name: player.name,
+              player_first_name: player.first_name || undefined,
+              category_id: player.category_id,
+              category_name: (player.categories as any).name,
+              club_name: (player.categories as any).clubs.name,
+              sport_type: (player.categories as any).rugby_type,
+              position: player.position || undefined,
+              avatar_url: player.avatar_url || undefined,
+              cover_image_url: (player.categories as any).cover_image_url || undefined,
+            });
             return;
           }
-
-          setAthleteInfo({
-            player_id: player.id,
-            player_name: player.name,
-            player_first_name: player.first_name || undefined,
-            category_id: player.category_id,
-            category_name: (player.categories as any).name,
-            club_name: (player.categories as any).clubs.name,
-            sport_type: (player.categories as any).rugby_type,
-            position: player.position || undefined,
-            avatar_url: player.avatar_url || undefined,
-            cover_image_url: (player.categories as any).cover_image_url || undefined,
-          });
-          return;
         }
       }
 
-      // Normal athlete flow - fetch ALL player entries for this user
+      // Normal athlete flow - fetch player record(s) for this user
       const { data: players, error } = await supabase
         .from("players")
         .select(`
@@ -143,9 +150,19 @@ export default function AthleteSpace() {
       }
 
       if (!players || players.length === 0) {
-        // If super admin, show player selector instead of redirecting
+        // If super admin or staff member, show player selector
         const { data: isSA } = await supabase.rpc("is_super_admin", { _user_id: user!.id });
         if (isSA) {
+          setShowPlayerSelector(true);
+          return;
+        }
+        // Check if user is a club/category member (staff)
+        const { data: clubMemberships } = await supabase
+          .from("club_members")
+          .select("club_id")
+          .eq("user_id", user!.id)
+          .limit(1);
+        if (clubMemberships && clubMemberships.length > 0) {
           setShowPlayerSelector(true);
           return;
         }
@@ -153,6 +170,7 @@ export default function AthleteSpace() {
         return;
       }
 
+      // Build entries from primary player records
       const entries: AthleteInfo[] = players.map(player => ({
         player_id: player.id,
         player_name: player.name,
@@ -165,6 +183,39 @@ export default function AthleteSpace() {
         avatar_url: player.avatar_url || undefined,
         cover_image_url: (player.categories as any).cover_image_url || undefined,
       }));
+
+      // Also fetch additional categories from player_categories junction table
+      const playerIds = players.map(p => p.id);
+      const existingCategoryIds = new Set(entries.map(e => e.category_id));
+
+      const { data: extraCategories } = await supabase
+        .from("player_categories")
+        .select("player_id, category_id, categories(name, rugby_type, cover_image_url, clubs(name))")
+        .in("player_id", playerIds)
+        .eq("status", "accepted");
+
+      if (extraCategories) {
+        for (const pc of extraCategories) {
+          if (!existingCategoryIds.has(pc.category_id)) {
+            const player = players.find(p => p.id === pc.player_id);
+            if (player && pc.categories) {
+              entries.push({
+                player_id: player.id,
+                player_name: player.name,
+                player_first_name: player.first_name || undefined,
+                category_id: pc.category_id,
+                category_name: (pc.categories as any).name,
+                club_name: (pc.categories as any).clubs?.name || "",
+                sport_type: (pc.categories as any).rugby_type,
+                position: player.position || undefined,
+                avatar_url: player.avatar_url || undefined,
+                cover_image_url: (pc.categories as any).cover_image_url || undefined,
+              });
+              existingCategoryIds.add(pc.category_id);
+            }
+          }
+        }
+      }
 
       setAllAthleteEntries(entries);
 
@@ -361,6 +412,11 @@ export default function AthleteSpace() {
 
   if (!athleteInfo) return null;
 
+  const isBowling = (athleteInfo.sport_type || "").toLowerCase().includes("bowling");
+  const isSurf = (athleteInfo.sport_type || "").toLowerCase().includes("surf");
+  const isSki = (athleteInfo.sport_type || "").toLowerCase().includes("ski") || (athleteInfo.sport_type || "").toLowerCase().includes("snow");
+  const isPadel = (athleteInfo.sport_type || "").toLowerCase().includes("padel");
+
   const displayName = athleteInfo.player_first_name
     ? `${athleteInfo.player_first_name} ${athleteInfo.player_name}`
     : athleteInfo.player_name;
@@ -481,17 +537,17 @@ export default function AthleteSpace() {
                   Calendrier
                </TabsTrigger>
               <TabsTrigger 
-                value="progression"
+                value="performance"
                  className="athlete-tab shrink-0 gap-1 px-2 py-1.5 rounded-xl font-semibold text-xs transition-all duration-200 data-[state=active]:shadow-lg"
                  style={{
-                   color: NAV_COLORS.programmation.base,
-                  backgroundColor: `${NAV_COLORS.programmation.base}15`,
-                  borderBottom: `3px solid ${NAV_COLORS.programmation.base}`,
-                  ["--tab-color" as string]: NAV_COLORS.programmation.base,
+                   color: NAV_COLORS.performance.base,
+                  backgroundColor: `${NAV_COLORS.performance.base}15`,
+                  borderBottom: `3px solid ${NAV_COLORS.performance.base}`,
+                  ["--tab-color" as string]: NAV_COLORS.performance.base,
                 }}
               >
                 <BarChart3 className="h-3.5 w-3.5" />
-                Progression
+                Performance
               </TabsTrigger>
               <TabsTrigger 
                 value="objectives"
@@ -517,21 +573,81 @@ export default function AthleteSpace() {
                  }}
                >
                  <Shield className="h-3.5 w-3.5" />
-                 Santé
-              </TabsTrigger>
-              <TabsTrigger 
-                value="education"
-                 className="athlete-tab shrink-0 gap-1 px-2 py-1.5 rounded-xl font-semibold text-xs transition-all duration-200 data-[state=active]:shadow-lg"
-                 style={{
-                   color: NAV_COLORS.effectif.base,
-                   backgroundColor: `${NAV_COLORS.effectif.base}15`,
-                   borderBottom: `3px solid ${NAV_COLORS.effectif.base}`,
-                   ["--tab-color" as string]: NAV_COLORS.effectif.base,
-                 }}
-               >
-                <BookOpen className="h-3.5 w-3.5" />
-                  Conseils
+                  Santé
+               </TabsTrigger>
+               {isBowling && (
+                 <TabsTrigger 
+                   value="arsenal"
+                   className="athlete-tab shrink-0 gap-1 px-2 py-1.5 rounded-xl font-semibold text-xs transition-all duration-200 data-[state=active]:shadow-lg"
+                   style={{
+                     color: NAV_COLORS.programmation.base,
+                     backgroundColor: `${NAV_COLORS.programmation.base}15`,
+                     borderBottom: `3px solid ${NAV_COLORS.programmation.base}`,
+                     ["--tab-color" as string]: NAV_COLORS.programmation.base,
+                   }}
+                 >
+                   <CircleDot className="h-3.5 w-3.5" />
+                   Arsenal
                  </TabsTrigger>
+               )}
+               {isSurf && (
+                 <TabsTrigger 
+                   value="equipment"
+                   className="athlete-tab shrink-0 gap-1 px-2 py-1.5 rounded-xl font-semibold text-xs transition-all duration-200 data-[state=active]:shadow-lg"
+                   style={{
+                     color: NAV_COLORS.programmation.base,
+                     backgroundColor: `${NAV_COLORS.programmation.base}15`,
+                     borderBottom: `3px solid ${NAV_COLORS.programmation.base}`,
+                     ["--tab-color" as string]: NAV_COLORS.programmation.base,
+                   }}
+                 >
+                   <Waves className="h-3.5 w-3.5" />
+                   Équipement
+                 </TabsTrigger>
+               )}
+               {isSki && (
+                 <TabsTrigger 
+                   value="ski-equipment"
+                   className="athlete-tab shrink-0 gap-1 px-2 py-1.5 rounded-xl font-semibold text-xs transition-all duration-200 data-[state=active]:shadow-lg"
+                   style={{
+                     color: NAV_COLORS.programmation.base,
+                     backgroundColor: `${NAV_COLORS.programmation.base}15`,
+                     borderBottom: `3px solid ${NAV_COLORS.programmation.base}`,
+                     ["--tab-color" as string]: NAV_COLORS.programmation.base,
+                   }}
+                 >
+                   <Waves className="h-3.5 w-3.5" />
+                   Matériel
+                 </TabsTrigger>
+               )}
+               {isPadel && (
+                 <TabsTrigger 
+                   value="padel-equipment"
+                   className="athlete-tab shrink-0 gap-1 px-2 py-1.5 rounded-xl font-semibold text-xs transition-all duration-200 data-[state=active]:shadow-lg"
+                   style={{
+                     color: NAV_COLORS.programmation.base,
+                     backgroundColor: `${NAV_COLORS.programmation.base}15`,
+                     borderBottom: `3px solid ${NAV_COLORS.programmation.base}`,
+                     ["--tab-color" as string]: NAV_COLORS.programmation.base,
+                   }}
+                 >
+                   🏓
+                   Matériel
+                 </TabsTrigger>
+               )}
+               <TabsTrigger 
+                  value="documents"
+                  className="athlete-tab shrink-0 gap-1 px-2 py-1.5 rounded-xl font-semibold text-xs transition-all duration-200 data-[state=active]:shadow-lg"
+                  style={{
+                    color: NAV_COLORS.admin.base,
+                    backgroundColor: `${NAV_COLORS.admin.base}15`,
+                    borderBottom: `3px solid ${NAV_COLORS.admin.base}`,
+                    ["--tab-color" as string]: NAV_COLORS.admin.base,
+                  }}
+                >
+                  <FileText className="h-3.5 w-3.5" />
+                  Documents
+                </TabsTrigger>
                {(
                   <TabsTrigger 
                     value="messaging"
@@ -600,8 +716,8 @@ export default function AthleteSpace() {
             />
           </TabsContent>
 
-          <TabsContent value="progression">
-            <AthleteSpaceProgression
+          <TabsContent value="performance">
+            <AthleteSpacePerformance
               playerId={athleteInfo.player_id}
               categoryId={athleteInfo.category_id}
               sportType={athleteInfo.sport_type}
@@ -622,10 +738,44 @@ export default function AthleteSpace() {
             />
           </TabsContent>
 
-          <TabsContent value="education">
-            <AthleteSpaceEducation sportType={athleteInfo.sport_type} />
-          </TabsContent>
-
+          {isBowling && (
+            <TabsContent value="arsenal">
+              <PlayerBowlingArsenal
+                playerId={athleteInfo.player_id}
+                categoryId={athleteInfo.category_id}
+              />
+            </TabsContent>
+          )}
+           {isSurf && (
+            <TabsContent value="equipment">
+              <PlayerSurfEquipment
+                playerId={athleteInfo.player_id}
+                categoryId={athleteInfo.category_id}
+              />
+            </TabsContent>
+          )}
+          {isSki && (
+            <TabsContent value="ski-equipment">
+              <PlayerSkiEquipment
+                playerId={athleteInfo.player_id}
+                categoryId={athleteInfo.category_id}
+              />
+            </TabsContent>
+          )}
+          {isPadel && (
+            <TabsContent value="padel-equipment">
+              <PlayerPadelEquipment
+                playerId={athleteInfo.player_id}
+                categoryId={athleteInfo.category_id}
+              />
+            </TabsContent>
+          )}
+          <TabsContent value="documents">
+              <AthleteSpaceDocuments
+                playerId={athleteInfo.player_id}
+                categoryId={athleteInfo.category_id}
+              />
+            </TabsContent>
           <TabsContent value="messaging">
               <MessagingTab categoryId={athleteInfo.category_id} isAthlete={true} />
             </TabsContent>

@@ -1,4 +1,5 @@
  import { useState } from "react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
  import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
  import { supabase } from "@/integrations/supabase/client";
  import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,7 +13,7 @@
  import { Textarea } from "@/components/ui/textarea";
  import { Checkbox } from "@/components/ui/checkbox";
  import { toast } from "@/components/ui/sonner";
-import { Plus, Edit, Pause, Play, Trash2, Building2, Mail, Video, MapPin, FolderOpen, User, Gift, DollarSign, Copy, Link, Check, GraduationCap, Search, CreditCard } from "lucide-react";
+import { Plus, Edit, Pause, Play, Trash2, Building2, Mail, Video, MapPin, FolderOpen, Copy, Link, Check, GraduationCap, Search, CreditCard } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { InviteClientDialog } from "./InviteClientDialog";
@@ -45,7 +46,7 @@ export function SuperAdminClients() {
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [categoryOptionsClient, setCategoryOptionsClient] = useState<Client | null>(null);
-   const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState({
       name: "",
       email: "",
       phone: "",
@@ -59,6 +60,7 @@ export function SuperAdminClients() {
        video_enabled: false,
        gps_data_enabled: false,
        academy_enabled: false,
+       timezone: "Europe/Paris",
     });
     const [selectedPlanId, setSelectedPlanId] = useState<string>("");
     const [subStartDate, setSubStartDate] = useState(new Date().toISOString().split("T")[0]);
@@ -66,7 +68,7 @@ export function SuperAdminClients() {
     const [subAmount, setSubAmount] = useState("");
     const [subPaymentMethod, setSubPaymentMethod] = useState("");
     const [clubName, setClubName] = useState("");
-    const [clubSport, setClubSport] = useState<MainSportCategory>("rugby");
+    const [clubSport, setClubSport] = useState<MainSportCategory>("rugby"); // kept for resetForm
      const [categoryDrafts, setCategoryDrafts] = useState<CategoryDraft[]>([]);
       const [generatedInviteLink, setGeneratedInviteLink] = useState<string | null>(null);
       const [linkCopied, setLinkCopied] = useState(false);
@@ -116,74 +118,6 @@ export function SuperAdminClients() {
        },
      });
 
-     // Fetch auto-detected club owners (users who created clubs)
-     const { data: clubOwners = [] } = useQuery({
-       queryKey: ["super-admin-club-owners"],
-       queryFn: async () => {
-         // Get all clubs with their owners
-         const { data: clubs, error: clubsError } = await supabase
-           .from("clubs")
-           .select("id, name, sport, user_id, client_id, is_active, created_at")
-           .order("created_at", { ascending: false });
-         if (clubsError) throw clubsError;
-
-         // Group clubs by owner
-         const ownerMap = new Map<string, any[]>();
-         (clubs || []).forEach(club => {
-           if (!ownerMap.has(club.user_id)) ownerMap.set(club.user_id, []);
-           ownerMap.get(club.user_id)!.push(club);
-         });
-
-         // Get unique owner user_ids
-         const ownerIds = Array.from(ownerMap.keys());
-         if (ownerIds.length === 0) return [];
-
-         // Get profiles
-         const { data: profiles } = await supabase
-           .from("profiles")
-           .select("id, full_name, email")
-           .in("id", ownerIds);
-
-         // Get approved_users status
-         const { data: approvedUsers } = await supabase
-           .from("approved_users")
-           .select("user_id, is_free_user")
-           .in("user_id", ownerIds);
-
-         const auMap = new Map<string, boolean | null>();
-         (approvedUsers || []).forEach(au => auMap.set(au.user_id, au.is_free_user));
-
-         return ownerIds.map(userId => {
-           const profile = profiles?.find(p => p.id === userId);
-           const userClubs = ownerMap.get(userId) || [];
-           return {
-             userId,
-             fullName: profile?.full_name || "Inconnu",
-             email: profile?.email || "-",
-             clubs: userClubs,
-             isFreeUser: auMap.get(userId) ?? null,
-             clubCount: userClubs.length,
-             createdAt: userClubs[userClubs.length - 1]?.created_at || null,
-           };
-         });
-       },
-     });
-
-     // Toggle free/paid status for a club owner
-     const toggleOwnerFreeStatus = useMutation({
-       mutationFn: async ({ userId, isFree }: { userId: string; isFree: boolean }) => {
-         const { error } = await supabase
-           .from("approved_users")
-           .update({ is_free_user: isFree })
-           .eq("user_id", userId);
-         if (error) throw error;
-       },
-       onSuccess: () => {
-         toast.success("Statut mis à jour");
-         queryClient.invalidateQueries({ queryKey: ["super-admin-club-owners"] });
-         queryClient.invalidateQueries({ queryKey: ["super-admin-approved-users"] });
-       },
-     });
  
    // Create client mutation
     const createClient = useMutation({
@@ -220,13 +154,18 @@ export function SuperAdminClients() {
           const { data: { user } } = await supabase.auth.getUser();
           if (!user) throw new Error("Non authentifié");
 
+          // Derive club sport from categories (use first category's sport or "multi" if mixed)
+          const uniqueSports = [...new Set(categoryDrafts.map(c => c.sport))];
+          const derivedSport = uniqueSports.length === 1 ? uniqueSports[0] : (uniqueSports.length > 1 ? "multi" : "rugby");
+
           const { data: clubData, error: clubError } = await supabase
             .from("clubs")
             .insert({
               name: clubName.trim(),
-              sport: clubSport,
+              sport: derivedSport,
               user_id: user.id,
               client_id: clientData.id,
+              timezone: data.timezone || "Europe/Paris",
             })
             .select("id")
             .single();
@@ -439,9 +378,10 @@ export function SuperAdminClients() {
          max_staff_users: 5,
          max_athletes: 50,
          notes: "",
-          video_enabled: false,
-          gps_data_enabled: false,
-          academy_enabled: false,
+           video_enabled: false,
+           gps_data_enabled: false,
+           academy_enabled: false,
+           timezone: "Europe/Paris",
        });
        setClubName("");
        setClubSport("rugby");
@@ -519,8 +459,9 @@ export function SuperAdminClients() {
        max_athletes: client.max_athletes,
        notes: client.notes || "",
         video_enabled: client.video_enabled || false,
-        gps_data_enabled: client.gps_data_enabled || false,
-        academy_enabled: (client as any).academy_enabled || false,
+         gps_data_enabled: client.gps_data_enabled || false,
+         academy_enabled: (client as any).academy_enabled || false,
+         timezone: (client as any).timezone || "Europe/Paris",
      });
    };
  
@@ -589,14 +530,50 @@ export function SuperAdminClients() {
          </div>
        </div>
  
-       <div className="space-y-2">
-         <Label>Adresse</Label>
-         <Input
-           value={formData.address}
-           onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-           placeholder="Adresse complète"
-         />
-       </div>
+        <div className="space-y-2">
+          <Label>Adresse</Label>
+          <Input
+            value={formData.address}
+            onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+            placeholder="Adresse complète"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label>Pays / Fuseau horaire</Label>
+          <Select value={formData.timezone} onValueChange={(v) => setFormData({ ...formData, timezone: v })}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Pacific/Auckland">🇳🇿 Nouvelle-Zélande</SelectItem>
+              <SelectItem value="Australia/Sydney">🇦🇺 Australie (Sydney)</SelectItem>
+              <SelectItem value="Asia/Tokyo">🇯🇵 Japon</SelectItem>
+              <SelectItem value="Asia/Shanghai">🇨🇳 Chine</SelectItem>
+              <SelectItem value="Asia/Dubai">🇦🇪 Émirats Arabes Unis</SelectItem>
+              <SelectItem value="Europe/Moscow">🇷🇺 Russie (Moscou)</SelectItem>
+              <SelectItem value="Europe/Paris">🇫🇷 France</SelectItem>
+              <SelectItem value="Europe/London">🇬🇧 Royaume-Uni</SelectItem>
+              <SelectItem value="Atlantic/Reykjavik">🇮🇸 Islande (UTC)</SelectItem>
+              <SelectItem value="America/Sao_Paulo">🇧🇷 Brésil</SelectItem>
+              <SelectItem value="America/New_York">🇺🇸 USA Est</SelectItem>
+              <SelectItem value="America/Chicago">🇺🇸 USA Centre</SelectItem>
+              <SelectItem value="America/Denver">🇺🇸 USA Montagne</SelectItem>
+              <SelectItem value="America/Los_Angeles">🇺🇸 USA Ouest</SelectItem>
+              <SelectItem value="America/Montreal">🇨🇦 Canada Est</SelectItem>
+              <SelectItem value="America/Vancouver">🇨🇦 Canada Ouest</SelectItem>
+              <SelectItem value="Indian/Reunion">🇷🇪 La Réunion</SelectItem>
+              <SelectItem value="Pacific/Noumea">🇳🇨 Nouvelle-Calédonie</SelectItem>
+              <SelectItem value="Pacific/Tahiti">🇵🇫 Polynésie française</SelectItem>
+              <SelectItem value="Europe/Brussels">🇧🇪 Belgique</SelectItem>
+              <SelectItem value="Europe/Zurich">🇨🇭 Suisse</SelectItem>
+              <SelectItem value="Africa/Casablanca">🇲🇦 Maroc</SelectItem>
+              <SelectItem value="Africa/Tunis">🇹🇳 Tunisie</SelectItem>
+              <SelectItem value="Africa/Dakar">🇸🇳 Sénégal</SelectItem>
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground">Les rappels Wellness seront envoyés à 8h dans ce fuseau horaire</p>
+        </div>
  
        <div className="grid grid-cols-2 gap-4">
          <div className="space-y-2">
@@ -735,6 +712,7 @@ export function SuperAdminClients() {
                     <Input
                       type="date"
                       value={subEndDate}
+                      min={subStartDate || undefined}
                       onChange={(e) => setSubEndDate(e.target.value)}
                     />
                   </div>
@@ -775,8 +753,6 @@ export function SuperAdminClients() {
            <CreateClientCategoriesSection
              clubName={clubName}
              onClubNameChange={setClubName}
-             clubSport={clubSport}
-             onClubSportChange={setClubSport}
              categories={categoryDrafts}
              onCategoriesChange={setCategoryDrafts}
            />
@@ -883,13 +859,7 @@ export function SuperAdminClients() {
               ? clients.filter((client: any) => {
                   const nameMatch = client.name?.toLowerCase().includes(query);
                   const emailMatch = client.email?.toLowerCase().includes(query);
-                  // Check if any club linked to this client matches
-                  const clubMatch = clubOwners.some((owner: any) =>
-                    owner.clubs.some((club: any) =>
-                      club.client_id === client.id && club.name.toLowerCase().includes(query)
-                    )
-                  );
-                  return nameMatch || emailMatch || clubMatch;
+                  return nameMatch || emailMatch;
                 })
               : clients;
 
@@ -987,90 +957,124 @@ export function SuperAdminClients() {
                    <TableCell>
                      {format(new Date(client.created_at), "dd MMM yyyy", { locale: fr })}
                    </TableCell>
-                     <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                       <div className="flex justify-end gap-1">
-                         <Button
-                           variant="ghost"
-                           size="icon"
-                           title="Assigner un abonnement"
-                           onClick={() => {
-                             resetSubForm();
-                             setAssignSubClientId(client.id);
-                           }}
-                         >
-                           <CreditCard className="h-4 w-4 text-primary" />
-                         </Button>
-                         <Button
-                           variant="ghost"
-                           size="icon"
-                           title="Copier le lien d'invitation"
-                           onClick={async () => {
-                            if (!client.email) {
-                              toast.error("Pas d'email pour ce client");
-                              return;
-                            }
-                            const { data: inv } = await supabase
-                              .from("ambassador_invitations")
-                              .select("token")
-                              .eq("email", client.email)
-                              .order("created_at", { ascending: false })
-                              .limit(1)
-                              .maybeSingle();
-                            if (inv?.token) {
-                              const link = `${window.location.origin}/ambassador-invitation?token=${inv.token}`;
-                              await navigator.clipboard.writeText(link);
-                              toast.success("Lien d'invitation copié !");
-                            } else {
-                              toast.error("Aucune invitation trouvée pour ce client");
-                            }
-                          }}
-                        >
-                          <Link className="h-4 w-4 text-muted-foreground" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          title="Options des catégories"
-                          onClick={() => setCategoryOptionsClient(client)}
-                        >
-                          <FolderOpen className="h-4 w-4 text-primary" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => openEditDialog(client)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        {client.status === "suspended" ? (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => toggleStatus.mutate({ id: client.id, status: "active" })}
-                          >
-                            <Play className="h-4 w-4 text-green-600" />
-                          </Button>
-                        ) : (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => toggleStatus.mutate({ id: client.id, status: "suspended" })}
-                          >
-                            <Pause className="h-4 w-4 text-amber-600" />
-                          </Button>
-                        )}
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => {
-                            if (confirm("Supprimer ce client ?")) {
-                              deleteClient.mutate(client.id);
-                            }
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </div>
+                      <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                        <TooltipProvider delayDuration={300}>
+                        <div className="flex justify-end gap-1">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => {
+                                  resetSubForm();
+                                  setAssignSubClientId(client.id);
+                                }}
+                              >
+                                <CreditCard className="h-4 w-4 text-primary" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Assigner un abonnement</TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={async () => {
+                                  if (!client.email) {
+                                    toast.error("Pas d'email pour ce client");
+                                    return;
+                                  }
+                                  const { data: inv } = await supabase
+                                    .from("ambassador_invitations")
+                                    .select("token")
+                                    .eq("email", client.email)
+                                    .order("created_at", { ascending: false })
+                                    .limit(1)
+                                    .maybeSingle();
+                                  if (inv?.token) {
+                                    const link = `${window.location.origin}/ambassador-invitation?token=${inv.token}`;
+                                    await navigator.clipboard.writeText(link);
+                                    toast.success("Lien d'invitation copié !");
+                                  } else {
+                                    toast.error("Aucune invitation trouvée pour ce client");
+                                  }
+                                }}
+                              >
+                                <Link className="h-4 w-4 text-muted-foreground" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Copier le lien d'invitation</TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setCategoryOptionsClient(client)}
+                              >
+                                <FolderOpen className="h-4 w-4 text-primary" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Options des catégories</TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => openEditDialog(client)}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Modifier le client</TooltipContent>
+                          </Tooltip>
+                          {client.status === "suspended" ? (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => toggleStatus.mutate({ id: client.id, status: "active" })}
+                                >
+                                  <Play className="h-4 w-4 text-green-600" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Réactiver le client</TooltipContent>
+                            </Tooltip>
+                          ) : (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => toggleStatus.mutate({ id: client.id, status: "suspended" })}
+                                >
+                                  <Pause className="h-4 w-4 text-amber-600" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Suspendre le client</TooltipContent>
+                            </Tooltip>
+                          )}
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => {
+                                  if (confirm("Supprimer ce client ?")) {
+                                    deleteClient.mutate(client.id);
+                                  }
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Supprimer le client</TooltipContent>
+                          </Tooltip>
+                        </div>
+                        </TooltipProvider>
                     </TableCell>
                  </TableRow>
                ))}
@@ -1079,80 +1083,6 @@ export function SuperAdminClients() {
            );
           })()}
 
-          {/* Auto-detected Club Owners section */}
-          <div className="mt-8 border-t pt-6">
-            <h3 className="text-lg font-semibold flex items-center gap-2 mb-4">
-              <User className="h-5 w-5" />
-              Propriétaires de clubs (auto-détectés)
-              <Badge variant="secondary" className="ml-2">{clubOwners.length}</Badge>
-            </h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              Utilisateurs ayant créé un ou plusieurs clubs sur la plateforme
-            </p>
-            {clubOwners.length === 0 ? (
-              <p className="text-muted-foreground text-center py-4 text-sm">Aucun propriétaire de club</p>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Propriétaire</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Clubs</TableHead>
-                    <TableHead>Statut</TableHead>
-                    <TableHead>Inscription</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {clubOwners.map((owner: any) => (
-                    <TableRow key={owner.userId}>
-                      <TableCell className="font-medium">{owner.fullName}</TableCell>
-                      <TableCell className="text-sm">{owner.email}</TableCell>
-                      <TableCell>
-                        <div className="flex flex-wrap gap-1">
-                          {owner.clubs.map((club: any) => (
-                            <Badge key={club.id} variant="outline" className="text-xs">
-                              <Building2 className="h-3 w-3 mr-1" />
-                              {club.name}
-                            </Badge>
-                          ))}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {owner.isFreeUser === true ? (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 gap-1 text-purple-600 hover:text-green-600"
-                            onClick={() => toggleOwnerFreeStatus.mutate({ userId: owner.userId, isFree: false })}
-                            title="Cliquer pour passer en Payant"
-                          >
-                            <Gift className="h-3.5 w-3.5" />
-                            <span className="text-xs font-medium">Gratuit</span>
-                          </Button>
-                        ) : owner.isFreeUser === false ? (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 gap-1 text-green-600 hover:text-purple-600"
-                            onClick={() => toggleOwnerFreeStatus.mutate({ userId: owner.userId, isFree: true })}
-                            title="Cliquer pour passer en Gratuit"
-                          >
-                            <DollarSign className="h-3.5 w-3.5" />
-                            <span className="text-xs font-medium">Payant</span>
-                          </Button>
-                        ) : (
-                          <Badge variant="outline" className="text-xs text-muted-foreground">Non défini</Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {owner.createdAt ? format(new Date(owner.createdAt), "dd MMM yyyy", { locale: fr }) : "-"}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </div>
  
          {/* Edit Dialog */}
          <Dialog open={!!editingClient} onOpenChange={(open) => !open && setEditingClient(null)}>
@@ -1232,6 +1162,7 @@ export function SuperAdminClients() {
                       <Input
                         type="date"
                         value={subEndDate}
+                        min={subStartDate || undefined}
                         onChange={(e) => setSubEndDate(e.target.value)}
                       />
                     </div>

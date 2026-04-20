@@ -195,6 +195,9 @@ export function PlayerMatchStatsDialog({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["player_match_stats", matchId] });
       queryClient.invalidateQueries({ queryKey: ["match", matchId] });
+      queryClient.invalidateQueries({ queryKey: ["matches-list-cumulative"] });
+      queryClient.invalidateQueries({ queryKey: ["cumulative_player_stats"] });
+      queryClient.invalidateQueries({ queryKey: ["player_all_match_stats"] });
       toast.success("Statistiques enregistrées");
       onOpenChange(false);
     },

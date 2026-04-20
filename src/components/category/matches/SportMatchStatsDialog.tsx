@@ -21,6 +21,7 @@ import { Switch } from "@/components/ui/switch";
 import { useStatPreferences } from "@/hooks/use-stat-preferences";
 import { MatchGpsImport } from "./MatchGpsImport";
 import { PlayerStatsGrid } from "./PlayerStatsGrid";
+import { MatchKickingFieldDialog, type KickAttempt } from "./MatchKickingFieldDialog";
 
 // Convert seconds to minutes display format (e.g., 185 => "3'05")
 function formatSecondsToMinutes(totalSeconds: number): string {
@@ -74,6 +75,8 @@ export function SportMatchStatsDialog({
   const [averagePlaySequenceText, setAveragePlaySequenceText] = useState<string>("");
   const [showGpsImport, setShowGpsImport] = useState(false);
   const [activeCategoryIndex, setActiveCategoryIndex] = useState(0);
+  const [kickingFieldPlayer, setKickingFieldPlayer] = useState<{ id: string; name: string } | null>(null);
+  const [playerKicks, setPlayerKicks] = useState<Record<string, KickAttempt[]>>({});
   const queryClient = useQueryClient();
 
   const fieldConfig = getSportFieldConfig(sportType);
@@ -236,6 +239,16 @@ export function SportMatchStatsDialog({
           return playerStats;
         });
         setStatsData(stats);
+
+        // Load existing kick positions from sport_data
+        const loadedKicks: Record<string, KickAttempt[]> = {};
+        existingStats?.forEach((existing) => {
+          const sd = (existing as { sport_data?: Record<string, any> }).sport_data;
+          if (sd?.kickAttempts && Array.isArray(sd.kickAttempts)) {
+            loadedKicks[existing.player_id] = sd.kickAttempts;
+          }
+        });
+        setPlayerKicks(loadedKicks);
       }
       setStatsInitialized(true);
       setLastCustomStatsCount(customStatFields.length);
@@ -301,11 +314,16 @@ export function SportMatchStatsDialog({
             }
           });
           
-          const sportData: Record<string, number> = {};
+          const sportData: Record<string, any> = {};
           mergedStats.forEach((stat) => {
             const val = Number(s[stat.key]) || 0;
             if (val !== 0) sportData[stat.key] = val;
           });
+          // Include kick attempt positions if available
+          const kicks = playerKicks[s.playerId];
+          if (kicks && kicks.length > 0) {
+            sportData.kickAttempts = kicks.map(k => ({ x: k.x, y: k.y, kickType: k.kickType, success: k.success }));
+          }
 
           return {
             match_id: matchId,
@@ -374,6 +392,9 @@ export function SportMatchStatsDialog({
       queryClient.invalidateQueries({ queryKey: ["match", matchId] });
       queryClient.invalidateQueries({ queryKey: ["awcr_tracking"] });
       queryClient.invalidateQueries({ queryKey: ["today_rpe_decision", categoryId] });
+      queryClient.invalidateQueries({ queryKey: ["matches-list-cumulative", categoryId] });
+      queryClient.invalidateQueries({ queryKey: ["cumulative_player_stats", categoryId] });
+      queryClient.invalidateQueries({ queryKey: ["player_all_match_stats"] });
       toast.success("Statistiques et charge match enregistrées");
       onOpenChange(false);
     },
@@ -576,6 +597,8 @@ export function SportMatchStatsDialog({
               stats={activeCategoryStats}
               onUpdateStat={updateStat}
               supportsGoalkeeper={supportsGoalkeeper}
+              isRugby={isRugbyType(sportType)}
+              onOpenKickingField={(playerId, playerName) => setKickingFieldPlayer({ id: playerId, name: playerName })}
             />
           </div>
         </ScrollArea>
@@ -624,6 +647,34 @@ export function SportMatchStatsDialog({
               name: p.playerName,
               position: p.position,
             }))}
+          />
+        )}
+
+        {/* Kicking Field Dialog for Rugby */}
+        {isRugbyType(sportType) && kickingFieldPlayer && (
+          <MatchKickingFieldDialog
+            open={!!kickingFieldPlayer}
+            onOpenChange={(open) => { if (!open) setKickingFieldPlayer(null); }}
+            playerName={kickingFieldPlayer.name}
+            playerId={kickingFieldPlayer.id}
+            initialKicks={playerKicks[kickingFieldPlayer.id] || []}
+            onComplete={(kickStats) => {
+              const playerId = kickingFieldPlayer.id;
+              // Save kick positions
+              setPlayerKicks(prev => ({ ...prev, [playerId]: kickStats.kicks }));
+              // Update all kicking stats for this player
+              updateStat(playerId, "conversions", kickStats.conversions);
+              updateStat(playerId, "conversionAttempts", kickStats.conversionAttempts);
+              updateStat(playerId, "penaltiesScored", kickStats.penaltiesScored);
+              updateStat(playerId, "penaltyAttempts", kickStats.penaltyAttempts);
+              updateStat(playerId, "dropGoals", kickStats.dropGoals);
+              updateStat(playerId, "dropAttempts", kickStats.dropAttempts);
+              // Points = tries * 5 + kicking points
+              const playerData = statsData.find(p => p.playerId === playerId);
+              const triesPoints = (Number(playerData?.tries) || 0) * 5;
+              updateStat(playerId, "points", triesPoints + kickStats.points);
+              setKickingFieldPlayer(null);
+            }}
           />
         )}
       </DialogContent>

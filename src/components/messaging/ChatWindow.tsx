@@ -18,6 +18,7 @@ import { MessageReactions } from "./MessageReactions";
 import { PollMessage } from "./PollMessage";
 import { CreatePollDialog } from "./CreatePollDialog";
 import { PollSummaryPanel } from "./PollSummaryPanel";
+import { getOrderedDistinctResolvedNames, resolveUserDisplayNames } from "./userDisplayNames";
 
 interface Message {
   id: string;
@@ -72,16 +73,25 @@ export function ChatWindow({ conversationId, categoryId }: ChatWindowProps) {
     },
   });
 
+  // Fetch participant profile names for header display
+  const { data: participantNames } = useQuery({
+    queryKey: ["conversation-participant-names", conversationId, user?.id],
+    queryFn: async () => {
+      if (!participants || participants.length === 0) return [];
+      const userIds = participants.map(p => p.user_id);
+      const nameMap = await resolveUserDisplayNames({ userIds, currentUser: user });
+      return getOrderedDistinctResolvedNames(userIds, nameMap);
+    },
+    enabled: !!participants && participants.length > 0,
+  });
+
   const { data: senderProfiles } = useQuery({
-    queryKey: ["sender-profiles", conversationId],
+    queryKey: ["sender-profiles", conversationId, user?.id],
     queryFn: async () => {
       if (!messages) return {};
       const uniqueIds = [...new Set(messages.map(m => m.sender_id))];
       if (uniqueIds.length === 0) return {};
-      const { data } = await supabase.from("profiles").select("id, full_name").in("id", uniqueIds);
-      const map: Record<string, string> = {};
-      data?.forEach(p => { map[p.id] = p.full_name || p.id.substring(0, 6); });
-      return map;
+      return resolveUserDisplayNames({ userIds: uniqueIds, currentUser: user });
     },
     enabled: !!messages && messages.length > 0,
   });
@@ -190,10 +200,17 @@ export function ChatWindow({ conversationId, categoryId }: ChatWindowProps) {
     <Card className="h-[600px] flex flex-col">
       <CardHeader className="pb-3 border-b">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-base flex items-center gap-2">
-            <MessageCircle className="h-5 w-5" />
-            Chat d'équipe
-          </CardTitle>
+          <div className="flex-1 min-w-0">
+            <CardTitle className="text-base flex items-center gap-2">
+              <MessageCircle className="h-5 w-5" />
+              Chat d'équipe
+            </CardTitle>
+            {participantNames && participantNames.length > 0 && (
+              <p className="text-xs text-muted-foreground truncate mt-0.5">
+                {participantNames.join(", ")}
+              </p>
+            )}
+          </div>
           <div className="flex items-center gap-2">
             <Badge variant="outline">
               <Users className="h-3 w-3 mr-1" />

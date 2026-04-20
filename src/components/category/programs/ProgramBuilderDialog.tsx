@@ -34,6 +34,9 @@ interface ProgramBuilderDialogProps {
   programId?: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  rehabMode?: boolean;
+  rehabPhaseName?: string;
+  onProgramSaved?: (programId: string) => void;
 }
 
 interface DropSet {
@@ -150,6 +153,9 @@ export function ProgramBuilderDialog({
   programId,
   open,
   onOpenChange,
+  rehabMode,
+  rehabPhaseName,
+  onProgramSaved,
 }: ProgramBuilderDialogProps) {
   const queryClient = useQueryClient();
   const [name, setName] = useState("");
@@ -373,6 +379,11 @@ export function ProgramBuilderDialog({
       const loadedBlocks = weeksToBlocks(loadedWeeks);
       setBlocks(loadedBlocks.length > 0 ? loadedBlocks : [createEmptyBlock(1)]);
     } else if (!programId) {
+      // Set defaults for rehab mode
+      if (rehabMode && !name) {
+        setName(`Programme réathléthisation - ${rehabPhaseName || "Phase"}`);
+        setTheme("reathletisation");
+      }
       setBlocks([createEmptyBlock(1)]);
     }
   }, [existingProgram, programId]);
@@ -604,7 +615,12 @@ export function ProgramBuilderDialog({
 
       toast.success(programId ? "Programme mis à jour" : "Programme créé");
       queryClient.invalidateQueries({ queryKey: ["training-programs"] });
-      onOpenChange(false);
+      queryClient.invalidateQueries({ queryKey: ["linked-program"] });
+      if (onProgramSaved && programIdToUse) {
+        onProgramSaved(programIdToUse);
+      } else {
+        onOpenChange(false);
+      }
     } catch (error: any) {
       console.error("Save error:", error);
       toast.error("Erreur lors de la sauvegarde: " + error.message);

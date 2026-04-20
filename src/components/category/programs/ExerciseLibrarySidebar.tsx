@@ -32,6 +32,8 @@ import { cn } from "@/lib/utils";
 
 interface ExerciseLibrarySidebarProps {
   sportType?: string;
+  /** If provided, exercises are clickable (no drag). Used in prophylaxis dialog etc. */
+  onClickExercise?: (exercise: { id: string; name: string; category: string; youtube_url?: string | null; image_url?: string | null }) => void;
 }
 
 interface DraggableExerciseProps {
@@ -95,7 +97,7 @@ function DraggableExercise({ exercise }: DraggableExerciseProps) {
   );
 }
 
-export function ExerciseLibrarySidebar({ sportType }: ExerciseLibrarySidebarProps) {
+export function ExerciseLibrarySidebar({ sportType, onClickExercise }: ExerciseLibrarySidebarProps) {
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -151,7 +153,7 @@ export function ExerciseLibrarySidebar({ sportType }: ExerciseLibrarySidebarProp
 
   return (
     <>
-      <div className="w-80 border-l bg-muted/30 flex flex-col h-full">
+      <div className="hidden sm:flex w-80 border-l bg-muted/30 flex-col h-full">
         <div className="border-b bg-background">
           <div className="flex items-center justify-between p-3 pb-2">
             <div className="flex items-center gap-2">
@@ -270,14 +272,49 @@ export function ExerciseLibrarySidebar({ sportType }: ExerciseLibrarySidebarProp
               <p className="text-center text-muted-foreground py-4 text-sm">Aucun exercice trouvé</p>
             ) : (
               filteredExercises.map((exercise) => (
-                <DraggableExercise key={exercise.id} exercise={exercise} />
+                onClickExercise ? (
+                  <button
+                    key={exercise.id}
+                    type="button"
+                    className={cn(
+                      "w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md border cursor-pointer transition-all hover:shadow-sm",
+                      getCategoryColor(exercise.category).borderColor,
+                      getCategoryColor(exercise.category).bgColor,
+                    )}
+                    onClick={() => onClickExercise(exercise)}
+                  >
+                    <Plus className={cn("h-3.5 w-3.5 shrink-0", getCategoryColor(exercise.category).color)} />
+                    <p className="font-medium text-xs truncate flex-1 min-w-0 text-left">{exercise.name}</p>
+                    {(exercise.youtube_url || exercise.image_url) && (
+                      <ExerciseMediaViewer
+                        exerciseName={exercise.name}
+                        imageUrl={exercise.image_url}
+                        youtubeUrl={exercise.youtube_url}
+                      >
+                        <span
+                          className="shrink-0 p-0.5 rounded hover:bg-background/80 transition-colors"
+                          onClick={(e) => e.stopPropagation()}
+                          title="Voir le média"
+                        >
+                          {exercise.youtube_url ? (
+                            <Video className="h-3.5 w-3.5 text-primary" />
+                          ) : (
+                            <ImageIcon className="h-3.5 w-3.5 text-primary" />
+                          )}
+                        </span>
+                      </ExerciseMediaViewer>
+                    )}
+                  </button>
+                ) : (
+                  <DraggableExercise key={exercise.id} exercise={exercise} />
+                )
               ))
             )}
           </div>
         </ScrollArea>
 
         <div className="p-2 border-t text-xs text-center text-muted-foreground bg-background">
-          Glissez-déposez dans les séances
+          {onClickExercise ? "Cliquez pour ajouter un exercice" : "Glissez-déposez dans les séances"}
         </div>
       </div>
 

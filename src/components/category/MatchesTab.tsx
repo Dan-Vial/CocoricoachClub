@@ -1,23 +1,21 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Calendar, BarChart3, Settings2, Dumbbell, Target } from "lucide-react";
+import { Plus, Calendar, BarChart3, Settings2, Camera } from "lucide-react";
 import { AddMatchCalendarDialog } from "./matches/AddMatchCalendarDialog";
 import { MatchCard } from "./matches/MatchCard";
 import { PlayerCumulativeStats } from "./matches/PlayerCumulativeStats";
 import { BowlingCumulativeStats } from "@/components/bowling/BowlingCumulativeStats";
-import { BowlingTrainingStats } from "@/components/bowling/BowlingTrainingStats";
-import { TennisTrainingStats } from "@/components/tennis/TennisTrainingStats";
-import { isFuture, isPast, format } from "date-fns";
+
+import { CategoryPhotosTab } from "./photos/CategoryPhotosTab";
+import { isFuture, isPast } from "date-fns";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { ColoredSubTabsList, ColoredSubTabsTrigger } from "@/components/ui/colored-subtabs";
 import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 import { isIndividualSport } from "@/lib/constants/sportTypes";
 import { useViewerMatches } from "@/hooks/use-viewer-data";
 import { StatPreferencesDialog } from "./settings/StatPreferencesDialog";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface MatchesTabProps {
   categoryId: string;
@@ -33,8 +31,6 @@ export function MatchesTab({ categoryId, sportType }: MatchesTabProps) {
   // Check if this is an individual sport (judo, bowling)
   const isIndividual = isIndividualSport(sportType || "");
   const isBowling = (sportType || "").toLowerCase().includes("bowling");
-  const isTennis = (sportType || "").toLowerCase().includes("tennis");
-  const hasTrainingStats = isBowling || isTennis;
   
   // Labels adaptés selon le sport
   const itemLabel = isIndividual ? "compétition" : "match";
@@ -43,30 +39,6 @@ export function MatchesTab({ categoryId, sportType }: MatchesTabProps) {
   const itemLabelPluralCapital = isIndividual ? "Compétitions" : "Matchs";
 
   const { data: matches, isLoading } = useViewerMatches(categoryId);
-
-  // Create training match (bowling or tennis)
-  const createTrainingMatch = useMutation({
-    mutationFn: async () => {
-      const today = format(new Date(), "yyyy-MM-dd");
-      const label = isTennis ? "Match d'entraînement" : "Entraînement";
-      const { error } = await supabase.from("matches").insert({
-        category_id: categoryId,
-        opponent: `${label} ${format(new Date(), "dd/MM/yyyy")}`,
-        match_date: today,
-        event_type: "training",
-        is_home: true,
-      });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["matches", categoryId] });
-      const msg = isTennis
-        ? "Match d'entraînement créé ! Ajoutez la composition puis saisissez les stats."
-        : "Entraînement bowling créé ! Ajoutez des joueurs puis saisissez les parties.";
-      toast.success(msg);
-    },
-    onError: () => toast.error("Erreur lors de la création"),
-  });
 
   // Filter out sub-matches (they are displayed within their parent match)
   const parentMatches = matches?.filter((m) => !m.parent_match_id) || [];
@@ -83,16 +55,14 @@ export function MatchesTab({ categoryId, sportType }: MatchesTabProps) {
         <div className="flex justify-center overflow-x-auto -mx-4 px-4 pb-2">
           <ColoredSubTabsList colorKey="competition" className="inline-flex w-max">
             <ColoredSubTabsTrigger value="matches" colorKey="competition" icon={<Calendar className="h-4 w-4" />}>
-              {itemLabelPluralCapital}
+              Gestion
             </ColoredSubTabsTrigger>
             <ColoredSubTabsTrigger value="stats" colorKey="competition" icon={<BarChart3 className="h-4 w-4" />}>
-              Stats cumulées
+              Stats compétition
             </ColoredSubTabsTrigger>
-            {hasTrainingStats && (
-              <ColoredSubTabsTrigger value="training_stats" colorKey="competition" icon={<Target className="h-4 w-4" />}>
-                Stats entraînement
-              </ColoredSubTabsTrigger>
-            )}
+            <ColoredSubTabsTrigger value="photos" colorKey="competition" icon={<Camera className="h-4 w-4" />}>
+              Photos
+            </ColoredSubTabsTrigger>
           </ColoredSubTabsList>
         </div>
 
@@ -115,17 +85,6 @@ export function MatchesTab({ categoryId, sportType }: MatchesTabProps) {
                       >
                         <Settings2 className="h-4 w-4" />
                         <span className="hidden sm:inline">Personnaliser stats</span>
-                      </Button>
-                    )}
-                    {(isBowling || isTennis) && (
-                      <Button 
-                        variant="outline"
-                        onClick={() => createTrainingMatch.mutate()}
-                        disabled={createTrainingMatch.isPending}
-                        className="gap-2"
-                      >
-                        <Dumbbell className="h-4 w-4" />
-                        <span className="hidden sm:inline">{isTennis ? "Match entraînement" : "Entraînement"}</span>
                       </Button>
                     )}
                     <Button onClick={() => setIsAddDialogOpen(true)} className="gap-2">
@@ -191,12 +150,11 @@ export function MatchesTab({ categoryId, sportType }: MatchesTabProps) {
           )}
         </TabsContent>
 
-        {hasTrainingStats && (
-          <TabsContent value="training_stats">
-            {isBowling && <BowlingTrainingStats categoryId={categoryId} />}
-            {isTennis && <TennisTrainingStats categoryId={categoryId} />}
-          </TabsContent>
-        )}
+
+
+        <TabsContent value="photos">
+          <CategoryPhotosTab categoryId={categoryId} />
+        </TabsContent>
       </Tabs>
 
       <AddMatchCalendarDialog

@@ -1,10 +1,13 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Activity, Zap, Users, Target, Dumbbell, Timer, Gauge } from "lucide-react";
+import { Activity, Zap, Users, Target, Timer, Settings2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { PlayerAvatarUpload } from "./PlayerAvatarUpload";
-import { getAthleticProfileConfig, type AthleticProfileConfig } from "@/lib/constants/athleticProfiles";
+import { CustomAthleticProfileEditor } from "./CustomAthleticProfileEditor";
+import { getAthleticProfileConfig, type AthleticProfileConfig, type AthleticProfileTest } from "@/lib/constants/athleticProfiles";
 
 interface PlayerProfileProps {
   playerId: string;
@@ -22,16 +25,53 @@ interface TestResult {
   date: string;
 }
 
-export function PlayerProfile({ playerId, categoryId, playerName, avatarUrl, sportType = "XV", discipline }: PlayerProfileProps) {
-  const profileConfig = getAthleticProfileConfig(sportType, discipline);
+interface CustomProfileType {
+  key: string;
+  label: string;
+  description: string;
+  recommendations: string[];
+  thresholdMin?: number;
+  thresholdMax?: number;
+}
 
-  // Fetch test data based on sport profile configuration
+export function PlayerProfile({ playerId, categoryId, playerName, avatarUrl, sportType = "XV", discipline }: PlayerProfileProps) {
+  const [editorOpen, setEditorOpen] = useState(false);
+  const defaultConfig = getAthleticProfileConfig(sportType, discipline);
+
+  // Fetch custom profile for this category
+  const { data: customProfile } = useQuery({
+    queryKey: ["custom_athletic_profile", categoryId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("custom_athletic_profiles")
+        .select("*")
+        .eq("category_id", categoryId)
+        .eq("is_active", true)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Determine which config to use
+  const isCustom = !!customProfile;
+  const customTests = customProfile?.tests as unknown as AthleticProfileTest[] | undefined;
+  const customProfileTypes = customProfile?.profile_types as unknown as { profiles?: CustomProfileType[] } | undefined;
+
+  const activeTests: AthleticProfileTest[] = isCustom && customTests && customTests.length >= 2
+    ? customTests
+    : defaultConfig.tests;
+
+  const profileLabel = isCustom ? (customProfile?.name || "Profil personnalisé") : defaultConfig.label;
+  const profileDescription = isCustom ? (customProfile?.description || "") : defaultConfig.profileDescription;
+
+  // Fetch test data
   const { data: testData } = useQuery({
-    queryKey: ["player_athletic_profile", playerId, sportType, discipline],
+    queryKey: ["player_athletic_profile", playerId, categoryId, sportType, discipline, isCustom],
     queryFn: async () => {
       const results: Record<string, TestResult | null> = {};
       
-      for (const test of profileConfig.tests) {
+      for (const test of activeTests) {
         let data: { value: number; date: string } | null = null;
         
         if (test.tableSource === "speed_tests") {
@@ -45,7 +85,6 @@ export function PlayerProfile({ playerId, categoryId, playerName, avatarUrl, spo
           
           if (speedData && speedData.length > 0) {
             const testResult = speedData[0];
-            // Handle different value columns
             const value = testResult.vma_kmh || testResult.speed_kmh || testResult.time_40m_seconds || 0;
             data = { value, date: testResult.test_date };
           }
@@ -82,161 +121,185 @@ export function PlayerProfile({ playerId, categoryId, playerName, avatarUrl, spo
     },
   });
 
-  // Calculate profile based on test results
-  const getPlayerProfile = (): {
-    type: ProfileType;
-    test1: TestResult | null;
-    test2: TestResult | null;
-    ratio: number | null;
-  } => {
-    const test1 = testData?.[profileConfig.tests[0].key] || null;
-    const test2 = testData?.[profileConfig.tests[1].key] || null;
+  // Calculate profile
+  const getPlayerProfile = () => {
+    const testResults = activeTests.map(t => testData?.[t.key] || null);
+    const hasAllData = testResults.every(r => r !== null);
 
-    if (!test1 || !test2) {
-      return { type: "insufficientData", test1, test2, ratio: null };
+    if (!hasAllData) {
+      return { type: "insufficientData" as ProfileType, testResults, ratio: null, matchedProfile: null };
     }
 
-    // Normalize both test values to a 0-100 scale for comparison
-    // The ratio determines which profile type to assign
-    const val1 = test1.value;
-    const val2 = test2.value;
-    
-    // For sports where both tests are "higher is better" or same direction
-    // we can compare relative performance
-    const t1Config = profileConfig.tests[0];
-    const t2Config = profileConfig.tests[1];
-    
-    // Create a simple ratio based on relative performance
-    // This is a simplified version - in reality you'd use sport-specific norms
+    // Calculate ratio based on first two tests
+    const val1 = testResults[0]!.value;
+    const val2 = testResults[1]!.value;
+    const t1 = activeTests[0];
+    const t2 = activeTests[1];
+
     let ratio: number;
-    
-    // If both tests point the same direction
-    if (t1Config.higherIsBetter === t2Config.higherIsBetter) {
+    if (t1.higherIsBetter === t2.higherIsBetter) {
       ratio = (val1 / (val1 + val2)) * 100;
     } else {
-      // If they point different directions, invert one
-      ratio = t1Config.higherIsBetter 
-        ? (val1 / (val1 + (1/val2))) * 100
-        : ((1/val1) / ((1/val1) + val2)) * 100;
+      ratio = t1.higherIsBetter
+        ? (val1 / (val1 + (1 / val2))) * 100
+        : ((1 / val1) / ((1 / val1) + val2)) * 100;
     }
 
-    // Classify based on ratio
+    // Match profile based on thresholds (custom) or default ranges
+    if (isCustom && customProfileTypes?.profiles) {
+      const matched = customProfileTypes.profiles.find(p => {
+        const min = p.thresholdMin ?? -Infinity;
+        const max = p.thresholdMax ?? Infinity;
+        return ratio >= min && ratio <= max;
+      });
+      return { type: "primary" as ProfileType, testResults, ratio, matchedProfile: matched || customProfileTypes.profiles[0] };
+    }
+
+    // Default classification
     let type: ProfileType;
-    if (ratio > 55) {
-      type = "primary";
-    } else if (ratio >= 45) {
-      type = "balanced";
-    } else {
-      type = "secondary";
-    }
+    if (ratio > 55) type = "primary";
+    else if (ratio >= 45) type = "balanced";
+    else type = "secondary";
 
-    return { type, test1, test2, ratio };
+    return { type, testResults, ratio, matchedProfile: null };
   };
 
   const profile = getPlayerProfile();
-  const currentProfileType = profileConfig.profileTypes[profile.type];
+
+  // Get display info
+  const getDisplayProfile = () => {
+    if (isCustom && profile.matchedProfile) {
+      return {
+        label: profile.matchedProfile.label,
+        description: profile.matchedProfile.description,
+        recommendations: profile.matchedProfile.recommendations.filter(Boolean),
+      };
+    }
+    if (!isCustom) {
+      const defaultType = defaultConfig.profileTypes[profile.type];
+      return {
+        label: defaultType.label,
+        description: defaultType.description,
+        recommendations: defaultType.recommendations,
+      };
+    }
+    return {
+      label: "Données insuffisantes",
+      description: "Tests requis pour déterminer le profil",
+      recommendations: activeTests.map(t => `Effectuer: ${t.label}`),
+    };
+  };
+
+  const displayProfile = getDisplayProfile();
 
   const getProfileIcon = () => {
     switch (profile.type) {
-      case "primary":
-        return Timer;
-      case "balanced":
-        return Users;
-      case "secondary":
-        return Zap;
-      default:
-        return Activity;
+      case "primary": return Timer;
+      case "balanced": return Users;
+      case "secondary": return Zap;
+      default: return Activity;
     }
   };
 
   const getProfileColor = () => {
     switch (profile.type) {
-      case "primary":
-        return "bg-primary text-primary-foreground";
-      case "balanced":
-        return "bg-accent text-accent-foreground";
-      case "secondary":
-        return "bg-secondary text-secondary-foreground";
-      default:
-        return "bg-muted text-muted-foreground";
+      case "primary": return "bg-primary text-primary-foreground";
+      case "balanced": return "bg-accent text-accent-foreground";
+      case "secondary": return "bg-secondary text-secondary-foreground";
+      default: return "bg-muted text-muted-foreground";
     }
   };
 
   const Icon = getProfileIcon();
 
   return (
-    <Card className="bg-gradient-card shadow-md">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Target className="h-5 w-5" />
-          Profil Athlétique - {profileConfig.label}
-        </CardTitle>
-        <p className="text-sm text-muted-foreground">
-          {profileConfig.profileDescription}
-        </p>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <PlayerAvatarUpload
-          playerId={playerId}
-          playerName={playerName}
-          currentAvatarUrl={avatarUrl}
-        />
-        
-        <div className="flex items-center justify-between">
-          <Badge className={`${getProfileColor()} text-lg py-2 px-4`}>
-            <Icon className="h-4 w-4 mr-2" />
-            {currentProfileType.label}
-          </Badge>
-          {profile.ratio && (
-            <div className="text-right">
-              <p className="text-sm text-muted-foreground">Équilibre</p>
-              <p className="text-2xl font-bold">{profile.ratio.toFixed(0)}%</p>
+    <>
+      <Card className="bg-gradient-card shadow-md">
+        <CardHeader className="py-3 px-4">
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-sm">
+              <Target className="h-4 w-4" />
+              Profil Athlétique - {profileLabel}
             </div>
-          )}
-        </div>
-
-        <div className="space-y-2">
-          <p className="text-muted-foreground">{currentProfileType.description}</p>
+            <Button variant="ghost" size="sm" className="h-7" onClick={() => setEditorOpen(true)} title="Personnaliser le profil">
+              <Settings2 className="h-3.5 w-3.5" />
+            </Button>
+          </CardTitle>
+          <p className="text-xs text-muted-foreground">
+            {profileDescription}
+            {isCustom && <Badge variant="outline" className="ml-2 text-[10px]">Personnalisé</Badge>}
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-3 px-4 pb-3 pt-0">
+          <PlayerAvatarUpload
+            playerId={playerId}
+            playerName={playerName}
+            currentAvatarUrl={avatarUrl}
+          />
           
-          {profile.test1 && profile.test2 && (
-            <div className="grid grid-cols-2 gap-4 mt-4 p-4 bg-muted/50 rounded-lg">
-              <div>
-                <p className="text-sm text-muted-foreground">{profileConfig.tests[0].shortLabel}</p>
-                <p className="text-xl font-bold text-primary">
-                  {profile.test1.value.toFixed(1)} {profileConfig.tests[0].unit}
-                </p>
+          <div className="flex items-center justify-between">
+            <Badge className={`${getProfileColor()} text-sm py-1 px-3`}>
+              <Icon className="h-3.5 w-3.5 mr-1.5" />
+              {displayProfile.label}
+            </Badge>
+            {profile.ratio !== null && (
+              <div className="text-right">
+                <p className="text-xs text-muted-foreground">Équilibre</p>
+                <p className="text-xl font-bold">{profile.ratio.toFixed(0)}%</p>
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">{profileConfig.tests[1].shortLabel}</p>
-                <p className="text-xl font-bold text-primary">
-                  {profile.test2.value.toFixed(1)} {profileConfig.tests[1].unit}
-                </p>
-              </div>
+            )}
+          </div>
+
+          <p className="text-xs text-muted-foreground">{displayProfile.description}</p>
+          
+          {profile.testResults && profile.testResults.some(r => r !== null) && (
+            <div className={`grid grid-cols-${Math.min(activeTests.length, 3)} gap-2 p-2 bg-muted/50 rounded-lg`}>
+              {activeTests.map((test, i) => {
+                const result = profile.testResults[i];
+                if (!result) return null;
+                return (
+                  <div key={test.key}>
+                    <p className="text-xs text-muted-foreground">{test.shortLabel}</p>
+                    <p className="text-base font-bold text-primary">
+                      {result.value.toFixed(1)} {test.unit}
+                    </p>
+                  </div>
+                );
+              })}
             </div>
           )}
-        </div>
 
-        <div className="space-y-2">
-          <h4 className="font-semibold">Recommandations d'entraînement:</h4>
-          <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-            {currentProfileType.recommendations.map((rec, index) => (
-              <li key={index}>{rec}</li>
-            ))}
-          </ul>
-        </div>
+          {displayProfile.recommendations.length > 0 && (
+            <div className="space-y-1">
+              <h4 className="font-semibold text-xs">Recommandations:</h4>
+              <ul className="list-disc list-inside space-y-0.5 text-xs text-muted-foreground">
+                {displayProfile.recommendations.slice(0, 3).map((rec, index) => (
+                  <li key={index}>{rec}</li>
+                ))}
+              </ul>
+            </div>
+          )}
 
-        {profile.type === "insufficientData" && (
-          <div className="p-3 bg-muted rounded-lg">
-            <p className="text-sm text-muted-foreground">
-              Pour déterminer le profil athlétique, il faut effectuer:
-            </p>
-            <ul className="list-disc list-inside text-sm text-muted-foreground mt-2">
-              <li>{profileConfig.tests[0].label}</li>
-              <li>{profileConfig.tests[1].label}</li>
-            </ul>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+          {profile.type === "insufficientData" && (
+            <div className="p-2 bg-muted rounded-lg">
+              <p className="text-xs text-muted-foreground">
+                Tests requis:
+              </p>
+              <ul className="list-disc list-inside text-xs text-muted-foreground mt-1">
+                {activeTests.map((test, i) => (
+                  <li key={i}>{test.label}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <CustomAthleticProfileEditor
+        open={editorOpen}
+        onOpenChange={setEditorOpen}
+        categoryId={categoryId}
+      />
+    </>
   );
 }

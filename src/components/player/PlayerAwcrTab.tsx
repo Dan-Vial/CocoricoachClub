@@ -18,9 +18,10 @@ import { HrvEntryDialog } from "@/components/category/hrv/HrvEntryDialog";
 interface PlayerAwcrTabProps {
   playerId: string;
   categoryId: string;
+  readOnly?: boolean;
 }
 
-export function PlayerAwcrTab({ playerId, categoryId }: PlayerAwcrTabProps) {
+export function PlayerAwcrTab({ playerId, categoryId, readOnly = false }: PlayerAwcrTabProps) {
   const [isHrvDialogOpen, setIsHrvDialogOpen] = useState(false);
   const { data: awcrData } = useQuery({
     queryKey: ["awcr_tracking", playerId],
@@ -51,15 +52,17 @@ export function PlayerAwcrTab({ playerId, categoryId }: PlayerAwcrTabProps) {
                 Ratio EWMA = Charge Aiguë (7j) / Charge Chronique (28j) | Zone optimale: 0.85 - 1.30
               </p>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsHrvDialogOpen(true)}
-              className="gap-2"
-            >
-              <Heart className="h-4 w-4 text-destructive" />
-              HRV
-            </Button>
+            {!readOnly && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsHrvDialogOpen(true)}
+                className="gap-2"
+              >
+                <Heart className="h-4 w-4 text-destructive" />
+                HRV
+              </Button>
+            )}
           </div>
         </CardHeader>
         <CardContent>

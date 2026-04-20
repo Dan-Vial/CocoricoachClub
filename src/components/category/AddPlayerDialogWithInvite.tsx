@@ -21,9 +21,10 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { playerSchema } from "@/lib/validations";
-import { ATHLETISME_DISCIPLINES, ATHLETISME_SPECIALTIES, JUDO_WEIGHT_CATEGORIES, AVIRON_ROLES, NATATION_DISCIPLINES, NATATION_SPECIALTIES, SKI_DISCIPLINES, TRIATHLON_DISCIPLINES, PADEL_POSITIONS, isAthletismeCategory, isJudoCategory, isNatationCategory, isSkiCategory, isTriathlonCategory, isPadelCategory, isIndividualSport } from "@/lib/constants/sportTypes";
+import { ATHLETISME_DISCIPLINES, ATHLETISME_SPECIALTIES, JUDO_WEIGHT_CATEGORIES, AVIRON_ROLES, NATATION_DISCIPLINES, NATATION_SPECIALTIES, SKI_DISCIPLINES, SURF_DISCIPLINES, TRIATHLON_DISCIPLINES, PADEL_POSITIONS, isAthletismeCategory, isJudoCategory, isNatationCategory, isSkiCategory, isSurfCategory, isTriathlonCategory, isPadelCategory, isIndividualSport, getSkiDisciplinesForCategory } from "@/lib/constants/sportTypes";
 import { getPositionsForSport } from "@/lib/constants/sportPositions";
-import { Loader2, Send, UserPlus, Copy, Check, AlertTriangle } from "lucide-react";
+import { Loader2, Send, UserPlus, Copy, Check, AlertTriangle, Plus, X, Download } from "lucide-react";
+import { scrapeFisResults, importFisResultsForPlayer } from "@/lib/fis/scrapeFisResults";
 import { useAuth } from "@/contexts/AuthContext";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
@@ -53,6 +54,14 @@ export function AddPlayerDialogWithInvite({
   const [isInviting, setIsInviting] = useState(false);
   const [generatedLink, setGeneratedLink] = useState<string | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
+  // FIS fields
+  const [fisCode, setFisCode] = useState("");
+  const [fisObjective, setFisObjective] = useState("");
+  const [fisObjectiveDate, setFisObjectiveDate] = useState("");
+  // Yearly objectives
+  const [yearlyObjectives, setYearlyObjectives] = useState<{ label: string; target: string }[]>([]);
+  const [importFisHistory, setImportFisHistory] = useState(true);
+  const [fisImportStatus, setFisImportStatus] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
   // Fetch category with club info
@@ -121,15 +130,21 @@ export function AddPlayerDialogWithInvite({
   const isTeamSport = !isIndividualSport(sportType);
   const positions = getPositionsForSport(sportType);
   
+  const isSurf = categoryData?.rugby_type ? isSurfCategory(categoryData.rugby_type) : false;
+  
   // Determine which discipline list to use
   const getDisciplineOptions = () => {
     if (isAthletics) return ATHLETISME_DISCIPLINES;
     if (isNatation) return NATATION_DISCIPLINES;
-    if (isSki) return SKI_DISCIPLINES;
+    if (isSki) return getSkiDisciplinesForCategory(categoryData?.rugby_type || "");
+    if (isSurf) return SURF_DISCIPLINES;
     if (isTriathlon) return TRIATHLON_DISCIPLINES;
     return [];
   };
-  const hasDisciplines = isAthletics || isNatation || isSki || isTriathlon;
+  const hasDisciplines = isAthletics || isNatation || isSurf || isTriathlon;
+  // For ski/snow with only 1 discipline option, don't show discipline picker
+  const skiDisciplines = isSki ? getSkiDisciplinesForCategory(categoryData?.rugby_type || "") : [];
+  const showSkiDiscipline = isSki && skiDisciplines.length > 1;
   const disciplineOptions = getDisciplineOptions();
   
   // Determine specialties
@@ -155,6 +170,12 @@ export function AddPlayerDialogWithInvite({
     setValidationError("");
     setGeneratedLink(null);
     setLinkCopied(false);
+    setFisCode("");
+    setFisObjective("");
+    setFisObjectiveDate("");
+    setYearlyObjectives([]);
+    setImportFisHistory(true);
+    setFisImportStatus(null);
   };
 
   const copyLink = async (link: string) => {
@@ -183,7 +204,10 @@ export function AddPlayerDialogWithInvite({
       birth_date?: string; 
       discipline?: string; 
       specialty?: string; 
-      position?: string 
+      position?: string;
+      fis_code?: string;
+      fis_objective?: string;
+      fis_objective_date?: string;
     }) => {
       const { data: player, error } = await supabase
         .from("players")
@@ -197,7 +221,10 @@ export function AddPlayerDialogWithInvite({
           birth_date: data.birth_date || null,
           discipline: data.discipline || null,
           specialty: data.specialty || null,
-          position: data.position || null
+          position: data.position || null,
+          fis_code: data.fis_code || null,
+          fis_objective: data.fis_objective || null,
+          fis_objective_date: data.fis_objective_date || null,
         })
         .select()
         .single();
@@ -265,8 +292,48 @@ export function AddPlayerDialogWithInvite({
         birth_date: birthDate || undefined,
         discipline: discipline || undefined,
         specialty: specialty || undefined,
-        position: position || undefined
+        position: position || undefined,
+        fis_code: fisCode.trim() || undefined,
+        fis_objective: fisObjective.trim() || undefined,
+        fis_objective_date: fisObjectiveDate || undefined,
       });
+
+      // Create FIS objectives if provided
+      if (isSki && yearlyObjectives.length > 0) {
+        const objectivesToInsert = yearlyObjectives
+          .filter(obj => obj.label.trim() && obj.target.trim())
+          .map(obj => ({
+            player_id: player.id,
+            category_id: categoryId,
+            label: obj.label.trim(),
+            points_required: parseFloat(obj.target),
+          }));
+        if (objectivesToInsert.length > 0) {
+          await supabase.from("fis_objectives").insert(objectivesToInsert);
+        }
+      }
+
+      // Auto-import FIS competition history
+      if (isSki && fisCode.trim() && importFisHistory) {
+        setFisImportStatus("Récupération de l'historique FIS...");
+        try {
+          const sectorCode = (categoryData?.rugby_type || "").toLowerCase().includes("ski") ? "AL" : "SB";
+          const fisData = await scrapeFisResults(fisCode.trim(), sectorCode);
+          if (fisData && fisData.results.length > 0) {
+            setFisImportStatus(`Import de ${fisData.results.length} résultats...`);
+            const count = await importFisResultsForPlayer(player.id, categoryId, fisData);
+            setFisImportStatus(null);
+            toast.success(`${count} résultat(s) FIS importé(s) automatiquement 🎿`);
+          } else {
+            setFisImportStatus(null);
+            toast.info("Aucun résultat FIS trouvé pour ce code");
+          }
+        } catch (fisErr) {
+          console.error("FIS import error:", fisErr);
+          setFisImportStatus(null);
+          toast.warning("Athlète créé mais l'import FIS a échoué. Vous pourrez réessayer plus tard.");
+        }
+      }
 
       // 2. Send invitation if requested
       if (sendInvitation && playerEmail.trim() && categoryData) {
@@ -334,7 +401,7 @@ export function AddPlayerDialogWithInvite({
     }
   };
 
-  const isLoading = addPlayer.isPending || isInviting;
+  const isLoading = addPlayer.isPending || isInviting || !!fisImportStatus;
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -540,6 +607,121 @@ export function AddPlayerDialogWithInvite({
                 </Select>
               </div>
             )}
+
+            {/* Ski/Snow discipline selector (filtered by category) */}
+            {showSkiDiscipline && (
+              <div className="space-y-2">
+                <Label htmlFor="skiDiscipline">Discipline *</Label>
+                <Select value={discipline} onValueChange={setDiscipline}>
+                  <SelectTrigger className="w-full bg-background">
+                    <SelectValue placeholder="Sélectionner une discipline" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border z-50 max-h-[300px]">
+                    {skiDisciplines.map((disc) => (
+                      <SelectItem key={disc.value} value={disc.value}>
+                        {disc.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* FIS fields for ski/snow */}
+            {isSki && (
+              <div className="space-y-3 border-t pt-3">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Code FIS</p>
+                <div className="space-y-2">
+                  <Label htmlFor="fisCode">Code FIS</Label>
+                  <Input id="fisCode" placeholder="Ex: 9510001" value={fisCode} onChange={(e) => setFisCode(e.target.value)} />
+                  <p className="text-xs text-muted-foreground">💡 Le classement et les points FIS seront importés automatiquement via le code FIS.</p>
+                </div>
+                {fisCode.trim() && (
+                  <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-md">
+                    <Checkbox
+                      id="importFisHistory"
+                      checked={importFisHistory}
+                      onCheckedChange={(checked) => setImportFisHistory(!!checked)}
+                    />
+                    <label htmlFor="importFisHistory" className="text-sm cursor-pointer flex items-center gap-2">
+                      <Download className="h-4 w-4 text-primary" />
+                      Importer automatiquement l'historique des compétitions FIS
+                    </label>
+                  </div>
+                )}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="fisObjective">Objectif sportif</Label>
+                    <Input id="fisObjective" placeholder="Ex: Qualification Championnats du Monde" value={fisObjective} onChange={(e) => setFisObjective(e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="fisObjectiveDate">Date objectif</Label>
+                    <Input id="fisObjectiveDate" type="date" value={fisObjectiveDate} onChange={(e) => setFisObjectiveDate(e.target.value)} />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Yearly objectives for ski/snow */}
+            {isSki && (
+              <div className="space-y-3 border-t pt-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Objectifs annuels</p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-7 text-xs"
+                    onClick={() => setYearlyObjectives(prev => [...prev, { label: "", target: "" }])}
+                  >
+                    <Plus className="h-3 w-3 mr-1" /> Ajouter
+                  </Button>
+                </div>
+                {yearlyObjectives.length === 0 && (
+                  <p className="text-xs text-muted-foreground italic">Aucun objectif défini. Ajoutez des objectifs de qualification (ex: JO, Mondiaux…)</p>
+                )}
+                {yearlyObjectives.map((obj, idx) => (
+                  <div key={idx} className="grid grid-cols-[1fr_100px_32px] gap-2 items-end">
+                    <div className="space-y-1">
+                      <Label className="text-xs">Objectif</Label>
+                      <Input
+                        placeholder="Ex: Qualification JO 2026"
+                        value={obj.label}
+                        onChange={(e) => {
+                          const updated = [...yearlyObjectives];
+                          updated[idx].label = e.target.value;
+                          setYearlyObjectives(updated);
+                        }}
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Points requis</Label>
+                      <Input
+                        type="number"
+                        placeholder="2000"
+                        value={obj.target}
+                        onChange={(e) => {
+                          const updated = [...yearlyObjectives];
+                          updated[idx].target = e.target.value;
+                          setYearlyObjectives(updated);
+                        }}
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-destructive hover:text-destructive"
+                      onClick={() => setYearlyObjectives(prev => prev.filter((_, i) => i !== idx))}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
             
             {/* Birth Date */}
             <div className="space-y-2">
@@ -601,7 +783,7 @@ export function AddPlayerDialogWithInvite({
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {isInviting ? "Envoi de l'invitation..." : "Ajout..."}
+                  {fisImportStatus ? fisImportStatus : isInviting ? "Envoi de l'invitation..." : "Ajout..."}
                 </>
               ) : sendInvitation ? (
                 <>

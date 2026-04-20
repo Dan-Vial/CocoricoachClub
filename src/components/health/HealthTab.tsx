@@ -4,14 +4,12 @@ import { ConcussionProtocolTab } from "@/components/category/ConcussionProtocolT
 import { MedicalRecordsTab } from "./MedicalRecordsTab";
 import { RecoveryJournalTab } from "./RecoveryJournalTab";
 import { CoachDashboard } from "./CoachDashboard";
-import { ProtocolManager } from "@/components/injuries/ProtocolManager";
 import { ActiveProtocolsDashboard } from "@/components/rehab/ActiveProtocolsDashboard";
 import {
   Activity,
   Brain,
   Snowflake,
   LayoutDashboard,
-  Settings2,
   Dumbbell,
 } from "lucide-react";
 import { useViewerModeContext } from "@/contexts/ViewerModeContext";
@@ -43,6 +41,7 @@ export function HealthTab({ categoryId }: HealthTabProps) {
 
   const sportType = category?.rugby_type || "";
   const isRugby = isRugbyType(sportType);
+  const hasConcussionProtocol = isRugby || ["judo", "ski", "snowboard"].includes(sportType);
 
   return (
     <div className="space-y-6">
@@ -70,7 +69,7 @@ export function HealthTab({ categoryId }: HealthTabProps) {
             )}
             
             {/* Protocole Commotion - Uniquement pour Rugby */}
-            {!isViewer && isRugby && (
+            {!isViewer && hasConcussionProtocol && (
               <ColoredSubTabsTrigger 
                 value="concussion" 
                 colorKey="sante"
@@ -102,16 +101,6 @@ export function HealthTab({ categoryId }: HealthTabProps) {
               </ColoredSubTabsTrigger>
             )}
             
-            {/* Protocoles - Masqué en mode viewer */}
-            {!isViewer && (
-              <ColoredSubTabsTrigger 
-                value="protocols" 
-                colorKey="sante"
-                icon={<Settings2 className="h-4 w-4" />}
-              >
-                Protocoles
-              </ColoredSubTabsTrigger>
-            )}
           </ColoredSubTabsList>
         </div>
 
@@ -125,7 +114,7 @@ export function HealthTab({ categoryId }: HealthTabProps) {
           </TabsContent>
         )}
 
-        {!isViewer && isRugby && (
+        {!isViewer && hasConcussionProtocol && (
           <TabsContent value="concussion">
             <ConcussionProtocolTab categoryId={categoryId} />
           </TabsContent>
@@ -140,12 +129,6 @@ export function HealthTab({ categoryId }: HealthTabProps) {
         {!isViewer && (
           <TabsContent value="rehab">
             <ActiveProtocolsDashboard categoryId={categoryId} />
-          </TabsContent>
-        )}
-
-        {!isViewer && (
-          <TabsContent value="protocols">
-            <ProtocolManager categoryId={categoryId} />
           </TabsContent>
         )}
       </Tabs>

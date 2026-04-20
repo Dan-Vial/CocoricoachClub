@@ -7,11 +7,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { BarChart3, CalendarIcon, Users, Target } from "lucide-react";
+import { BarChart3, CalendarIcon, Users, Target, Download, FileSpreadsheet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { format, isAfter, isBefore, startOfDay, endOfDay } from "date-fns";
 import { fr } from "date-fns/locale";
+import { toast } from "sonner";
+import ExcelJS from "exceljs";
+import jsPDF from "jspdf";
 import { TENNIS_EXERCISE_TYPES } from "./TennisDrillTraining";
+import { getExcelBranding, addBrandedHeader, styleDataHeaderRow, addZebraRows, addFooter, downloadWorkbook } from "@/lib/excelExport";
+import { preparePdfWithSettings } from "@/lib/pdfExport";
 
 interface TennisTrainingStatsProps {
   categoryId: string;
@@ -165,6 +170,165 @@ export function TennisTrainingStats({ categoryId }: TennisTrainingStatsProps) {
 
   const getTypeLabel = (type: string) => TENNIS_EXERCISE_TYPES.find(t => t.value === type)?.label || type;
 
+  const handleExportExcel = async () => {
+    try {
+      const branding = await getExcelBranding(categoryId);
+      const wb = new ExcelJS.Workbook();
+
+      // Sheet 1: Drill stats
+      if (playerDrillStats.length > 0) {
+        const ws1 = wb.addWorksheet("Stats spécifiques");
+        const exerciseTypes = [...new Set(playerDrillStats.flatMap(p => Object.keys(p.byType)))];
+        ws1.columns = [
+          { header: "Athlète", key: "name", width: 22 },
+          { header: "Sessions", key: "sessions", width: 12 },
+          { header: "Taux global", key: "global", width: 14 },
+          ...exerciseTypes.map(t => ({ header: TENNIS_EXERCISE_TYPES.find(e => e.value === t)?.label || t, key: t, width: 18 })),
+        ];
+        const sr = addBrandedHeader(ws1, "Stats entraînement tennis - Exercices", branding, [
+          ["Période", `${dateFrom ? format(dateFrom, "dd/MM/yyyy") : "Début"} → ${dateTo ? format(dateTo, "dd/MM/yyyy") : "Fin"}`],
+        ]);
+        styleDataHeaderRow(ws1, sr, 3 + exerciseTypes.length, branding.headerColor);
+        ws1.getRow(sr).values = ["Athlète", "Sessions", "Taux global", ...exerciseTypes.map(t => TENNIS_EXERCISE_TYPES.find(e => e.value === t)?.label || t)];
+        playerDrillStats.forEach((p, i) => {
+          const row = ws1.getRow(sr + 1 + i);
+          row.getCell(1).value = p.player.name;
+          row.getCell(2).value = p.sessions;
+          row.getCell(3).value = `${p.total.rate.toFixed(1)}%`;
+          exerciseTypes.forEach((t, j) => {
+            const d = p.byType[t];
+            row.getCell(4 + j).value = d ? `${(d.attempts > 0 ? (d.successes / d.attempts) * 100 : 0).toFixed(1)}%` : "-";
+          });
+        });
+        addZebraRows(ws1, sr + 1, sr + playerDrillStats.length, 3 + exerciseTypes.length);
+        addFooter(ws1, sr + playerDrillStats.length + 1, 3 + exerciseTypes.length, branding.footerText);
+      }
+
+      // Sheet 2: Match stats
+      if (playerMatchStats.length > 0) {
+        const ws2 = wb.addWorksheet("Stats matchs");
+        ws2.columns = [
+          { header: "Athlète", key: "name", width: 22 },
+          { header: "Matchs", key: "matches", width: 10 },
+          { header: "Aces", key: "aces", width: 10 },
+          { header: "Dbl Fautes", key: "df", width: 12 },
+          { header: "Winners", key: "winners", width: 12 },
+          { header: "FD", key: "ue", width: 10 },
+          { header: "% 1ère", key: "firstServe", width: 12 },
+          { header: "% Break", key: "break", width: 12 },
+        ];
+        const sr = addBrandedHeader(ws2, "Stats entraînement tennis - Matchs", branding);
+        styleDataHeaderRow(ws2, sr, 8, branding.headerColor);
+        ws2.getRow(sr).values = ["Athlète", "Matchs", "Aces", "Dbl Fautes", "Winners", "FD", "% 1ère", "% Break"];
+        playerMatchStats.forEach((p, i) => {
+          ws2.getRow(sr + 1 + i).values = [
+            p.playerName, p.matchCount,
+            p.avgStats.aces ?? 0, p.avgStats.doubleFaults ?? 0,
+            p.avgStats.winners ?? 0, p.avgStats.unforcedErrors ?? 0,
+            `${p.avgStats.firstServePercentage ?? 0}%`, `${p.avgStats.breakPointConversion ?? 0}%`,
+          ];
+        });
+        addZebraRows(ws2, sr + 1, sr + playerMatchStats.length, 8);
+      }
+
+      await downloadWorkbook(wb, `stats-entrainement-tennis-${format(new Date(), "yyyy-MM-dd")}.xlsx`);
+      toast.success("Export Excel téléchargé !");
+    } catch (e) {
+      toast.error("Erreur lors de l'export Excel");
+    }
+  };
+
+  const handleExportPdf = async () => {
+    try {
+      const { settings, clubName, categoryName, seasonName } = await preparePdfWithSettings(categoryId);
+      const doc = new jsPDF({ orientation: "landscape" });
+      const pageW = doc.internal.pageSize.getWidth();
+      const pageH = doc.internal.pageSize.getHeight();
+
+      if (settings?.header_color) {
+        const hc = settings.header_color.replace("#", "");
+        doc.setFillColor(parseInt(hc.substring(0, 2), 16), parseInt(hc.substring(2, 4), 16), parseInt(hc.substring(4, 6), 16));
+      } else {
+        doc.setFillColor(34, 67, 120);
+      }
+      doc.rect(0, 0, pageW, 28, "F");
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(16);
+      doc.text("Stats entraînement tennis", 14, 12);
+      doc.setFontSize(10);
+      doc.text(`${clubName || ""} • ${categoryName || ""} • ${seasonName || ""}`, 14, 20);
+      doc.text(format(new Date(), "dd/MM/yyyy"), pageW - 14, 20, { align: "right" });
+
+      let y = 36;
+
+      // Drill stats
+      if (playerDrillStats.length > 0) {
+        doc.setTextColor(30, 41, 59);
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "bold");
+        doc.text("Exercices spécifiques", 14, y);
+        y += 8;
+
+        playerDrillStats.forEach(ps => {
+          if (y > pageH - 40) { doc.addPage(); y = 15; }
+          doc.setFontSize(10);
+          doc.setFont("helvetica", "bold");
+          doc.setTextColor(30, 41, 59);
+          doc.text(`${ps.player.name} — Global: ${ps.total.rate.toFixed(1)}% (${ps.sessions} sessions)`, 14, y);
+          y += 6;
+          doc.setFontSize(9);
+          doc.setFont("helvetica", "normal");
+          Object.entries(ps.byType).sort((a, b) => b[1].attempts - a[1].attempts).forEach(([type, data]) => {
+            if (y > pageH - 15) { doc.addPage(); y = 15; }
+            const label = TENNIS_EXERCISE_TYPES.find(t => t.value === type)?.label || type;
+            const rate = data.attempts > 0 ? (data.successes / data.attempts) * 100 : 0;
+            doc.text(`${label}: ${data.successes}/${data.attempts} (${rate.toFixed(1)}%)`, 20, y);
+            y += 6;
+          });
+          y += 4;
+        });
+      }
+
+      // Match stats
+      if (playerMatchStats.length > 0) {
+        if (y > pageH - 50) { doc.addPage(); y = 15; }
+        doc.setTextColor(30, 41, 59);
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "bold");
+        doc.text("Stats matchs d'entraînement", 14, y);
+        y += 6;
+
+        const cols = [14, 80, 110, 140, 170, 200, 230];
+        const headers = ["Athlète", "Matchs", "Aces", "Dbl F.", "Winners", "% 1ère", "% Break"];
+        doc.setFillColor(241, 245, 249);
+        doc.rect(14, y, pageW - 28, 7, "F");
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "bold");
+        headers.forEach((h, i) => doc.text(h, cols[i], y + 5));
+        y += 9;
+        doc.setFont("helvetica", "normal");
+
+        playerMatchStats.forEach(p => {
+          if (y > pageH - 15) { doc.addPage(); y = 15; }
+          doc.setTextColor(30, 41, 59);
+          doc.text(p.playerName.substring(0, 25), cols[0], y + 4);
+          doc.text(String(p.matchCount), cols[1], y + 4);
+          doc.text(String(p.avgStats.aces ?? 0), cols[2], y + 4);
+          doc.text(String(p.avgStats.doubleFaults ?? 0), cols[3], y + 4);
+          doc.text(String(p.avgStats.winners ?? 0), cols[4], y + 4);
+          doc.text(`${p.avgStats.firstServePercentage ?? 0}%`, cols[5], y + 4);
+          doc.text(`${p.avgStats.breakPointConversion ?? 0}%`, cols[6], y + 4);
+          y += 7;
+        });
+      }
+
+      doc.save(`stats-entrainement-tennis-${format(new Date(), "yyyy-MM-dd")}.pdf`);
+      toast.success("Export PDF téléchargé !");
+    } catch (e) {
+      toast.error("Erreur lors de l'export PDF");
+    }
+  };
+
   const isLoading = loadingDrills || loadingMatches;
 
   if (isLoading) {
@@ -179,9 +343,10 @@ export function TennisTrainingStats({ categoryId }: TennisTrainingStatsProps) {
       {/* Filters */}
       <Card>
         <CardContent className="pt-4">
-          <div className="flex flex-wrap gap-3 items-end">
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">Athlète</label>
+          <div className="flex flex-wrap gap-3 items-end justify-between">
+            <div className="flex flex-wrap gap-3 items-end">
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-muted-foreground">Athlète</label>
               <Select value={selectedPlayerId} onValueChange={setSelectedPlayerId}>
                 <SelectTrigger className="w-[180px] h-9">
                   <SelectValue placeholder="Tous" />
@@ -226,6 +391,19 @@ export function TennisTrainingStats({ categoryId }: TennisTrainingStatsProps) {
               <Button variant="ghost" size="sm" onClick={() => { setDateFrom(undefined); setDateTo(undefined); }}>
                 Réinitialiser
               </Button>
+            )}
+            </div>
+            {(hasDrillData || hasMatchData) && (
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={handleExportExcel} className="gap-1">
+                  <FileSpreadsheet className="h-4 w-4" />
+                  <span className="hidden sm:inline">Excel</span>
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleExportPdf} className="gap-1">
+                  <Download className="h-4 w-4" />
+                  <span className="hidden sm:inline">PDF</span>
+                </Button>
+              </div>
             )}
           </div>
         </CardContent>

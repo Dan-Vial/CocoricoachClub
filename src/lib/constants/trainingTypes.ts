@@ -44,6 +44,8 @@ export const SPORT_TRAINING_CATEGORIES: TrainingTypeCategory[] = [
   { key: "natation", label: "Natation", forSports: ["natation"] },
   // Ski / Sports de Glisse
   { key: "ski", label: "Sports de Glisse", forSports: ["ski"] },
+  // Surf
+  { key: "surf", label: "Surf", forSports: ["surf"] },
   // Triathlon
   { key: "triathlon", label: "Triathlon", forSports: ["triathlon"] },
   // CrossFit / Hyrox / Musculation categories
@@ -84,6 +86,7 @@ function getBaseSport(sportType: string): string {
   if (normalizedSport.startsWith('crossfit')) return 'crossfit';
   if (normalizedSport.startsWith('padel')) return 'padel';
   if (normalizedSport.startsWith('natation')) return 'natation';
+  if (normalizedSport.startsWith('surf')) return 'surf';
   if (normalizedSport.startsWith('ski') || normalizedSport.startsWith('snow')) return 'ski';
   if (normalizedSport.startsWith('triathlon')) return 'triathlon';
   if (normalizedSport.startsWith('tennis')) return 'tennis';
@@ -297,6 +300,23 @@ export const ALL_TRAINING_TYPES: TrainingTypeOption[] = [
   { value: "ski_tir", label: "Tir (Biathlon)", hasExercises: false, forSports: ["ski"], category: "ski" },
   { value: "ski_hors_saison", label: "Hors-saison / Roller-ski", hasExercises: false, forSports: ["ski"], category: "ski" },
 
+  // Surf specific
+  { value: "surf_session_libre", label: "Session libre", hasExercises: false, forSports: ["surf"], category: "surf" },
+  { value: "surf_technique", label: "Technique / Manœuvres", hasExercises: false, forSports: ["surf"], category: "surf" },
+  { value: "surf_competition", label: "Heat / Compétition", hasExercises: false, forSports: ["surf"], category: "surf" },
+  { value: "surf_paddle", label: "Rame / Paddling", hasExercises: false, forSports: ["surf"], category: "surf" },
+  { value: "surf_apnea", label: "Apnée / Hold-down", hasExercises: false, forSports: ["surf"], category: "surf" },
+  { value: "surf_video", label: "Analyse Vidéo Surf", hasExercises: false, forSports: ["surf"], category: "surf" },
+  { value: "surf_dry_land", label: "Dry Land / Préparation hors eau", hasExercises: true, forSports: ["surf"], category: "surf" },
+  { value: "surf_balance", label: "Équilibre / Balance Board", hasExercises: false, forSports: ["surf"], category: "surf" },
+  { value: "surf_skate", label: "Surf-Skate", hasExercises: false, forSports: ["surf"], category: "surf" },
+  { value: "surf_reading", label: "Lecture de vagues / Océanographie", hasExercises: false, forSports: ["surf"], category: "surf" },
+  { value: "surf_big_wave_training", label: "Entraînement Big Wave", hasExercises: false, forSports: ["surf"], category: "surf" },
+  { value: "surf_tube_riding", label: "Travail de Tube", hasExercises: false, forSports: ["surf"], category: "surf" },
+  { value: "surf_aerial_training", label: "Travail Aérien", hasExercises: false, forSports: ["surf"], category: "surf" },
+  { value: "surf_yoga_stretching", label: "Yoga / Stretching Surf", hasExercises: false, forSports: ["surf"], category: "surf" },
+  { value: "surf_mental", label: "Préparation Mentale", hasExercises: false, forSports: ["surf"], category: "surf" },
+
   // Triathlon specific
   { value: "triathlon_natation", label: "Entraînement Natation", hasExercises: false, forSports: ["triathlon"], category: "triathlon" },
   { value: "triathlon_velo", label: "Entraînement Vélo", hasExercises: false, forSports: ["triathlon"], category: "triathlon" },
@@ -323,6 +343,7 @@ export const ALL_TRAINING_TYPES: TrainingTypeOption[] = [
   { value: "souplesse_mobilite", label: "Souplesse / Mobilité", hasExercises: true, forTeamSports: true, forIndividualSports: true, category: "common" },
   { value: "fitness_game", label: "Fitness Game", hasExercises: false, forTeamSports: true, forIndividualSports: true, category: "common" },
   { value: "repos", label: "Repos", hasExercises: false, forTeamSports: true, forIndividualSports: true, category: "common" },
+  { value: "precision", label: "Entraînement Précision", hasExercises: false, forTeamSports: true, forIndividualSports: true, category: "common" },
   { value: "test", label: "Test", hasExercises: false, forTeamSports: true, forIndividualSports: true, category: "common" },
   { value: "echauffement", label: "Échauffement", hasExercises: false, forTeamSports: true, forIndividualSports: true, category: "common" },
   { value: "recuperation", label: "Récupération Active", hasExercises: false, forTeamSports: true, forIndividualSports: true, category: "common" },
@@ -612,6 +633,8 @@ export const TRAINING_TYPE_COLORS: Record<string, string> = {
   tennis_jeu_double: "bg-teal-500",
   tennis_panier: "bg-lime-500",
   tennis_mental: "bg-violet-500",
+  // Precision (all sports)
+  precision: "bg-lime-500",
   // Default for custom types
   _default: "bg-gray-500",
 };
@@ -636,6 +659,7 @@ export const TRAINING_TYPE_LABELS: Record<string, string> = {
   reunion: "Réunion",
   medical: "Médical",
   repos: "Repos",
+  precision: "Entraînement Précision",
   test: "Test",
   video_analyse: "Analyse Vidéo",
   // Football specific

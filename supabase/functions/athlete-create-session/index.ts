@@ -12,22 +12,22 @@ serve(async (req) => {
     return new Response("ok", { headers: corsHeaders });
   }
 
-  const json = (data: unknown, status = 200) =>
+  const respond = (data: unknown) =>
     new Response(JSON.stringify(data), {
-      status,
+      status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
 
   try {
     if (req.method !== "POST") {
-      return json({ success: false, error: "Méthode non autorisée" }, 405);
+      return respond({ success: false, error: "Méthode non autorisée" });
     }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
     if (!supabaseUrl || !serviceKey) {
-      return json({ success: false, error: "Configuration backend manquante" }, 500);
+      return respond({ success: false, error: "Configuration backend manquante" });
     }
 
     const supabase = createClient(supabaseUrl, serviceKey);
@@ -36,14 +36,14 @@ serve(async (req) => {
     const jwt = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
 
     if (!jwt) {
-      return json({ success: false, error: "Authentification requise" }, 401);
+      return respond({ success: false, error: "Authentification requise" });
     }
 
     const { data: userData, error: userError } = await supabase.auth.getUser(jwt);
     const userId = userData.user?.id;
 
     if (userError || !userId) {
-      return json({ success: false, error: "Session invalide" }, 401);
+      return respond({ success: false, error: "Session invalide" });
     }
 
     const body = await req.json();
@@ -57,31 +57,68 @@ serve(async (req) => {
       intensity,
       notes,
       session_blocks,
+      exercises,
     } = body ?? {};
 
     if (!category_id || !player_id || !session_date || !training_type) {
-      return json({ success: false, error: "Données manquantes" }, 400);
+      return respond({ success: false, error: "Données manquantes" });
     }
 
+    // Check player access: athlete owns the player OR staff/admin has category access
     const { data: player, error: playerError } = await supabase
       .from("players")
-      .select("id")
+      .select("id, user_id")
       .eq("id", player_id)
-      .eq("category_id", category_id)
-      .eq("user_id", userId)
       .maybeSingle();
 
     if (playerError) throw playerError;
     if (!player) {
-      return json({ success: false, error: "Accès refusé pour ce joueur" }, 403);
+      return respond({ success: false, error: "Joueur introuvable" });
     }
 
-    const parsedIntensity =
+    // If the logged-in user is NOT the player owner, check if they have staff access
+    if (player.user_id !== userId) {
+      const { data: hasAccess } = await supabase.rpc("can_access_category", {
+        _user_id: userId,
+        _category_id: category_id,
+      });
+      const { data: isSA } = await supabase.rpc("is_super_admin", {
+        _user_id: userId,
+      });
+      if (!hasAccess && !isSA) {
+        return respond({ success: false, error: "Accès refusé pour ce joueur" });
+      }
+    }
+
+    // Verify player has access to this category (primary or via player_categories)
+    const { data: primaryMatch } = await supabase
+      .from("players")
+      .select("id")
+      .eq("id", player_id)
+      .eq("category_id", category_id)
+      .maybeSingle();
+
+    if (!primaryMatch) {
+      const { data: pcMatch } = await supabase
+        .from("player_categories")
+        .select("id")
+        .eq("player_id", player_id)
+        .eq("category_id", category_id)
+        .eq("status", "accepted")
+        .maybeSingle();
+
+      if (!pcMatch) {
+        return respond({ success: false, error: "Accès refusé pour cette catégorie" });
+      }
+    }
+
+    const rawIntensity =
       typeof intensity === "number"
         ? intensity
         : typeof intensity === "string" && intensity.trim() !== ""
           ? Number(intensity)
           : null;
+    const parsedIntensity = rawIntensity !== null && !Number.isNaN(rawIntensity) && rawIntensity >= 1 && rawIntensity <= 10 ? rawIntensity : null;
 
     const { data: session, error: sessionError } = await supabase
       .from("training_sessions")
@@ -100,6 +137,7 @@ serve(async (req) => {
 
     if (sessionError) throw sessionError;
 
+    // Insert session blocks
     const blockRecords = Array.isArray(session_blocks)
       ? session_blocks
           .filter((block) => block?.training_type)
@@ -116,6 +154,7 @@ serve(async (req) => {
             target_intensity: block.target_intensity ?? null,
             volume: block.volume ?? null,
             contact_charge: block.contact_charge ?? null,
+            bowling_exercise_type: block.bowling_exercise_type || null,
           }))
       : [];
 
@@ -130,9 +169,43 @@ serve(async (req) => {
       }
     }
 
-    return json({ success: true, session_id: session.id });
+    // Insert exercises
+    const exerciseRecords = Array.isArray(exercises)
+      ? exercises
+          .filter((ex) => ex?.exercise_name?.trim())
+          .map((ex, idx) => ({
+            training_session_id: session.id,
+            player_id,
+            category_id,
+            exercise_name: ex.exercise_name,
+            exercise_category: ex.exercise_category || "autre",
+            sets: typeof ex.sets === "number" ? ex.sets : (parseInt(ex.sets) || 3),
+            reps: ex.reps != null ? (typeof ex.reps === "number" ? ex.reps : (parseInt(ex.reps) || null)) : null,
+            weight_kg: ex.weight_kg != null ? Number(ex.weight_kg) || null : null,
+            rest_seconds: ex.rest_seconds != null ? (typeof ex.rest_seconds === "number" ? ex.rest_seconds : (parseInt(ex.rest_seconds) || null)) : null,
+            notes: ex.notes || null,
+            order_index: idx,
+            library_exercise_id: ex.library_exercise_id || null,
+          }))
+      : [];
+
+    if (exerciseRecords.length > 0) {
+      const { error: exercisesError } = await supabase
+        .from("gym_session_exercises")
+        .insert(exerciseRecords);
+
+      if (exercisesError) {
+        // Cleanup on failure
+        await supabase.from("training_session_blocks").delete().eq("training_session_id", session.id);
+        await supabase.from("training_sessions").delete().eq("id", session.id);
+        throw exercisesError;
+      }
+    }
+
+    return respond({ success: true, session_id: session.id });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Erreur inconnue";
-    return json({ success: false, error: message }, 500);
+    console.error("[athlete-create-session] Error:", message);
+    return respond({ success: false, error: message });
   }
 });

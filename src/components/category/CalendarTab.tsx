@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { ColoredSubTabsList, ColoredSubTabsTrigger, ColoredContentCard, ColoredCardHeader, ColoredTitle } from "@/components/ui/colored-subtabs";
-import { Calendar as CalendarIcon, Target, BarChart3, Dumbbell } from "lucide-react";
+import { Calendar as CalendarIcon, Target, BarChart3, Dumbbell, LayoutGrid } from "lucide-react";
 import { toast } from "sonner";
 import { SessionFormDialog } from "./sessions/SessionFormDialog";
 import { AddMatchCalendarDialog } from "./matches/AddMatchCalendarDialog";
@@ -18,12 +18,14 @@ import { useNavigate } from "react-router-dom";
 import { SeasonObjectivesSection } from "@/components/planning/SeasonObjectivesSection";
 import { BowlingTrainingStats } from "@/components/bowling/BowlingTrainingStats";
 import { TennisTrainingStats } from "@/components/tennis/TennisTrainingStats";
+import { PrecisionTrainingStats } from "@/components/training/PrecisionTrainingStats";
 import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 import { exportCalendarToPdf, printElement } from "@/lib/pdfExport";
 import { getTrainingTypesForSport, TRAINING_TYPE_COLORS } from "@/lib/constants/trainingTypes";
 import { DisabledTabTrigger } from "@/components/ui/disabled-tab-trigger";
 import { useViewerSessions, useViewerMatches } from "@/hooks/use-viewer-data";
 import { ImprovedCalendarView } from "./calendar/ImprovedCalendarView";
+import { AnnualPlanningView } from "@/components/planning/AnnualPlanningView";
 
 interface CalendarTabProps {
   categoryId: string;
@@ -91,9 +93,17 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
 
   // Get matches for a specific date
   const getMatchesForDate = (date: Date) => {
-    return matches?.filter((match) =>
-      isSameDay(new Date(match.match_date), date)
-    ) || [];
+    return matches?.filter((match) => {
+      const matchStart = new Date(match.match_date);
+      if (match.end_date && match.end_date !== match.match_date) {
+        const matchEnd = new Date(match.end_date);
+        const dayOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+        const startOnly = new Date(matchStart.getFullYear(), matchStart.getMonth(), matchStart.getDate());
+        const endOnly = new Date(matchEnd.getFullYear(), matchEnd.getMonth(), matchEnd.getDate());
+        return dayOnly >= startOnly && dayOnly <= endOnly;
+      }
+      return isSameDay(matchStart, date);
+    }) || [];
   };
 
   // Get planning items for a specific date
@@ -279,32 +289,32 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
 
   const isBowling = (sportType || "").toLowerCase().includes("bowling");
   const isTennis = (sportType || "").toLowerCase().includes("tennis");
-  const hasTrainingStats = isBowling || isTennis;
 
   return (
     <div className="space-y-6">
-      <Tabs defaultValue="global" className="space-y-4">
+      <Tabs defaultValue="annual" className="space-y-4">
         <div className="flex justify-center">
           <ColoredSubTabsList colorKey="planification" className="inline-flex w-max">
-          <ColoredSubTabsTrigger value="global" colorKey="planification" icon={<CalendarIcon className="h-4 w-4" />}>
+          <ColoredSubTabsTrigger value="annual" colorKey="planification" icon={<LayoutGrid className="h-4 w-4" />} tooltip="Planification annuelle : cycles de périodisation, macrocycles et calendrier des compétitions sur l'année">
+            <span className="hidden sm:inline">Vue Annuelle</span>
+            <span className="sm:hidden">Annuel</span>
+          </ColoredSubTabsTrigger>
+          <ColoredSubTabsTrigger value="global" colorKey="planification" icon={<CalendarIcon className="h-4 w-4" />} tooltip="Calendrier hebdomadaire interactif avec les séances, matchs et événements jour par jour">
             <span className="hidden sm:inline">Calendrier Global</span>
             <span className="sm:hidden">Global</span>
           </ColoredSubTabsTrigger>
-          {hasTrainingStats && (
-            <ColoredSubTabsTrigger value="training_stats" colorKey="planification" icon={<BarChart3 className="h-4 w-4" />}>
-              <span className="hidden sm:inline">Stats entraînement</span>
-              <span className="sm:hidden">Stats</span>
-            </ColoredSubTabsTrigger>
-          )}
-          {/* Objectifs - Grisé en mode viewer */}
           {!isViewer && (
-            <ColoredSubTabsTrigger value="objectives" colorKey="planification" icon={<Target className="h-4 w-4" />}>
+            <ColoredSubTabsTrigger value="objectives" colorKey="planification" icon={<Target className="h-4 w-4" />} tooltip="Définir et suivre les objectifs de saison pour l'équipe et chaque athlète">
               <span className="hidden sm:inline">Objectifs</span>
               <span className="sm:hidden">Obj.</span>
             </ColoredSubTabsTrigger>
           )}
           </ColoredSubTabsList>
         </div>
+
+        <TabsContent value="annual">
+          <AnnualPlanningView categoryId={categoryId} />
+        </TabsContent>
 
         <TabsContent value="global">
           <ImprovedCalendarView
@@ -365,12 +375,6 @@ export function CalendarTab({ categoryId }: CalendarTabProps) {
           />
         </TabsContent>
 
-        {hasTrainingStats && (
-          <TabsContent value="training_stats">
-            {isBowling && <BowlingTrainingStats categoryId={categoryId} />}
-            {isTennis && <TennisTrainingStats categoryId={categoryId} />}
-          </TabsContent>
-        )}
 
         {!isViewer && (
           <TabsContent value="objectives">

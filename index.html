@@ -11,6 +11,7 @@
 
   <!-- PWA Meta Tags -->
   <meta name="theme-color" content="#0F172A" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="CocoriCoach Club" />
@@ -31,22 +32,35 @@
   <script type="module">
     window.OneSignalDeferred = window.OneSignalDeferred || [];
     OneSignalDeferred.push(async function (OneSignal) {
-      await OneSignal.init({
-        appId: "%VITE_ONE_SIGNAL_APP_ID%",
-        serviceWorkerParam: {scope: "/push/onesignal/"},
-        serviceWorkerPath: "push/onesignal/OneSignalSDKWorker.js",
-        notifyButton: {enable: false},
-        promptOptions: {slidedown: {enabled: false}},
-        autoRegister: false,
-        autoResubscribe: true,
+      const oneSignalAppId = "%VITE_ONE_SIGNAL_APP_ID%";
+      const hasValidAppId =
+        !!oneSignalAppId && !oneSignalAppId.includes("VITE_ONE_SIGNAL_APP_ID");
 
-        // Config develop-local
-        ...(import.meta.env.DEV && {
-          allowLocalhostAsSecureOrigin: true,
-        })
-      });
-      window.OneSignal = OneSignal;
-      console.log("[OneSignal] SDK v16 initialized");
+      if (!hasValidAppId) {
+        console.warn("[OneSignal] Missing App ID — SDK initialization skipped");
+        return;
+      }
+
+      try {
+        await OneSignal.init({
+          appId: oneSignalAppId,
+          serviceWorkerParam: { scope: "/push/onesignal/" },
+          serviceWorkerPath: "push/onesignal/OneSignalSDKWorker.js",
+          notifyButton: { enable: false },
+          promptOptions: { slidedown: { enabled: false } },
+          autoRegister: false,
+          autoResubscribe: true,
+
+          // Config develop-local
+          ...(import.meta.env.DEV && {
+            allowLocalhostAsSecureOrigin: true,
+          }),
+        });
+        window.OneSignal = OneSignal;
+        console.log("[OneSignal] SDK v16 initialized");
+      } catch (error) {
+        console.warn("[OneSignal] SDK initialization failed, continuing without push", error);
+      }
     });
   </script>
 </head>

@@ -1,0 +1,3 @@
+UPDATE exercise_library SET description = 'Extension de hanche avec barre — renforce fessiers et ischios. Dos appuyé sur banc, pieds à plat, bassin en rétroversion en haut.' WHERE LOWER(TRIM(name)) = 'hip thrust' AND (description IS NULL OR description = '');
+
+UPDATE exercise_library SET description = 'Squat barre arrière — quadriceps, fessiers, ischios. Descente contrôlée jusqu''à parallèle, dos gainé, genoux dans l''axe des pieds.' WHERE LOWER(TRIM(name)) = 'back squat' AND (description IS NULL OR description = '');

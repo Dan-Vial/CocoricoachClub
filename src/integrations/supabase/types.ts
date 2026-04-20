@@ -63,6 +63,13 @@ export type Database = {
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "academic_absences_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       academic_grades: {
@@ -115,6 +122,13 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academic_grades_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -172,6 +186,13 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_documents_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -318,6 +339,106 @@ export type Database = {
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "athlete_access_tokens_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      athlete_exercise_logs: {
+        Row: {
+          actual_reps: number | null
+          actual_sets: number | null
+          actual_weight_kg: number
+          category_id: string
+          created_at: string | null
+          exercise_category: string | null
+          exercise_name: string
+          gym_exercise_id: string | null
+          id: string
+          notes: string | null
+          player_id: string
+          prescribed_percentage_1rm: number | null
+          prescribed_reps: number | null
+          prescribed_sets: number | null
+          tonnage: number | null
+          training_session_id: string
+        }
+        Insert: {
+          actual_reps?: number | null
+          actual_sets?: number | null
+          actual_weight_kg: number
+          category_id: string
+          created_at?: string | null
+          exercise_category?: string | null
+          exercise_name: string
+          gym_exercise_id?: string | null
+          id?: string
+          notes?: string | null
+          player_id: string
+          prescribed_percentage_1rm?: number | null
+          prescribed_reps?: number | null
+          prescribed_sets?: number | null
+          tonnage?: number | null
+          training_session_id: string
+        }
+        Update: {
+          actual_reps?: number | null
+          actual_sets?: number | null
+          actual_weight_kg?: number
+          category_id?: string
+          created_at?: string | null
+          exercise_category?: string | null
+          exercise_name?: string
+          gym_exercise_id?: string | null
+          id?: string
+          notes?: string | null
+          player_id?: string
+          prescribed_percentage_1rm?: number | null
+          prescribed_reps?: number | null
+          prescribed_sets?: number | null
+          tonnage?: number | null
+          training_session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "athlete_exercise_logs_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "athlete_exercise_logs_gym_exercise_id_fkey"
+            columns: ["gym_exercise_id"]
+            isOneToOne: false
+            referencedRelation: "gym_session_exercises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "athlete_exercise_logs_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "athlete_exercise_logs_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "athlete_exercise_logs_training_session_id_fkey"
+            columns: ["training_session_id"]
+            isOneToOne: false
+            referencedRelation: "training_sessions"
+            referencedColumns: ["id"]
+          },
         ]
       }
       athlete_invitations: {
@@ -390,6 +511,13 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "athlete_invitations_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -492,6 +620,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "awcr_tracking_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "awcr_tracking_training_session_id_fkey"
             columns: ["training_session_id"]
             isOneToOne: false
@@ -503,9 +638,12 @@ export type Database = {
       benchmarks: {
         Row: {
           applies_to: string | null
+          body_weight_multiplier: number | null
           category_id: string
           created_at: string | null
           created_by: string | null
+          filter_type: string | null
+          filter_value: string | null
           id: string
           level_1_label: string
           level_1_max: number | null
@@ -515,18 +653,23 @@ export type Database = {
           level_3_max: number | null
           level_4_label: string
           level_4_max: number | null
+          levels: Json | null
           lower_is_better: boolean
           name: string
           test_category: string
           test_type: string
           unit: string | null
           updated_at: string | null
+          use_body_weight_ratio: boolean | null
         }
         Insert: {
           applies_to?: string | null
+          body_weight_multiplier?: number | null
           category_id: string
           created_at?: string | null
           created_by?: string | null
+          filter_type?: string | null
+          filter_value?: string | null
           id?: string
           level_1_label?: string
           level_1_max?: number | null
@@ -536,18 +679,23 @@ export type Database = {
           level_3_max?: number | null
           level_4_label?: string
           level_4_max?: number | null
+          levels?: Json | null
           lower_is_better?: boolean
           name: string
           test_category: string
           test_type: string
           unit?: string | null
           updated_at?: string | null
+          use_body_weight_ratio?: boolean | null
         }
         Update: {
           applies_to?: string | null
+          body_weight_multiplier?: number | null
           category_id?: string
           created_at?: string | null
           created_by?: string | null
+          filter_type?: string | null
+          filter_value?: string | null
           id?: string
           level_1_label?: string
           level_1_max?: number | null
@@ -557,12 +705,14 @@ export type Database = {
           level_3_max?: number | null
           level_4_label?: string
           level_4_max?: number | null
+          levels?: Json | null
           lower_is_better?: boolean
           name?: string
           test_category?: string
           test_type?: string
           unit?: string | null
           updated_at?: string | null
+          use_body_weight_ratio?: boolean | null
         }
         Relationships: [
           {
@@ -629,6 +779,13 @@ export type Database = {
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "body_composition_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       bowling_ball_catalog: {
@@ -679,13 +836,59 @@ export type Database = {
         }
         Relationships: []
       }
+      bowling_oil_pattern_players: {
+        Row: {
+          created_at: string
+          id: string
+          oil_pattern_id: string
+          player_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          oil_pattern_id: string
+          player_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          oil_pattern_id?: string
+          player_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bowling_oil_pattern_players_oil_pattern_id_fkey"
+            columns: ["oil_pattern_id"]
+            isOneToOne: false
+            referencedRelation: "bowling_oil_patterns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bowling_oil_pattern_players_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bowling_oil_pattern_players_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bowling_oil_patterns: {
         Row: {
           buff_distance_feet: number | null
           category_id: string
           created_at: string
           forward_oil: boolean | null
+          gender: string | null
           id: string
+          image_url_female: string | null
+          image_url_male: string | null
           is_preset: boolean | null
           length_feet: number | null
           match_id: string | null
@@ -704,7 +907,10 @@ export type Database = {
           category_id: string
           created_at?: string
           forward_oil?: boolean | null
+          gender?: string | null
           id?: string
+          image_url_female?: string | null
+          image_url_male?: string | null
           is_preset?: boolean | null
           length_feet?: number | null
           match_id?: string | null
@@ -723,7 +929,10 @@ export type Database = {
           category_id?: string
           created_at?: string
           forward_oil?: boolean | null
+          gender?: string | null
           id?: string
+          image_url_female?: string | null
+          image_url_male?: string | null
           is_preset?: boolean | null
           length_feet?: number | null
           match_id?: string | null
@@ -817,6 +1026,13 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bowling_spare_training_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
             referencedColumns: ["id"]
           },
           {
@@ -954,6 +1170,41 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "category_members_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      category_photos: {
+        Row: {
+          caption: string | null
+          category_id: string
+          created_at: string
+          file_url: string
+          id: string
+          uploaded_by: string
+        }
+        Insert: {
+          caption?: string | null
+          category_id: string
+          created_at?: string
+          file_url: string
+          id?: string
+          uploaded_by: string
+        }
+        Update: {
+          caption?: string | null
+          category_id?: string
+          created_at?: string
+          file_url?: string
+          id?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "category_photos_category_id_fkey"
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categories"
@@ -1156,6 +1407,13 @@ export type Database = {
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "clip_player_associations_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       club_invitations: {
@@ -1266,6 +1524,7 @@ export type Database = {
           logo_url: string | null
           name: string
           sport: string
+          timezone: string
           user_id: string
         }
         Insert: {
@@ -1276,6 +1535,7 @@ export type Database = {
           logo_url?: string | null
           name: string
           sport?: string
+          timezone?: string
           user_id: string
         }
         Update: {
@@ -1286,6 +1546,7 @@ export type Database = {
           logo_url?: string | null
           name?: string
           sport?: string
+          timezone?: string
           user_id?: string
         }
         Relationships: [
@@ -1401,6 +1662,13 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "competition_rounds_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -1569,6 +1837,13 @@ export type Database = {
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "convocation_recipients_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       convocations: {
@@ -1647,6 +1922,53 @@ export type Database = {
           },
         ]
       }
+      custom_athletic_profiles: {
+        Row: {
+          category_id: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          profile_types: Json
+          tests: Json
+          updated_at: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          profile_types?: Json
+          tests?: Json
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          profile_types?: Json
+          tests?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_athletic_profiles_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: true
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       custom_stats: {
         Row: {
           category_id: string
@@ -1696,6 +2018,96 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      custom_test_categories: {
+        Row: {
+          category_id: string
+          created_at: string | null
+          custom_test_id: string
+          id: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string | null
+          custom_test_id: string
+          id?: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string | null
+          custom_test_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_test_categories_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "custom_test_categories_custom_test_id_fkey"
+            columns: ["custom_test_id"]
+            isOneToOne: false
+            referencedRelation: "custom_tests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      custom_tests: {
+        Row: {
+          club_id: string
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          is_time: boolean | null
+          name: string
+          test_category: string
+          unit: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          club_id: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_time?: boolean | null
+          name: string
+          test_category: string
+          unit?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          club_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_time?: boolean | null
+          name?: string
+          test_category?: string
+          unit?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_tests_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "admin_all_clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "custom_tests_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
             referencedColumns: ["id"]
           },
         ]
@@ -1848,6 +2260,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "event_participants_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "event_participants_training_session_id_fkey"
             columns: ["training_session_id"]
             isOneToOne: false
@@ -1996,6 +2415,462 @@ export type Database = {
           },
         ]
       }
+      fis_calendar_events: {
+        Row: {
+          category_id: string
+          competition_level: string | null
+          created_at: string
+          discipline: string | null
+          end_date: string | null
+          event_date: string
+          event_name: string
+          feed_id: string | null
+          fis_race_id: string | null
+          fis_results_url: string | null
+          fis_sector_code: string | null
+          fis_uid: string
+          gender: string | null
+          id: string
+          location: string | null
+          match_id: string | null
+          raw_description: string | null
+          updated_at: string
+        }
+        Insert: {
+          category_id: string
+          competition_level?: string | null
+          created_at?: string
+          discipline?: string | null
+          end_date?: string | null
+          event_date: string
+          event_name: string
+          feed_id?: string | null
+          fis_race_id?: string | null
+          fis_results_url?: string | null
+          fis_sector_code?: string | null
+          fis_uid: string
+          gender?: string | null
+          id?: string
+          location?: string | null
+          match_id?: string | null
+          raw_description?: string | null
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string
+          competition_level?: string | null
+          created_at?: string
+          discipline?: string | null
+          end_date?: string | null
+          event_date?: string
+          event_name?: string
+          feed_id?: string | null
+          fis_race_id?: string | null
+          fis_results_url?: string | null
+          fis_sector_code?: string | null
+          fis_uid?: string
+          gender?: string | null
+          id?: string
+          location?: string | null
+          match_id?: string | null
+          raw_description?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fis_calendar_events_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fis_calendar_events_feed_id_fkey"
+            columns: ["feed_id"]
+            isOneToOne: false
+            referencedRelation: "fis_calendar_feeds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fis_calendar_events_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fis_calendar_feeds: {
+        Row: {
+          category_id: string
+          created_at: string
+          discipline_codes: string[] | null
+          feed_url: string
+          id: string
+          last_synced_at: string | null
+          season_code: string | null
+          sector_code: string | null
+          sync_enabled: boolean
+          updated_at: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          discipline_codes?: string[] | null
+          feed_url: string
+          id?: string
+          last_synced_at?: string | null
+          season_code?: string | null
+          sector_code?: string | null
+          sync_enabled?: boolean
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          discipline_codes?: string[] | null
+          feed_url?: string
+          id?: string
+          last_synced_at?: string | null
+          season_code?: string | null
+          sector_code?: string | null
+          sync_enabled?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fis_calendar_feeds_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fis_competitions: {
+        Row: {
+          category_id: string
+          competition_date: string
+          country: string | null
+          created_at: string
+          discipline: string
+          end_date: string | null
+          f_value: number | null
+          id: string
+          level: string
+          location: string | null
+          name: string
+          notes: string | null
+          race_penalty: number | null
+          top_classified_1_pts: number | null
+          top_classified_2_pts: number | null
+          top_classified_3_pts: number | null
+          top_classified_4_pts: number | null
+          top_classified_5_pts: number | null
+          top_rider_1_pts: number | null
+          top_rider_2_pts: number | null
+          top_rider_3_pts: number | null
+          top_rider_4_pts: number | null
+          top_rider_5_pts: number | null
+          total_participants: number | null
+          updated_at: string
+          wspl_pl: number | null
+          wspl_stars: number | null
+        }
+        Insert: {
+          category_id: string
+          competition_date: string
+          country?: string | null
+          created_at?: string
+          discipline?: string
+          end_date?: string | null
+          f_value?: number | null
+          id?: string
+          level?: string
+          location?: string | null
+          name: string
+          notes?: string | null
+          race_penalty?: number | null
+          top_classified_1_pts?: number | null
+          top_classified_2_pts?: number | null
+          top_classified_3_pts?: number | null
+          top_classified_4_pts?: number | null
+          top_classified_5_pts?: number | null
+          top_rider_1_pts?: number | null
+          top_rider_2_pts?: number | null
+          top_rider_3_pts?: number | null
+          top_rider_4_pts?: number | null
+          top_rider_5_pts?: number | null
+          total_participants?: number | null
+          updated_at?: string
+          wspl_pl?: number | null
+          wspl_stars?: number | null
+        }
+        Update: {
+          category_id?: string
+          competition_date?: string
+          country?: string | null
+          created_at?: string
+          discipline?: string
+          end_date?: string | null
+          f_value?: number | null
+          id?: string
+          level?: string
+          location?: string | null
+          name?: string
+          notes?: string | null
+          race_penalty?: number | null
+          top_classified_1_pts?: number | null
+          top_classified_2_pts?: number | null
+          top_classified_3_pts?: number | null
+          top_classified_4_pts?: number | null
+          top_classified_5_pts?: number | null
+          top_rider_1_pts?: number | null
+          top_rider_2_pts?: number | null
+          top_rider_3_pts?: number | null
+          top_rider_4_pts?: number | null
+          top_rider_5_pts?: number | null
+          total_participants?: number | null
+          updated_at?: string
+          wspl_pl?: number | null
+          wspl_stars?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fis_competitions_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fis_objectives: {
+        Row: {
+          category_id: string
+          created_at: string
+          deadline: string | null
+          discipline: string | null
+          id: string
+          is_active: boolean
+          label: string
+          location: string | null
+          player_id: string
+          points_required: number
+          updated_at: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          deadline?: string | null
+          discipline?: string | null
+          id?: string
+          is_active?: boolean
+          label: string
+          location?: string | null
+          player_id: string
+          points_required: number
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          deadline?: string | null
+          discipline?: string | null
+          id?: string
+          is_active?: boolean
+          label?: string
+          location?: string | null
+          player_id?: string
+          points_required?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fis_objectives_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fis_objectives_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fis_objectives_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fis_points_reference: {
+        Row: {
+          base_points: number
+          category_id: string | null
+          created_at: string
+          id: string
+          position: number
+        }
+        Insert: {
+          base_points: number
+          category_id?: string | null
+          created_at?: string
+          id?: string
+          position: number
+        }
+        Update: {
+          base_points?: number
+          category_id?: string | null
+          created_at?: string
+          id?: string
+          position?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fis_points_reference_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fis_ranking_settings: {
+        Row: {
+          category_id: string
+          created_at: string
+          id: string
+          max_counting_results: number
+          point_multipliers: Json | null
+          rolling_weeks: number
+          updated_at: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          id?: string
+          max_counting_results?: number
+          point_multipliers?: Json | null
+          rolling_weeks?: number
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          id?: string
+          max_counting_results?: number
+          point_multipliers?: Json | null
+          rolling_weeks?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fis_ranking_settings_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: true
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fis_results: {
+        Row: {
+          base_points: number | null
+          calculated_points: number | null
+          category_id: string
+          competition_id: string
+          created_at: string
+          expires_at: string | null
+          fis_points: number
+          id: string
+          is_counting: boolean | null
+          notes: string | null
+          player_id: string
+          ranking: number | null
+          score: number | null
+          total_riders: number | null
+          updated_at: string
+          wspl_pl: number | null
+          wspl_points: number | null
+          wspl_stars: number | null
+        }
+        Insert: {
+          base_points?: number | null
+          calculated_points?: number | null
+          category_id: string
+          competition_id: string
+          created_at?: string
+          expires_at?: string | null
+          fis_points?: number
+          id?: string
+          is_counting?: boolean | null
+          notes?: string | null
+          player_id: string
+          ranking?: number | null
+          score?: number | null
+          total_riders?: number | null
+          updated_at?: string
+          wspl_pl?: number | null
+          wspl_points?: number | null
+          wspl_stars?: number | null
+        }
+        Update: {
+          base_points?: number | null
+          calculated_points?: number | null
+          category_id?: string
+          competition_id?: string
+          created_at?: string
+          expires_at?: string | null
+          fis_points?: number
+          id?: string
+          is_counting?: boolean | null
+          notes?: string | null
+          player_id?: string
+          ranking?: number | null
+          score?: number | null
+          total_riders?: number | null
+          updated_at?: string
+          wspl_pl?: number | null
+          wspl_points?: number | null
+          wspl_stars?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fis_results_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fis_results_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "fis_competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fis_results_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fis_results_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gathering_wellness_assessments: {
         Row: {
           appetite_level: number | null
@@ -2140,6 +3015,13 @@ export type Database = {
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "gathering_wellness_assessments_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       generic_tests: {
@@ -2198,6 +3080,13 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "generic_tests_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -2477,6 +3366,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "gps_sessions_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "gps_sessions_training_session_id_fkey"
             columns: ["training_session_id"]
             isOneToOne: false
@@ -2488,14 +3384,17 @@ export type Database = {
       gym_session_exercises: {
         Row: {
           category_id: string
+          cluster_sets: Json | null
           contraction_regime: string | null
           created_at: string
+          drop_sets: Json | null
           duration_seconds: number | null
           exercise_category: string | null
           exercise_name: string
           group_id: string | null
           id: string
           library_exercise_id: string | null
+          method: string | null
           notes: string | null
           order_index: number | null
           player_id: string
@@ -2511,14 +3410,17 @@ export type Database = {
         }
         Insert: {
           category_id: string
+          cluster_sets?: Json | null
           contraction_regime?: string | null
           created_at?: string
+          drop_sets?: Json | null
           duration_seconds?: number | null
           exercise_category?: string | null
           exercise_name: string
           group_id?: string | null
           id?: string
           library_exercise_id?: string | null
+          method?: string | null
           notes?: string | null
           order_index?: number | null
           player_id: string
@@ -2534,14 +3436,17 @@ export type Database = {
         }
         Update: {
           category_id?: string
+          cluster_sets?: Json | null
           contraction_regime?: string | null
           created_at?: string
+          drop_sets?: Json | null
           duration_seconds?: number | null
           exercise_category?: string | null
           exercise_name?: string
           group_id?: string | null
           id?: string
           library_exercise_id?: string | null
+          method?: string | null
           notes?: string | null
           order_index?: number | null
           player_id?: string
@@ -2575,6 +3480,13 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gym_session_exercises_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
             referencedColumns: ["id"]
           },
           {
@@ -2688,6 +3600,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "hrv_records_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "hrv_records_training_session_id_fkey"
             columns: ["training_session_id"]
             isOneToOne: false
@@ -2755,6 +3674,13 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "injuries_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -2879,6 +3805,90 @@ export type Database = {
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "jump_tests_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kicking_attempts: {
+        Row: {
+          category_id: string
+          created_at: string
+          half: number | null
+          id: string
+          kick_type: string
+          match_id: string
+          minute: number | null
+          notes: string | null
+          player_id: string
+          success: boolean
+          zone_label: string | null
+          zone_x: number
+          zone_y: number
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          half?: number | null
+          id?: string
+          kick_type?: string
+          match_id: string
+          minute?: number | null
+          notes?: string | null
+          player_id: string
+          success?: boolean
+          zone_label?: string | null
+          zone_x?: number
+          zone_y?: number
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          half?: number | null
+          id?: string
+          kick_type?: string
+          match_id?: string
+          minute?: number | null
+          notes?: string | null
+          player_id?: string
+          success?: boolean
+          zone_label?: string | null
+          zone_x?: number
+          zone_y?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kicking_attempts_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kicking_attempts_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kicking_attempts_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kicking_attempts_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       match_lineups: {
@@ -2933,6 +3943,13 @@ export type Database = {
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "match_lineups_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       match_sheet_players: {
@@ -2985,6 +4002,13 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_sheet_players_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -3091,7 +4115,13 @@ export type Database = {
           created_at: string
           distance_meters: number | null
           effective_play_time: number | null
+          end_date: string | null
           event_type: string | null
+          fis_calendar_event_id: string | null
+          fis_event_factor: number | null
+          fis_participants_count: number | null
+          fis_pre_competition_validated: boolean | null
+          fis_top5_points: Json | null
           id: string
           is_finalized: boolean | null
           is_home: boolean | null
@@ -3116,7 +4146,13 @@ export type Database = {
           created_at?: string
           distance_meters?: number | null
           effective_play_time?: number | null
+          end_date?: string | null
           event_type?: string | null
+          fis_calendar_event_id?: string | null
+          fis_event_factor?: number | null
+          fis_participants_count?: number | null
+          fis_pre_competition_validated?: boolean | null
+          fis_top5_points?: Json | null
           id?: string
           is_finalized?: boolean | null
           is_home?: boolean | null
@@ -3141,7 +4177,13 @@ export type Database = {
           created_at?: string
           distance_meters?: number | null
           effective_play_time?: number | null
+          end_date?: string | null
           event_type?: string | null
+          fis_calendar_event_id?: string | null
+          fis_event_factor?: number | null
+          fis_participants_count?: number | null
+          fis_pre_competition_validated?: boolean | null
+          fis_top5_points?: Json | null
           id?: string
           is_finalized?: boolean | null
           is_home?: boolean | null
@@ -3163,6 +4205,13 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "matches_fis_calendar_event_id_fkey"
+            columns: ["fis_calendar_event_id"]
+            isOneToOne: false
+            referencedRelation: "fis_calendar_events"
             referencedColumns: ["id"]
           },
           {
@@ -3250,6 +4299,13 @@ export type Database = {
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "medical_records_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       menstrual_cycles: {
@@ -3299,6 +4355,13 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "menstrual_cycles_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -3362,6 +4425,13 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "menstrual_symptoms_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -3439,6 +4509,13 @@ export type Database = {
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "mental_assessments_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       mental_goals: {
@@ -3494,6 +4571,13 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mental_goals_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -3557,6 +4641,13 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mental_prep_sessions_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -3703,6 +4794,13 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mobility_tests_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -3991,6 +5089,76 @@ export type Database = {
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "nutrition_entries_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      padel_session_equipment: {
+        Row: {
+          created_at: string
+          equipment_id: string
+          id: string
+          match_id: string | null
+          player_id: string
+          training_session_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          equipment_id: string
+          id?: string
+          match_id?: string | null
+          player_id: string
+          training_session_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          equipment_id?: string
+          id?: string
+          match_id?: string | null
+          player_id?: string
+          training_session_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "padel_session_equipment_equipment_id_fkey"
+            columns: ["equipment_id"]
+            isOneToOne: false
+            referencedRelation: "player_padel_equipment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "padel_session_equipment_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "padel_session_equipment_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "padel_session_equipment_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "padel_session_equipment_training_session_id_fkey"
+            columns: ["training_session_id"]
+            isOneToOne: false
+            referencedRelation: "training_sessions"
+            referencedColumns: ["id"]
+          },
         ]
       }
       payment_history: {
@@ -4120,6 +5288,139 @@ export type Database = {
           },
         ]
       }
+      periodization_categories: {
+        Row: {
+          category_id: string
+          color: string
+          created_at: string
+          id: string
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          category_id: string
+          color?: string
+          created_at?: string
+          id?: string
+          name: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string
+          color?: string
+          created_at?: string
+          id?: string
+          name?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "periodization_categories_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      periodization_cycles: {
+        Row: {
+          category_id: string
+          color: string
+          created_at: string
+          cycle_type: string | null
+          end_date: string
+          id: string
+          intensity: number | null
+          name: string
+          notes: string | null
+          objective: string | null
+          periodization_category_id: string
+          start_date: string
+          updated_at: string
+          volume: number | null
+        }
+        Insert: {
+          category_id: string
+          color?: string
+          created_at?: string
+          cycle_type?: string | null
+          end_date: string
+          id?: string
+          intensity?: number | null
+          name: string
+          notes?: string | null
+          objective?: string | null
+          periodization_category_id: string
+          start_date: string
+          updated_at?: string
+          volume?: number | null
+        }
+        Update: {
+          category_id?: string
+          color?: string
+          created_at?: string
+          cycle_type?: string | null
+          end_date?: string
+          id?: string
+          intensity?: number | null
+          name?: string
+          notes?: string | null
+          objective?: string | null
+          periodization_category_id?: string
+          start_date?: string
+          updated_at?: string
+          volume?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "periodization_cycles_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "periodization_cycles_periodization_category_id_fkey"
+            columns: ["periodization_category_id"]
+            isOneToOne: false
+            referencedRelation: "periodization_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      periodization_saved_colors: {
+        Row: {
+          category_id: string
+          color: string
+          created_at: string
+          id: string
+        }
+        Insert: {
+          category_id: string
+          color: string
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          category_id?: string
+          color?: string
+          created_at?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "periodization_saved_colors_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       player_academic_profiles: {
         Row: {
           category_id: string
@@ -4178,6 +5479,13 @@ export type Database = {
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "player_academic_profiles_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       player_academic_tracking: {
@@ -4186,6 +5494,7 @@ export type Database = {
           academic_grade: number | null
           category_id: string
           created_at: string
+          grade_scale: string | null
           id: string
           notes: string | null
           player_id: string
@@ -4198,6 +5507,7 @@ export type Database = {
           academic_grade?: number | null
           category_id: string
           created_at?: string
+          grade_scale?: string | null
           id?: string
           notes?: string | null
           player_id: string
@@ -4210,6 +5520,7 @@ export type Database = {
           academic_grade?: number | null
           category_id?: string
           created_at?: string
+          grade_scale?: string | null
           id?: string
           notes?: string | null
           player_id?: string
@@ -4230,6 +5541,13 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_academic_tracking_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -4292,16 +5610,28 @@ export type Database = {
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "player_availability_scores_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       player_bowling_arsenal: {
         Row: {
+          balance_type: string | null
           ball_catalog_id: string | null
           category_id: string
           created_at: string
           current_surface: string | null
           custom_ball_brand: string | null
           custom_ball_name: string | null
+          custom_differential: number | null
+          custom_intermediate_diff: number | null
+          custom_rg: number | null
+          drilling_layout: string | null
           games_played: number
           id: string
           is_active: boolean
@@ -4312,12 +5642,17 @@ export type Database = {
           weight_lbs: number | null
         }
         Insert: {
+          balance_type?: string | null
           ball_catalog_id?: string | null
           category_id: string
           created_at?: string
           current_surface?: string | null
           custom_ball_brand?: string | null
           custom_ball_name?: string | null
+          custom_differential?: number | null
+          custom_intermediate_diff?: number | null
+          custom_rg?: number | null
+          drilling_layout?: string | null
           games_played?: number
           id?: string
           is_active?: boolean
@@ -4328,12 +5663,17 @@ export type Database = {
           weight_lbs?: number | null
         }
         Update: {
+          balance_type?: string | null
           ball_catalog_id?: string | null
           category_id?: string
           created_at?: string
           current_surface?: string | null
           custom_ball_brand?: string | null
           custom_ball_name?: string | null
+          custom_differential?: number | null
+          custom_intermediate_diff?: number | null
+          custom_rg?: number | null
+          drilling_layout?: string | null
           games_played?: number
           id?: string
           is_active?: boolean
@@ -4363,6 +5703,13 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_bowling_arsenal_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -4438,6 +5785,79 @@ export type Database = {
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "player_caps_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      player_categories: {
+        Row: {
+          category_id: string
+          club_id: string
+          id: string
+          is_primary: boolean | null
+          joined_at: string | null
+          player_id: string
+          status: string
+        }
+        Insert: {
+          category_id: string
+          club_id: string
+          id?: string
+          is_primary?: boolean | null
+          joined_at?: string | null
+          player_id: string
+          status?: string
+        }
+        Update: {
+          category_id?: string
+          club_id?: string
+          id?: string
+          is_primary?: boolean | null
+          joined_at?: string | null
+          player_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_categories_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_categories_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "admin_all_clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_categories_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_categories_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_categories_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       player_contacts: {
@@ -4499,6 +5919,13 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_contacts_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -4565,6 +5992,13 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_development_plans_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -4636,6 +6070,13 @@ export type Database = {
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "player_evaluations_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       player_exercise_completions: {
@@ -4691,6 +6132,13 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_exercise_completions_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
             referencedColumns: ["id"]
           },
           {
@@ -4801,6 +6249,13 @@ export type Database = {
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "player_match_stats_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       player_measurements: {
@@ -4844,6 +6299,186 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_measurements_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      player_objectives: {
+        Row: {
+          category_id: string
+          created_at: string
+          created_by: string | null
+          current_value: number | null
+          description: string | null
+          goal_type: string
+          id: string
+          metric_name: string | null
+          metric_unit: string | null
+          objective_type: string
+          player_id: string
+          progress_percentage: number | null
+          season_year: number
+          status: string
+          target_date: string | null
+          target_value: number | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          created_by?: string | null
+          current_value?: number | null
+          description?: string | null
+          goal_type?: string
+          id?: string
+          metric_name?: string | null
+          metric_unit?: string | null
+          objective_type?: string
+          player_id: string
+          progress_percentage?: number | null
+          season_year?: number
+          status?: string
+          target_date?: string | null
+          target_value?: number | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          created_by?: string | null
+          current_value?: number | null
+          description?: string | null
+          goal_type?: string
+          id?: string
+          metric_name?: string | null
+          metric_unit?: string | null
+          objective_type?: string
+          player_id?: string
+          progress_percentage?: number | null
+          season_year?: number
+          status?: string
+          target_date?: string | null
+          target_value?: number | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_objectives_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_objectives_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_objectives_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      player_padel_equipment: {
+        Row: {
+          accessory_brand: string | null
+          accessory_description: string | null
+          accessory_type: string | null
+          category_id: string
+          created_at: string
+          equipment_type: string
+          id: string
+          is_active: boolean
+          notes: string | null
+          player_id: string
+          racket_balance: string | null
+          racket_brand: string | null
+          racket_model: string | null
+          racket_shape: string | null
+          racket_surface: string | null
+          racket_weight_g: number | null
+          shoe_brand: string | null
+          shoe_model: string | null
+          updated_at: string
+        }
+        Insert: {
+          accessory_brand?: string | null
+          accessory_description?: string | null
+          accessory_type?: string | null
+          category_id: string
+          created_at?: string
+          equipment_type?: string
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          player_id: string
+          racket_balance?: string | null
+          racket_brand?: string | null
+          racket_model?: string | null
+          racket_shape?: string | null
+          racket_surface?: string | null
+          racket_weight_g?: number | null
+          shoe_brand?: string | null
+          shoe_model?: string | null
+          updated_at?: string
+        }
+        Update: {
+          accessory_brand?: string | null
+          accessory_description?: string | null
+          accessory_type?: string | null
+          category_id?: string
+          created_at?: string
+          equipment_type?: string
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          player_id?: string
+          racket_balance?: string | null
+          racket_brand?: string | null
+          racket_model?: string | null
+          racket_shape?: string | null
+          racket_surface?: string | null
+          racket_weight_g?: number | null
+          shoe_brand?: string | null
+          shoe_model?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_padel_equipment_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_padel_equipment_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_padel_equipment_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -4927,6 +6562,108 @@ export type Database = {
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "player_performance_references_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      player_rehab_exercises: {
+        Row: {
+          created_at: string
+          description: string | null
+          duration: string | null
+          exercise_library_id: string | null
+          exercise_order: number
+          frequency: string | null
+          id: string
+          image_url: string | null
+          is_completed: boolean
+          name: string
+          notes: string | null
+          phase_id: string | null
+          phase_number: number
+          player_rehab_protocol_id: string
+          reps: string | null
+          sets: number | null
+          source_exercise_id: string | null
+          updated_at: string
+          video_url: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          duration?: string | null
+          exercise_library_id?: string | null
+          exercise_order?: number
+          frequency?: string | null
+          id?: string
+          image_url?: string | null
+          is_completed?: boolean
+          name: string
+          notes?: string | null
+          phase_id?: string | null
+          phase_number?: number
+          player_rehab_protocol_id: string
+          reps?: string | null
+          sets?: number | null
+          source_exercise_id?: string | null
+          updated_at?: string
+          video_url?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          duration?: string | null
+          exercise_library_id?: string | null
+          exercise_order?: number
+          frequency?: string | null
+          id?: string
+          image_url?: string | null
+          is_completed?: boolean
+          name?: string
+          notes?: string | null
+          phase_id?: string | null
+          phase_number?: number
+          player_rehab_protocol_id?: string
+          reps?: string | null
+          sets?: number | null
+          source_exercise_id?: string | null
+          updated_at?: string
+          video_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_rehab_exercises_exercise_library_id_fkey"
+            columns: ["exercise_library_id"]
+            isOneToOne: false
+            referencedRelation: "exercise_library"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_rehab_exercises_phase_id_fkey"
+            columns: ["phase_id"]
+            isOneToOne: false
+            referencedRelation: "protocol_phases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_rehab_exercises_player_rehab_protocol_id_fkey"
+            columns: ["player_rehab_protocol_id"]
+            isOneToOne: false
+            referencedRelation: "player_rehab_protocols"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_rehab_exercises_source_exercise_id_fkey"
+            columns: ["source_exercise_id"]
+            isOneToOne: false
+            referencedRelation: "protocol_exercises"
+            referencedColumns: ["id"]
+          },
         ]
       }
       player_rehab_protocols: {
@@ -5001,6 +6738,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "player_rehab_protocols_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "player_rehab_protocols_protocol_id_fkey"
             columns: ["protocol_id"]
             isOneToOne: false
@@ -5058,6 +6802,210 @@ export type Database = {
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "player_selections_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      player_ski_equipment: {
+        Row: {
+          boot_brand: string | null
+          boot_flex: number | null
+          boot_model: string | null
+          camber_type: string | null
+          category_id: string
+          created_at: string
+          equipment_type: string
+          id: string
+          is_active: boolean
+          notes: string | null
+          player_id: string
+          ski_brand: string | null
+          ski_length_cm: number | null
+          ski_model: string | null
+          ski_radius_m: number | null
+          ski_stiffness: string | null
+          sole_structure: string | null
+          updated_at: string
+          wax_brand: string | null
+          wax_humidity_range: string | null
+          wax_temp_range: string | null
+          wax_type: string | null
+        }
+        Insert: {
+          boot_brand?: string | null
+          boot_flex?: number | null
+          boot_model?: string | null
+          camber_type?: string | null
+          category_id: string
+          created_at?: string
+          equipment_type?: string
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          player_id: string
+          ski_brand?: string | null
+          ski_length_cm?: number | null
+          ski_model?: string | null
+          ski_radius_m?: number | null
+          ski_stiffness?: string | null
+          sole_structure?: string | null
+          updated_at?: string
+          wax_brand?: string | null
+          wax_humidity_range?: string | null
+          wax_temp_range?: string | null
+          wax_type?: string | null
+        }
+        Update: {
+          boot_brand?: string | null
+          boot_flex?: number | null
+          boot_model?: string | null
+          camber_type?: string | null
+          category_id?: string
+          created_at?: string
+          equipment_type?: string
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          player_id?: string
+          ski_brand?: string | null
+          ski_length_cm?: number | null
+          ski_model?: string | null
+          ski_radius_m?: number | null
+          ski_stiffness?: string | null
+          sole_structure?: string | null
+          updated_at?: string
+          wax_brand?: string | null
+          wax_humidity_range?: string | null
+          wax_temp_range?: string | null
+          wax_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_ski_equipment_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_ski_equipment_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_ski_equipment_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      player_surf_equipment: {
+        Row: {
+          board_brand: string | null
+          board_length_feet: number | null
+          board_model: string | null
+          board_shaper: string | null
+          board_thickness_inches: number | null
+          board_type: string | null
+          board_volume_liters: number | null
+          board_width_inches: number | null
+          category_id: string
+          created_at: string
+          equipment_type: string
+          fins_brand: string | null
+          fins_model: string | null
+          fins_type: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean
+          notes: string | null
+          player_id: string
+          purchase_date: string | null
+          updated_at: string
+          wetsuit_brand: string | null
+          wetsuit_thickness: string | null
+        }
+        Insert: {
+          board_brand?: string | null
+          board_length_feet?: number | null
+          board_model?: string | null
+          board_shaper?: string | null
+          board_thickness_inches?: number | null
+          board_type?: string | null
+          board_volume_liters?: number | null
+          board_width_inches?: number | null
+          category_id: string
+          created_at?: string
+          equipment_type?: string
+          fins_brand?: string | null
+          fins_model?: string | null
+          fins_type?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          notes?: string | null
+          player_id: string
+          purchase_date?: string | null
+          updated_at?: string
+          wetsuit_brand?: string | null
+          wetsuit_thickness?: string | null
+        }
+        Update: {
+          board_brand?: string | null
+          board_length_feet?: number | null
+          board_model?: string | null
+          board_shaper?: string | null
+          board_thickness_inches?: number | null
+          board_type?: string | null
+          board_volume_liters?: number | null
+          board_width_inches?: number | null
+          category_id?: string
+          created_at?: string
+          equipment_type?: string
+          fins_brand?: string | null
+          fins_model?: string | null
+          fins_type?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          notes?: string | null
+          player_id?: string
+          purchase_date?: string | null
+          updated_at?: string
+          wetsuit_brand?: string | null
+          wetsuit_thickness?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_surf_equipment_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_surf_equipment_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_surf_equipment_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       player_transfers: {
@@ -5110,6 +7058,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "player_transfers_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "player_transfers_to_category_id_fkey"
             columns: ["to_category_id"]
             isOneToOne: false
@@ -5132,6 +7087,11 @@ export type Database = {
           email: string | null
           emergency_notes: string | null
           first_name: string | null
+          fis_code: string | null
+          fis_objective: string | null
+          fis_objective_date: string | null
+          fis_points: number | null
+          fis_ranking: number | null
           id: string
           medical_notes: string | null
           name: string
@@ -5163,6 +7123,11 @@ export type Database = {
           email?: string | null
           emergency_notes?: string | null
           first_name?: string | null
+          fis_code?: string | null
+          fis_objective?: string | null
+          fis_objective_date?: string | null
+          fis_points?: number | null
+          fis_ranking?: number | null
           id?: string
           medical_notes?: string | null
           name: string
@@ -5194,6 +7159,11 @@ export type Database = {
           email?: string | null
           emergency_notes?: string | null
           first_name?: string | null
+          fis_code?: string | null
+          fis_objective?: string | null
+          fis_objective_date?: string | null
+          fis_points?: number | null
+          fis_ranking?: number | null
           id?: string
           medical_notes?: string | null
           name?: string
@@ -5447,6 +7417,159 @@ export type Database = {
           },
         ]
       }
+      precision_exercise_types: {
+        Row: {
+          category_id: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          is_system: boolean
+          label: string
+          sport: string
+          sub_discipline: string | null
+          value: string
+        }
+        Insert: {
+          category_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_system?: boolean
+          label: string
+          sport: string
+          sub_discipline?: string | null
+          value: string
+        }
+        Update: {
+          category_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_system?: boolean
+          label?: string
+          sport?: string
+          sub_discipline?: string | null
+          value?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "precision_exercise_types_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      precision_training: {
+        Row: {
+          attempts: number
+          ball_arsenal_id: string | null
+          category_id: string
+          created_at: string
+          exercise_label: string
+          exercise_type_id: string | null
+          id: string
+          kick_origin_x: number | null
+          kick_origin_y: number | null
+          lineout_distance: string | null
+          lineout_height: string | null
+          notes: string | null
+          player_id: string
+          session_date: string
+          success_rate: number | null
+          successes: number
+          training_session_id: string | null
+          zone_x: number | null
+          zone_y: number | null
+        }
+        Insert: {
+          attempts?: number
+          ball_arsenal_id?: string | null
+          category_id: string
+          created_at?: string
+          exercise_label: string
+          exercise_type_id?: string | null
+          id?: string
+          kick_origin_x?: number | null
+          kick_origin_y?: number | null
+          lineout_distance?: string | null
+          lineout_height?: string | null
+          notes?: string | null
+          player_id: string
+          session_date?: string
+          success_rate?: number | null
+          successes?: number
+          training_session_id?: string | null
+          zone_x?: number | null
+          zone_y?: number | null
+        }
+        Update: {
+          attempts?: number
+          ball_arsenal_id?: string | null
+          category_id?: string
+          created_at?: string
+          exercise_label?: string
+          exercise_type_id?: string | null
+          id?: string
+          kick_origin_x?: number | null
+          kick_origin_y?: number | null
+          lineout_distance?: string | null
+          lineout_height?: string | null
+          notes?: string | null
+          player_id?: string
+          session_date?: string
+          success_rate?: number | null
+          successes?: number
+          training_session_id?: string | null
+          zone_x?: number | null
+          zone_y?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "precision_training_ball_arsenal_id_fkey"
+            columns: ["ball_arsenal_id"]
+            isOneToOne: false
+            referencedRelation: "player_bowling_arsenal"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "precision_training_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "precision_training_exercise_type_id_fkey"
+            columns: ["exercise_type_id"]
+            isOneToOne: false
+            referencedRelation: "precision_exercise_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "precision_training_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "precision_training_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "precision_training_training_session_id_fkey"
+            columns: ["training_session_id"]
+            isOneToOne: false
+            referencedRelation: "training_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string | null
@@ -5505,6 +7628,13 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "program_assignments_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
             referencedColumns: ["id"]
           },
           {
@@ -5691,6 +7821,189 @@ export type Database = {
           },
         ]
       }
+      prophylaxis_assignments: {
+        Row: {
+          category_id: string
+          created_at: string
+          end_date: string | null
+          id: string
+          is_active: boolean
+          player_id: string
+          program_id: string
+          start_date: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          is_active?: boolean
+          player_id: string
+          program_id: string
+          start_date?: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          is_active?: boolean
+          player_id?: string
+          program_id?: string
+          start_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prophylaxis_assignments_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prophylaxis_assignments_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prophylaxis_assignments_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prophylaxis_assignments_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "prophylaxis_programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prophylaxis_exercises: {
+        Row: {
+          created_at: string
+          duration_seconds: number | null
+          exercise_name: string
+          id: string
+          library_exercise_id: string | null
+          notes: string | null
+          order_index: number
+          program_id: string
+          reps: string | null
+          rest_seconds: number | null
+          sets: number | null
+        }
+        Insert: {
+          created_at?: string
+          duration_seconds?: number | null
+          exercise_name: string
+          id?: string
+          library_exercise_id?: string | null
+          notes?: string | null
+          order_index?: number
+          program_id: string
+          reps?: string | null
+          rest_seconds?: number | null
+          sets?: number | null
+        }
+        Update: {
+          created_at?: string
+          duration_seconds?: number | null
+          exercise_name?: string
+          id?: string
+          library_exercise_id?: string | null
+          notes?: string | null
+          order_index?: number
+          program_id?: string
+          reps?: string | null
+          rest_seconds?: number | null
+          sets?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prophylaxis_exercises_library_exercise_id_fkey"
+            columns: ["library_exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercise_library"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prophylaxis_exercises_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "prophylaxis_programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prophylaxis_programs: {
+        Row: {
+          body_zone: string
+          category_id: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          frequency: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          player_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          body_zone: string
+          category_id: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          frequency?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          player_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          body_zone?: string
+          category_id?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          frequency?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          player_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prophylaxis_programs_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prophylaxis_programs_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prophylaxis_programs_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       protocol_exercises: {
         Row: {
           created_at: string
@@ -5800,42 +8113,61 @@ export type Database = {
       }
       protocol_phases: {
         Row: {
+          care_instructions: string[] | null
           created_at: string
           description: string | null
           duration_days_max: number | null
           duration_days_min: number | null
           exit_criteria: string[] | null
           id: string
+          linked_program_id: string | null
           name: string
           objectives: string[] | null
           phase_number: number
           protocol_id: string
+          taping_diagram_url: string | null
+          taping_instructions: string[] | null
         }
         Insert: {
+          care_instructions?: string[] | null
           created_at?: string
           description?: string | null
           duration_days_max?: number | null
           duration_days_min?: number | null
           exit_criteria?: string[] | null
           id?: string
+          linked_program_id?: string | null
           name: string
           objectives?: string[] | null
           phase_number: number
           protocol_id: string
+          taping_diagram_url?: string | null
+          taping_instructions?: string[] | null
         }
         Update: {
+          care_instructions?: string[] | null
           created_at?: string
           description?: string | null
           duration_days_max?: number | null
           duration_days_min?: number | null
           exit_criteria?: string[] | null
           id?: string
+          linked_program_id?: string | null
           name?: string
           objectives?: string[] | null
           phase_number?: number
           protocol_id?: string
+          taping_diagram_url?: string | null
+          taping_instructions?: string[] | null
         }
         Relationships: [
+          {
+            foreignKeyName: "protocol_phases_linked_program_id_fkey"
+            columns: ["linked_program_id"]
+            isOneToOne: false
+            referencedRelation: "training_programs"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "protocol_phases_protocol_id_fkey"
             columns: ["protocol_id"]
@@ -6084,6 +8416,13 @@ export type Database = {
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "recovery_journal_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       recruitment_prospects: {
@@ -6229,6 +8568,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "rehab_calendar_events_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "rehab_calendar_events_player_rehab_protocol_id_fkey"
             columns: ["player_rehab_protocol_id"]
             isOneToOne: false
@@ -6354,6 +8700,13 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "return_to_play_protocols_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -6503,6 +8856,13 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rugby_specific_tests_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -6717,6 +9077,184 @@ export type Database = {
           },
         ]
       }
+      ski_conditions: {
+        Row: {
+          air_temperature_celsius: number | null
+          altitude_m: number | null
+          avalanche_risk: number | null
+          category_id: string
+          created_at: string
+          gate_setup: string | null
+          id: string
+          match_id: string | null
+          notes: string | null
+          piste_condition: string | null
+          piste_evolution: string | null
+          precipitation: string | null
+          slope_difficulty: string | null
+          slope_hardness: string | null
+          slope_name: string | null
+          snow_evolution: string | null
+          snow_granulometry: string | null
+          snow_humidity: string | null
+          snow_quality: number | null
+          snow_temperature_celsius: number | null
+          snow_type: string | null
+          sunshine: string | null
+          training_session_id: string | null
+          updated_at: string
+          visibility: string | null
+          weather: string | null
+          wind_direction: string | null
+          wind_speed_kmh: number | null
+        }
+        Insert: {
+          air_temperature_celsius?: number | null
+          altitude_m?: number | null
+          avalanche_risk?: number | null
+          category_id: string
+          created_at?: string
+          gate_setup?: string | null
+          id?: string
+          match_id?: string | null
+          notes?: string | null
+          piste_condition?: string | null
+          piste_evolution?: string | null
+          precipitation?: string | null
+          slope_difficulty?: string | null
+          slope_hardness?: string | null
+          slope_name?: string | null
+          snow_evolution?: string | null
+          snow_granulometry?: string | null
+          snow_humidity?: string | null
+          snow_quality?: number | null
+          snow_temperature_celsius?: number | null
+          snow_type?: string | null
+          sunshine?: string | null
+          training_session_id?: string | null
+          updated_at?: string
+          visibility?: string | null
+          weather?: string | null
+          wind_direction?: string | null
+          wind_speed_kmh?: number | null
+        }
+        Update: {
+          air_temperature_celsius?: number | null
+          altitude_m?: number | null
+          avalanche_risk?: number | null
+          category_id?: string
+          created_at?: string
+          gate_setup?: string | null
+          id?: string
+          match_id?: string | null
+          notes?: string | null
+          piste_condition?: string | null
+          piste_evolution?: string | null
+          precipitation?: string | null
+          slope_difficulty?: string | null
+          slope_hardness?: string | null
+          slope_name?: string | null
+          snow_evolution?: string | null
+          snow_granulometry?: string | null
+          snow_humidity?: string | null
+          snow_quality?: number | null
+          snow_temperature_celsius?: number | null
+          snow_type?: string | null
+          sunshine?: string | null
+          training_session_id?: string | null
+          updated_at?: string
+          visibility?: string | null
+          weather?: string | null
+          wind_direction?: string | null
+          wind_speed_kmh?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ski_conditions_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ski_conditions_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ski_conditions_training_session_id_fkey"
+            columns: ["training_session_id"]
+            isOneToOne: false
+            referencedRelation: "training_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ski_session_equipment: {
+        Row: {
+          created_at: string
+          equipment_id: string
+          id: string
+          match_id: string | null
+          player_id: string
+          training_session_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          equipment_id: string
+          id?: string
+          match_id?: string | null
+          player_id: string
+          training_session_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          equipment_id?: string
+          id?: string
+          match_id?: string | null
+          player_id?: string
+          training_session_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ski_session_equipment_equipment_id_fkey"
+            columns: ["equipment_id"]
+            isOneToOne: false
+            referencedRelation: "player_ski_equipment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ski_session_equipment_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ski_session_equipment_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ski_session_equipment_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ski_session_equipment_training_session_id_fkey"
+            columns: ["training_session_id"]
+            isOneToOne: false
+            referencedRelation: "training_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       smart_alerts: {
         Row: {
           alert_type: string
@@ -6773,6 +9311,13 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "smart_alerts_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -6835,6 +9380,13 @@ export type Database = {
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "speed_tests_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       staff_notes: {
@@ -6886,6 +9438,13 @@ export type Database = {
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "staff_notes_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       strength_tests: {
@@ -6929,6 +9488,13 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "strength_tests_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -7010,6 +9576,160 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      surf_conditions: {
+        Row: {
+          bottom_notes: string | null
+          bottom_type: string | null
+          category_id: string
+          created_at: string
+          id: string
+          match_id: string | null
+          notes: string | null
+          spot_name: string | null
+          spot_quality: number | null
+          swell_direction: string | null
+          swell_height_m: number | null
+          swell_period_s: number | null
+          tide_coefficient: number | null
+          tide_level: string | null
+          tide_phase: string | null
+          training_session_id: string | null
+          updated_at: string
+          wave_quality: number | null
+          wind_direction: string | null
+          wind_speed_kmh: number | null
+        }
+        Insert: {
+          bottom_notes?: string | null
+          bottom_type?: string | null
+          category_id: string
+          created_at?: string
+          id?: string
+          match_id?: string | null
+          notes?: string | null
+          spot_name?: string | null
+          spot_quality?: number | null
+          swell_direction?: string | null
+          swell_height_m?: number | null
+          swell_period_s?: number | null
+          tide_coefficient?: number | null
+          tide_level?: string | null
+          tide_phase?: string | null
+          training_session_id?: string | null
+          updated_at?: string
+          wave_quality?: number | null
+          wind_direction?: string | null
+          wind_speed_kmh?: number | null
+        }
+        Update: {
+          bottom_notes?: string | null
+          bottom_type?: string | null
+          category_id?: string
+          created_at?: string
+          id?: string
+          match_id?: string | null
+          notes?: string | null
+          spot_name?: string | null
+          spot_quality?: number | null
+          swell_direction?: string | null
+          swell_height_m?: number | null
+          swell_period_s?: number | null
+          tide_coefficient?: number | null
+          tide_level?: string | null
+          tide_phase?: string | null
+          training_session_id?: string | null
+          updated_at?: string
+          wave_quality?: number | null
+          wind_direction?: string | null
+          wind_speed_kmh?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "surf_conditions_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "surf_conditions_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "surf_conditions_training_session_id_fkey"
+            columns: ["training_session_id"]
+            isOneToOne: false
+            referencedRelation: "training_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      surf_session_equipment: {
+        Row: {
+          created_at: string
+          equipment_id: string
+          id: string
+          match_id: string | null
+          player_id: string
+          training_session_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          equipment_id: string
+          id?: string
+          match_id?: string | null
+          player_id: string
+          training_session_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          equipment_id?: string
+          id?: string
+          match_id?: string | null
+          player_id?: string
+          training_session_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "surf_session_equipment_equipment_id_fkey"
+            columns: ["equipment_id"]
+            isOneToOne: false
+            referencedRelation: "player_surf_equipment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "surf_session_equipment_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "surf_session_equipment_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "surf_session_equipment_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "surf_session_equipment_training_session_id_fkey"
+            columns: ["training_session_id"]
+            isOneToOne: false
+            referencedRelation: "training_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       team_trips: {
         Row: {
@@ -7199,6 +9919,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "tennis_drill_training_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "tennis_drill_training_training_session_id_fkey"
             columns: ["training_session_id"]
             isOneToOne: false
@@ -7329,6 +10056,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "tournament_player_rotation_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "tournament_player_rotation_tournament_match_id_fkey"
             columns: ["tournament_match_id"]
             isOneToOne: false
@@ -7434,6 +10168,13 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_attendance_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
             referencedColumns: ["id"]
           },
           {
@@ -7687,10 +10428,12 @@ export type Database = {
           id: string
           intensity: number | null
           notes: string | null
+          periodization_cycle_id: string | null
           planned_intensity: number | null
           session_date: string
           session_end_time: string | null
           session_start_time: string | null
+          test_reminder_id: string | null
           training_type: string
         }
         Insert: {
@@ -7700,10 +10443,12 @@ export type Database = {
           id?: string
           intensity?: number | null
           notes?: string | null
+          periodization_cycle_id?: string | null
           planned_intensity?: number | null
           session_date: string
           session_end_time?: string | null
           session_start_time?: string | null
+          test_reminder_id?: string | null
           training_type: string
         }
         Update: {
@@ -7713,10 +10458,12 @@ export type Database = {
           id?: string
           intensity?: number | null
           notes?: string | null
+          periodization_cycle_id?: string | null
           planned_intensity?: number | null
           session_date?: string
           session_end_time?: string | null
           session_start_time?: string | null
+          test_reminder_id?: string | null
           training_type?: string
         }
         Relationships: [
@@ -7732,6 +10479,27 @@ export type Database = {
             columns: ["created_by_player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_sessions_created_by_player_id_fkey"
+            columns: ["created_by_player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_sessions_periodization_cycle_id_fkey"
+            columns: ["periodization_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "periodization_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_sessions_test_reminder_id_fkey"
+            columns: ["test_reminder_id"]
+            isOneToOne: false
+            referencedRelation: "test_reminders"
             referencedColumns: ["id"]
           },
         ]
@@ -8214,6 +10982,13 @@ export type Database = {
             referencedRelation: "players"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "wellness_tracking_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
     }
@@ -8310,6 +11085,117 @@ export type Database = {
           token: string | null
         }
         Relationships: []
+      }
+      players_safe: {
+        Row: {
+          allergies: string | null
+          avatar_url: string | null
+          birth_date: string | null
+          birth_year: number | null
+          category_id: string | null
+          club_origin: string | null
+          created_at: string | null
+          dietary_requirements: string | null
+          discipline: string | null
+          email: string | null
+          emergency_notes: string | null
+          first_name: string | null
+          id: string | null
+          medical_notes: string | null
+          name: string | null
+          parent_contact_1_email: string | null
+          parent_contact_1_name: string | null
+          parent_contact_1_phone: string | null
+          parent_contact_1_relation: string | null
+          parent_contact_2_email: string | null
+          parent_contact_2_name: string | null
+          parent_contact_2_phone: string | null
+          parent_contact_2_relation: string | null
+          phone: string | null
+          position: string | null
+          pwa_install_dismissed: boolean | null
+          season_id: string | null
+          specialty: string | null
+          user_id: string | null
+        }
+        Insert: {
+          allergies?: never
+          avatar_url?: string | null
+          birth_date?: string | null
+          birth_year?: number | null
+          category_id?: string | null
+          club_origin?: string | null
+          created_at?: string | null
+          dietary_requirements?: never
+          discipline?: string | null
+          email?: never
+          emergency_notes?: never
+          first_name?: string | null
+          id?: string | null
+          medical_notes?: never
+          name?: string | null
+          parent_contact_1_email?: never
+          parent_contact_1_name?: never
+          parent_contact_1_phone?: never
+          parent_contact_1_relation?: never
+          parent_contact_2_email?: never
+          parent_contact_2_name?: never
+          parent_contact_2_phone?: never
+          parent_contact_2_relation?: never
+          phone?: never
+          position?: string | null
+          pwa_install_dismissed?: boolean | null
+          season_id?: string | null
+          specialty?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          allergies?: never
+          avatar_url?: string | null
+          birth_date?: string | null
+          birth_year?: number | null
+          category_id?: string | null
+          club_origin?: string | null
+          created_at?: string | null
+          dietary_requirements?: never
+          discipline?: string | null
+          email?: never
+          emergency_notes?: never
+          first_name?: string | null
+          id?: string | null
+          medical_notes?: never
+          name?: string | null
+          parent_contact_1_email?: never
+          parent_contact_1_name?: never
+          parent_contact_1_phone?: never
+          parent_contact_1_relation?: never
+          parent_contact_2_email?: never
+          parent_contact_2_name?: never
+          parent_contact_2_phone?: never
+          parent_contact_2_relation?: never
+          phone?: never
+          position?: string | null
+          pwa_install_dismissed?: boolean | null
+          season_id?: string | null
+          specialty?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "players_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "players_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       safe_category_invitations: {
         Row: {
@@ -8451,6 +11337,18 @@ export type Database = {
         }
         Returns: string
       }
+      expire_trial_clients: { Args: never; Returns: undefined }
+      get_player_categories: {
+        Args: { _player_id: string }
+        Returns: {
+          category_id: string
+          category_name: string
+          club_id: string
+          club_name: string
+          is_primary: boolean
+          sport_type: string
+        }[]
+      }
       get_safe_profile: {
         Args: { profile_id: string }
         Returns: {
@@ -8492,6 +11390,20 @@ export type Database = {
       }
       renew_invitation: {
         Args: { _invitation_id: string; _table_name: string }
+        Returns: Json
+      }
+      respond_to_category_link: {
+        Args: { _player_category_id: string; _response: string }
+        Returns: Json
+      }
+      transfer_player_with_history: {
+        Args: {
+          _from_category_id: string
+          _notes?: string
+          _player_id: string
+          _reason?: string
+          _to_category_id: string
+        }
         Returns: Json
       }
       user_is_conversation_admin: {

@@ -151,6 +151,7 @@ export function AddNationalEventDialog({
                 <Input
                   id="endDate"
                   type="date"
+                  min={startDate || undefined}
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
                 />

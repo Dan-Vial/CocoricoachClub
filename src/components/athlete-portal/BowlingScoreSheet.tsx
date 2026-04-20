@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BowlingBallSelector } from "@/components/bowling/BowlingBallSelector";
 import { Input } from "@/components/ui/input";
@@ -6,7 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Target, TrendingUp, Save, X, CheckCircle } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Target, TrendingUp, Save, X, CheckCircle, ChevronDown } from "lucide-react";
+import { getStatTextColor, getStatColor } from "@/lib/bowling/statColors";
 
 export interface ThrowData {
   value: string; // "X", "/", "0"-"9", "-" (miss)
@@ -34,12 +36,16 @@ export interface BowlingStats {
   singlePinConverted: number;
   pocketCount: number;
   totalThrows: number;
+  totalFrames: number;
   strikePercentage: number;
   sparePercentage: number;
   splitPercentage: number;
   singlePinConversionRate: number;
   pocketPercentage: number;
   openFrames: number;
+  firstBallGte8Count: number;
+  firstBallGte8Opportunities: number;
+  firstBallGte8Percentage: number;
 }
 
 interface BowlingScoreSheetProps {
@@ -49,6 +55,7 @@ interface BowlingScoreSheetProps {
   playerId?: string;
   categoryId?: string;
   readOnly?: boolean;
+  trackPockets?: boolean;
 }
 
 const createEmptyFrame = (): FrameData => ({
@@ -66,7 +73,7 @@ const createEmptyThrow = (): ThrowData => ({
   isSinglePinConverted: false,
 });
 
-export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, categoryId, readOnly }: BowlingScoreSheetProps) {
+export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, categoryId, readOnly, trackPockets = true }: BowlingScoreSheetProps) {
   const [frames, setFrames] = useState<FrameData[]>(() => 
     initialFrames || Array.from({ length: 10 }, () => createEmptyFrame())
   );
@@ -74,6 +81,72 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, c
   const [ballMode, setBallMode] = useState<"simple" | "advanced">("simple");
   const [selectedBallId, setSelectedBallId] = useState<string | null>(null);
   const [frameBalls, setFrameBalls] = useState<(string | null)[]>(Array(10).fill(null));
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const inputRefs = useRef<Map<string, HTMLInputElement>>(new Map());
+
+  const getInputKey = (frameIndex: number, throwIndex: number) => `${frameIndex}-${throwIndex}`;
+
+  const setInputRef = (frameIndex: number, throwIndex: number, el: HTMLInputElement | null) => {
+    const key = getInputKey(frameIndex, throwIndex);
+    if (el) {
+      inputRefs.current.set(key, el);
+    } else {
+      inputRefs.current.delete(key);
+    }
+  };
+
+  // Find the next editable throw position
+  const findNextThrow = useCallback((frameIndex: number, throwIndex: number, currentFrames: FrameData[]): [number, number] | null => {
+    // Try next throw in same frame
+    const nextThrow = throwIndex + 1;
+    const maxThrows = frameIndex < 9 ? 2 : 3;
+    if (nextThrow < maxThrows) {
+      // Check if this throw would be editable
+      const frame = currentFrames[frameIndex];
+      if (frameIndex < 9) {
+        if (nextThrow === 1 && frame.throws[0]?.value === "X") {
+          // Strike in frames 1-9, move to next frame
+          return frameIndex < 9 ? [frameIndex + 1, 0] : null;
+        }
+        return [frameIndex, nextThrow];
+      } else {
+        // 10th frame - always advance within frame up to max
+        return [frameIndex, nextThrow];
+      }
+    }
+    // Move to next frame
+    if (frameIndex < 9) {
+      return [frameIndex + 1, 0];
+    }
+    return null; // End of game
+  }, []);
+
+  // Find the previous editable throw position
+  const findPrevThrow = useCallback((frameIndex: number, throwIndex: number, currentFrames: FrameData[]): [number, number] | null => {
+    if (throwIndex > 0) {
+      return [frameIndex, throwIndex - 1];
+    }
+    if (frameIndex > 0) {
+      const prevFrame = currentFrames[frameIndex - 1];
+      if (prevFrame.throws[0]?.value === "X" && frameIndex - 1 < 9) {
+        return [frameIndex - 1, 0]; // Strike frame, only 1 throw
+      }
+      return [frameIndex - 1, 1]; // Normal frame, go to 2nd throw
+    }
+    return null;
+  }, []);
+
+  const focusInput = useCallback((frameIndex: number, throwIndex: number) => {
+    // Small delay to allow React to render
+    setTimeout(() => {
+      const key = getInputKey(frameIndex, throwIndex);
+      const input = inputRefs.current.get(key);
+      if (input) {
+        input.focus();
+        input.select();
+      }
+    }, 50);
+  }, []);
   const handleFrameBallChange = (frameIndex: number, ballId: string | null) => {
     setFrameBalls(prev => {
       const next = [...prev];
@@ -92,24 +165,28 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, c
     singlePinConverted: 0,
     pocketCount: 0,
     totalThrows: 0,
+    totalFrames: 10,
     strikePercentage: 0,
     sparePercentage: 0,
     splitPercentage: 0,
     singlePinConversionRate: 0,
     pocketPercentage: 0,
     openFrames: 0,
+    firstBallGte8Count: 0,
+    firstBallGte8Opportunities: 0,
+    firstBallGte8Percentage: 0,
   });
 
   // Reset frames when initialFrames changes (for editing existing games)
   useEffect(() => {
     if (initialFrames) {
       setFrames(initialFrames);
-      setIsSaved(true); // Mark as saved if we're viewing an existing game
+      setIsSaved(readOnly || false);
     } else {
       setFrames(Array.from({ length: 10 }, () => createEmptyFrame()));
       setIsSaved(false);
     }
-  }, [initialFrames]);
+  }, [initialFrames, readOnly]);
 
   // Calculate score for a frame
   const calculateFrameScore = useCallback((frameIndex: number, allFrames: FrameData[]): number | null => {
@@ -202,6 +279,8 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, c
     let totalThrows = 0;
     let openFrames = 0;
     let firstThrowCount = 0;
+    let firstBallGte8Count = 0;
+    let firstBallGte8Opportunities = 0;
 
     allFrames.forEach((frame, frameIndex) => {
       const isTenthFrame = frameIndex === 9;
@@ -211,11 +290,24 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, c
         
         totalThrows++;
         
-        // Pocket count - only on "first throws" of frames
-        // In 10th frame: throw 0, throw 1 if throw 0 was strike, throw 2 if throw 1 was strike
         const isFirstThrowContext = isPocketAllowed(frameIndex, throwIndex, frame);
         if (throwData.isPocket && isFirstThrowContext) {
           pocketCount++;
+        }
+
+        // Count first ball >= 8 pins (on first throw contexts only)
+        if (isFirstThrowContext && throwData.value !== "") {
+          // Check if this is the last possible throw (12th throw with no conversion chance)
+          const isLastThrowNoConversion = isTenthFrame && throwIndex === 2 && (
+            (frame.throws[0]?.value === "X" && frame.throws[1]?.value === "X") ||
+            (frame.throws[0]?.value !== "X" && frame.throws[1]?.value === "/")
+          );
+          if (!isLastThrowNoConversion) {
+            firstBallGte8Opportunities++;
+            if (throwData.pins >= 8) {
+              firstBallGte8Count++;
+            }
+          }
         }
 
         // Count strikes
@@ -224,37 +316,26 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, c
           if (!isTenthFrame || throwIndex === 0) {
             firstThrowCount++;
           } else if (isTenthFrame && throwIndex === 1) {
-            // 2nd throw of 10th frame being a strike counts as first throw context
             firstThrowCount++;
           } else if (isTenthFrame && throwIndex === 2 && frame.throws[1]?.value === "X") {
-            // 3rd throw after 2nd was strike counts as first throw context
             firstThrowCount++;
           }
         }
 
-        // Count spares (not including the original strike throws)
+        // Count spares
         if (throwData.value === "/") {
-          // Check if this spare was a split conversion
           const previousThrow = frame.throws[throwIndex - 1];
           if (previousThrow?.isSplit) {
             splitConverted++;
-            spares++; // Split converti compte dans les spares
+            spares++;
           } else {
-            spares++; // Spare normal
-          }
-        } else if (throwIndex > 0) {
-          // Check if previous throw was a split that was NOT converted
-          const previousThrow = frame.throws[throwIndex - 1];
-          if (previousThrow?.isSplit && throwData.value !== "/") {
-            // Split non converti - ne compte pas dans les opportunités de spare
-            // On va ajuster en soustrayant des opportunités totales
+            spares++;
           }
         }
 
-        // Count splits - exclude 11th and 12th throws (10th frame bonus throws after strikes)
+        // Count splits
         if (throwData.isSplit) {
           if (isTenthFrame && throwIndex >= 1) {
-            // In 10th frame, if previous throws are strikes, this is a bonus throw
             const previousThrows = frame.throws.slice(0, throwIndex);
             const hasStrikeSequence = previousThrows.every(t => t.value === "X");
             if (hasStrikeSequence) {
@@ -267,64 +348,100 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, c
           }
         }
 
-        // Count single pins automatically - when first throw = 9 (leaving 1 pin)
-        // Reuse the existing isFirstThrowContext variable
+        // Count single pins (first throw = 9, leaving 1 pin)
+        // Exclude the last possible throw (12th) where no conversion is possible
         if (isFirstThrowContext && throwData.value === "9") {
-          singlePinCount++;
-          // Check if next throw is a spare (conversion)
-          const nextThrow = frame.throws[throwIndex + 1];
-          if (nextThrow?.value === "/") {
-            singlePinConverted++;
+          const isLastThrowNoConversion = isTenthFrame && throwIndex === 2 && (
+            (frame.throws[0]?.value === "X" && frame.throws[1]?.value === "X") ||
+            (frame.throws[0]?.value !== "X" && frame.throws[1]?.value === "/")
+          );
+          if (!isLastThrowNoConversion) {
+            singlePinCount++;
+            const nextThrow = frame.throws[throwIndex + 1];
+            if (nextThrow?.value === "/") {
+              singlePinConverted++;
+            }
           }
         }
       });
 
-      // Count open frames (frames 1-9)
+      // Count open frames (frames 1-9) - exclude unconverted splits
       if (!isTenthFrame && frame.throws.length >= 2) {
         const first = frame.throws[0];
         const second = frame.throws[1];
-        if (first.value !== "X" && second.value !== "/") {
+        if (first.value !== "X" && second.value !== "/" && !first.isSplit) {
           openFrames++;
         }
       }
     });
 
-    // Calculate last frame cumulative score as total
     const totalScore = allFrames[9].cumulativeScore || 0;
 
-    // First throw contexts count (for pocket %)
-    // Frames 1-9: 1 each = 9, plus up to 3 in 10th frame depending on strikes
-    let pocketOpportunities = 9; // frames 1-9
     const tenthFrame = allFrames[9];
-    pocketOpportunities++; // 1st throw of 10th
-    if (tenthFrame.throws[0]?.value === "X") pocketOpportunities++; // 2nd throw after strike
-    if (tenthFrame.throws[1]?.value === "X") pocketOpportunities++; // 3rd throw after strike
+    let totalFrames = 10;
+    if (tenthFrame.throws.length >= 2) {
+      const first10 = tenthFrame.throws[0];
+      const second10 = tenthFrame.throws[1];
+      if (first10?.value === "X") {
+        totalFrames = 11;
+        if (second10?.value === "X" && tenthFrame.throws[2]?.value) {
+          totalFrames = 12;
+        }
+      } else if (second10?.value === "/") {
+        totalFrames = 11;
+      }
+    }
 
-    // Count unconverted splits to exclude from spare opportunities
-    let unconvertedSplits = splitCount - splitConverted;
+    let pocketOpportunities = 9;
+    pocketOpportunities++;
+    if (tenthFrame.throws[0]?.value === "X") pocketOpportunities++;
+    if (tenthFrame.throws[1]?.value === "X" || tenthFrame.throws[1]?.value === "/") pocketOpportunities++;
+
+    const strikePercentage = totalFrames > 0 ? (strikes / totalFrames) * 100 : 0;
     
-    // Calculate percentages
-    const strikePercentage = (strikes / 12) * 100;
+    let spareOpportunities = 0;
+    let sparesConverted = 0;
+    for (let i = 0; i < 9; i++) {
+      const f = allFrames[i];
+      if (f.throws.length === 0 || f.throws[0].value === "" || f.throws[0].value === "X") continue;
+      if (f.throws[0].isSplit && f.throws[1]?.value !== "/") continue;
+      spareOpportunities++;
+      if (f.throws[1]?.value === "/") {
+        sparesConverted++;
+      }
+    }
+    if (tenthFrame.throws[0]?.value !== "X" && tenthFrame.throws[0]?.value !== "") {
+      if (!(tenthFrame.throws[0]?.isSplit && tenthFrame.throws[1]?.value !== "/")) {
+        spareOpportunities++;
+        if (tenthFrame.throws[1]?.value === "/") sparesConverted++;
+      }
+    }
+    // 11th frame spare opportunity - but NOT if 12th throw has no subsequent throw for conversion
+    if (tenthFrame.throws[0]?.value === "X" && tenthFrame.throws[1]?.value !== "X" && tenthFrame.throws[1]?.value !== "") {
+      if (!(tenthFrame.throws[1]?.isSplit && tenthFrame.throws[2]?.value !== "/")) {
+        spareOpportunities++;
+        if (tenthFrame.throws[2]?.value === "/") sparesConverted++;
+      }
+    }
     
-    // Spare % = spares / (opportunités de spare - splits non convertis)
-    // Les splits non convertis ne comptent pas dans le calcul
-    const baseSpareOpportunities = Math.max(0, 10 - strikes + (strikes > 10 ? 2 : 0));
-    const totalSpareOpportunities = Math.max(0, baseSpareOpportunities - unconvertedSplits);
-    const sparePercentage = totalSpareOpportunities > 0 
-      ? (spares / totalSpareOpportunities) * 100 
+    const sparePercentage = spareOpportunities > 0 
+      ? Math.min(100, (sparesConverted / spareOpportunities) * 100)
       : 0;
 
     const splitPercentage = splitCount > 0 
       ? (splitConverted / splitCount) * 100 
       : 0;
 
-    // Single pin conversion rate = of single pin situations, how many were converted
     const singlePinConversionRate = singlePinCount > 0 
       ? (singlePinConverted / singlePinCount) * 100 
       : 0;
 
     const pocketPercentage = pocketOpportunities > 0 
       ? (pocketCount / pocketOpportunities) * 100 
+      : 0;
+
+    const firstBallGte8Percentage = firstBallGte8Opportunities > 0
+      ? (firstBallGte8Count / firstBallGte8Opportunities) * 100
       : 0;
 
     return {
@@ -338,12 +455,16 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, c
       singlePinConverted,
       pocketCount,
       totalThrows,
+      totalFrames,
       strikePercentage: Math.round(strikePercentage * 10) / 10,
       sparePercentage: Math.round(sparePercentage * 10) / 10,
       splitPercentage: Math.round(splitPercentage * 10) / 10,
       singlePinConversionRate: Math.round(singlePinConversionRate * 10) / 10,
       pocketPercentage: Math.round(pocketPercentage * 10) / 10,
       openFrames,
+      firstBallGte8Count,
+      firstBallGte8Opportunities,
+      firstBallGte8Percentage: Math.round(firstBallGte8Percentage * 10) / 10,
     };
   }, []);
 
@@ -357,12 +478,12 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, c
     }
     
     // 10th frame:
-    // - 1st throw: always allowed
+    // - 1st throw: always allowed (first ball)
     // - 2nd throw: only if 1st was a strike (fresh pins)
-    // - 3rd throw: only if 2nd was a strike (fresh pins)
+    // - 3rd throw: if 2nd was a strike (fresh pins) OR if 2nd was a spare (fresh pins after spare)
     if (throwIndex === 0) return true;
     if (throwIndex === 1) return frame.throws[0]?.value === "X";
-    if (throwIndex === 2) return frame.throws[1]?.value === "X";
+    if (throwIndex === 2) return frame.throws[1]?.value === "X" || frame.throws[1]?.value === "/";
     
     return false;
   };
@@ -413,9 +534,20 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, c
       if (upperValue === "X") {
         currentThrow.pins = 10;
       } else if (upperValue === "/") {
-        // Spare: 10 minus previous pins in this frame
-        const previousPins = throws.slice(0, throwIndex).reduce((sum, t) => sum + t.pins, 0);
-        currentThrow.pins = 10 - previousPins;
+        const isTenthFrame = frameIndex === 9;
+        if (isTenthFrame) {
+          let pinsInCurrentSet = 0;
+          for (let ti = throwIndex - 1; ti >= 0; ti--) {
+            if (throws[ti]?.value === "X" || throws[ti]?.value === "/") {
+              break;
+            }
+            pinsInCurrentSet += throws[ti]?.pins || 0;
+          }
+          currentThrow.pins = 10 - pinsInCurrentSet;
+        } else {
+          const previousPins = throws.slice(0, throwIndex).reduce((sum, t) => sum + t.pins, 0);
+          currentThrow.pins = 10 - previousPins;
+        }
       } else if (upperValue === "-" || upperValue === "") {
         currentThrow.pins = 0;
       } else {
@@ -426,8 +558,31 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, c
       frame.throws = throws;
       newFrames[frameIndex] = frame;
 
-      return calculateAllScores(newFrames);
+      const calculated = calculateAllScores(newFrames);
+
+      // Auto-advance to next throw if a valid value was entered
+      if (upperValue !== "") {
+        const next = findNextThrow(frameIndex, throwIndex, calculated);
+        if (next) {
+          focusInput(next[0], next[1]);
+        }
+      }
+
+      return calculated;
     });
+  };
+
+  // Handle keyboard navigation (arrow keys)
+  const handleKeyDown = (frameIndex: number, throwIndex: number, e: React.KeyboardEvent) => {
+    if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+      e.preventDefault();
+      const next = findNextThrow(frameIndex, throwIndex, frames);
+      if (next) focusInput(next[0], next[1]);
+    } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+      e.preventDefault();
+      const prev = findPrevThrow(frameIndex, throwIndex, frames);
+      if (prev) focusInput(prev[0], prev[1]);
+    }
   };
 
   // Handle checkbox changes
@@ -510,12 +665,13 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, c
     onSave?.(stats, frames, ballData);
   };
 
-  // Get cell background color based on throw value
-  const getThrowCellStyle = (value: string): string => {
-    // Use semantic tokens only (no hard-coded colors)
+  // Get cell background color based on throw value and split status
+  const getThrowCellStyle = (value: string, throwData?: ThrowData): string => {
     if (value === "X") return "bg-primary text-primary-foreground font-bold";
     if (value === "/") return "bg-secondary text-secondary-foreground font-bold";
     if (value === "" || value === "-") return "bg-muted/50";
+    // Red background for splits
+    if (throwData?.isSplit) return "bg-destructive text-destructive-foreground font-bold";
     return "bg-accent text-accent-foreground";
   };
 
@@ -607,17 +763,19 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, c
                             return (
                               <div 
                                 key={throwIndex} 
-                                className={`${boxSize} border-l border-b border-foreground/20 ${
+                                className={`${boxSize} border-l border-b border-foreground/20 relative ${
                                   throwIndex === 0 && !isTenth ? "border-l-0" : ""
                                 }`}
                               >
                                 <Input
+                                  ref={(el) => setInputRef(frameIndex, throwIndex, el)}
                                   type="text"
                                   maxLength={1}
                                   value={value}
                                   onChange={(e) => handleThrowInput(frameIndex, throwIndex, e.target.value)}
+                                  onKeyDown={(e) => handleKeyDown(frameIndex, throwIndex, e)}
                                   disabled={!editable || isSaved}
-                                  className={`w-full h-full text-center text-sm font-bold p-0 uppercase rounded-none border-0 focus:ring-1 focus:ring-primary ${getThrowCellStyle(value)} ${isSaved ? "opacity-70" : ""}`}
+                                  className={`w-full h-full text-center text-sm font-bold p-0 uppercase rounded-none border-0 focus:ring-1 focus:ring-primary ${getThrowCellStyle(value, throwData)} ${isSaved ? "opacity-70" : ""}`}
                                   placeholder=""
                                 />
                               </div>
@@ -638,89 +796,142 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, c
           </div>
 
           {/* Total Score Display */}
-          <div className="mt-4 flex items-center justify-center">
+          <div className="mt-4 flex items-center justify-center gap-4">
             <div className="bg-primary/10 rounded-xl px-8 py-4 border border-primary/20">
               <div className="text-center">
                 <div className="text-sm text-muted-foreground font-medium">Score Total</div>
                 <div className="text-4xl font-bold text-primary">{stats.totalScore}</div>
               </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Throw Details - Pocket, Split, Single Pin */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-lg">Détails des lancers</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <div className="space-y-3 min-w-max">
-              {frames.map((frame, frameIndex) => (
-                <div key={frameIndex} className="flex items-center gap-3">
-                  <div className="w-16 text-sm font-medium text-muted-foreground shrink-0">
-                    Frame {frameIndex + 1}
-                  </div>
-                  <div className="flex gap-4 flex-wrap">
-                    {frame.throws.map((throwData, throwIndex) => {
-                      if (!throwData.value) return null;
-                      
-                      const pocketAllowed = isPocketAllowed(frameIndex, throwIndex, frame);
-                      const isBonusThrow = frameIndex === 9 && throwIndex >= 1 && 
-                        frame.throws.slice(0, throwIndex).every(t => t.value === "X");
-                      
-                      return (
-                        <div 
-                          key={throwIndex} 
-                          className="flex items-center gap-3 p-2 rounded-lg bg-muted/50"
-                        >
-                          <Badge variant="outline" className="shrink-0">
-                            L{throwIndex + 1}: {throwData.value}
-                          </Badge>
-                          
-                          {/* Pocket checkbox - only on first throw contexts */}
-                          {pocketAllowed && (
-                            <div className="flex items-center gap-2">
-                              <Checkbox
-                                id={`pocket-${frameIndex}-${throwIndex}`}
-                                checked={throwData.isPocket}
-                                disabled={isSaved}
-                                onCheckedChange={() => handleCheckboxChange(frameIndex, throwIndex, "isPocket")}
-                              />
-                              <Label htmlFor={`pocket-${frameIndex}-${throwIndex}`} className="text-xs">
-                                Boule en poche
-                              </Label>
-                            </div>
-                          )}
-
-                          {/* Split checkbox - same logic as pocket: first throw contexts */}
-                          {pocketAllowed && throwData.value !== "X" && throwData.value !== "/" && (
-                            <div className="flex items-center gap-2">
-                              <Checkbox
-                                id={`split-${frameIndex}-${throwIndex}`}
-                                checked={throwData.isSplit}
-                                disabled={isSaved}
-                                onCheckedChange={() => handleCheckboxChange(frameIndex, throwIndex, "isSplit")}
-                              />
-                              <Label 
-                                htmlFor={`split-${frameIndex}-${throwIndex}`} 
-                                className="text-xs"
-                              >
-                                Split
-                              </Label>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
+            <div className="bg-muted rounded-xl px-4 py-4 border border-border">
+              <div className="text-center">
+                <div className="text-sm text-muted-foreground font-medium">Frames</div>
+                <div className="text-2xl font-bold text-foreground">{stats.totalFrames}</div>
+              </div>
             </div>
           </div>
         </CardContent>
       </Card>
+
+      {/* Throw Details - Collapsible */}
+      <Collapsible open={detailsOpen} onOpenChange={setDetailsOpen}>
+        <Card>
+          <CollapsibleTrigger asChild>
+            <CardHeader className="pb-2 cursor-pointer hover:bg-muted/50 transition-colors">
+              <CardTitle className="text-lg flex items-center justify-between">
+                <span>Détails des lancers</span>
+                <ChevronDown className={`h-5 w-5 transition-transform duration-200 ${detailsOpen ? "rotate-180" : ""}`} />
+              </CardTitle>
+            </CardHeader>
+          </CollapsibleTrigger>
+           <CollapsibleContent>
+            <CardContent>
+              {/* Toggle all pockets button */}
+              {!isSaved && trackPockets && (
+                <div className="mb-4 flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setFrames(prevFrames => {
+                        const allPocketsChecked = prevFrames.every((frame, fi) =>
+                          frame.throws.every((t, ti) => {
+                            if (!t.value) return true;
+                            if (!isPocketAllowed(fi, ti, frame)) return true;
+                            return t.isPocket;
+                          })
+                        );
+                        return prevFrames.map((frame, fi) => ({
+                          ...frame,
+                          throws: frame.throws.map((t, ti) => {
+                            if (!t.value) return t;
+                            if (!isPocketAllowed(fi, ti, frame)) return t;
+                            return { ...t, isPocket: !allPocketsChecked };
+                          }),
+                        }));
+                      });
+                    }}
+                    className="gap-1"
+                  >
+                    <Target className="h-4 w-4" />
+                    {frames.every((frame, fi) =>
+                      frame.throws.every((t, ti) => {
+                        if (!t.value) return true;
+                        if (!isPocketAllowed(fi, ti, frame)) return true;
+                        return t.isPocket;
+                      })
+                    )
+                      ? "Décocher toutes les poches"
+                      : "Cocher toutes les poches"}
+                  </Button>
+                </div>
+              )}
+              <div className="overflow-x-auto">
+                <div className="space-y-3 min-w-max">
+                  {frames.map((frame, frameIndex) => (
+                    <div key={frameIndex} className="flex items-center gap-3">
+                      <div className="w-16 text-sm font-medium text-muted-foreground shrink-0">
+                        Frame {frameIndex + 1}
+                      </div>
+                      <div className="flex gap-4 flex-wrap">
+                        {frame.throws.map((throwData, throwIndex) => {
+                          if (!throwData.value) return null;
+                          
+                          const pocketAllowed = isPocketAllowed(frameIndex, throwIndex, frame);
+                          
+                          return (
+                            <div 
+                              key={throwIndex} 
+                              className="flex items-center gap-3 p-2 rounded-lg bg-muted/50"
+                            >
+                              <Badge variant="outline" className="shrink-0">
+                                L{throwIndex + 1}: {throwData.value}
+                              </Badge>
+                              
+                              {/* Pocket checkbox - only on first throw contexts */}
+                              {pocketAllowed && trackPockets && (
+                                <div className="flex items-center gap-2">
+                                  <Checkbox
+                                    id={`pocket-${frameIndex}-${throwIndex}`}
+                                    checked={throwData.isPocket}
+                                    disabled={isSaved}
+                                    onCheckedChange={() => handleCheckboxChange(frameIndex, throwIndex, "isPocket")}
+                                  />
+                                  <Label htmlFor={`pocket-${frameIndex}-${throwIndex}`} className="text-xs">
+                                    Boule en poche
+                                  </Label>
+                                </div>
+                              )}
+
+                              {/* Split checkbox - same logic as pocket: first throw contexts */}
+                              {pocketAllowed && throwData.value !== "X" && throwData.value !== "/" && (
+                                <div className="flex items-center gap-2">
+                                  <Checkbox
+                                    id={`split-${frameIndex}-${throwIndex}`}
+                                    checked={throwData.isSplit}
+                                    disabled={isSaved}
+                                    onCheckedChange={() => handleCheckboxChange(frameIndex, throwIndex, "isSplit")}
+                                  />
+                                  <Label 
+                                    htmlFor={`split-${frameIndex}-${throwIndex}`} 
+                                    className="text-xs"
+                                  >
+                                    Split
+                                  </Label>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </CollapsibleContent>
+        </Card>
+      </Collapsible>
 
       {/* Statistics Summary */}
       <Card className="bg-gradient-to-br from-primary/5 to-primary/10">
@@ -732,15 +943,19 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, c
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-            <StatBox 
+             <StatBox 
               label="% Strikes" 
               value={`${stats.strikePercentage}%`}
-              detail={`${stats.strikes} strikes`}
+              detail={`${stats.strikes}/${stats.totalFrames} frames`}
+              bgColorClass={getStatColor("strike", stats.strikePercentage).bg}
+              textColorClass={getStatColor("strike", stats.strikePercentage).text}
             />
             <StatBox 
               label="% Spares" 
               value={`${stats.sparePercentage}%`}
               detail={`${stats.spares} spares (hors splits)`}
+              bgColorClass={getStatColor("spare", stats.sparePercentage).bg}
+              textColorClass={getStatColor("spare", stats.sparePercentage).text}
             />
             <StatBox 
               label="% Splits conv." 
@@ -752,16 +967,27 @@ export function BowlingScoreSheet({ onSave, onCancel, initialFrames, playerId, c
               label="% QS converties" 
               value={`${stats.singlePinConversionRate}%`}
               detail={`${stats.singlePinConverted}/${stats.singlePinCount}`}
+              bgColorClass={getStatColor("singlePin", stats.singlePinConversionRate).bg}
+              textColorClass={getStatColor("singlePin", stats.singlePinConversionRate).text}
             />
             <StatBox 
-              label="% Boules en poche" 
+              label="% Poches" 
               value={`${stats.pocketPercentage}%`}
               detail={`${stats.pocketCount} lancers`}
+              bgColorClass={getStatColor("pocket", stats.pocketPercentage).bg}
+              textColorClass={getStatColor("pocket", stats.pocketPercentage).text}
             />
             <StatBox 
-              label="Open frames" 
+              label="% Boules ≥8" 
+              value={`${stats.firstBallGte8Percentage}%`}
+              detail={`${stats.firstBallGte8Count}/${stats.firstBallGte8Opportunities}`}
+              bgColorClass={getStatColor("firstBallGte8", stats.firstBallGte8Percentage).bg}
+              textColorClass={getStatColor("firstBallGte8", stats.firstBallGte8Percentage).text}
+            />
+            <StatBox 
+              label="Frames non fermées" 
               value={stats.openFrames.toString()}
-              detail="frames sans strike/spare"
+              detail="hors splits non convertis"
             />
             <StatBox 
               label="Score total" 
@@ -796,13 +1022,28 @@ interface StatBoxProps {
   detail: string;
   note?: string;
   highlight?: boolean;
+  colorClass?: string;
+  bgColorClass?: string;
+  textColorClass?: string;
 }
 
-function StatBox({ label, value, detail, note, highlight }: StatBoxProps) {
+function StatBox({ label, value, detail, note, highlight, colorClass, bgColorClass, textColorClass }: StatBoxProps) {
+  if (bgColorClass) {
+    const isNoire2 = textColorClass?.includes("text-red");
+    const valueColor = isNoire2 ? "text-red-600 font-extrabold" : "text-white";
+    return (
+      <div className={`p-3 rounded-lg ${bgColorClass} text-white`}>
+        <div className="text-xs opacity-80">{label}</div>
+        <div className={`text-xl font-bold ${valueColor}`}>{value}</div>
+        <div className="text-xs opacity-80">{detail}</div>
+        {note && <div className="text-xs opacity-70">{note}</div>}
+      </div>
+    );
+  }
   return (
     <div className={`p-3 rounded-lg ${highlight ? "bg-primary/20 border border-primary/30" : "bg-background border"}`}>
       <div className="text-xs text-muted-foreground">{label}</div>
-      <div className={`text-xl font-bold ${highlight ? "text-primary" : ""}`}>{value}</div>
+      <div className={`text-xl font-bold ${colorClass || (highlight ? "text-primary" : "")}`}>{value}</div>
       <div className="text-xs text-muted-foreground">{detail}</div>
       {note && <div className="text-xs text-muted-foreground">{note}</div>}
     </div>

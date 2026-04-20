@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { format, startOfWeek, addDays, addWeeks, subWeeks } from "date-fns";
 import { fr } from "date-fns/locale";
-import { ChevronLeft, ChevronRight, Plus, X, Clock, MapPin, Download, Printer } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, X, Clock, MapPin, Download, Printer, Target, Trophy, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { exportWeeklyPlanningToPdf, printElement } from "@/lib/pdfExport";
@@ -27,6 +27,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useViewerModeContext } from "@/contexts/ViewerModeContext";
+import { EXERCISE_CATEGORIES } from "@/lib/constants/rugbyPrecisionExercises";
+import { isRugbyType } from "@/lib/constants/sportTypes";
+import { PrecisionFieldTracker } from "@/components/rugby/PrecisionFieldTracker";
 
 interface WeeklyPlanningCalendarProps {
   categoryId: string;
@@ -44,6 +47,7 @@ interface PlanningItem {
   template_id: string | null;
   is_match?: boolean;
   match_opponent?: string | null;
+  notes?: string | null;
   template?: {
     name: string;
     session_type: string;
@@ -51,6 +55,8 @@ interface PlanningItem {
     intensity: string | null;
   } | null;
 }
+
+type SessionMode = "session" | "match" | "precision";
 
 export function WeeklyPlanningCalendar({ categoryId }: WeeklyPlanningCalendarProps) {
   const [currentWeekStart, setCurrentWeekStart] = useState(() =>
@@ -63,15 +69,36 @@ export function WeeklyPlanningCalendar({ categoryId }: WeeklyPlanningCalendarPro
   const [newItemLocation, setNewItemLocation] = useState("");
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("none");
   const [pendingTemplateId, setPendingTemplateId] = useState<string | null>(null);
-  const [isMatch, setIsMatch] = useState(false);
+  const [sessionMode, setSessionMode] = useState<SessionMode>("session");
   const [matchOpponent, setMatchOpponent] = useState("");
   const [isHomeMatch, setIsHomeMatch] = useState(true);
+  const [precisionCategory, setPrecisionCategory] = useState<string>("buteur");
+  const [precisionTrackerOpen, setPrecisionTrackerOpen] = useState(false);
+  const [precisionItemDate, setPrecisionItemDate] = useState<string | null>(null);
+  const [precisionSessionId, setPrecisionSessionId] = useState<string | null>(null);
 
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { isViewer } = useViewerModeContext();
 
   const weekStartStr = format(currentWeekStart, "yyyy-MM-dd");
+
+  // Fetch category sport type
+  const { data: category } = useQuery({
+    queryKey: ["category-sport-type-planning", categoryId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("categories")
+        .select("rugby_type")
+        .eq("id", categoryId)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const sportType = category?.rugby_type || "";
+  const isRugby = isRugbyType(sportType);
 
   const { data: planning, isLoading } = useQuery({
     queryKey: ["weekly-planning", categoryId, weekStartStr],
@@ -88,6 +115,39 @@ export function WeeklyPlanningCalendar({ categoryId }: WeeklyPlanningCalendarPro
       return data as PlanningItem[];
     },
   });
+
+  // Fetch matches for the current week from the matches table
+  const weekEndStr = format(addDays(currentWeekStart, 6), "yyyy-MM-dd");
+  const { data: weekMatches = [] } = useQuery({
+    queryKey: ["weekly-matches", categoryId, weekStartStr],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("matches")
+        .select("id, match_date, match_time, opponent, location, is_finalized, is_home, score_home, score_away, competition, event_type")
+        .eq("category_id", categoryId)
+        .gte("match_date", weekStartStr)
+        .lte("match_date", weekEndStr);
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  // Group matches by day of week
+  const matchesByDay = useMemo(() => {
+    const result: Record<number, typeof weekMatches> = {};
+    DAYS.forEach((_, i) => { result[i] = []; });
+    weekMatches.forEach((m) => {
+      const matchDate = new Date(m.match_date + "T00:00:00");
+      const dayIndex = DAYS.findIndex((_, i) => {
+        const dayDate = format(addDays(currentWeekStart, i), "yyyy-MM-dd");
+        return dayDate === m.match_date;
+      });
+      if (dayIndex >= 0) {
+        result[dayIndex].push(m);
+      }
+    });
+    return result;
+  }, [weekMatches, currentWeekStart]);
 
   const { data: templates } = useQuery({
     queryKey: ["session-templates", categoryId],
@@ -114,40 +174,87 @@ export function WeeklyPlanningCalendar({ categoryId }: WeeklyPlanningCalendarPro
     mutationFn: async () => {
       if (selectedDay === null) return;
       
-      // Calculate actual date for the match
-      const matchDate = format(addDays(currentWeekStart, selectedDay), "yyyy-MM-dd");
+      const itemDate = format(addDays(currentWeekStart, selectedDay), "yyyy-MM-dd");
       
       // If it's a match, also create it in the matches table
-      if (isMatch && matchOpponent) {
+      if (sessionMode === "match" && matchOpponent) {
         const { error: matchError } = await supabase.from("matches").insert({
           category_id: categoryId,
           opponent: matchOpponent,
-          match_date: matchDate,
+          match_date: itemDate,
           match_time: newItemTime || null,
           location: newItemLocation || null,
           is_home: isHomeMatch,
         });
         if (matchError) throw matchError;
       }
-      
+
+      // If precision session, also create a training_session
+      if (sessionMode === "precision") {
+        const catLabel = EXERCISE_CATEGORIES.find(c => c.key === precisionCategory)?.label || "Précision";
+        const firstExercise = EXERCISE_CATEGORIES.find(c => c.key === precisionCategory)?.exercises[0];
+        const precisionMeta = JSON.stringify({ id: firstExercise?.value || precisionCategory, label: catLabel });
+        const { error: tsError } = await supabase.from("training_sessions").insert({
+          category_id: categoryId,
+          session_date: itemDate,
+          session_start_time: newItemTime || null,
+          training_type: "precision",
+          notes: `<!--PRECISION_EXERCISE:${precisionMeta}-->`,
+        });
+        if (tsError) throw tsError;
+      }
+
+      const customTitle = sessionMode === "match" 
+        ? `Match vs ${matchOpponent}` 
+        : sessionMode === "precision"
+          ? `🎯 ${EXERCISE_CATEGORIES.find(c => c.key === precisionCategory)?.label || "Précision"}`
+          : (newItemTitle || null);
+
       const { error } = await supabase.from("weekly_planning").insert({
         category_id: categoryId,
         week_start_date: weekStartStr,
         day_of_week: selectedDay,
         time_slot: newItemTime || null,
-        custom_title: isMatch ? `Match vs ${matchOpponent}` : (newItemTitle || null),
+        custom_title: customTitle,
         location: newItemLocation || null,
-        template_id: (!isMatch && selectedTemplateId && selectedTemplateId !== "none") ? selectedTemplateId : null,
+        template_id: (sessionMode === "session" && selectedTemplateId && selectedTemplateId !== "none") ? selectedTemplateId : null,
         created_by: user?.id,
+        notes: sessionMode === "precision" ? `precision:${precisionCategory}` : null,
       });
       if (error) throw error;
     },
     onSuccess: () => {
+      const wasPrecision = sessionMode === "precision";
       queryClient.invalidateQueries({ queryKey: ["weekly-planning", categoryId, weekStartStr] });
       queryClient.invalidateQueries({ queryKey: ["matches", categoryId] });
       queryClient.invalidateQueries({ queryKey: ["weekly-planning-all", categoryId] });
-      toast.success(isMatch ? "Match ajouté" : "Séance ajoutée");
+      queryClient.invalidateQueries({ queryKey: ["today-training-sessions", categoryId] });
+      toast.success(
+        sessionMode === "match" ? "Match ajouté" : 
+        wasPrecision ? "Séance de précision ajoutée" : 
+        "Séance ajoutée"
+      );
       resetAddDialog();
+      // Auto-open precision tracker after creating precision session
+      if (wasPrecision && selectedDay !== null) {
+        const itemDate = format(addDays(currentWeekStart, selectedDay), "yyyy-MM-dd");
+        setPrecisionItemDate(itemDate);
+        // Find the just-created session
+        setTimeout(async () => {
+          const { data: sessions } = await supabase
+            .from("training_sessions")
+            .select("id")
+            .eq("category_id", categoryId)
+            .eq("session_date", itemDate)
+            .eq("training_type", "precision")
+            .order("created_at", { ascending: false })
+            .limit(1);
+          if (sessions && sessions.length > 0) {
+            setPrecisionSessionId(sessions[0].id);
+          }
+          setPrecisionTrackerOpen(true);
+        }, 500);
+      }
     },
     onError: () => {
       toast.error("Erreur lors de l'ajout");
@@ -176,9 +283,10 @@ export function WeeklyPlanningCalendar({ categoryId }: WeeklyPlanningCalendarPro
     setNewItemLocation("");
     setSelectedTemplateId("none");
     setPendingTemplateId(null);
-    setIsMatch(false);
+    setSessionMode("session");
     setMatchOpponent("");
     setIsHomeMatch(true);
+    setPrecisionCategory("buteur");
   };
 
   const handleDropOnDay = (dayIndex: number, templateData: string) => {
@@ -193,7 +301,6 @@ export function WeeklyPlanningCalendar({ categoryId }: WeeklyPlanningCalendarPro
         setSelectedTemplateId(template.id);
         setPendingTemplateId(null);
       } else {
-        // évite une valeur invalide tant que la liste n'est pas chargée
         setSelectedTemplateId("none");
       }
 
@@ -229,6 +336,17 @@ export function WeeklyPlanningCalendar({ categoryId }: WeeklyPlanningCalendarPro
     if (calendarRef.current) {
       printElement(calendarRef.current, `Planning Hebdomadaire - Semaine du ${format(currentWeekStart, "d MMMM yyyy", { locale: fr })}`);
     }
+  };
+
+  const isPrecisionItem = (item: PlanningItem) => {
+    return item.notes?.startsWith("precision:") || item.custom_title?.startsWith("🎯");
+  };
+
+  const getPrecisionTheme = (item: PlanningItem): string | null => {
+    if (!isPrecisionItem(item)) return null;
+    const catKey = item.notes?.replace("precision:", "");
+    const cat = EXERCISE_CATEGORIES.find(c => c.key === catKey);
+    return cat?.label || null;
   };
 
   return (
@@ -300,6 +418,7 @@ export function WeeklyPlanningCalendar({ categoryId }: WeeklyPlanningCalendarPro
                           setSelectedTemplateId("none");
                           setPendingTemplateId(null);
                           setNewItemTitle("");
+                          setSessionMode("session");
                           setAddDialogOpen(true);
                         }}
                       >
@@ -309,10 +428,61 @@ export function WeeklyPlanningCalendar({ categoryId }: WeeklyPlanningCalendarPro
                   </div>
                 
                 <div className="space-y-1">
+                  {/* Matches from competition tab */}
+                  {matchesByDay[index]?.map((match) => (
+                    <div
+                      key={`match-${match.id}`}
+                      className="rounded p-2 text-xs bg-destructive/10 border border-destructive/30"
+                    >
+                      <div className="flex items-center gap-1 font-medium">
+                        <Trophy className="h-3 w-3 text-destructive shrink-0" />
+                        <span className="truncate">
+                          {match.opponent}
+                        </span>
+                      </div>
+                      {match.competition && (
+                        <p className="text-[10px] text-muted-foreground truncate mt-0.5">
+                          {match.competition}
+                        </p>
+                      )}
+                      {match.match_time && (
+                        <div className="flex items-center gap-1 text-muted-foreground mt-0.5">
+                          <Clock className="h-3 w-3" />
+                          {match.match_time.substring(0, 5)}
+                        </div>
+                      )}
+                      {match.location && (
+                        <div className="flex items-center gap-1 text-muted-foreground">
+                          <MapPin className="h-3 w-3" />
+                          <span className="truncate">{match.location}</span>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-1 mt-1">
+                        {match.is_finalized ? (
+                          <Badge variant="secondary" className="text-[9px] px-1 py-0 h-4 gap-0.5">
+                            <CheckCircle2 className="h-2.5 w-2.5" />
+                            Terminé
+                            {match.score_home != null && match.score_away != null && (
+                              <span className="ml-0.5">{match.score_home}-{match.score_away}</span>
+                            )}
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 border-destructive/40 text-destructive">
+                            En cours
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  
+                  {/* Planning items */}
                   {planningByDay[index]?.map((item) => (
                       <div
                         key={item.id}
-                        className="group relative bg-primary/10 rounded p-2 text-xs"
+                        className={cn(
+                          "group relative rounded p-2 text-xs",
+                          isPrecisionItem(item) ? "bg-amber-500/15 border border-amber-500/30" : "bg-primary/10"
+                        )}
                       >
                         {!isViewer && (
                           <Button
@@ -327,6 +497,11 @@ export function WeeklyPlanningCalendar({ categoryId }: WeeklyPlanningCalendarPro
                         <p className="font-medium truncate">
                         {item.template?.name || item.custom_title || "Séance"}
                       </p>
+                      {isPrecisionItem(item) && (
+                        <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 border-amber-500/40 text-amber-700 dark:text-amber-400 mt-0.5">
+                          {getPrecisionTheme(item) || "Précision"}
+                        </Badge>
+                      )}
                       {item.time_slot && (
                         <div className="flex items-center gap-1 text-muted-foreground mt-1">
                           <Clock className="h-3 w-3" />
@@ -338,6 +513,35 @@ export function WeeklyPlanningCalendar({ categoryId }: WeeklyPlanningCalendarPro
                           <MapPin className="h-3 w-3" />
                           <span className="truncate">{item.location}</span>
                         </div>
+                      )}
+                      {/* Precision session: button to open tracker */}
+                      {isPrecisionItem(item) && !isViewer && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full mt-1.5 h-6 text-[10px] gap-1 border-amber-500/30 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10"
+                          onClick={async () => {
+                            const itemDate = format(addDays(currentWeekStart, index), "yyyy-MM-dd");
+                            setPrecisionItemDate(itemDate);
+                            const { data: sessions } = await supabase
+                              .from("training_sessions")
+                              .select("id")
+                              .eq("category_id", categoryId)
+                              .eq("session_date", itemDate)
+                              .eq("training_type", "precision")
+                              .order("created_at", { ascending: false })
+                              .limit(1);
+                            if (sessions && sessions.length > 0) {
+                              setPrecisionSessionId(sessions[0].id);
+                            } else {
+                              setPrecisionSessionId(null);
+                            }
+                            setPrecisionTrackerOpen(true);
+                          }}
+                        >
+                          <Target className="h-3 w-3" />
+                          Saisir stats
+                        </Button>
                       )}
                     </div>
                   ))}
@@ -353,6 +557,7 @@ export function WeeklyPlanningCalendar({ categoryId }: WeeklyPlanningCalendarPro
         </CardContent>
       </Card>
 
+      {/* Add dialog */}
       <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -361,12 +566,12 @@ export function WeeklyPlanningCalendar({ categoryId }: WeeklyPlanningCalendarPro
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            <div className="flex items-center gap-4 p-3 rounded-lg border bg-muted/50">
+            <div className="flex items-center gap-3 p-3 rounded-lg border bg-muted/50 flex-wrap">
               <Label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="radio"
-                  checked={!isMatch}
-                  onChange={() => setIsMatch(false)}
+                  checked={sessionMode === "session"}
+                  onChange={() => setSessionMode("session")}
                   className="accent-primary"
                 />
                 Séance
@@ -374,15 +579,29 @@ export function WeeklyPlanningCalendar({ categoryId }: WeeklyPlanningCalendarPro
               <Label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="radio"
-                  checked={isMatch}
-                  onChange={() => setIsMatch(true)}
+                  checked={sessionMode === "match"}
+                  onChange={() => setSessionMode("match")}
                   className="accent-primary"
                 />
                 Match
               </Label>
+              {isRugby && (
+                <Label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    checked={sessionMode === "precision"}
+                    onChange={() => setSessionMode("precision")}
+                    className="accent-primary"
+                  />
+                  <span className="flex items-center gap-1">
+                    <Target className="h-3.5 w-3.5" />
+                    Précision
+                  </span>
+                </Label>
+              )}
             </div>
 
-            {isMatch ? (
+            {sessionMode === "match" && (
               <>
                 <div className="space-y-2">
                   <Label>Adversaire *</Label>
@@ -413,7 +632,63 @@ export function WeeklyPlanningCalendar({ categoryId }: WeeklyPlanningCalendarPro
                   </Label>
                 </div>
               </>
-            ) : (
+            )}
+
+            {sessionMode === "precision" && (
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <Label>Thématique de précision *</Label>
+                  <Select value={precisionCategory} onValueChange={setPrecisionCategory}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent position="popper" className="z-[200]">
+                      {EXERCISE_CATEGORIES.map((cat) => (
+                        <SelectItem key={cat.key} value={cat.key}>
+                          {cat.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {/* Preview of what will be available */}
+                <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 space-y-2">
+                  {precisionCategory === "buteur" && (
+                    <>
+                      <p className="text-xs font-medium text-primary">🎯 Exercices disponibles sur le terrain :</p>
+                      <div className="flex items-center gap-3 flex-wrap">
+                        {EXERCISE_CATEGORIES.find(c => c.key === "buteur")?.exercises.map(ex => (
+                          <span key={ex.value} className="flex items-center gap-1.5 text-xs">
+                            <span style={{ color: ex.color }}>
+                              {ex.shape === "circle" ? "●" : ex.shape === "square" ? "■" : "◆"}
+                            </span>
+                            {ex.label}
+                          </span>
+                        ))}
+                      </div>
+                      <p className="text-[10px] text-muted-foreground">
+                        Les 3 types de tir seront disponibles simultanément sur la cartographie, comme en match.
+                      </p>
+                    </>
+                  )}
+                  {precisionCategory === "zone_kicks" && (
+                    <p className="text-xs text-muted-foreground">
+                      🦶 Coups de pied de zone : coup d'envoi, renvoi en-but, renvoi 22m, coup de pied tactique.
+                    </p>
+                  )}
+                  {precisionCategory === "lineout" && (
+                    <p className="text-xs text-muted-foreground">
+                      📏 Touche : saisie des lancers par zone (devant/milieu/fond × hauteur).
+                    </p>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  La cartographie s'ouvrira automatiquement après la création pour saisir les stats joueur par joueur.
+                </p>
+              </div>
+            )}
+
+            {sessionMode === "session" && (
               <>
                 <div className="space-y-2">
                   <Label>Template (optionnel)</Label>
@@ -471,7 +746,9 @@ export function WeeklyPlanningCalendar({ categoryId }: WeeklyPlanningCalendarPro
               <Button 
                 onClick={() => addPlanningItem.mutate()}
                 disabled={
-                  (isMatch ? !matchOpponent : ((!selectedTemplateId || selectedTemplateId === "none") && !newItemTitle)) || 
+                  (sessionMode === "match" ? !matchOpponent : 
+                   sessionMode === "precision" ? !precisionCategory :
+                   ((!selectedTemplateId || selectedTemplateId === "none") && !newItemTitle)) || 
                   addPlanningItem.isPending
                 }
               >
@@ -481,6 +758,30 @@ export function WeeklyPlanningCalendar({ categoryId }: WeeklyPlanningCalendarPro
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Precision tracker dialog */}
+      {isRugby && (
+        <Dialog open={precisionTrackerOpen} onOpenChange={setPrecisionTrackerOpen}>
+          <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Target className="h-5 w-5 text-primary" />
+                Saisie de précision
+                {precisionItemDate && (
+                  <span className="text-sm font-normal text-muted-foreground ml-2">
+                    — {format(new Date(precisionItemDate), "d MMMM yyyy", { locale: fr })}
+                  </span>
+                )}
+              </DialogTitle>
+            </DialogHeader>
+            <PrecisionFieldTracker 
+              categoryId={categoryId} 
+              sessionId={precisionSessionId || undefined}
+              sessionDate={precisionItemDate || undefined}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
     </>
   );
 }

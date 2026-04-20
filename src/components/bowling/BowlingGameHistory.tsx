@@ -7,6 +7,7 @@ import { Calendar, Eye, Trophy } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { BowlingScoreSheet, type FrameData, type BowlingStats } from "@/components/athlete-portal/BowlingScoreSheet";
+import { getStatColor } from "@/lib/bowling/statColors";
 
 interface BowlingGameData {
   roundId: string;
@@ -56,7 +57,6 @@ export function BowlingGameHistory({ games, categoryId }: BowlingGameHistoryProp
     );
   }
 
-  // Group games by match (competition)
   const groupedByMatch = games.reduce<Record<string, { matchDate: string; opponent: string; games: BowlingGameData[] }>>((acc, game) => {
     if (!acc[game.matchId]) {
       acc[game.matchId] = { matchDate: game.matchDate, opponent: game.matchOpponent, games: [] };
@@ -110,8 +110,12 @@ export function BowlingGameHistory({ games, categoryId }: BowlingGameHistoryProp
                         <span className="text-2xl font-bold tabular-nums">{game.score}</span>
                       </div>
                       <div className="flex items-center gap-3">
-                        <div className="text-right text-xs text-muted-foreground hidden sm:block">
-                          <div>{game.strikes}X / {game.spares}/ / {game.openFrames} open</div>
+                         <div className="text-right text-xs text-muted-foreground hidden sm:block">
+                          <div className="flex items-center gap-1 justify-end">
+                            <span className={`${getStatColor("strike", game.strikePercentage).bg} ${getStatColor("strike", game.strikePercentage).text.includes("text-red") ? "text-red-600" : "text-white"} px-1.5 py-0.5 rounded text-xs font-medium`}>{game.strikes}X</span>
+                            <span className={`${getStatColor("spare", game.sparePercentage).bg} ${getStatColor("spare", game.sparePercentage).text.includes("text-red") ? "text-red-600" : "text-white"} px-1.5 py-0.5 rounded text-xs font-medium`}>{game.spares}/</span>
+                            <span className="text-muted-foreground">{game.openFrames} open</span>
+                          </div>
                           <div>Splits: {game.splitCount} ({game.splitConverted} conv.)</div>
                         </div>
                         {game.frames && (
@@ -135,7 +139,7 @@ export function BowlingGameHistory({ games, categoryId }: BowlingGameHistoryProp
         })}
       </div>
 
-      {/* Read-only score sheet dialog */}
+      {/* Read-only score sheet dialog - interactive for viewing details */}
       <Dialog open={!!viewingGame} onOpenChange={(open) => !open && setViewingGame(null)}>
         <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -146,13 +150,12 @@ export function BowlingGameHistory({ games, categoryId }: BowlingGameHistoryProp
             </DialogTitle>
           </DialogHeader>
           {viewingGame?.frames && (
-            <div className="pointer-events-none opacity-90">
-              <BowlingScoreSheet
-                initialFrames={viewingGame.frames}
-                onSave={() => {}}
-                onCancel={() => {}}
-              />
-            </div>
+            <BowlingScoreSheet
+              initialFrames={viewingGame.frames}
+              onSave={() => {}}
+              onCancel={() => setViewingGame(null)}
+              readOnly
+            />
           )}
         </DialogContent>
       </Dialog>

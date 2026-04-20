@@ -9,13 +9,29 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
   const PORT = Number(env.VITE_PORT);
 
-  // TODO: Séparation des config:
-  // - développement
-  // - production
-  // - ...
+  // Fallbacks robustes pour éviter un crash runtime si l'env build n'injecte pas les vars
+  const SUPABASE_URL =
+    env.VITE_SUPABASE_URL ||
+    process.env.VITE_SUPABASE_URL ||
+    "https://mbloebaovvvgfwxsdzgo.supabase.co";
+
+  const SUPABASE_PUBLISHABLE_KEY =
+    env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+    process.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1ibG9lYmFvdnZ2Z2Z3eHNkemdvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwMTc0NzksImV4cCI6MjA3ODU5MzQ3OX0.o2SMHIz5Vg34bhLErBlMT1Ign6enDcHTzhbIzMIkJLE";
+
+  const SUPABASE_PROJECT_ID =
+    env.VITE_SUPABASE_PROJECT_ID ||
+    process.env.VITE_SUPABASE_PROJECT_ID ||
+    "mbloebaovvvgfwxsdzgo";
 
   return {
     clearScreen: false,
+    define: {
+      "import.meta.env.VITE_SUPABASE_URL": JSON.stringify(SUPABASE_URL),
+      "import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY": JSON.stringify(SUPABASE_PUBLISHABLE_KEY),
+      "import.meta.env.VITE_SUPABASE_PROJECT_ID": JSON.stringify(SUPABASE_PROJECT_ID),
+    },
     server: {
       host: "::",
       port: PORT,
@@ -31,7 +47,7 @@ export default defineConfig(({ mode }) => {
     plugins: [
       react(),
       mode === "development" && componentTagger(),
-      VitePWA({
+      mode !== "development" && VitePWA({
         registerType: 'autoUpdate',
         includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg', 'pwa-192x192.png', 'pwa-512x512.png'],
         manifest: {
@@ -76,7 +92,7 @@ export default defineConfig(({ mode }) => {
                 cacheName: 'supabase-api-cache',
                 expiration: {
                   maxEntries: 500,
-                  maxAgeSeconds: 60 * 60 * 24 * 2 // 48 hours
+                  maxAgeSeconds: 60 * 60 * 24 * 2
                 },
                 cacheableResponse: {
                   statuses: [0, 200]
@@ -91,7 +107,7 @@ export default defineConfig(({ mode }) => {
                 cacheName: 'supabase-storage-cache',
                 expiration: {
                   maxEntries: 500,
-                  maxAgeSeconds: 60 * 60 * 24 * 14 // 14 days
+                  maxAgeSeconds: 60 * 60 * 24 * 14
                 },
                 cacheableResponse: {
                   statuses: [0, 200]
@@ -105,7 +121,7 @@ export default defineConfig(({ mode }) => {
                 cacheName: 'google-fonts-cache',
                 expiration: {
                   maxEntries: 30,
-                  maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
+                  maxAgeSeconds: 60 * 60 * 24 * 365
                 }
               }
             },
@@ -116,7 +132,7 @@ export default defineConfig(({ mode }) => {
                 cacheName: 'gstatic-fonts-cache',
                 expiration: {
                   maxEntries: 30,
-                  maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
+                  maxAgeSeconds: 60 * 60 * 24 * 365
                 }
               }
             },
@@ -127,14 +143,14 @@ export default defineConfig(({ mode }) => {
                 cacheName: 'images-cache',
                 expiration: {
                   maxEntries: 300,
-                  maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
+                  maxAgeSeconds: 60 * 60 * 24 * 30
                 }
               }
             }
           ]
         },
         devOptions: {
-          enabled: true
+          enabled: false
         }
       })
     ].filter(Boolean),

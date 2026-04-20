@@ -67,17 +67,39 @@ serve(async (req) => {
         return json({ success: false, error: "Données manquantes" }, 400);
       }
 
+      // Check player access: either primary category or via player_categories
       const { data: player, error: playerError } = await supabase
         .from("players")
         .select("id")
         .eq("id", player_id)
-        .eq("category_id", category_id)
         .eq("user_id", userId)
         .maybeSingle();
 
       if (playerError) throw playerError;
       if (!player) {
         return json({ success: false, error: "Accès refusé pour ce joueur" }, 403);
+      }
+
+      // Verify player has access to this category
+      const { data: primaryMatch } = await supabase
+        .from("players")
+        .select("id")
+        .eq("id", player_id)
+        .eq("category_id", category_id)
+        .maybeSingle();
+
+      if (!primaryMatch) {
+        const { data: pcMatch } = await supabase
+          .from("player_categories")
+          .select("id")
+          .eq("player_id", player_id)
+          .eq("category_id", category_id)
+          .eq("status", "accepted")
+          .maybeSingle();
+
+        if (!pcMatch) {
+          return json({ success: false, error: "Accès refusé pour cette catégorie" }, 403);
+        }
       }
 
       const parsedIntensity =

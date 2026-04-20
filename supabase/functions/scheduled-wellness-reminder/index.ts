@@ -29,16 +29,55 @@ serve(async (req) => {
       Authorization: `Key ${oneSignalApiKey}`,
     };
 
-    // Get all active categories with their players
+    // Get all clubs with their timezone
+    const { data: allClubs, error: clubsError } = await supabase
+      .from("clubs")
+      .select("id, name, timezone");
+
+    if (clubsError) throw clubsError;
+    if (!allClubs || allClubs.length === 0) {
+      return new Response(
+        JSON.stringify({ message: "No clubs found" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Filter clubs where it's currently 8h in their timezone
+    const eligibleClubIds: string[] = [];
+    for (const club of allClubs) {
+      try {
+        const tz = club.timezone || "Europe/Paris";
+        const nowInTz = new Date().toLocaleString("en-US", { timeZone: tz });
+        const localHour = new Date(nowInTz).getHours();
+        if (localHour === 8) {
+          eligibleClubIds.push(club.id);
+          console.log(`[wellness] Club "${club.name}" (${tz}) → 8h local ✓`);
+        } else {
+          console.log(`[wellness] Club "${club.name}" (${tz}) → ${localHour}h local, skipping`);
+        }
+      } catch (e) {
+        console.error(`[wellness] Invalid timezone for club "${club.name}": ${club.timezone}`, e);
+      }
+    }
+
+    if (eligibleClubIds.length === 0) {
+      console.log("[wellness] No clubs at 8h local right now");
+      return new Response(
+        JSON.stringify({ skipped: true, reason: "No clubs at 8h local" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Get categories for eligible clubs only
     const { data: categories, error: catError } = await supabase
       .from("categories")
-      .select(`id, name, club_id, clubs!inner(name)`);
+      .select("id, name, club_id, clubs!inner(name)")
+      .in("club_id", eligibleClubIds);
 
     if (catError) throw catError;
-
     if (!categories || categories.length === 0) {
       return new Response(
-        JSON.stringify({ message: "No categories found" }),
+        JSON.stringify({ message: "No categories for eligible clubs" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -52,7 +91,6 @@ serve(async (req) => {
     const wellnessDeepLink = `${appBaseUrl}/athlete-space?tab=wellness`;
 
     for (const category of categories) {
-      // Get players with email OR with a user account (for push)
       const { data: players, error: playersError } = await supabase
         .from("players")
         .select("id, name, email, phone, user_id")
@@ -112,7 +150,7 @@ serve(async (req) => {
         }
       }
 
-      // ── PUSH via OneSignal (external_id targeting) ─────────────────────────
+      // ── PUSH via OneSignal ─────────────────────────────────────────────
       const pushUserIds = players
         .filter((p) => p.user_id)
         .map((p) => p.user_id!);
@@ -169,6 +207,7 @@ serve(async (req) => {
         message: `${totalEmailsSent} email(s) + ${totalPushSent} push sent`,
         emailsSent: totalEmailsSent,
         pushSent: totalPushSent,
+        eligibleClubs: eligibleClubIds.length,
         results,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }

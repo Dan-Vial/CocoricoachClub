@@ -28,6 +28,8 @@ import { useStatPreferences } from "@/hooks/use-stat-preferences";
 import { BowlingOilPatternSection } from "./BowlingOilPatternSection";
 import { BowlingScoreSheet, FrameData, BowlingStats } from "@/components/athlete-portal/BowlingScoreSheet";
 import { isAthletismeCategory } from "@/lib/constants/sportTypes";
+import { BowlingBlockManager, type BowlingBlock, type Round as BowlingRound, BOWLING_COMPETITION_CATEGORIES, BOWLING_PHASES } from "@/components/bowling/BowlingBlockManager";
+import { BowlingCompetitionSummary } from "@/components/bowling/BowlingCompetitionSummary";
 
 const blurOnWheel = (e: React.WheelEvent<HTMLInputElement>) => {
   // Prevent wheel/trackpad from changing number inputs instead of scrolling the dialog
@@ -49,7 +51,6 @@ interface Round {
   result: string;
   notes: string;
   stats: Record<string, number>;
-  // New fields for Aviron/Judo
   phase: string;
   lane?: number;
   wind_conditions?: string;
@@ -58,9 +59,12 @@ interface Round {
   final_time_seconds?: number;
   ranking?: number;
   gap_to_first?: string;
-  // Bowling specific
+  bowlingCategory?: string;
   isLocked?: boolean;
   bowlingFrames?: FrameData[];
+  roundDate?: string;
+  blockId?: string;
+  ballData?: { mode: string; ballId?: string | null; frameBalls?: (string | null)[] };
 }
 
 interface PlayerRounds {
@@ -97,15 +101,7 @@ const JUDO_PHASES = [
   { value: "finale", label: "Finale" },
 ];
 
-// Bowling phases
-const BOWLING_PHASES = [
-  { value: "qualification", label: "Qualification" },
-  { value: "round_robin", label: "Round Robin" },
-  { value: "quart", label: "Quart de finale" },
-  { value: "demi", label: "Demi-finale" },
-  { value: "petite_finale", label: "Petite finale" },
-  { value: "finale", label: "Finale" },
-];
+// Bowling categories and phases are imported from BowlingBlockManager
 
 // Aviron boat types
 const AVIRON_BOAT_TYPES = [
@@ -134,6 +130,7 @@ export function CompetitionRoundsDialog({
   const [playerRoundsData, setPlayerRoundsData] = useState<PlayerRounds[]>([]);
   const [selectedPlayerId, setSelectedPlayerId] = useState<string>("");
   const [isDataInitialized, setIsDataInitialized] = useState(false);
+  const [bowlingBlocks, setBowlingBlocks] = useState<Record<string, BowlingBlock[]>>({});
   const queryClient = useQueryClient();
 
   const { stats: filteredSportStats, hasCustomPreferences } = useStatPreferences({ categoryId, sportType });
@@ -226,12 +223,29 @@ export function CompetitionRoundsDialog({
     toast.success(`Partie ${roundNumber} validée et verrouillée`);
   };
 
+  // Unlock a bowling round for re-editing
+  const unlockBowlingRound = (playerId: string, roundNumber: number) => {
+    setPlayerRoundsData(prev => prev.map(p => {
+      if (p.playerId === playerId) {
+        return {
+          ...p,
+          rounds: p.rounds.map(r => 
+            r.round_number === roundNumber ? { ...r, isLocked: false } : r
+          ),
+        };
+      }
+      return p;
+    }));
+    toast.info(`Partie ${roundNumber} déverrouillée pour modification`);
+  };
+
   // Handle bowling score sheet save with frames
   const handleBowlingScoreSheetSave = (
     playerId: string, 
     roundNumber: number, 
     sheetStats: BowlingStats, 
-    frames: FrameData[]
+    frames: FrameData[],
+    ballData?: any
   ) => {
     setPlayerRoundsData(prev => prev.map(p => {
       if (p.playerId === playerId) {
@@ -243,6 +257,7 @@ export function CompetitionRoundsDialog({
                 ...r,
                 bowlingFrames: frames,
                 isLocked: true,
+                ballData: ballData || r.ballData,
                 stats: {
                   ...r.stats,
                   gameScore: sheetStats.totalScore,
@@ -315,28 +330,42 @@ export function CompetitionRoundsDialog({
 
   // Initialize data only once when lineup and existingRounds are loaded
   useEffect(() => {
-    // Only initialize once to prevent overwriting local state (new rounds added by user)
     if (isDataInitialized) return;
     
     if (lineup && lineup.length > 0) {
+      const newBowlingBlocks: Record<string, BowlingBlock[]> = {};
+      
       const playersData = lineup.map((l) => {
         const player = l.players as { id: string; name: string; first_name?: string; discipline?: string; specialty?: string } | null;
         const playerRounds = existingRounds?.filter(r => r.player_id === l.player_id) || [];
         
-        return {
-          playerId: l.player_id,
-          playerName: [player?.first_name, player?.name].filter(Boolean).join(" ") || "Athlète",
-          discipline: player?.discipline || undefined,
-          specialty: player?.specialty || undefined,
-          boat_type: l.boat_type || undefined,
-          crew_role: l.crew_role || undefined,
-          seat_position: l.seat_position || undefined,
-          rounds: playerRounds.map(r => {
+        // For bowling: reconstruct blocks from existing rounds
+        if (isBowling && playerRounds.length > 0) {
+          const blockMap = new Map<string, BowlingBlock>();
+          const roundsWithBlocks = playerRounds.map(r => {
             const statData = r.competition_round_stats?.[0]?.stat_data as Record<string, any> || {};
-            // Extract bowling frames if stored in stat_data
             const bowlingFrames = statData.bowlingFrames as FrameData[] | undefined;
-            // Remove bowlingFrames from stats object for display
-            const { bowlingFrames: _, ...cleanStats } = statData;
+            const bowlingCategory = statData.bowlingCategory as string | undefined;
+            const roundDate = statData.roundDate as string | undefined;
+            const blockId = statData.blockId as string | undefined;
+            const ballData = statData.ballData as any | undefined;
+            const { bowlingFrames: _, bowlingCategory: _bc, roundDate: _rd, blockId: _bi, ballData: _bd, ...cleanStats } = statData;
+            
+            // Create or find block
+            const effectiveBlockId = blockId || `legacy_${roundDate || "nodate"}_${bowlingCategory || "nocat"}_${r.phase || "nophase"}`;
+            if (!blockMap.has(effectiveBlockId)) {
+              blockMap.set(effectiveBlockId, {
+                id: effectiveBlockId,
+                roundDate: roundDate || matchData?.match_date?.split("T")[0] || "",
+                bowlingCategory: bowlingCategory || "",
+                phase: r.phase || "",
+                opponent_name: r.opponent_name || "",
+                notes: "",
+                debriefing: (statData.blockDebriefing as string) || "",
+                isCollapsed: false,
+                trackPockets: statData.trackPockets !== false,
+              });
+            }
             
             return {
               id: r.id,
@@ -353,22 +382,79 @@ export function CompetitionRoundsDialog({
               final_time_seconds: r.final_time_seconds || undefined,
               ranking: r.ranking || undefined,
               gap_to_first: r.gap_to_first || undefined,
-              // For bowling: mark as locked if it has an id (already saved), restore frames
               isLocked: !!r.id,
               bowlingFrames: bowlingFrames,
+              bowlingCategory: bowlingCategory,
+              roundDate: roundDate,
+              blockId: effectiveBlockId,
+              ballData: ballData,
+            };
+          });
+          
+          newBowlingBlocks[l.player_id] = Array.from(blockMap.values());
+          
+          return {
+            playerId: l.player_id,
+            playerName: [player?.first_name, player?.name].filter(Boolean).join(" ") || "Athlète",
+            discipline: player?.discipline || undefined,
+            specialty: player?.specialty || undefined,
+            boat_type: l.boat_type || undefined,
+            crew_role: l.crew_role || undefined,
+            seat_position: l.seat_position || undefined,
+            rounds: roundsWithBlocks,
+          };
+        }
+        
+        // Non-bowling path (unchanged)
+        return {
+          playerId: l.player_id,
+          playerName: [player?.first_name, player?.name].filter(Boolean).join(" ") || "Athlète",
+          discipline: player?.discipline || undefined,
+          specialty: player?.specialty || undefined,
+          boat_type: l.boat_type || undefined,
+          crew_role: l.crew_role || undefined,
+          seat_position: l.seat_position || undefined,
+          rounds: playerRounds.map(r => {
+            const statData = r.competition_round_stats?.[0]?.stat_data as Record<string, any> || {};
+            const bowlingFrames = statData.bowlingFrames as FrameData[] | undefined;
+            const bowlingCategory = statData.bowlingCategory as string | undefined;
+            const roundDate = statData.roundDate as string | undefined;
+            const { bowlingFrames: _, bowlingCategory: _bc, roundDate: _rd, ...cleanStats } = statData;
+            
+            return {
+              id: r.id,
+              round_number: r.round_number,
+              opponent_name: r.opponent_name || "",
+              result: r.result || "",
+              notes: r.notes || "",
+              stats: cleanStats as Record<string, number>,
+              phase: r.phase || "",
+              lane: r.lane || undefined,
+              wind_conditions: r.wind_conditions || undefined,
+              current_conditions: r.current_conditions || undefined,
+              temperature_celsius: r.temperature_celsius || undefined,
+              final_time_seconds: r.final_time_seconds || undefined,
+              ranking: r.ranking || undefined,
+              gap_to_first: r.gap_to_first || undefined,
+              isLocked: !!r.id,
+              bowlingFrames: bowlingFrames,
+              bowlingCategory: bowlingCategory,
+              roundDate: roundDate,
             };
           }),
         };
       });
       setPlayerRoundsData(playersData);
+      if (Object.keys(newBowlingBlocks).length > 0) {
+        setBowlingBlocks(newBowlingBlocks);
+      }
       setIsDataInitialized(true);
       
-      // Only set the default selected player if not already set
       if (!selectedPlayerId && playersData.length > 0) {
         setSelectedPlayerId(playersData[0].playerId);
       }
     }
-  }, [lineup, existingRounds, isDataInitialized, selectedPlayerId]);
+  }, [lineup, existingRounds, isDataInitialized, selectedPlayerId, isBowling, matchData]);
 
   // Update crew info for a player
   const updatePlayerCrewInfo = (playerId: string, field: string, value: any) => {
@@ -429,10 +515,20 @@ export function CompetitionRoundsDialog({
 
           if (roundError) throw roundError;
 
-          // Insert stats for this round (include bowling frames if present)
-          const statDataToSave = round.bowlingFrames 
-            ? { ...round.stats, bowlingFrames: round.bowlingFrames }
-            : round.stats;
+          // Insert stats for this round (include bowling frames, ballData, blockId if present)
+          // Find block debriefing for this round
+          const playerBlocks = bowlingBlocks[playerData.playerId] || [];
+          const roundBlock = playerBlocks.find(b => b.id === round.blockId);
+          const statDataToSave = {
+            ...round.stats,
+            ...(round.bowlingFrames ? { bowlingFrames: round.bowlingFrames } : {}),
+            ...(round.bowlingCategory ? { bowlingCategory: round.bowlingCategory } : {}),
+            ...(round.roundDate ? { roundDate: round.roundDate } : {}),
+            ...(round.blockId ? { blockId: round.blockId } : {}),
+            ...(round.ballData ? { ballData: round.ballData } : {}),
+            ...(roundBlock?.debriefing ? { blockDebriefing: roundBlock.debriefing } : {}),
+            ...(roundBlock ? { trackPockets: roundBlock.trackPockets } : {}),
+          };
           
           if (Object.keys(statDataToSave).length > 0) {
             const insertData = {
@@ -801,37 +897,62 @@ export function CompetitionRoundsDialog({
 
             <TabsContent value="rounds" className="flex-1 min-h-0 mt-0 overflow-hidden">
               <ScrollArea className="h-[calc(90vh-280px)] pr-4">
+                {/* Bowling: use block manager */}
+                {isBowling ? (
+                  <BowlingBlockManager
+                    playerId={selectedPlayer.playerId}
+                    categoryId={categoryId}
+                    matchId={matchId}
+                    rounds={selectedPlayer.rounds}
+                    blocks={bowlingBlocks[selectedPlayer.playerId] || []}
+                    matchDate={matchData?.match_date}
+                    onBlocksChange={(newBlocks) => {
+                      setBowlingBlocks(prev => ({ ...prev, [selectedPlayer.playerId]: newBlocks }));
+                    }}
+                    onRoundsChange={(newRounds) => {
+                      setPlayerRoundsData(prev => prev.map(p =>
+                        p.playerId === selectedPlayer.playerId ? { ...p, rounds: newRounds } : p
+                      ));
+                    }}
+                    onScoreSave={(roundNumber, stats, frames, ballData) => {
+                      handleBowlingScoreSheetSave(selectedPlayer.playerId, roundNumber, stats, frames, ballData);
+                    }}
+                    onLock={(roundNumber) => lockBowlingRound(selectedPlayer.playerId, roundNumber)}
+                    onUnlock={(roundNumber) => unlockBowlingRound(selectedPlayer.playerId, roundNumber)}
+                  />
+                ) : (
                 <div className="space-y-4 pb-4">
-                  {/* Add round button */}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => addRound(selectedPlayer.playerId)}
-                    className="w-full gap-2"
-                  >
-                    <Plus className="h-4 w-4" />
-                    Ajouter {isAviron ? "une course" : isJudo ? "un combat" : isBowling ? "une partie" : isAthletics ? "une épreuve" : `un ${roundLabel.toLowerCase()}`}
-                  </Button>
-
                   {selectedPlayer.rounds.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground space-y-2">
+                    <div className="text-center py-8 text-muted-foreground space-y-4">
                       <p>Aucun {roundLabel.toLowerCase()} enregistré</p>
                       <p className="text-sm">
-                        {isBowling
-                          ? "Cliquez sur “Ajouter une partie (feuille de score)” pour saisir X / / 0-9."
-                          : `Cliquez sur le bouton ci-dessus pour ajouter ${isAviron ? "une course" : isJudo ? "un combat" : `un ${roundLabel.toLowerCase()}`}.`}
+                        Cliquez sur le bouton ci-dessous pour commencer.
                       </p>
+                      <Button
+                        size="sm"
+                        onClick={() => addRound(selectedPlayer.playerId)}
+                        className="w-full gap-2 bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+                      >
+                        <Plus className="h-4 w-4" />
+                        Ajouter {isAviron ? "une course" : isJudo ? "un combat" : isAthletics ? "une épreuve" : `un ${roundLabel.toLowerCase()}`}
+                      </Button>
                     </div>
                   ) : (
-                    selectedPlayer.rounds.map((round) => (
-                      <Card key={round.round_number} className={`relative ${round.isLocked ? "opacity-80" : ""}`}>
+                    selectedPlayer.rounds.map((round, roundIdx) => (
+                      <div key={round.round_number} className="space-y-4">
+                      <Card className={`relative ${round.isLocked ? "opacity-80" : ""}`}>
                         {/* Locked indicator */}
                         {round.isLocked && (
-                          <div className="absolute top-2 right-2 z-10">
-                            <Badge variant="secondary" className="gap-1">
+                          <div className="absolute top-2 right-2 z-10 flex items-center gap-1">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-7 text-xs gap-1"
+                              onClick={() => unlockBowlingRound(selectedPlayer.playerId, round.round_number)}
+                            >
                               <Lock className="h-3 w-3" />
-                              Validée
-                            </Badge>
+                              Modifier
+                            </Button>
                           </div>
                         )}
                         <CardHeader className="pb-2">
@@ -839,8 +960,13 @@ export function CompetitionRoundsDialog({
                             <CardTitle className="text-base flex items-center gap-2">
                               {isAviron ? <Ship className="h-4 w-4" /> : isJudo ? <Swords className="h-4 w-4" /> : <Circle className="h-4 w-4" />}
                               {roundLabel} {round.round_number}
+                              {isBowling && round.bowlingCategory && (
+                                <Badge variant="secondary" className="ml-1">
+                                  {BOWLING_COMPETITION_CATEGORIES.find(c => c.value === round.bowlingCategory)?.label || round.bowlingCategory}
+                                </Badge>
+                              )}
                               {round.phase && (
-                                <Badge variant="outline" className="ml-2">
+                                <Badge variant="outline" className="ml-1">
                                   {phases.find(p => p.value === round.phase)?.label || round.phase}
                                 </Badge>
                               )}
@@ -1065,11 +1191,40 @@ export function CompetitionRoundsDialog({
                             </div>
                           )}
 
-                          {/* Bowling: Phase, Adversaire, then score sheet */}
+                          {/* Bowling: Category, Phase, Adversaire, then score sheet */}
                           {isBowling && (
                             <div className={`space-y-4 ${round.isLocked ? "opacity-80" : ""}`}>
-                              {/* Phase and opponent info - always visible */}
-                              <div className={`grid grid-cols-2 gap-3 ${round.isLocked ? "pointer-events-none" : ""}`}>
+                              {/* Date, Category, Phase, and opponent info - always visible */}
+                              <div className={`grid grid-cols-2 sm:grid-cols-4 gap-3 ${round.isLocked ? "pointer-events-none" : ""}`}>
+                                <div>
+                                  <Label className="text-xs">Jour</Label>
+                                  <Input
+                                    type="date"
+                                    value={round.roundDate || matchData?.match_date?.split("T")[0] || ""}
+                                    onChange={(e) => updateRound(selectedPlayer.playerId, round.round_number, { roundDate: e.target.value })}
+                                    className="h-8"
+                                    disabled={round.isLocked}
+                                  />
+                                </div>
+                                <div>
+                                  <Label className="text-xs">Catégorie</Label>
+                                  <Select
+                                    value={round.bowlingCategory || ""}
+                                    onValueChange={(value) => updateRound(selectedPlayer.playerId, round.round_number, { bowlingCategory: value })}
+                                    disabled={round.isLocked}
+                                  >
+                                    <SelectTrigger className="h-8">
+                                      <SelectValue placeholder="Sélectionner..." />
+                                    </SelectTrigger>
+                                    <SelectContent className="z-[200]">
+                                      {BOWLING_COMPETITION_CATEGORIES.map((cat) => (
+                                        <SelectItem key={cat.value} value={cat.value}>
+                                          {cat.label}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
                                 <div>
                                   <Label className="text-xs">Phase</Label>
                                   <Select
@@ -1094,30 +1249,21 @@ export function CompetitionRoundsDialog({
                                   <Input
                                     value={round.opponent_name}
                                     onChange={(e) => updateRound(selectedPlayer.playerId, round.round_number, { opponent_name: e.target.value })}
-                                    placeholder="Nom de l'adversaire"
+                                    placeholder="Nom adversaire"
                                     className="h-8"
                                     disabled={round.isLocked}
                                   />
                                 </div>
                               </div>
 
-                              {/* Locked state indicator */}
-                              {round.isLocked && (
-                                <div className="flex items-center justify-center gap-2 p-3 rounded-lg bg-muted border border-border">
-                                  <Lock className="h-5 w-5 text-primary" />
-                                  <span className="text-sm font-medium text-foreground">
-                                    Partie validée - Consultation uniquement
-                                  </span>
-                                </div>
-                              )}
-
                               {/* Embedded Bowling Score Sheet */}
-                              <div className={round.isLocked ? "pointer-events-none" : ""}>
+                              <div>
                                 <BowlingScoreSheet
                                   key={`bowling-${round.round_number}-${round.isLocked}`}
                                   initialFrames={round.bowlingFrames}
                                   playerId={selectedPlayer.playerId}
                                   categoryId={categoryId}
+                                  readOnly={round.isLocked}
                                   onSave={(stats, frames, ballData) => {
                                     handleBowlingScoreSheetSave(
                                       selectedPlayer.playerId,
@@ -1192,14 +1338,36 @@ export function CompetitionRoundsDialog({
                           </div>
                         </CardContent>
                       </Card>
+                      {/* Add game button after each round */}
+                      <Button
+                        size="sm"
+                        onClick={() => addRound(selectedPlayer.playerId)}
+                        className="w-full gap-2 bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+                      >
+                        <Plus className="h-4 w-4" />
+                        Ajouter {isAviron ? "une course" : isJudo ? "un combat" : isAthletics ? "une épreuve" : `un ${roundLabel.toLowerCase()}`}
+                      </Button>
+                      </div>
                     ))
                   )}
                 </div>
+                )}
               </ScrollArea>
             </TabsContent>
 
             <TabsContent value="summary" className="flex-1 min-h-0 mt-0 overflow-hidden">
               <ScrollArea className="h-[calc(90vh-280px)]">
+              {isBowling ? (
+                <BowlingCompetitionSummary
+                  rounds={selectedPlayer.rounds}
+                  blocks={bowlingBlocks[selectedPlayer.playerId] || []}
+                  playerName={selectedPlayer.playerName}
+                  getBallName={(ballId) => {
+                    // Try to find ball name from arsenals
+                    return ballId;
+                  }}
+                />
+              ) : (
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base flex items-center gap-2">
@@ -1238,146 +1406,6 @@ export function CompetitionRoundsDialog({
                                   </div>
                                 )}
                               </div>
-                            ) : isBowling ? (
-                              // Bowling-specific summary with global stats
-                              <>
-                                {/* Main metrics */}
-                                <div className="grid grid-cols-4 gap-3 text-center">
-                                  <div className="p-3 rounded-lg bg-muted">
-                                    <p className="text-2xl font-bold">{total}</p>
-                                    <p className="text-xs text-muted-foreground">Parties</p>
-                                  </div>
-                                  <div className="p-3 rounded-lg bg-primary/10">
-                                    <p className="text-2xl font-bold text-primary">
-                                      {Math.max(...selectedPlayer.rounds.map(r => r.stats["gameScore"] || 0))}
-                                    </p>
-                                    <p className="text-xs text-muted-foreground">High Game</p>
-                                  </div>
-                                  <div className="p-3 rounded-lg bg-secondary/50">
-                                    <p className="text-2xl font-bold">
-                                      {(selectedPlayer.rounds.reduce((sum, r) => sum + (r.stats["gameScore"] || 0), 0) / total || 0).toFixed(1)}
-                                    </p>
-                                    <p className="text-xs text-muted-foreground">Moyenne</p>
-                                  </div>
-                                  <div className="p-3 rounded-lg bg-muted">
-                                    <p className="text-2xl font-bold">
-                                      {selectedPlayer.rounds.reduce((sum, r) => sum + (r.stats["gameScore"] || 0), 0)}
-                                    </p>
-                                    <p className="text-xs text-muted-foreground">Total Pins</p>
-                                  </div>
-                                </div>
-
-                                {/* Strikes and Spares totals */}
-                                <div className="grid grid-cols-2 gap-4">
-                                  <div className="p-4 rounded-lg border bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-800/10">
-                                    <div className="flex items-center justify-between">
-                                      <div>
-                                        <p className="text-3xl font-bold text-amber-600">
-                                          {selectedPlayer.rounds.reduce((sum, r) => sum + (r.stats["strikes"] || 0), 0)}
-                                        </p>
-                                        <p className="text-sm text-muted-foreground">Strikes totaux</p>
-                                      </div>
-                                      <div className="text-right">
-                                        <p className="text-lg font-semibold">
-                                          {((selectedPlayer.rounds.reduce((sum, r) => sum + (r.stats["strikePercentage"] || 0), 0) / total) || 0).toFixed(1)}%
-                                        </p>
-                                        <p className="text-xs text-muted-foreground">Moy. % strikes</p>
-                                      </div>
-                                    </div>
-                                  </div>
-                                  <div className="p-4 rounded-lg border bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/10">
-                                    <div className="flex items-center justify-between">
-                                      <div>
-                                        <p className="text-3xl font-bold text-blue-600">
-                                          {selectedPlayer.rounds.reduce((sum, r) => sum + (r.stats["spares"] || 0), 0)}
-                                        </p>
-                                        <p className="text-sm text-muted-foreground">Spares (hors splits)</p>
-                                      </div>
-                                      <div className="text-right">
-                                        <p className="text-lg font-semibold">
-                                          {((selectedPlayer.rounds.reduce((sum, r) => sum + (r.stats["sparePercentage"] || 0), 0) / total) || 0).toFixed(1)}%
-                                        </p>
-                                        <p className="text-xs text-muted-foreground">Moy. % spares</p>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-
-                                {/* Split stats */}
-                                <div className="p-3 rounded-lg border border-orange-200 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/10">
-                                  <div className="flex items-center justify-between">
-                                    <div className="flex gap-6">
-                                      <div>
-                                        <p className="text-2xl font-bold text-orange-600">
-                                          {selectedPlayer.rounds.reduce((sum, r) => sum + (r.stats["splitCount"] || 0), 0)}
-                                        </p>
-                                        <p className="text-xs text-muted-foreground">Splits total</p>
-                                      </div>
-                                      <div>
-                                        <p className="text-2xl font-bold text-green-600">
-                                          {selectedPlayer.rounds.reduce((sum, r) => sum + (r.stats["splitConverted"] || 0), 0)}
-                                        </p>
-                                        <p className="text-xs text-muted-foreground">Splits convertis</p>
-                                      </div>
-                                    </div>
-                                    <div className="text-right">
-                                      <p className="text-lg font-semibold">
-                                        {(() => {
-                                          const totalSplits = selectedPlayer.rounds.reduce((sum, r) => sum + (r.stats["splitCount"] || 0), 0);
-                                          const totalConverted = selectedPlayer.rounds.reduce((sum, r) => sum + (r.stats["splitConverted"] || 0), 0);
-                                          return totalSplits > 0 ? ((totalConverted / totalSplits) * 100).toFixed(1) : 0;
-                                        })()}%
-                                      </p>
-                                      <p className="text-xs text-muted-foreground">% Conv. Splits</p>
-                                    </div>
-                                  </div>
-                                  <p className="text-[10px] text-muted-foreground mt-2 italic">
-                                    Splits sur 11e/12e lancer exclus: {selectedPlayer.rounds.reduce((sum, r) => sum + (r.stats["splitOnLastThrow"] || 0), 0)}
-                                  </p>
-                                </div>
-
-                                {/* Other stats */}
-                                <div className="grid grid-cols-2 gap-3 text-center">
-                                  <div className="p-2 rounded border">
-                                    <p className="text-lg font-bold">{selectedPlayer.rounds.reduce((sum, r) => sum + (r.stats["openFrames"] || 0), 0)}</p>
-                                    <p className="text-xs text-muted-foreground">Open Frames</p>
-                                  </div>
-                                  <div className="p-2 rounded border">
-                                    <p className="text-lg font-bold">{wins}/{losses}</p>
-                                    <p className="text-xs text-muted-foreground">V/D</p>
-                                  </div>
-                                </div>
-
-                                {/* Games list */}
-                                <div className="space-y-2">
-                                  <h4 className="font-medium">Détail des parties</h4>
-                                  <div className="space-y-1">
-                                    {selectedPlayer.rounds.map(round => (
-                                      <div key={round.round_number} className="flex items-center justify-between p-2 rounded border text-sm">
-                                        <div className="flex items-center gap-2">
-                                          <Badge variant="outline">
-                                            {phases.find(p => p.value === round.phase)?.label || `Partie ${round.round_number}`}
-                                          </Badge>
-                                          {round.opponent_name && (
-                                            <span className="text-muted-foreground">vs {round.opponent_name}</span>
-                                          )}
-                                        </div>
-                                        <div className="flex items-center gap-3">
-                                          <span className="font-mono font-bold">{round.stats["gameScore"] || 0}</span>
-                                          <span className="text-xs text-muted-foreground">
-                                            {round.stats["strikes"] || 0}X / {round.stats["spares"] || 0}/
-                                          </span>
-                                          {round.result && (
-                                            <Badge variant={round.result === "win" ? "default" : round.result === "loss" ? "destructive" : "secondary"}>
-                                              {round.result === "win" ? "V" : round.result === "loss" ? "D" : "N"}
-                                            </Badge>
-                                          )}
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              </>
                             ) : isAthletics ? (
                               <div className="space-y-3">
                                 <div className="grid grid-cols-3 gap-3 text-center">
@@ -1511,6 +1539,7 @@ export function CompetitionRoundsDialog({
                   )}
                 </CardContent>
               </Card>
+              )}
               </ScrollArea>
             </TabsContent>
           </Tabs>

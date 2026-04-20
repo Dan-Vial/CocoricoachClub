@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Plus, Trash2, Filter, ClipboardList, CalendarPlus } from "lucide-react";
+import { CreateCustomTestDialog } from "./CreateCustomTestDialog";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -38,6 +39,7 @@ interface GenericTestsSectionProps {
 export function GenericTestsSection({ categoryId, sportType, defaultCategory }: GenericTestsSectionProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isScheduleDialogOpen, setIsScheduleDialogOpen] = useState(false);
+  const [isCreateTestDialogOpen, setIsCreateTestDialogOpen] = useState(false);
   const isRehabMode = defaultCategory === "rehab";
   const isSingleCategoryMode = !!defaultCategory && defaultCategory !== "rehab" && defaultCategory !== "all";
   const [filterCategory, setFilterCategory] = useState<string>(
@@ -190,6 +192,9 @@ export function GenericTestsSection({ categoryId, sportType, defaultCategory }: 
             <Button size="sm" onClick={() => setIsDialogOpen(true)}>
               <ClipboardList className="h-4 w-4 mr-1" /> Saisir des résultats
             </Button>
+            <Button size="sm" variant="outline" onClick={() => setIsCreateTestDialogOpen(true)}>
+              <Plus className="h-4 w-4 mr-1" /> Créer un test
+            </Button>
             {filterTestType !== "all" && selectedCategory && (
               <Button size="sm" variant="outline" onClick={() => setIsScheduleDialogOpen(true)}>
                 <CalendarPlus className="h-4 w-4 mr-1" /> Planifier
@@ -338,6 +343,13 @@ export function GenericTestsSection({ categoryId, sportType, defaultCategory }: 
           />
         );
       })()}
+
+      <CreateCustomTestDialog
+        open={isCreateTestDialogOpen}
+        onOpenChange={setIsCreateTestDialogOpen}
+        categoryId={categoryId}
+        sportType={sportType}
+      />
     </Card>
   );
 }

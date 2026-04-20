@@ -22,7 +22,7 @@ import { toast } from "sonner";
 import { AlertTriangle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { playerSchema } from "@/lib/validations";
-import { ATHLETISME_DISCIPLINES, ATHLETISME_SPECIALTIES, JUDO_WEIGHT_CATEGORIES, AVIRON_ROLES, isAthletismeCategory, isJudoCategory, isIndividualSport } from "@/lib/constants/sportTypes";
+import { ATHLETISME_DISCIPLINES, ATHLETISME_SPECIALTIES, JUDO_WEIGHT_CATEGORIES, AVIRON_ROLES, isAthletismeCategory, isJudoCategory, isIndividualSport, isSkiCategory, SKI_DISCIPLINES, getSkiDisciplinesForCategory } from "@/lib/constants/sportTypes";
 import { getPositionsForSport } from "@/lib/constants/sportPositions";
 
 interface AddPlayerDialogProps {
@@ -44,6 +44,10 @@ export function AddPlayerDialog({
   const [discipline, setDiscipline] = useState("");
   const [specialty, setSpecialty] = useState("");
   const [position, setPosition] = useState("");
+  const [fisRanking, setFisRanking] = useState("");
+  const [fisPointsInput, setFisPointsInput] = useState("");
+  const [fisObjective, setFisObjective] = useState("");
+  const [fisObjectiveDate, setFisObjectiveDate] = useState("");
   const [validationError, setValidationError] = useState("");
   const queryClient = useQueryClient();
 
@@ -121,6 +125,7 @@ export function AddPlayerDialog({
   const isAthletics = category?.rugby_type ? isAthletismeCategory(category.rugby_type) : false;
   const isJudo = category?.rugby_type ? isJudoCategory(category.rugby_type) : false;
   const isAviron = sportType.toLowerCase().includes("aviron");
+  const isSki = category?.rugby_type ? isSkiCategory(category.rugby_type) : false;
   const needsDisciplineSelection = isAthletics || isJudo;
   const isTeamSport = !isIndividualSport(sportType);
   const positions = getPositionsForSport(sportType);
@@ -129,7 +134,7 @@ export function AddPlayerDialog({
   const availableSpecialties = discipline && isAthletics ? ATHLETISME_SPECIALTIES[discipline] || [] : [];
 
   const addPlayer = useMutation({
-    mutationFn: async (data: { name: string; email?: string; phone?: string; birth_year?: number; birth_date?: string; discipline?: string; specialty?: string; position?: string }) => {
+    mutationFn: async (data: { name: string; email?: string; phone?: string; birth_year?: number; birth_date?: string; discipline?: string; specialty?: string; position?: string; fis_ranking?: number; fis_points?: number; fis_objective?: string; fis_objective_date?: string }) => {
       const { error } = await supabase
         .from("players")
         .insert({ 
@@ -143,7 +148,11 @@ export function AddPlayerDialog({
           specialty: data.specialty || null,
           position: data.position || null,
           season_id: activeSeason?.id || null,
-        });
+          fis_ranking: data.fis_ranking || null,
+          fis_points: data.fis_points || null,
+          fis_objective: data.fis_objective || null,
+          fis_objective_date: data.fis_objective_date || null,
+        } as any);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -157,6 +166,10 @@ export function AddPlayerDialog({
       setDiscipline("");
       setSpecialty("");
       setPosition("");
+      setFisRanking("");
+      setFisPointsInput("");
+      setFisObjective("");
+      setFisObjectiveDate("");
       onOpenChange(false);
     },
     onError: () => {
@@ -209,7 +222,11 @@ export function AddPlayerDialog({
       birth_date: birthDate || undefined,
       discipline: discipline || undefined,
       specialty: specialty || undefined,
-      position: position || undefined
+      position: position || undefined,
+      fis_ranking: fisRanking ? parseInt(fisRanking) : undefined,
+      fis_points: fisPointsInput ? parseFloat(fisPointsInput) : undefined,
+      fis_objective: fisObjective.trim() || undefined,
+      fis_objective_date: fisObjectiveDate || undefined,
     });
   };
 
@@ -382,7 +399,81 @@ export function AddPlayerDialog({
                 </p>
               </div>
             )}
-            
+
+            {/* Ski/Snow discipline selector - filtered */}
+            {isSki && (() => {
+              const filteredDisciplines = getSkiDisciplinesForCategory(category?.rugby_type || "");
+              return filteredDisciplines.length > 1 ? (
+                <div className="space-y-2">
+                  <Label htmlFor="skiDiscipline">Discipline</Label>
+                  <Select value={discipline} onValueChange={setDiscipline}>
+                    <SelectTrigger className="w-full bg-background">
+                      <SelectValue placeholder="Sélectionner une discipline" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-background border z-50 max-h-[300px]">
+                      {filteredDisciplines.map((disc) => (
+                        <SelectItem key={disc.value} value={disc.value}>
+                          {disc.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              ) : null;
+            })()}
+
+            {/* FIS fields for ski/snow */}
+            {isSki && (
+              <>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="fisRanking">Classement FIS</Label>
+                    <Input
+                      id="fisRanking"
+                      type="number"
+                      value={fisRanking}
+                      onChange={(e) => setFisRanking(e.target.value)}
+                      placeholder="Ex: 45"
+                      min="1"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="fisPoints">Points FIS</Label>
+                    <Input
+                      id="fisPoints"
+                      type="number"
+                      value={fisPointsInput}
+                      onChange={(e) => setFisPointsInput(e.target.value)}
+                      placeholder="Ex: 320.50"
+                      step="0.01"
+                      min="0"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="fisObjective">Objectif sportif</Label>
+                  <Input
+                    id="fisObjective"
+                    value={fisObjective}
+                    onChange={(e) => setFisObjective(e.target.value)}
+                    placeholder="Ex: Qualification Championnats du Monde"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="fisObjectiveDate">Date cible objectif</Label>
+                  <Input
+                    id="fisObjectiveDate"
+                    type="date"
+                    value={fisObjectiveDate}
+                    onChange={(e) => setFisObjectiveDate(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Échéance pour atteindre l'objectif FIS
+                  </p>
+                </div>
+              </>
+            )}
+
             <div className="space-y-2">
               <Label htmlFor="birthDate">Date de naissance (optionnel)</Label>
               <Input

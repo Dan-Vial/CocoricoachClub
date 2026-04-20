@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { subDays } from "date-fns";
 import { useRealtimeSync } from "@/hooks/useRealtimeSync";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -31,7 +32,7 @@ const getScoreBadgeClass = (score: number) => {
 
 export function WellnessTab({ categoryId }: WellnessTabProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [filterDate, setFilterDate] = useState<Date | undefined>(undefined);
+  const [filterDate, setFilterDate] = useState<Date | undefined>(subDays(new Date(), 1));
   const { isViewer } = useViewerModeContext();
 
   useRealtimeSync({
@@ -99,7 +100,7 @@ export function WellnessTab({ categoryId }: WellnessTabProps) {
         <TabsList>
           <TabsTrigger value="tracking">Suivi Wellness</TabsTrigger>
           <TabsTrigger value="pain-stats">Statistiques Douleurs</TabsTrigger>
-          <TabsTrigger value="risk">Risque Blessure (EWMA + Wellness)</TabsTrigger>
+          <TabsTrigger value="risk">Risque Blessure (EWMA + AWCR + Wellness)</TabsTrigger>
           {isFeminine && (
             <TabsTrigger value="menstrual">Cycle Menstruel</TabsTrigger>
           )}

@@ -28,6 +28,7 @@ interface AddSubMatchDialogProps {
     id: string;
     category_id: string;
     competition: string | null;
+    match_format?: string | null;
   };
 }
 
@@ -35,12 +36,16 @@ const COMPETITION_STAGES = [
   { value: "poules_1", label: "Phase de poules - Match 1" },
   { value: "poules_2", label: "Phase de poules - Match 2" },
   { value: "poules_3", label: "Phase de poules - Match 3" },
+  { value: "trente_deuxiemes", label: "32èmes de finale" },
   { value: "seiziemes", label: "Seizièmes de finale" },
   { value: "huitiemes", label: "Huitièmes de finale" },
   { value: "quarts", label: "Quarts de finale" },
   { value: "demies", label: "Demi-finales" },
   { value: "petite_finale", label: "Petite finale / 3ème place" },
   { value: "finale", label: "Finale" },
+  { value: "classement_5", label: "Match de classement (5ème-8ème)" },
+  { value: "classement_9", label: "Match de classement (9ème-12ème)" },
+  { value: "classement_13", label: "Match de classement (13ème-16ème)" },
 ];
 
 export function AddSubMatchDialog({
@@ -71,6 +76,7 @@ export function AddSubMatchDialog({
         location: location || null,
         is_home: isHome,
         notes: notes || null,
+        match_format: parentMatch.match_format || null,
       } as any);
       if (error) throw error;
     },

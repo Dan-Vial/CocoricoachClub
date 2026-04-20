@@ -1,0 +1,1 @@
+DROP INDEX IF EXISTS public.bowling_oil_patterns_match_id_unique;

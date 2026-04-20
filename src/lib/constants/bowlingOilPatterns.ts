@@ -147,3 +147,63 @@ export const FRICTION_LEVELS = [
 export const OIL_RATIOS = [
   "1:1", "1.5:1", "2:1", "2.5:1", "3:1", "3.5:1", "4:1", "4.5:1", "5:1", "6:1", "7:1", "8:1", "10:1"
 ];
+
+// Parse oil ratio string "X:1" to numeric value
+export function parseOilRatio(ratio: string | null | undefined): number | null {
+  if (!ratio) return null;
+  const match = ratio.match(/^(\d+(?:\.\d+)?)\s*:\s*1$/);
+  if (!match) return null;
+  return parseFloat(match[1]);
+}
+
+// Oil pattern category based on lateral ratio
+export type OilCategoryType = "sport" | "challenge" | "recreation";
+
+export interface OilCategoryInfo {
+  type: OilCategoryType;
+  label: string;
+  color: string; // tailwind classes
+  description: string;
+  detail: string;
+}
+
+export function getOilCategory(ratio: string | null | undefined): OilCategoryInfo | null {
+  const value = parseOilRatio(ratio);
+  if (value === null) return null;
+
+  if (value < 1) return null;
+
+  if (value <= 3) {
+    return {
+      type: "sport",
+      label: "Sportif",
+      color: "bg-red-500/15 text-red-600 border-red-500 dark:bg-red-500/20 dark:text-red-400 dark:border-red-500",
+      description: "Conditions très compétitives",
+      detail: value < 1.5
+        ? "Conditions très difficiles (huilage à plat)"
+        : value < 2.5
+        ? "Conditions très compétitives dites « Sportives »"
+        : "Conditions compétitives (ratio ≤ 3:1)",
+    };
+  }
+
+  if (value <= 4.99) {
+    return {
+      type: "challenge",
+      label: "Challenge",
+      color: "bg-blue-100 text-blue-900 border-blue-400 dark:bg-blue-500/25 dark:text-blue-200 dark:border-blue-400",
+      description: "Conditions compétitives intermédiaires",
+      detail: value <= 3.5
+        ? "Conditions compétitives (ratio 3.01 à 3.5:1)"
+        : "Scorabilité importante (ratio 3.5 à 4.99:1)",
+    };
+  }
+
+  return {
+    type: "recreation",
+    label: "Récréation",
+    color: "bg-green-100 text-green-800 border-green-400 dark:bg-green-500/25 dark:text-green-200 dark:border-green-400",
+    description: "Conditions « maison »",
+    detail: "Ratio > 5:1 — Conditions récréatives, la boule est orientée vers la poche",
+  };
+}

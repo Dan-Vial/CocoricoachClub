@@ -8,12 +8,13 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, FileText, Calendar, AlertTriangle, Download, Trash2, Search, User, Upload, File, Image, Eye } from "lucide-react";
+import { Plus, FileText, Calendar, AlertTriangle, Download, Trash2, Search, User, Upload, File, Image, Eye, Users } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { fr } from "date-fns/locale";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 
 interface DocumentsSectionProps {
   categoryId: string;
@@ -42,7 +43,7 @@ const DOCUMENT_TYPES = [
   { value: "insurance", label: "Assurance" },
   { value: "parental_authorization", label: "Autorisation parentale" },
   { value: "image_rights", label: "Droit à l'image" },
-  { value: "other", label: "Autre" },
+  { value: "custom", label: "Autre (personnalisé)" },
 ];
 
 const ACCEPTED_FILE_TYPES = ".pdf,.jpg,.jpeg,.png,.webp,.heic,.gif,.bmp,.tiff,.tif";
@@ -76,14 +77,15 @@ export function DocumentsSection({ categoryId }: DocumentsSectionProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [showAddDialog, setShowAddDialog] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // "team" = documents d'équipe, or a player id
+  const [selectedTab, setSelectedTab] = useState<string>("team");
 
+  const [customDocumentType, setCustomDocumentType] = useState("");
   const [formData, setFormData] = useState({
-    player_id: "",
     document_type: "license",
     title: "",
     expiry_date: "",
@@ -110,9 +112,9 @@ export function DocumentsSection({ categoryId }: DocumentsSectionProps) {
         .from("admin_documents" as any)
         .select("*, players(name, first_name)")
         .eq("category_id", categoryId)
-        .order("expiry_date", { ascending: true, nullsFirst: false });
+        .order("created_at", { ascending: false });
       if (error) throw error;
-      
+
       return (data as unknown as AdminDocument[]).map((doc) => {
         if (!doc.expiry_date) return { ...doc, status: "valid" };
         const daysUntilExpiry = differenceInDays(new Date(doc.expiry_date), new Date());
@@ -132,26 +134,13 @@ export function DocumentsSection({ categoryId }: DocumentsSectionProps) {
       .upload(fileName, file, { upsert: false });
 
     if (error) throw error;
-
-    const { data: urlData } = supabase.storage
-      .from("admin-documents")
-      .getPublicUrl(fileName);
-
-    // Since bucket is private, use signed URL
-    const { data: signedData, error: signedError } = await supabase.storage
-      .from("admin-documents")
-      .createSignedUrl(fileName, 60 * 60 * 24 * 365 * 10); // 10 years
-
-    if (signedError) throw signedError;
-    
-    // Store the path, not the signed URL (we'll generate signed URLs on demand)
     return fileName;
   };
 
   const getSignedUrl = async (filePath: string): Promise<string | null> => {
     const { data, error } = await supabase.storage
       .from("admin-documents")
-      .createSignedUrl(filePath, 60 * 60); // 1 hour
+      .createSignedUrl(filePath, 60 * 60);
     if (error) return null;
     return data.signedUrl;
   };
@@ -165,11 +154,13 @@ export function DocumentsSection({ categoryId }: DocumentsSectionProps) {
         fileUrl = await uploadFile(selectedFile);
       }
 
+      const playerId = selectedTab === "team" ? null : selectedTab;
+
       const { error } = await supabase.from("admin_documents" as any).insert({
         category_id: categoryId,
         created_by: user?.id,
-        player_id: data.player_id || null,
-        document_type: data.document_type,
+        player_id: playerId,
+        document_type: data.document_type === "custom" ? customDocumentType : data.document_type,
         title: data.title,
         file_url: fileUrl,
         expiry_date: data.expiry_date || null,
@@ -194,7 +185,6 @@ export function DocumentsSection({ categoryId }: DocumentsSectionProps) {
 
   const deleteDocumentMutation = useMutation({
     mutationFn: async (doc: AdminDocument) => {
-      // Delete file from storage if exists
       if (doc.file_url && !doc.file_url.startsWith("http")) {
         await supabase.storage.from("admin-documents").remove([doc.file_url]);
       }
@@ -209,13 +199,10 @@ export function DocumentsSection({ categoryId }: DocumentsSectionProps) {
 
   const handleViewFile = async (doc: AdminDocument) => {
     if (!doc.file_url) return;
-
-    // If it's already a full URL (legacy), open directly
     if (doc.file_url.startsWith("http")) {
       window.open(doc.file_url, "_blank");
       return;
     }
-
     const url = await getSignedUrl(doc.file_url);
     if (url) {
       window.open(url, "_blank");
@@ -224,14 +211,46 @@ export function DocumentsSection({ categoryId }: DocumentsSectionProps) {
     }
   };
 
+  const handleDownloadFile = async (doc: AdminDocument) => {
+    if (!doc.file_url) return;
+
+    try {
+      let url: string;
+      if (doc.file_url.startsWith("http")) {
+        url = doc.file_url;
+      } else {
+        const signedUrl = await getSignedUrl(doc.file_url);
+        if (!signedUrl) {
+          toast({ title: "Erreur", description: "Impossible de télécharger le fichier", variant: "destructive" });
+          return;
+        }
+        url = signedUrl;
+      }
+
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      const ext = doc.file_url.split(".").pop() || "bin";
+      a.download = `${doc.title}.${ext}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(blobUrl);
+    } catch {
+      toast({ title: "Erreur", description: "Échec du téléchargement", variant: "destructive" });
+    }
+  };
+
   const resetForm = () => {
     setFormData({
-      player_id: "",
       document_type: "license",
       title: "",
       expiry_date: "",
       notes: "",
     });
+    setCustomDocumentType("");
     setSelectedFile(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
@@ -247,24 +266,38 @@ export function DocumentsSection({ categoryId }: DocumentsSectionProps) {
     }
 
     setSelectedFile(file);
-
-    // Auto-fill title from filename if empty
     if (!formData.title) {
       const nameWithoutExt = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
-      setFormData(prev => ({ ...prev, title: nameWithoutExt }));
+      setFormData((prev) => ({ ...prev, title: nameWithoutExt }));
     }
   };
 
-  const filteredDocuments = documents?.filter((doc) => {
-    const matchesSearch =
-      doc.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      doc.players?.name?.toLowerCase().includes(searchQuery.toLowerCase());
+  // Filter documents for current tab
+  const tabDocuments = documents?.filter((doc) => {
+    if (selectedTab === "team") return doc.player_id === null;
+    return doc.player_id === selectedTab;
+  });
+
+  const filteredDocuments = tabDocuments?.filter((doc) => {
     const matchesType = typeFilter === "all" || doc.document_type === typeFilter;
-    return matchesSearch && matchesType;
+    return matchesType;
   });
 
   const expiredDocs = documents?.filter((d) => d.status === "expired") || [];
   const expiringSoonDocs = documents?.filter((d) => d.status === "expiring_soon") || [];
+
+  const selectedPlayerName = selectedTab === "team"
+    ? "Équipe"
+    : (() => {
+        const p = players?.find((pl) => pl.id === selectedTab);
+        return p ? [p.first_name, p.name].filter(Boolean).join(" ") : "";
+      })();
+
+  // Count docs per player/team for badges
+  const getDocCount = (id: string) => {
+    if (id === "team") return documents?.filter((d) => d.player_id === null).length || 0;
+    return documents?.filter((d) => d.player_id === id).length || 0;
+  };
 
   return (
     <div className="space-y-6">
@@ -283,7 +316,8 @@ export function DocumentsSection({ categoryId }: DocumentsSectionProps) {
                 <ul className="space-y-1">
                   {expiredDocs.slice(0, 5).map((doc) => (
                     <li key={doc.id} className="text-red-600">
-                      {doc.players?.name ? `${[doc.players.first_name, doc.players.name].filter(Boolean).join(" ")} - ` : ""}{doc.title}
+                      {doc.players?.name ? `${[doc.players.first_name, doc.players.name].filter(Boolean).join(" ")} - ` : ""}
+                      {doc.title}
                     </li>
                   ))}
                   {expiredDocs.length > 5 && (
@@ -305,7 +339,8 @@ export function DocumentsSection({ categoryId }: DocumentsSectionProps) {
                 <ul className="space-y-1">
                   {expiringSoonDocs.slice(0, 5).map((doc) => (
                     <li key={doc.id} className="text-amber-600">
-                      {doc.players?.name ? `${[doc.players.first_name, doc.players.name].filter(Boolean).join(" ")} - ` : ""}{doc.title}
+                      {doc.players?.name ? `${[doc.players.first_name, doc.players.name].filter(Boolean).join(" ")} - ` : ""}
+                      {doc.title}
                       {doc.expiry_date && (
                         <span className="ml-1 text-xs">
                           ({differenceInDays(new Date(doc.expiry_date), new Date())} jours)
@@ -320,41 +355,76 @@ export function DocumentsSection({ categoryId }: DocumentsSectionProps) {
         </div>
       )}
 
-      {/* Header avec recherche et filtres */}
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-        <div className="flex flex-1 gap-2 w-full sm:w-auto">
-          <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Rechercher..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9"
-            />
+      {/* Onglets athlètes */}
+      <div className="space-y-4">
+        <ScrollArea className="w-full">
+          <div className="flex gap-2 pb-2">
+            <Button
+              variant={selectedTab === "team" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setSelectedTab("team")}
+              className="shrink-0"
+            >
+              <Users className="h-4 w-4 mr-1.5" />
+              Équipe
+              {getDocCount("team") > 0 && (
+                <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-[10px]">
+                  {getDocCount("team")}
+                </Badge>
+              )}
+            </Button>
+            {players?.map((player) => (
+              <Button
+                key={player.id}
+                variant={selectedTab === player.id ? "default" : "outline"}
+                size="sm"
+                onClick={() => setSelectedTab(player.id)}
+                className="shrink-0"
+              >
+                <User className="h-4 w-4 mr-1.5" />
+                {[player.first_name, player.name].filter(Boolean).join(" ")}
+                {getDocCount(player.id) > 0 && (
+                  <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-[10px]">
+                    {getDocCount(player.id)}
+                  </Badge>
+                )}
+              </Button>
+            ))}
           </div>
-          <Select value={typeFilter} onValueChange={setTypeFilter}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tous les types</SelectItem>
-              {DOCUMENT_TYPES.map((type) => (
-                <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <ScrollBar orientation="horizontal" />
+        </ScrollArea>
+
+        {/* Header avec filtre et bouton ajouter */}
+        <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
+          <div className="flex gap-2">
+            <Select value={typeFilter} onValueChange={setTypeFilter}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tous les types</SelectItem>
+                {DOCUMENT_TYPES.map((type) => (
+                  <SelectItem key={type.value} value={type.value}>
+                    {type.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <Button onClick={() => { resetForm(); setShowAddDialog(true); }}>
+            <Plus className="h-4 w-4 mr-2" />
+            Ajouter un document {selectedTab !== "team" ? `pour ${selectedPlayerName}` : "d'équipe"}
+          </Button>
         </div>
 
+        {/* Dialog ajout document */}
         <Dialog open={showAddDialog} onOpenChange={(open) => { setShowAddDialog(open); if (!open) resetForm(); }}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Ajouter un document
-            </Button>
-          </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Nouveau Document</DialogTitle>
+              <DialogTitle>
+                Nouveau document {selectedTab !== "team" ? `— ${selectedPlayerName}` : "— Équipe"}
+              </DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               {/* File Upload */}
@@ -396,49 +466,34 @@ export function DocumentsSection({ categoryId }: DocumentsSectionProps) {
                   ) : (
                     <div className="space-y-2">
                       <Upload className="h-8 w-8 mx-auto text-muted-foreground" />
-                      <p className="text-sm text-muted-foreground">
-                        Cliquez pour sélectionner un fichier
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        PDF, JPG, PNG, WEBP, GIF • Max {MAX_FILE_SIZE_MB} Mo
-                      </p>
+                      <p className="text-sm text-muted-foreground">Cliquez pour sélectionner un fichier</p>
+                      <p className="text-xs text-muted-foreground">PDF, JPG, PNG, WEBP, GIF • Max {MAX_FILE_SIZE_MB} Mo</p>
                     </div>
                   )}
                 </div>
               </div>
 
               <div>
-                <Label>Joueur (optionnel)</Label>
-                <Select 
-                  value={formData.player_id || "none"} 
-                  onValueChange={(v) => setFormData({ ...formData, player_id: v === "none" ? "" : v })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner un joueur..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Aucun (document équipe)</SelectItem>
-                    {players?.map((player) => (
-                      <SelectItem key={player.id} value={player.id}>{[player.first_name, player.name].filter(Boolean).join(" ")}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
                 <Label>Type de document *</Label>
-                <Select 
-                  value={formData.document_type} 
-                  onValueChange={(v) => setFormData({ ...formData, document_type: v })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
+                <Select value={formData.document_type} onValueChange={(v) => { setFormData({ ...formData, document_type: v }); if (v !== "custom") setCustomDocumentType(""); }}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {DOCUMENT_TYPES.map((type) => (
                       <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
+                {formData.document_type === "custom" && (
+                  <div className="mt-2">
+                    <Label className="text-xs">Nom du type personnalisé *</Label>
+                    <Input
+                      value={customDocumentType}
+                      onChange={(e) => setCustomDocumentType(e.target.value)}
+                      placeholder="Ex: Bilan annuel, Fiche technique..."
+                      autoFocus
+                    />
+                  </div>
+                )}
               </div>
               <div>
                 <Label>Titre / Description *</Label>
@@ -467,7 +522,7 @@ export function DocumentsSection({ categoryId }: DocumentsSectionProps) {
               </div>
               <Button
                 onClick={() => addDocumentMutation.mutate(formData)}
-                disabled={!formData.title || !selectedFile || addDocumentMutation.isPending || isUploading}
+                disabled={!formData.title || !selectedFile || addDocumentMutation.isPending || isUploading || (formData.document_type === "custom" && !customDocumentType.trim())}
                 className="w-full"
               >
                 {isUploading ? (
@@ -482,80 +537,82 @@ export function DocumentsSection({ categoryId }: DocumentsSectionProps) {
             </div>
           </DialogContent>
         </Dialog>
-      </div>
 
-      {/* Liste des documents */}
-      <div className="grid gap-3">
-        {isLoading ? (
-          <div className="text-center py-8 text-muted-foreground">Chargement...</div>
-        ) : filteredDocuments?.length === 0 ? (
-          <Card>
-            <CardContent className="py-8 text-center text-muted-foreground">
-              <FileText className="h-12 w-12 mx-auto mb-4 opacity-30" />
-              <p>Aucun document enregistré</p>
-            </CardContent>
-          </Card>
-        ) : (
-          filteredDocuments?.map((doc) => (
-            <Card key={doc.id} className={doc.status === "expired" ? "border-red-200" : doc.status === "expiring_soon" ? "border-amber-200" : ""}>
-              <CardContent className="p-4 flex items-center justify-between">
-                <div className="flex items-center gap-4 flex-1 min-w-0">
-                  <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center shrink-0">
-                    {getFileIcon(doc.file_url)}
-                  </div>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h4 className="font-medium truncate">{doc.title}</h4>
-                      <Badge className={STATUS_COLORS[doc.status]}>
-                        {STATUS_LABELS[doc.status]}
-                      </Badge>
-                      {doc.file_url && (
-                        <Badge variant="outline" className="text-xs">
-                          {doc.file_url.split(".").pop()?.toUpperCase()}
+        {/* Liste des documents */}
+        <div className="grid gap-3">
+          {isLoading ? (
+            <div className="text-center py-8 text-muted-foreground">Chargement...</div>
+          ) : filteredDocuments?.length === 0 ? (
+            <Card>
+              <CardContent className="py-8 text-center text-muted-foreground">
+                <FileText className="h-12 w-12 mx-auto mb-4 opacity-30" />
+                <p>Aucun document pour {selectedPlayerName}</p>
+              </CardContent>
+            </Card>
+          ) : (
+            filteredDocuments?.map((doc) => (
+              <Card
+                key={doc.id}
+                className={doc.status === "expired" ? "border-red-200" : doc.status === "expiring_soon" ? "border-amber-200" : ""}
+              >
+                <CardContent className="p-4 flex items-center justify-between">
+                  <div className="flex items-center gap-4 flex-1 min-w-0">
+                    <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center shrink-0">
+                      {getFileIcon(doc.file_url)}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h4 className="font-medium truncate">{doc.title}</h4>
+                        <Badge className={STATUS_COLORS[doc.status]}>
+                          {STATUS_LABELS[doc.status]}
                         </Badge>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-3 text-sm text-muted-foreground flex-wrap">
-                      <span>{DOCUMENT_TYPES.find((t) => t.value === doc.document_type)?.label}</span>
-                      {doc.players?.name && (
-                        <span className="flex items-center gap-1">
-                          <User className="h-3 w-3" />
-                          {[doc.players.first_name, doc.players.name].filter(Boolean).join(" ")}
-                        </span>
-                      )}
-                      {doc.expiry_date && (
-                        <span className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          Expire le {format(new Date(doc.expiry_date), "d MMM yyyy", { locale: fr })}
-                        </span>
-                      )}
+                        {doc.file_url && (
+                          <Badge variant="outline" className="text-xs">
+                            {doc.file_url.split(".").pop()?.toUpperCase()}
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-3 text-sm text-muted-foreground flex-wrap">
+                        <span>{DOCUMENT_TYPES.find((t) => t.value === doc.document_type)?.label || doc.document_type}</span>
+                        {doc.expiry_date && (
+                          <span className="flex items-center gap-1">
+                            <Calendar className="h-3 w-3" />
+                            Expire le {format(new Date(doc.expiry_date), "d MMM yyyy", { locale: fr })}
+                          </span>
+                        )}
+                        {doc.created_at && (
+                          <span className="text-xs">
+                            Ajouté le {format(new Date(doc.created_at), "d MMM yyyy", { locale: fr })}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-                <div className="flex items-center gap-1 shrink-0">
-                  {doc.file_url && (
+                  <div className="flex items-center gap-1 shrink-0">
+                    {doc.file_url && (
+                      <>
+                        <Button variant="ghost" size="icon" title="Voir le fichier" onClick={() => handleViewFile(doc)}>
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" title="Télécharger" onClick={() => handleDownloadFile(doc)}>
+                          <Download className="h-4 w-4" />
+                        </Button>
+                      </>
+                    )}
                     <Button
                       variant="ghost"
                       size="icon"
-                      title="Voir le fichier"
-                      onClick={() => handleViewFile(doc)}
+                      className="text-destructive hover:text-destructive"
+                      onClick={() => deleteDocumentMutation.mutate(doc)}
                     >
-                      <Eye className="h-4 w-4" />
+                      <Trash2 className="h-4 w-4" />
                     </Button>
-                  )}
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="text-destructive hover:text-destructive"
-                    onClick={() => deleteDocumentMutation.mutate(doc)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))
-        )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </div>
       </div>
     </div>
   );

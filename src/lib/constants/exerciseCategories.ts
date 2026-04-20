@@ -516,7 +516,7 @@ export const EXERCISE_CATEGORIES: ExerciseCategory[] = [
   { value: "natation_pullbuoy_paddles", label: "Natation - Pull-buoy / Plaquettes", group: "terrain", sport: "natation" },
   { value: "natation_kick", label: "Natation - Travail de jambes", group: "terrain", sport: "natation" },
   
-  // Sports de glisse / Ski
+  // Sports de glisse / Ski / Surf
   { value: "ski_technique", label: "Ski - Technique", group: "terrain", sport: "ski" },
   { value: "ski_slalom_drills", label: "Ski - Éducatifs slalom", group: "terrain", sport: "ski" },
   { value: "ski_geant_drills", label: "Ski - Éducatifs géant", group: "terrain", sport: "ski" },
@@ -526,6 +526,17 @@ export const EXERCISE_CATEGORIES: ExerciseCategory[] = [
   { value: "ski_biathlon_tir", label: "Biathlon - Tir", group: "terrain", sport: "ski" },
   { value: "ski_freestyle", label: "Freestyle / Snowboard", group: "terrain", sport: "ski" },
   { value: "ski_dry_land", label: "Ski - Dry Land Training", group: "terrain", sport: "ski" },
+  // Surf (standalone sport)
+  { value: "surf_session_libre", label: "Surf - Session libre", group: "terrain", sport: "surf" },
+  { value: "surf_technique_manoeuvres", label: "Surf - Travail de manœuvres", group: "terrain", sport: "surf" },
+  { value: "surf_tube_riding", label: "Surf - Tube riding", group: "terrain", sport: "surf" },
+  { value: "surf_aerials", label: "Surf - Aériens", group: "terrain", sport: "surf" },
+  { value: "surf_paddle_endurance", label: "Surf - Endurance rame", group: "terrain", sport: "surf" },
+  { value: "surf_pop_up_drills", label: "Surf - Pop-up / take-off drills", group: "terrain", sport: "surf" },
+  { value: "surf_video_analysis", label: "Surf - Analyse vidéo", group: "terrain", sport: "surf" },
+  { value: "surf_apnea", label: "Surf - Apnée / Hold-down", group: "terrain", sport: "surf" },
+  { value: "surf_balance_board", label: "Surf - Balance board / Indo board", group: "terrain", sport: "surf" },
+  { value: "surf_skateboard", label: "Surf - Surf skate / Carver", group: "terrain", sport: "surf" },
   
   // Triathlon
   { value: "triathlon_swim", label: "Triathlon - Natation", group: "terrain", sport: "triathlon" },

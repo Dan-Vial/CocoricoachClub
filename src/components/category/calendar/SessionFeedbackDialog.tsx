@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 import { Badge } from "@/components/ui/badge";
-import { Activity, ClipboardCheck, Plus, X } from "lucide-react";
+import { Activity, ClipboardCheck, Dumbbell, Plus, Target, X } from "lucide-react";
+import { SessionWeightLogTab } from "./SessionWeightLogTab";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -21,6 +22,8 @@ import {
 import { getTestCategoriesForSport, TestCategory } from "@/lib/constants/testCategories";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
+import { isRugbyType } from "@/lib/constants/sportTypes";
+import { PrecisionFieldTracker } from "@/components/rugby/PrecisionFieldTracker";
 
 interface SessionFeedbackDialogProps {
   open: boolean;
@@ -51,7 +54,8 @@ export function SessionFeedbackDialog({
 }: SessionFeedbackDialogProps) {
   const [rpeValues, setRpeValues] = useState<Record<string, { rpe: string; duration: string }>>({});
   const [sessionTests, setSessionTests] = useState<SessionTest[]>([]);
-  const [activeTab, setActiveTab] = useState(sessionType === "test" ? "tests" : "rpe");
+  const [weightLogs, setWeightLogs] = useState<Record<string, Record<string, { weight: string; sets: string; reps: string }>>>({});
+  const [activeTab, setActiveTab] = useState(sessionType === "test" ? "tests" : sessionType === "precision" ? "precision" : "rpe");
   const queryClient = useQueryClient();
 
   // Fetch category to get sport type
@@ -70,6 +74,8 @@ export function SessionFeedbackDialog({
   });
 
   const sportType = category?.rugby_type || "";
+  const isRugby = isRugbyType(sportType);
+  const isPrecisionSession = sessionType === "precision" && isRugby;
   const testCategories = getTestCategoriesForSport(sportType);
 
   // Fetch session details to get default duration and notes (for test config)
@@ -238,9 +244,23 @@ export function SessionFeedbackDialog({
     if (!open) {
       setRpeValues({});
       setSessionTests([]);
-      setActiveTab(sessionType === "test" ? "tests" : "rpe");
+      setWeightLogs({});
+      setActiveTab(sessionType === "test" ? "tests" : sessionType === "precision" ? "precision" : "rpe");
     }
   }, [open, sessionType]);
+
+  const handleWeightLogChange = (playerId: string, exerciseName: string, field: "weight" | "sets" | "reps", value: string) => {
+    setWeightLogs((prev) => ({
+      ...prev,
+      [playerId]: {
+        ...prev[playerId],
+        [exerciseName]: {
+          ...(prev[playerId]?.[exerciseName] || { weight: "", sets: "", reps: "" }),
+          [field]: value,
+        },
+      },
+    }));
+  };
 
   // Calculate AWCR for a player
   const calculateAWCR = async (playerId: string, sessionDateStr: string, newLoad: number) => {
@@ -339,7 +359,31 @@ export function SessionFeedbackDialog({
         if (error) throw error;
       }
 
-      return { rpeCount: playersToSave.length, testCount: testRecords.length };
+      // Save weight logs
+      const weightLogRecords: any[] = [];
+      Object.entries(weightLogs).forEach(([playerId, exercises]) => {
+        Object.entries(exercises).forEach(([exerciseName, vals]) => {
+          if (!vals.weight || parseFloat(vals.weight) <= 0) return;
+          weightLogRecords.push({
+            training_session_id: sessionId,
+            player_id: playerId,
+            category_id: categoryId,
+            exercise_name: exerciseName,
+            actual_weight_kg: parseFloat(vals.weight),
+            actual_sets: vals.sets ? parseInt(vals.sets) : null,
+            actual_reps: vals.reps ? parseInt(vals.reps) : null,
+          });
+        });
+      });
+
+      if (weightLogRecords.length > 0) {
+        const { error } = await supabase.from("athlete_exercise_logs").upsert(weightLogRecords, {
+          onConflict: "training_session_id,player_id,exercise_name",
+        });
+        if (error) throw error;
+      }
+
+      return { rpeCount: playersToSave.length, testCount: testRecords.length, weightCount: weightLogRecords.length };
     },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["awcr_tracking"] });
@@ -348,24 +392,25 @@ export function SessionFeedbackDialog({
       queryClient.invalidateQueries({ queryKey: ["generic_tests", categoryId] });
       queryClient.invalidateQueries({ queryKey: ["generic_tests_discovery", categoryId] });
       queryClient.invalidateQueries({ queryKey: ["today_session_tests"] });
-      // Invalidate analytics caches
       queryClient.invalidateQueries({ queryKey: ["generic-tests-evolution", categoryId] });
       queryClient.invalidateQueries({ queryKey: ["generic-tests-multi-comparison", categoryId] });
+      queryClient.invalidateQueries({ queryKey: ["athlete-exercise-logs"] });
+      queryClient.invalidateQueries({ queryKey: ["athlete-exercise-logs-dashboard"] });
       
-      let message = "";
-      if (result.rpeCount > 0) message += `${result.rpeCount} RPE enregistré(s)`;
-      if (result.testCount > 0) {
-        if (message) message += " et ";
-        message += `${result.testCount} résultat(s) de test`;
-      }
-      if (message) {
-        toast.success(message);
+      const parts: string[] = [];
+      if (result.rpeCount > 0) parts.push(`${result.rpeCount} RPE`);
+      if (result.testCount > 0) parts.push(`${result.testCount} test(s)`);
+      if (result.weightCount > 0) parts.push(`${result.weightCount} charge(s)`);
+      
+      if (parts.length > 0) {
+        toast.success(`Enregistré: ${parts.join(", ")}`);
       } else {
         toast.info("Aucune donnée à enregistrer");
       }
       
       setRpeValues({});
       setSessionTests([]);
+      setWeightLogs({});
       onOpenChange(false);
     },
     onError: (error: Error) => {
@@ -467,9 +512,17 @@ export function SessionFeedbackDialog({
     acc + (t.savedPlayerIds?.size || 0), 0
   );
 
+  const hasWeightLogs = Object.values(weightLogs).some((exercises) =>
+    Object.values(exercises).some((v) => v.weight && parseFloat(v.weight) > 0)
+  );
+  const weightLogCount = Object.values(weightLogs).reduce(
+    (acc, exercises) => acc + Object.values(exercises).filter((v) => v.weight && parseFloat(v.weight) > 0).length,
+    0
+  );
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col">
+      <DialogContent className={cn("max-h-[95vh] flex flex-col", isPrecisionSession ? "max-w-5xl w-[95vw]" : "max-w-lg")}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Activity className="h-5 w-5 text-primary" />
@@ -479,6 +532,12 @@ export function SessionFeedbackDialog({
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
           <TabsList className="w-full">
+            {isPrecisionSession && (
+              <TabsTrigger value="precision" className="flex-1 gap-2">
+                <Target className="h-4 w-4" />
+                🎯 Précision
+              </TabsTrigger>
+            )}
             <TabsTrigger value="rpe" className="flex-1 gap-2">
               <Activity className="h-4 w-4" />
               RPE
@@ -502,7 +561,29 @@ export function SessionFeedbackDialog({
                 </Badge>
               )}
             </TabsTrigger>
+            <TabsTrigger value="weights" className="flex-1 gap-2">
+              <Dumbbell className="h-4 w-4" />
+              Charges
+              {weightLogCount > 0 && (
+                <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
+                  {weightLogCount}
+                </Badge>
+              )}
+            </TabsTrigger>
           </TabsList>
+
+          {/* Precision tab */}
+          {isPrecisionSession && (
+            <TabsContent value="precision" className="flex-1 flex flex-col min-h-0 mt-4">
+              <div className="flex-1 min-h-0 overflow-y-auto pr-1" style={{ maxHeight: "calc(95vh - 180px)" }}>
+                <PrecisionFieldTracker
+                  categoryId={categoryId}
+                  sessionId={sessionId}
+                  sessionDate={session?.session_date}
+                />
+              </div>
+            </TabsContent>
+          )}
 
           <TabsContent value="rpe" className="flex-1 flex flex-col min-h-0 mt-4">
             <p className="text-sm text-muted-foreground mb-3">
@@ -714,18 +795,35 @@ export function SessionFeedbackDialog({
               )}
             </div>
           </TabsContent>
+
+          <TabsContent value="weights" className="flex-1 flex flex-col min-h-0 mt-4">
+            <SessionWeightLogTab
+              sessionId={sessionId}
+              categoryId={categoryId}
+              playersToShow={playersToShow}
+              weightLogs={weightLogs}
+              onWeightLogChange={handleWeightLogChange}
+            />
+          </TabsContent>
         </Tabs>
 
         <div className="flex justify-end gap-2 pt-4 border-t">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Annuler
+            {activeTab === "precision" ? "Fermer" : "Annuler"}
           </Button>
-          <Button
-            onClick={() => saveData.mutate()}
-            disabled={saveData.isPending || (!hasNewRpeValues && !hasTestResults)}
-          >
-            {saveData.isPending ? "Enregistrement..." : "Enregistrer"}
-          </Button>
+          {activeTab !== "precision" && (
+            <Button
+              onClick={() => saveData.mutate()}
+              disabled={saveData.isPending || (!hasNewRpeValues && !hasTestResults && !hasWeightLogs)}
+            >
+              {saveData.isPending ? "Enregistrement..." : "Enregistrer"}
+            </Button>
+          )}
+          {activeTab === "precision" && (
+            <p className="text-xs text-muted-foreground self-center">
+              ✅ Les données de précision sont sauvegardées automatiquement à chaque saisie.
+            </p>
+          )}
         </div>
       </DialogContent>
     </Dialog>

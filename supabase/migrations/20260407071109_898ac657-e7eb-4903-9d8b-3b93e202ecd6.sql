@@ -1,0 +1,1 @@
+ALTER TABLE public.clubs ADD COLUMN timezone text NOT NULL DEFAULT 'Europe/Paris';

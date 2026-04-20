@@ -69,7 +69,7 @@ export function EditableRugbyType({ categoryId, currentType }: EditableRugbyType
   return (
     <>
       <div className="flex items-center gap-2 group">
-        <span className="text-primary-foreground/90">
+        <span className="text-white/90">
           {getSportLabel(currentType)}
         </span>
         <button
@@ -77,10 +77,10 @@ export function EditableRugbyType({ categoryId, currentType }: EditableRugbyType
             setSportType(currentType);
             setIsOpen(true);
           }}
-          className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-primary-foreground/10 rounded-md"
+          className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-white/10 rounded-md"
           aria-label="Modifier le type de sport"
         >
-          <Pencil className="h-4 w-4 text-primary-foreground" />
+          <Pencil className="h-4 w-4 text-white" />
         </button>
       </div>
 

@@ -5,8 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
-import { ArrowLeft, ArrowRightLeft, Edit2, Check, X, User, Activity, FlaskConical, Swords, CalendarDays, Heart, Utensils, GraduationCap, Bandage, CircleDot } from "lucide-react";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { ArrowLeft, ArrowRightLeft, Edit2, Check, X, User, Activity, FlaskConical, Swords, CalendarDays, Heart, Utensils, GraduationCap, Bandage, CircleDot, Mountain, FileText, BarChart3 } from "lucide-react";
 import { ColoredNavTabsList } from "@/components/ui/colored-nav-tabs";
 import * as TabsPrimitive from "@radix-ui/react-tabs";
 import { cn } from "@/lib/utils";
@@ -19,6 +19,7 @@ import { PlayerProfile } from "@/components/player/PlayerProfile";
 import { PlayerInjuriesTab } from "@/components/player/PlayerInjuriesTab";
 import { PlayerBiometrics } from "@/components/player/PlayerBiometrics";
 import { PlayerMatchesTab } from "@/components/player/PlayerMatchesTab";
+import { PlayerCumulativeStats } from "@/components/category/matches/PlayerCumulativeStats";
 import { PlayerWellnessTab } from "@/components/player/PlayerWellnessTab";
 import { PlayerNutritionTab } from "@/components/player/PlayerNutritionTab";
 import { PlayerAcademyTab } from "@/components/player/PlayerAcademyTab";
@@ -31,11 +32,16 @@ import { PlayerAdditionalInfoSection } from "@/components/player/PlayerAdditiona
 import { PlayerPersonalInfoSection } from "@/components/player/PlayerPersonalInfoSection";
 import { PlayerReferenceCard } from "@/components/player/PlayerReferenceCard";
 import { PlayerBowlingArsenal } from "@/components/bowling/PlayerBowlingArsenal";
+import { BowlingCumulativeStats } from "@/components/bowling/BowlingCumulativeStats";
+import { PlayerSurfEquipment } from "@/components/surf/PlayerSurfEquipment";
+import { PlayerSkiEquipment } from "@/components/ski/PlayerSkiEquipment";
+import { PlayerPadelEquipment } from "@/components/padel/PlayerPadelEquipment";
 import { ViewerModeProvider, useViewerModeContext } from "@/contexts/ViewerModeContext";
+import { AthleteSpaceDocuments } from "@/components/athlete-space/AthleteSpaceDocuments";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getPositionsForSport } from "@/lib/constants/sportPositions";
-import { isIndividualSport, ATHLETISME_DISCIPLINES, ATHLETISME_SPECIALTIES, JUDO_WEIGHT_CATEGORIES, isAthletismeCategory, isJudoCategory, AVIRON_ROLES } from "@/lib/constants/sportTypes";
+import { isIndividualSport, ATHLETISME_DISCIPLINES, ATHLETISME_SPECIALTIES, JUDO_WEIGHT_CATEGORIES, isAthletismeCategory, isJudoCategory, isSkiCategory, isPadelCategory, AVIRON_ROLES } from "@/lib/constants/sportTypes";
 import { getDisciplineLabel, getSpecialtyLabel } from "@/lib/constants/athleticProfiles";
 import { toast } from "sonner";
 
@@ -44,17 +50,17 @@ function PlayerDetailTab({ value, label, icon: Icon, color }: { value: string; l
     <TabsPrimitive.Trigger
       value={value}
       className={cn(
-        "group relative inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm",
+        "group relative inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg font-medium text-xs",
         "transition-all duration-200 ease-out whitespace-nowrap",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
         "hover:opacity-80",
-        "data-[state=active]:shadow-md data-[state=active]:scale-105",
+        "data-[state=active]:shadow-md",
       )}
       style={{ borderWidth: "2px", borderColor: color, borderStyle: "solid" }}
     >
       <span
         className={cn(
-          "absolute inset-0 rounded-md transition-all duration-200",
+          "pointer-events-none absolute inset-0 rounded-md transition-all duration-200",
           "opacity-0 scale-95",
           "group-data-[state=active]:opacity-100 group-data-[state=active]:scale-100"
         )}
@@ -102,6 +108,9 @@ function PlayerDetailsContent() {
   const isJudo = isJudoCategory(sportType);
   const isAviron = sportType.toLowerCase().includes("aviron");
   const isBowling = sportType.toLowerCase().includes("bowling");
+  const isSurf = sportType.toLowerCase().includes("surf");
+  const isSki = isSkiCategory(sportType);
+  const isPadel = isPadelCategory(sportType);
   const positions = getPositionsForSport(sportType);
 
   // Get display label for discipline/position/role
@@ -413,7 +422,7 @@ function PlayerDetailsContent() {
 
         {/* Athlete Access Section - only for coaches */}
         {!isViewer && player.category_id && (
-          <div className="mb-6">
+          <div className="mb-3">
             <AthleteAccessSection 
               playerId={playerId!} 
               categoryId={player.category_id}
@@ -422,8 +431,7 @@ function PlayerDetailsContent() {
           </div>
         )}
 
-        {/* Performance References Section */}
-        <div className="mb-6">
+        <div className="mb-3">
           <PlayerReferenceCard 
             categoryId={player.category_id}
             playerId={playerId!}
@@ -431,8 +439,18 @@ function PlayerDetailsContent() {
           />
         </div>
 
-        {/* Player Profile and Biometrics Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        {/* Personal Info Section */}
+        <div className="mb-3">
+          <PlayerPersonalInfoSection 
+            playerId={playerId!}
+            categoryId={player.category_id}
+            isViewer={isViewer}
+            sportType={sportType}
+          />
+        </div>
+
+        {/* Player Profile and Biometrics Section - Compact */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-3">
           <PlayerProfile 
             playerId={playerId!} 
             categoryId={player.category_id}
@@ -448,35 +466,13 @@ function PlayerDetailsContent() {
           />
         </div>
 
-        {/* Bowling Arsenal - below biometrics */}
-        {isBowling && (
-          <div className="mb-6">
-            <PlayerBowlingArsenal playerId={playerId!} categoryId={player.category_id} isViewer={isViewer} />
-          </div>
-        )}
-
-        {/* Personal Info Section (Email, Phone, Birth date) */}
-        <div className="mb-6">
-          <PlayerPersonalInfoSection 
-            playerId={playerId!}
-            isViewer={isViewer}
-          />
-        </div>
-
-        {/* Additional Info Section (Parent contacts, dietary, medical) */}
-        <div className="mb-6">
-          <PlayerAdditionalInfoSection 
-            playerId={playerId!}
-            isViewer={isViewer}
-          />
-        </div>
-
         <Tabs defaultValue="charge" className="space-y-6">
-          <ScrollArea className="w-full">
+          <ScrollArea className="w-full whitespace-nowrap pb-2">
             <ColoredNavTabsList className="flex w-max gap-1.5 p-2">
               <PlayerDetailTab value="charge" label="Charge" icon={Activity} color="hsl(350 80% 55%)" />
               <PlayerDetailTab value="tests" label="Tests" icon={FlaskConical} color="hsl(280 70% 55%)" />
-              <PlayerDetailTab value="matches" label="Matchs" icon={Swords} color="hsl(220 80% 55%)" />
+              <PlayerDetailTab value="matches" label={isTeamSport ? "Matchs" : "Compétitions"} icon={Swords} color="hsl(220 80% 55%)" />
+              <PlayerDetailTab value="stats" label="Stats" icon={BarChart3} color="hsl(145 70% 45%)" />
               <PlayerDetailTab value="calendar" label="Calendrier" icon={CalendarDays} color="hsl(35 90% 55%)" />
               <PlayerDetailTab value="wellness" label="Wellness" icon={Heart} color="hsl(160 65% 45%)" />
               <PlayerDetailTab value="nutrition" label="Nutrition" icon={Utensils} color="hsl(45 95% 50%)" />
@@ -484,8 +480,11 @@ function PlayerDetailsContent() {
                 <PlayerDetailTab value="academy" label="Académie" icon={GraduationCap} color="hsl(200 85% 50%)" />
               )}
               <PlayerDetailTab value="injuries" label="Blessures" icon={Bandage} color="hsl(10 80% 55%)" />
+              {(isBowling || isSurf || isSki || isPadel) && (
+                <PlayerDetailTab value="equipment" label={isBowling ? "Arsenal" : "Matériel"} icon={Mountain} color="hsl(190 70% 50%)" />
+              )}
+              <PlayerDetailTab value="documents" label="Documents" icon={FileText} color="hsl(280 70% 55%)" />
             </ColoredNavTabsList>
-            <ScrollBar orientation="horizontal" />
           </ScrollArea>
 
           <TabsContent value="charge">
@@ -495,13 +494,7 @@ function PlayerDetailsContent() {
                 categoryId={player.category_id} 
                 playerName={fullName}
               />
-              <PlayerAwcrTab playerId={playerId!} categoryId={player.category_id} />
-              <PlayerReportSection 
-                playerId={playerId!} 
-                categoryId={player.category_id} 
-                playerName={fullName}
-                sportType={sportType}
-              />
+              <PlayerAwcrTab playerId={playerId!} categoryId={player.category_id} readOnly={true} />
             </div>
           </TabsContent>
 
@@ -510,12 +503,28 @@ function PlayerDetailsContent() {
           </TabsContent>
 
           <TabsContent value="matches">
-            <PlayerMatchesTab 
-              playerId={playerId!} 
-              categoryId={player.category_id} 
-              playerName={fullName}
-              sportType={(player.categories as { rugby_type?: string })?.rugby_type}
-            />
+            {isBowling ? (
+              <BowlingCumulativeStats categoryId={player.category_id} playerId={playerId!} />
+            ) : (
+              <PlayerMatchesTab 
+                playerId={playerId!} 
+                categoryId={player.category_id} 
+                playerName={fullName}
+                sportType={(player.categories as { rugby_type?: string })?.rugby_type}
+              />
+            )}
+          </TabsContent>
+
+          <TabsContent value="stats">
+            {isBowling ? (
+              <BowlingCumulativeStats categoryId={player.category_id} playerId={playerId!} />
+            ) : (
+              <PlayerCumulativeStats 
+                categoryId={player.category_id} 
+                sportType={(player.categories as { rugby_type?: string })?.rugby_type}
+                playerId={playerId!}
+              />
+            )}
           </TabsContent>
 
           <TabsContent value="calendar">
@@ -528,18 +537,48 @@ function PlayerDetailsContent() {
           </TabsContent>
 
           <TabsContent value="nutrition">
-            <PlayerNutritionTab playerId={playerId!} categoryId={player.category_id} />
+            <PlayerNutritionTab playerId={playerId!} categoryId={player.category_id} readOnly={true} />
           </TabsContent>
 
           <TabsContent value="academy">
-            <PlayerAcademyTab playerId={playerId!} categoryId={player.category_id} playerName={fullName} />
+            <PlayerAcademyTab playerId={playerId!} categoryId={player.category_id} playerName={fullName} readOnly={true} />
           </TabsContent>
 
           <TabsContent value="injuries">
-            <PlayerInjuriesTab playerId={playerId!} categoryId={player.category_id} playerName={fullName} />
+            <PlayerInjuriesTab playerId={playerId!} categoryId={player.category_id} playerName={fullName} readOnly={true} />
+          </TabsContent>
+
+          {(isBowling || isSurf || isSki || isPadel) && (
+            <TabsContent value="equipment">
+              {isBowling && (
+                <PlayerBowlingArsenal playerId={playerId!} categoryId={player.category_id} isViewer={true} />
+              )}
+              {isSurf && (
+                <PlayerSurfEquipment playerId={playerId!} categoryId={player.category_id} isViewer={true} />
+              )}
+              {isSki && (
+                <PlayerSkiEquipment playerId={playerId!} categoryId={player.category_id} isViewer={true} />
+              )}
+              {isPadel && (
+                <PlayerPadelEquipment playerId={playerId!} categoryId={player.category_id} isViewer={true} />
+              )}
+            </TabsContent>
+          )}
+          <TabsContent value="documents">
+            <AthleteSpaceDocuments playerId={playerId!} categoryId={player.category_id} />
           </TabsContent>
 
         </Tabs>
+
+        {/* Individual Report - always visible at the bottom */}
+        <div className="mt-8">
+          <PlayerReportSection 
+            playerId={playerId!} 
+            categoryId={player.category_id} 
+            playerName={fullName}
+            sportType={sportType}
+          />
+        </div>
 
         {!isViewer && (
           <TransferPlayerDialog

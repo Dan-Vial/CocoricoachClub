@@ -289,7 +289,7 @@ export function AssignProgramDialog({
           </DialogTitle>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 pr-2">
+        <div className="flex-1 overflow-y-auto pr-2">
           <div className="space-y-4">
             {/* Start date */}
             <div className="space-y-2">
@@ -358,7 +358,7 @@ export function AssignProgramDialog({
               showInjuredFilter={true}
             />
           </div>
-        </ScrollArea>
+        </div>
 
         <DialogFooter className="pt-4 border-t">
           <Button variant="outline" onClick={() => onOpenChange(false)}>

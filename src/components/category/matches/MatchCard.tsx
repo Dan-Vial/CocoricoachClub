@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { MatchSheetsSection } from "@/components/category/admin/MatchSheetsSection";
 import { fr } from "date-fns/locale";
 import {
   Trash2,
@@ -26,14 +27,26 @@ import {
   ChevronUp,
   Lock,
   Bell,
+  FileSpreadsheet,
 } from "lucide-react";
 import { MatchLineupDialog } from "./MatchLineupDialog";
+import { isSurfCategory, isSkiCategory, getMainSportFromType } from "@/lib/constants/sportTypes";
+import { FisPreCompetitionForm } from "@/components/planning/FisPreCompetitionForm";
+import { SurfConditionsForm } from "@/components/surf/SurfConditionsForm";
+import { SkiConditionsForm } from "@/components/ski/SkiConditionsForm";
+import { SessionEquipmentSection } from "@/components/shared/SessionEquipmentSection";
 import { SportMatchStatsDialog } from "./SportMatchStatsDialog";
 import { CompetitionRoundsDialog } from "./CompetitionRoundsDialog";
 import { AggregatedRoundStatsDialog } from "./AggregatedRoundStatsDialog";
 import { EditMatchDialog } from "./EditMatchDialog";
 import { AddSubMatchDialog } from "./AddSubMatchDialog";
 import { NotifyAthletesDialog } from "@/components/notifications/NotifyAthletesDialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { isIndividualSport } from "@/lib/constants/sportTypes";
 import { getCompetitionStageLabel as getCompetitionStageLabelUtil } from "@/lib/constants/competitions";
 import {
@@ -67,6 +80,8 @@ interface Match {
   age_category?: string | null;
   distance_meters?: number | null;
   parent_match_id?: string | null;
+  end_date?: string | null;
+  match_format?: string | null;
 }
 
 interface MatchCardProps {
@@ -85,6 +100,7 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
   const [isSubMatchesExpanded, setIsSubMatchesExpanded] = useState(false);
   const [isEditingScore, setIsEditingScore] = useState(false);
   const [isNotifyOpen, setIsNotifyOpen] = useState(false);
+  const [isMatchSheetOpen, setIsMatchSheetOpen] = useState(false);
   const [scoreHome, setScoreHome] = useState(match.score_home?.toString() || "");
   const [scoreAway, setScoreAway] = useState(match.score_away?.toString() || "");
   const queryClient = useQueryClient();
@@ -111,6 +127,19 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
         .eq("match_id", match.id);
       if (error) throw error;
       return count || 0;
+    },
+  });
+
+  // Fetch lineup player names for pair display (Padel/Tennis doubles)
+  const { data: lineupPlayers } = useQuery({
+    queryKey: ["match_lineup_players", match.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("match_lineups")
+        .select("player_id, players(id, name, first_name)")
+        .eq("match_id", match.id);
+      if (error) throw error;
+      return data;
     },
   });
 
@@ -159,8 +188,20 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
 
   const sportType = category?.rugby_type || "XV";
   const isIndividual = isIndividualSport(sportType);
+  const isPadel = sportType.toLowerCase().includes("padel");
+  const isTennis = sportType.toLowerCase().includes("tennis");
+  const isSkiSport = getMainSportFromType(sportType) === "ski";
+  const hasTournamentBracket = isPadel || isTennis;
+  const isDoublesMatch = isPadel || (isTennis && (match.match_format === "double" || match.match_format === "double_mixte"));
   const hasSubMatches = subMatches && subMatches.length > 0;
-  const canHaveSubMatches = !isIndividual && !isSubMatch && !match.parent_match_id;
+  const canHaveSubMatches = (!isIndividual || hasTournamentBracket) && !isSubMatch && !match.parent_match_id;
+  const isTeamSport = !isIndividual;
+  
+  // Check if match is within 3 days (for pre-competition form)
+  const fisMatchDate = new Date(match.match_date);
+  const now = new Date();
+  const daysDiff = Math.ceil((fisMatchDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+  const showPreCompetition = isSkiSport && daysDiff <= 3 && !match.is_finalized;
   
   // Check if this is a sport that uses rounds (Judo, Bowling, Aviron, Athletics)
   const hasRoundBasedStats = sportType.toLowerCase().includes("judo") || 
@@ -320,6 +361,9 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
             <div className="text-sm text-muted-foreground mt-1 space-y-1">
               <p>
                 {format(matchDate, "EEEE d MMMM yyyy", { locale: fr })}
+                {match.end_date && match.end_date !== match.match_date && (
+                  <> → {format(new Date(match.end_date), "EEEE d MMMM yyyy", { locale: fr })}</>
+                )}
                 {match.match_time && ` à ${match.match_time.slice(0, 5)}`}
               </p>
               {/* For individual sports, show event name if different from competition */}
@@ -356,9 +400,57 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
                   {match.location}
                 </p>
               )}
+              {/* Age category */}
+              {match.age_category && (
+                <p className="text-xs text-muted-foreground/80">
+                  Catégorie : {match.age_category}
+                </p>
+              )}
+              {/* Distance for individual sports */}
+              {isIndividual && match.distance_meters && match.distance_meters > 0 && (
+                <p className="text-xs text-muted-foreground/80">
+                  Distance : {match.distance_meters >= 1000 ? `${(match.distance_meters / 1000).toFixed(1)} km` : `${match.distance_meters} m`}
+                </p>
+              )}
+              {/* Pair display for Padel / Tennis doubles */}
+              {isDoublesMatch && lineupPlayers && lineupPlayers.length > 0 && (
+                <p className="flex items-center gap-1">
+                  <Users className="h-3 w-3" />
+                  <span className="font-medium">
+                    Paire : {lineupPlayers.map((lp: any) => {
+                      const p = lp.players;
+                      return [p?.first_name, p?.name].filter(Boolean).join(" ");
+                    }).join(" & ")}
+                  </span>
+                </p>
+              )}
+              {/* Tennis format badge */}
+              {isTennis && match.match_format && (
+                <Badge variant="outline" className="text-xs w-fit">
+                  {match.match_format === "simple" ? "Simple" : match.match_format === "double" ? "Double" : "Double Mixte"}
+                </Badge>
+              )}
+              {/* Inline stats badges */}
+              <div className="flex items-center gap-1.5 flex-wrap mt-1">
+                {lineupCount !== undefined && lineupCount > 0 && (
+                  <Badge variant="outline" className="text-[10px] gap-1 py-0">
+                    <Users className="h-2.5 w-2.5" />
+                    {lineupCount} {isIndividual ? "participant(s)" : "joueur(s)"}
+                  </Badge>
+                )}
+                {hasRoundBasedStats && roundsCount !== undefined && roundsCount > 0 && (
+                  <Badge variant="outline" className="text-[10px] gap-1 py-0">
+                    <BarChart3 className="h-2.5 w-2.5" />
+                    {roundsCount} partie(s)
+                  </Badge>
+                )}
+                {match.notes && (
+                  <Badge variant="outline" className="text-[10px] gap-1 py-0 text-muted-foreground">
+                    📝 Note
+                  </Badge>
+                )}
+              </div>
             </div>
-
-            {/* Score - Only for team sports */}
             {!isIndividual && (
               <div className="mt-3">
                 {isEditingScore ? (
@@ -415,80 +507,55 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
               </div>
             )}
 
-            {match.notes && (
-              <p className="text-sm text-muted-foreground mt-2 italic">{match.notes}</p>
-            )}
           </div>
 
-          <div className="flex flex-col gap-2">
-            {/* Actions dropdown */}
-            {/* modal={false} avoids scroll-jumps/offset issues in some layouts */}
+          <div className="flex flex-col gap-1.5 items-end">
+            {/* Direct action buttons */}
+            <Button variant="outline" size="sm" className="gap-1.5 text-xs w-full justify-start" onClick={() => setIsEditOpen(true)}>
+              <Edit2 className="h-3.5 w-3.5" />
+              Modifier
+            </Button>
+            <Button variant="outline" size="sm" className="gap-1.5 text-xs w-full justify-start" onClick={() => setIsLineupOpen(true)}>
+              <Users className="h-3.5 w-3.5" />
+              {isDoublesMatch ? `Paire (${lineupCount || 0}/2)` : isIndividual ? `Participants (${lineupCount || 0})` : `Composition (${lineupCount || 0})`}
+            </Button>
+            {isTeamSport && (
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs w-full justify-start" onClick={() => setIsMatchSheetOpen(true)}>
+                <FileSpreadsheet className="h-3.5 w-3.5" />
+                Feuille de match
+              </Button>
+            )}
+            {hasRoundBasedStats ? (
+              isTrainingMatch ? (
+                <Button variant="outline" size="sm" className="gap-1.5 text-xs w-full justify-start opacity-50 cursor-not-allowed" disabled>
+                  <Lock className="h-3.5 w-3.5" />
+                  {sportType.toLowerCase().includes("bowling") ? `Parties (${roundsCount || 0})` : `Épreuves (${roundsCount || 0})`}
+                </Button>
+              ) : (
+                <Button variant="outline" size="sm" className="gap-1.5 text-xs w-full justify-start" onClick={() => setIsRoundsOpen(true)}>
+                  <Swords className="h-3.5 w-3.5" />
+                  {sportType.toLowerCase().includes("judo") ? `Combats (${roundsCount || 0})` : 
+                   sportType.toLowerCase().includes("bowling") ? `Parties (${roundsCount || 0})` : 
+                   sportType.toLowerCase().includes("aviron") ? `Courses (${roundsCount || 0})` : 
+                   `Épreuves (${roundsCount || 0})`}
+                </Button>
+              )
+            ) : null}
+            {canHaveSubMatches && (
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs w-full justify-start" onClick={() => setIsAddSubMatchOpen(true)}>
+                <Plus className="h-3.5 w-3.5" />
+                Ajouter un match
+              </Button>
+            )}
+            {/* Secondary actions menu */}
             <DropdownMenu modal={false}>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-2">
-                  <Settings className="h-4 w-4" />
-                  Actions
+                <Button variant="ghost" size="sm" className="gap-1.5 text-xs w-full justify-start text-muted-foreground">
+                  <Settings className="h-3.5 w-3.5" />
+                  Plus
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem onClick={() => setIsEditOpen(true)}>
-                  <Edit2 className="h-4 w-4 mr-2" />
-                  Modifier
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setIsLineupOpen(true)}>
-                  <Users className="h-4 w-4 mr-2" />
-                  {isIndividual ? `Participants (${lineupCount})` : `Composition (${lineupCount})`}
-                </DropdownMenuItem>
-                {/* Statistiques button - for round-based sports, only enabled when finalized */}
-                {hasRoundBasedStats ? (
-                  <DropdownMenuItem 
-                    onClick={() => isFinalized && setIsAggregatedStatsOpen(true)}
-                    disabled={!isFinalized}
-                    className={!isFinalized ? "opacity-50 cursor-not-allowed" : ""}
-                  >
-                    {isFinalized ? (
-                      <BarChart3 className="h-4 w-4 mr-2" />
-                    ) : (
-                      <Lock className="h-4 w-4 mr-2 text-muted-foreground" />
-                    )}
-                    Statistiques {!isFinalized && "(finaliser d'abord)"}
-                  </DropdownMenuItem>
-                ) : (
-                  <DropdownMenuItem onClick={() => setIsStatsOpen(true)}>
-                    <BarChart3 className="h-4 w-4 mr-2" />
-                    Statistiques
-                  </DropdownMenuItem>
-                )}
-                {hasRoundBasedStats && (
-                  isTrainingMatch ? (
-                    <DropdownMenuItem disabled className="opacity-50 cursor-not-allowed">
-                      <Lock className="h-4 w-4 mr-2 text-muted-foreground" />
-                      {sportType.toLowerCase().includes("bowling") ? `Parties (${roundsCount || 0})` : `Épreuves (${roundsCount || 0})`} — via Planification
-                    </DropdownMenuItem>
-                  ) : (
-                    <DropdownMenuItem
-                      onClick={() => {
-                        setIsRoundsOpen(true);
-                      }}
-                    >
-                      <Swords className="h-4 w-4 mr-2" />
-                      {sportType.toLowerCase().includes("judo") ? `Combats (${roundsCount || 0})` : 
-                       sportType.toLowerCase().includes("bowling") ? `Parties (${roundsCount || 0})` : 
-                       sportType.toLowerCase().includes("aviron") ? `Courses (${roundsCount || 0})` : 
-                       sportType.toLowerCase().includes("athletisme") ? `Épreuves (${roundsCount || 0})` : `Épreuves (${roundsCount || 0})`}
-                    </DropdownMenuItem>
-                  )
-                )}
-                {canHaveSubMatches && (
-                  <>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => setIsAddSubMatchOpen(true)}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Ajouter un match
-                    </DropdownMenuItem>
-                  </>
-                )}
-                <DropdownMenuSeparator />
                 {isFinalized ? (
                   <DropdownMenuItem onClick={() => finalizeMatch.mutate(false)}>
                     <X className="h-4 w-4 mr-2" />
@@ -525,6 +592,41 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
           </div>
         </div>
 
+        {/* Surf conditions */}
+        {isSurfCategory(sportType) && (
+          <div className="mt-3">
+            <SurfConditionsForm matchId={match.id} categoryId={categoryId} />
+          </div>
+        )}
+
+        {/* FIS Pre-competition form (ski sports, 3 days before) */}
+        {showPreCompetition && (
+          <div className="mt-3">
+            <FisPreCompetitionForm
+              matchId={match.id}
+              categoryId={categoryId}
+              currentData={match as any}
+            />
+          </div>
+        )}
+        {/* Ski conditions */}
+        {isSkiCategory(sportType) && (
+          <div className="mt-3">
+            <SkiConditionsForm matchId={match.id} categoryId={categoryId} />
+          </div>
+        )}
+
+        {/* Equipment selection per player */}
+        {(isSurfCategory(sportType) || isSkiCategory(sportType) || isPadel) && (
+          <div className="mt-3">
+            <SessionEquipmentSection
+              categoryId={categoryId}
+              sportType={sportType}
+              matchId={match.id}
+            />
+          </div>
+        )}
+
         {/* Sub-matches section */}
         {hasSubMatches && (
           <Collapsible open={isSubMatchesExpanded} onOpenChange={setIsSubMatchesExpanded}>
@@ -532,7 +634,7 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
               <Button variant="ghost" size="sm" className="w-full mt-3 gap-2 justify-between">
                 <span className="flex items-center gap-2">
                   <Trophy className="h-4 w-4" />
-                  {subMatches?.length} match{subMatches && subMatches.length > 1 ? "s" : ""} dans cette compétition
+                  {subMatches?.length} match{subMatches && subMatches.length > 1 ? "s" : ""} dans ce {hasTournamentBracket ? "tournoi" : "cette compétition"}
                 </span>
                 {isSubMatchesExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
               </Button>
@@ -563,6 +665,7 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
         onOpenChange={setIsLineupOpen}
         matchId={match.id}
         categoryId={categoryId}
+        matchFormat={match.match_format}
       />
 
       {/* For non-round-based sports, use SportMatchStatsDialog */}
@@ -607,6 +710,7 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
             id: match.id,
             category_id: match.category_id,
             competition: match.competition,
+            match_format: match.match_format,
           }}
         />
       )}
@@ -627,6 +731,18 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
           location: match.location || undefined,
         }}
       />
+
+      {/* Match Sheet Dialog */}
+      {isTeamSport && isMatchSheetOpen && (
+        <Dialog open={isMatchSheetOpen} onOpenChange={setIsMatchSheetOpen}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Feuille de match — {match.opponent}</DialogTitle>
+            </DialogHeader>
+            <MatchSheetsSection categoryId={categoryId} preSelectedMatchId={match.id} />
+          </DialogContent>
+        </Dialog>
+      )}
     </>
   );
 }

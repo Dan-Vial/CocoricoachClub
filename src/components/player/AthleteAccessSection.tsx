@@ -140,16 +140,16 @@ export function AthleteAccessSection({ playerId, categoryId, playerName }: Athle
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Link2 className="h-5 w-5" />
+      <CardHeader className="py-3 px-4">
+        <CardTitle className="flex items-center gap-2 text-sm">
+          <Link2 className="h-4 w-4" />
           Accès Athlète
         </CardTitle>
-        <CardDescription>
-          Lien d'activation pour que {playerName} crée son compte et accède à son espace athlète
+        <CardDescription className="text-xs">
+          Lien d'activation pour que {playerName} accède à son espace athlète
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-5">
+      <CardContent className="space-y-3 px-4 pb-3 pt-0">
 
         {/* Email Section */}
         <div className="space-y-2">

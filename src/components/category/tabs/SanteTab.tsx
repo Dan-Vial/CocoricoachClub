@@ -1,11 +1,9 @@
 import { useState } from "react";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
-import { Heart, Smile, Apple, Activity } from "lucide-react";
+import { Heart, Smile, Apple } from "lucide-react";
 import { HealthTab } from "@/components/health/HealthTab";
 import { WellnessTab } from "@/components/category/WellnessTab";
 import { NutritionTab } from "@/components/category/NutritionTab";
-import { HrvEntryDialog } from "@/components/category/hrv/HrvEntryDialog";
-import { HrvHistoryTab } from "@/components/category/hrv/HrvHistoryTab";
 import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 import { ColoredSubTabsList, ColoredSubTabsTrigger } from "@/components/ui/colored-subtabs";
 import React from "react";
@@ -54,6 +52,7 @@ export function SanteTab({ categoryId }: SanteTabProps) {
               value="health" 
               colorKey="sante"
               icon={<Heart className="h-4 w-4" />}
+              tooltip="Suivi médical : blessures, protocoles de retour, réathlétisation et historique de santé"
             >
               Santé
             </ColoredSubTabsTrigger>
@@ -62,22 +61,17 @@ export function SanteTab({ categoryId }: SanteTabProps) {
                 value="wellness" 
                 colorKey="sante"
                 icon={<Smile className="h-4 w-4" />}
+                tooltip="Questionnaire de bien-être quotidien : sommeil, fatigue, stress, courbatures et score de récupération"
               >
                 Wellness
               </ColoredSubTabsTrigger>
             )}
-            <ColoredSubTabsTrigger 
-              value="hrv" 
-              colorKey="sante"
-              icon={<Activity className="h-4 w-4" />}
-            >
-              HRV
-            </ColoredSubTabsTrigger>
             {!isViewer && (
               <ColoredSubTabsTrigger 
                 value="nutrition" 
                 colorKey="sante"
                 icon={<Apple className="h-4 w-4" />}
+                tooltip="Plans nutritionnels et suivi alimentaire adaptés aux objectifs de chaque athlète"
               >
                 Nutrition
               </ColoredSubTabsTrigger>
@@ -95,9 +89,6 @@ export function SanteTab({ categoryId }: SanteTabProps) {
           </TabsContent>
         )}
 
-        <TabsContent value="hrv">
-          <HrvHistoryTab categoryId={categoryId} />
-        </TabsContent>
 
         {!isViewer && (
           <TabsContent value="nutrition">

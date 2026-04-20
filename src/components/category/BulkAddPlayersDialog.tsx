@@ -30,11 +30,13 @@ import {
   NATATION_DISCIPLINES,
   NATATION_SPECIALTIES,
   SKI_DISCIPLINES,
+  SURF_DISCIPLINES,
   TRIATHLON_DISCIPLINES,
   isAthletismeCategory,
   isJudoCategory,
   isNatationCategory,
   isSkiCategory,
+  isSurfCategory,
   isTriathlonCategory,
   isPadelCategory,
   isIndividualSport,
@@ -97,15 +99,17 @@ export function BulkAddPlayersDialog({
   const isJudo = isJudoCategory(sportType);
   const isNatation = isNatationCategory(sportType);
   const isSki = isSkiCategory(sportType);
+  const isSurf = isSurfCategory(sportType);
   const isTriathlon = isTriathlonCategory(sportType);
   const isTeamSport = !isIndividualSport(sportType);
   const positions = getPositionsForSport(sportType);
-  const hasDisciplines = isAthletics || isNatation || isSki || isTriathlon;
+  const hasDisciplines = isAthletics || isNatation || isSki || isSurf || isTriathlon;
 
   const getDisciplineOptions = () => {
     if (isAthletics) return ATHLETISME_DISCIPLINES;
     if (isNatation) return NATATION_DISCIPLINES;
     if (isSki) return SKI_DISCIPLINES;
+    if (isSurf) return SURF_DISCIPLINES;
     if (isTriathlon) return TRIATHLON_DISCIPLINES;
     if (isJudo) return JUDO_WEIGHT_CATEGORIES.map(c => ({ value: c.value, label: c.label }));
     return [];
@@ -127,7 +131,7 @@ export function BulkAddPlayersDialog({
     reader.onload = (evt) => {
       try {
         const data = new Uint8Array(evt.target?.result as ArrayBuffer);
-        const workbook = XLSX.read(data, { type: "array" });
+        const workbook = XLSX.read(data, { type: "array", raw: false });
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
         const rows = XLSX.utils.sheet_to_json<Record<string, any>>(sheet, { defval: "" });
 
@@ -151,7 +155,11 @@ export function BulkAddPlayersDialog({
           const nom = get(["nom", "name", "last_name", "lastname"]);
           const prenom = get(["prenom", "prénom", "firstname", "first_name", "first name"]);
           const email = get(["mail", "email", "e-mail", "courriel"]);
-          const tel = get(["tel", "telephone", "téléphone", "phone", "mobile"]);
+          let tel = get(["tel", "telephone", "téléphone", "phone", "mobile"]);
+          // Fix leading zero lost by Excel for French phone numbers
+          if (tel && /^\d{9}$/.test(tel)) {
+            tel = "0" + tel; // e.g. 612345678 -> 0612345678
+          }
           const rawDate = get(["date de naissance", "date_naissance", "datenaissance", "birth_date", "birthdate", "dob", "naissance"]);
 
           // Parse date: try Excel serial number or string

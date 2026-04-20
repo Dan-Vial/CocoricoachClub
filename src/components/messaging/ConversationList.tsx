@@ -178,6 +178,7 @@ export function ConversationList({ categoryId, selectedId, onSelect, isAthlete =
     enabled: !!user,
   });
 
+
   // Auto-create default conversations if missing AND auto-join to default groups
   const { data: defaultGroupsCreated } = useQuery({
     queryKey: ["default-conversations-check", categoryId, isAthlete, user?.id],

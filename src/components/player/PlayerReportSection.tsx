@@ -25,20 +25,21 @@ interface PlayerReportSectionProps {
   sportType?: string;
 }
 
-type ReportSection = "tests" | "biometrics" | "wellness" | "matches" | "ewma";
+type ReportSection = "tests" | "biometrics" | "wellness" | "matches" | "training_stats" | "ewma";
 
 const SECTION_LABELS: Record<ReportSection, string> = {
   tests: "Tests de performance",
   biometrics: "Données biométriques",
   wellness: "Wellness",
-  matches: "Statistiques matchs",
+  matches: "Statistiques compétitions",
+  training_stats: "Statistiques entraînement",
   ewma: "Charge d'entraînement (EWMA)",
 };
 
 export function PlayerReportSection({ playerId, categoryId, playerName, sportType }: PlayerReportSectionProps) {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
-  const [selectedSections, setSelectedSections] = useState<ReportSection[]>(["tests", "biometrics", "wellness", "matches", "ewma"]);
+  const [selectedSections, setSelectedSections] = useState<ReportSection[]>(["tests", "biometrics", "wellness", "matches", "training_stats", "ewma"]);
   const [generating, setGenerating] = useState<"pdf" | "csv" | null>(null);
 
   const { data: player } = useQuery({
@@ -300,6 +301,10 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
       injuriesRes,
       awcrRes,
       competitionRoundsRes,
+      bowlingSpareRes,
+      tennisDrillRes,
+      precisionRes,
+      trainingRoundsRes,
     ] = await Promise.all([
       supabase.from("player_measurements").select("*").eq("player_id", playerId).order("measurement_date", { ascending: false }),
       supabase.from("body_composition").select("*").eq("player_id", playerId).order("measurement_date", { ascending: false }),
@@ -361,6 +366,42 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
         if (dateTo) q = q.lte("matches.match_date", dateTo);
         return q.order("created_at", { ascending: false });
       })(),
+      // Bowling spare training
+      (() => {
+        let q = supabase.from("bowling_spare_training" as any).select("*").eq("player_id", playerId);
+        if (dateFrom) q = q.gte("session_date", dateFrom);
+        if (dateTo) q = q.lte("session_date", dateTo);
+        return q.order("session_date", { ascending: false });
+      })(),
+      // Tennis drill training
+      (() => {
+        let q = supabase.from("tennis_drill_training" as any).select("*").eq("player_id", playerId);
+        if (dateFrom) q = q.gte("session_date", dateFrom);
+        if (dateTo) q = q.lte("session_date", dateTo);
+        return q.order("session_date", { ascending: false });
+      })(),
+      // Precision training (generic)
+      (() => {
+        let q = supabase.from("precision_training").select("*").eq("player_id", playerId);
+        if (dateFrom) q = q.gte("session_date", dateFrom);
+        if (dateTo) q = q.lte("session_date", dateTo);
+        return q.order("session_date", { ascending: false });
+      })(),
+      // Training competition rounds (bowling training games)
+      (() => {
+        const subQ = supabase.from("matches").select("id").eq("category_id", categoryId).eq("event_type", "training");
+        return subQ.then(async (matchRes) => {
+          if (!matchRes.data || matchRes.data.length === 0) return { data: [], error: null };
+          const matchIds = matchRes.data.map(m => m.id);
+          let q = supabase.from("competition_rounds")
+            .select("*, competition_round_stats(stat_data), matches!inner(match_date)")
+            .eq("player_id", playerId)
+            .in("match_id", matchIds);
+          if (dateFrom) q = q.gte("matches.match_date", dateFrom);
+          if (dateTo) q = q.lte("matches.match_date", dateTo);
+          return q.order("created_at", { ascending: false });
+        });
+      })(),
     ]);
 
     return {
@@ -375,6 +416,10 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
       injuries: injuriesRes.data || [],
       awcr: awcrRes.data || [],
       competitionRounds: competitionRoundsRes.data || [],
+      bowlingSpareTraining: (bowlingSpareRes as any)?.data || [],
+      tennisDrillTraining: (tennisDrillRes as any)?.data || [],
+      precisionTraining: (precisionRes as any)?.data || [],
+      trainingRounds: (trainingRoundsRes as any)?.data || [],
     };
   };
 
@@ -1058,6 +1103,129 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
         yPos += 8;
       }
 
+      // ===== TRAINING STATS SECTION =====
+      if (selectedSections.includes("training_stats")) {
+        const allTrainingExercises: { exercise: string; date: string; attempts: number; successes: number; rate: number }[] = [];
+
+        // Bowling spare training
+        (data.bowlingSpareTraining || []).forEach((t: any) => {
+          allTrainingExercises.push({
+            exercise: t.exercise_type || '-',
+            date: t.session_date,
+            attempts: t.attempts || 0,
+            successes: t.successes || 0,
+            rate: t.success_rate || 0,
+          });
+        });
+
+        // Tennis drill training
+        (data.tennisDrillTraining || []).forEach((t: any) => {
+          allTrainingExercises.push({
+            exercise: t.exercise_type || '-',
+            date: t.session_date,
+            attempts: t.attempts || 0,
+            successes: t.successes || 0,
+            rate: t.success_rate || 0,
+          });
+        });
+
+        // Precision training (generic)
+        (data.precisionTraining || []).forEach((t: any) => {
+          allTrainingExercises.push({
+            exercise: t.exercise_label || '-',
+            date: t.session_date,
+            attempts: t.attempts || 0,
+            successes: t.successes || 0,
+            rate: t.success_rate || 0,
+          });
+        });
+
+        if (allTrainingExercises.length > 0) {
+          yPos = localCheckPageBreak(pdf, yPos, 40, pdfSettings);
+          pdf.setFillColor(...colors.light);
+          pdf.rect(margin, yPos, contentWidth, 8, 'F');
+          pdf.setTextColor(...colors.primary);
+          pdf.setFontSize(11);
+          pdf.setFont("helvetica", "bold");
+          pdf.text("STATISTIQUES ENTRAÎNEMENT", margin + 3, yPos + 5.5);
+          pdf.setFont("helvetica", "normal");
+          pdf.setTextColor(...colors.dark);
+          yPos += 12;
+
+          // Cumulative by exercise type
+          const exerciseTotals = new Map<string, { attempts: number; successes: number }>();
+          allTrainingExercises.forEach(t => {
+            const existing = exerciseTotals.get(t.exercise) || { attempts: 0, successes: 0 };
+            existing.attempts += t.attempts;
+            existing.successes += t.successes;
+            exerciseTotals.set(t.exercise, existing);
+          });
+
+          // Summary table
+          const summHeaders = ["Exercice", "Tentatives", "Réussites", "% Réussite"];
+          const summColWidths = [60, 35, 35, 35];
+          yPos = drawTableHeaderPdf(pdf, summHeaders, summColWidths, yPos, margin);
+
+          let idx = 0;
+          exerciseTotals.forEach((totals, exercise) => {
+            yPos = localCheckPageBreak(pdf, yPos, 10, pdfSettings);
+            const rate = totals.attempts > 0 ? Math.round((totals.successes / totals.attempts) * 10000) / 100 : 0;
+            const rateColor: [number, number, number] = rate >= 70 ? colors.success : rate >= 40 ? colors.warning : colors.danger;
+            yPos = drawTableRowPdf(pdf, [
+              exercise,
+              String(totals.attempts),
+              String(totals.successes),
+              `${rate.toFixed(1)}%`,
+            ], summColWidths, yPos, idx % 2 === 1, margin, [null, null, null, rateColor]);
+            idx++;
+          });
+          yPos += 6;
+
+          // Overall totals
+          const totalAttempts = allTrainingExercises.reduce((sum, t) => sum + t.attempts, 0);
+          const totalSuccesses = allTrainingExercises.reduce((sum, t) => sum + t.successes, 0);
+          const overallRate = totalAttempts > 0 ? Math.round((totalSuccesses / totalAttempts) * 10000) / 100 : 0;
+
+          pdf.setFontSize(9);
+          pdf.setFont("helvetica", "bold");
+          pdf.setTextColor(...colors.primary);
+          pdf.text(`Total: ${totalAttempts} tentatives, ${totalSuccesses} réussites, ${overallRate.toFixed(1)}% de réussite`, margin, yPos);
+          pdf.setFont("helvetica", "normal");
+          pdf.setTextColor(...colors.dark);
+          yPos += 8;
+
+          // Detail table (recent entries)
+          const detailHeaders = ["Date", "Exercice", "Tentatives", "Réussites", "% Réussite"];
+          const detailColWidths = [28, 52, 30, 30, 30];
+          yPos = localCheckPageBreak(pdf, yPos, 15, pdfSettings);
+          yPos = drawTableHeaderPdf(pdf, detailHeaders, detailColWidths, yPos, margin);
+
+          allTrainingExercises.slice(0, 20).forEach((t, index) => {
+            yPos = localCheckPageBreak(pdf, yPos, 10, pdfSettings);
+            const rateColor: [number, number, number] = t.rate >= 70 ? colors.success : t.rate >= 40 ? colors.warning : colors.danger;
+            yPos = drawTableRowPdf(pdf, [
+              t.date ? format(new Date(t.date), "dd/MM/yy") : '-',
+              t.exercise,
+              String(t.attempts),
+              String(t.successes),
+              `${t.rate.toFixed(1)}%`,
+            ], detailColWidths, yPos, index % 2 === 1, margin, [null, null, null, null, rateColor]);
+          });
+          yPos += 8;
+
+          // Bar chart of success rates by exercise
+          const chartData = Array.from(exerciseTotals.entries()).map(([exercise, totals]) => ({
+            label: exercise,
+            value: totals.attempts > 0 ? Math.round((totals.successes / totals.attempts) * 100) : 0,
+            color: colors.primary,
+          }));
+          if (chartData.length >= 2) {
+            yPos = localCheckPageBreak(pdf, yPos, 55, pdfSettings);
+            yPos = drawBarChart(pdf, chartData, margin, yPos, contentWidth, 35, "% Réussite par exercice");
+          }
+        }
+      }
+
       // ===== EWMA / CHARGE SECTION =====
       if (selectedSections.includes("ewma")) {
         yPos = localCheckPageBreak(pdf, yPos, 50, pdfSettings);
@@ -1535,6 +1703,112 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
         });
       }
 
+      // ===== FEUILLE STATS ENTRAÎNEMENT =====
+      if (selectedSections.includes("training_stats")) {
+        const allTrainingExercises: { exercise: string; date: string; attempts: number; successes: number; rate: number }[] = [];
+
+        (data.bowlingSpareTraining || []).forEach((t: any) => {
+          allTrainingExercises.push({ exercise: t.exercise_type || '-', date: t.session_date, attempts: t.attempts || 0, successes: t.successes || 0, rate: t.success_rate || 0 });
+        });
+        (data.tennisDrillTraining || []).forEach((t: any) => {
+          allTrainingExercises.push({ exercise: t.exercise_type || '-', date: t.session_date, attempts: t.attempts || 0, successes: t.successes || 0, rate: t.success_rate || 0 });
+        });
+        (data.precisionTraining || []).forEach((t: any) => {
+          allTrainingExercises.push({ exercise: t.exercise_label || '-', date: t.session_date, attempts: t.attempts || 0, successes: t.successes || 0, rate: t.success_rate || 0 });
+        });
+
+        if (allTrainingExercises.length > 0) {
+          const sheet = workbook.addWorksheet('Stats Entraînement');
+          let rowIdx = addSheetHeader(sheet, 'STATISTIQUES ENTRAÎNEMENT');
+
+          // Cumulative summary section
+          const exerciseTotals = new Map<string, { attempts: number; successes: number }>();
+          allTrainingExercises.forEach(t => {
+            const existing = exerciseTotals.get(t.exercise) || { attempts: 0, successes: 0 };
+            existing.attempts += t.attempts;
+            existing.successes += t.successes;
+            exerciseTotals.set(t.exercise, existing);
+          });
+
+          // Summary header
+          const summRow = sheet.getRow(rowIdx);
+          summRow.getCell(1).value = 'RÉSUMÉ CUMULÉ';
+          summRow.getCell(1).font = { bold: true, size: 11, color: { argb: 'FF224378' } };
+          rowIdx++;
+
+          const summHeaders = ['Exercice', 'Tentatives', 'Réussites', '% Réussite'];
+          sheet.columns = [{ width: 30 }, { width: 14 }, { width: 14 }, { width: 14 }, { width: 14 }];
+          const shRow = sheet.getRow(rowIdx);
+          summHeaders.forEach((h, i) => { shRow.getCell(i + 1).value = h; });
+          styleHeaderRow(sheet, rowIdx, summHeaders.length);
+          rowIdx++;
+
+          exerciseTotals.forEach((totals, exercise) => {
+            const row = sheet.getRow(rowIdx);
+            const rate = totals.attempts > 0 ? Math.round((totals.successes / totals.attempts) * 10000) / 100 : 0;
+            row.getCell(1).value = exercise;
+            row.getCell(2).value = totals.attempts;
+            row.getCell(3).value = totals.successes;
+            row.getCell(4).value = rate;
+            row.getCell(4).numFmt = '0.0"%"';
+            row.getCell(4).font = { bold: true, color: { argb: rate >= 70 ? 'FF27AE60' : rate >= 40 ? 'FFEAB308' : 'FFEF4444' } };
+            if (rowIdx % 2 === 0) {
+              for (let i = 1; i <= 4; i++) {
+                row.getCell(i).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
+              }
+            }
+            rowIdx++;
+          });
+
+          // Overall total
+          const totalAttempts = allTrainingExercises.reduce((sum, t) => sum + t.attempts, 0);
+          const totalSuccesses = allTrainingExercises.reduce((sum, t) => sum + t.successes, 0);
+          const overallRate = totalAttempts > 0 ? Math.round((totalSuccesses / totalAttempts) * 10000) / 100 : 0;
+          rowIdx++;
+          const totRow = sheet.getRow(rowIdx);
+          totRow.getCell(1).value = 'TOTAL';
+          totRow.getCell(1).font = { bold: true, color: { argb: 'FF224378' } };
+          totRow.getCell(2).value = totalAttempts;
+          totRow.getCell(2).font = { bold: true };
+          totRow.getCell(3).value = totalSuccesses;
+          totRow.getCell(3).font = { bold: true };
+          totRow.getCell(4).value = overallRate;
+          totRow.getCell(4).font = { bold: true, size: 12, color: { argb: overallRate >= 70 ? 'FF27AE60' : 'FFEAB308' } };
+          for (let i = 1; i <= 4; i++) {
+            totRow.getCell(i).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2E8F0' } };
+          }
+          rowIdx += 2;
+
+          // Detail section
+          const detailTitleRow = sheet.getRow(rowIdx);
+          detailTitleRow.getCell(1).value = 'DÉTAIL PAR SESSION';
+          detailTitleRow.getCell(1).font = { bold: true, size: 11, color: { argb: 'FF224378' } };
+          rowIdx++;
+
+          const detailHeaders = ['Date', 'Exercice', 'Tentatives', 'Réussites', '% Réussite'];
+          const dhRow = sheet.getRow(rowIdx);
+          detailHeaders.forEach((h, i) => { dhRow.getCell(i + 1).value = h; });
+          styleHeaderRow(sheet, rowIdx, detailHeaders.length);
+          rowIdx++;
+
+          allTrainingExercises.forEach((t) => {
+            const row = sheet.getRow(rowIdx);
+            row.getCell(1).value = t.date ? format(new Date(t.date), "dd/MM/yyyy") : '-';
+            row.getCell(2).value = t.exercise;
+            row.getCell(3).value = t.attempts;
+            row.getCell(4).value = t.successes;
+            row.getCell(5).value = t.rate;
+            row.getCell(5).font = { color: { argb: t.rate >= 70 ? 'FF27AE60' : t.rate >= 40 ? 'FFEAB308' : 'FFEF4444' } };
+            if (rowIdx % 2 === 0) {
+              for (let i = 1; i <= 5; i++) {
+                row.getCell(i).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
+              }
+            }
+            rowIdx++;
+          });
+        }
+      }
+
       // ===== FEUILLE BLESSURES =====
       if (data.injuries.length > 0) {
         const sheet = workbook.addWorksheet('Blessures');
@@ -1703,6 +1977,7 @@ export function PlayerReportSection({ playerId, categoryId, playerName, sportTyp
             <Input
               type="date"
               value={dateTo}
+              min={dateFrom || undefined}
               onChange={e => setDateTo(e.target.value)}
               className="h-9"
             />

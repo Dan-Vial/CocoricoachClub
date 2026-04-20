@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { Trash2, Info } from "lucide-react";
+import { Trash2, Info, Send, Copy, Link2, Check, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -25,6 +25,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface CategoryCollaborationTabProps {
   categoryId: string;
@@ -39,11 +45,13 @@ const AVAILABLE_ROLES = [
   { value: "physio", label: "Kinésithérapeute", description: "Blessures et récupération", variant: "secondary" as const },
   { value: "mental_coach", label: "Préparateur Mental", description: "Wellness et suivi psychologique", variant: "secondary" as const },
   { value: "administratif", label: "Administratif", description: "Documents et gestion administrative", variant: "secondary" as const },
+  { value: "athlete", label: "Athlète", description: "Accès joueur / sportif", variant: "secondary" as const },
   { value: "viewer", label: "Viewer", description: "Consultation uniquement", variant: "outline" as const },
 ];
 
 export function CategoryCollaborationTab({ categoryId }: CategoryCollaborationTabProps) {
   const queryClient = useQueryClient();
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const { data: category, isLoading: categoryLoading } = useQuery({
     queryKey: ["category", categoryId],
@@ -68,14 +76,12 @@ export function CategoryCollaborationTab({ categoryId }: CategoryCollaborationTa
         .order("created_at", { ascending: false });
       if (error) throw error;
       
-      // Fetch profiles and player names for each member
       const membersWithProfiles = await Promise.all(
         data.map(async (member: any) => {
           const { data: profileData } = await supabase
             .rpc("get_safe_profile", { profile_id: member.user_id });
           const profile = profileData?.[0] || null;
           
-          // If full_name is empty, try to get name from linked player
           let displayName = profile?.full_name;
           if (!displayName) {
             const { data: playerData } = await supabase
@@ -99,7 +105,34 @@ export function CategoryCollaborationTab({ categoryId }: CategoryCollaborationTa
     },
   });
 
-  // Fetch club members with access to this category
+  // Fetch existing invitations for this category to get tokens
+  const { data: invitations } = useQuery({
+    queryKey: ["category-invitations", categoryId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("category_invitations")
+        .select("*")
+        .eq("category_id", categoryId)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Also fetch athlete invitations
+  const { data: athleteInvitations } = useQuery({
+    queryKey: ["athlete-invitations", categoryId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("athlete_invitations")
+        .select("*")
+        .eq("category_id", categoryId)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const { data: clubMembers, isLoading: clubMembersLoading } = useQuery({
     queryKey: ["club-members-for-category", categoryId],
     queryFn: async () => {
@@ -111,7 +144,6 @@ export function CategoryCollaborationTab({ categoryId }: CategoryCollaborationTa
         .order("created_at", { ascending: false });
       if (error) throw error;
       
-      // Fetch profiles and player names for each member
       const membersWithProfiles = await Promise.all(
         data.map(async (member: any) => {
           const { data: profileData } = await supabase
@@ -137,11 +169,26 @@ export function CategoryCollaborationTab({ categoryId }: CategoryCollaborationTa
         })
       );
       
-      // Filter members who have access to this category (full club access or assigned)
       return membersWithProfiles.filter((m: any) => {
-        if (!m.assigned_categories || m.assigned_categories.length === 0) return true; // Full club access
+        if (!m.assigned_categories || m.assigned_categories.length === 0) return true;
         return m.assigned_categories.includes(categoryId);
       });
+    },
+    enabled: !!category,
+  });
+
+  // Also fetch club-level invitations
+  const { data: clubInvitations } = useQuery({
+    queryKey: ["club-invitations-for-category", category?.club_id],
+    queryFn: async () => {
+      if (!category) return [];
+      const { data, error } = await supabase
+        .from("club_invitations")
+        .select("*")
+        .eq("club_id", (category as any).club_id)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
     },
     enabled: !!category,
   });
@@ -151,18 +198,13 @@ export function CategoryCollaborationTab({ categoryId }: CategoryCollaborationTa
     queryFn: async () => {
       const { data: user } = await supabase.auth.getUser();
       if (!user.user || !category) return false;
-      
-      // Check if user is club owner
       if ((category as any).clubs?.user_id === user.user.id) return true;
-      
-      // Check if user is club admin
       const { data: memberRole } = await supabase
         .from("club_members")
         .select("role")
         .eq("club_id", (category as any).club_id)
         .eq("user_id", user.user.id)
         .maybeSingle();
-      
       return memberRole?.role === "admin";
     },
     enabled: !!category,
@@ -202,12 +244,78 @@ export function CategoryCollaborationTab({ categoryId }: CategoryCollaborationTa
     },
   });
 
+  const renewInvitationMutation = useMutation({
+    mutationFn: async ({ tableName, invitationId }: { tableName: string; invitationId: string }) => {
+      const { data, error } = await supabase.rpc("renew_invitation", {
+        _table_name: tableName,
+        _invitation_id: invitationId,
+      });
+      if (error) throw error;
+      return data as any;
+    },
+    onSuccess: (data) => {
+      if (data?.success) {
+        queryClient.invalidateQueries({ queryKey: ["category-invitations", categoryId] });
+        queryClient.invalidateQueries({ queryKey: ["club-invitations-for-category"] });
+        toast.success("Invitation renvoyée avec succès");
+      } else {
+        toast.error(data?.error || "Erreur lors du renvoi");
+      }
+    },
+    onError: () => {
+      toast.error("Erreur lors du renvoi de l'invitation");
+    },
+  });
+
+  const createInvitationMutation = useMutation({
+    mutationFn: async ({ email, role, isClubMember }: { email: string; role: string; isClubMember: boolean }) => {
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) throw new Error("Not authenticated");
+      
+      const token = crypto.randomUUID();
+      const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
+
+      if (isClubMember) {
+        const { error } = await supabase.from("club_invitations").insert({
+          club_id: (category as any).club_id,
+          email,
+          role: role as any,
+          invited_by: user.user.id,
+          token,
+          expires_at: expiresAt,
+          status: "pending",
+        });
+        if (error) throw error;
+        return { token, type: "club_invitations" };
+      } else {
+        const { error } = await supabase.from("category_invitations").insert({
+          category_id: categoryId,
+          email,
+          role: role as any,
+          invited_by: user.user.id,
+          token,
+          expires_at: expiresAt,
+          status: "pending",
+        });
+        if (error) throw error;
+        return { token, type: "category_invitations" };
+      }
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["category-invitations", categoryId] });
+      queryClient.invalidateQueries({ queryKey: ["club-invitations-for-category"] });
+      const link = getInvitationLink(data.token, data.type);
+      navigator.clipboard.writeText(link);
+      toast.success("Invitation créée et lien copié dans le presse-papiers !");
+    },
+    onError: () => {
+      toast.error("Erreur lors de la création de l'invitation");
+    },
+  });
+
   const getRoleConfig = (role: string) => {
     return AVAILABLE_ROLES.find(r => r.value === role) || { 
-      value: role, 
-      label: role, 
-      description: "", 
-      variant: "outline" as const 
+      value: role, label: role, description: "", variant: "outline" as const 
     };
   };
 
@@ -216,9 +324,123 @@ export function CategoryCollaborationTab({ categoryId }: CategoryCollaborationTa
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
+  // Find invitation for a member by email
+  const getInvitationForMember = (memberEmail: string | null | undefined, isClubMember: boolean): { invitation: any; type: string } | null => {
+    if (!memberEmail) return null;
+    
+    if (isClubMember) {
+      const clubInv = clubInvitations?.find((inv: any) => inv.email === memberEmail);
+      if (clubInv) return { invitation: clubInv, type: "club_invitations" };
+      return null;
+    }
+    
+    // Check category invitations
+    const catInv = invitations?.find((inv: any) => inv.email === memberEmail);
+    if (catInv) return { invitation: catInv, type: "category_invitations" };
+    
+    // Check athlete invitations
+    const athInv = athleteInvitations?.find((inv: any) => inv.email === memberEmail);
+    if (athInv) return { invitation: athInv, type: "athlete_invitations" };
+    
+    return null;
+  };
+
+  const getInvitationLink = (token: string, type: string) => {
+    if (type === "athlete_invitations") {
+      return `${window.location.origin}/accept-athlete-invitation?token=${token}`;
+    }
+    const isCategory = type === "category_invitations";
+    return `${window.location.origin}/accept-invitation?token=${token}${isCategory ? "&type=category" : ""}`;
+  };
+
+  const handleCopyLink = async (token: string, type: string, memberId: string) => {
+    const link = getInvitationLink(token, type);
+    await navigator.clipboard.writeText(link);
+    setCopiedId(memberId);
+    toast.success("Lien copié dans le presse-papiers");
+    setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const handleResendInvitation = (invitationId: string, tableName: string) => {
+    renewInvitationMutation.mutate({ tableName, invitationId });
+  };
+
   if (categoryLoading) {
     return <Skeleton className="h-96 w-full" />;
   }
+
+  const renderInvitationActions = (member: any, isClubMember: boolean) => {
+    const result = getInvitationForMember(member.profile?.email, isClubMember);
+    
+    if (!result) {
+      if (!member.profile?.email) {
+        return <span className="text-xs text-muted-foreground italic">—</span>;
+      }
+      return (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 gap-1 text-xs"
+                onClick={() => createInvitationMutation.mutate({
+                  email: member.profile.email,
+                  role: member.role,
+                  isClubMember,
+                })}
+                disabled={createInvitationMutation.isPending}
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Créer
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Créer et copier un lien d'invitation</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      );
+    }
+
+    const { invitation, type } = result;
+    
+    return (
+      <TooltipProvider>
+        <div className="flex items-center gap-1">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => handleResendInvitation(invitation.id, type)}
+                disabled={renewInvitationMutation.isPending}
+              >
+                <Send className="h-3.5 w-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Renvoyer l'invitation</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => handleCopyLink(invitation.token, type, member.id)}
+              >
+                {copiedId === member.id ? (
+                  <Check className="h-3.5 w-3.5 text-green-500" />
+                ) : (
+                  <Copy className="h-3.5 w-3.5" />
+                )}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Copier le lien d'invitation</TooltipContent>
+          </Tooltip>
+        </div>
+      </TooltipProvider>
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -248,6 +470,7 @@ export function CategoryCollaborationTab({ categoryId }: CategoryCollaborationTa
                 <TableRow>
                   <TableHead>Membre</TableHead>
                   <TableHead>Rôle Club</TableHead>
+                  <TableHead>Invitation</TableHead>
                   <TableHead>Accès</TableHead>
                 </TableRow>
               </TableHeader>
@@ -261,6 +484,9 @@ export function CategoryCollaborationTab({ categoryId }: CategoryCollaborationTa
                       </div>
                     </TableCell>
                     <TableCell>{getRoleBadge(member.role)}</TableCell>
+                    <TableCell>
+                      {renderInvitationActions(member, true)}
+                    </TableCell>
                     <TableCell>
                       <Badge variant="outline" className="bg-secondary text-secondary-foreground border-border">
                         {!member.assigned_categories || member.assigned_categories.length === 0 
@@ -297,6 +523,7 @@ export function CategoryCollaborationTab({ categoryId }: CategoryCollaborationTa
                 <TableRow>
                   <TableHead>Membre</TableHead>
                   <TableHead>Rôle</TableHead>
+                  <TableHead>Invitation</TableHead>
                   <TableHead>Depuis</TableHead>
                   {canManage && <TableHead className="w-12"></TableHead>}
                 </TableRow>
@@ -335,6 +562,9 @@ export function CategoryCollaborationTab({ categoryId }: CategoryCollaborationTa
                       ) : (
                         getRoleBadge(member.role)
                       )}
+                    </TableCell>
+                    <TableCell>
+                      {renderInvitationActions(member, false)}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {format(new Date(member.created_at), "dd MMM yyyy", { locale: fr })}

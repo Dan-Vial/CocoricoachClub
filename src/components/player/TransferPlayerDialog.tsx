@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { AlertTriangle, ArrowRight } from "lucide-react";
+import { AlertTriangle, ArrowRight, CheckCircle2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface TransferPlayerDialogProps {
@@ -66,33 +66,28 @@ export function TransferPlayerDialog({
 
   const transferPlayer = useMutation({
     mutationFn: async () => {
-      // 1. Create transfer record
-      const { error: transferError } = await supabase
-        .from("player_transfers")
-        .insert({
-          player_id: playerId,
-          from_category_id: currentCategoryId,
-          to_category_id: targetCategoryId,
-          reason: reason || null,
-          notes: notes || null,
-          transferred_by: user?.id,
-        });
+      const { data, error } = await supabase.rpc("transfer_player_with_history", {
+        _player_id: playerId,
+        _from_category_id: currentCategoryId,
+        _to_category_id: targetCategoryId,
+        _reason: reason || null,
+        _notes: notes || null,
+      });
 
-      if (transferError) throw transferError;
+      if (error) throw error;
 
-      // 2. Update player's category
-      const { error: updateError } = await supabase
-        .from("players")
-        .update({ category_id: targetCategoryId })
-        .eq("id", playerId);
+      const result = data as any;
+      if (!result?.success) {
+        throw new Error(result?.error || "Erreur lors du transfert");
+      }
 
-      if (updateError) throw updateError;
+      return result;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["player", playerId] });
       queryClient.invalidateQueries({ queryKey: ["players"] });
       queryClient.invalidateQueries({ queryKey: ["player-transfers", playerId] });
-      toast.success(`${playerName} a été transféré avec succès`);
+      toast.success(`${playerName} a été transféré avec tout son historique`);
       onOpenChange(false);
       setTargetCategoryId("");
       setReason("");
@@ -100,7 +95,7 @@ export function TransferPlayerDialog({
     },
     onError: (error) => {
       console.error("Transfer error:", error);
-      toast.error("Erreur lors du transfert du joueur");
+      toast.error(error.message || "Erreur lors du transfert du joueur");
     },
   });
 
@@ -124,8 +119,8 @@ export function TransferPlayerDialog({
             Transférer {playerName}
           </DialogTitle>
           <DialogDescription>
-            Transférer ce joueur vers une autre catégorie du même club. 
-            L'historique restera consultable.
+            Transférer ce joueur vers une autre catégorie du même club.
+            Tout l'historique sera migré automatiquement.
           </DialogDescription>
         </DialogHeader>
 
@@ -176,6 +171,7 @@ export function TransferPlayerDialog({
                 <SelectItem value="level_promotion">Promotion niveau supérieur</SelectItem>
                 <SelectItem value="national_selection">Sélection nationale</SelectItem>
                 <SelectItem value="level_adjustment">Ajustement de niveau</SelectItem>
+                <SelectItem value="end_of_season">Fin de saison</SelectItem>
                 <SelectItem value="other">Autre</SelectItem>
               </SelectContent>
             </Select>
@@ -192,12 +188,22 @@ export function TransferPlayerDialog({
             />
           </div>
 
-          <div className="flex items-start gap-2 p-3 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-200 dark:border-amber-800">
-            <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
-            <p className="text-sm text-amber-700 dark:text-amber-400">
-              L'historique du joueur (tests, blessures, matchs) restera associé 
-              à l'ancienne catégorie mais sera visible depuis son profil.
-            </p>
+          <div className="space-y-2">
+            <div className="flex items-start gap-2 p-3 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800">
+              <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+              <div className="text-sm text-green-700 dark:text-green-400">
+                <p className="font-medium">Transfert complet avec historique</p>
+                <p className="mt-1">Tout l'historique du joueur (tests, blessures, wellness, composition corporelle, stats, etc.) sera automatiquement migré vers la nouvelle catégorie.</p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-2 p-3 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-200 dark:border-amber-800">
+              <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
+              <p className="text-sm text-amber-700 dark:text-amber-400">
+                L'espace athlète sera automatiquement lié à la nouvelle catégorie. 
+                Les séances et matchs passés resteront accessibles.
+              </p>
+            </div>
           </div>
 
           <DialogFooter>
@@ -212,7 +218,7 @@ export function TransferPlayerDialog({
               type="submit"
               disabled={!targetCategoryId || transferPlayer.isPending}
             >
-              {transferPlayer.isPending ? "Transfert..." : "Transférer"}
+              {transferPlayer.isPending ? "Transfert en cours..." : "Transférer"}
             </Button>
           </DialogFooter>
         </form>

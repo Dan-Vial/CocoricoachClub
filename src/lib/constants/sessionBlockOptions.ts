@@ -17,8 +17,19 @@ export const SESSION_OBJECTIVES = [
   { value: "anaerobie", label: "Anaérobie" },
   { value: "vitesse_explosivite", label: "Vitesse / Explosivité" },
   { value: "force_contact", label: "Force / Contact" },
+  { value: "force_max", label: "Force maximale" },
+  { value: "hypertrophie", label: "Hypertrophie" },
+  { value: "puissance", label: "Puissance" },
+  { value: "endurance_musculaire", label: "Endurance musculaire" },
+  { value: "endurance_force", label: "Endurance de force" },
+  { value: "mobilite", label: "Mobilité / Souplesse" },
+  { value: "proprioception", label: "Proprioception / Équilibre" },
+  { value: "prevention_blessures", label: "Prévention blessures" },
+  { value: "recuperation", label: "Récupération" },
+  { value: "coordination", label: "Coordination / Agilité" },
   { value: "tactique", label: "Tactique" },
   { value: "technique", label: "Technique" },
+  { value: "mental", label: "Préparation mentale" },
 ] as const;
 
 export const TARGET_INTENSITIES = [
@@ -42,7 +53,11 @@ export const CONTACT_CHARGE_OPTIONS = [
 ] as const;
 
 export function getSessionTypeLabel(value: string): string {
-  return SESSION_TYPES.find(t => t.value === value)?.label || value.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+  const found = SESSION_TYPES.find(t => t.value === value);
+  if (found) return found.label;
+  // Clean up: replace underscores, capitalize first letter only, keep rest lowercase
+  const cleaned = value.replace(/_/g, " ").toLowerCase();
+  return cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
 }
 
 export function getObjectiveLabel(value: string): string {

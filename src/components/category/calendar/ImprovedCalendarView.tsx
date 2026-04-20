@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ChevronLeft, ChevronRight, Plus, Download, Printer, Calendar as CalendarIcon, Filter, X } from "lucide-react";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, addMonths, subMonths, startOfWeek, endOfWeek, isSameDay, isSameMonth, addWeeks, subWeeks, addDays, subDays } from "date-fns";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, addMonths, subMonths, startOfWeek, endOfWeek, isSameDay, isSameMonth, addWeeks, subWeeks, addDays, subDays, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
 import { TRAINING_TYPE_COLORS, getTrainingTypesForSport, getTrainingTypeLabel } from "@/lib/constants/trainingTypes";
 import { isIndividualSport } from "@/lib/constants/sportTypes";
@@ -52,6 +52,7 @@ interface Match {
   opponent: string;
   location: string | null;
   is_home: boolean | null;
+  end_date?: string | null;
 }
 
 interface ImprovedCalendarViewProps {
@@ -116,6 +117,34 @@ export function ImprovedCalendarView({
   // Filter states
   const [selectedEventTypes, setSelectedEventTypes] = useState<string[]>([]);
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
+
+  // Fetch periodization cycles for this category
+  const { data: periodizationCycles } = useQuery({
+    queryKey: ["periodization-cycles-calendar", categoryId],
+    queryFn: async () => {
+      const { data: categories, error: catError } = await supabase
+        .from("periodization_categories")
+        .select("id, name, color")
+        .eq("category_id", categoryId);
+      if (catError) throw catError;
+      if (!categories || categories.length === 0) return [];
+
+      const { data: cycles, error: cycleError } = await supabase
+        .from("periodization_cycles")
+        .select("id, periodization_category_id, name, color, start_date, end_date, cycle_type")
+        .in("periodization_category_id", categories.map(c => c.id));
+      if (cycleError) throw cycleError;
+
+      return (cycles || []).map(cycle => {
+        const cat = categories.find(c => c.id === cycle.periodization_category_id);
+        return {
+          ...cycle,
+          categoryName: cat?.name || "",
+          displayColor: cycle.color || cat?.color || "#6366f1",
+        };
+      });
+    },
+  });
 
   // Fetch players for filter and notifications
   const { data: players } = useQuery({
@@ -189,6 +218,19 @@ export function ImprovedCalendarView({
     }
   }, [currentDate, viewMode]);
 
+  // Get cycles visible in the current calendar view
+  const visibleCycles = useMemo(() => {
+    if (!periodizationCycles || calendarDays.length === 0) return [];
+    const viewStart = calendarDays[0];
+    const viewEnd = calendarDays[calendarDays.length - 1];
+    
+    return periodizationCycles.filter(cycle => {
+      const cycleStart = parseISO(cycle.start_date);
+      const cycleEnd = parseISO(cycle.end_date);
+      return cycleStart <= viewEnd && cycleEnd >= viewStart;
+    });
+  }, [periodizationCycles, calendarDays]);
+
   // Filter sessions based on selected filters
   const filteredSessions = useMemo(() => {
     let result = sessions;
@@ -229,9 +271,18 @@ export function ImprovedCalendarView({
   };
 
   const getMatchesForDay = (day: Date) => {
-    return filteredMatches.filter((match) => 
-      isSameDay(new Date(match.match_date), day)
-    );
+    return filteredMatches.filter((match) => {
+      const matchStart = new Date(match.match_date);
+      // If multi-day tournament, show on all days in range
+      if (match.end_date && match.end_date !== match.match_date) {
+        const matchEnd = new Date(match.end_date);
+        const dayOnly = new Date(day.getFullYear(), day.getMonth(), day.getDate());
+        const startOnly = new Date(matchStart.getFullYear(), matchStart.getMonth(), matchStart.getDate());
+        const endOnly = new Date(matchEnd.getFullYear(), matchEnd.getMonth(), matchEnd.getDate());
+        return dayOnly >= startOnly && dayOnly <= endOnly;
+      }
+      return isSameDay(matchStart, day);
+    });
   };
 
   // Toggle event type filter
@@ -497,6 +548,57 @@ export function ImprovedCalendarView({
                   ))}
                 </div>
 
+                {/* Periodization cycle bars */}
+                {visibleCycles.length > 0 && (
+                  <div className="border-b bg-muted/30 px-0.5 py-1 space-y-0.5">
+                    {visibleCycles.map(cycle => {
+                      const totalDays = calendarDays.length;
+                      const viewStart = calendarDays[0];
+                      const viewEnd = calendarDays[totalDays - 1];
+                      const cycleStart = parseISO(cycle.start_date);
+                      const cycleEnd = parseISO(cycle.end_date);
+                      
+                      const clampedStart = cycleStart < viewStart ? viewStart : cycleStart;
+                      const clampedEnd = cycleEnd > viewEnd ? viewEnd : cycleEnd;
+                      
+                      // Calculate position as percentage of total grid
+                      const startIndex = calendarDays.findIndex(d => 
+                        d.getFullYear() === clampedStart.getFullYear() && 
+                        d.getMonth() === clampedStart.getMonth() && 
+                        d.getDate() === clampedStart.getDate()
+                      );
+                      const endIndex = calendarDays.findIndex(d => 
+                        d.getFullYear() === clampedEnd.getFullYear() && 
+                        d.getMonth() === clampedEnd.getMonth() && 
+                        d.getDate() === clampedEnd.getDate()
+                      );
+                      
+                      if (startIndex === -1 || endIndex === -1) return null;
+                      
+                      const leftPercent = (startIndex / totalDays) * 100;
+                      const widthPercent = ((endIndex - startIndex + 1) / totalDays) * 100;
+                      
+                      return (
+                        <div key={cycle.id} className="relative h-5">
+                          <div
+                            className="absolute top-0 h-full rounded-sm flex items-center px-1.5 overflow-hidden"
+                            style={{
+                              left: `${leftPercent}%`,
+                              width: `${widthPercent}%`,
+                              backgroundColor: cycle.displayColor,
+                              opacity: 0.85,
+                            }}
+                          >
+                            <span className="text-[10px] font-medium text-white truncate drop-shadow-sm">
+                              {cycle.categoryName}: {cycle.name}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
                 {/* Calendar days */}
                 <div className="grid grid-cols-7">
                   {calendarDays.map((day, index) => (
@@ -509,6 +611,7 @@ export function ImprovedCalendarView({
                       sportType={sportType}
                       isViewer={isViewer}
                       onDayClick={handleDayClickWithAdd}
+                      onShowAllEvents={onDayClick}
                       onPreviewSession={(session) => onViewSession?.(session)}
                       onEditSession={(session) => onEditSession?.(session)}
                       onFeedbackSession={(session) => setFeedbackSession(session)}

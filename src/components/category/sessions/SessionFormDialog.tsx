@@ -53,6 +53,8 @@ import {
   Repeat,
   ArrowUp,
   ArrowDown,
+  Waves,
+  Mountain,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getCategoryLabel, getCategoriesForSport, isCategoryForSport, isErgCategory, isSledCategory, isRunningCategory, hasSpecialMetrics } from "@/lib/constants/exerciseCategories";
@@ -81,11 +83,17 @@ import {
 } from "@/lib/constants/trainingStyles";
 import { SessionGpsImport, type GpsPlayerData } from "@/components/category/gps/SessionGpsImport";
 import { GpsObjectivesForm } from "@/components/category/gps/GpsObjectivesForm";
-import { isRugbyType } from "@/lib/constants/sportTypes";
+import { isRugbyType, isSkiCategory, isSurfCategory, isPadelCategory, isIndividualSport } from "@/lib/constants/sportTypes";
+import { SurfConditionsForm } from "@/components/surf/SurfConditionsForm";
+import { SkiConditionsForm } from "@/components/ski/SkiConditionsForm";
+import { SessionEquipmentSection } from "@/components/shared/SessionEquipmentSection";
 import { TrainingMethodBlock } from "./TrainingMethodBlocks";
 import { TrainingMethodSelect } from "./TrainingMethodSelect";
 import { SessionTestBlock, type SessionTest } from "./SessionTestBlock";
 import { SessionBlocksManager, type SessionBlock } from "./SessionBlocksManager";
+import { PrecisionExerciseSelector } from "@/components/precision/PrecisionExerciseSelector";
+import { getDisplayNotes, parsePrecisionExerciseFromNotes } from "@/lib/utils/sessionNotes";
+import { RUGBY_PRECISION_EXERCISES, EXERCISE_CATEGORIES } from "@/lib/constants/rugbyPrecisionExercises";
 
 interface SessionFormDialogProps {
   open: boolean;
@@ -93,6 +101,8 @@ interface SessionFormDialogProps {
   categoryId: string;
   editSession?: any | null;
   defaultDate?: string; // Format: "yyyy-MM-dd"
+  /** When set, the dialog runs in "athlete mode": player is pre-selected & locked, session is tagged as athlete-created */
+  athletePlayerId?: string;
 }
 
 // Erg-specific data structure for cardio machines
@@ -254,7 +264,9 @@ export function SessionFormDialog({
   categoryId,
   editSession,
   defaultDate,
+  athletePlayerId,
 }: SessionFormDialogProps) {
+  const isAthleteMode = !!athletePlayerId;
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
@@ -278,6 +290,8 @@ export function SessionFormDialog({
   const [sessionTests, setSessionTests] = useState<SessionTest[]>([]);
   const [sessionBlocks, setSessionBlocks] = useState<SessionBlock[]>([]);
   const [activeTab, setActiveTab] = useState("details");
+  const [precisionExerciseId, setPrecisionExerciseId] = useState<string | null>(null);
+  const [precisionExerciseLabel, setPrecisionExerciseLabel] = useState("");
   
   // Block configurations for groups
   const [blockConfigs, setBlockConfigs] = useState<Record<string, BlockConfig>>({});
@@ -480,9 +494,10 @@ export function SessionFormDialog({
       setType(editSession.training_type || "");
       setIntensity(editSession.intensity?.toString() || "");
 
-      // Strip <!--TESTS:...--> from visible notes
-      const rawNotes = editSession.notes || "";
-      setNotes(rawNotes.replace(/\n?<!--TESTS:.*?-->/g, "").trim());
+      const precisionExercise = parsePrecisionExerciseFromNotes(editSession.notes);
+      setPrecisionExerciseId(precisionExercise?.id ?? precisionExercise?.label ?? null);
+      setPrecisionExerciseLabel(precisionExercise?.label ?? "");
+      setNotes(getDisplayNotes(editSession.notes));
       setPlayerSelectionMode((prev) => (prev === "all" ? prev : "all"));
       setSelectedPlayers((prev) => (prev.length === 0 ? prev : []));
       return;
@@ -670,12 +685,18 @@ export function SessionFormDialog({
     mutationFn: async () => {
       // Use first block type if blocks exist, otherwise use selected type
       const mainType = sessionBlocks.length > 0 ? sessionBlocks[0].training_type : type;
-      const mainIntensity = sessionBlocks.length > 0 
+      const rawIntensity = sessionBlocks.length > 0 
         ? sessionBlocks.reduce((max, b) => Math.max(max, b.intensity || 0), 0)
         : (intensity ? parseInt(intensity) : null);
+      const mainIntensity = rawIntensity && rawIntensity >= 1 && rawIntensity <= 10 ? rawIntensity : null;
 
       // Build notes with embedded test config for test sessions
       let finalNotes = notes || "";
+      if (mainType === "precision" && precisionExerciseLabel) {
+        finalNotes =
+          (finalNotes ? `${finalNotes}\n` : "") +
+          `<!--PRECISION_EXERCISE:${JSON.stringify({ id: precisionExerciseId, label: precisionExerciseLabel })}-->`;
+      }
       if (sessionTests.length > 0) {
         const testConfig = sessionTests
           .filter(t => t.test_type)
@@ -685,6 +706,68 @@ export function SessionFormDialog({
         }
       }
 
+      // --- ATHLETE MODE: use edge function ---
+      if (isAthleteMode) {
+        if (!athletePlayerId) throw new Error("Session expirée. Reconnecte-toi.");
+        const { data: authData } = await supabase.auth.getSession();
+        const accessToken = authData.session?.access_token;
+        if (!accessToken) throw new Error("Session expirée. Reconnecte-toi.");
+
+        const athleteBlocks = sessionBlocks
+          .filter((block) => block.training_type)
+          .map((block, idx) => ({
+            block_order: idx,
+            start_time: block.start_time || null,
+            end_time: block.end_time || null,
+            training_type: block.training_type,
+            intensity: block.intensity ?? null,
+            notes: block.notes || null,
+            session_type: block.session_type || null,
+            objective: block.objective || null,
+            target_intensity: block.target_intensity || null,
+            volume: block.volume || null,
+            contact_charge: block.contact_charge || null,
+            bowling_exercise_type: block.bowling_exercise_type || null,
+          }));
+
+        const validExercisesForAthlete = exercises
+          .filter(e => e.exercise_name.trim())
+          .map((ex, idx) => ({
+            exercise_name: ex.exercise_name,
+            exercise_category: ex.exercise_category,
+            sets: ex.sets,
+            reps: ex.reps,
+            weight_kg: ex.weight_mode === "kg" ? ex.weight_kg : null,
+            rest_seconds: ex.rest_seconds,
+            notes: ex.weight_mode === "percent_rm" && ex.weight_percent_rm
+              ? `${ex.weight_percent_rm}% RM${ex.notes ? ` - ${ex.notes}` : ""}`
+              : (ex.notes || null),
+            order_index: idx,
+            library_exercise_id: ex.library_exercise_id,
+          }));
+
+        const { data: payload, error } = await supabase.functions.invoke("athlete-create-session", {
+          headers: { Authorization: `Bearer ${accessToken}` },
+          body: {
+            category_id: categoryId,
+            player_id: athletePlayerId,
+            session_date: date,
+            session_start_time: startTime || null,
+            session_end_time: endTime || null,
+            training_type: mainType || "autre",
+            intensity: mainIntensity,
+            notes: finalNotes || null,
+            session_blocks: athleteBlocks,
+            exercises: validExercisesForAthlete,
+          },
+        });
+
+        if (error) throw new Error(error.message || "Erreur lors de la création de la séance");
+        if (!payload?.success) throw new Error(payload?.error || "Erreur lors de la création de la séance");
+        return payload.session_id;
+      }
+
+      // --- STAFF MODE ---
       const sessionData = {
         category_id: categoryId,
         session_date: date,
@@ -853,7 +936,10 @@ export function SessionFormDialog({
               order_index: idx,
               library_exercise_id: ex.library_exercise_id,
               set_type: ex.set_type,
+              method: ex.set_type,
               group_id: ex.group_id,
+              drop_sets: ex.drop_sets ? (ex.drop_sets as any) : null,
+              cluster_sets: ex.cluster_sets ? (ex.cluster_sets as any) : null,
             }))
           );
 
@@ -905,7 +991,6 @@ export function SessionFormDialog({
       queryClient.invalidateQueries({ queryKey: ["event-participants-edit"] });
       queryClient.invalidateQueries({ queryKey: ["generic_tests", categoryId] });
       queryClient.invalidateQueries({ queryKey: ["generic_tests_discovery", categoryId] });
-      // Invalidate analytics caches
       queryClient.invalidateQueries({ queryKey: ["generic-tests-evolution", categoryId] });
       queryClient.invalidateQueries({ queryKey: ["generic-tests-multi-comparison", categoryId] });
       queryClient.invalidateQueries({ queryKey: ["session-blocks"] });
@@ -915,13 +1000,17 @@ export function SessionFormDialog({
       queryClient.invalidateQueries({ queryKey: ["today_sessions_decision", categoryId] });
       queryClient.invalidateQueries({ queryKey: ["tomorrow_sessions_decision", categoryId] });
       queryClient.invalidateQueries({ queryKey: ["today_attendance_decision", categoryId] });
+      if (isAthleteMode) {
+        queryClient.invalidateQueries({ queryKey: ["athlete-calendar-sessions"] });
+        queryClient.invalidateQueries({ queryKey: ["athlete-space-sessions"] });
+      }
       
       const exerciseCount = exercises.filter((e) => e.exercise_name.trim()).length;
       const gpsCount = gpsData.filter(d => d.matchedPlayer).length;
       const testCount = sessionTests.filter(t => t.test_type && Object.values(t.player_results).some(v => v)).length;
       const blockCount = sessionBlocks.filter(b => b.training_type).length;
       
-      let successMessage = editSession ? "Séance modifiée" : "Séance créée";
+      let successMessage = isAthleteMode ? "Séance ajoutée" : (editSession ? "Séance modifiée" : "Séance créée");
       if (blockCount > 0) successMessage += ` avec ${blockCount} bloc(s)`;
       if (exerciseCount > 0) successMessage += ` et ${exerciseCount} exercice(s)`;
       if (testCount > 0) successMessage += ` et ${testCount} test(s)`;
@@ -929,8 +1018,8 @@ export function SessionFormDialog({
       
       toast.success(successMessage);
 
-      // 🔔 Send push notifications to participants (creation only)
-      if (!editSession && returnedSessionId) {
+      // 🔔 Send push notifications to participants (creation only, staff mode)
+      if (!isAthleteMode && !editSession && returnedSessionId) {
         const mainType = sessionBlocks.length > 0 ? sessionBlocks[0].training_type : type;
         const participantIds = playerSelectionMode === "specific" && selectedPlayers.length > 0
           ? selectedPlayers
@@ -949,8 +1038,9 @@ export function SessionFormDialog({
 
       onOpenChange(false);
     },
-    onError: () => {
-      toast.error("Erreur lors de l'enregistrement");
+    onError: (error: Error) => {
+      console.error("[SessionFormDialog] Save error:", error);
+      toast.error(error.message || "Erreur lors de l'enregistrement");
     },
   });
 
@@ -970,7 +1060,17 @@ export function SessionFormDialog({
     setGpsData([]);
     setSessionTests([]);
     setSessionBlocks([]);
+    setPrecisionExerciseId(null);
+    setPrecisionExerciseLabel("");
     setActiveTab("details");
+  };
+
+  const handleTypeChange = (newType: string) => {
+    setType(newType);
+    if (newType !== "precision") {
+      setPrecisionExerciseId(null);
+      setPrecisionExerciseLabel("");
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -986,13 +1086,20 @@ export function SessionFormDialog({
       return;
     }
 
-    // Validate: must have blocks with valid types
-    const hasValidBlocks = sessionBlocks.length > 0 && sessionBlocks.some(b => b.training_type);
-
-    if (date && hasValidBlocks) {
-      saveSession.mutate();
-    } else if (!hasValidBlocks) {
-      toast.error("Veuillez ajouter au moins un bloc thématique");
+    // Validate: athlete mode uses type, staff mode uses blocks
+    if (isAthleteMode) {
+      if (date && type) {
+        saveSession.mutate();
+      } else if (!type) {
+        toast.error("Veuillez sélectionner un type de séance");
+      }
+    } else {
+      const hasValidBlocks = sessionBlocks.length > 0 && sessionBlocks.some(b => b.training_type);
+      if (date && hasValidBlocks) {
+        saveSession.mutate();
+      } else if (!hasValidBlocks) {
+        toast.error("Veuillez ajouter au moins un bloc thématique");
+      }
     }
   };
 
@@ -2318,7 +2425,7 @@ export function SessionFormDialog({
         ) : (
           // Standard Sets, Reps, Weight, Rest
           <div className="space-y-2">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <div className="grid grid-cols-4 gap-2">
               <div>
                 <Label className="text-xs text-muted-foreground">Séries</Label>
                 <Input
@@ -2634,17 +2741,20 @@ export function SessionFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[95vh] flex flex-col">
+      <DialogContent className={cn("max-h-[95vh] flex flex-col p-4 sm:p-6", isAthleteMode ? "max-w-4xl w-[95vw]" : "max-w-6xl w-[95vw]")}>
         <DialogHeader>
-          <DialogTitle>{editSession ? "Modifier la séance" : "Nouvelle séance"}</DialogTitle>
+          <DialogTitle>{isAthleteMode ? "Ajouter ma séance" : (editSession ? "Modifier la séance" : "Nouvelle séance")}</DialogTitle>
           <DialogDescription>
-            Remplissez les détails de la séance et ajoutez des exercices si nécessaire.
+            {isAthleteMode 
+              ? "Crée ta séance avec exercices et tests. Elle sera visible par le staff."
+              : "Remplissez les détails de la séance et ajoutez des exercices si nécessaire."
+            }
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
-            <TabsList className="grid w-full grid-cols-4 shrink-0">
+            <TabsList className={cn("grid w-full shrink-0", isAthleteMode ? "grid-cols-3" : "grid-cols-2 sm:grid-cols-4")}>
               <TabsTrigger value="details">Détails</TabsTrigger>
               <TabsTrigger value="exercises">
                 Exercices
@@ -2662,13 +2772,45 @@ export function SessionFormDialog({
                   </Badge>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="players">Joueurs</TabsTrigger>
+              {!isAthleteMode && <TabsTrigger value="players">{isIndividualSport(sportType || "") ? "Athlètes" : "Joueurs"}</TabsTrigger>}
             </TabsList>
 
             <div className="flex-1 overflow-hidden mt-4">
               <TabsContent value="details" className="h-full m-0">
                 <ScrollArea className="h-[50vh] pr-4">
                   <div className="space-y-4">
+                    {/* Athlete quick type selector */}
+                    {isAthleteMode && (
+                      <div className="space-y-2">
+                        <Label>Type de séance *</Label>
+                        <div className="grid grid-cols-3 gap-2">
+                          {[
+                            { value: "musculation", label: "Musculation", icon: "💪" },
+                            { value: "cardio", label: "Cardio / Course", icon: "🏃" },
+                            { value: "precision", label: "Précision", icon: "🎯" },
+                            { value: "test", label: "Test", icon: "📋" },
+                            { value: "physique", label: "Physique", icon: "⚡" },
+                            { value: "recuperation", label: "Récupération", icon: "🧘" },
+                          ].map((opt) => (
+                            <Button
+                              key={opt.value}
+                              type="button"
+                              variant={type === opt.value ? "default" : "outline"}
+                              size="sm"
+                              className={cn(
+                                "flex items-center gap-1.5 text-xs h-9",
+                                type === opt.value && "ring-2 ring-primary ring-offset-1"
+                              )}
+                              onClick={() => handleTypeChange(opt.value)}
+                            >
+                              <span>{opt.icon}</span>
+                              {opt.label}
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     <div className="space-y-2">
                       <Label htmlFor="date">Date *</Label>
                       <Input
@@ -2701,15 +2843,17 @@ export function SessionFormDialog({
                       </div>
                     </div>
 
-                    {/* Session Blocks Manager - for multi-theme sessions */}
-                    <SessionBlocksManager
-                      blocks={sessionBlocks}
-                      onBlocksChange={setSessionBlocks}
-                      sportType={sportType}
-                      categoryId={categoryId}
-                      sessionStartTime={startTime}
-                      sessionEndTime={endTime}
-                    />
+                    {/* Session Blocks Manager - staff only */}
+                    {!isAthleteMode && (
+                      <SessionBlocksManager
+                        blocks={sessionBlocks}
+                        onBlocksChange={setSessionBlocks}
+                        sportType={sportType}
+                        categoryId={categoryId}
+                        sessionStartTime={startTime}
+                        sessionEndTime={endTime}
+                      />
+                    )}
 
                     {/* Intensity - only shown if no blocks */}
                     {sessionBlocks.length === 0 && (
@@ -2728,6 +2872,113 @@ export function SessionFormDialog({
                     )}
 
 
+                    {/* Precision exercise selector - shown for "precision" type or when a block has precision */}
+                    {(type === "precision" || sessionBlocks.some(b => b.training_type === "precision")) && !isRugbyType(sportType || "") && (
+                      <div className="rounded-lg border border-accent/30 p-3 space-y-2">
+                        <PrecisionExerciseSelector
+                          categoryId={categoryId}
+                          sportType={sportType}
+                          selectedExerciseId={precisionExerciseId}
+                          onExerciseChange={(id, label) => {
+                            setPrecisionExerciseId(id);
+                            setPrecisionExerciseLabel(label);
+                          }}
+                          allowCreate={!isAthleteMode}
+                        />
+                        <p className="text-[10px] text-muted-foreground">
+                          📊 Les athlètes pourront saisir leurs stats de précision (réussites / tentatives) lors de la saisie RPE.
+                          Le staff peut créer des exercices personnalisés via le bouton « + ».
+                        </p>
+                      </div>
+                    )}
+                    {(type === "precision" || sessionBlocks.some(b => b.training_type === "precision")) && isRugbyType(sportType || "") && (() => {
+                      const resolvedCat = EXERCISE_CATEGORIES.find(c => c.exercises.some(e => e.value === precisionExerciseId));
+                      const activeCatKey = resolvedCat?.key || "buteur";
+                      const activeCat = resolvedCat || EXERCISE_CATEGORIES.find(c => c.key === "buteur")!;
+                      return (
+                      <div className="rounded-lg border border-accent/30 p-3 space-y-3">
+                        <div className="space-y-2">
+                          <Label className="text-sm">Catégorie de précision</Label>
+                          <Select
+                            value={activeCatKey}
+                            onValueChange={(catKey) => {
+                              const cat = EXERCISE_CATEGORIES.find(c => c.key === catKey);
+                              const first = cat?.exercises[0];
+                              if (first) {
+                                setPrecisionExerciseId(first.value);
+                                setPrecisionExerciseLabel(first.label);
+                              }
+                            }}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Choisir la catégorie" />
+                            </SelectTrigger>
+                            <SelectContent position="popper" className="z-[200]">
+                              {EXERCISE_CATEGORIES.map((cat) => (
+                                <SelectItem key={cat.key} value={cat.key}>
+                                  {cat.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {/* Show specific exercise for non-buteur */}
+                        {activeCatKey === "buteur" ? (
+                              <div className="rounded-lg bg-primary/5 border border-primary/20 p-2.5 space-y-1.5">
+                                <p className="text-xs font-medium text-primary">🎯 Exercices buteur disponibles :</p>
+                                <div className="flex items-center gap-3 flex-wrap">
+                                  {activeCat.exercises.map(ex => (
+                                    <span key={ex.value} className="flex items-center gap-1.5 text-xs">
+                                      <span style={{ color: ex.color }}>
+                                        {ex.shape === "circle" ? "●" : ex.shape === "square" ? "■" : "◆"}
+                                      </span>
+                                      {ex.label}
+                                    </span>
+                                  ))}
+                                </div>
+                                <p className="text-[10px] text-muted-foreground">
+                                  Les 3 types seront disponibles simultanément sur la cartographie.
+                                </p>
+                              </div>
+                        ) : (
+                            <div className="space-y-2">
+                              <Label className="text-sm">Exercice spécifique</Label>
+                              <Select
+                                value={precisionExerciseId ?? undefined}
+                                onValueChange={(value) => {
+                                  const exercise = RUGBY_PRECISION_EXERCISES.find((item) => item.value === value);
+                                  setPrecisionExerciseId(value);
+                                  setPrecisionExerciseLabel(exercise?.label || value);
+                                }}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Choisir l'exercice" />
+                                </SelectTrigger>
+                                <SelectContent position="popper" className="z-[200]">
+                                  {activeCat.exercises.map((exercise) => (
+                                    <SelectItem key={exercise.value} value={exercise.value}>
+                                      <span className="flex items-center gap-2">
+                                        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: exercise.color }} />
+                                        {exercise.label}
+                                      </span>
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                        )}
+
+                        <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                          🏉 Le choix fait ici sera repris par défaut dans la saisie athlète.
+                        </p>
+                        <p className="text-[10px] text-muted-foreground">
+                          📊 Tu pourras saisir tes stats de précision (réussites / tentatives) lors de la saisie RPE via le terrain interactif.
+                        </p>
+                      </div>
+                      );
+                    })()}
+
                     <div className="space-y-2">
                       <Label htmlFor="notes">Notes</Label>
                       <Textarea
@@ -2739,8 +2990,8 @@ export function SessionFormDialog({
                       />
                     </div>
 
-                    {/* GPS Import - Only visible when editing a session for Rugby/Football */}
-                    {showGpsImport && players && (
+                    {/* GPS Import - Only visible when editing a session for Rugby/Football (staff only) */}
+                    {!isAthleteMode && showGpsImport && players && (
                       <div className="pt-4 border-t">
                         <SessionGpsImport
                           players={players.map(p => ({ id: p.id, name: p.name, position: p.position }))}
@@ -2750,13 +3001,61 @@ export function SessionFormDialog({
                       </div>
                     )}
 
-                    {/* GPS Objectives - Only visible when editing a session */}
-                    {showGpsImport && editSession && (
+                    {/* GPS Objectives - Only visible when editing a session (staff only) */}
+                    {!isAthleteMode && showGpsImport && editSession && (
                       <div className="pt-4 border-t">
                         <GpsObjectivesForm
                           categoryId={categoryId}
                           trainingSessionId={editSession.id}
                           sportType={sportType || "XV"}
+                        />
+                      </div>
+                    )}
+
+                    {/* Surf Conditions */}
+                    {isSurfCategory(sportType || "") && (
+                      <div className="pt-4 border-t">
+                        {editSession ? (
+                          <SurfConditionsForm
+                            trainingSessionId={editSession.id}
+                            categoryId={categoryId}
+                            isViewer={isAthleteMode}
+                          />
+                        ) : (
+                          <div className="flex items-center gap-2 p-3 rounded-lg border border-dashed text-muted-foreground text-sm">
+                            <Waves className="h-4 w-4 shrink-0" />
+                            <span>Les conditions de surf et le matériel seront disponibles après la création de la séance.</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Ski Conditions */}
+                    {isSkiCategory(sportType || "") && (
+                      <div className="pt-4 border-t">
+                        {editSession ? (
+                          <SkiConditionsForm
+                            trainingSessionId={editSession.id}
+                            categoryId={categoryId}
+                            isViewer={isAthleteMode}
+                          />
+                        ) : (
+                          <div className="flex items-center gap-2 p-3 rounded-lg border border-dashed text-muted-foreground text-sm">
+                            <Mountain className="h-4 w-4 shrink-0" />
+                            <span>Les conditions neige et le matériel seront disponibles après la création de la séance.</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Equipment selection per player */}
+                    {editSession && (isSurfCategory(sportType || "") || isSkiCategory(sportType || "") || isPadelCategory(sportType || "")) && (
+                      <div className="pt-4 border-t">
+                        <SessionEquipmentSection
+                          categoryId={categoryId}
+                          sportType={sportType || ""}
+                          trainingSessionId={editSession.id}
+                          isViewer={isAthleteMode}
                         />
                       </div>
                     )}
@@ -2767,9 +3066,9 @@ export function SessionFormDialog({
               <TabsContent value="exercises" className="h-full m-0">
                 {activeTab === "exercises" ? (
                   <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-                    <div className="flex h-[50vh]">
+                    <div className="flex flex-col sm:flex-row h-[50vh]">
                       {/* Left side - Exercise list with drop zone */}
-                      <div className="flex-1 pr-4">
+                      <div className="flex-1 sm:pr-4 min-h-0">
                         <DroppableExerciseZone>
                           <ScrollArea className="h-full">
                             <div className="space-y-4">
@@ -2820,8 +3119,8 @@ export function SessionFormDialog({
                     </DragOverlay>
                   </DndContext>
                 ) : (
-                  <div className="flex h-[50vh]">
-                    <div className="flex-1 pr-4">
+                  <div className="flex flex-col sm:flex-row h-[50vh]">
+                    <div className="flex-1 sm:pr-4 min-h-0">
                       <ScrollArea className="h-full">
                         <div className="space-y-4">
                           <div className="flex items-center justify-between">
@@ -2854,7 +3153,7 @@ export function SessionFormDialog({
                         </div>
                       </ScrollArea>
                     </div>
-                    <div className="w-80 border-l bg-muted/30" />
+                    <div className="hidden sm:block w-80 border-l bg-muted/30" />
                   </div>
                 )}
               </TabsContent>
@@ -2865,20 +3164,22 @@ export function SessionFormDialog({
                     tests={sessionTests}
                     onTestsChange={setSessionTests}
                     sportType={sportType}
-                    players={players?.map(p => ({ 
-                      id: p.id, 
-                      name: p.name, 
-                      position: p.position, 
-                      avatar_url: p.avatar_url 
-                    })) || []}
-                    selectedPlayers={selectedPlayers}
-                    playerSelectionMode={playerSelectionMode}
+                    players={isAthleteMode 
+                      ? (players?.filter(p => p.id === athletePlayerId).map(p => ({ 
+                          id: p.id, name: p.name, position: p.position, avatar_url: p.avatar_url 
+                        })) || [])
+                      : (players?.map(p => ({ 
+                          id: p.id, name: p.name, position: p.position, avatar_url: p.avatar_url 
+                        })) || [])
+                    }
+                    selectedPlayers={isAthleteMode ? (athletePlayerId ? [athletePlayerId] : []) : selectedPlayers}
+                    playerSelectionMode={isAthleteMode ? "specific" : playerSelectionMode}
                     hideResults={true}
                   />
                 </ScrollArea>
               </TabsContent>
 
-              <TabsContent value="players" className="h-full m-0">
+              {!isAthleteMode && <TabsContent value="players" className="h-full m-0">
                 <ScrollArea className="h-[50vh] pr-4">
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
@@ -3023,7 +3324,7 @@ export function SessionFormDialog({
                     )}
                   </div>
                 </ScrollArea>
-              </TabsContent>
+              </TabsContent>}
             </div>
           </Tabs>
 

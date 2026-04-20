@@ -1,19 +1,20 @@
 import { Tabs, TabsContent } from "@/components/ui/tabs";
-import { BarChart3, Dumbbell, History, Zap, Lock, Brain, Target } from "lucide-react";
-import { AnalyticsTab } from "@/components/analytics/AnalyticsTab";
+import { Dumbbell, Zap, Lock, BarChart3, Target } from "lucide-react";
 import { PhysicalPreparationTab } from "@/components/category/PhysicalPreparationTab";
-import { SessionHistoryTimeline } from "@/components/category/history/SessionHistoryTimeline";
 import { TrainingLoadTab } from "@/components/training-load/TrainingLoadTab";
-import { MentalPerformanceSection } from "@/components/category/mental/MentalPerformanceSection";
-import { BenchmarkTab } from "@/components/category/benchmarks/BenchmarkTab";
+import { EvolutionTestsMuscuTab } from "@/components/tonnage/EvolutionTestsMuscuTab";
+import { BowlingTrainingStats } from "@/components/bowling/BowlingTrainingStats";
+import { TennisTrainingStats } from "@/components/tennis/TennisTrainingStats";
+import { PrecisionTrainingStats } from "@/components/training/PrecisionTrainingStats";
+import { PrecisionFieldTracker } from "@/components/rugby/PrecisionFieldTracker";
 import { useViewerModeContext } from "@/contexts/ViewerModeContext";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ColoredSubTabsList, ColoredSubTabsTrigger } from "@/components/ui/colored-subtabs";
+import { isRugbyType } from "@/lib/constants/sportTypes";
 
 interface PerformanceTabProps {
   categoryId: string;
+  sportType?: string;
 }
 
 function PerformanceDisabledMessage() {
@@ -35,23 +36,11 @@ function PerformanceDisabledMessage() {
   );
 }
 
-export function PerformanceTab({ categoryId }: PerformanceTabProps) {
+export function PerformanceTab({ categoryId, sportType }: PerformanceTabProps) {
   const { isViewer } = useViewerModeContext();
-
-  const { data: category } = useQuery({
-    queryKey: ["category-sport-type-perf", categoryId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("categories")
-        .select("rugby_type")
-        .eq("id", categoryId)
-        .single();
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  const sportType = category?.rugby_type || "";
+  const isBowling = (sportType || "").toLowerCase().includes("bowling");
+  const isTennis = (sportType || "").toLowerCase().includes("tennis");
+  const isRugby = isRugbyType(sportType || "");
 
   if (isViewer) {
     return <PerformanceDisabledMessage />;
@@ -65,47 +54,37 @@ export function PerformanceTab({ categoryId }: PerformanceTabProps) {
             value="training-load" 
             colorKey="performance"
             icon={<Zap className="h-4 w-4" />}
+            tooltip="Monitoring de la charge interne (sRPE) et externe (HRV), ratios EWMA et AWCR pour prévenir les blessures"
           >
             <span className="hidden sm:inline">Charge d'entraînement</span>
             <span className="sm:hidden">Charge</span>
           </ColoredSubTabsTrigger>
           <ColoredSubTabsTrigger 
-            value="history" 
-            colorKey="performance"
-            icon={<History className="h-4 w-4" />}
-          >
-            <span className="hidden sm:inline">Historique</span>
-            <span className="sm:hidden">Hist</span>
-          </ColoredSubTabsTrigger>
-          <ColoredSubTabsTrigger 
-            value="analytics" 
-            colorKey="performance"
-            icon={<BarChart3 className="h-4 w-4" />}
-          >
-            Analyse
-          </ColoredSubTabsTrigger>
-          <ColoredSubTabsTrigger 
             value="physical-prep" 
             colorKey="performance"
             icon={<Dumbbell className="h-4 w-4" />}
+            tooltip="Disponibilité des athlètes, alertes de risque de blessure et analyses prédictives par IA"
           >
             <span className="hidden sm:inline">Prépa Physique</span>
             <span className="sm:hidden">Prépa</span>
           </ColoredSubTabsTrigger>
           <ColoredSubTabsTrigger 
-            value="mental" 
+            value="evolution-tests" 
             colorKey="performance"
-            icon={<Brain className="h-4 w-4" />}
+            icon={<BarChart3 className="h-4 w-4" />}
+            tooltip="Graphiques d'évolution des tests physiques, comparaisons entre athlètes et suivi du tonnage de musculation"
           >
-            <span className="hidden sm:inline">Performance Mentale</span>
-            <span className="sm:hidden">Mental</span>
+            <span className="hidden sm:inline">Évolution Tests / Muscu</span>
+            <span className="sm:hidden">Tests</span>
           </ColoredSubTabsTrigger>
           <ColoredSubTabsTrigger 
-            value="benchmarks" 
+            value="training-stats" 
             colorKey="performance"
             icon={<Target className="h-4 w-4" />}
+            tooltip="Statistiques détaillées des entraînements : précision, drills et exercices spécifiques au sport"
           >
-            Benchmarks
+            <span className="hidden sm:inline">Stats entraînement</span>
+            <span className="sm:hidden">Stats entr.</span>
           </ColoredSubTabsTrigger>
         </ColoredSubTabsList>
       </div>
@@ -114,24 +93,27 @@ export function PerformanceTab({ categoryId }: PerformanceTabProps) {
         <TrainingLoadTab categoryId={categoryId} />
       </TabsContent>
 
-      <TabsContent value="history">
-        <SessionHistoryTimeline categoryId={categoryId} />
-      </TabsContent>
-
-      <TabsContent value="analytics">
-        <AnalyticsTab categoryId={categoryId} />
-      </TabsContent>
-
       <TabsContent value="physical-prep">
         <PhysicalPreparationTab categoryId={categoryId} />
       </TabsContent>
 
-      <TabsContent value="mental">
-        <MentalPerformanceSection categoryId={categoryId} />
+      <TabsContent value="evolution-tests">
+        <EvolutionTestsMuscuTab categoryId={categoryId} />
       </TabsContent>
 
-      <TabsContent value="benchmarks">
-        <BenchmarkTab categoryId={categoryId} sportType={sportType} />
+      <TabsContent value="training-stats">
+        {isBowling ? (
+          <BowlingTrainingStats categoryId={categoryId} />
+        ) : isTennis ? (
+          <TennisTrainingStats categoryId={categoryId} />
+        ) : isRugby ? (
+          <div className="space-y-6">
+            <PrecisionFieldTracker categoryId={categoryId} />
+            <PrecisionTrainingStats categoryId={categoryId} />
+          </div>
+        ) : (
+          <PrecisionTrainingStats categoryId={categoryId} />
+        )}
       </TabsContent>
     </Tabs>
   );

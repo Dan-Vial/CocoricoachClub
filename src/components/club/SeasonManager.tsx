@@ -93,6 +93,7 @@ export function SeasonManager({ clubId, categories }: SeasonManagerProps) {
   const createSeason = useMutation({
     mutationFn: async () => {
       if (!newName || !startDate || !endDate) throw new Error("Champs requis");
+      if (endDate < startDate) throw new Error("La date de fin doit être postérieure à la date de début");
       const { error } = await supabase.from("seasons").insert({
         club_id: clubId,
         name: newName,
@@ -371,6 +372,7 @@ export function SeasonManager({ clubId, categories }: SeasonManagerProps) {
                       mode="single"
                       selected={endDate}
                       onSelect={setEndDate}
+                      disabled={(date) => startDate ? date < startDate : false}
                       className={cn("p-3 pointer-events-auto")}
                     />
                   </PopoverContent>

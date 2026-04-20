@@ -52,11 +52,21 @@ export const RUGBY_STATS: StatField[] = [
   { key: "defenseCollisions", label: "Nombre de collisions", shortLabel: "Collisions", category: "defense", type: "number" },
   { key: "defenseCollisionsOver5m", label: "Collision +5m", shortLabel: "Coll. +5m", category: "defense", type: "number" },
   { key: "defenseCollisionsUnder5m", label: "Collision -5m", shortLabel: "Coll. -5m", category: "defense", type: "number" },
-  // Scrum & Lineout
-  { key: "scrumWon", label: "Mêlées gagnées", shortLabel: "Mêlées", category: "attack", type: "number" },
+  // Scrum & Lineout - Attack (our scrums/lineouts)
+  { key: "scrumTotal", label: "Mêlées introduites", shortLabel: "Mêl. intro.", category: "attack", type: "number" },
+  { key: "scrumWon", label: "Mêlées conservées", shortLabel: "Mêl. cons.", category: "attack", type: "number" },
+  { key: "scrumSuccessRate", label: "% Mêlées conservées", shortLabel: "% Mêl.", category: "attack", type: "percentage", max: 100, computedFrom: { successKey: "scrumWon", totalKey: "scrumTotal" } },
   { key: "scrumPenaltiesWon", label: "Pén. mêlées gagnées", shortLabel: "Pén. mêl.", category: "attack", type: "number" },
-  { key: "lineoutWon", label: "Touches gagnées", shortLabel: "Touches", category: "attack", type: "number" },
-  { key: "lineoutSteals", label: "Touches volées", shortLabel: "T. volées", category: "defense", type: "number" },
+  { key: "lineoutTotal", label: "Touches introduites", shortLabel: "T. intro.", category: "attack", type: "number" },
+  { key: "lineoutWon", label: "Touches conservées", shortLabel: "T. cons.", category: "attack", type: "number" },
+  { key: "lineoutSuccessRate", label: "% Touches conservées", shortLabel: "% Touch.", category: "attack", type: "percentage", max: 100, computedFrom: { successKey: "lineoutWon", totalKey: "lineoutTotal" } },
+  // Scrum & Lineout - Defense (opponent scrums/lineouts)
+  { key: "scrumDefenseTotal", label: "Mêlées adverses", shortLabel: "Mêl. adv.", category: "defense", type: "number" },
+  { key: "scrumDefenseWon", label: "Mêlées adverses gagnées", shortLabel: "Mêl. adv. G.", category: "defense", type: "number" },
+  { key: "scrumDefenseRate", label: "% Mêlées adverses gagnées", shortLabel: "% Mêl. D.", category: "defense", type: "percentage", max: 100, computedFrom: { successKey: "scrumDefenseWon", totalKey: "scrumDefenseTotal" } },
+  { key: "lineoutDefenseTotal", label: "Touches adverses", shortLabel: "T. adv.", category: "defense", type: "number" },
+  { key: "lineoutSteals", label: "Touches adverses volées", shortLabel: "T. volées", category: "defense", type: "number" },
+  { key: "lineoutDefenseRate", label: "% Touches adverses volées", shortLabel: "% T. vol.", category: "defense", type: "percentage", max: 100, computedFrom: { successKey: "lineoutSteals", totalKey: "lineoutDefenseTotal" } },
   // Individual Stats - General
   { key: "minutesPlayed", label: "Minutes jouées", shortLabel: "Min.", category: "general", type: "number" },
   { key: "starts", label: "Titularisations", shortLabel: "Titu.", category: "general", type: "number" },
@@ -286,6 +296,7 @@ export const JUDO_STATS: StatField[] = [
   { key: "victoryModeWazaari", label: "Mode victoire: Waza-ari", shortLabel: "Waza-ari", category: "scoring", type: "number", max: 1 },
   { key: "victoryModeDecision", label: "Mode victoire: Décision", shortLabel: "Décision", category: "scoring", type: "number", max: 1 },
   { key: "victoryModeHansoku", label: "Mode victoire: Hansoku-make", shortLabel: "Hansoku", category: "scoring", type: "number", max: 1 },
+  { key: "victoryModeYuko", label: "Mode victoire: Yuko", shortLabel: "Yuko", category: "scoring", type: "number", max: 1 },
   { key: "finalScore", label: "Score final", shortLabel: "Score", category: "scoring", type: "number" },
   { key: "combatDuration", label: "Temps du combat (sec)", shortLabel: "Durée", category: "scoring", type: "number" },
   
@@ -658,6 +669,42 @@ export const SNOWBOARD_STATS: StatField[] = [
   { key: "falls", label: "Chutes", shortLabel: "Chutes", category: "defense", type: "number" },
 ];
 
+// ==================== SURF STATS ====================
+export const SURF_STATS: StatField[] = [
+  // Scoring
+  { key: "heatScore", label: "Score du heat", shortLabel: "Score", category: "scoring", type: "number" },
+  { key: "ranking", label: "Classement", shortLabel: "Place", category: "scoring", type: "number" },
+  { key: "bestWaveScore", label: "Meilleure vague", shortLabel: "Best", category: "scoring", type: "number" },
+  { key: "secondBestWaveScore", label: "2e meilleure vague", shortLabel: "2nd", category: "scoring", type: "number" },
+  { key: "combinedScore", label: "Score combiné (2 meilleures)", shortLabel: "Combiné", category: "scoring", type: "number" },
+  // Manœuvres (attack)
+  { key: "wavesRidden", label: "Vagues surfées", shortLabel: "Vagues", category: "attack", type: "number" },
+  { key: "wavesCaught", label: "Vagues prises", shortLabel: "Prises", category: "attack", type: "number" },
+  { key: "tubeRides", label: "Tubes", shortLabel: "Tubes", category: "attack", type: "number" },
+  { key: "aerials", label: "Aériens", shortLabel: "Aériens", category: "attack", type: "number" },
+  { key: "cutbacks", label: "Cutbacks", shortLabel: "Cutback", category: "attack", type: "number" },
+  { key: "carves", label: "Bottom/Top turns", shortLabel: "Turns", category: "attack", type: "number" },
+  { key: "snaps", label: "Snaps", shortLabel: "Snaps", category: "attack", type: "number" },
+  { key: "floaters", label: "Floaters", shortLabel: "Float", category: "attack", type: "number" },
+  { key: "reentries", label: "Re-entries", shortLabel: "Re-entry", category: "attack", type: "number" },
+  { key: "laybacks", label: "Layback turns", shortLabel: "Layback", category: "attack", type: "number" },
+  // Tactique & Priorité (defense)
+  { key: "interferencesCalled", label: "Interférences reçues", shortLabel: "Interf.", category: "defense", type: "number" },
+  { key: "priorityCalls", label: "Priorités obtenues", shortLabel: "Priorité", category: "defense", type: "number" },
+  { key: "falls", label: "Chutes", shortLabel: "Chutes", category: "defense", type: "number" },
+  { key: "paddleBackOuts", label: "Paddle-outs difficiles", shortLabel: "P.Out", category: "defense", type: "number" },
+  { key: "waveSelection", label: "Sélection de vague (1-10)", shortLabel: "Sélection", category: "defense", type: "number", max: 10 },
+  { key: "positioning", label: "Positionnement (1-10)", shortLabel: "Position", category: "defense", type: "number", max: 10 },
+  // Conditions (general)
+  { key: "heatDuration", label: "Durée du heat (min)", shortLabel: "Durée", category: "general", type: "number" },
+  { key: "waveHeight", label: "Taille vagues (m)", shortLabel: "Hauteur", category: "general", type: "number" },
+  { key: "windCondition", label: "Vent (1=offshore, 2=cross, 3=onshore)", shortLabel: "Vent", category: "general", type: "number" },
+  { key: "swellPeriod", label: "Période houle (sec)", shortLabel: "Période", category: "general", type: "number" },
+  { key: "waterTemp", label: "Temp. eau (°C)", shortLabel: "T°eau", category: "general", type: "number" },
+  { key: "spotName", label: "Spot", shortLabel: "Spot", category: "general", type: "number" },
+  { key: "heatResult", label: "Résultat (1=avance, 0=éliminé)", shortLabel: "Résultat", category: "general", type: "number", max: 1 },
+];
+
 // ==================== TRIATHLON STATS ====================
 export const TRIATHLON_STATS: StatField[] = [
   { key: "totalTime", label: "Temps total (min)", shortLabel: "Total", category: "scoring", type: "number" },
@@ -685,7 +732,7 @@ export const DUATHLON_STATS: StatField[] = [
   { key: "gapToFirst", label: "Écart au 1er (sec)", shortLabel: "Écart", category: "scoring", type: "number" },
 ];
 
-export type SportType = "XV" | "7" | "XIII" | "football" | "handball" | "volleyball" | "basketball" | "judo" | "aviron" | "bowling" | "academie" | "national_team" | "athletisme" | "padel" | "natation" | "ski" | "triathlon";
+export type SportType = "XV" | "7" | "XIII" | "football" | "handball" | "volleyball" | "basketball" | "judo" | "aviron" | "bowling" | "academie" | "national_team" | "athletisme" | "padel" | "natation" | "ski" | "surf" | "triathlon";
 // Tennis stats
 export const TENNIS_STATS: StatField[] = [
   // Scoring
@@ -732,7 +779,7 @@ export const TENNIS_STATS: StatField[] = [
 ];
 
 // Helper function to extract base sport from subtypes like "aviron_club", "judo_academie"
-function getBaseSport(sportType: string): string {
+export function getBaseSport(sportType: string): string {
   // Handle exact rugby types first
   if (["XV", "7", "XIII", "academie", "national_team"].includes(sportType)) {
     return "rugby";
@@ -749,6 +796,7 @@ function getBaseSport(sportType: string): string {
 function getSkiStatsForDiscipline(discipline?: string): StatField[] {
   if (!discipline) return SKI_ALPIN_STATS;
   const d = discipline.toLowerCase();
+  if (d.includes("biathlon")) return SKI_BIATHLON_STATS;
   if (d.includes("biathlon")) return SKI_BIATHLON_STATS;
   if (d.includes("fond") || d.includes("skiathlon") || d.includes("relais") || d.includes("sprint") && d.includes("fond")) return SKI_FOND_STATS;
   if (d.includes("freestyle") || d.includes("bosses") || d.includes("slopestyle") || d.includes("halfpipe") || d.includes("half-pipe") || d.includes("skicross")) return SKI_FREESTYLE_STATS;
@@ -803,6 +851,8 @@ export function getStatsForSport(sportType: SportType | string, isGoalkeeper: bo
     case "ski":
     case "snow":
       return getSkiStatsForDiscipline(discipline);
+    case "surf":
+      return SURF_STATS;
     case "triathlon":
       return getTriathlonStatsForDiscipline(discipline);
     case "tennis":
@@ -1006,6 +1056,16 @@ export function getStatCategories(sportType: SportType | string): { key: string;
     ];
   }
 
+  // Surf
+  if (baseSport === "surf") {
+    return [
+      { key: "scoring", label: "Score & Classement" },
+      { key: "attack", label: "Manœuvres" },
+      { key: "defense", label: "Tactique & Priorité" },
+      { key: "general", label: "Conditions" },
+    ];
+  }
+
   // Triathlon
   if (baseSport === "triathlon") {
     return [
@@ -1087,7 +1147,7 @@ export function getStatCategories(sportType: SportType | string): { key: string;
 // Check if sport supports multi-round competition (like Judo, Bowling, Athletics)
 export function supportsCompetitionRounds(sportType: string): boolean {
   const baseSport = getBaseSport(sportType);
-  return ["judo", "bowling", "aviron", "athletisme", "athlétisme", "natation", "ski", "snow", "triathlon"].includes(baseSport);
+  return ["judo", "bowling", "aviron", "athletisme", "athlétisme", "natation", "ski", "snow", "surf", "triathlon"].includes(baseSport);
 }
 
 // Get phase options for a sport
@@ -1112,6 +1172,17 @@ export function getCompetitionPhasesForSport(sportType: string): { value: string
       { value: "qualification", label: "Qualification" },
       { value: "manche_1", label: "Manche 1" },
       { value: "manche_2", label: "Manche 2" },
+      { value: "finale", label: "Finale" },
+    ];
+  }
+
+  if (baseSport === "surf") {
+    return [
+      { value: "round_1", label: "Round 1" },
+      { value: "round_2", label: "Round 2" },
+      { value: "round_3", label: "Round 3" },
+      { value: "quarts", label: "Quarts de finale" },
+      { value: "demies", label: "Demi-finales" },
       { value: "finale", label: "Finale" },
     ];
   }

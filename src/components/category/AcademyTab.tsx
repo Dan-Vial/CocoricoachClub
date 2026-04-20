@@ -12,55 +12,48 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, GraduationCap, Users, Target, Trash2, Award, Star } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
+import { GraduationCap, BookOpen, Clock, BarChart3, CalendarIcon, Plus, Pencil, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { toast } from "sonner";
-import { SelectionsSection } from "./academy/SelectionsSection";
-import { EvaluationsSection } from "./academy/EvaluationsSection";
+import { AcademicStatsSection } from "./academy/AcademicStatsSection";
 
 interface AcademyTabProps {
   categoryId: string;
 }
 
-const STAFF_ROLES = [
-  { value: "medecin", label: "Médecin" },
-  { value: "kine", label: "Kinésithérapeute" },
-  { value: "preparateur", label: "Préparateur physique" },
-  { value: "tuteur", label: "Tuteur scolaire" },
-  { value: "coach", label: "Coach" },
-];
 
 export function AcademyTab({ categoryId }: AcademyTabProps) {
   const queryClient = useQueryClient();
   const [academicDialogOpen, setAcademicDialogOpen] = useState(false);
-  const [staffNoteDialogOpen, setStaffNoteDialogOpen] = useState(false);
-  const [developmentDialogOpen, setDevelopmentDialogOpen] = useState(false);
+  const [absenceDialogOpen, setAbsenceDialogOpen] = useState(false);
+  const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
+  
+  
   const [selectedPlayer, setSelectedPlayer] = useState("");
 
   // Form states
   const [absenceHours, setAbsenceHours] = useState("");
   const [absenceReason, setAbsenceReason] = useState("");
   const [academicGrade, setAcademicGrade] = useState("");
+  const [gradeScale, setGradeScale] = useState("20");
   const [subject, setSubject] = useState("");
+  const [newSubject, setNewSubject] = useState("");
+  const [isAddingSubject, setIsAddingSubject] = useState(false);
+  const [gradeDate, setGradeDate] = useState<Date>(new Date());
   const [academicNotes, setAcademicNotes] = useState("");
 
-  const [staffRole, setStaffRole] = useState("");
-  const [noteContent, setNoteContent] = useState("");
 
-  const [seasonYear, setSeasonYear] = useState(new Date().getFullYear().toString());
-  const [physicalObj, setPhysicalObj] = useState("");
-  const [technicalObj, setTechnicalObj] = useState("");
-  const [tacticalObj, setTacticalObj] = useState("");
-  const [mentalObj, setMentalObj] = useState("");
-  const [academicObj, setAcademicObj] = useState("");
 
   const { data: players } = useQuery({
     queryKey: ["players", categoryId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("players")
-        .select("id, name")
+        .select("id, name, first_name")
         .eq("category_id", categoryId)
         .order("name");
       if (error) throw error;
@@ -81,131 +74,146 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
     },
   });
 
-  const { data: staffNotes } = useQuery({
-    queryKey: ["staff_notes", categoryId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("staff_notes")
-        .select("*, players(name)")
-        .eq("category_id", categoryId)
-        .order("note_date", { ascending: false });
-      if (error) throw error;
-      return data;
-    },
-  });
 
-  const { data: developmentPlans } = useQuery({
-    queryKey: ["development_plans", categoryId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("player_development_plans")
-        .select("*, players(name)")
-        .eq("category_id", categoryId)
-        .order("season_year", { ascending: false });
-      if (error) throw error;
-      return data;
-    },
-  });
 
-  const addAcademicTracking = useMutation({
+  const addAcademicGrade = useMutation({
     mutationFn: async () => {
       const { error } = await supabase.from("player_academic_tracking").insert({
         player_id: selectedPlayer,
         category_id: categoryId,
-        school_absence_hours: absenceHours ? parseFloat(absenceHours) : 0,
-        absence_reason: absenceReason || null,
-        academic_grade: academicGrade ? parseFloat(academicGrade) : null,
+        school_absence_hours: 0,
+        academic_grade: gradeScale !== "letter" && academicGrade ? parseFloat(academicGrade) : null,
+        grade_scale: gradeScale,
         subject: subject || null,
-        notes: academicNotes || null,
+        tracking_date: format(gradeDate, "yyyy-MM-dd"),
+        notes: gradeScale === "letter" ? `${academicGrade}${academicNotes ? ` - ${academicNotes}` : ""}` : (academicNotes || null),
       });
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["academic_tracking", categoryId] });
-      toast.success("Suivi scolaire ajouté");
+      queryClient.invalidateQueries({ queryKey: ["academic_subjects", categoryId] });
+      toast.success("Note scolaire ajoutée");
       resetAcademicForm();
       setAcademicDialogOpen(false);
     },
     onError: () => toast.error("Erreur lors de l'ajout"),
   });
 
-  const addStaffNote = useMutation({
+  const addAbsence = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.from("staff_notes").insert({
+      const { error } = await supabase.from("player_academic_tracking").insert({
         player_id: selectedPlayer,
         category_id: categoryId,
-        staff_role: staffRole,
-        note_content: noteContent,
+        school_absence_hours: absenceHours ? parseFloat(absenceHours) : 0,
+        absence_reason: absenceReason || null,
       });
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["staff_notes", categoryId] });
-      toast.success("Note ajoutée");
-      resetStaffNoteForm();
-      setStaffNoteDialogOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["academic_tracking", categoryId] });
+      toast.success("Absence enregistrée");
+      resetAbsenceForm();
+      setAbsenceDialogOpen(false);
     },
     onError: () => toast.error("Erreur lors de l'ajout"),
   });
 
-  const addDevelopmentPlan = useMutation({
+
+  const updateAcademicGrade = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.from("player_development_plans").insert({
+      if (!editingEntryId) return;
+      const { error } = await supabase.from("player_academic_tracking").update({
         player_id: selectedPlayer,
-        category_id: categoryId,
-        season_year: parseInt(seasonYear),
-        physical_objectives: physicalObj || null,
-        technical_objectives: technicalObj || null,
-        tactical_objectives: tacticalObj || null,
-        mental_objectives: mentalObj || null,
-        academic_objectives: academicObj || null,
-      });
+        academic_grade: gradeScale !== "letter" && academicGrade ? parseFloat(academicGrade) : null,
+        grade_scale: gradeScale,
+        subject: subject || null,
+        tracking_date: format(gradeDate, "yyyy-MM-dd"),
+        notes: gradeScale === "letter" ? `${academicGrade}${academicNotes ? ` - ${academicNotes}` : ""}` : (academicNotes || null),
+      }).eq("id", editingEntryId);
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["development_plans", categoryId] });
-      toast.success("Plan de développement créé");
-      resetDevelopmentForm();
-      setDevelopmentDialogOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["academic_tracking", categoryId] });
+      queryClient.invalidateQueries({ queryKey: ["academic_subjects", categoryId] });
+      toast.success("Note modifiée");
+      resetAcademicForm();
+      setAcademicDialogOpen(false);
     },
-    onError: () => toast.error("Erreur lors de l'ajout"),
+    onError: () => toast.error("Erreur lors de la modification"),
   });
+
+  const deleteAcademicEntry = useMutation({
+    mutationFn: async (entryId: string) => {
+      const { error } = await supabase.from("player_academic_tracking").delete().eq("id", entryId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["academic_tracking", categoryId] });
+      queryClient.invalidateQueries({ queryKey: ["academic_subjects", categoryId] });
+      toast.success("Entrée supprimée");
+    },
+    onError: () => toast.error("Erreur lors de la suppression"),
+  });
+
+  const handleEditEntry = (entry: any) => {
+    setEditingEntryId(entry.id);
+    setSelectedPlayer(entry.player_id);
+    setGradeScale((entry as any).grade_scale || "20");
+    if ((entry as any).grade_scale === "letter" && entry.notes) {
+      setAcademicGrade(entry.notes.split(" - ")[0]);
+      setAcademicNotes(entry.notes.includes(" - ") ? entry.notes.split(" - ").slice(1).join(" - ") : "");
+    } else {
+      setAcademicGrade(entry.academic_grade ? String(entry.academic_grade) : "");
+      setAcademicNotes(entry.notes || "");
+    }
+    setSubject(entry.subject || "");
+    setGradeDate(new Date(entry.tracking_date));
+    setAcademicDialogOpen(true);
+  };
 
   const resetAcademicForm = () => {
     setSelectedPlayer("");
+    setAcademicGrade("");
+    setGradeScale("20");
+    setSubject("");
+    setNewSubject("");
+    setIsAddingSubject(false);
+    setGradeDate(new Date());
+    setAcademicNotes("");
+    setEditingEntryId(null);
+  };
+
+  const resetAbsenceForm = () => {
+    setSelectedPlayer("");
     setAbsenceHours("");
     setAbsenceReason("");
-    setAcademicGrade("");
-    setSubject("");
-    setAcademicNotes("");
   };
 
-  const resetStaffNoteForm = () => {
-    setSelectedPlayer("");
-    setStaffRole("");
-    setNoteContent("");
-  };
 
-  const resetDevelopmentForm = () => {
-    setSelectedPlayer("");
-    setSeasonYear(new Date().getFullYear().toString());
-    setPhysicalObj("");
-    setTechnicalObj("");
-    setTacticalObj("");
-    setMentalObj("");
-    setAcademicObj("");
-  };
+  const DEFAULT_SUBJECTS = [
+    "Mathématiques", "Français", "Anglais", "Espagnol", "Allemand",
+    "Histoire-Géographie", "Physique-Chimie", "SVT", "SES",
+    "Philosophie", "EPS", "NSI", "EMC",
+    "Arts Plastiques", "Musique", "Italien",
+    "HGGSP", "HLP", "LLCE", "Maths Expertes", "Maths Complémentaires",
+  ];
 
-  const getRoleBadgeColor = (role: string) => {
-    const colors: Record<string, string> = {
-      medecin: "bg-red-500",
-      kine: "bg-blue-500",
-      preparateur: "bg-green-500",
-      tuteur: "bg-purple-500",
-      coach: "bg-orange-500",
-    };
-    return colors[role] || "bg-gray-500";
-  };
+  const { data: dbSubjects } = useQuery({
+    queryKey: ["academic_subjects", categoryId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("player_academic_tracking")
+        .select("subject")
+        .eq("category_id", categoryId)
+        .not("subject", "is", null);
+      if (error) throw error;
+      return [...new Set(data.map(d => d.subject).filter(Boolean))] as string[];
+    },
+  });
+
+  const existingSubjects = [...new Set([...DEFAULT_SUBJECTS, ...(dbSubjects || [])])].sort();
+
 
   return (
     <div className="space-y-6">
@@ -215,17 +223,8 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
             <ColoredSubTabsTrigger value="academic" colorKey="academy" icon={<GraduationCap className="h-4 w-4" />}>
               Suivi Scolaire
             </ColoredSubTabsTrigger>
-            <ColoredSubTabsTrigger value="staff" colorKey="academy" icon={<Users className="h-4 w-4" />}>
-              Notes Staff
-            </ColoredSubTabsTrigger>
-            <ColoredSubTabsTrigger value="development" colorKey="academy" icon={<Target className="h-4 w-4" />}>
-              Plans de Développement
-            </ColoredSubTabsTrigger>
-            <ColoredSubTabsTrigger value="selections" colorKey="academy" icon={<Award className="h-4 w-4" />}>
-              Sélections
-            </ColoredSubTabsTrigger>
-            <ColoredSubTabsTrigger value="evaluations" colorKey="academy" icon={<Star className="h-4 w-4" />}>
-              Évaluations
+            <ColoredSubTabsTrigger value="stats" colorKey="academy" icon={<BarChart3 className="h-4 w-4" />}>
+              Statistiques
             </ColoredSubTabsTrigger>
           </ColoredSubTabsList>
         </div>
@@ -239,176 +238,126 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
                   <CardTitle>Suivi Scolaire</CardTitle>
                   <CardDescription>Absences, notes et suivi académique</CardDescription>
                 </div>
-                <Button onClick={() => setAcademicDialogOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Nouvelle entrée
-                </Button>
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={() => setAbsenceDialogOpen(true)}>
+                    <Clock className="h-4 w-4 mr-2" />
+                    Ajouter une absence
+                  </Button>
+                  <Button onClick={() => setAcademicDialogOpen(true)}>
+                    <BookOpen className="h-4 w-4 mr-2" />
+                    Ajouter une note
+                  </Button>
+                </div>
               </div>
             </CardHeader>
-            <CardContent>
-              {!academicData || academicData.length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">Aucun suivi scolaire enregistré.</p>
-              ) : (
-                <div className="rounded-md border overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Joueur</TableHead>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Heures Absence</TableHead>
-                        <TableHead>Raison</TableHead>
-                        <TableHead>Note</TableHead>
-                        <TableHead>Matière</TableHead>
-                        <TableHead>Commentaires</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {academicData.map((entry) => (
-                        <TableRow key={entry.id}>
-                          <TableCell className="font-medium">{entry.players?.name}</TableCell>
-                          <TableCell>{format(new Date(entry.tracking_date), "dd MMM yyyy", { locale: fr })}</TableCell>
-                          <TableCell>{entry.school_absence_hours || 0}h</TableCell>
-                          <TableCell className="max-w-32 truncate">{entry.absence_reason || "-"}</TableCell>
-                          <TableCell>{entry.academic_grade ? `${entry.academic_grade}/20` : "-"}</TableCell>
-                          <TableCell>{entry.subject || "-"}</TableCell>
-                          <TableCell className="max-w-40 truncate">{entry.notes || "-"}</TableCell>
+            <CardContent className="space-y-6">
+              {/* Notes section */}
+              <div>
+                <h3 className="text-sm font-semibold mb-2">Notes</h3>
+                {(!academicData || academicData.filter(e => e.academic_grade || (e as any).grade_scale === "letter").length === 0) ? (
+                  <p className="text-center text-muted-foreground py-4 text-sm">Aucune note enregistrée.</p>
+                ) : (
+                  <div className="rounded-md border overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Joueur</TableHead>
+                          <TableHead>Date</TableHead>
+                          <TableHead>Note</TableHead>
+                          <TableHead>Matière</TableHead>
+                          <TableHead>Commentaires</TableHead>
+                          <TableHead className="w-20">Actions</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Staff Notes Tab */}
-        <TabsContent value="staff">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Notes du Staff</CardTitle>
-                  <CardDescription>Commentaires médecin, kiné, préparateur, tuteur</CardDescription>
-                </div>
-                <Button onClick={() => setStaffNoteDialogOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Nouvelle note
-                </Button>
+                      </TableHeader>
+                      <TableBody>
+                        {academicData.filter(e => e.academic_grade || (e as any).grade_scale === "letter").map((entry) => (
+                          <TableRow key={entry.id}>
+                            <TableCell className="font-medium">{entry.players?.name}</TableCell>
+                            <TableCell>{format(new Date(entry.tracking_date), "dd MMM yyyy", { locale: fr })}</TableCell>
+                            <TableCell>
+                              {entry.academic_grade 
+                                ? `${entry.academic_grade}/${(entry as any).grade_scale || "20"}`
+                                : ((entry as any).grade_scale === "letter" && entry.notes) 
+                                  ? entry.notes.split(" - ")[0]
+                                  : "-"
+                              }
+                            </TableCell>
+                            <TableCell>{entry.subject || "-"}</TableCell>
+                            <TableCell className="max-w-40 truncate">{entry.notes || "-"}</TableCell>
+                            <TableCell>
+                              <div className="flex gap-1">
+                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEditEntry(entry)}>
+                                  <Pencil className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => {
+                                  if (confirm("Supprimer cette note ?")) deleteAcademicEntry.mutate(entry.id);
+                                }}>
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
               </div>
-            </CardHeader>
-            <CardContent>
-              {!staffNotes || staffNotes.length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">Aucune note enregistrée.</p>
-              ) : (
-                <div className="space-y-4">
-                  {staffNotes.map((note) => (
-                    <div key={note.id} className="p-4 border rounded-lg">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-3">
-                          <span className="font-medium">{note.players?.name}</span>
-                          <Badge className={`${getRoleBadgeColor(note.staff_role)} text-white`}>
-                            {STAFF_ROLES.find((r) => r.value === note.staff_role)?.label || note.staff_role}
-                          </Badge>
-                        </div>
-                        <span className="text-sm text-muted-foreground">
-                          {format(new Date(note.note_date), "dd MMM yyyy", { locale: fr })}
-                        </span>
-                      </div>
-                      <p className="text-sm">{note.note_content}</p>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
 
-        {/* Development Plans Tab */}
-        <TabsContent value="development">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Plans de Développement Individuel</CardTitle>
-                  <CardDescription>Objectifs annuels et bilans par joueur</CardDescription>
-                </div>
-                <Button onClick={() => setDevelopmentDialogOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Nouveau plan
-                </Button>
+              {/* Absences section */}
+              <div>
+                <h3 className="text-sm font-semibold mb-2">Absences</h3>
+                {(!academicData || academicData.filter(e => e.school_absence_hours && e.school_absence_hours > 0 && !e.academic_grade).length === 0) ? (
+                  <p className="text-center text-muted-foreground py-4 text-sm">Aucune absence enregistrée.</p>
+                ) : (
+                  <div className="rounded-md border overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Joueur</TableHead>
+                          <TableHead>Date</TableHead>
+                          <TableHead>Heures</TableHead>
+                          <TableHead>Raison</TableHead>
+                          <TableHead className="w-20">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {academicData.filter(e => e.school_absence_hours && e.school_absence_hours > 0 && !e.academic_grade).map((entry) => (
+                          <TableRow key={entry.id}>
+                            <TableCell className="font-medium">{entry.players?.name}</TableCell>
+                            <TableCell>{format(new Date(entry.tracking_date), "dd MMM yyyy", { locale: fr })}</TableCell>
+                            <TableCell>{entry.school_absence_hours}h</TableCell>
+                            <TableCell className="max-w-40 truncate">{entry.absence_reason || "-"}</TableCell>
+                            <TableCell>
+                              <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => {
+                                if (confirm("Supprimer cette absence ?")) deleteAcademicEntry.mutate(entry.id);
+                              }}>
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
               </div>
-            </CardHeader>
-            <CardContent>
-              {!developmentPlans || developmentPlans.length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">Aucun plan de développement enregistré.</p>
-              ) : (
-                <div className="space-y-4">
-                  {developmentPlans.map((plan) => (
-                    <div key={plan.id} className="p-4 border rounded-lg">
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-3">
-                          <span className="font-medium text-lg">{plan.players?.name}</span>
-                          <Badge variant="outline">Saison {plan.season_year}/{plan.season_year + 1}</Badge>
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
-                        {plan.physical_objectives && (
-                          <div className="p-3 bg-muted rounded">
-                            <span className="font-medium text-primary">Physique:</span>
-                            <p className="mt-1">{plan.physical_objectives}</p>
-                          </div>
-                        )}
-                        {plan.technical_objectives && (
-                          <div className="p-3 bg-muted rounded">
-                            <span className="font-medium text-primary">Technique:</span>
-                            <p className="mt-1">{plan.technical_objectives}</p>
-                          </div>
-                        )}
-                        {plan.tactical_objectives && (
-                          <div className="p-3 bg-muted rounded">
-                            <span className="font-medium text-primary">Tactique:</span>
-                            <p className="mt-1">{plan.tactical_objectives}</p>
-                          </div>
-                        )}
-                        {plan.mental_objectives && (
-                          <div className="p-3 bg-muted rounded">
-                            <span className="font-medium text-primary">Mental:</span>
-                            <p className="mt-1">{plan.mental_objectives}</p>
-                          </div>
-                        )}
-                        {plan.academic_objectives && (
-                          <div className="p-3 bg-muted rounded">
-                            <span className="font-medium text-primary">Scolaire:</span>
-                            <p className="mt-1">{plan.academic_objectives}</p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Selections Tab */}
-        <TabsContent value="selections">
-          <SelectionsSection categoryId={categoryId} players={players} />
-        </TabsContent>
 
-
-        {/* Evaluations Tab */}
-        <TabsContent value="evaluations">
-          <EvaluationsSection categoryId={categoryId} players={players} />
+        {/* Stats Tab */}
+        <TabsContent value="stats">
+          <AcademicStatsSection categoryId={categoryId} />
         </TabsContent>
       </Tabs>
 
-      {/* Academic Dialog */}
-      <Dialog open={academicDialogOpen} onOpenChange={setAcademicDialogOpen}>
+      {/* Grade Dialog */}
+      <Dialog open={academicDialogOpen} onOpenChange={(open) => { setAcademicDialogOpen(open); if (!open) resetAcademicForm(); }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Ajouter un suivi scolaire</DialogTitle>
+            <DialogTitle>{editingEntryId ? "Modifier la note scolaire" : "Ajouter une note scolaire"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
@@ -417,7 +366,120 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
                 <SelectTrigger><SelectValue placeholder="Sélectionner un joueur" /></SelectTrigger>
                 <SelectContent>
                   {players?.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                    <SelectItem key={p.id} value={p.id}>{p.first_name ? `${p.first_name} ${p.name}` : p.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Barème</Label>
+              <Select value={gradeScale} onValueChange={(val) => { setGradeScale(val); setAcademicGrade(""); }}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="5">Sur 5</SelectItem>
+                  <SelectItem value="10">Sur 10</SelectItem>
+                  <SelectItem value="20">Sur 20</SelectItem>
+                  <SelectItem value="letter">Lettres (A, B, C, D)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Note</Label>
+                {gradeScale === "letter" ? (
+                  <Select value={academicGrade} onValueChange={setAcademicGrade}>
+                    <SelectTrigger><SelectValue placeholder="Choisir" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="A">A</SelectItem>
+                      <SelectItem value="B">B</SelectItem>
+                      <SelectItem value="C">C</SelectItem>
+                      <SelectItem value="D">D</SelectItem>
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Input type="number" value={academicGrade} onChange={(e) => setAcademicGrade(e.target.value)} placeholder={`/${gradeScale}`} min="0" max={gradeScale} />
+                )}
+              </div>
+              <div>
+                <Label>Date</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !gradeDate && "text-muted-foreground")}>
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {gradeDate ? format(gradeDate, "dd MMM yyyy", { locale: fr }) : "Choisir une date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar mode="single" selected={gradeDate} onSelect={(d) => d && setGradeDate(d)} initialFocus className="p-3 pointer-events-auto" locale={fr} />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
+            <div>
+              <Label>Matière</Label>
+              {isAddingSubject ? (
+                <div className="flex gap-2">
+                  <Input 
+                    value={newSubject} 
+                    onChange={(e) => setNewSubject(e.target.value)} 
+                    placeholder="Nouvelle matière..." 
+                    className="flex-1"
+                  />
+                  <Button type="button" size="sm" onClick={() => {
+                    if (newSubject.trim()) {
+                      setSubject(newSubject.trim());
+                      setIsAddingSubject(false);
+                    }
+                  }}>OK</Button>
+                  <Button type="button" size="sm" variant="outline" onClick={() => { setIsAddingSubject(false); setNewSubject(""); }}>Annuler</Button>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <Select value={subject} onValueChange={setSubject}>
+                    <SelectTrigger className="flex-1"><SelectValue placeholder="Sélectionner une matière" /></SelectTrigger>
+                    <SelectContent position="popper" side="bottom" align="start" sideOffset={4} className="max-h-[200px]">
+                     {existingSubjects.map((s) => (
+                        <SelectItem key={s} value={s}>{s}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button type="button" size="icon" variant="outline" onClick={() => setIsAddingSubject(true)} title="Ajouter une matière">
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+            </div>
+            <div>
+              <Label>Commentaires</Label>
+              <Textarea value={academicNotes} onChange={(e) => setAcademicNotes(e.target.value)} placeholder="Notes additionnelles..." />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setAcademicDialogOpen(false); resetAcademicForm(); }}>Annuler</Button>
+            <Button 
+              onClick={() => editingEntryId ? updateAcademicGrade.mutate() : addAcademicGrade.mutate()} 
+              disabled={!selectedPlayer || !academicGrade || addAcademicGrade.isPending || updateAcademicGrade.isPending}
+            >
+              {(addAcademicGrade.isPending || updateAcademicGrade.isPending) ? "Enregistrement..." : (editingEntryId ? "Modifier" : "Ajouter")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Absence Dialog */}
+      <Dialog open={absenceDialogOpen} onOpenChange={setAbsenceDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Ajouter une absence</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Joueur</Label>
+              <Select value={selectedPlayer} onValueChange={setSelectedPlayer}>
+                <SelectTrigger><SelectValue placeholder="Sélectionner un joueur" /></SelectTrigger>
+                <SelectContent>
+                  {players?.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>{p.first_name ? `${p.first_name} ${p.name}` : p.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -428,134 +490,20 @@ export function AcademyTab({ categoryId }: AcademyTabProps) {
                 <Input type="number" value={absenceHours} onChange={(e) => setAbsenceHours(e.target.value)} placeholder="0" />
               </div>
               <div>
-                <Label>Raison absence</Label>
+                <Label>Raison</Label>
                 <Input value={absenceReason} onChange={(e) => setAbsenceReason(e.target.value)} placeholder="Compétition, blessure..." />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Note (/20)</Label>
-                <Input type="number" value={academicGrade} onChange={(e) => setAcademicGrade(e.target.value)} placeholder="15" />
-              </div>
-              <div>
-                <Label>Matière</Label>
-                <Input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Mathématiques" />
-              </div>
-            </div>
-            <div>
-              <Label>Commentaires</Label>
-              <Textarea value={academicNotes} onChange={(e) => setAcademicNotes(e.target.value)} placeholder="Notes additionnelles..." />
-            </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setAcademicDialogOpen(false)}>Annuler</Button>
-            <Button onClick={() => addAcademicTracking.mutate()} disabled={!selectedPlayer || addAcademicTracking.isPending}>
-              {addAcademicTracking.isPending ? "Ajout..." : "Ajouter"}
+            <Button variant="outline" onClick={() => setAbsenceDialogOpen(false)}>Annuler</Button>
+            <Button onClick={() => addAbsence.mutate()} disabled={!selectedPlayer || !absenceHours || addAbsence.isPending}>
+              {addAbsence.isPending ? "Ajout..." : "Ajouter"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Staff Note Dialog */}
-      <Dialog open={staffNoteDialogOpen} onOpenChange={setStaffNoteDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Ajouter une note</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>Joueur</Label>
-              <Select value={selectedPlayer} onValueChange={setSelectedPlayer}>
-                <SelectTrigger><SelectValue placeholder="Sélectionner un joueur" /></SelectTrigger>
-                <SelectContent>
-                  {players?.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Rôle</Label>
-              <Select value={staffRole} onValueChange={setStaffRole}>
-                <SelectTrigger><SelectValue placeholder="Sélectionner un rôle" /></SelectTrigger>
-                <SelectContent>
-                  {STAFF_ROLES.map((role) => (
-                    <SelectItem key={role.value} value={role.value}>{role.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Note</Label>
-              <Textarea value={noteContent} onChange={(e) => setNoteContent(e.target.value)} placeholder="Contenu de la note..." rows={4} />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setStaffNoteDialogOpen(false)}>Annuler</Button>
-            <Button onClick={() => addStaffNote.mutate()} disabled={!selectedPlayer || !staffRole || !noteContent || addStaffNote.isPending}>
-              {addStaffNote.isPending ? "Ajout..." : "Ajouter"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Development Plan Dialog */}
-      <Dialog open={developmentDialogOpen} onOpenChange={setDevelopmentDialogOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Créer un plan de développement</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Joueur</Label>
-                <Select value={selectedPlayer} onValueChange={setSelectedPlayer}>
-                  <SelectTrigger><SelectValue placeholder="Sélectionner un joueur" /></SelectTrigger>
-                  <SelectContent>
-                    {players?.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>Année de saison</Label>
-                <Input type="number" value={seasonYear} onChange={(e) => setSeasonYear(e.target.value)} />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Objectifs Physiques</Label>
-                <Textarea value={physicalObj} onChange={(e) => setPhysicalObj(e.target.value)} placeholder="Ex: Améliorer la VMA de 10%..." rows={2} />
-              </div>
-              <div>
-                <Label>Objectifs Techniques</Label>
-                <Textarea value={technicalObj} onChange={(e) => setTechnicalObj(e.target.value)} placeholder="Ex: Travailler le jeu au pied..." rows={2} />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Objectifs Tactiques</Label>
-                <Textarea value={tacticalObj} onChange={(e) => setTacticalObj(e.target.value)} placeholder="Ex: Améliorer la lecture du jeu..." rows={2} />
-              </div>
-              <div>
-                <Label>Objectifs Mentaux</Label>
-                <Textarea value={mentalObj} onChange={(e) => setMentalObj(e.target.value)} placeholder="Ex: Gestion du stress en match..." rows={2} />
-              </div>
-            </div>
-            <div>
-              <Label>Objectifs Scolaires</Label>
-              <Textarea value={academicObj} onChange={(e) => setAcademicObj(e.target.value)} placeholder="Ex: Maintenir une moyenne > 12..." rows={2} />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDevelopmentDialogOpen(false)}>Annuler</Button>
-            <Button onClick={() => addDevelopmentPlan.mutate()} disabled={!selectedPlayer || addDevelopmentPlan.isPending}>
-              {addDevelopmentPlan.isPending ? "Création..." : "Créer"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

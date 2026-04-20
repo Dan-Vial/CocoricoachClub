@@ -2,6 +2,7 @@ import * as React from "react";
 import * as TabsPrimitive from "@radix-ui/react-tabs";
 import { cn } from "@/lib/utils";
 import { NAV_COLORS, NavColorKey } from "./colored-nav-tabs";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 // Colored SubTabs for consistent sub-navigation styling
 interface ColoredSubTabsListProps extends React.ComponentPropsWithoutRef<typeof TabsPrimitive.List> {
@@ -34,44 +35,54 @@ ColoredSubTabsList.displayName = "ColoredSubTabsList";
 interface ColoredSubTabsTriggerProps extends React.ComponentPropsWithoutRef<typeof TabsPrimitive.Trigger> {
   colorKey: NavColorKey;
   icon?: React.ReactNode;
+  tooltip?: string;
 }
 
 const ColoredSubTabsTrigger = React.forwardRef<
   React.ElementRef<typeof TabsPrimitive.Trigger>,
   ColoredSubTabsTriggerProps
->(({ className, colorKey, icon, children, ...props }, ref) => {
+>(({ className, colorKey, icon, children, tooltip, ...props }, ref) => {
   const colors = NAV_COLORS[colorKey];
 
-  return (
+  const trigger = (
     <TabsPrimitive.Trigger
       ref={ref}
       className={cn(
-        "group relative inline-flex items-center gap-1.5 px-2 sm:px-3 py-2 rounded-md font-medium text-xs sm:text-sm",
+        "colored-tab-trigger group relative inline-flex items-center gap-1.5 px-2 sm:px-3 py-2 rounded-md font-medium text-xs sm:text-sm",
         "transition-all duration-200 ease-out",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
         "data-[state=active]:shadow-md",
         className
       )}
       style={{
-        ["--subtab-color" as string]: colors.base,
+        ["--tab-color" as string]: colors.base,
       }}
       {...props}
     >
-      {/* Active background */}
       <span 
-        className={cn(
-          "absolute inset-0 rounded-md transition-all duration-200",
-          "opacity-0 scale-95",
-          "group-data-[state=active]:opacity-100 group-data-[state=active]:scale-100"
-        )}
+        className="colored-tab-bg pointer-events-none absolute inset-0 rounded-md transition-all duration-200 opacity-0 scale-95 group-data-[state=active]:opacity-100 group-data-[state=active]:scale-100"
         style={{ backgroundColor: colors.base }}
       />
-      {/* Content - uses CSS variable for color, white when active */}
-      <span className="relative z-10 flex items-center gap-1.5 transition-colors duration-200 text-[var(--subtab-color)] group-data-[state=active]:text-white">
+      <span className="colored-tab-text relative z-10 flex items-center gap-1.5 transition-colors duration-200" style={{ color: 'var(--tab-color)' }}>
         {icon && <span className="shrink-0 h-4 w-4">{icon}</span>}
         {children}
       </span>
     </TabsPrimitive.Trigger>
+  );
+
+  if (!tooltip) return trigger;
+
+  return (
+    <TooltipProvider delayDuration={400}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="inline-flex">{trigger}</span>
+        </TooltipTrigger>
+        <TooltipContent side="bottom" className="max-w-xs bg-background/95 backdrop-blur-sm border shadow-lg">
+          <p className="text-[11px] leading-relaxed text-muted-foreground">{tooltip}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 });
 ColoredSubTabsTrigger.displayName = "ColoredSubTabsTrigger";

@@ -70,13 +70,27 @@ export function useViewerPlayers(categoryId: string) {
   return useViewerData<any[]>({
     queryKey: ["players", categoryId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Fetch direct players
+      const { data: directPlayers, error } = await supabase
         .from("players")
         .select("*")
         .eq("category_id", categoryId)
         .order("name");
       if (error) throw error;
-      return data || [];
+
+      // Fetch linked players via player_categories junction table
+      const { data: linkedEntries } = await supabase
+        .from("player_categories")
+        .select("player_id, players(*)")
+        .eq("category_id", categoryId)
+        .eq("status", "accepted");
+
+      const directIds = new Set((directPlayers || []).map((p: any) => p.id));
+      const linkedPlayers = (linkedEntries || [])
+        .filter((e: any) => e.players && !directIds.has(e.player_id))
+        .map((e: any) => ({ ...e.players, _linked: true }));
+
+      return [...(directPlayers || []), ...linkedPlayers];
     },
     publicDataKey: "players",
     enabled: !!categoryId,
