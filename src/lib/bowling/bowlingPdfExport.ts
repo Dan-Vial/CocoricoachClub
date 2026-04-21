@@ -334,8 +334,9 @@ export async function exportBowlingPdf(playerName: string, games: BowlingGameDat
   const hasSubInfo = !!(options?.competitionName || options?.ageCategory || options?.location || options?.competitionDate);
   const hasMedals = medals.length > 0;
   const visibleMedals = medals.slice(0, 2);
+  const estimatedTextStartX = avatarBase64 ? margin + 30 : margin;
   const medalLabels = visibleMedals.map(getMedalLabel);
-  const medalTextMaxWidth = pageWidth - textStartX - margin - 18;
+  const medalTextMaxWidth = pageWidth - estimatedTextStartX - margin - 18;
   const medalLineCounts = medalLabels.map((label) => Math.max(1, doc.splitTextToSize(label, medalTextMaxWidth).length));
   const medalsBlockH = hasMedals
     ? visibleMedals.reduce((total, _medal, index) => total + 10 + (medalLineCounts[index] - 1) * 4, 0) + 4
