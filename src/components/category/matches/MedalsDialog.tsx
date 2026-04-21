@@ -346,7 +346,7 @@ export function MedalsDialog({
                     </span>
                   )}
                 </Label>
-                <ScrollArea className="h-40 rounded border p-2">
+                <div className="max-h-40 overflow-y-auto rounded border p-2">
                   <div className="space-y-1">
                     {players?.map((p) => (
                       <label
@@ -363,7 +363,7 @@ export function MedalsDialog({
                       </label>
                     ))}
                   </div>
-                </ScrollArea>
+                </div>
               </div>
 
               <div className="space-y-2">
