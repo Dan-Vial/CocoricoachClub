@@ -363,13 +363,14 @@ export function BowlingCumulativeStats({ categoryId, playerId: fixedPlayerId }: 
                       toast.info("Génération du PDF joueur...");
                       const avatarUrl = playerGames[0]?.playerAvatarUrl || null;
                       const matchIds = [...new Set(playerGames.map(g => g.matchId))];
-                      const [matchResult, catResult, oilResult, oilAssignResult, arsenalResult, catalogResult] = await Promise.all([
+                      const [matchResult, catResult, oilResult, oilAssignResult, arsenalResult, catalogResult, medalsResult] = await Promise.all([
                         supabase.from("matches").select("opponent, location, age_category, competition, match_date").eq("id", matchIds[0]).single(),
                         supabase.from("categories").select("name").eq("id", categoryId).single(),
                         supabase.from("bowling_oil_patterns").select("id, name, image_url_male, image_url_female").in("match_id", matchIds),
                         supabase.from("bowling_oil_pattern_players" as any).select("oil_pattern_id, player_id"),
                         supabase.from("player_bowling_arsenal" as any).select("*").eq("player_id", activePlayerId).eq("category_id", categoryId),
                         supabase.from("bowling_ball_catalog" as any).select("*"),
+                        supabase.from("player_medals").select("medal_type, rank, custom_title").eq("player_id", activePlayerId).order("awarded_date", { ascending: false }),
                       ]);
                       const matchRow = matchResult.data;
                       const catData = catResult.data;
@@ -417,6 +418,7 @@ export function BowlingCumulativeStats({ categoryId, playerId: fixedPlayerId }: 
                           location: matchRow?.location || null,
                           competitionDate: matchRow?.match_date || null,
                           arsenalBalls,
+                          medals: (medalsResult.data as Array<{ medal_type: string; rank?: number | null; custom_title?: string | null }>) || [],
                         }
                       );
                       toast.success("PDF joueur exporté !");
@@ -434,18 +436,20 @@ export function BowlingCumulativeStats({ categoryId, playerId: fixedPlayerId }: 
                     try {
                       toast.info("Génération du PDF équipe...");
                       const allMatchIds = [...new Set((allGames || []).map(g => g.matchId))];
-                      const [matchResult, catResult, oilResult, oilAssignResult, arsenalResult, catalogResult] = await Promise.all([
+                      const [matchResult, catResult, oilResult, oilAssignResult, arsenalResult, catalogResult, medalsResult] = await Promise.all([
                         supabase.from("matches").select("opponent, location, age_category, competition, match_date").eq("id", allMatchIds[0]).single(),
                         supabase.from("categories").select("name").eq("id", categoryId).single(),
                         supabase.from("bowling_oil_patterns").select("id, name, image_url_male, image_url_female").in("match_id", allMatchIds),
                         supabase.from("bowling_oil_pattern_players" as any).select("oil_pattern_id, player_id"),
                         supabase.from("player_bowling_arsenal" as any).select("*").eq("category_id", categoryId),
                         supabase.from("bowling_ball_catalog" as any).select("*"),
+                        supabase.from("player_medals").select("player_id, medal_type, rank, custom_title").in("player_id", players.map(p => p.id)).order("awarded_date", { ascending: false }),
                       ]);
                       const matchRow = matchResult.data;
                       const catData = catResult.data;
                       const allOilPatterns = (oilResult.data || []) as any[];
                       const allOilAssignments = (oilAssignResult.data || []) as any[];
+                      const allMedals = (medalsResult.data as Array<{ player_id: string; medal_type: string; rank?: number | null; custom_title?: string | null }>) || [];
                       // Default oil pattern (first one, for players without assignment)
                       const defaultOil = allOilPatterns[0] || null;
                       let defaultOilName: string | null = defaultOil?.name || null;
@@ -468,6 +472,7 @@ export function BowlingCumulativeStats({ categoryId, playerId: fixedPlayerId }: 
                           games: (allGames || []).filter(g => g.playerId === p.id),
                           oilPatternName: playerOil ? playerOil.name : null,
                           oilPatternImageUrl: playerOil ? (playerOil.image_url_male || playerOil.image_url_female || null) : null,
+                          medals: allMedals.filter((m) => m.player_id === p.id).map(({ player_id, ...medal }) => medal),
                           arsenalBalls: playerArsenal.map((item: any) => {
                             const cat = item.ball_catalog_id ? catalogMap.get(item.ball_catalog_id) : null;
                             const name = cat ? `${cat.brand} ${cat.model}` : `${item.custom_ball_brand || ""} ${item.custom_ball_name || "Custom"}`.trim();
