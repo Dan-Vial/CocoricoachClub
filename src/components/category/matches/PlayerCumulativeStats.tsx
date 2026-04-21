@@ -1048,6 +1048,12 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
     if (!player) return;
     try {
       const { settings, clubName, categoryName, seasonName } = await preparePdfWithSettings(categoryId);
+      const { data: medals } = await supabase
+        .from("player_medals")
+        .select("medal_type, rank, custom_title")
+        .eq("player_id", playerId)
+        .order("awarded_date", { ascending: false });
+
       const doc = new jsPDF({ orientation: "portrait" });
       const pageW = doc.internal.pageSize.getWidth();
       const pageH = doc.internal.pageSize.getHeight();
@@ -1088,16 +1094,59 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
       }
 
       const infoX = player.avatarUrl ? 42 : 14;
+      const medalLabel = (medal: { medal_type: string; rank?: number | null; custom_title?: string | null }) => {
+        if (medal.medal_type === "gold") return "Or";
+        if (medal.medal_type === "silver") return "Argent";
+        if (medal.medal_type === "bronze") return "Bronze";
+        if (medal.medal_type === "ranking") return `${medal.rank || ""}e place`;
+        if (medal.medal_type === "title") return medal.custom_title || "Titre";
+        return medal.medal_type;
+      };
+      const medalColor = (type: string): [number, number, number] => {
+        if (type === "gold") return [202, 138, 4];
+        if (type === "silver") return [148, 163, 184];
+        if (type === "bronze") return [180, 83, 9];
+        if (type === "ranking") return [59, 130, 246];
+        return [hcR, hcG, hcB];
+      };
+
       doc.setTextColor(30, 41, 59);
       doc.setFontSize(14);
       doc.setFont("helvetica", "bold");
       doc.text(player.playerName, infoX, y + 8);
+
+      let metaY = y + 15;
+      if (medals && medals.length > 0) {
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(8);
+        let badgeX = infoX;
+        const badgeY = y + 14;
+
+        medals.slice(0, 4).forEach((medal: any) => {
+          const label = medalLabel(medal);
+          const [r, g, b] = medalColor(medal.medal_type);
+          doc.setFillColor(r, g, b);
+          doc.circle(badgeX + 2, badgeY - 1, 1.6, "F");
+          doc.setTextColor(r, g, b);
+          doc.text(label, badgeX + 6, badgeY);
+          badgeX += doc.getTextWidth(label) + 14;
+        });
+
+        if (medals.length > 4) {
+          doc.setFont("helvetica", "normal");
+          doc.setTextColor(100, 116, 139);
+          doc.text(`+${medals.length - 4}`, badgeX, badgeY);
+        }
+
+        metaY = y + 21;
+      }
+
       doc.setFont("helvetica", "normal");
       doc.setFontSize(9);
       doc.setTextColor(100, 116, 139);
-      doc.text(`Poste : ${player.position || "—"}  •  ${player.matchesPlayed} matchs joués`, infoX, y + 15);
-      doc.text(`Club : ${clubName || "—"}  •  Catégorie : ${categoryName || "—"}`, infoX, y + 21);
-      y += 30;
+      doc.text(`Poste : ${player.position || "—"}  •  ${player.matchesPlayed} matchs joués`, infoX, metaY);
+      doc.text(`Club : ${clubName || "—"}  •  Catégorie : ${categoryName || "—"}`, infoX, metaY + 6);
+      y = metaY + 9;
 
       // Selected matches list
       const selectedMatches = allMatches.filter(m => activeMatchIds.includes(m.id));
