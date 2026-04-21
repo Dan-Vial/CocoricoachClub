@@ -36,6 +36,7 @@ import { BowlingCumulativeStats } from "@/components/bowling/BowlingCumulativeSt
 import { PlayerSurfEquipment } from "@/components/surf/PlayerSurfEquipment";
 import { PlayerSkiEquipment } from "@/components/ski/PlayerSkiEquipment";
 import { PlayerPadelEquipment } from "@/components/padel/PlayerPadelEquipment";
+import { PlayerMedalsSection } from "@/components/player/PlayerMedalsSection";
 import { ViewerModeProvider, useViewerModeContext } from "@/contexts/ViewerModeContext";
 import { AthleteSpaceDocuments } from "@/components/athlete-space/AthleteSpaceDocuments";
 import { Badge } from "@/components/ui/badge";
@@ -464,6 +465,11 @@ function PlayerDetailsContent() {
             categoryId={player.category_id}
             birthYear={player.birth_year}
           />
+        </div>
+
+        {/* Palmarès / Médailles */}
+        <div className="mb-3">
+          <PlayerMedalsSection playerId={playerId!} />
         </div>
 
         <Tabs defaultValue="charge" className="space-y-6">
