@@ -28,7 +28,9 @@ import {
   Lock,
   Bell,
   FileSpreadsheet,
+  Award,
 } from "lucide-react";
+import { MedalsDialog } from "./MedalsDialog";
 import { MatchLineupDialog } from "./MatchLineupDialog";
 import { isSurfCategory, isSkiCategory, getMainSportFromType } from "@/lib/constants/sportTypes";
 import { FisPreCompetitionForm } from "@/components/planning/FisPreCompetitionForm";
