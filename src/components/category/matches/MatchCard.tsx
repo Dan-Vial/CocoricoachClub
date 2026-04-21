@@ -103,6 +103,7 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
   const [isEditingScore, setIsEditingScore] = useState(false);
   const [isNotifyOpen, setIsNotifyOpen] = useState(false);
   const [isMatchSheetOpen, setIsMatchSheetOpen] = useState(false);
+  const [isMedalsOpen, setIsMedalsOpen] = useState(false);
   const [scoreHome, setScoreHome] = useState(match.score_home?.toString() || "");
   const [scoreAway, setScoreAway] = useState(match.score_away?.toString() || "");
   const queryClient = useQueryClient();
@@ -573,6 +574,11 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setIsMedalsOpen(true)} className="text-amber-600 dark:text-amber-400">
+                  <Award className="h-4 w-4 mr-2" />
+                  Médailles & palmarès
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => setIsNotifyOpen(true)} className="text-primary">
                   <Bell className="h-4 w-4 mr-2" />
                   Notifier les athlètes
@@ -745,6 +751,16 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
           </DialogContent>
         </Dialog>
       )}
+
+      {/* Medals Dialog */}
+      <MedalsDialog
+        open={isMedalsOpen}
+        onOpenChange={setIsMedalsOpen}
+        matchId={match.id}
+        categoryId={categoryId}
+        competitionName={isIndividual ? (match.competition || match.opponent || "Compétition") : `${match.is_home ? "vs" : "@"} ${match.opponent}`}
+        competitionDate={match.match_date}
+      />
     </>
   );
 }
