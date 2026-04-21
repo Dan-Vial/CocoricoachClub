@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Users, Building2, UserCheck, Clock, CreditCard, TrendingUp, AlertTriangle, Calendar, Gift, Ban, DollarSign } from "lucide-react";
+import { Users, Building2, UserCheck, Clock, TrendingUp, AlertTriangle, Calendar, Gift, Ban, DollarSign, History } from "lucide-react";
 import { format, differenceInDays, addMonths } from "date-fns";
 import { fr } from "date-fns/locale";
 
@@ -20,11 +20,11 @@ export function SuperAdminDashboard() {
 
       const { data: clubs } = await supabase
         .from("clubs")
-        .select("id, is_active, created_at, client_id");
+        .select("id, is_active, created_at, client_id, user_id");
 
       const { data: categories } = await supabase
         .from("categories")
-        .select("id");
+        .select("id, club_id");
 
       const { data: players } = await supabase
         .from("players")
@@ -41,12 +41,12 @@ export function SuperAdminDashboard() {
       // Get users who already have an active role (club or category member)
       const { data: activeClubMembers } = await supabase
         .from("club_members")
-        .select("user_id");
+        .select("user_id, club_id");
       const { data: activeCategoryMembers } = await supabase
         .from("category_members")
-        .select("user_id");
+        .select("user_id, category_id");
 
-      const activeUserIds = new Set([
+      const approvedUserIds = new Set([
         ...(approvedUsers || []).map(a => a.user_id),
         ...(activeClubMembers || []).map(m => m.user_id),
         ...(activeCategoryMembers || []).map(m => m.user_id),
@@ -113,16 +113,62 @@ export function SuperAdminDashboard() {
       
       const suspendedClients = clients?.filter(c => c.status === "suspended").length || 0;
 
+      // Currently active clients = active status (paying or free) + active trials
+      const currentlyActiveClients = activePayingClients + activeFreeClients + activeTrialClients.length;
+
       const totalClubs = clubs?.length || 0;
       const activeClubs = clubs?.filter(c => c.is_active).length || 0;
 
+      // Total users (all-time history)
       const totalUsers = users?.length || 0;
-      const pendingUsers = (users || []).filter(u => !activeUserIds.has(u.id)).length;
+      const pendingUsers = (users || []).filter(u => !approvedUserIds.has(u.id)).length;
+
+      // Currently active users = users attached to a currently active client
+      // (active status or active trial; suspended/expired excluded)
+      const activeClientIds = new Set(
+        (clients || [])
+          .filter(c => 
+            c.status === "active" || 
+            (c.status === "trial" && (!c.trial_ends_at || new Date(c.trial_ends_at) > now))
+          )
+          .map(c => c.id)
+      );
+
+      // Map club_id -> client_id (only for clubs of active clients)
+      const activeClubIds = new Set(
+        (clubs || [])
+          .filter(c => c.client_id && activeClientIds.has(c.client_id))
+          .map(c => c.id)
+      );
+
+      // Map category_id -> club_id for active client clubs
+      const activeCategoryIds = new Set(
+        (categories || [])
+          .filter(c => activeClubIds.has(c.club_id))
+          .map(c => c.id)
+      );
+
+      const activeUserIds = new Set<string>();
+      // Club owners of active clients
+      (clubs || []).forEach(cl => {
+        if (cl.user_id && activeClubIds.has(cl.id)) activeUserIds.add(cl.user_id);
+      });
+      // Club members of active clients
+      (activeClubMembers || []).forEach(m => {
+        if (activeClubIds.has(m.club_id)) activeUserIds.add(m.user_id);
+      });
+      // Category members (athletes/staff) of active clients
+      (activeCategoryMembers || []).forEach(m => {
+        if (activeCategoryIds.has(m.category_id)) activeUserIds.add(m.user_id);
+      });
+
+      const activeUsersCount = activeUserIds.size;
 
       const revenueThisMonth = payments?.reduce((sum, p) => sum + Number(p.amount || 0), 0) || 0;
 
       return {
         totalClients,
+        currentlyActiveClients,
         activePayingClients,
         activeFreeClients,
         trialClients: activeTrialClients.length,
@@ -133,6 +179,7 @@ export function SuperAdminDashboard() {
         totalCategories: categories?.length || 0,
         totalAthletes: players?.length || 0,
         totalUsers,
+        activeUsersCount,
         pendingUsers,
         revenueThisMonth,
         expiringSubscriptions: expiringSubscriptions || [],
@@ -155,12 +202,18 @@ export function SuperAdminDashboard() {
             <Building2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats?.totalClients || 0}</div>
-            <div className="flex gap-2 mt-1 flex-wrap">
+            <div className="flex items-baseline gap-2">
+              <div className="text-2xl font-bold text-green-600">{stats?.currentlyActiveClients || 0}</div>
+              <span className="text-sm text-muted-foreground">/ {stats?.totalClients || 0}</span>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              <span className="text-green-600 font-medium">actifs</span> sur total historique
+            </p>
+            <div className="flex gap-1 mt-2 flex-wrap">
               <Badge variant="outline" className="text-xs">{(stats?.activePayingClients || 0) + (stats?.activeFreeClients || 0)} actifs</Badge>
               <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700">{stats?.trialClients} essai</Badge>
               {(stats?.expiredTrialClients || 0) > 0 && (
-                <Badge variant="outline" className="text-xs bg-orange-50 text-orange-700">{stats?.expiredTrialClients} essai expiré</Badge>
+                <Badge variant="outline" className="text-xs bg-orange-50 text-orange-700">{stats?.expiredTrialClients} expiré</Badge>
               )}
               {(stats?.suspendedClients || 0) > 0 && (
                 <Badge variant="outline" className="text-xs bg-red-50 text-red-700">{stats?.suspendedClients} suspendu</Badge>
@@ -188,14 +241,20 @@ export function SuperAdminDashboard() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats?.totalUsers || 0}</div>
+            <div className="flex items-baseline gap-2">
+              <div className="text-2xl font-bold text-green-600">{stats?.activeUsersCount || 0}</div>
+              <span className="text-sm text-muted-foreground">/ {stats?.totalUsers || 0}</span>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              <span className="text-green-600 font-medium">actifs</span> sur total historique
+            </p>
             {stats?.pendingUsers && stats.pendingUsers > 0 ? (
-              <Badge variant="destructive" className="text-xs mt-1">
+              <Badge variant="destructive" className="text-xs mt-2">
                 <Clock className="h-3 w-3 mr-1" />
                 {stats.pendingUsers} en attente
               </Badge>
             ) : (
-              <p className="text-xs text-muted-foreground">Tous validés</p>
+              <p className="text-xs text-muted-foreground mt-2">Tous validés</p>
             )}
           </CardContent>
         </Card>
@@ -214,12 +273,46 @@ export function SuperAdminDashboard() {
         </Card>
       </div>
 
+      {/* Historique vs Actuel */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <History className="h-5 w-5" />
+            Historique vs Actuel
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="p-4 bg-muted/50 rounded-lg border text-center">
+              <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Clients (historique)</p>
+              <div className="text-3xl font-bold">{stats?.totalClients || 0}</div>
+              <p className="text-xs text-muted-foreground mt-1">depuis le début</p>
+            </div>
+            <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800 text-center">
+              <p className="text-xs text-green-700 dark:text-green-400 uppercase tracking-wide mb-1">Clients actifs</p>
+              <div className="text-3xl font-bold text-green-600">{stats?.currentlyActiveClients || 0}</div>
+              <p className="text-xs text-muted-foreground mt-1">contrat en cours</p>
+            </div>
+            <div className="p-4 bg-muted/50 rounded-lg border text-center">
+              <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Utilisateurs (historique)</p>
+              <div className="text-3xl font-bold">{stats?.totalUsers || 0}</div>
+              <p className="text-xs text-muted-foreground mt-1">comptes créés</p>
+            </div>
+            <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800 text-center">
+              <p className="text-xs text-green-700 dark:text-green-400 uppercase tracking-wide mb-1">Utilisateurs actifs</p>
+              <div className="text-3xl font-bold text-green-600">{stats?.activeUsersCount || 0}</div>
+              <p className="text-xs text-muted-foreground mt-1">clients actifs</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Résumé détaillé */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
             <Calendar className="h-5 w-5" />
-            Résumé
+            Résumé détaillé
           </CardTitle>
         </CardHeader>
         <CardContent>
