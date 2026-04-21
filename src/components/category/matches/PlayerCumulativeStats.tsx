@@ -1157,6 +1157,97 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
         }
       }
 
+      // ===== Palmarès / Médailles =====
+      try {
+        const { data: medals } = await supabase
+          .from("player_medals")
+          .select("*, matches(opponent, competition, match_date, location)")
+          .eq("player_id", playerId)
+          .order("awarded_date", { ascending: false });
+
+        if (medals && medals.length > 0) {
+          if (y > pageH - 60) { doc.addPage(); y = 15; }
+
+          doc.setFontSize(11);
+          doc.setFont("helvetica", "bold");
+          doc.setTextColor(30, 41, 59);
+          doc.text(`Palmarès (${medals.length})`, 14, y);
+          y += 6;
+
+          // Counts summary
+          const counts: Record<string, number> = {};
+          medals.forEach((m: any) => { counts[m.medal_type] = (counts[m.medal_type] || 0) + 1; });
+          const summary: string[] = [];
+          if (counts.gold) summary.push(`Or: ${counts.gold}`);
+          if (counts.silver) summary.push(`Argent: ${counts.silver}`);
+          if (counts.bronze) summary.push(`Bronze: ${counts.bronze}`);
+          if (counts.ranking) summary.push(`Classements: ${counts.ranking}`);
+          if (counts.title) summary.push(`Titres: ${counts.title}`);
+          if (summary.length) {
+            doc.setFontSize(8);
+            doc.setFont("helvetica", "normal");
+            doc.setTextColor(100, 116, 139);
+            doc.text(summary.join("  •  "), 14, y);
+            y += 6;
+          }
+
+          const medalLabel = (m: any) => {
+            if (m.medal_type === "gold") return "Or";
+            if (m.medal_type === "silver") return "Argent";
+            if (m.medal_type === "bronze") return "Bronze";
+            if (m.medal_type === "ranking") return `${m.rank}e place`;
+            if (m.medal_type === "title") return m.custom_title || "Titre";
+            return m.medal_type;
+          };
+          const medalColor = (type: string): [number, number, number] => {
+            if (type === "gold") return [202, 138, 4];
+            if (type === "silver") return [148, 163, 184];
+            if (type === "bronze") return [180, 83, 9];
+            if (type === "ranking") return [59, 130, 246];
+            return [hcR, hcG, hcB];
+          };
+
+          medals.forEach((m: any) => {
+            if (y > pageH - 22) { doc.addPage(); y = 15; }
+            const match = m.matches;
+            const compName = match?.competition || match?.opponent || "Compétition";
+            const dateStr = m.awarded_date ? format(new Date(m.awarded_date), "dd/MM/yyyy") : "";
+            const [r, g, b] = medalColor(m.medal_type);
+
+            // Card
+            doc.setFillColor(248, 250, 252);
+            doc.roundedRect(14, y, pageW - 28, 16, 1.5, 1.5, "F");
+            // Color accent
+            doc.setFillColor(r, g, b);
+            doc.rect(14, y, 2, 16, "F");
+
+            doc.setFontSize(9);
+            doc.setFont("helvetica", "bold");
+            doc.setTextColor(r, g, b);
+            doc.text(medalLabel(m), 20, y + 6);
+
+            doc.setFont("helvetica", "normal");
+            doc.setTextColor(30, 41, 59);
+            doc.setFontSize(8);
+            const titleExtra = m.custom_title && m.medal_type !== "title" ? ` — ${m.custom_title}` : "";
+            const teamExtra = m.team_label ? `  [${m.team_label}]` : (m.group_id ? "  [Équipe]" : "");
+            doc.text(`${compName}${titleExtra}${teamExtra}`, 50, y + 6);
+
+            doc.setFontSize(7);
+            doc.setTextColor(100, 116, 139);
+            const locStr = match?.location ? `  •  ${match.location}` : "";
+            doc.text(`${dateStr}${locStr}`, 20, y + 11);
+            if (m.notes) {
+              doc.setFont("helvetica", "italic");
+              doc.text(String(m.notes).substring(0, 110), 20, y + 14.5);
+              doc.setFont("helvetica", "normal");
+            }
+
+            y += 18;
+          });
+        }
+      } catch { /* skip palmarès on error */ }
+
       // Footer
       if (settings?.footer_text) {
         doc.setFontSize(7);
