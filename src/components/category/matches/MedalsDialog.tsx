@@ -355,13 +355,7 @@ export function MedalsDialog({
                       >
                         <Checkbox
                           checked={selectedPlayerIds.includes(p.id)}
-                          onCheckedChange={() => {
-                            if (isCollective) {
-                              togglePlayer(p.id);
-                            } else {
-                              setSelectedPlayerIds([p.id]);
-                            }
-                          }}
+                          onCheckedChange={() => togglePlayer(p.id)}
                         />
                         <span className="text-sm">
                           {[p.first_name, p.name].filter(Boolean).join(" ")}
