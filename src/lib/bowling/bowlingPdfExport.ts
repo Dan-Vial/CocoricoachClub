@@ -25,6 +25,13 @@ interface BowlingPdfOptions {
   location?: string | null;
   competitionDate?: string | null;
   arsenalBalls?: ArsenalBallData[];
+  medals?: BowlingPdfMedal[];
+}
+
+interface BowlingPdfMedal {
+  medal_type: string;
+  rank?: number | null;
+  custom_title?: string | null;
 }
 
 async function loadImageAsBase64(url: string): Promise<{ data: string; width: number; height: number; format: "PNG" | "JPEG" } | null> {
@@ -279,6 +286,24 @@ export async function exportBowlingPdf(playerName: string, games: BowlingGameDat
   const margin = 15;
   const contentWidth = pageWidth - margin * 2;
   let y = 15;
+  const medals = options?.medals || [];
+
+  const getMedalLabel = (medal: BowlingPdfMedal) => {
+    if (medal.medal_type === "gold") return "Or";
+    if (medal.medal_type === "silver") return "Argent";
+    if (medal.medal_type === "bronze") return "Bronze";
+    if (medal.medal_type === "ranking") return medal.rank ? `${medal.rank}e place` : "Classement";
+    if (medal.medal_type === "title") return medal.custom_title || "Titre";
+    return medal.custom_title || medal.medal_type;
+  };
+
+  const getMedalColors = (type: string): { fill: [number, number, number]; stroke: [number, number, number] } => {
+    if (type === "gold") return { fill: [245, 158, 11], stroke: [180, 83, 9] };
+    if (type === "silver") return { fill: [203, 213, 225], stroke: [100, 116, 139] };
+    if (type === "bronze") return { fill: [194, 101, 55], stroke: [154, 52, 18] };
+    if (type === "ranking") return { fill: [96, 165, 250], stroke: [29, 78, 216] };
+    return { fill: [34, 197, 94], stroke: [21, 128, 61] };
+  };
 
   // Load images in parallel
   const arsenalBalls = options?.arsenalBalls || [];
@@ -294,7 +319,8 @@ export async function exportBowlingPdf(playerName: string, games: BowlingGameDat
 
   // ===================== HEADER =====================
   const hasSubInfo = !!(options?.competitionName || options?.ageCategory || options?.location || options?.competitionDate);
-  const headerH = avatarBase64 ? 35 : (hasSubInfo ? 30 : 28);
+  const hasMedals = medals.length > 0;
+  const headerH = hasMedals ? 42 : avatarBase64 ? 35 : (hasSubInfo ? 30 : 28);
   doc.setFillColor(...COLORS.primary);
   doc.rect(0, 0, pageWidth, headerH, "F");
 
@@ -346,6 +372,42 @@ export async function exportBowlingPdf(playerName: string, games: BowlingGameDat
   doc.setFontSize(8);
   doc.setFont("helvetica", "normal");
   doc.text(`Rapport genere le ${format(new Date(), "dd MMMM yyyy", { locale: fr })} - ${games.length} parties`, textStartX, avatarBase64 ? 27 : 23);
+
+  if (hasMedals) {
+    let chipX = textStartX;
+    const chipY = headerH - 9;
+    const chipMaxX = pageWidth - margin;
+    const visibleMedals = medals.slice(0, 5);
+
+    visibleMedals.forEach((medal) => {
+      const label = getMedalLabel(medal);
+      const icon = medal.medal_type === "gold" ? "G" : medal.medal_type === "silver" ? "S" : medal.medal_type === "bronze" ? "B" : medal.medal_type === "ranking" ? "#" : "T";
+      const textW = doc.getTextWidth(label);
+      const chipW = textW + 14;
+      if (chipX + chipW > chipMaxX) return;
+      const { fill, stroke } = getMedalColors(medal.medal_type);
+
+      doc.setFillColor(255, 255, 255);
+      doc.setDrawColor(...stroke);
+      doc.roundedRect(chipX, chipY - 4.5, chipW, 6, 2, 2, "FD");
+      doc.setFillColor(...fill);
+      doc.circle(chipX + 3.5, chipY - 1.5, 1.8, "F");
+      doc.setTextColor(...stroke);
+      doc.setFontSize(6.5);
+      doc.setFont("helvetica", "bold");
+      doc.text(icon, chipX + 3.5, chipY - 0.7, { align: "center" });
+      doc.setTextColor(...COLORS.text);
+      doc.text(label, chipX + 7, chipY);
+      chipX += chipW + 2;
+    });
+
+    if (medals.length > visibleMedals.length && chipX + 10 <= chipMaxX) {
+      doc.setTextColor(...COLORS.white);
+      doc.setFontSize(7);
+      doc.setFont("helvetica", "bold");
+      doc.text(`+${medals.length - visibleMedals.length}`, chipX, chipY);
+    }
+  }
   y = headerH + 7;
 
   // ===================== OIL PATTERN =====================
@@ -1168,6 +1230,7 @@ export interface TeamPlayerData {
   arsenalBalls?: ArsenalBallData[];
   oilPatternName?: string | null;
   oilPatternImageUrl?: string | null;
+  medals?: BowlingPdfMedal[];
 }
 
 export async function exportBowlingTeamPdf(
@@ -1188,6 +1251,7 @@ export async function exportBowlingTeamPdf(
       ...options,
       playerAvatarUrl: player.avatarUrl,
       arsenalBalls: player.arsenalBalls,
+      medals: player.medals,
       // Use per-player oil pattern if assigned, otherwise fallback to shared options
       oilPatternName: player.oilPatternName ?? options?.oilPatternName,
       oilPatternImageUrl: player.oilPatternImageUrl ?? options?.oilPatternImageUrl,
