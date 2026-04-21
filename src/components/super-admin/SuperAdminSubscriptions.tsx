@@ -369,9 +369,9 @@ import { Checkbox } from "@/components/ui/checkbox";
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
                   </div>
-                  <CardHeader>
-                    <CardTitle className="text-lg">{plan.name}</CardTitle>
-                  </CardHeader>
+                   <CardHeader>
+                     <CardTitle className="text-lg pr-20">{plan.name}</CardTitle>
+                   </CardHeader>
                    <CardContent>
                      <div className="text-2xl font-bold">
                        {Number(plan.price_monthly) > 0
