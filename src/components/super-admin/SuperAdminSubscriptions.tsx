@@ -372,19 +372,19 @@ import { Checkbox } from "@/components/ui/checkbox";
                   <CardHeader>
                     <CardTitle className="text-lg">{plan.name}</CardTitle>
                   </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">
-                      {plan.price_monthly
-                        ? `${plan.price_monthly}€/mois`
-                        : plan.price_yearly
-                        ? `${plan.price_yearly}€/an`
-                        : "Gratuit"}
-                    </div>
-                    {plan.price_monthly && plan.price_yearly && (
-                      <div className="text-sm text-muted-foreground">
-                        ou {plan.price_yearly}€/an
-                      </div>
-                    )}
+                   <CardContent>
+                     <div className="text-2xl font-bold">
+                       {Number(plan.price_monthly) > 0
+                         ? `${Number(plan.price_monthly)}€/mois`
+                         : Number(plan.price_yearly) > 0
+                         ? `${Number(plan.price_yearly)}€${plan.name?.toLowerCase().includes("comptant") ? " (comptant)" : "/an"}`
+                         : "Gratuit"}
+                     </div>
+                     {Number(plan.price_monthly) > 0 && Number(plan.price_yearly) > 0 && (
+                       <div className="text-sm text-muted-foreground">
+                         ou {Number(plan.price_yearly)}€/an
+                       </div>
+                     )}
                     <div className="text-sm text-muted-foreground mt-2">
                       <p>{plan.max_clubs} clubs</p>
                       <p>{plan.max_athletes} athlètes/cat.</p>
