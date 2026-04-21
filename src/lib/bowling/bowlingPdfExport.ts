@@ -401,7 +401,16 @@ export async function exportBowlingPdf(playerName: string, games: BowlingGameDat
       const labelLines = doc.splitTextToSize(medalLabels[index], medalTextMaxWidth);
       const rowH = 10 + (labelLines.length - 1) * 4;
       const { fill, stroke } = getMedalColors(medal.medal_type);
-      const icon = medal.medal_type === "gold" ? "G" : medal.medal_type === "silver" ? "S" : medal.medal_type === "bronze" ? "B" : medal.medal_type === "ranking" ? "#" : "T";
+      const icon =
+        medal.medal_type === "gold"
+          ? "1"
+          : medal.medal_type === "silver"
+            ? "2"
+            : medal.medal_type === "bronze"
+              ? "3"
+              : medal.medal_type === "ranking"
+                ? medal.rank ? String(medal.rank) : "#"
+                : "★";
 
       doc.setFillColor(255, 255, 255);
       doc.setDrawColor(...stroke);
