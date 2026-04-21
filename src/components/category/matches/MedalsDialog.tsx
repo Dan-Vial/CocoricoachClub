@@ -23,7 +23,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Award, Trash2, Plus, Medal, Trophy } from "lucide-react";
 import { toast } from "sonner";
-import { ScrollArea } from "@/components/ui/scroll-area";
+
 
 interface MedalsDialogProps {
   open: boolean;
@@ -198,8 +198,8 @@ export function MedalsDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 pr-4">
-          <div className="space-y-6">
+        <div className="flex-1 overflow-y-auto pr-4">
+          <div className="space-y-6 pb-4">
             {groupedMedals.length > 0 && (
               <div className="space-y-2">
                 <h3 className="text-sm font-semibold text-muted-foreground">
@@ -386,7 +386,7 @@ export function MedalsDialog({
               </Button>
             </div>
           </div>
-        </ScrollArea>
+        </div>
       </DialogContent>
     </Dialog>
   );
