@@ -32,6 +32,7 @@ interface BowlingPdfMedal {
   medal_type: string;
   rank?: number | null;
   custom_title?: string | null;
+  team_label?: string | null;
 }
 
 async function loadImageAsBase64(url: string): Promise<{ data: string; width: number; height: number; format: "PNG" | "JPEG" } | null> {
@@ -289,12 +290,24 @@ export async function exportBowlingPdf(playerName: string, games: BowlingGameDat
   const medals = options?.medals || [];
 
   const getMedalLabel = (medal: BowlingPdfMedal) => {
-    if (medal.medal_type === "gold") return "Or";
-    if (medal.medal_type === "silver") return "Argent";
-    if (medal.medal_type === "bronze") return "Bronze";
-    if (medal.medal_type === "ranking") return medal.rank ? `${medal.rank}e place` : "Classement";
-    if (medal.medal_type === "title") return medal.custom_title || "Titre";
-    return medal.custom_title || medal.medal_type;
+    if (medal.custom_title?.trim()) return medal.custom_title.trim();
+
+    const baseLabel =
+      medal.medal_type === "gold"
+        ? "Médaille d'Or"
+        : medal.medal_type === "silver"
+          ? "Médaille d'Argent"
+          : medal.medal_type === "bronze"
+            ? "Médaille de Bronze"
+            : medal.medal_type === "ranking"
+              ? medal.rank
+                ? `${medal.rank}e place`
+                : "Classement"
+              : medal.medal_type === "title"
+                ? "Titre"
+                : medal.medal_type;
+
+    return medal.team_label ? `${baseLabel} ${medal.team_label}` : baseLabel;
   };
 
   const getMedalColors = (type: string): { fill: [number, number, number]; stroke: [number, number, number] } => {
@@ -320,7 +333,15 @@ export async function exportBowlingPdf(playerName: string, games: BowlingGameDat
   // ===================== HEADER =====================
   const hasSubInfo = !!(options?.competitionName || options?.ageCategory || options?.location || options?.competitionDate);
   const hasMedals = medals.length > 0;
-  const headerH = hasMedals ? 42 : avatarBase64 ? 35 : (hasSubInfo ? 30 : 28);
+  const visibleMedals = medals.slice(0, 2);
+  const estimatedTextStartX = avatarBase64 ? margin + 30 : margin;
+  const medalLabels = visibleMedals.map(getMedalLabel);
+  const medalTextMaxWidth = pageWidth - estimatedTextStartX - margin - 18;
+  const medalLineCounts = medalLabels.map((label) => Math.max(1, doc.splitTextToSize(label, medalTextMaxWidth).length));
+  const medalsBlockH = hasMedals
+    ? visibleMedals.reduce((total, _medal, index) => total + 10 + (medalLineCounts[index] - 1) * 4, 0) + 4
+    : 0;
+  const headerH = (avatarBase64 ? 35 : (hasSubInfo ? 30 : 28)) + medalsBlockH;
   doc.setFillColor(...COLORS.primary);
   doc.rect(0, 0, pageWidth, headerH, "F");
 
@@ -374,38 +395,38 @@ export async function exportBowlingPdf(playerName: string, games: BowlingGameDat
   doc.text(`Rapport genere le ${format(new Date(), "dd MMMM yyyy", { locale: fr })} - ${games.length} parties`, textStartX, avatarBase64 ? 27 : 23);
 
   if (hasMedals) {
-    let chipX = textStartX;
-    const chipY = headerH - 9;
-    const chipMaxX = pageWidth - margin;
-    const visibleMedals = medals.slice(0, 5);
+    let medalY = avatarBase64 ? 31 : 27;
 
-    visibleMedals.forEach((medal) => {
-      const label = getMedalLabel(medal);
-      const icon = medal.medal_type === "gold" ? "G" : medal.medal_type === "silver" ? "S" : medal.medal_type === "bronze" ? "B" : medal.medal_type === "ranking" ? "#" : "T";
-      const textW = doc.getTextWidth(label);
-      const chipW = textW + 14;
-      if (chipX + chipW > chipMaxX) return;
+    visibleMedals.forEach((medal, index) => {
+      const labelLines = doc.splitTextToSize(medalLabels[index], medalTextMaxWidth);
+      const rowH = 10 + (labelLines.length - 1) * 4;
       const { fill, stroke } = getMedalColors(medal.medal_type);
+      const icon = medal.medal_type === "gold" ? "G" : medal.medal_type === "silver" ? "S" : medal.medal_type === "bronze" ? "B" : medal.medal_type === "ranking" ? "#" : "T";
 
       doc.setFillColor(255, 255, 255);
       doc.setDrawColor(...stroke);
-      doc.roundedRect(chipX, chipY - 4.5, chipW, 6, 2, 2, "FD");
+      doc.roundedRect(textStartX, medalY, pageWidth - textStartX - margin, rowH, 3, 3, "FD");
+
       doc.setFillColor(...fill);
-      doc.circle(chipX + 3.5, chipY - 1.5, 1.8, "F");
-      doc.setTextColor(...stroke);
-      doc.setFontSize(6.5);
+      doc.circle(textStartX + 6, medalY + rowH / 2, 3.2, "F");
+      doc.setTextColor(...COLORS.white);
+      doc.setFontSize(10);
       doc.setFont("helvetica", "bold");
-      doc.text(icon, chipX + 3.5, chipY - 0.7, { align: "center" });
-      doc.setTextColor(...COLORS.text);
-      doc.text(label, chipX + 7, chipY);
-      chipX += chipW + 2;
+      doc.text(icon, textStartX + 6, medalY + rowH / 2 + 1.1, { align: "center" });
+
+      doc.setTextColor(...stroke);
+      doc.setFontSize(9.5);
+      doc.setFont("helvetica", "bold");
+      doc.text(labelLines, textStartX + 12, medalY + 4.4);
+
+      medalY += rowH + 3;
     });
 
-    if (medals.length > visibleMedals.length && chipX + 10 <= chipMaxX) {
+    if (medals.length > visibleMedals.length) {
       doc.setTextColor(...COLORS.white);
-      doc.setFontSize(7);
+      doc.setFontSize(8);
       doc.setFont("helvetica", "bold");
-      doc.text(`+${medals.length - visibleMedals.length}`, chipX, chipY);
+      doc.text(`+${medals.length - visibleMedals.length} autre(s) médaille(s)`, textStartX, medalY + 1);
     }
   }
   y = headerH + 7;
