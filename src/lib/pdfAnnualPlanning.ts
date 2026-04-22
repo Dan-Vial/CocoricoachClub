@@ -513,14 +513,15 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
           ? xCol + innerPadding + laneW + laneGap + laneW / 2
           : xCol + innerPadding + laneW / 2;
         // ── Title (cycle name) — right lane ──
-        // Keep extra lateral safety because rotated text uses the font size as visual width.
-        const titleMaxFs = Math.max(3.2, Math.min(12, laneW * 0.76));
-        const titleFit = fitVerticalText(pdf, cycle.name, Math.max(1, usableH - 1.6), 0.6, titleMaxFs, "bold");
+        // Cap by lane width but with a high floor to keep labels readable, even if it
+        // means slightly using the gap area between lanes.
+        const titleMaxFs = Math.max(5.5, Math.min(12, laneW * 1.0));
+        const titleFit = fitVerticalText(pdf, cycle.name, Math.max(1, usableH - 1.6), 5.0, titleMaxFs, "bold");
 
         // Type label sizing (computed before drawing so we can align baselines)
-        const typeMaxFs = Math.max(2.8, Math.min(9.5, laneW * 0.7));
+        const typeMaxFs = Math.max(4.5, Math.min(9.5, laneW * 0.9));
         const typeFit = hasTypeLabel
-          ? fitVerticalText(pdf, typeFullLabel, Math.max(1, usableH - 1.6), 0.6, typeMaxFs, "italic")
+          ? fitVerticalText(pdf, typeFullLabel, Math.max(1, usableH - 1.6), 4.0, typeMaxFs, "italic")
           : { fontSize: 0, text: "" };
 
         // Anchor text at the bottom of the band; vertical text reads upward toward bandTop.
