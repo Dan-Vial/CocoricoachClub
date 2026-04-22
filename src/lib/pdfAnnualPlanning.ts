@@ -167,8 +167,8 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
   const gridRight = pageW - margin;
   const totalGridW = gridRight - gridLeft;
 
-  const dayInitialW = 2.6;
-  const dayNumberW = 3.2;
+  const dayInitialW = 3.6;
+  const dayNumberW = 4.4;
   const monthLabelW = dayInitialW + dayNumberW;
 
   // Build matches list (excluding training events) for footer rendering
@@ -271,8 +271,8 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
       pdf.rect(xMonth, y, dayInitialW, dayRowH, "S");
       pdf.setTextColor(weekend ? 120 : 60, weekend ? 30 : 65, weekend ? 30 : 80);
       pdf.setFont("helvetica", "bold");
-      pdf.setFontSize(Math.min(5.5, dayRowH * 0.55));
-      pdf.text(initial, xMonth + dayInitialW / 2, y + dayRowH / 2 + 1, { align: "center" });
+      pdf.setFontSize(Math.min(8.5, dayRowH * 0.85));
+      pdf.text(initial, xMonth + dayInitialW / 2, y + dayRowH / 2 + 1.2, { align: "center" });
 
       // Day number
       pdf.setFillColor(weekend ? 230 : 248, weekend ? 233 : 250, weekend ? 240 : 253);
@@ -281,8 +281,8 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
       pdf.rect(xMonth + dayInitialW, y, dayNumberW, dayRowH, "S");
       pdf.setTextColor(40, 45, 60);
       pdf.setFont("helvetica", "bold");
-      pdf.setFontSize(Math.min(5.5, dayRowH * 0.55));
-      pdf.text(String(d), xMonth + dayInitialW + dayNumberW / 2, y + dayRowH / 2 + 1, { align: "center" });
+      pdf.setFontSize(Math.min(8.5, dayRowH * 0.85));
+      pdf.text(String(d), xMonth + dayInitialW + dayNumberW / 2, y + dayRowH / 2 + 1.2, { align: "center" });
     }
 
     // Cycle sub-columns
@@ -359,13 +359,7 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
         pdf.circle(cx, cy, Math.min(1.5, dayRowH * 0.38), "FD");
       }
 
-      if (date.getTime() === today.getTime()) {
-        const y = gridTop + monthHeaderH + (d - 1) * dayRowH;
-        pdf.setDrawColor(220, 38, 38);
-        pdf.setLineWidth(0.5);
-        pdf.rect(xMonth + 0.2, y + 0.2, monthWidth - 0.4, dayRowH - 0.4, "S");
-        pdf.setLineWidth(0.15);
-      }
+      // (today highlight removed per user request)
     }
   }
 
@@ -506,11 +500,7 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
   pdf.setFontSize(7);
   pdf.text("Compétition", rightLegendX + 2, legendY);
 
-  pdf.setDrawColor(220, 38, 38);
-  pdf.setLineWidth(0.5);
-  pdf.rect(rightLegendX + 26, legendY - 2.4, 3, 3, "S");
-  pdf.setLineWidth(0.15);
-  pdf.text("Aujourd'hui", rightLegendX + 30, legendY);
+  // (today legend removed per user request)
 
   pdf.setDrawColor(220, 222, 230);
   pdf.line(margin, pageH - 5, pageW - margin, pageH - 5);
