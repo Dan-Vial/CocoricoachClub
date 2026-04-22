@@ -266,7 +266,7 @@ export function AnnualTimelineView({
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <button
-                            className="absolute -translate-x-1/2 flex flex-col items-center justify-center rounded-md shadow-sm hover:shadow-md hover:scale-110 transition-all"
+                            className="absolute -translate-x-1/2 flex flex-col items-center justify-center rounded-md shadow-sm hover:shadow-md hover:scale-110 transition-all cursor-pointer"
                             style={{
                               left: `${offsetPct}%`,
                               top: "50%",
@@ -275,6 +275,12 @@ export function AnnualTimelineView({
                               width: "22px",
                               height: "22px",
                               zIndex: 10,
+                            }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (routeCategoryId) {
+                                navigate(`/categories/${routeCategoryId}?tab=competition`);
+                              }
                             }}
                           >
                             <Trophy className="h-3 w-3 text-white" />
