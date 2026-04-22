@@ -477,9 +477,17 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
       />
       <AddMultipleCompetitionsDialog
         open={addCompetitionsOpen}
-        onOpenChange={setAddCompetitionsOpen}
+        onOpenChange={(open) => {
+          setAddCompetitionsOpen(open);
+          if (!open) {
+            setPrefilledStartDate(undefined);
+            setPrefilledEndDate(undefined);
+          }
+        }}
         categoryId={categoryId}
         sportType={categoryData?.rugby_type}
+        prefilledStartDate={prefilledStartDate}
+        prefilledEndDate={prefilledEndDate}
       />
       {editingCycle && (
         <EditCycleDialog
