@@ -202,11 +202,12 @@ export function MatchLineupDialog({
               is_starter: true,
               position: null,
               minutes_played: 0,
+              start_order: e.startOrder ?? null,
             })),
           );
           if (error) throw error;
         }
-        return { selectedCount: selected.length };
+        return { selectedCount: new Set(selected.map((e) => e.playerId)).size };
       }
 
       // Insert new lineup
