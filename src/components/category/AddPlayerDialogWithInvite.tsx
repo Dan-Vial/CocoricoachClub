@@ -586,8 +586,107 @@ export function AddPlayerDialogWithInvite({
               </div>
             )}
 
-            {/* Disciplines for all sports */}
-            {hasDisciplines && (
+            {/* Athlétisme : multi-disciplines (un athlète peut s'aligner sur plusieurs épreuves) */}
+            {isAthletics && (
+              <div className="space-y-2 rounded-lg border p-3 bg-muted/20">
+                <Label className="text-sm font-medium">Disciplines pratiquées *</Label>
+                <p className="text-xs text-muted-foreground">
+                  Un athlète peut pratiquer plusieurs disciplines et spécialités (ex. sprint 100m + sprint 200m + saut en longueur). La 1ʳᵉ ajoutée sera la principale.
+                </p>
+
+                {disciplinePairs.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {disciplinePairs.map((pair, i) => {
+                      const discLabel =
+                        ATHLETISME_DISCIPLINES.find((d) => d.value === pair.discipline)?.label ||
+                        pair.discipline;
+                      const specLabel = pair.specialty
+                        ? (ATHLETISME_SPECIALTIES[pair.discipline] || []).find(
+                            (s) => s.value === pair.specialty,
+                          )?.label || pair.specialty
+                        : null;
+                      return (
+                        <span
+                          key={`${pair.discipline}-${pair.specialty}-${i}`}
+                          className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs ${
+                            i === 0
+                              ? "bg-primary text-primary-foreground border-transparent"
+                              : "bg-muted text-foreground"
+                          }`}
+                        >
+                          <span>
+                            {discLabel}
+                            {specLabel ? ` · ${specLabel}` : ""}
+                            {i === 0 ? " (principale)" : ""}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => removeDisciplinePair(i)}
+                            className="ml-0.5 rounded-sm hover:bg-foreground/10 p-0.5"
+                            aria-label="Retirer cette discipline"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
+
+                <div className="flex flex-col sm:flex-row gap-2 pt-1">
+                  <Select
+                    value={draftDiscipline}
+                    onValueChange={(val) => {
+                      setDraftDiscipline(val);
+                      setDraftSpecialty("");
+                    }}
+                  >
+                    <SelectTrigger className="w-full bg-background">
+                      <SelectValue placeholder="Discipline" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-background border z-[200] max-h-[300px]">
+                      {ATHLETISME_DISCIPLINES.map((disc) => (
+                        <SelectItem key={disc.value} value={disc.value}>
+                          {disc.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  {draftAvailableSpecialties.length > 0 && (
+                    <Select value={draftSpecialty} onValueChange={setDraftSpecialty}>
+                      <SelectTrigger className="w-full bg-background">
+                        <SelectValue placeholder="Spécialité" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-background border z-[200] max-h-[300px]">
+                        {draftAvailableSpecialties.map((spec) => (
+                          <SelectItem key={spec.value} value={spec.value}>
+                            {spec.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={addDisciplinePair}
+                    disabled={
+                      !draftDiscipline ||
+                      (draftAvailableSpecialties.length > 0 && !draftSpecialty)
+                    }
+                    aria-label="Ajouter cette discipline"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Discipline unique pour les autres sports (natation, ski, surf, triathlon) */}
+            {hasDisciplines && !isAthletics && (
               <div className="space-y-2">
                 <Label htmlFor="discipline">Discipline *</Label>
                 <Select 
@@ -611,7 +710,7 @@ export function AddPlayerDialogWithInvite({
               </div>
             )}
 
-            {hasDisciplines && discipline && availableSpecialties.length > 0 && (
+            {hasDisciplines && !isAthletics && discipline && availableSpecialties.length > 0 && (
               <div className="space-y-2">
                 <Label htmlFor="specialty">Spécialité *</Label>
                 <Select value={specialty} onValueChange={setSpecialty}>
