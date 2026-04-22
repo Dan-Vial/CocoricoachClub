@@ -299,6 +299,19 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
               ))}
             </div>
 
+            {/* Export PDF (always visible) */}
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 gap-1 text-xs"
+              onClick={handleExportPdf}
+              disabled={categories.length === 0}
+              title="Exporter la planification annuelle en PDF (paysage A4, 2 pages)"
+            >
+              <Download className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Exporter PDF</span>
+            </Button>
+
             {/* Actions */}
             {!isViewer && (
               <div className="flex gap-1.5">
