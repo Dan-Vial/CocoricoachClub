@@ -365,14 +365,25 @@ export function AthleticsMinimasManager({ categoryId }: Props) {
                           size="icon"
                           className="h-7 w-7"
                           onClick={() => openEdit(m)}
+                          title="Modifier"
                         >
                           <Pencil className="h-3.5 w-3.5" />
                         </Button>
                         <Button
                           variant="ghost"
                           size="icon"
+                          className="h-7 w-7"
+                          onClick={() => openDuplicate(m)}
+                          title="Dupliquer (utile lors d'un changement de barème)"
+                        >
+                          <Copy className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           className="h-7 w-7 text-destructive"
-                          onClick={() => deleteMutation.mutate(m.id)}
+                          onClick={() => setDeleteTarget(m)}
+                          title="Supprimer"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </Button>
@@ -385,6 +396,40 @@ export function AthleticsMinimasManager({ categoryId }: Props) {
           </div>
         )}
       </CardContent>
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer ce minima ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteTarget && (
+                <>
+                  <span className="font-semibold">{getMinimaLevel(deleteTarget.level)?.label || deleteTarget.level}</span>
+                  {" — "}
+                  {ATHLETISME_DISCIPLINES.find(d => d.value === deleteTarget.discipline)?.label || deleteTarget.discipline}
+                  {deleteTarget.specialty ? ` (${deleteTarget.specialty})` : ""}
+                  {" : "}
+                  <span className="font-mono">{deleteTarget.target_value} {deleteTarget.unit}</span>
+                  <br />
+                  Cette action est définitive. Pense à utiliser <span className="font-semibold">Modifier</span> si tu veux juste ajuster la valeur pour la nouvelle saison.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (deleteTarget) deleteMutation.mutate(deleteTarget.id);
+                setDeleteTarget(null);
+              }}
+            >
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }
