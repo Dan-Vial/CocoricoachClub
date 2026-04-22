@@ -2,7 +2,8 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Plus, Calendar, Settings2, ChevronLeft, ChevronRight, Check, BarChart3, Clock, Trash2, Trophy } from "lucide-react";
+import { Plus, Calendar, Settings2, ChevronLeft, ChevronRight, Check, BarChart3, Clock, Trash2, Trophy, Download } from "lucide-react";
+import { exportAnnualPlanningToPdf } from "@/lib/pdfAnnualPlanning";
 import { format, startOfYear, endOfYear, addYears, subYears } from "date-fns";
 import { fr } from "date-fns/locale";
 import { YearCalendarGrid } from "./YearCalendarGrid";
@@ -64,17 +65,17 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
   const [prefilledEndDate, setPrefilledEndDate] = useState<Date | undefined>();
   const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null);
 
-  // Query sport type
+  // Query sport type + names for PDF export
   const { data: categoryData } = useQuery({
     queryKey: ["category-sport-type-annual", categoryId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("categories")
-        .select("rugby_type")
+        .select("rugby_type, name, clubs(name)")
         .eq("id", categoryId)
         .single();
       if (error) throw error;
-      return data;
+      return data as { rugby_type: string; name: string; clubs: { name: string } | null };
     },
   });
   const isSkiSport = categoryData?.rugby_type ? getMainSportFromType(categoryData.rugby_type) === "ski" : false;
@@ -231,6 +232,23 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
     setAddCycleOpen(true);
   }, [activeCategoryId, categories]);
 
+  const handleExportPdf = useCallback(() => {
+    try {
+      exportAnnualPlanningToPdf({
+        year: selectedYear.getFullYear(),
+        categoryName: categoryData?.name || "Catégorie",
+        clubName: categoryData?.clubs?.name,
+        categories,
+        cycles,
+        matches,
+      });
+      toast.success("PDF généré avec succès");
+    } catch (e) {
+      console.error(e);
+      toast.error("Erreur lors de la génération du PDF");
+    }
+  }, [selectedYear, categoryData, categories, cycles, matches]);
+
   return (
     <div className="space-y-4">
       {/* ─── HEADER ─── */}
@@ -280,6 +298,19 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
                 </button>
               ))}
             </div>
+
+            {/* Export PDF (always visible) */}
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 gap-1 text-xs"
+              onClick={handleExportPdf}
+              disabled={categories.length === 0}
+              title="Exporter la planification annuelle en PDF (paysage A4, 2 pages)"
+            >
+              <Download className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Exporter PDF</span>
+            </Button>
 
             {/* Actions */}
             {!isViewer && (
