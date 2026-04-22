@@ -241,8 +241,9 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
   const intensityRowH = 5.5;
   const intensityRows = data.categories.length + 1;
   const intensityBlockH = 8 + intensityRows * intensityRowH;
+  const intensityScaleH = 9; // 0→10 color scale legend
   const legendH = 8;
-  const footerH = legendH + intensityBlockH + competitionsBlockH + 4;
+  const footerH = legendH + intensityBlockH + intensityScaleH + competitionsBlockH + 4;
 
   const gridTop = 22;
   const gridBottom = pageH - footerH;
