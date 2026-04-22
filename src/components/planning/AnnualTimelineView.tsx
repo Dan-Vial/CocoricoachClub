@@ -158,7 +158,7 @@ export function AnnualTimelineView({
 
   // Today marker
   const today = new Date();
-  const todayInYear = today.getFullYear() === year;
+  const todayInYear = today >= yearStart && today <= yearEnd;
   const todayPct = todayInYear ? (differenceInDays(today, yearStart) / totalDays) * 100 : null;
 
   // Week markers for zoom
