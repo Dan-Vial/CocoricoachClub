@@ -138,7 +138,7 @@ export function AnnualTimelineView({
     return eachWeekOfInterval({ start: yearStart, end: yearEnd }, { weekStartsOn: 1 });
   }, [year]);
 
-  const labelWidth = "140px";
+  const labelWidth = "200px";
 
   return (
     <div className="relative overflow-x-auto">
