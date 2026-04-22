@@ -1,12 +1,13 @@
 import { Tabs, TabsContent } from "@/components/ui/tabs";
-import { Trophy, Swords, Flag, Award, Mountain, BarChart3 } from "lucide-react";
+import { Trophy, Swords, Flag, Award, Mountain, BarChart3, Medal } from "lucide-react";
 import { MatchesTab } from "@/components/category/MatchesTab";
 import { TournamentsTab } from "@/components/category/TournamentsTab";
 import { NationalTeamTab } from "@/components/category/national-team/NationalTeamTab";
-import { isIndividualSport, getMainSportFromType } from "@/lib/constants/sportTypes";
+import { isIndividualSport, getMainSportFromType, isAthletismeCategory } from "@/lib/constants/sportTypes";
 import { ColoredSubTabsList, ColoredSubTabsTrigger } from "@/components/ui/colored-subtabs";
 import { FisCompetitionsTab } from "@/components/category/fis/FisCompetitionsTab";
 import { FisRankingTab } from "@/components/category/fis/FisRankingTab";
+import { AthleticsRecordsTab } from "@/components/category/athletics/AthleticsRecordsTab";
 
 interface CompetitionTabProps {
   categoryId: string;
@@ -18,6 +19,7 @@ interface CompetitionTabProps {
 export function CompetitionTab({ categoryId, isRugby7, isNationalTeam, sportType }: CompetitionTabProps) {
   const isIndividual = isIndividualSport(sportType || "");
   const isSkiSport = sportType ? getMainSportFromType(sportType) === "ski" : false;
+  const isAthletics = sportType ? isAthletismeCategory(sportType) : false;
   
   const matchLabel = "Compétitions";
   const MatchIcon = isIndividual ? Award : Swords;
@@ -69,6 +71,17 @@ export function CompetitionTab({ categoryId, isRugby7, isNationalTeam, sportType
               <span className="sm:hidden">National</span>
             </ColoredSubTabsTrigger>
           )}
+          {isAthletics && (
+            <ColoredSubTabsTrigger
+              value="records"
+              colorKey="competition"
+              icon={<Medal className="h-4 w-4" />}
+              tooltip="Records personnels des athlètes et minimas fédéraux par discipline"
+            >
+              <span className="hidden sm:inline">Minimas / Records</span>
+              <span className="sm:hidden">Records</span>
+            </ColoredSubTabsTrigger>
+          )}
         </ColoredSubTabsList>
       </div>
 
@@ -95,6 +108,12 @@ export function CompetitionTab({ categoryId, isRugby7, isNationalTeam, sportType
       {isNationalTeam && (
         <TabsContent value="national-team">
           <NationalTeamTab categoryId={categoryId} />
+        </TabsContent>
+      )}
+
+      {isAthletics && (
+        <TabsContent value="records">
+          <AthleticsRecordsTab categoryId={categoryId} />
         </TabsContent>
       )}
     </Tabs>
