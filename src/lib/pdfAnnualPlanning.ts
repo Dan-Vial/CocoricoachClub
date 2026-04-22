@@ -340,7 +340,17 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
         const fs = Math.max(5, Math.min(7.5, subColW * 0.85));
         pdf.setFontSize(fs);
         const maxChars = Math.floor((colHeight - 4) / (fs * 0.42));
-        drawVerticalText(pdf, cycle.name, colCenterX + fs * 0.35, colBottom, maxChars);
+        // Build label with cycle type prefix (PG / PS / PC / Récup)
+        const typeMap: Record<string, string> = {
+          general_prep: "PG",
+          specific_prep: "PS",
+          competition: "PC",
+          recovery: "Récup",
+          transition: "Trans",
+        };
+        const typeLabel = cycle.cycle_type ? (typeMap[cycle.cycle_type] || cycle.cycle_type.toUpperCase()) : "";
+        const fullLabel = typeLabel ? `${typeLabel} • ${cycle.name}` : cycle.name;
+        drawVerticalText(pdf, fullLabel, colCenterX + fs * 0.35, colBottom, maxChars);
       }
     }
 
