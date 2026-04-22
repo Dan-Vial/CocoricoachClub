@@ -219,11 +219,26 @@ export function AthleticsMinimasManager({ categoryId }: Props) {
                 </div>
               )}
               <div>
+                <Label className="text-xs">Niveau du minima *</Label>
+                <Select value={level} onValueChange={setLevel}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choisir un niveau" />
+                  </SelectTrigger>
+                  <SelectContent className="z-[200]">
+                    {MINIMA_LEVELS.map((l) => (
+                      <SelectItem key={l.value} value={l.value}>
+                        {l.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
                 <Label className="text-xs">Libellé</Label>
                 <Input
                   value={label}
                   onChange={(e) => setLabel(e.target.value)}
-                  placeholder="Ex: Minima France élite"
+                  placeholder="Ex: Minima France élite, Standard A JO Paris…"
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">
