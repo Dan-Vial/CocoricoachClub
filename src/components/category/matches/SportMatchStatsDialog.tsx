@@ -30,18 +30,26 @@ function formatSecondsToMinutes(totalSeconds: number): string {
   return `${mins}'${secs.toString().padStart(2, '0')}`;
 }
 
-// Parse minutes input (accepts "2'45", "2.45", or raw number as seconds)
+// Parse minutes input. Accepts:
+//   "2'45"  → 2 min 45 sec  → 165
+//   "2.45"  → 2 min 45 sec  → 165
+//   "2,45"  → 2 min 45 sec  → 165
+//   "2'5"   → 2 min 50 sec  → 170 (single-digit padded to the right)
+//   "2.5"   → 2 min 50 sec  → 170
+//   "180"   → 180 sec       → 180 (raw seconds when no separator)
 function parseMinutesToSeconds(input: string): number {
   if (!input || input.trim() === "") return 0;
-  if (input.includes("'")) {
-    const [mins, secs] = input.split("'");
-    return (parseInt(mins) || 0) * 60 + (parseInt(secs) || 0);
+  // Normalise all accepted separators (apostrophe / dot / comma) to a single one
+  const normalised = input.trim().replace(/[',.]/g, ":");
+  if (normalised.includes(":")) {
+    const [minsRaw, secsRaw = ""] = normalised.split(":");
+    const mins = parseInt(minsRaw, 10) || 0;
+    // Pad single digit to the right so "2.5" reads as 2 min 50 sec (not 2 min 05 sec)
+    const secsPadded = secsRaw.length === 1 ? secsRaw + "0" : secsRaw;
+    const secs = Math.min(parseInt(secsPadded, 10) || 0, 59);
+    return mins * 60 + secs;
   }
-  if (input.includes(".")) {
-    const [mins, secs] = input.split(".");
-    return (parseInt(mins) || 0) * 60 + (parseInt(secs) || 0);
-  }
-  return parseInt(input) || 0;
+  return parseInt(normalised, 10) || 0;
 }
 
 interface SportMatchStatsDialogProps {
