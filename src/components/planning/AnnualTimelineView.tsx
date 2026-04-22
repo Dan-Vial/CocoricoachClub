@@ -169,8 +169,8 @@ export function AnnualTimelineView({
   const labelWidth = "200px";
 
   return (
-    <div className="relative overflow-x-auto">
-      <div style={{ minWidth: zoomLevel === "year" ? "900px" : "1400px" }}>
+    <div className="relative w-full">
+      <div className="w-full">
         {/* MONTH HEADER */}
         <div className="flex border-b-2 border-border/60">
           <div style={{ width: labelWidth, minWidth: labelWidth }} className="shrink-0" />
