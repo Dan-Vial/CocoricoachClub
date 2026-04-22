@@ -168,61 +168,6 @@ export function CycleFormFields({
         <IntensitySlider label="Volume" value={volume} onChange={onVolumeChange} />
       </div>
 
-      {(onLoadPatternChange || onFatigueTargetChange) && (
-        <div className="grid grid-cols-2 gap-3">
-          {onLoadPatternChange && (
-            <div>
-              <Label>Structure de charge</Label>
-              <Select value={loadPattern} onValueChange={onLoadPatternChange}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Choisir..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {LOAD_PATTERNS.map((p) => (
-                    <SelectItem key={p.value} value={p.value}>
-                      {p.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-          {onFatigueTargetChange && (
-            <div>
-              <Label>Fatigue cible (fin de cycle)</Label>
-              <Select value={fatigueTarget} onValueChange={onFatigueTargetChange}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Choisir..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {FATIGUE_TARGETS.map((f) => (
-                    <SelectItem key={f.value} value={f.value}>
-                      {f.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-        </div>
-      )}
-
-      {onSessionsPerWeekChange && (
-        <div className="w-1/2">
-          <Label>Séances / semaine</Label>
-          <Input
-            type="number"
-            min={0}
-            max={20}
-            placeholder="Ex: 5"
-            value={sessionsPerWeek ?? ""}
-            onChange={(e) => {
-              const v = e.target.value;
-              onSessionsPerWeekChange(v === "" ? null : Number(v));
-            }}
-          />
-        </div>
-      )}
     </>
   );
 }
