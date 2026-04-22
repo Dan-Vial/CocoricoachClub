@@ -884,7 +884,7 @@ export function CompetitionRoundsDialog({
             {/* Oil Pattern Tab (Bowling only) */}
             {isBowling && (
               <TabsContent value="oil" className="mt-0 overflow-hidden">
-                <ScrollArea className="h-[calc(90vh-300px)]">
+                <ScrollArea className="h-[calc(95vh-200px)]">
                   <div className="pr-4 pb-4">
                     <BowlingOilPatternSection
                       matchId={matchId}
@@ -896,7 +896,7 @@ export function CompetitionRoundsDialog({
             )}
 
             <TabsContent value="rounds" className="flex-1 min-h-0 mt-0 overflow-hidden">
-              <ScrollArea className="h-[calc(90vh-280px)] pr-4">
+              <ScrollArea className="h-[calc(95vh-200px)] pr-4">
                 {/* Bowling: use block manager */}
                 {isBowling ? (
                   <BowlingBlockManager
@@ -1356,7 +1356,7 @@ export function CompetitionRoundsDialog({
             </TabsContent>
 
             <TabsContent value="summary" className="flex-1 min-h-0 mt-0 overflow-hidden">
-              <ScrollArea className="h-[calc(90vh-280px)]">
+              <ScrollArea className="h-[calc(95vh-200px)]">
               {isBowling ? (
                 <BowlingCompetitionSummary
                   rounds={selectedPlayer.rounds}
