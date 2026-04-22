@@ -8,7 +8,7 @@ import { PlayerCumulativeStats } from "./matches/PlayerCumulativeStats";
 import { BowlingCumulativeStats } from "@/components/bowling/BowlingCumulativeStats";
 
 import { CategoryPhotosTab } from "./photos/CategoryPhotosTab";
-import { isFuture, isPast } from "date-fns";
+import { startOfDay } from "date-fns";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { ColoredSubTabsList, ColoredSubTabsTrigger } from "@/components/ui/colored-subtabs";
 import { useViewerModeContext } from "@/contexts/ViewerModeContext";
@@ -41,9 +41,15 @@ export function MatchesTab({ categoryId, sportType }: MatchesTabProps) {
   const { data: matches, isLoading } = useViewerMatches(categoryId);
 
   // Filter out sub-matches (they are displayed within their parent match)
+  // Compare by calendar day so a match scheduled for "today" is considered upcoming
   const parentMatches = matches?.filter((m) => !m.parent_match_id) || [];
-  const upcomingMatches = parentMatches.filter((m) => isFuture(new Date(m.match_date)));
-  const pastMatches = parentMatches.filter((m) => isPast(new Date(m.match_date)));
+  const today = startOfDay(new Date());
+  const upcomingMatches = parentMatches.filter(
+    (m) => startOfDay(new Date(m.match_date)).getTime() >= today.getTime()
+  );
+  const pastMatches = parentMatches.filter(
+    (m) => startOfDay(new Date(m.match_date)).getTime() < today.getTime()
+  );
 
   if (isLoading) {
     return <p className="text-muted-foreground">Chargement...</p>;
