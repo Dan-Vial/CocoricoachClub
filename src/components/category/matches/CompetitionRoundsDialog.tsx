@@ -72,6 +72,8 @@ interface Round {
 }
 
 interface PlayerRounds {
+  /** Unique key for this lineup entry (player + discipline + specialty). */
+  entryKey: string;
   playerId: string;
   playerName: string;
   discipline?: string;
@@ -82,6 +84,12 @@ interface PlayerRounds {
   crew_role?: string;
   seat_position?: number;
 }
+
+const buildEntryKey = (
+  playerId: string,
+  discipline?: string | null,
+  specialty?: string | null,
+) => `${playerId}|${discipline ?? ""}|${specialty ?? ""}`;
 
 // Aviron phases
 const AVIRON_PHASES = [
@@ -413,6 +421,7 @@ export function CompetitionRoundsDialog({
           newBowlingBlocks[l.player_id] = Array.from(blockMap.values());
           
           return {
+            entryKey: buildEntryKey(l.player_id, effectiveDiscipline, effectiveSpecialty),
             playerId: l.player_id,
             playerName: [player?.first_name, player?.name].filter(Boolean).join(" ") || "Athlète",
             discipline: effectiveDiscipline,
@@ -426,6 +435,7 @@ export function CompetitionRoundsDialog({
         
         // Non-bowling path
         return {
+          entryKey: buildEntryKey(l.player_id, effectiveDiscipline, effectiveSpecialty),
           playerId: l.player_id,
           playerName: [player?.first_name, player?.name].filter(Boolean).join(" ") || "Athlète",
           discipline: effectiveDiscipline,
@@ -472,7 +482,7 @@ export function CompetitionRoundsDialog({
       setIsDataInitialized(true);
       
       if (!selectedPlayerId && playersData.length > 0) {
-        setSelectedPlayerId(playersData[0].playerId);
+        setSelectedPlayerId(playersData[0].entryKey);
       }
     }
   }, [lineup, existingRounds, isDataInitialized, selectedPlayerId, isBowling, matchData]);
@@ -661,15 +671,15 @@ export function CompetitionRoundsDialog({
     },
   });
 
-  const addRound = (playerId: string) => {
-    const player = playerRoundsData.find((p) => p.playerId === playerId);
+  const addRound = (entryKey: string) => {
+    const player = playerRoundsData.find((p) => p.entryKey === entryKey);
     const newRoundNumber = player && player.rounds.length > 0
       ? Math.max(...player.rounds.map((r) => r.round_number)) + 1
       : 1;
 
     setPlayerRoundsData((prev) =>
       prev.map((p) => {
-        if (p.playerId === playerId) {
+        if (p.entryKey === entryKey) {
           return {
             ...p,
             rounds: [
@@ -692,9 +702,9 @@ export function CompetitionRoundsDialog({
     );
   };
 
-  const removeRound = (playerId: string, roundNumber: number) => {
+  const removeRound = (entryKey: string, roundNumber: number) => {
     setPlayerRoundsData(prev => prev.map(p => {
-      if (p.playerId === playerId) {
+      if (p.entryKey === entryKey) {
         return {
           ...p,
           rounds: p.rounds.filter(r => r.round_number !== roundNumber),
@@ -704,9 +714,9 @@ export function CompetitionRoundsDialog({
     }));
   };
 
-  const updateRound = (playerId: string, roundNumber: number, updates: Partial<Round>) => {
+  const updateRound = (entryKey: string, roundNumber: number, updates: Partial<Round>) => {
     setPlayerRoundsData(prev => prev.map(p => {
-      if (p.playerId === playerId) {
+      if (p.entryKey === entryKey) {
         return {
           ...p,
           rounds: p.rounds.map(r => 
@@ -718,9 +728,9 @@ export function CompetitionRoundsDialog({
     }));
   };
 
-  const updateRoundStat = (playerId: string, roundNumber: number, statKey: string, value: number) => {
+  const updateRoundStat = (entryKey: string, roundNumber: number, statKey: string, value: number) => {
     setPlayerRoundsData(prev => prev.map(p => {
-      if (p.playerId === playerId) {
+      if (p.entryKey === entryKey) {
         return {
           ...p,
           rounds: p.rounds.map(r => 
@@ -755,7 +765,7 @@ export function CompetitionRoundsDialog({
   };
 
   const hasLineup = lineup && lineup.length > 0;
-  const selectedPlayer = playerRoundsData.find(p => p.playerId === selectedPlayerId);
+  const selectedPlayer = playerRoundsData.find(p => p.entryKey === selectedPlayerId);
 
   // Calculate aggregated stats for a player
   const calculateAggregatedStats = (rounds: Round[]) => {
@@ -835,9 +845,9 @@ export function CompetitionRoundsDialog({
             <SelectContent className="z-[200]">
               {playerRoundsData.map((player) => (
                 <SelectItem 
-                  key={player.playerId} 
-                  value={player.playerId}
-                  textValue={player.playerName}
+                  key={player.entryKey} 
+                  value={player.entryKey}
+                  textValue={`${player.playerName}${player.specialty ? ` ${player.specialty}` : player.discipline ? ` ${player.discipline}` : ""}`}
                 >
                   <div className="flex items-center gap-2">
                     <span>{player.playerName}</span>
@@ -996,7 +1006,7 @@ export function CompetitionRoundsDialog({
                       </p>
                       <Button
                         size="sm"
-                        onClick={() => addRound(selectedPlayer.playerId)}
+                        onClick={() => addRound(selectedPlayer.entryKey)}
                         className="w-full gap-2 bg-destructive hover:bg-destructive/90 text-destructive-foreground"
                       >
                         <Plus className="h-4 w-4" />
@@ -1043,7 +1053,7 @@ export function CompetitionRoundsDialog({
                                   variant="ghost"
                                   size="icon"
                                   className="h-8 w-8"
-                                  onClick={() => removeRound(selectedPlayer.playerId, round.round_number)}
+                                  onClick={() => removeRound(selectedPlayer.entryKey, round.round_number)}
                                 >
                                   <Trash2 className="h-4 w-4 text-destructive" />
                                 </Button>
@@ -1059,7 +1069,7 @@ export function CompetitionRoundsDialog({
                                 <Label className="text-xs">Phase</Label>
                                 <Select
                                   value={round.phase}
-                                  onValueChange={(value) => updateRound(selectedPlayer.playerId, round.round_number, { phase: value })}
+                                  onValueChange={(value) => updateRound(selectedPlayer.entryKey, round.round_number, { phase: value })}
                                   disabled={round.isLocked}
                                 >
                                   <SelectTrigger className="h-8">
@@ -1083,7 +1093,7 @@ export function CompetitionRoundsDialog({
                                     max={9}
                                      onWheel={blurOnWheel}
                                     value={round.lane || ""}
-                                    onChange={(e) => updateRound(selectedPlayer.playerId, round.round_number, { lane: parseInt(e.target.value) || undefined })}
+                                    onChange={(e) => updateRound(selectedPlayer.entryKey, round.round_number, { lane: parseInt(e.target.value) || undefined })}
                                     placeholder="1-9"
                                     className="h-8"
                                     disabled={round.isLocked}
@@ -1100,7 +1110,7 @@ export function CompetitionRoundsDialog({
                                 <Label className="text-xs">Vent</Label>
                                 <Input
                                   value={round.wind_conditions || ""}
-                                  onChange={(e) => updateRound(selectedPlayer.playerId, round.round_number, { wind_conditions: e.target.value })}
+                                  onChange={(e) => updateRound(selectedPlayer.entryKey, round.round_number, { wind_conditions: e.target.value })}
                                   placeholder="Ex: Vent de face 10km/h"
                                   className="h-8"
                                 />
@@ -1109,7 +1119,7 @@ export function CompetitionRoundsDialog({
                                 <Label className="text-xs">Courant</Label>
                                 <Input
                                   value={round.current_conditions || ""}
-                                  onChange={(e) => updateRound(selectedPlayer.playerId, round.round_number, { current_conditions: e.target.value })}
+                                  onChange={(e) => updateRound(selectedPlayer.entryKey, round.round_number, { current_conditions: e.target.value })}
                                   placeholder="Ex: Faible"
                                   className="h-8"
                                 />
@@ -1120,7 +1130,7 @@ export function CompetitionRoundsDialog({
                                   type="number"
                                   onWheel={blurOnWheel}
                                   value={round.temperature_celsius || ""}
-                                  onChange={(e) => updateRound(selectedPlayer.playerId, round.round_number, { temperature_celsius: parseFloat(e.target.value) || undefined })}
+                                  onChange={(e) => updateRound(selectedPlayer.entryKey, round.round_number, { temperature_celsius: parseFloat(e.target.value) || undefined })}
                                   placeholder="20"
                                   className="h-8"
                                 />
@@ -1135,7 +1145,7 @@ export function CompetitionRoundsDialog({
                                 <Label className="text-xs">Temps final (MM:SS.ms)</Label>
                                 <Input
                                   value={round.final_time_seconds ? formatTime(round.final_time_seconds) : ""}
-                                  onChange={(e) => updateRound(selectedPlayer.playerId, round.round_number, { final_time_seconds: parseTime(e.target.value) })}
+                                  onChange={(e) => updateRound(selectedPlayer.entryKey, round.round_number, { final_time_seconds: parseTime(e.target.value) })}
                                   placeholder="6:45.23"
                                   className="h-8"
                                 />
@@ -1147,7 +1157,7 @@ export function CompetitionRoundsDialog({
                                   min={1}
                                   onWheel={blurOnWheel}
                                   value={round.ranking || ""}
-                                  onChange={(e) => updateRound(selectedPlayer.playerId, round.round_number, { ranking: parseInt(e.target.value) || undefined })}
+                                  onChange={(e) => updateRound(selectedPlayer.entryKey, round.round_number, { ranking: parseInt(e.target.value) || undefined })}
                                   placeholder="1"
                                   className="h-8"
                                 />
@@ -1156,7 +1166,7 @@ export function CompetitionRoundsDialog({
                                 <Label className="text-xs">Écart au 1er</Label>
                                 <Input
                                   value={round.gap_to_first || ""}
-                                  onChange={(e) => updateRound(selectedPlayer.playerId, round.round_number, { gap_to_first: e.target.value })}
+                                  onChange={(e) => updateRound(selectedPlayer.entryKey, round.round_number, { gap_to_first: e.target.value })}
                                   placeholder="+2.5s ou +3%"
                                   className="h-8"
                                 />
@@ -1171,7 +1181,7 @@ export function CompetitionRoundsDialog({
                                 <Label className="text-xs">Adversaire</Label>
                                 <Input
                                   value={round.opponent_name}
-                                  onChange={(e) => updateRound(selectedPlayer.playerId, round.round_number, { opponent_name: e.target.value })}
+                                  onChange={(e) => updateRound(selectedPlayer.entryKey, round.round_number, { opponent_name: e.target.value })}
                                   placeholder="Nom de l'adversaire"
                                   className="h-8"
                                   disabled={round.isLocked}
@@ -1181,7 +1191,7 @@ export function CompetitionRoundsDialog({
                                 <Label className="text-xs">Résultat</Label>
                                 <Select
                                   value={round.result}
-                                  onValueChange={(value) => updateRound(selectedPlayer.playerId, round.round_number, { result: value })}
+                                  onValueChange={(value) => updateRound(selectedPlayer.entryKey, round.round_number, { result: value })}
                                   disabled={round.isLocked}
                                 >
                                   <SelectTrigger className="h-8">
@@ -1216,7 +1226,7 @@ export function CompetitionRoundsDialog({
                                   min={1}
                                   onWheel={blurOnWheel}
                                   value={round.ranking || ""}
-                                  onChange={(e) => updateRound(selectedPlayer.playerId, round.round_number, { ranking: parseInt(e.target.value) || undefined })}
+                                  onChange={(e) => updateRound(selectedPlayer.entryKey, round.round_number, { ranking: parseInt(e.target.value) || undefined })}
                                   placeholder="1"
                                   className="h-8"
                                   disabled={round.isLocked}
@@ -1226,7 +1236,7 @@ export function CompetitionRoundsDialog({
                                 <Label className="text-xs">Résultat</Label>
                                 <Select
                                   value={round.result}
-                                  onValueChange={(value) => updateRound(selectedPlayer.playerId, round.round_number, { result: value })}
+                                  onValueChange={(value) => updateRound(selectedPlayer.entryKey, round.round_number, { result: value })}
                                   disabled={round.isLocked}
                                 >
                                   <SelectTrigger className="h-8">
@@ -1264,7 +1274,7 @@ export function CompetitionRoundsDialog({
                                 <Label className="text-xs">Vent (m/s)</Label>
                                 <Input
                                   value={round.wind_conditions || ""}
-                                  onChange={(e) => updateRound(selectedPlayer.playerId, round.round_number, { wind_conditions: e.target.value })}
+                                  onChange={(e) => updateRound(selectedPlayer.entryKey, round.round_number, { wind_conditions: e.target.value })}
                                   placeholder="+1.2"
                                   className="h-8"
                                   disabled={round.isLocked}
@@ -1275,7 +1285,7 @@ export function CompetitionRoundsDialog({
                                 <Select
                                   value={(round as any).wind_direction || ""}
                                   onValueChange={(value) =>
-                                    updateRound(selectedPlayer.playerId, round.round_number, { wind_direction: value } as any)
+                                    updateRound(selectedPlayer.entryKey, round.round_number, { wind_direction: value } as any)
                                   }
                                   disabled={round.isLocked}
                                 >
@@ -1298,7 +1308,7 @@ export function CompetitionRoundsDialog({
                                   type="number"
                                   onWheel={blurOnWheel}
                                   value={round.temperature_celsius || ""}
-                                  onChange={(e) => updateRound(selectedPlayer.playerId, round.round_number, { temperature_celsius: parseFloat(e.target.value) || undefined })}
+                                  onChange={(e) => updateRound(selectedPlayer.entryKey, round.round_number, { temperature_celsius: parseFloat(e.target.value) || undefined })}
                                   placeholder="20"
                                   className="h-8"
                                   disabled={round.isLocked}
@@ -1312,7 +1322,7 @@ export function CompetitionRoundsDialog({
                                   size="sm"
                                   className="h-8 gap-1"
                                   onClick={() =>
-                                    updateRound(selectedPlayer.playerId, round.round_number, {
+                                    updateRound(selectedPlayer.entryKey, round.round_number, {
                                       is_personal_record: !(round as any).is_personal_record,
                                     } as any)
                                   }
@@ -1336,7 +1346,7 @@ export function CompetitionRoundsDialog({
                                   <Input
                                     type="date"
                                     value={round.roundDate || matchData?.match_date?.split("T")[0] || ""}
-                                    onChange={(e) => updateRound(selectedPlayer.playerId, round.round_number, { roundDate: e.target.value })}
+                                    onChange={(e) => updateRound(selectedPlayer.entryKey, round.round_number, { roundDate: e.target.value })}
                                     className="h-8"
                                     disabled={round.isLocked}
                                   />
@@ -1345,7 +1355,7 @@ export function CompetitionRoundsDialog({
                                   <Label className="text-xs">Catégorie</Label>
                                   <Select
                                     value={round.bowlingCategory || ""}
-                                    onValueChange={(value) => updateRound(selectedPlayer.playerId, round.round_number, { bowlingCategory: value })}
+                                    onValueChange={(value) => updateRound(selectedPlayer.entryKey, round.round_number, { bowlingCategory: value })}
                                     disabled={round.isLocked}
                                   >
                                     <SelectTrigger className="h-8">
@@ -1364,7 +1374,7 @@ export function CompetitionRoundsDialog({
                                   <Label className="text-xs">Phase</Label>
                                   <Select
                                     value={round.phase}
-                                    onValueChange={(value) => updateRound(selectedPlayer.playerId, round.round_number, { phase: value })}
+                                    onValueChange={(value) => updateRound(selectedPlayer.entryKey, round.round_number, { phase: value })}
                                     disabled={round.isLocked}
                                   >
                                     <SelectTrigger className="h-8">
@@ -1383,7 +1393,7 @@ export function CompetitionRoundsDialog({
                                   <Label className="text-xs">Adversaire</Label>
                                   <Input
                                     value={round.opponent_name}
-                                    onChange={(e) => updateRound(selectedPlayer.playerId, round.round_number, { opponent_name: e.target.value })}
+                                    onChange={(e) => updateRound(selectedPlayer.entryKey, round.round_number, { opponent_name: e.target.value })}
                                     placeholder="Nom adversaire"
                                     className="h-8"
                                     disabled={round.isLocked}
@@ -1410,7 +1420,7 @@ export function CompetitionRoundsDialog({
                                   onCancel={() => {
                                     // Remove the round if cancelled (new game not saved)
                                     if (!round.isLocked) {
-                                      removeRound(selectedPlayer.playerId, round.round_number);
+                                      removeRound(selectedPlayer.entryKey, round.round_number);
                                     }
                                   }}
                                 />
@@ -1457,7 +1467,7 @@ export function CompetitionRoundsDialog({
                                               <Input
                                                 type="number"
                                                 value={round.stats[stat.key] || 0}
-                                                onChange={(e) => updateRoundStat(selectedPlayer.playerId, round.round_number, stat.key, parseFloat(e.target.value) || 0)}
+                                                onChange={(e) => updateRoundStat(selectedPlayer.entryKey, round.round_number, stat.key, parseFloat(e.target.value) || 0)}
                                                 min={stat.min ?? 0}
                                                 max={stat.max}
                                                 className="h-7 text-sm"
@@ -1479,7 +1489,7 @@ export function CompetitionRoundsDialog({
                             <Label className="text-xs">Notes</Label>
                             <Input
                               value={round.notes}
-                              onChange={(e) => updateRound(selectedPlayer.playerId, round.round_number, { notes: e.target.value })}
+                              onChange={(e) => updateRound(selectedPlayer.entryKey, round.round_number, { notes: e.target.value })}
                               placeholder={`Notes sur ${isAviron ? 'cette course' : isJudo ? 'ce combat' : isAthletics ? 'cette épreuve' : 'ce round'}`}
                               className="h-8"
                             />
@@ -1489,7 +1499,7 @@ export function CompetitionRoundsDialog({
                       {/* Add game button after each round */}
                       <Button
                         size="sm"
-                        onClick={() => addRound(selectedPlayer.playerId)}
+                        onClick={() => addRound(selectedPlayer.entryKey)}
                         className="w-full gap-2 bg-destructive hover:bg-destructive/90 text-destructive-foreground"
                       >
                         <Plus className="h-4 w-4" />
