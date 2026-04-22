@@ -1,6 +1,5 @@
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
 
 const CYCLE_TYPES = [
   { value: "PG", label: "PG - Préparation Générale" },
@@ -10,6 +9,8 @@ const CYCLE_TYPES = [
 ];
 
 const DOMINANT_QUALITIES = [
+  { value: "technique", label: "Technique" },
+  { value: "tactique", label: "Tactique" },
   { value: "force", label: "Force" },
   { value: "puissance", label: "Puissance" },
   { value: "vitesse", label: "Vitesse / Explosivité" },
@@ -17,28 +18,10 @@ const DOMINANT_QUALITIES = [
   { value: "endurance_anaerobie", label: "Endurance anaérobie" },
   { value: "endurance_force", label: "Endurance de force" },
   { value: "hypertrophie", label: "Hypertrophie" },
-  { value: "technique", label: "Technique" },
-  { value: "tactique", label: "Tactique" },
   { value: "mobilite", label: "Mobilité / Souplesse" },
   { value: "prevention", label: "Prévention / Prophylaxie" },
   { value: "mental", label: "Préparation mentale" },
   { value: "mixte", label: "Mixte / Polyvalent" },
-];
-
-const LOAD_PATTERNS = [
-  { value: "linear", label: "Linéaire (charge croissante)" },
-  { value: "undulating", label: "Ondulatoire (alternance)" },
-  { value: "block", label: "Bloc concentré" },
-  { value: "step", label: "Marches (3:1 - 3 sem charge / 1 sem décharge)" },
-  { value: "taper", label: "Affûtage / Taper (avant compétition)" },
-  { value: "maintenance", label: "Maintien" },
-];
-
-const FATIGUE_TARGETS = [
-  { value: "low", label: "Faible (fraîcheur)" },
-  { value: "moderate", label: "Modérée (équilibre)" },
-  { value: "high", label: "Élevée (surcharge)" },
-  { value: "supercompensation", label: "Surcompensation (rebond)" },
 ];
 
 function getSliderColor(value: number) {
@@ -102,12 +85,6 @@ interface CycleFormFieldsProps {
   onVolumeChange: (value: number) => void;
   dominantQuality?: string;
   onDominantQualityChange?: (value: string) => void;
-  loadPattern?: string;
-  onLoadPatternChange?: (value: string) => void;
-  fatigueTarget?: string;
-  onFatigueTargetChange?: (value: string) => void;
-  sessionsPerWeek?: number | null;
-  onSessionsPerWeekChange?: (value: number | null) => void;
 }
 
 export function CycleFormFields({
@@ -119,12 +96,6 @@ export function CycleFormFields({
   onVolumeChange,
   dominantQuality = "",
   onDominantQualityChange,
-  loadPattern = "",
-  onLoadPatternChange,
-  fatigueTarget = "",
-  onFatigueTargetChange,
-  sessionsPerWeek = null,
-  onSessionsPerWeekChange,
 }: CycleFormFieldsProps) {
   return (
     <>
@@ -168,61 +139,6 @@ export function CycleFormFields({
         <IntensitySlider label="Volume" value={volume} onChange={onVolumeChange} />
       </div>
 
-      {(onLoadPatternChange || onFatigueTargetChange) && (
-        <div className="grid grid-cols-2 gap-3">
-          {onLoadPatternChange && (
-            <div>
-              <Label>Structure de charge</Label>
-              <Select value={loadPattern} onValueChange={onLoadPatternChange}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Choisir..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {LOAD_PATTERNS.map((p) => (
-                    <SelectItem key={p.value} value={p.value}>
-                      {p.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-          {onFatigueTargetChange && (
-            <div>
-              <Label>Fatigue cible (fin de cycle)</Label>
-              <Select value={fatigueTarget} onValueChange={onFatigueTargetChange}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Choisir..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {FATIGUE_TARGETS.map((f) => (
-                    <SelectItem key={f.value} value={f.value}>
-                      {f.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-        </div>
-      )}
-
-      {onSessionsPerWeekChange && (
-        <div className="w-1/2">
-          <Label>Séances / semaine</Label>
-          <Input
-            type="number"
-            min={0}
-            max={20}
-            placeholder="Ex: 5"
-            value={sessionsPerWeek ?? ""}
-            onChange={(e) => {
-              const v = e.target.value;
-              onSessionsPerWeekChange(v === "" ? null : Number(v));
-            }}
-          />
-        </div>
-      )}
     </>
   );
 }

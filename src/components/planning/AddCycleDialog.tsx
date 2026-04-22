@@ -39,9 +39,6 @@ export function AddCycleDialog({ open, onOpenChange, categoryId, categories, pre
   const [intensity, setIntensity] = useState(0);
   const [volume, setVolume] = useState(0);
   const [dominantQuality, setDominantQuality] = useState("");
-  const [loadPattern, setLoadPattern] = useState("");
-  const [fatigueTarget, setFatigueTarget] = useState("");
-  const [sessionsPerWeek, setSessionsPerWeek] = useState<number | null>(null);
   const [customColor, setCustomColor] = useState("");
   const queryClient = useQueryClient();
 
@@ -75,9 +72,6 @@ export function AddCycleDialog({ open, onOpenChange, categoryId, categories, pre
         intensity: intensity || null,
         volume: volume || null,
         dominant_quality: dominantQuality || null,
-        load_pattern: loadPattern || null,
-        fatigue_target: fatigueTarget || null,
-        sessions_per_week: sessionsPerWeek,
       });
       if (error) throw error;
     },
@@ -100,9 +94,6 @@ export function AddCycleDialog({ open, onOpenChange, categoryId, categories, pre
     setIntensity(0);
     setVolume(0);
     setDominantQuality("");
-    setLoadPattern("");
-    setFatigueTarget("");
-    setSessionsPerWeek(null);
     setCustomColor("");
   };
 
@@ -159,12 +150,6 @@ export function AddCycleDialog({ open, onOpenChange, categoryId, categories, pre
             onVolumeChange={setVolume}
             dominantQuality={dominantQuality}
             onDominantQualityChange={setDominantQuality}
-            loadPattern={loadPattern}
-            onLoadPatternChange={setLoadPattern}
-            fatigueTarget={fatigueTarget}
-            onFatigueTargetChange={setFatigueTarget}
-            sessionsPerWeek={sessionsPerWeek}
-            onSessionsPerWeekChange={setSessionsPerWeek}
           />
 
           <div className="grid grid-cols-2 gap-3">
