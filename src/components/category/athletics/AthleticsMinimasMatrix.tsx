@@ -443,20 +443,13 @@ export function AthleticsMinimasMatrix({ categoryId }: Props) {
                                 )}
                               </TableCell>
                               <TableCell className="text-center">
-                                {(() => {
-                                  // SB = best between competition perf of the season and stored season_best
-                                  let sbValue: number | null = best ?? sb ?? null;
-                                  if (best != null && sb != null) {
-                                    sbValue = lowerIsBetter ? Math.min(best, sb) : Math.max(best, sb);
-                                  }
-                                  return sbValue != null ? (
-                                    <span className="font-mono font-semibold text-sm text-sky-700 dark:text-sky-500">
-                                      {sbValue.toFixed(2)} {group.minimas[0]?.unit}
-                                    </span>
-                                  ) : (
-                                    <span className="text-xs text-muted-foreground italic">—</span>
-                                  );
-                                })()}
+                                {effectiveSb != null ? (
+                                  <span className="font-mono font-semibold text-sm text-sky-700 dark:text-sky-500">
+                                    {effectiveSb.toFixed(2)} {group.minimas[0]?.unit}
+                                  </span>
+                                ) : (
+                                  <span className="text-xs text-muted-foreground italic">—</span>
+                                )}
                               </TableCell>
                               {group.minimas.map((m) => {
                                 const delta = computeDelta(
