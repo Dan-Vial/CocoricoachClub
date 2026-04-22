@@ -12,6 +12,7 @@ import { AddCycleCategoryDialog } from "./AddCycleCategoryDialog";
 import { AddCycleDialog } from "./AddCycleDialog";
 import { EditCycleDialog } from "./EditCycleDialog";
 import { FisCalendarSync } from "./FisCalendarSync";
+import { AddMultipleCompetitionsDialog } from "./AddMultipleCompetitionsDialog";
 import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -56,6 +57,7 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
   const [viewMode, setViewMode] = useState<ViewMode>("timeline");
   const [addCategoryOpen, setAddCategoryOpen] = useState(false);
   const [addCycleOpen, setAddCycleOpen] = useState(false);
+  const [addCompetitionsOpen, setAddCompetitionsOpen] = useState(false);
   const [addCyclePreselectedCategory, setAddCyclePreselectedCategory] = useState<string | null>(null);
   const [editingCycle, setEditingCycle] = useState<PeriodizationCycle | null>(null);
   const [prefilledStartDate, setPrefilledStartDate] = useState<Date | undefined>();
