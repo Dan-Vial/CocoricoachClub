@@ -861,6 +861,72 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
           });
         });
 
+        // ===== Évolution & progression par stat (multi-compétitions) — per athlete =====
+        if (matchesDataForCharts.length >= 2 && (mode === "single" || mode === "individual")) {
+          for (const p of exportStats) {
+            const playerMatches = matchesDataForCharts.filter((m) => m.players[p.playerId]);
+            if (playerMatches.length < 2) continue;
+
+            doc.addPage();
+            drawHeader(`Évolution & progression — ${p.playerName}`);
+            y = 36;
+
+            doc.setFontSize(7);
+            doc.setTextColor(100, 116, 139);
+            doc.text(
+              "% calculé par rapport à la valeur précédente. Vert = progression, Rouge = régression.",
+              14,
+              y
+            );
+            y += 6;
+
+            const evoStats: StatEvolutionData[] = sportStats
+              .map((s) => {
+                const points = playerMatches.map((m) => {
+                  const psd = m.players[p.playerId]?.sportData || {};
+                  let value = Number(psd[s.key] || 0);
+                  if (s.computedFrom) {
+                    const { successKey, totalKey, failureKey } = s.computedFrom;
+                    const success = Number(psd[successKey] || 0);
+                    const total = totalKey
+                      ? Number(psd[totalKey] || 0)
+                      : success + Number(psd[failureKey!] || 0);
+                    value = total > 0 ? Math.round((success / total) * 100) : 0;
+                  }
+                  const matchInfo = allMatches.find((mm) => mm.id === m.matchId);
+                  const compLabel = matchInfo?.competition || matchInfo?.opponent || m.matchLabel;
+                  return {
+                    matchId: m.matchId,
+                    matchDate: m.matchDate,
+                    matchLabel: compLabel,
+                    value,
+                  };
+                });
+                const hasData = points.some((pp) => pp.value !== 0);
+                return {
+                  statKey: s.key,
+                  statLabel: s.label,
+                  isPercent: !!s.computedFrom,
+                  points: hasData ? points : [],
+                };
+              })
+              .filter((s) => s.points.length > 0);
+
+            const halfW = (pageW - 28 - 6) / 2;
+            evoStats.forEach((evo) => {
+              const tableH = 14 + evo.points.length * 6 + 8;
+              const blockH = Math.max(45, tableH);
+              if (y + blockH > pageH - 10) {
+                doc.addPage();
+                y = 15;
+              }
+              drawStatLineChart(doc, evo, 14, y, halfW, 42);
+              drawStatEvolutionTable(doc, evo, 14 + halfW + 6, y, halfW, pageH);
+              y += blockH + 4;
+            });
+          }
+        }
+
         // Kicking map page (rugby only) - unified map with different symbols
         if (isRugby && Object.keys(kickingByPlayerFinal).length > 0) {
           doc.addPage();
