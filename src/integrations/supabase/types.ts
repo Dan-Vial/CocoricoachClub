@@ -529,10 +529,12 @@ export type Database = {
           created_by: string | null
           discipline: string
           id: string
+          is_locked: boolean
           label: string
           level: string
           lower_is_better: boolean
           notes: string | null
+          season_id: string | null
           specialty: string | null
           target_value: number
           unit: string
@@ -544,10 +546,12 @@ export type Database = {
           created_by?: string | null
           discipline: string
           id?: string
+          is_locked?: boolean
           label?: string
           level?: string
           lower_is_better?: boolean
           notes?: string | null
+          season_id?: string | null
           specialty?: string | null
           target_value: number
           unit?: string
@@ -559,10 +563,12 @@ export type Database = {
           created_by?: string | null
           discipline?: string
           id?: string
+          is_locked?: boolean
           label?: string
           level?: string
           lower_is_better?: boolean
           notes?: string | null
+          season_id?: string | null
           specialty?: string | null
           target_value?: number
           unit?: string
@@ -576,6 +582,13 @@ export type Database = {
             referencedRelation: "categories"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "athletics_minimas_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
         ]
       }
       athletics_records: {
@@ -585,6 +598,7 @@ export type Database = {
           created_by: string | null
           discipline: string
           id: string
+          is_locked: boolean
           lower_is_better: boolean
           notes: string | null
           personal_best: number | null
@@ -594,6 +608,7 @@ export type Database = {
           season_best: number | null
           season_best_date: string | null
           season_best_location: string | null
+          season_id: string | null
           season_year: number
           specialty: string | null
           unit: string
@@ -605,6 +620,7 @@ export type Database = {
           created_by?: string | null
           discipline: string
           id?: string
+          is_locked?: boolean
           lower_is_better?: boolean
           notes?: string | null
           personal_best?: number | null
@@ -614,6 +630,7 @@ export type Database = {
           season_best?: number | null
           season_best_date?: string | null
           season_best_location?: string | null
+          season_id?: string | null
           season_year?: number
           specialty?: string | null
           unit?: string
@@ -625,6 +642,7 @@ export type Database = {
           created_by?: string | null
           discipline?: string
           id?: string
+          is_locked?: boolean
           lower_is_better?: boolean
           notes?: string | null
           personal_best?: number | null
@@ -634,6 +652,7 @@ export type Database = {
           season_best?: number | null
           season_best_date?: string | null
           season_best_location?: string | null
+          season_id?: string | null
           season_year?: number
           specialty?: string | null
           unit?: string
@@ -659,6 +678,13 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "athletics_records_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
             referencedColumns: ["id"]
           },
         ]
@@ -9109,6 +9135,64 @@ export type Database = {
           },
         ]
       }
+      season_closures: {
+        Row: {
+          category_id: string
+          closed_at: string
+          closed_by: string
+          closed_season_id: string
+          created_at: string
+          id: string
+          new_season_id: string | null
+          notes: string | null
+          recap: Json
+        }
+        Insert: {
+          category_id: string
+          closed_at?: string
+          closed_by: string
+          closed_season_id: string
+          created_at?: string
+          id?: string
+          new_season_id?: string | null
+          notes?: string | null
+          recap?: Json
+        }
+        Update: {
+          category_id?: string
+          closed_at?: string
+          closed_by?: string
+          closed_season_id?: string
+          created_at?: string
+          id?: string
+          new_season_id?: string | null
+          notes?: string | null
+          recap?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "season_closures_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "season_closures_closed_season_id_fkey"
+            columns: ["closed_season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "season_closures_new_season_id_fkey"
+            columns: ["new_season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       season_goals: {
         Row: {
           category_id: string
@@ -11569,6 +11653,16 @@ export type Database = {
         Returns: boolean
       }
       cleanup_old_invitation_attempts: { Args: never; Returns: undefined }
+      close_athletics_season: {
+        Args: {
+          _category_id: string
+          _closed_season_id: string
+          _new_season_id: string
+          _notes?: string
+          _recap?: Json
+        }
+        Returns: Json
+      }
       create_category_with_members: {
         Args: {
           _club_id: string
