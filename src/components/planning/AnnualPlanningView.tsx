@@ -52,10 +52,25 @@ const VIEW_MODES: { value: ViewMode; label: string; shortLabel: string; icon: Re
   { value: "heatmap", label: "Vue charge", shortLabel: "Charge", icon: <BarChart3 className="h-4 w-4" /> },
 ];
 
+const MONTH_LABELS = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
+const START_MONTH_STORAGE_PREFIX = "planning-start-month:";
+
 export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
   const { isViewer } = useViewerModeContext();
   const queryClient = useQueryClient();
   const [selectedYear, setSelectedYear] = useState(new Date());
+  const [startMonth, setStartMonth] = useState<number>(() => {
+    if (typeof window === "undefined") return 0;
+    const stored = window.localStorage.getItem(`${START_MONTH_STORAGE_PREFIX}${categoryId}`);
+    const n = stored ? parseInt(stored, 10) : 0;
+    return Number.isFinite(n) && n >= 0 && n <= 11 ? n : 0;
+  });
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(`${START_MONTH_STORAGE_PREFIX}${categoryId}`, String(startMonth));
+    }
+  }, [startMonth, categoryId]);
+
   const [viewMode, setViewMode] = useState<ViewMode>("timeline");
   const [addCategoryOpen, setAddCategoryOpen] = useState(false);
   const [addCycleOpen, setAddCycleOpen] = useState(false);
@@ -81,8 +96,21 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
   });
   const isSkiSport = categoryData?.rugby_type ? getMainSportFromType(categoryData.rugby_type) === "ski" : false;
 
-  const yearStart = startOfYear(selectedYear);
-  const yearEnd = endOfYear(selectedYear);
+  // Period (12 months starting at startMonth of selectedYear)
+  const { periodStart, periodEnd, periodLabel } = useMemo(() => {
+    const ps = new Date(selectedYear.getFullYear(), startMonth, 1);
+    const pe = addDays(addMonths(ps, 12), -1);
+    const sameYear = ps.getFullYear() === pe.getFullYear();
+    const label = startMonth === 0
+      ? `${ps.getFullYear()}`
+      : sameYear
+        ? `${MONTH_LABELS[startMonth]} ${ps.getFullYear()}`
+        : `${MONTH_LABELS[startMonth]} ${ps.getFullYear()} → ${MONTH_LABELS[pe.getMonth()]} ${pe.getFullYear()}`;
+    return { periodStart: ps, periodEnd: pe, periodLabel: label };
+  }, [selectedYear, startMonth]);
+
+  const yearStart = periodStart;
+  const yearEnd = periodEnd;
 
   // ─── Data queries ───
   const { data: categories = [] } = useQuery({
