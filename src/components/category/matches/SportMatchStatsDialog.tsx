@@ -595,6 +595,7 @@ export function SportMatchStatsDialog({
             <PlayerStatsGrid
               players={statsData}
               stats={activeCategoryStats}
+              categoryKey={activeCategory?.key}
               onUpdateStat={updateStat}
               supportsGoalkeeper={supportsGoalkeeper}
               isRugby={isRugbyType(sportType)}

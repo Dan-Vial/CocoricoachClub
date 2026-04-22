@@ -24,6 +24,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Plus, Trash2, Trophy, Target, BarChart3, Swords, Circle, Ship, Users, Droplet, CheckCircle, Lock } from "lucide-react";
 import { getStatsForSport, getStatCategories, getAggregatedStatsForSport, getAthletismeStatsForDiscipline, ATHLETISME_PHASES, ATHLETISME_GENERAL_STATS, type StatField } from "@/lib/constants/sportStats";
+import { groupStatsByTheme } from "@/lib/statSubGroups";
 import { useStatPreferences } from "@/hooks/use-stat-preferences";
 import { BowlingOilPatternSection } from "./BowlingOilPatternSection";
 import { BowlingScoreSheet, FrameData, BowlingStats } from "@/components/athlete-portal/BowlingScoreSheet";
@@ -1292,7 +1293,7 @@ export function CompetitionRoundsDialog({
                             </div>
                           )}
 
-                          {/* Stats for this round - organized by category (non-bowling, non-aviron) */}
+                          {/* Stats for this round - organized by category & sub-themes (non-bowling, non-aviron) */}
                           {!isAviron && !isBowling && (() => {
                             const playerStats = getPlayerStats(selectedPlayer);
                             const playerCats = getPlayerStatCategories(selectedPlayer);
@@ -1301,24 +1302,37 @@ export function CompetitionRoundsDialog({
                               {playerCats.map(cat => {
                                 const categoryStats = playerStats.filter(s => s.category === cat.key);
                                 if (categoryStats.length === 0) return null;
+                                const subGroups = groupStatsByTheme(cat.key, categoryStats);
                                 return (
-                                  <div key={cat.key}>
+                                  <div key={cat.key} className="space-y-2">
                                     <Label className="text-xs font-medium text-primary">{cat.label}</Label>
-                                    <div className="grid grid-cols-3 gap-2 mt-1">
-                                      {categoryStats.map(stat => (
-                                        <div key={stat.key}>
-                                          <Label className="text-[10px] text-muted-foreground">{stat.shortLabel}</Label>
-                                          <Input
-                                            type="number"
-                                            value={round.stats[stat.key] || 0}
-                                            onChange={(e) => updateRoundStat(selectedPlayer.playerId, round.round_number, stat.key, parseFloat(e.target.value) || 0)}
-                                            min={stat.min ?? 0}
-                                            max={stat.max}
-                                            className="h-7 text-sm"
-                                          />
+                                    {subGroups.map(group => (
+                                      <div
+                                        key={group.key}
+                                        className={`rounded-md ${group.label ? `border p-2 ${group.color?.ring || "border-border/40"} ${group.color?.soft || ""}` : ""}`}
+                                      >
+                                        {group.label && (
+                                          <p className={`text-[10px] font-semibold uppercase tracking-wide mb-1.5 ${group.color?.accent || "text-muted-foreground"}`}>
+                                            {group.label}
+                                          </p>
+                                        )}
+                                        <div className="grid grid-cols-3 gap-2">
+                                          {group.items.map(stat => (
+                                            <div key={stat.key}>
+                                              <Label className="text-[10px] text-muted-foreground">{stat.shortLabel}</Label>
+                                              <Input
+                                                type="number"
+                                                value={round.stats[stat.key] || 0}
+                                                onChange={(e) => updateRoundStat(selectedPlayer.playerId, round.round_number, stat.key, parseFloat(e.target.value) || 0)}
+                                                min={stat.min ?? 0}
+                                                max={stat.max}
+                                                className="h-7 text-sm"
+                                              />
+                                            </div>
+                                          ))}
                                         </div>
-                                      ))}
-                                    </div>
+                                      </div>
+                                    ))}
                                   </div>
                                 );
                               })}

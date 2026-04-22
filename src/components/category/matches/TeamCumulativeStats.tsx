@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Users, TrendingUp, TrendingDown, Minus, Trophy, Target, Shield, Activity, Dumbbell } from "lucide-react";
 import type { StatField } from "@/lib/constants/sportStats";
 import { getStatCategories } from "@/lib/constants/sportStats";
+import { groupStatsByTheme } from "@/lib/statSubGroups";
 
 interface CumulativeStats {
   playerId: string;
@@ -121,41 +122,8 @@ export function TeamCumulativeStats({ stats, matchesData, sportStats, sportType,
   const isNeutralStat = (key: string) =>
     /minutesplayed|playingtime|starts|manofmatch/i.test(key);
 
-  // Sub-group definitions per category. Order matters; first matching group wins.
-  // Each group bundles related stats inside a category for clearer reading.
-  const subGroupDefs: Record<string, { key: string; label: string; match: (k: string) => boolean }[]> = {
-    general: [
-      { key: "scrums", label: "Mêlées", match: (k) => /^scrum/i.test(k) },
-      { key: "lineouts", label: "Touches", match: (k) => /^lineout/i.test(k) },
-    ],
-    scoring: [
-      { key: "tries", label: "Essais", match: (k) => /^tries$|^tryassists$/i.test(k) },
-      { key: "conversions", label: "Transformations", match: (k) => /^conversion/i.test(k) },
-      { key: "penalties", label: "Pénalités", match: (k) => /^penalt(y|ies)(scored|attempts)?$/i.test(k) || /^penaltyattempts$|^penaltiesscored$/i.test(k) },
-      { key: "drops", label: "Drops", match: (k) => /^drop/i.test(k) },
-    ],
-  };
-
-  const groupStats = (catKey: string, statsList: StatField[]) => {
-    const defs = subGroupDefs[catKey] || [];
-    if (defs.length === 0) return [{ key: "_all", label: null as string | null, items: statsList }];
-    const buckets: { key: string; label: string | null; items: StatField[] }[] = defs.map(d => ({
-      key: d.key, label: d.label, items: [],
-    }));
-    const others: StatField[] = [];
-    statsList.forEach(s => {
-      const def = defs.find(d => d.match(s.key));
-      if (def) {
-        const bucket = buckets.find(b => b.key === def.key)!;
-        bucket.items.push(s);
-      } else {
-        others.push(s);
-      }
-    });
-    const result = buckets.filter(b => b.items.length > 0);
-    if (others.length > 0) result.push({ key: "_others", label: result.length > 0 ? "Autres" : null, items: others });
-    return result;
-  };
+  // Use shared sub-group helper (same logic as PlayerCumulativeStats and stats input)
+  const groupStats = (catKey: string, statsList: StatField[]) => groupStatsByTheme(catKey, statsList);
 
   const renderStatTile = (stat: StatField, opts?: { large?: boolean }) => {
     const large = opts?.large;
@@ -223,7 +191,7 @@ export function TeamCumulativeStats({ stats, matchesData, sportStats, sportType,
                 const unlabeledGroups = groups.filter(g => !g.label);
                 return (
                   <>
-                    {/* Labeled sub-blocks rendered side-by-side */}
+                    {/* Labeled sub-blocks rendered side-by-side, color-coded by theme */}
                     {labeledGroups.length > 0 && (
                       <div
                         className="grid gap-2"
@@ -232,9 +200,9 @@ export function TeamCumulativeStats({ stats, matchesData, sportStats, sportType,
                         {labeledGroups.map(group => (
                           <div
                             key={group.key}
-                            className="rounded-md border border-border/50 bg-muted/20 p-1.5 space-y-1"
+                            className={`rounded-md border p-1.5 space-y-1 ${group.color?.ring || "border-border/50"} ${group.color?.soft || "bg-muted/20"}`}
                           >
-                            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground px-0.5">
+                            <p className={`text-[10px] font-semibold uppercase tracking-wide px-0.5 ${group.color?.accent || "text-muted-foreground"}`}>
                               {group.label}
                             </p>
                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
