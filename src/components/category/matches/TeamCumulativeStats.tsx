@@ -155,47 +155,57 @@ export function TeamCumulativeStats({ stats, matchesData, sportStats, sportType 
         </CardContent>
       </Card>
 
-      <Tabs defaultValue={statCategories[0]?.key || "general"} className="w-full">
-        <TabsList className={`grid w-full grid-cols-${Math.min(statCategories.length, 4)}`}>
-          {statCategories.map(cat => (
-            <TabsTrigger key={cat.key} value={cat.key} className="gap-1 text-xs">
-              {getCategoryIcon(cat.key)}
-              <span className="hidden sm:inline">{cat.label}</span>
-            </TabsTrigger>
-          ))}
-        </TabsList>
-
+      <div className="space-y-4">
         {statCategories.map(cat => {
           const categoryStats = sportStats.filter(s => s.category === cat.key);
+          if (categoryStats.length === 0) return null;
           return (
-            <TabsContent key={cat.key} value={cat.key}>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {categoryStats.map(stat => {
-                  const val = teamTotals.totals[stat.key] || 0;
-                  const avg = teamTotals.matchCount > 0 ? Math.round((val / teamTotals.matchCount) * 10) / 10 : 0;
-                  const prog = teamProgression[stat.key] || 0;
-                  return (
-                    <div key={stat.key} className="p-3 bg-muted/50 rounded-lg text-center space-y-1">
-                      <p className="text-2xl font-bold">
-                        {stat.computedFrom ? `${val}%` : val}
-                      </p>
-                      <p className="text-xs text-muted-foreground">{stat.shortLabel}</p>
-                      <div className="flex items-center justify-center gap-2">
-                        {!stat.computedFrom && (
-                          <span className="text-xs text-muted-foreground">Moy: {avg}</span>
-                        )}
-                        {matchesData.length >= 2 && !stat.computedFrom && (
-                          <ProgressionBadge value={prog} />
-                        )}
+            <Card key={cat.key} className="border-border/60">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  {getCategoryIcon(cat.key)}
+                  {cat.label}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                  {categoryStats.map(stat => {
+                    const val = teamTotals.totals[stat.key] || 0;
+                    const avg = teamTotals.matchCount > 0 ? Math.round((val / teamTotals.matchCount) * 10) / 10 : 0;
+                    const prog = teamProgression[stat.key] || 0;
+                    // Traffic-light color based on progression direction
+                    // For "lower is better" stats (like turnovers, missed_tackles, errors, penalties_conceded), invert.
+                    const lowerIsBetter = /turnover|missed|error|penalt(y|ies)_conceded|fault|loss|interception_conceded/i.test(stat.key);
+                    const effectiveProg = lowerIsBetter ? -prog : prog;
+                    let toneClass = "bg-muted/50 border-border/60";
+                    if (matchesData.length >= 2 && !stat.computedFrom) {
+                      if (effectiveProg > 0) toneClass = "bg-emerald-500/10 border-emerald-500/30 dark:bg-emerald-500/15";
+                      else if (effectiveProg < 0) toneClass = "bg-destructive/10 border-destructive/30";
+                      else toneClass = "bg-amber-500/10 border-amber-500/30";
+                    }
+                    return (
+                      <div key={stat.key} className={`p-3 rounded-lg text-center space-y-1 border ${toneClass}`}>
+                        <p className="text-2xl font-bold">
+                          {stat.computedFrom ? `${val}%` : val}
+                        </p>
+                        <p className="text-xs text-muted-foreground">{stat.shortLabel}</p>
+                        <div className="flex items-center justify-center gap-2">
+                          {!stat.computedFrom && (
+                            <span className="text-xs text-muted-foreground">Moy: {avg}</span>
+                          )}
+                          {matchesData.length >= 2 && !stat.computedFrom && (
+                            <ProgressionBadge value={prog} />
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </TabsContent>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
           );
         })}
-      </Tabs>
+      </div>
     </div>
   );
 }
