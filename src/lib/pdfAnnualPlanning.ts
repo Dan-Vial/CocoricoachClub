@@ -134,36 +134,64 @@ function drawVerticalText(
   pdf.text(safe, x, y, { angle: 90 });
 }
 
-// Draws a small gold trophy/cup icon centered on (cx, cy)
+// Draws a refined gold trophy/cup icon centered on (cx, cy)
 function drawTrophyIcon(pdf: jsPDF, cx: number, cy: number, size: number) {
-  const gold: [number, number, number] = [212, 160, 23];
-  const goldDark: [number, number, number] = [140, 100, 10];
+  const gold: [number, number, number] = [230, 178, 36];
+  const goldDark: [number, number, number] = [125, 88, 8];
+  const goldLight: [number, number, number] = [255, 218, 110];
   const s = size;
 
-  pdf.setDrawColor(goldDark[0], goldDark[1], goldDark[2]);
   pdf.setLineWidth(0.18);
-  pdf.setFillColor(gold[0], gold[1], gold[2]);
+  pdf.setDrawColor(goldDark[0], goldDark[1], goldDark[2]);
 
-  // Cup bowl
-  const bowlW = s * 0.85;
-  const bowlH = s * 0.55;
-  const bowlTop = cy - s * 0.45;
-  pdf.ellipse(cx, bowlTop + bowlH * 0.45, bowlW / 2, bowlH * 0.55, "FD");
+  // ── Base (pedestal) ──
+  const baseW = s * 0.72;
+  const baseH = s * 0.13;
+  const baseY = cy + s * 0.45;
+  pdf.setFillColor(goldDark[0], goldDark[1], goldDark[2]);
+  pdf.rect(cx - baseW / 2, baseY, baseW, baseH, "FD");
 
-  // Side handles
-  const handleR = s * 0.18;
-  pdf.circle(cx - bowlW / 2 - handleR * 0.35, bowlTop + bowlH * 0.4, handleR, "FD");
-  pdf.circle(cx + bowlW / 2 + handleR * 0.35, bowlTop + bowlH * 0.4, handleR, "FD");
-
-  // Stem
+  // ── Stem ──
   const stemW = s * 0.18;
-  const stemH = s * 0.25;
-  pdf.rect(cx - stemW / 2, bowlTop + bowlH * 0.85, stemW, stemH, "FD");
+  const stemH = s * 0.22;
+  const stemY = baseY - stemH;
+  pdf.setFillColor(gold[0], gold[1], gold[2]);
+  pdf.rect(cx - stemW / 2, stemY, stemW, stemH, "FD");
 
-  // Base
-  const baseW = s * 0.7;
-  const baseH = s * 0.12;
-  pdf.rect(cx - baseW / 2, bowlTop + bowlH * 0.85 + stemH, baseW, baseH, "FD");
+  // ── Handles (left & right) — rendered as small ellipses behind the cup ──
+  const handleW = s * 0.22;
+  const handleH = s * 0.32;
+  const handleCY = cy - s * 0.05;
+  pdf.setFillColor(gold[0], gold[1], gold[2]);
+  pdf.ellipse(cx - s * 0.42, handleCY, handleW / 2, handleH / 2, "FD");
+  pdf.ellipse(cx + s * 0.42, handleCY, handleW / 2, handleH / 2, "FD");
+  // Inner cutouts to hint at handle shape
+  pdf.setFillColor(255, 255, 255);
+  pdf.setDrawColor(255, 255, 255);
+  pdf.ellipse(cx - s * 0.42, handleCY, handleW / 2 - s * 0.07, handleH / 2 - s * 0.07, "F");
+  pdf.ellipse(cx + s * 0.42, handleCY, handleW / 2 - s * 0.07, handleH / 2 - s * 0.07, "F");
+
+  // ── Cup bowl (main body) — rounded rectangle ──
+  pdf.setDrawColor(goldDark[0], goldDark[1], goldDark[2]);
+  pdf.setFillColor(gold[0], gold[1], gold[2]);
+  const bowlW = s * 0.62;
+  const bowlH = s * 0.62;
+  const bowlX = cx - bowlW / 2;
+  const bowlY = cy - s * 0.42;
+  pdf.roundedRect(bowlX, bowlY, bowlW, bowlH, s * 0.12, s * 0.12, "FD");
+
+  // ── Highlight (light shine on left side of bowl) ──
+  pdf.setFillColor(goldLight[0], goldLight[1], goldLight[2]);
+  pdf.setDrawColor(goldLight[0], goldLight[1], goldLight[2]);
+  pdf.roundedRect(
+    bowlX + s * 0.08,
+    bowlY + s * 0.08,
+    s * 0.12,
+    s * 0.36,
+    s * 0.04,
+    s * 0.04,
+    "F",
+  );
 }
 
 function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
