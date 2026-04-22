@@ -124,12 +124,15 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
   const { data: lineupCount } = useQuery({
     queryKey: ["match_lineup_count", match.id],
     queryFn: async () => {
-      const { count, error } = await supabase
+      // Athletics: a single athlete can be registered on multiple events
+      // (= multiple rows). We must count DISTINCT athletes, not rows.
+      const { data, error } = await supabase
         .from("match_lineups")
-        .select("*", { count: "exact", head: true })
+        .select("player_id")
         .eq("match_id", match.id);
       if (error) throw error;
-      return count || 0;
+      const uniquePlayerIds = new Set((data || []).map((r: any) => r.player_id));
+      return uniquePlayerIds.size;
     },
   });
 
