@@ -1584,9 +1584,9 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
         <CumulativeStatsCharts stats={stats} matchesData={matchesDataForCharts} sportStats={sportStats} selectedMatchIds={activeMatchIds} sportType={sportType} />
       )}
 
-      {/* SPLIT SCREEN: Team (left) + Individual (right) — or just individual in single player mode */}
-      <div className={isSinglePlayerMode ? "" : "grid grid-cols-1 lg:grid-cols-2 gap-6"}>
-        {/* LEFT: Team Stats */}
+      {/* STACKED LAYOUT: Team (top, full width) + Individual (below) — or just individual in single player mode */}
+      <div className={isSinglePlayerMode ? "" : "space-y-6"}>
+        {/* TOP: Team Stats — full width, all categories stacked */}
         {!isSinglePlayerMode && (
         <div>
           <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
