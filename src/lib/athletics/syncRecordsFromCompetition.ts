@@ -226,12 +226,12 @@ export async function syncAthleticsRecordsFromRounds(opts: SyncOptions): Promise
       const update: Record<string, any> = {};
       if (beatsSb) {
         update.season_best = perf.value;
-        update.season_best_date = matchDate;
+        update.season_best_date = perf.perfDate;
         update.season_best_location = matchLocation || null;
       }
       if (beatsPb || beatsSeasonPb) {
         update.personal_best = perf.value;
-        update.personal_best_date = matchDate;
+        update.personal_best_date = perf.perfDate;
         update.personal_best_location = matchLocation || null;
       }
       if (Object.keys(update).length === 0) continue;
@@ -252,7 +252,7 @@ export async function syncAthleticsRecordsFromRounds(opts: SyncOptions): Promise
         unit: perf.unit,
         lower_is_better: perf.lowerIsBetter,
         season_best: perf.value,
-        season_best_date: matchDate,
+        season_best_date: perf.perfDate,
         season_best_location: matchLocation || null,
       };
       // Propagation du PB : on prend la meilleure valeur entre l'historique et la nouvelle perf.
@@ -262,7 +262,7 @@ export async function syncAthleticsRecordsFromRounds(opts: SyncOptions): Promise
           : Math.max(historicalPb.value, perf.value)
         : perf.value;
       insertPayload.personal_best = newPb;
-      insertPayload.personal_best_date = matchDate;
+      insertPayload.personal_best_date = perf.perfDate;
       insertPayload.personal_best_location = matchLocation || null;
 
       const { error } = await supabase
