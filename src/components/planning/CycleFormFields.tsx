@@ -8,9 +8,7 @@ const CYCLE_TYPES = [
   { value: "recuperation", label: "Récupération" },
 ];
 
-const DOMINANT_QUALITIES = [
-  { value: "technique", label: "Technique" },
-  { value: "tactique", label: "Tactique" },
+const PHYSICAL_QUALITIES = [
   { value: "force", label: "Force" },
   { value: "puissance", label: "Puissance" },
   { value: "vitesse", label: "Vitesse / Explosivité" },
@@ -20,9 +18,36 @@ const DOMINANT_QUALITIES = [
   { value: "hypertrophie", label: "Hypertrophie" },
   { value: "mobilite", label: "Mobilité / Souplesse" },
   { value: "prevention", label: "Prévention / Prophylaxie" },
-  { value: "mental", label: "Préparation mentale" },
   { value: "mixte", label: "Mixte / Polyvalent" },
 ];
+
+const SPORT_QUALITIES = [
+  { value: "technique", label: "Technique" },
+  { value: "tactique", label: "Tactique" },
+];
+
+const MENTAL_QUALITIES = [
+  { value: "visualisation", label: "Visualisation" },
+  { value: "routines", label: "Routines" },
+  { value: "respiration", label: "Respiration" },
+  { value: "gestion_emotions", label: "Gestion des émotions" },
+  { value: "switch", label: "Switch" },
+  { value: "concentration", label: "Concentration" },
+];
+
+const ALL_QUALITIES = [
+  ...SPORT_QUALITIES,
+  ...PHYSICAL_QUALITIES,
+  ...MENTAL_QUALITIES,
+];
+
+function getQualitiesForLine(lineName?: string) {
+  if (!lineName) return ALL_QUALITIES;
+  const n = lineName.toLowerCase();
+  if (n.includes("mental")) return MENTAL_QUALITIES;
+  if (n.includes("physique")) return PHYSICAL_QUALITIES;
+  return SPORT_QUALITIES;
+}
 
 function getSliderColor(value: number) {
   if (value <= 2) return "#22c55e";
@@ -85,6 +110,7 @@ interface CycleFormFieldsProps {
   onVolumeChange: (value: number) => void;
   dominantQuality?: string;
   onDominantQualityChange?: (value: string) => void;
+  periodizationLineName?: string;
 }
 
 export function CycleFormFields({
@@ -96,7 +122,9 @@ export function CycleFormFields({
   onVolumeChange,
   dominantQuality = "",
   onDominantQualityChange,
+  periodizationLineName,
 }: CycleFormFieldsProps) {
+  const qualities = getQualitiesForLine(periodizationLineName);
   return (
     <>
       <div className="grid grid-cols-2 gap-3">
@@ -117,13 +145,13 @@ export function CycleFormFields({
         </div>
         {onDominantQualityChange && (
           <div>
-            <Label>Qualité dominante</Label>
+            <Label>Thématique</Label>
             <Select value={dominantQuality} onValueChange={onDominantQualityChange}>
               <SelectTrigger>
                 <SelectValue placeholder="Choisir..." />
               </SelectTrigger>
               <SelectContent>
-                {DOMINANT_QUALITIES.map((q) => (
+                {qualities.map((q) => (
                   <SelectItem key={q.value} value={q.value}>
                     {q.label}
                   </SelectItem>
