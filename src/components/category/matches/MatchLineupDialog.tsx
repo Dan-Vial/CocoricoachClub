@@ -79,16 +79,22 @@ export function MatchLineupDialog({
   const { data: players } = useQuery({
     queryKey: ["players", categoryId, isAthletics ? "athletics" : "default"],
     queryFn: async () => {
-      const cols = isAthletics
-        ? "id, name, first_name, position, discipline, specialty, disciplines, specialties"
-        : "id, name, first_name, position";
+      if (isAthletics) {
+        const { data, error } = await supabase
+          .from("players")
+          .select("id, name, first_name, position, discipline, specialty, disciplines, specialties")
+          .eq("category_id", categoryId)
+          .order("name");
+        if (error) throw error;
+        return data as any[];
+      }
       const { data, error } = await supabase
         .from("players")
-        .select(cols)
+        .select("id, name, first_name, position")
         .eq("category_id", categoryId)
         .order("name");
       if (error) throw error;
-      return data;
+      return data as any[];
     },
   });
 
