@@ -446,12 +446,13 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
         const titleX = rightLaneCenter + titleFs * 0.16;
         drawVerticalText(pdf, cycle.name, titleX, titleY, titleMaxChars);
 
-        // ── Type label (Préparation Générale, etc.) — left lane only ──
+        // ── Type label (Préparation Générale, etc.) — left lane only — gray italic, discreet ──
         if (hasTypeLabel) {
           const typeFs = Math.max(2.9, Math.min(5.2, laneW * 0.72));
-          pdf.setFont("helvetica", "normal");
+          pdf.setFont("helvetica", "italic");
           pdf.setFontSize(typeFs);
-          pdf.setTextColor(0, 0, 0);
+          // Discreet gray, adapted for dark vs light cycle backgrounds
+          pdf.setTextColor(...(lightOnDark ? ([220, 222, 228] as [number, number, number]) : ([110, 115, 130] as [number, number, number])));
           const typeMaxChars = Math.floor((bandHeight - 4) / (typeFs * 0.42));
           const typeX = leftLaneCenter + typeFs * 0.12;
           drawVerticalText(pdf, typeFullLabel, typeX, titleY, typeMaxChars);
@@ -532,11 +533,28 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
         pdf.setFillColor(245, 246, 248);
       } else {
         const t = Math.min(1, value / 10);
-        const baseColor = catId === null ? ([60, 90, 200] as [number, number, number]) : color;
-        const r = Math.round(255 - (255 - baseColor[0]) * t);
-        const g = Math.round(255 - (255 - baseColor[1]) * t);
-        const b = Math.round(255 - (255 - baseColor[2]) * t);
-        pdf.setFillColor(r, g, b);
+        if (catId === null) {
+          // Aggregate row: green → yellow → red gradient based on intensity
+          // 0 → green (76,175,80), 0.5 → amber (255,193,7), 1 → red (229,57,53)
+          let r: number, g: number, b: number;
+          if (t <= 0.5) {
+            const u = t / 0.5;
+            r = Math.round(76 + (255 - 76) * u);
+            g = Math.round(175 + (193 - 175) * u);
+            b = Math.round(80 + (7 - 80) * u);
+          } else {
+            const u = (t - 0.5) / 0.5;
+            r = Math.round(255 + (229 - 255) * u);
+            g = Math.round(193 + (57 - 193) * u);
+            b = Math.round(7 + (53 - 7) * u);
+          }
+          pdf.setFillColor(r, g, b);
+        } else {
+          const r = Math.round(255 - (255 - color[0]) * t);
+          const g = Math.round(255 - (255 - color[1]) * t);
+          const b = Math.round(255 - (255 - color[2]) * t);
+          pdf.setFillColor(r, g, b);
+        }
       }
       pdf.rect(x, y, intColW, intensityRowH, "F");
       pdf.setDrawColor(210, 213, 222);
@@ -559,7 +577,8 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
   orderedCats.forEach((cat, idx) => {
     drawIntensityRow(idx, cat.name, hexToRgb(cat.color), cat.id);
   });
-  drawIntensityRow(orderedCats.length, "Mix global", [60, 90, 200], null);
+  // Aggregate row uses a neutral gray label background; cell colors handled inside (green→red)
+  drawIntensityRow(orderedCats.length, "Moyenne de tous les cycles", [90, 100, 120], null);
 
   // ── Competitions list ──
   let competitionsTop = intRowsTop + intensityRows * intensityRowH + 4;
