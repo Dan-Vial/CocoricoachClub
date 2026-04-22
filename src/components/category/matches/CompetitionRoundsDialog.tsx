@@ -671,15 +671,15 @@ export function CompetitionRoundsDialog({
     },
   });
 
-  const addRound = (playerId: string) => {
-    const player = playerRoundsData.find((p) => p.playerId === playerId);
+  const addRound = (entryKey: string) => {
+    const player = playerRoundsData.find((p) => p.entryKey === entryKey);
     const newRoundNumber = player && player.rounds.length > 0
       ? Math.max(...player.rounds.map((r) => r.round_number)) + 1
       : 1;
 
     setPlayerRoundsData((prev) =>
       prev.map((p) => {
-        if (p.playerId === playerId) {
+        if (p.entryKey === entryKey) {
           return {
             ...p,
             rounds: [
@@ -702,9 +702,9 @@ export function CompetitionRoundsDialog({
     );
   };
 
-  const removeRound = (playerId: string, roundNumber: number) => {
+  const removeRound = (entryKey: string, roundNumber: number) => {
     setPlayerRoundsData(prev => prev.map(p => {
-      if (p.playerId === playerId) {
+      if (p.entryKey === entryKey) {
         return {
           ...p,
           rounds: p.rounds.filter(r => r.round_number !== roundNumber),
@@ -714,9 +714,9 @@ export function CompetitionRoundsDialog({
     }));
   };
 
-  const updateRound = (playerId: string, roundNumber: number, updates: Partial<Round>) => {
+  const updateRound = (entryKey: string, roundNumber: number, updates: Partial<Round>) => {
     setPlayerRoundsData(prev => prev.map(p => {
-      if (p.playerId === playerId) {
+      if (p.entryKey === entryKey) {
         return {
           ...p,
           rounds: p.rounds.map(r => 
@@ -728,9 +728,9 @@ export function CompetitionRoundsDialog({
     }));
   };
 
-  const updateRoundStat = (playerId: string, roundNumber: number, statKey: string, value: number) => {
+  const updateRoundStat = (entryKey: string, roundNumber: number, statKey: string, value: number) => {
     setPlayerRoundsData(prev => prev.map(p => {
-      if (p.playerId === playerId) {
+      if (p.entryKey === entryKey) {
         return {
           ...p,
           rounds: p.rounds.map(r => 
