@@ -476,7 +476,6 @@ export const AVIRON_STATS: StatField[] = [
 // Sprint stats
 export const ATHLETISME_SPRINT_STATS: StatField[] = [
   { key: "time", label: "Temps (sec)", shortLabel: "Temps", category: "scoring", type: "number" },
-  { key: "reactionTime", label: "Temps de réaction (ms)", shortLabel: "Réaction", category: "scoring", type: "number" },
   { key: "finalRanking", label: "Classement", shortLabel: "Place", category: "scoring", type: "number" },
   { key: "windSpeed", label: "Vent (m/s)", shortLabel: "Vent", category: "general", type: "number" },
   { key: "lane", label: "Couloir", shortLabel: "Couloir", category: "general", type: "number", min: 1, max: 9 },
@@ -516,7 +515,6 @@ export const ATHLETISME_TRAIL_STATS: StatField[] = [
 // Hurdles stats
 export const ATHLETISME_HAIES_STATS: StatField[] = [
   { key: "time", label: "Temps (sec)", shortLabel: "Temps", category: "scoring", type: "number" },
-  { key: "reactionTime", label: "Temps de réaction (ms)", shortLabel: "Réaction", category: "scoring", type: "number" },
   { key: "finalRanking", label: "Classement", shortLabel: "Place", category: "scoring", type: "number" },
   { key: "windSpeed", label: "Vent (m/s)", shortLabel: "Vent", category: "general", type: "number" },
   { key: "lane", label: "Couloir", shortLabel: "Couloir", category: "general", type: "number", min: 1, max: 9 },
