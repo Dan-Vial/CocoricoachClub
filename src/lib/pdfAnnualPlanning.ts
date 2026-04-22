@@ -399,15 +399,14 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
       const xCol = xCyclesStart + s * subColW;
       const colColor: [number, number, number] = cycle ? hexToRgb(cycle.color) : [255, 255, 255];
 
+      // First pass: fill cells (cycle color or weekend tint).
+      // No per-day strokes here so cycle bands are not "cut" by horizontal lines.
       for (let d = 1; d <= 31; d++) {
         const y = gridTop + monthHeaderH + (d - 1) * dayRowH;
 
         if (d > daysInMonth) {
           pdf.setFillColor(235, 237, 242);
           pdf.rect(xCol, y, subColW, dayRowH, "F");
-          pdf.setDrawColor(220, 222, 230);
-          pdf.setLineWidth(0.1);
-          pdf.rect(xCol, y, subColW, dayRowH, "S");
           continue;
         }
 
@@ -421,11 +420,12 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
           pdf.setFillColor(weekend ? 235 : 252, weekend ? 237 : 253, weekend ? 242 : 255);
         }
         pdf.rect(xCol, y, subColW, dayRowH, "F");
-
-        pdf.setDrawColor(210, 213, 222);
-        pdf.setLineWidth(0.08);
-        pdf.rect(xCol, y, subColW, dayRowH, "S");
       }
+
+      // Single outer border around the whole sub-column (no per-day horizontal strokes).
+      pdf.setDrawColor(210, 213, 222);
+      pdf.setLineWidth(0.1);
+      pdf.rect(xCol, gridTop + monthHeaderH, subColW, 31 * dayRowH, "S");
 
       if (s < subCols - 1) {
         pdf.setDrawColor(255, 255, 255);
@@ -449,7 +449,6 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
         const bandTop = gridTop + monthHeaderH + (firstDay - 1) * dayRowH;
         const bandBottom = gridTop + monthHeaderH + lastDay * dayRowH;
         const bandHeight = bandBottom - bandTop;
-        const bandCenterY = (bandTop + bandBottom) / 2;
 
         const lum = luminance(colColor);
         const lightOnDark = lum <= 0.55;
@@ -472,9 +471,11 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
           : "";
 
         // ── Reserve 2 independent text lanes inside the colored band to avoid overlaps ──
+        const innerPaddingV = Math.min(1.4, bandHeight * 0.05); // top/bottom safety inside band
         const innerPadding = Math.min(0.8, subColW * 0.08);
         const laneGap = Math.min(0.8, subColW * 0.08);
         const usableW = Math.max(2.4, subColW - innerPadding * 2);
+        const usableH = Math.max(1, bandHeight - innerPaddingV * 2);
         const hasTypeLabel = Boolean(typeFullLabel);
         const laneW = hasTypeLabel
           ? Math.max(1.1, (usableW - laneGap) / 2)
@@ -483,27 +484,28 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
         const rightLaneCenter = hasTypeLabel
           ? xCol + innerPadding + laneW + laneGap + laneW / 2
           : xCol + innerPadding + laneW / 2;
-        const titleY = bandBottom - 2;
+        // Anchor text at the bottom of the band; vertical text reads upward toward bandTop.
+        const titleY = bandBottom - innerPaddingV;
 
-        // ── Title (cycle name) — right lane only ──
-        const titleFs = Math.max(3.2, Math.min(6.8, laneW * 0.82));
+        // ── Title (cycle name) — right lane ──
+        // Auto-fit: cap by lane width AND by available band height (shrinks if needed).
+        const titleMaxFs = Math.max(3.2, Math.min(6.8, laneW * 0.82));
+        const titleFit = fitVerticalText(cycle.name, usableH, 2.6, titleMaxFs);
         pdf.setFont("helvetica", "bold");
-        pdf.setFontSize(titleFs);
+        pdf.setFontSize(titleFit.fontSize);
         pdf.setTextColor(...(lightOnDark ? ([255, 255, 255] as [number, number, number]) : ([30, 35, 50] as [number, number, number])));
-        const titleMaxChars = Math.floor((bandHeight - 4) / (titleFs * 0.42));
-        const titleX = rightLaneCenter + titleFs * 0.16;
-        drawVerticalText(pdf, cycle.name, titleX, titleY, titleMaxChars);
+        const titleX = rightLaneCenter + titleFit.fontSize * 0.16;
+        pdf.text(titleFit.text, titleX, titleY, { angle: 90 });
 
-        // ── Type label (Préparation Générale, etc.) — left lane only — gray italic, discreet ──
+        // ── Type label (Préparation Générale, etc.) — left lane — gray italic ──
         if (hasTypeLabel) {
-          const typeFs = Math.max(2.9, Math.min(5.2, laneW * 0.72));
+          const typeMaxFs = Math.max(2.6, Math.min(5.2, laneW * 0.72));
+          const typeFit = fitVerticalText(typeFullLabel, usableH, 2.4, typeMaxFs);
           pdf.setFont("helvetica", "italic");
-          pdf.setFontSize(typeFs);
-          // Discreet gray, adapted for dark vs light cycle backgrounds
+          pdf.setFontSize(typeFit.fontSize);
           pdf.setTextColor(...(lightOnDark ? ([220, 222, 228] as [number, number, number]) : ([110, 115, 130] as [number, number, number])));
-          const typeMaxChars = Math.floor((bandHeight - 4) / (typeFs * 0.42));
-          const typeX = leftLaneCenter + typeFs * 0.12;
-          drawVerticalText(pdf, typeFullLabel, typeX, titleY, typeMaxChars);
+          const typeX = leftLaneCenter + typeFit.fontSize * 0.12;
+          pdf.text(typeFit.text, typeX, titleY, { angle: 90 });
         }
       }
     }
