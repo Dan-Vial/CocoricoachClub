@@ -135,18 +135,18 @@ export function TeamCumulativeStats({ stats, matchesData, sportStats, sportType,
                 {cat.label}
               </CardTitle>
             </CardHeader>
-            <CardContent className="px-3 pb-3 pt-0">
-              <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-2">
+            <CardContent className="px-2 pb-2 pt-0">
+              <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-1.5">
                 {/* Inject scored / conceded tiles at start of "general" category */}
                 {isGeneral && scoreSummary && (
                   <>
-                    <div className="p-2 rounded-lg text-center space-y-0.5 border bg-emerald-500/10 border-emerald-500/30">
-                      <p className="text-xl font-bold text-emerald-600 dark:text-emerald-400">{scoreSummary.scored}</p>
-                      <p className="text-[11px] text-muted-foreground leading-tight">Pts marqués</p>
+                    <div className="p-1.5 rounded-md text-center space-y-0 border bg-emerald-500/10 border-emerald-500/30">
+                      <p className="text-base font-bold text-emerald-600 dark:text-emerald-400 leading-tight">{scoreSummary.scored}</p>
+                      <p className="text-[9px] text-muted-foreground leading-tight">Pts marqués</p>
                     </div>
-                    <div className="p-2 rounded-lg text-center space-y-0.5 border bg-destructive/10 border-destructive/30">
-                      <p className="text-xl font-bold text-destructive">{scoreSummary.conceded}</p>
-                      <p className="text-[11px] text-muted-foreground leading-tight">Pts encaissés</p>
+                    <div className="p-1.5 rounded-md text-center space-y-0 border bg-destructive/10 border-destructive/30">
+                      <p className="text-base font-bold text-destructive leading-tight">{scoreSummary.conceded}</p>
+                      <p className="text-[9px] text-muted-foreground leading-tight">Pts encaissés</p>
                     </div>
                   </>
                 )}
@@ -164,14 +164,14 @@ export function TeamCumulativeStats({ stats, matchesData, sportStats, sportType,
                     else toneClass = "bg-amber-500/10 border-amber-500/30";
                   }
                   return (
-                    <div key={stat.key} className={`p-2 rounded-lg text-center space-y-0.5 border ${toneClass}`}>
-                      <p className="text-xl font-bold">
+                    <div key={stat.key} className={`p-1.5 rounded-md text-center space-y-0 border ${toneClass}`}>
+                      <p className="text-base font-bold leading-tight">
                         {stat.computedFrom ? `${val}%` : val}
                       </p>
-                      <p className="text-[11px] text-muted-foreground leading-tight">{stat.shortLabel}</p>
-                      <div className="flex items-center justify-center gap-1 flex-wrap">
+                      <p className="text-[9px] text-muted-foreground leading-tight">{stat.shortLabel}</p>
+                      <div className="flex items-center justify-center gap-0.5 flex-wrap">
                         {!stat.computedFrom && (
-                          <span className="text-[10px] text-muted-foreground">Moy {avg}</span>
+                          <span className="text-[9px] text-muted-foreground">Moy {avg}</span>
                         )}
                         {!neutral && matchesData.length >= 2 && !stat.computedFrom && (
                           <ProgressionBadge value={prog} />
