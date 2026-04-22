@@ -612,83 +612,77 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
           ? ([228, 231, 239] as [number, number, number])
           : ([90, 98, 116] as [number, number, number]);
 
-        // ─────────────────────────────────────────────────────────────────
-        // RENDU DU TEXTE — hiérarchie stricte (jamais d'abréviation prématurée) :
-        //  1. Texte HORIZONTAL complet (multi-lignes, auto font-size)
-        //  2. Texte VERTICAL complet (rotation 90°) si bloc étroit ET haut
-        //  3. Multi-lignes du texte court (fallback wrap)
-        //  4. Abréviation (UNIQUEMENT si rien d'autre ne tient)
-        //
-        // Règle du ratio : si height/width >= 1.6 → on tente le vertical AVANT
-        // l'horizontal, car c'est là que le texte complet a le plus de chances
-        // de tenir.
-        // ─────────────────────────────────────────────────────────────────
-        const ratio = usableH / Math.max(0.1, usableW);
-        const preferVertical = ratio >= 1.6 && usableH >= 8;
-
-        type HLayout = { fontSize: number; lines: string[]; text: string };
-        type VLayout = { fontSize: number; text: string };
-
-        const tryHorizontal = (candidates: string[], boxW: number, boxH: number, minFs: number, maxFs: number, maxLines: number, style: "normal" | "bold" | "italic"): HLayout =>
-          fitHorizontalTextBlock(pdf, candidates.filter(Boolean), boxW, boxH, minFs, maxFs, maxLines, style);
-
-        const tryVertical = (text: string, availableH: number, minFs: number, maxFs: number, lateralBudget: number, style: "normal" | "bold" | "italic"): VLayout =>
-          fitVerticalText(pdf, text, availableH, minFs, maxFs, style, lateralBudget);
-
-        // Helper : draw a fitted horizontal block (title + optional type)
-        const drawHorizontalLayout = (titleLayout: HLayout, typeLayout: HLayout) => {
-          const topBlockHeight = measureTextBlockHeight(titleLayout.fontSize, titleLayout.lines.length);
-          const bottomBlockHeight = measureTextBlockHeight(typeLayout.fontSize, typeLayout.lines.length);
-          const combinedHeight = topBlockHeight + (typeLayout.lines.length > 0 ? 0.9 : 0) + bottomBlockHeight;
-          let yCursor = bandTop + (bandHeight - combinedHeight) / 2 + titleLayout.fontSize * 0.8;
-
-          if (titleLayout.text && titleLayout.fontSize > 0) {
-            pdf.setFont("helvetica", "bold");
-            pdf.setFontSize(titleLayout.fontSize);
-            pdf.setTextColor(...textColor);
-            const lineHeight = titleLayout.fontSize * 1.05;
-            titleLayout.lines.forEach((line) => {
-              pdf.text(line, xCol + subColW / 2, yCursor, { align: "center" });
-              yCursor += lineHeight;
-            });
-          }
-
-          if (typeLayout.text && typeLayout.fontSize > 0) {
-            yCursor += 0.9;
-            pdf.setFont("helvetica", "italic");
-            pdf.setFontSize(typeLayout.fontSize);
-            pdf.setTextColor(...secondaryTextColor);
-            const lineHeight = typeLayout.fontSize * 1.02;
-            typeLayout.lines.forEach((line) => {
-              pdf.text(line, xCol + subColW / 2, yCursor, { align: "center" });
-              yCursor += lineHeight;
-            });
-          }
-        };
-
-        // Helper : draw vertical (rotated) labels in 1 or 2 lanes
-        const drawVerticalLayout = (titleFit: VLayout, typeFit: VLayout) => {
-          const laneW = hasTypeLabel && typeFit.text
+        // ALWAYS render cycle text VERTICALLY — never horizontal.
+        // Two lanes (left = type, right = title) when both labels exist.
+        {
+          const laneW = hasTypeLabel
             ? Math.max(1.1, (usableW - laneGap) / 2)
             : usableW;
           const leftLaneCenter = xCol + innerPadding + laneW / 2;
-          const rightLaneCenter = hasTypeLabel && typeFit.text
+          const rightLaneCenter = hasTypeLabel
             ? xCol + innerPadding + laneW + laneGap + laneW / 2
-            : xCol + subColW / 2;
+            : xCol + innerPadding + laneW / 2;
+          const lateralBudget = Math.max(0, laneW - 0.35);
+          const titleMaxFs = Math.min(11, Math.max(3, lateralBudget));
+          const typeMaxFs = Math.min(8.5, Math.max(2.6, lateralBudget));
+          const reservedDescender = Math.max(titleMaxFs, typeMaxFs) * 0.28 + 0.45;
+          const verticalBudget = Math.max(0, usableH - reservedDescender);
+
+          // Try full names first; fallback to short labels only if vertical fitting fails.
+          let titleFit = fitVerticalText(
+            pdf,
+            cycle.name,
+            verticalBudget,
+            3.2,
+            titleMaxFs,
+            "bold",
+            lateralBudget,
+          );
+          if (!titleFit.text && cycleShortLabel) {
+            titleFit = fitVerticalText(
+              pdf,
+              cycleShortLabel,
+              verticalBudget,
+              2.8,
+              titleMaxFs,
+              "bold",
+              lateralBudget,
+            );
+          }
+
+          let typeFit = hasTypeLabel
+            ? fitVerticalText(
+                pdf,
+                typeFullLabel,
+                verticalBudget,
+                2.8,
+                typeMaxFs,
+                "italic",
+                lateralBudget,
+              )
+            : { fontSize: 0, text: "" };
+          if (hasTypeLabel && !typeFit.text && typeShortLabel) {
+            typeFit = fitVerticalText(
+              pdf,
+              typeShortLabel,
+              verticalBudget,
+              2.4,
+              typeMaxFs,
+              "italic",
+              lateralBudget,
+            );
+          }
+
           const maxFs = Math.max(titleFit.fontSize, typeFit.fontSize);
           const descenderPad = maxFs * 0.28 + 0.45;
-          // Vertical text reads bottom→top; center it within the band.
-          const titleH = titleFit.fontSize > 0 ? pdf.getTextWidth(titleFit.text) : 0;
-          const typeH = typeFit.fontSize > 0 ? pdf.getTextWidth(typeFit.text) : 0;
-          const targetH = Math.max(titleH, typeH);
-          const baseY = bandTop + (bandHeight - targetH) / 2 + targetH - descenderPad;
+          const titleY = bandBottom - innerPaddingV - descenderPad;
 
           if (titleFit.text && titleFit.fontSize > 0) {
             pdf.setFont("helvetica", "bold");
             pdf.setFontSize(titleFit.fontSize);
             pdf.setTextColor(...textColor);
-            const titleX = (hasTypeLabel && typeFit.text ? rightLaneCenter : leftLaneCenter) + titleFit.fontSize * 0.05;
-            pdf.text(titleFit.text, titleX, baseY, { angle: 90 });
+            const titleX = rightLaneCenter + titleFit.fontSize * 0.05;
+            pdf.text(titleFit.text, titleX, titleY, { angle: 90 });
           }
 
           if (hasTypeLabel && typeFit.text && typeFit.fontSize > 0) {
@@ -696,99 +690,7 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
             pdf.setFontSize(typeFit.fontSize);
             pdf.setTextColor(...secondaryTextColor);
             const typeX = leftLaneCenter + typeFit.fontSize * 0.04;
-            pdf.text(typeFit.text, typeX, baseY, { angle: 90 });
-          }
-        };
-
-        // Lateral budget for vertical = how wide the rotated character can be
-        const verticalLaneW = hasTypeLabel
-          ? Math.max(1.1, (usableW - laneGap) / 2)
-          : usableW;
-        const lateralBudget = Math.max(0, verticalLaneW - 0.45);
-        const titleMaxFs = Math.min(11, lateralBudget);
-        const typeMaxFs = Math.min(8.5, lateralBudget);
-        const verticalBudget = Math.max(0, usableH - (Math.max(titleMaxFs, typeMaxFs) * 0.28 + 0.45));
-
-        // ── STEP 1 : try full-text HORIZONTAL (unless ratio strongly favors vertical) ──
-        let horizontalSucceeded = false;
-        if (!preferVertical) {
-          const titleBoxW = usableW;
-          const titleBoxH = hasTypeLabel ? usableH * 0.62 : usableH;
-          const typeBoxH = hasTypeLabel ? usableH * 0.28 : 0;
-
-          // Try ONLY the full text first (no fallback to abbreviation yet)
-          const titleLayout = tryHorizontal([cycle.name], titleBoxW, titleBoxH, 4.2, 8.8, 4, "bold");
-          const typeLayout = hasTypeLabel
-            ? tryHorizontal([typeFullLabel], titleBoxW, typeBoxH, 3.2, 5.6, 3, "italic")
-            : { fontSize: 0, lines: [], text: "" } as HLayout;
-
-          if (titleLayout.text && (!hasTypeLabel || typeLayout.text)) {
-            drawHorizontalLayout(titleLayout, typeLayout);
-            horizontalSucceeded = true;
-          }
-        }
-
-        if (horizontalSucceeded) {
-          // done
-        } else {
-          // ── STEP 2 : try full-text VERTICAL (rotated 90°) ──
-          const titleVFit = tryVertical(cycle.name, verticalBudget, 3.8, titleMaxFs, lateralBudget, "bold");
-          const typeVFit = hasTypeLabel
-            ? tryVertical(typeFullLabel, verticalBudget, 3.2, typeMaxFs, lateralBudget, "italic")
-            : { fontSize: 0, text: "" } as VLayout;
-
-          const verticalSucceeded = titleVFit.text && titleVFit.fontSize > 0 && (!hasTypeLabel || (typeVFit.text && typeVFit.fontSize > 0));
-
-          if (verticalSucceeded) {
-            drawVerticalLayout(titleVFit, typeVFit);
-          } else {
-            // ── STEP 3 : multi-line WRAP of the full text (more lines allowed) ──
-            const titleBoxW = usableW;
-            const titleBoxH = hasTypeLabel ? usableH * 0.62 : usableH;
-            const typeBoxH = hasTypeLabel ? usableH * 0.28 : 0;
-            const titleWrap = tryHorizontal([cycle.name], titleBoxW, titleBoxH, 3.4, 7.5, 5, "bold");
-            const typeWrap = hasTypeLabel
-              ? tryHorizontal([typeFullLabel], titleBoxW, typeBoxH, 2.8, 5.0, 3, "italic")
-              : { fontSize: 0, lines: [], text: "" } as HLayout;
-
-            if (titleWrap.text && (!hasTypeLabel || typeWrap.text)) {
-              drawHorizontalLayout(titleWrap, typeWrap);
-            } else {
-              // ── STEP 3b : try ABBREVIATED text VERTICAL before giving up ──
-              const titleVFitShort = tryVertical(cycleShortLabel || cycle.name, verticalBudget, 3.2, titleMaxFs, lateralBudget, "bold");
-              const typeVFitShort = hasTypeLabel
-                ? tryVertical(typeShortLabel || typeFullLabel, verticalBudget, 2.8, typeMaxFs, lateralBudget, "italic")
-                : { fontSize: 0, text: "" } as VLayout;
-
-              if (titleVFitShort.text && titleVFitShort.fontSize > 0) {
-                drawVerticalLayout(titleVFitShort, typeVFitShort);
-              } else {
-                // ── STEP 4 : LAST RESORT — abbreviated horizontal multi-line ──
-                const compactLabel = tryHorizontal(
-                  [cycleShortLabel, typeShortLabel, cycle.name, typeFullLabel],
-                  Math.max(0.5, usableW),
-                  Math.max(0.5, usableH),
-                  2.8,
-                  6.6,
-                  3,
-                  "bold",
-                );
-
-                if (compactLabel.text && compactLabel.fontSize > 0) {
-                  pdf.setFont("helvetica", "bold");
-                  pdf.setFontSize(compactLabel.fontSize);
-                  pdf.setTextColor(...textColor);
-                  const lineHeight = compactLabel.fontSize * 1.05;
-                  const blockHeight = measureTextBlockHeight(compactLabel.fontSize, compactLabel.lines.length);
-                  let yText = bandTop + (bandHeight - blockHeight) / 2 + compactLabel.fontSize * 0.8;
-                  compactLabel.lines.forEach((line) => {
-                    pdf.text(line, xCol + subColW / 2, yText, { align: "center" });
-                    yText += lineHeight;
-                  });
-                }
-                // If even the abbreviation doesn't fit, render nothing — color band only.
-              }
-            }
+            pdf.text(typeFit.text, typeX, titleY, { angle: 90 });
           }
         }
       }
