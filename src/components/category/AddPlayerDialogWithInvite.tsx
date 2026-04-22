@@ -328,6 +328,17 @@ export function AddPlayerDialogWithInvite({
     }
 
     try {
+      // Athlétisme : la 1ʳᵉ paire devient discipline/spécialité "principale" (rétro-compatible)
+      // et on stocke aussi la liste complète dans disciplines[]/specialties[].
+      const primaryDiscipline = isAthletics
+        ? disciplinePairs[0]?.discipline || ""
+        : discipline;
+      const primarySpecialty = isAthletics
+        ? disciplinePairs[0]?.specialty || ""
+        : specialty;
+      const disciplineList = isAthletics ? disciplinePairs.map((p) => p.discipline) : undefined;
+      const specialtyList = isAthletics ? disciplinePairs.map((p) => p.specialty || "") : undefined;
+
       // 1. Create the player
       const player = await addPlayer.mutateAsync({
         name: result.data.name,
@@ -336,8 +347,10 @@ export function AddPlayerDialogWithInvite({
         phone: playerPhone.trim() || undefined,
         birth_year: result.data.birthYear,
         birth_date: birthDate || undefined,
-        discipline: discipline || undefined,
-        specialty: specialty || undefined,
+        discipline: primaryDiscipline || undefined,
+        specialty: primarySpecialty || undefined,
+        disciplines: disciplineList,
+        specialties: specialtyList,
         position: position || undefined,
         fis_code: fisCode.trim() || undefined,
         fis_objective: fisObjective.trim() || undefined,
