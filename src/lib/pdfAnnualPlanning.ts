@@ -408,11 +408,16 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
 
         // Map cycle types to full labels (no abbreviation)
         const typeMap: Record<string, string> = {
+          PG: "Préparation Générale",
+          PS: "Préparation Spécifique",
+          PC: "Préparation Compétition",
+          recuperation: "Récupération",
+          transition: "Transition",
+          // Legacy/alternative keys
           general_prep: "Préparation Générale",
           specific_prep: "Préparation Spécifique",
           competition: "Préparation Compétition",
           recovery: "Récupération",
-          transition: "Transition",
         };
         const typeFullLabel = cycle.cycle_type
           ? (typeMap[cycle.cycle_type] || cycle.cycle_type)
